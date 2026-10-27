@@ -39,6 +39,9 @@ CONTROL_SCREENS = (
     "/rules-fees",
     "/reconciliation",
     "/governance",
+    "/agent/intake",
+    "/agent/adjudication",
+    "/admin",
 )
 
 
@@ -108,7 +111,7 @@ def test_every_control_of_every_screen_carries_a_label(client: TestClient) -> No
 
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
-    # City Administrator holds grants for all eight screens, so for that
+    # City Administrator holds grants for all eleven screens, so for that
     # persona the navigation is the full canonical list on every screen.
     # Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
@@ -116,7 +119,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 8, path
+        assert len(items) == 11, path
         if reference is None:
             reference = items
         assert items == reference
@@ -132,6 +135,9 @@ SCREEN_PATHS = {
     "rules": "/rules-fees",
     "reconciliation": "/reconciliation",
     "governance": "/governance",
+    "agent_intake": "/agent/intake",
+    "agent_adjudication": "/agent/adjudication",
+    "admin": "/admin",
 }
 
 #: The screens each persona may open (same table as the view-model tests).
@@ -144,8 +150,9 @@ EXPECTED_NAVIGATION = {
         "permit",
         "steward",
         "rules",
+        "agent_intake",
     ],
-    "persona_permit_reviewer": ["queue", "applicants", "permit"],
+    "persona_permit_reviewer": ["queue", "applicants", "permit", "agent_adjudication"],
     "persona_city_administrator": list(SCREEN_PATHS),
 }
 

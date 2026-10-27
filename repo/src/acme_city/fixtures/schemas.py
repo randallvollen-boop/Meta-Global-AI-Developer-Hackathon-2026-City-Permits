@@ -218,6 +218,15 @@ class PermitTypeFixture(StrictModel):
     required_fields: list[str] = Field(default_factory=list)
     required_documents: list[str] = Field(default_factory=list)
     source_mapping: dict[str, Any] = Field(default_factory=dict)
+    #: The review area the intake router sends a ready case to.
+    review_area: str | None = None
+    #: ``simple``, ``with_plans`` or ``formal_review``.
+    process_category: str | None = None
+    #: A discretionary type is always held for a person or a board.
+    discretionary: bool = False
+    description: str = ""
+    #: The fee schedule key that applies to this type.
+    fee_schedule_key: str | None = None
 
 
 class RuleFixture(StrictModel):
@@ -270,6 +279,12 @@ class ScenarioFixture(StrictModel):
     starting_state: str = ""
 
 
+class ReasonCodeFixture(StrictModel):
+    code: str
+    label: str
+    description: str = ""
+
+
 class DemoConfig(CatalogModel):
     config_version: str
     fixture_version: str
@@ -279,6 +294,7 @@ class DemoConfig(CatalogModel):
     session: dict[str, Any] = Field(default_factory=dict)
     reset: dict[str, Any] = Field(default_factory=dict)
     scenarios: list[ScenarioFixture] = Field(default_factory=list)
+    reason_codes: list[ReasonCodeFixture] = Field(default_factory=list)
 
 
 class PartyFixture(StrictModel):

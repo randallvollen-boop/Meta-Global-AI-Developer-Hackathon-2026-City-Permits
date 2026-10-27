@@ -94,7 +94,7 @@
             </div>
           </div>
         </td>
-        <td><span class="pill {{ state_tones.get(item.state, 'info') }}">{{ item.state }}</span></td>
+        <td><span class="pill {{ state_tones.get(item.state, 'info') }}" data-testid="queue-item-state">{{ item.state_label or item.state }}</span></td>
         <td>
           {% if item.kind == 'application' %}
           <span class="mini-steps" role="img" aria-label="Step {{ item.step + 1 }} of 5">{% for i in range(5) %}<i class="{{ 'd' if i < item.step else 'c' if i == item.step else 'b' if item.step_state == 'blocked' and i == item.step else '' }}"></i>{% endfor %}</span>

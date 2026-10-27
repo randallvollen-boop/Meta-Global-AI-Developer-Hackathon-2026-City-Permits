@@ -248,6 +248,34 @@
       "category": "admin",
       "description": "Read the service health and schema state.",
       "sensitive": false
+    },
+    {
+      "permission_id": "agent.toggle",
+      "action": "agent.toggle",
+      "category": "agent",
+      "description": "Wake an agent or put it back to sleep. Only the City Administrator holds this grant.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "agent.run.intake",
+      "action": "agent.run.intake",
+      "category": "agent",
+      "description": "Run the intake agent on one case or on the waiting cases.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "agent.run.adjudication",
+      "action": "agent.run.adjudication",
+      "category": "agent",
+      "description": "Run the adjudication agent on one case or on the cases that are in review.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "config.manage",
+      "action": "config.manage",
+      "category": "configuration",
+      "description": "Change the permit-type configuration and the reason codes of the City.",
+      "sensitive": false
     }
   ],
   "role_grants": {
@@ -260,6 +288,7 @@
       "records.document.view"
     ],
     "intake_clerk": [
+      "agent.run.intake",
       "applicant.profile.edit",
       "application.revision.submit",
       "application.submit",
@@ -269,6 +298,7 @@
       "source.snapshot.stage"
     ],
     "domain_steward": [
+      "agent.run.intake",
       "change.case.transition",
       "correction.request.submit",
       "records.document.view",
@@ -298,6 +328,7 @@
       "rule.version.publish"
     ],
     "permit_reviewer": [
+      "agent.run.adjudication",
       "application.evaluate",
       "application.revision.submit",
       "correction.request.submit",
@@ -324,6 +355,10 @@
     "administrator": [
       "admin.actor.manage",
       "admin.session.revoke",
+      "agent.run.adjudication",
+      "agent.run.intake",
+      "agent.toggle",
+      "config.manage",
       "permit.icon.generate",
       "records.configuration.view",
       "records.document.view"

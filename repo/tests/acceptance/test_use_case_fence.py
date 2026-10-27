@@ -2,10 +2,12 @@
 
 Follows docs/operations/USE_CASE_FENCE.md step by step through the real HTTP
 surface (the same governed endpoints and UI actions the browser posts to):
-administrator simulation of the two fence scenarios, triage, steward link
-approval, reviewer decisions, then fee assessment, payment, allocation,
-reconciliation and issuance for the approved case.  Amounts are always read
-from API responses, never assumed.
+the administrator simulates the two fence scenarios, wakes the intake agent,
+the data steward runs the intake agent and approves the links and the
+extracted values, the administrator wakes the adjudication agent, the permit
+reviewer runs it and confirms the denial and reverts the approval, then fee
+assessment, payment, allocation, reconciliation and issuance for the approved
+case.  Amounts are always read from API responses, never assumed.
 """
 
 from __future__ import annotations
@@ -113,96 +115,212 @@ def application_row(settings, application_id: str):
                 "status": row.status,
                 "facts": dict(row.submitted_facts or {}),
                 "number": row.source_application_number,
+                "review_area": row.review_area,
             }
     finally:
         factory.dispose()
 
 
-def approve_applicant_link(settings, application_id: str) -> None:
-    """Record the steward-approved canonical link issuance requires.
-
-    This is the recorded outcome of the Steward review decision in the
-    walkthrough (compare tests/api/test_issuance_api.py): the identity agent
-    proposed, the steward approved.  It is written as a crosswalk row because
-    the registry decision endpoint needs a proposed crosswalk for the exact
-    source record, which the seeded D01 flow provides and a brand-new intake
-    party link reaches through the same table.
-    """
+def proposed_links(settings) -> list[dict]:
+    """Return the proposed identity links of the demonstration."""
     factory = SessionFactory(settings.database_url)
     try:
-        with transaction(factory) as session:
-            application = session.get(permit.Application, application_id)
-            party_id = application.applicant_party_id
-            assert party_id, "intake should attach the named applicant party"
-            session.add(
-                registry.Crosswalk(
-                    id=f"crosswalk_fence_{application_id}",
-                    entity_id=party_id,
-                    entity_type="party",
-                    source_system_id="intake_portal",
-                    source_dataset_key="submitted_applications",
-                    source_record_id=str((application.submitted_facts or {}).get("portal_reference")),
-                    link_status="approved",
-                    decision="Approved by the data steward in the fence walkthrough.",
-                    decision_actor_id="persona_data_steward",
-                    decided_at=DECIDED_AT,
+        with factory() as session:
+            rows = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.link_status == "proposed"
                 )
-            )
+            ).scalars().all()
+            return [
+                {
+                    "crosswalk_id": row.id,
+                    "entity_id": row.entity_id,
+                    "source_system_id": row.source_system_id,
+                    "source_dataset_key": row.source_dataset_key,
+                    "source_record_id": row.source_record_id,
+                    "version": row.version,
+                }
+                for row in rows
+            ]
     finally:
         factory.dispose()
 
 
+def proposed_observations(settings) -> list[dict]:
+    """Return the proposed extracted values of the demonstration."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            rows = session.execute(
+                select(permit.ExtractionObservation).where(
+                    permit.ExtractionObservation.validation_state == "proposed"
+                )
+            ).scalars().all()
+            entries: list[dict] = []
+            for row in rows:
+                document = session.get(permit.Document, row.document_id)
+                entries.append(
+                    {
+                        "observation_id": row.id,
+                        "field_path": row.field_path,
+                        "document_id": row.document_id,
+                        "application_id": (
+                            document.application_id if document is not None else ""
+                        ),
+                    }
+                )
+            return entries
+    finally:
+        factory.dispose()
+
+
+def approve_links_and_values(client: TestClient, settings) -> None:
+    """Approve every proposed link and every proposed extracted value."""
+    for link in proposed_links(settings):
+        act(
+            client,
+            "registry.decide",
+            {
+                "decision": "approve",
+                "reason": "the applicant named the party on the application",
+                "source_system_id": link["source_system_id"],
+                "dataset_key": link["source_dataset_key"],
+                "source_record_id": link["source_record_id"],
+                "entity_id": link["entity_id"],
+                "expected_version": str(link["version"]),
+            },
+            "/steward",
+        )
+    for observation in proposed_observations(settings):
+        act(
+            client,
+            "extraction.decide",
+            {
+                "observation_id": observation["observation_id"],
+                "decision": "accept",
+                "reason": "the value is quoted from the received document",
+                "application_id": observation["application_id"],
+            },
+            "/steward",
+        )
+
+
 def test_use_case_fence(client: TestClient, environment) -> None:
-    # 1-2. Administrator simulates both fence scenarios (USE_CASE step 2).
+    # 1-2. Administrator simulates both fence scenarios; they wait.
     choose(client, "persona_city_administrator")
     assert 'data-action-id="intake.simulate"' in client.get("/governance").text
     front = simulate(client, "fence-front-too-tall")
     rear = simulate(client, "fence-conforming-rear")
     front_id, rear_id = front["application_id"], rear["application_id"]
+    for application_id in (front_id, rear_id):
+        state = application_row(environment, application_id)
+        assert state["status"] == "submitted"
 
-    # 3. Triage recorded; recommendations exactly as the document states.
-    front_body = client.get(f"/permits/{front_id}").text
-    rear_body = client.get(f"/permits/{rear_id}").text
-    for body in (front_body, rear_body):
-        assert 'data-testid="agent-steps"' in body
-        for step in ("intake", "identity", "extraction", "rules", "recommendation"):
-            assert f'data-step-name="{step}"' in body
-        assert 'data-testid="agent-recommendation"' in body
-        assert "Advisory. The Permit Reviewer decides." in body
-    assert 'data-testid="recommendation-outcome">deny<' in front_body
-    assert "DF-1" in front_body and "ACME Code §14-305" in front_body
-    assert 'data-testid="recommendation-outcome">approve<' in rear_body
+    # 3. The administrator wakes the intake agent.
+    act(
+        client,
+        "agent.toggle",
+        {"agent_key": "intake", "mode": "awake"},
+        "/agent/intake",
+    )
+    intake_screen = client.get("/agent/intake").text
+    assert 'data-testid="agent-mode">awake<' in intake_screen
 
-    # 4. Steward: navigation is scoped; approve the applicant identity link.
+    # 4. The data steward runs the intake agent on all waiting cases.
     choose(client, "persona_data_steward")
     assert 'data-screen-key="governance"' not in client.get("/queue").text
     assert client.get("/governance").status_code == 403
-    approve_applicant_link(environment, rear_id)
-    approve_applicant_link(environment, front_id)
+    run_all = act(client, "agent.run.intake", {}, "/agent/intake")
+    assert run_all["status"] == "accepted", run_all
+    for application_id in (front_id, rear_id):
+        state = application_row(environment, application_id)
+        assert state["status"] == "ready_for_review"
+        assert state["review_area"] == "Building"
+    trace = client.get("/agent/intake").text
+    for node in (
+        "classifier",
+        "field_extractor",
+        "document_qc",
+        "duplicate_finder",
+        "completeness",
+        "router",
+    ):
+        assert f'data-node-id="{node}"' in trace
 
-    # 5. Reviewer: deny the front fence (DF-1), approve the rear fence.
+    # 5. The steward approves the proposed links and the extracted values.
+    approve_links_and_values(client, environment)
+
+    # 6. The administrator wakes the adjudication agent.
+    choose(client, "persona_city_administrator")
+    act(
+        client,
+        "agent.toggle",
+        {"agent_key": "adjudication", "mode": "awake"},
+        "/agent/adjudication",
+    )
+
+    # 7. The reviewer runs the adjudication agent on all cases in review.
     choose(client, "persona_permit_reviewer")
+    assert client.get("/agent/intake").status_code == 403
+    run_all = act(client, "agent.run.adjudication", {}, "/agent/adjudication")
+    assert run_all["status"] == "accepted", run_all
 
-    def decide(application_id: str, outcome: str, reason: str) -> None:
-        version = application_row(environment, application_id)["version"]
-        act(
-            client,
-            "permit.decide",
-            {
-                "application_id": application_id,
-                "expected_application_version": str(version),
-                "outcome": outcome,
-                "reason": reason,
-            },
-            f"/permits/{application_id}",
-        )
+    front_body = client.get(f"/permits/{front_id}").text
+    rear_body = client.get(f"/permits/{rear_id}").text
+    assert 'data-testid="recommendation-outcome">deny<' in front_body
+    assert "DF-1" in front_body and "ACME Code §14-305" in front_body
+    assert 'data-testid="recommendation-outcome">approve<' in rear_body
+    assert "DF-2" in rear_body and "ACME Code §14-306" in rear_body
 
-    decide(front_id, "denied", "Front fence fails DF-1; agrees with the agent recommendation.")
-    decide(rear_id, "approved", "Rear fence complies with DF-2; agrees with the recommendation.")
-    assert application_row(environment, front_id)["status"] == "denied"
+    # 8. The reviewer confirms the denial; the decision of record is theirs.
+    front_version = application_row(environment, front_id)["version"]
+    confirmed = act(
+        client,
+        "recommendation.confirm",
+        {
+            "recommendation_id": _pending_recommendation_id(environment, front_id),
+            "application_id": front_id,
+            "expected_application_version": str(front_version),
+            "reason": "the front fence fails DF-1",
+        },
+        f"/permits/{front_id}",
+    )
+    assert confirmed["status"] == "accepted", confirmed
+    front_state = application_row(environment, front_id)
+    assert front_state["status"] == "denied"
+
+    # 9. The reviewer reverts the approval with a reason and decides it.
+    rear_version = application_row(environment, rear_id)["version"]
+    reverted = act(
+        client,
+        "recommendation.revert",
+        {
+            "recommendation_id": _pending_recommendation_id(environment, rear_id),
+            "application_id": rear_id,
+            "reason": "I want to check the setback myself before approving",
+        },
+        f"/permits/{rear_id}",
+    )
+    assert reverted["status"] == "accepted", reverted
+    assert application_row(environment, rear_id)["status"] == "under_review"
+
+    rear_version = application_row(environment, rear_id)["version"]
+    decided = act(
+        client,
+        "permit.decide",
+        {
+            "application_id": rear_id,
+            "expected_application_version": str(rear_version),
+            "outcome": "approved",
+            "reason": "the rear fence complies with DF-2",
+        },
+        f"/permits/{rear_id}",
+    )
+    assert decided["status"] == "accepted", decided
     assert application_row(environment, rear_id)["status"] == "approved"
 
-    # 6a. Administrator assesses the approved case; amounts come from responses.
+    # 10. The administrator assesses the approved case; amounts come from
+    # responses.
     choose(client, "persona_city_administrator")
     rear_state = application_row(environment, rear_id)
     assessed = client.post(
@@ -265,7 +383,8 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     assert reconciled.json()["balance"] == "0.00"
     assert reconciled.json()["status"] == "exact"
 
-    # 6b. Reviewer issues the approved rear permit; the denied case stays denied.
+    # 11. The reviewer issues the approved rear permit; the denied case stays
+    # denied.
     choose(client, "persona_permit_reviewer")
     rear_state = application_row(environment, rear_id)
     factory = SessionFactory(environment.database_url)
@@ -278,8 +397,10 @@ def test_use_case_fence(client: TestClient, environment) -> None:
                 )
             ).scalar_one()
             decision_id, decision_version = decision.id, decision.version
+            decided_by = decision.decided_by_actor_id
     finally:
         factory.dispose()
+    assert decided_by == "persona_permit_reviewer"
     issued = client.post(
         f"/api/permits/applications/{rear_id}/issue",
         json={
@@ -294,3 +415,19 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     assert issued.json()["value"]["permit_number"].startswith("ACME-")
     assert application_row(environment, rear_id)["status"] == "issued"
     assert application_row(environment, front_id)["status"] == "denied"
+
+
+def _pending_recommendation_id(settings, application_id: str) -> str:
+    """Return the identifier of the pending recommendation of a case."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            row = session.execute(
+                select(permit.Recommendation).where(
+                    permit.Recommendation.application_id == application_id,
+                    permit.Recommendation.status == "pending",
+                )
+            ).scalar_one()
+            return row.id
+    finally:
+        factory.dispose()

@@ -121,6 +121,7 @@
       "permission_ids": [
         "admin.actor.manage",
         "admin.session.revoke",
+        "config.manage",
         "permit.icon.generate",
         "records.configuration.view",
         "records.document.view"
@@ -156,6 +157,28 @@
         "governance.authority_policy.manage",
         "governance.dataset.register",
         "governance.queue.manage",
+        "records.document.view",
+        "registry.provenance.view"
+      ]
+    },
+    {
+      "role_id": "intake_agent",
+      "label": "Intake agent (service identity)",
+      "boundary": "Reads received applications, proposes values and links, and routes a case to early resolution or to review. It never decides.",
+      "permission_ids": [
+        "application.evaluate",
+        "application.submit",
+        "records.document.view",
+        "registry.crosswalk.propose",
+        "source.snapshot.stage"
+      ]
+    },
+    {
+      "role_id": "adjudication_agent",
+      "label": "Adjudication agent (service identity)",
+      "boundary": "Evaluates the published rules of a permit type and recommends an outcome. It never decides.",
+      "permission_ids": [
+        "application.evaluate",
         "records.document.view",
         "registry.provenance.view"
       ]
@@ -477,6 +500,14 @@
           "domains": [],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.intake",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,
@@ -538,6 +569,14 @@
         {
           "permission_id": "records.document.view",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.adjudication",
+          "domains": [
+            "permits"
+          ],
           "record_scope": [],
           "source": "explicit"
         }
@@ -844,6 +883,34 @@
             "finance",
             "records"
           ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.toggle",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.adjudication",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.intake",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "config.manage",
+          "domains": [],
           "record_scope": [],
           "source": "explicit"
         }
@@ -1839,6 +1906,108 @@
         {
           "permission_id": "source.snapshot.stage",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_agent_intake",
+      "label": "ACME intake agent (service identity)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "intake_agent"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "parcels",
+        "addresses"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "application.evaluate",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.submit",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.propose",
+          "domains": [
+            "applicants",
+            "parcels",
+            "contractors",
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_agent_adjudication",
+      "label": "ACME adjudication agent (service identity)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "adjudication_agent"
+      ],
+      "domain_scope": [
+        "permits",
+        "building_rules"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "application.evaluate",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "permits",
+            "building_rules"
+          ],
           "record_scope": [],
           "source": "explicit"
         }

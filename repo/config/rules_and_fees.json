@@ -25,7 +25,12 @@
       "source_mapping": {
         "baseline_permit_type_key": "res_building",
         "source_kind": "preserved_baseline_permit_configuration"
-      }
+      },
+      "review_area": "Building",
+      "process_category": "with_plans",
+      "discretionary": false,
+      "description": "A new or extended residential building, reviewed against the building rules and the energy compliance form.",
+      "fee_schedule_key": "fee_commercial_demo"
     },
     {
       "permit_type_id": "permit_type_deck_fence",
@@ -45,7 +50,12 @@
       "source_mapping": {
         "baseline_permit_type_key": "deck_fence",
         "source_kind": "preserved_baseline_permit_configuration"
-      }
+      },
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A residential deck, fence or other yard structure, reviewed at the counter.",
+      "fee_schedule_key": "fee_commercial_demo"
     },
     {
       "permit_type_id": "permit_type_com_ti",
@@ -69,7 +79,12 @@
       "source_mapping": {
         "baseline_permit_type_key": "com_ti",
         "source_kind": "preserved_baseline_permit_configuration"
-      }
+      },
+      "review_area": "Building",
+      "process_category": "with_plans",
+      "discretionary": false,
+      "description": "A commercial tenant improvement, reviewed with the building rules and the fire suppression plan.",
+      "fee_schedule_key": "fee_commercial_demo"
     },
     {
       "permit_type_id": "permit_type_sign",
@@ -89,7 +104,12 @@
       "source_mapping": {
         "baseline_permit_type_key": "sign",
         "source_kind": "preserved_baseline_permit_configuration"
-      }
+      },
+      "review_area": "Planning & Zoning",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A sign, reviewed by planning and zoning.",
+      "fee_schedule_key": "fee_commercial_demo"
     },
     {
       "permit_type_id": "permit_type_row_encroachment",
@@ -109,6 +129,288 @@
       "source_mapping": {
         "baseline_permit_type_key": "row_encroachment",
         "source_kind": "preserved_baseline_permit_configuration"
+      },
+      "review_area": "Engineering",
+      "process_category": "with_plans",
+      "discretionary": false,
+      "description": "A right-of-way or encroachment, reviewed by public works with a traffic control plan.",
+      "fee_schedule_key": "fee_commercial_demo"
+    },
+    {
+      "permit_type_id": "permit_type_patio",
+      "key": "patio",
+      "label": "Patio",
+      "review_route": "Building counter review",
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A residential patio, reviewed at the counter.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "patio_width_ft"
+      ],
+      "required_documents": [
+        "site_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "patio",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_shed",
+      "key": "shed",
+      "label": "Shed or accessory building",
+      "review_route": "Building counter review",
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A detached shed or other accessory building.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "shed_area_sqft"
+      ],
+      "required_documents": [
+        "site_plan",
+        "material_spec"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "shed",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_pod",
+      "key": "pod",
+      "label": "Temporary container (POD or dumpster)",
+      "review_route": "Engineering counter review",
+      "review_area": "Engineering",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A temporary container placed on a site for a stated number of days.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "pod_duration_days"
+      ],
+      "required_documents": [
+        "site_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "pod",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_hvac",
+      "key": "hvac",
+      "label": "HVAC replacement",
+      "review_route": "Building counter review",
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "The replacement of a heating or cooling system.",
+      "required_fields": [
+        "parcel_number",
+        "project_description"
+      ],
+      "required_documents": [
+        "contractor_license_copy"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "hvac",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_water_heater",
+      "key": "water_heater",
+      "label": "Water-heater replacement",
+      "review_route": "Building counter review",
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "The replacement of a residential water heater.",
+      "required_fields": [
+        "parcel_number",
+        "project_description"
+      ],
+      "required_documents": [
+        "contractor_license_copy"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "water_heater",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_residential_electric",
+      "key": "residential_electric",
+      "label": "Residential electric service",
+      "review_route": "Building counter review",
+      "review_area": "Building",
+      "process_category": "simple",
+      "discretionary": false,
+      "description": "A new or upgraded residential electric service.",
+      "required_fields": [
+        "parcel_number",
+        "project_description"
+      ],
+      "required_documents": [
+        "contractor_license_copy"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "residential_electric",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_fire_alarm",
+      "key": "fire_alarm",
+      "label": "Commercial fire alarm",
+      "review_route": "Fire plan review",
+      "review_area": "Fire",
+      "process_category": "with_plans",
+      "discretionary": false,
+      "description": "A commercial fire alarm system, reviewed with construction plans.",
+      "required_fields": [
+        "parcel_number",
+        "project_description"
+      ],
+      "required_documents": [
+        "construction_plans",
+        "fire_suppression_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "fire_alarm",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_change_occupancy",
+      "key": "change_occupancy",
+      "label": "Change of occupancy",
+      "review_route": "Building formal review",
+      "review_area": "Building",
+      "process_category": "formal_review",
+      "discretionary": false,
+      "description": "A change from one use of a building to another.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "prior_use",
+        "proposed_use",
+        "occupancy_load"
+      ],
+      "required_documents": [
+        "floor_plan",
+        "change_of_use_notice"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "change_occupancy",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_site_plan_review",
+      "key": "site_plan_review",
+      "label": "Site plan review",
+      "review_route": "Planning and zoning formal review",
+      "review_area": "Planning & Zoning",
+      "process_category": "formal_review",
+      "discretionary": true,
+      "description": "A site plan reviewed by the planning board. Discretionary: only a person or the board decides.",
+      "required_fields": [
+        "parcel_number",
+        "project_description"
+      ],
+      "required_documents": [
+        "site_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "site_plan_review",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_rezoning",
+      "key": "rezoning",
+      "label": "Rezoning",
+      "review_route": "Planning and zoning formal review",
+      "review_area": "Planning & Zoning",
+      "process_category": "formal_review",
+      "discretionary": true,
+      "description": "A request to change the zoning of a parcel. Discretionary: only a person or the board decides.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "current_zoning",
+        "proposed_zoning"
+      ],
+      "required_documents": [
+        "site_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "rezoning",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_zoning_variance",
+      "key": "zoning_variance",
+      "label": "Zoning variance",
+      "review_route": "Board and administrative review",
+      "review_area": "Board / Administrative",
+      "process_category": "formal_review",
+      "discretionary": true,
+      "description": "A request to vary the zoning rules of a parcel. Discretionary: only a person or the board decides.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "variance_reason"
+      ],
+      "required_documents": [
+        "site_plan"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "zoning_variance",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_certificate_appropriateness",
+      "key": "certificate_appropriateness",
+      "label": "Certificate of appropriateness",
+      "review_route": "Board and administrative review",
+      "review_area": "Board / Administrative",
+      "process_category": "formal_review",
+      "discretionary": true,
+      "description": "A certificate that a change is appropriate to a historic property. Discretionary: only a person or the board decides.",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "property_address"
+      ],
+      "required_documents": [
+        "owner_authorization"
+      ],
+      "fee_schedule_key": "fee_commercial_demo",
+      "source_mapping": {
+        "baseline_permit_type_key": "certificate_appropriateness",
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
       }
     }
   ],
@@ -573,6 +875,295 @@
         "baseline_rule_id": "CT-2",
         "source_kind": "preserved_baseline_executable_rule",
         "citation_selected": "ACME Code §14-415",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "PA-1",
+      "version": 1,
+      "permit_type": "patio",
+      "kind": "executable",
+      "title": "Patio setback acknowledgement",
+      "citation": "ACME Code §15-101",
+      "field_path": "setback_acknowledged",
+      "operator": "equals",
+      "limit_value": "no",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "The patio does not acknowledge the required setback.",
+      "condition_note": "Record the setback acknowledgement before the permit is issued.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "PA-1",
+        "citation_selected": "ACME Code §15-101",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SH-1",
+      "version": 1,
+      "permit_type": "shed",
+      "kind": "executable",
+      "title": "Accessory building floor area, upper limit",
+      "citation": "ACME Code §15-104",
+      "field_path": "shed_area_sqft",
+      "operator": "max",
+      "limit_value": "600",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "The accessory building floor area is above the 600 sq ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "unit": "sq ft",
+        "baseline_rule_id": "SH-1",
+        "citation_selected": "ACME Code §15-104",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SH-2",
+      "version": 1,
+      "permit_type": "shed",
+      "kind": "executable",
+      "title": "Accessory building floor area, engineered footing",
+      "citation": "ACME Code §15-106",
+      "field_path": "shed_area_sqft",
+      "operator": "max",
+      "limit_value": "200",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "The accessory building floor area is above the 200 sq ft limit.",
+      "condition_note": "An engineered footing detail is required for this floor area.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "unit": "sq ft",
+        "baseline_rule_id": "SH-2",
+        "citation_selected": "ACME Code §15-106",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "PD-1",
+      "version": 1,
+      "permit_type": "pod",
+      "kind": "executable",
+      "title": "Temporary container duration",
+      "citation": "ACME Code §15-210",
+      "field_path": "pod_duration_days",
+      "operator": "max",
+      "limit_value": "30",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "The temporary container is placed for longer than the 30 day period.",
+      "condition_note": "A renewal is required for the additional time.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "unit": "days",
+        "baseline_rule_id": "PD-1",
+        "citation_selected": "ACME Code §15-210",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "HV-1",
+      "version": 1,
+      "permit_type": "hvac",
+      "kind": "executable",
+      "title": "Licensed contractor for an HVAC replacement",
+      "citation": "ACME Code §15-301",
+      "field_path": "contractor_license",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "A licensed contractor must be recorded for an HVAC replacement.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "HV-1",
+        "citation_selected": "ACME Code §15-301",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "WH-1",
+      "version": 1,
+      "permit_type": "water_heater",
+      "kind": "executable",
+      "title": "Licensed contractor for a water-heater replacement",
+      "citation": "ACME Code §15-302",
+      "field_path": "contractor_license",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "A licensed contractor must be recorded for a water-heater replacement.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "WH-1",
+        "citation_selected": "ACME Code §15-302",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RE-1",
+      "version": 1,
+      "permit_type": "residential_electric",
+      "kind": "executable",
+      "title": "Licensed contractor for residential electric work",
+      "citation": "ACME Code §15-303",
+      "field_path": "contractor_license",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "A licensed contractor must be recorded for residential electric work.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "RE-1",
+        "citation_selected": "ACME Code §15-303",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "FA-1",
+      "version": 1,
+      "permit_type": "fire_alarm",
+      "kind": "executable",
+      "title": "Construction plans for a commercial fire alarm",
+      "citation": "ACME Code §15-501",
+      "field_path": "construction_plans_received",
+      "operator": "equals",
+      "limit_value": "no",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "Construction plans were not received with the commercial fire alarm application.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "FA-1",
+        "citation_selected": "ACME Code §15-501",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CO-1",
+      "version": 1,
+      "permit_type": "change_occupancy",
+      "kind": "executable",
+      "title": "Prior use must be stated",
+      "citation": "ACME Code §15-401",
+      "field_path": "prior_use",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "The prior use of the building must be stated.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "CO-1",
+        "citation_selected": "ACME Code §15-401",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CO-2",
+      "version": 1,
+      "permit_type": "change_occupancy",
+      "kind": "executable",
+      "title": "Proposed use must be stated",
+      "citation": "ACME Code §15-402",
+      "field_path": "proposed_use",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "The proposed use of the building must be stated.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "CO-2",
+        "citation_selected": "ACME Code §15-402",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CO-3",
+      "version": 1,
+      "permit_type": "change_occupancy",
+      "kind": "executable",
+      "title": "Final inspection",
+      "citation": "ACME Code §15-403",
+      "field_path": "final_inspection_completed",
+      "operator": "required",
+      "limit_value": "present",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "The final inspection has not been recorded.",
+      "condition_note": "A final inspection is required before the permit is issued.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification",
+        "baseline_rule_id": "CO-3",
+        "citation_selected": "ACME Code §15-403",
         "citation_count": 1
       }
     }

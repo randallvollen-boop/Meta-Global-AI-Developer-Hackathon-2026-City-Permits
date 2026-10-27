@@ -41,8 +41,9 @@ from acme_city.permits.service import PermitService
 from acme_city.registry.provenance import crosswalk_view
 from acme_city.registry.service import RegistryService
 from acme_city.rules.service import RuleCatalogService
+from acme_city.ui import agent_views
 
-#: The eight required screens, in the order the navigation shows them.
+#: The required screens, in the order the navigation shows them.
 SCREENS: tuple[dict[str, str], ...] = (
     {"key": "queue", "label": "Work queue", "href": "/queue"},
     {"key": "applicants", "label": "Applicants", "href": "/applicants"},
@@ -56,6 +57,13 @@ SCREENS: tuple[dict[str, str], ...] = (
     {"key": "rules", "label": "Rules and fees", "href": "/rules-fees"},
     {"key": "reconciliation", "label": "Reconciliation", "href": "/reconciliation"},
     {"key": "governance", "label": "Governance and sources", "href": "/governance"},
+    {"key": "agent_intake", "label": "Intake agent", "href": "/agent/intake"},
+    {
+        "key": "agent_adjudication",
+        "label": "Adjudication agent",
+        "href": "/agent/adjudication",
+    },
+    {"key": "admin", "label": "Administration", "href": "/admin"},
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -76,6 +84,9 @@ SCREEN_DOMAIN: dict[str, str] = {
     "rules": "building_rules",
     "reconciliation": "finance",
     "governance": "records",
+    "agent_intake": "permits",
+    "agent_adjudication": "permits",
+    "admin": "records",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -135,6 +146,19 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("governance.authority_policy.publish", "records"),
         ("governance.queue.manage", None),
         ("records.audit.view", None),
+    ),
+    "agent_intake": (
+        ("agent.run.intake", "permits"),
+        ("agent.toggle", None),
+    ),
+    "agent_adjudication": (
+        ("agent.run.adjudication", "permits"),
+        ("agent.toggle", None),
+    ),
+    "admin": (
+        ("config.manage", None),
+        ("admin.actor.manage", None),
+        ("records.configuration.view", None),
     ),
 }
 
@@ -783,65 +807,7 @@ def allowed_actions_for(
         application = payload.get("application") or {}
         evaluation = payload.get("evaluation") or {}
         decision = payload.get("current_decision") or {}
-        recommendation = payload.get("current_recommendation") or {}
         application_version = application.get("application_version") or 0
-        if recommendation.get("recommendation_id"):
-            actions.append(
-                action(
-                    session,
-                    actor,
-                    action_id="triage.rerun",
-                    label="Re-run triage",
-                    path="/ui/actions/triage.rerun",
-                    permission="application.evaluate",
-                    domain_id="permits",
-                    record_ids=(record_id or "",),
-                    destination="Agent triage pipeline",
-                    description=(
-                        "Run the intake, identity, extraction, rules and "
-                        "recommendation agent steps again for this case."
-                    ),
-                    expected_version=application_version,
-                    fields=(
-                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
-                    ),
-                )
-            )
-            actions.append(
-                action(
-                    session,
-                    actor,
-                    action_id="recommendation.stance",
-                    label="Record stance on the agent recommendation",
-                    path="/ui/actions/recommendation.stance",
-                    permission="permit.decide",
-                    domain_id="permits",
-                    record_ids=(record_id or "",),
-                    destination="Agent recommendation",
-                    description=(
-                        "Say whether you agree with the advisory recommendation. "
-                        "Disagreeing requires a reason. The recommendation never decides."
-                    ),
-                    expected_version=application_version,
-                    fields=(
-                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
-                        _field(
-                            "recommendation_id",
-                            "Recommendation",
-                            value=str(recommendation.get("recommendation_id", "")),
-                            field_type="hidden",
-                        ),
-                        _field(
-                            "stance",
-                            "Stance",
-                            field_type="select",
-                            options=("agree", "disagree"),
-                            required=True,
-                        ),
-                        _field("reason", "Reason (required when disagreeing)", field_type="textarea"),
-                    ),
-                )
-            )
         for field_row in payload.get("extracted_fields") or []:
             if field_row.get("state") != "proposed":
                 continue
@@ -1824,6 +1790,8 @@ def _next_action(
     if blockers:
         return f"Resolve {blockers[0]['code'].replace('_', ' ')}"
     if evaluation is None:
+        if application.status == "submitted" and application.scenario_id is None:
+            return "Waiting for the intake agent"
         if allows(session, actor, "application.evaluate", "permits"):
             return "Run validation"
         return "Waiting for validation"
@@ -1883,6 +1851,11 @@ def work_queue(
                 "step": step,
                 "step_state": step_state,
                 "state": application.status,
+                "state_label": (
+                    "Awaiting intake agent"
+                    if application.status == "submitted" and application.scenario_id is None
+                    else application.status
+                ),
                 "department": "permits",
                 "assignee": application.applicant_party_id,
                 "blocker": blockers[0]["detail"] if blockers else "",
@@ -2513,6 +2486,51 @@ def master_detail(session: Session, actor: ActorContext, party_id: str) -> dict[
 # ------------------------------------------------------------ permit workspace
 
 
+def _agent_trace(session: Session, application_id: str) -> list[dict[str, Any]]:
+    """Return the recorded runs of the agents on one application.
+
+    The trace is the per-node record of each run: which node ran, at which
+    dependency level, with which status and what it found.
+    """
+    runs = list(
+        session.execute(
+            select(agent.AgentRun)
+            .where(agent.AgentRun.application_id == application_id)
+            .order_by(agent.AgentRun.started_at, agent.AgentRun.id)
+        ).scalars().all()
+    )
+    trace: list[dict[str, Any]] = []
+    for run in runs:
+        nodes = list(
+            session.execute(
+                select(agent.AgentRunNode)
+                .where(agent.AgentRunNode.agent_run_id == run.id)
+                .order_by(agent.AgentRunNode.position)
+            ).scalars().all()
+        )
+        for node in nodes:
+            trace.append(
+                {
+                    "step_id": node.id,
+                    "step_name": node.node_id,
+                    "label": node.label,
+                    "dependency_level": node.dependency_level,
+                    "service_identity_id": run.service_identity_id,
+                    "service_identity_label": actor_label(session, run.service_identity_id),
+                    "started_at": _iso(run.started_at),
+                    "ended_at": _iso(run.finished_at),
+                    "inputs": {},
+                    "outcome": node.status,
+                    "outcome_detail": node.note or "",
+                    "model_run_id": None,
+                    "evaluation_id": None,
+                    "recommendation_id": None,
+                    "triggered_by": run.triggered_by,
+                }
+            )
+    return trace
+
+
 def permit_workspace(
     session: Session, actor: ActorContext, application_id: str
 ) -> dict[str, Any]:
@@ -2549,6 +2567,8 @@ def permit_workspace(
             "decision_id": row.id,
             "decision_type": row.decision_type,
             "outcome": row.outcome,
+            "outcome_label": decision_outcome_label(row),
+            "conditions": list(row.conditions or []),
             "decided_by_actor_id": row.decided_by_actor_id,
             "decided_at": _iso(row.decided_at),
             "reason": row.reason,
@@ -2573,8 +2593,13 @@ def permit_workspace(
             "rationale": row.rationale,
             "muse_summary": row.muse_summary,
             "muse_run_id": row.muse_run_id,
-            "reviewer_stance": row.reviewer_stance,
-            "reviewer_stance_reason": row.reviewer_stance_reason,
+            "conditions": list(row.conditions or []),
+            "confirmed_by": row.confirmed_by or "",
+            "confirmed_at": _iso(row.confirmed_at),
+            "reverted_by": row.reverted_by or "",
+            "reverted_at": _iso(row.reverted_at),
+            "revert_reason": row.revert_reason or "",
+            "decision_id": row.decision_id or "",
         }
         for row in session.execute(
             select(permit.Recommendation).where(
@@ -2582,28 +2607,7 @@ def permit_workspace(
             )
         ).scalars().all()
     ]
-    agent_steps = [
-        {
-            "step_id": row.id,
-            "step_name": row.step_name,
-            "service_identity_id": row.service_identity_id,
-            "service_identity_label": actor_label(session, row.service_identity_id),
-            "started_at": _iso(row.started_at),
-            "ended_at": _iso(row.ended_at),
-            "inputs": dict(row.inputs or {}),
-            "outcome": row.outcome,
-            "outcome_detail": row.outcome_detail,
-            "model_run_id": row.model_run_id,
-            "evaluation_id": row.evaluation_id,
-            "recommendation_id": row.recommendation_id,
-            "triggered_by": row.triggered_by,
-        }
-        for row in session.execute(
-            select(agent.AgentStep)
-            .where(agent.AgentStep.application_id == application.id)
-            .order_by(agent.AgentStep.created_at, agent.AgentStep.id)
-        ).scalars().all()
-    ]
+    agent_steps = _agent_trace(session, application.id)
     documents = [
         {
             "document_id": row.id,
@@ -2855,6 +2859,8 @@ def permit_workspace(
             {
                 "decision_id": current_decision.id,
                 "outcome": current_decision.outcome,
+                "outcome_label": decision_outcome_label(current_decision),
+                "conditions": list(current_decision.conditions or []),
                 "decided_by_actor_id": current_decision.decided_by_actor_id,
                 "decided_at": _iso(current_decision.decided_at),
                 "reason": current_decision.reason,
@@ -2866,8 +2872,37 @@ def permit_workspace(
         ),
         "recommendations": recommendations,
         "current_recommendation": next(
-            (row for row in recommendations if row["status"] == "proposed"), None
+            (row for row in recommendations if row["status"] == "pending"), None
         ),
+        "findings": [
+            {
+                "finding_id": row.id,
+                "finding_type": row.finding_type,
+                "message": row.message,
+                "rule": row.rule or "",
+                "applicant_must": row.applicant_must or "",
+                "severity": row.severity,
+                "source_node": row.source_node or "",
+                "related_application_id": row.related_application_id or "",
+            }
+            for row in session.execute(
+                select(permit.ApplicationFinding)
+                .where(permit.ApplicationFinding.application_id == application.id)
+                .order_by(
+                    permit.ApplicationFinding.created_at,
+                    permit.ApplicationFinding.id,
+                )
+            ).scalars().all()
+        ],
+        "agent_states": {
+            key: agent_views.agent_state(session, key)
+            for key in ("intake", "adjudication")
+        },
+        "can_run_intake": allows(session, actor, "agent.run.intake", "permits"),
+        "can_run_adjudication": allows(
+            session, actor, "agent.run.adjudication", "permits"
+        ),
+        "can_decide": allows(session, actor, "permit.decide", "permits"),
         "agent_steps": agent_steps,
         "finance": finance_view,
         "blockers": blockers,
@@ -3372,6 +3407,13 @@ def stewardship_history(session: Session, limit: int = 25) -> list[dict[str, Any
         .limit(limit)
     ).scalars().all()
     return [_history_entry(session, row) for row in rows]
+
+
+def decision_outcome_label(row: permit.Decision) -> str:
+    """Return the outcome a person reads: an approval with conditions says so."""
+    if row.outcome == "approved" and row.conditions:
+        return "Approved with conditions"
+    return row.outcome.replace("_", " ").capitalize()
 
 
 def _history_entry(session: Session, row: audit.AuditEvent) -> dict[str, Any]:

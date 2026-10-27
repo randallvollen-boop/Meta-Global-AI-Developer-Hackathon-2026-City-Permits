@@ -19,6 +19,7 @@ from acme_city.core.errors import ValidationError
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.persistence.base import Base
 from acme_city.persistence.models import (  # noqa: F401  (registers every table on the metadata)
+    agent,
     audit,
     change,
     finance,
@@ -367,9 +368,49 @@ def reset_demo(
                 required_fields=list(permit_type.required_fields),
                 required_documents=list(permit_type.required_documents),
                 active=True,
+                review_area=permit_type.review_area,
+                process_category=permit_type.process_category,
+                discretionary=bool(permit_type.discretionary),
+                description=permit_type.description or None,
+                fee_schedule_key=permit_type.fee_schedule_key,
             )
         )
     counts["permit_types"] = len(bundle.rules.permit_types)
+    session.flush()
+
+    # --------------------------------------------------------- agent controls
+    # Both agents sleep after a reset.  Nothing runs until a City
+    # Administrator wakes one and a person asks it to run.
+    for agent_key in ("intake", "adjudication"):
+        session.add(
+            agent.AgentControl(
+                id=f"agentctl_{agent_key}",
+                correlation_id=f"corr_reset_{agent_key}",
+                agent_key=agent_key,
+                mode=agent.AGENT_ASLEEP,
+                version=1,
+                changed_by=None,
+                changed_at=None,
+            )
+        )
+    counts["agent_controls"] = 2
+
+    # ----------------------------------------------------------- reason codes
+    for reason_code in bundle.demo.reason_codes:
+        session.add(
+            permit.ReasonCode(
+                id=f"reasoncode_{reason_code.code.lower()}",
+                correlation_id=f"corr_reason_{reason_code.code.lower()}",
+                code=reason_code.code,
+                label=reason_code.label,
+                description=reason_code.description or None,
+                active=True,
+                version=1,
+                changed_by=None,
+                changed_at=None,
+            )
+        )
+    counts["reason_codes"] = len(bundle.demo.reason_codes)
     session.flush()
 
     rule_id_by_key: dict[tuple[str, int], str] = {}

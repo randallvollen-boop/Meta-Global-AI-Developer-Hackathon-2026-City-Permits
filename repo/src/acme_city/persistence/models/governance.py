@@ -78,6 +78,13 @@ class Actor(IdMixin, CreatedAtMixin, Base):
     selectable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     deactivated_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     deactivated_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The department a person works in.  It is display information only: it
+    #: never grants anything.
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    #: The persona role a user follows.  The grants of that role are copied
+    #: onto the user when the user is created; the label itself never
+    #: authorizes an action.
+    persona_role: Mapped[str | None] = mapped_column(String(48), nullable=True)
 
 
 class ActorRole(IdMixin, Base):

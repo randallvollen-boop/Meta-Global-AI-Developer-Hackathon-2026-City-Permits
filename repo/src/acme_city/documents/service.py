@@ -56,8 +56,15 @@ ALLOWED_DOCUMENT_TYPES: frozenset[str] = frozenset(
         "owner_authorization",
         "traffic_control_plan",
         "insurance_certificate",
+        "contractor_license_copy",
+        "change_of_use_notice",
         "supporting_document",
     }
+)
+
+#: The scan-quality flags a received document may carry.
+ALLOWED_QUALITY_FLAGS: frozenset[str] = frozenset(
+    {"rotated", "low_res", "handwritten", "unreadable", "duplicate_page"}
 )
 
 #: The largest document the demonstration accepts.
@@ -81,6 +88,8 @@ class StoreDocumentCommand(BaseModel):
     filename: str
     media_type: str
     content: bytes
+    #: The scan-quality flags the intake record carried for this document.
+    quality: list[str] = []
 
 
 class DocumentService:
@@ -129,6 +138,13 @@ class DocumentService:
         if len(content) > MAX_DOCUMENT_BYTES:
             raise ValidationError("the document is larger than the demonstration accepts")
 
+        quality = [str(flag) for flag in (command.quality or [])]
+        unknown = set(quality) - ALLOWED_QUALITY_FLAGS
+        if unknown:
+            raise ValidationError(
+                "unsupported document quality flag(s): " + ", ".join(sorted(unknown))
+            )
+
         application = self._session.execute(
             select(permit.Application).where(permit.Application.id == command.application_id)
         ).scalar_one_or_none()
@@ -164,6 +180,7 @@ class DocumentService:
             received_at=self._now,
             uploaded_by_actor_id=actor.actor_id,
             fictional_demo=True,
+            quality=list(quality),
         )
         self._session.add(row)
         self._session.flush()

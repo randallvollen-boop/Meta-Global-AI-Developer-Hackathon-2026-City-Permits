@@ -1,4 +1,4 @@
-# Runbook: outside intake, agent triage, and human decisions
+# Runbook: outside intake, two people-driven agents, and human decisions
 
 ACME City Permits is a fictional demonstration. Every person, address, rule,
 fee and permit is synthetic, the server binds to loopback only
@@ -21,98 +21,176 @@ holds the staging grant; override with `--actor`):
 ```bash
 uv run python scripts/simulate_intake.py --scenario fence-conforming-rear
 uv run python scripts/simulate_intake.py --scenario mixed --count 6 --base-url http://127.0.0.1:8266
+uv run python scripts/simulate_intake.py --scenario random --count 12
 ```
 
 Or, in the browser, sign in as **City Administrator**, open **Governance and
 sources**, and use **Simulate incoming permits**. Scenarios:
 `fence-conforming-rear`, `fence-front-too-tall`, `fence-missing-site-plan`,
-`deck-high`, `mixed` (about six records).
+`deck-high`, `mixed` (about six records), `shed-large` (a 400 sq ft shed,
+which carries a condition), `variance-request` (a discretionary type, which
+is held), `hvac-no-contractor` (which fails), `fax-unreadable` (an unreadable
+page, so the case goes to early resolution), `duplicate-fence` (the same
+applicant, address and type as a fence already submitted) and `random`
+(deterministic from a seed, across all seventeen permit types and all five
+channels, with realistic omissions and quality problems).
 
 ## How data comes in
 
 The city gathers permits outside this system through the fictional **ACME
-ePermit Portal (simulated)**, with three channels: `portal` (web form),
-`counter_scan` (paper handed in at the counter and scanned/transcribed) and
-`email`. The portal is registered as the source system `intake_portal` with
-the dataset `submitted_applications` (contract
+ePermit Portal (simulated)**, with five channels: `portal` (web form),
+`counter_scan` (paper handed in at the counter and scanned/transcribed),
+`email`, `mail` (post) and `fax`. The portal is registered as the source
+system `intake_portal` with the dataset `submitted_applications` (contract
 `contract_intake_portal_submitted_applications`, domain `permits`, owner
 Building Safety director, queue `queue_permits`, custodian Permitting) — see
 it on **Governance and sources**.
 
 Each intake record carries: channel, received_at, portal reference, applicant
 (name, email, phone), site address and parcel text, permit type key,
-submitted facts, and document text (typed documents such as `site_plan` and
-`material_spec`).
+submitted facts, and documents (typed documents such as `site_plan` and
+`material_spec`), each with the scan-quality flags the record carried
+(`rotated`, `low_res`, `handwritten`, `unreadable`, `duplicate_page`).
 
-Ingestion (`src/acme_city/intake/service.py`) never writes tables directly:
+Ingestion (`src/acme_city/portal_intake/service.py`) never writes tables
+directly:
 
 1. **Stage raw** — `IngestionService.ingest` validates the record against its
    registered contract and preserves the raw snapshot (idempotent on the
    portal reference: a repeat returns `duplicate` and creates nothing).
 2. **Create the case** — `PermitService.submit`, as the seeded intake service
    identity, creates the Permitting application, its first immutable revision
-   and its site (parcel/address resolved from the submitted text).
+   and its site (parcel/address resolved from the submitted text). The
+   permit-type requirements in force at that moment are recorded on the case,
+   so a later configuration change never rewrites what this case was measured
+   against.
 3. **Store documents** — `DocumentService.store_version` stores each
-   document's bytes and records its hash.
-4. **Triage** — the five agent steps below run synchronously.
+   document's bytes, records its hash and records its scan-quality flags.
+4. **Wait** — nothing else happens. The case sits in status `submitted` and
+   is shown as **Awaiting intake agent**.
 
 APIs: `POST /api/intake/records`, `POST /api/intake/simulate`,
 `GET /api/intake/scenarios`, plus the source endpoints
 `GET /api/sources/systems`, `POST /api/sources/{system}/{dataset}/intake`.
 
-## The triage pipeline (agents propose; people decide)
+## The two agents (agents propose; people decide)
 
-On intake, on an application revision and on **Re-run triage** (Permit
-workspace action), these steps run server-side in order. Each runs as a named
-**service identity** (never a selectable persona) and is recorded as an
-auditable agent step (`agent_steps`: start, end, inputs, outcome, identity),
-audited as `agent.<step>`, and shown in the workspace timeline and, where Muse
-is involved, in the Muse run tab. Current seeded identities:
-`service_delegate_steward` (intake/identity/extraction/rules/recommendation
-steps; explicit grants in `config/actors.json`, including the `application.submit`
-and `application.evaluate` grants the delegate needed to create and evaluate
-cases — it has **no** `permit.decide`, `permit.issue` or finance grant).
+There are two agents and both are **service identities**, never selectable
+personas:
 
-| # | Step | What it does |
-|---|------|--------------|
-| 1 | Intake agent | Checks completeness against the permit type's `required_fields`/`required_documents` (`config/rules_and_fees.json`). Missing → application `needs_information` and the missing items are recorded for the applicant. Complete → routed to the type's `review_route` queue (e.g. "Building Safety counter review"). |
-| 2 | Identity agent | Runs the deterministic matcher to **propose** links for applicant, parcel and contractor. The Data Steward approves them in **Steward review**; no agent approves a link. |
-| 3 | Extraction agent (Muse Spark) | Runs the existing Muse extraction on the document text — **replay by default** (recorded, labelled, deterministic from the received text, no provider call); live only with `--live-muse`/the simulate flag, within `ACME_MUSE_LIVE_CALL_CAP`, Meta Standard `muse-spark-1.3` only. It proposes values; the steward accepts or corrects them ("Accept or correct extracted …" actions). |
-| 4 | Rules agent | Runs the deterministic evaluator (`rules/evaluator.py`) via `PermitService.evaluate` and records the evaluation (rule versions, inputs, citations). |
-| 5 | Recommendation agent | Creates an advisory `Recommendation`: outcome deterministically from the rule results (any `fail` → `deny`, or `request_information` when the failure is missing/blank input; any `condition` → `approve_with_conditions`; any judgment/`review` → `needs_reviewer_judgment`; else `approve`); rationale citing each rule id, observed value, limit and citation; optional Muse summary (strict JSON, replay by default) that may only explain — a summary naming a different outcome is rejected and the deterministic text is shown. |
+| Agent | Identity | Who may run it | Who may wake it |
+|---|---|---|---|
+| Intake agent | `service_agent_intake` | Data Steward, City Administrator (`agent.run.intake`) | City Administrator only (`agent.toggle`) |
+| Adjudication agent | `service_agent_adjudication` | Permit Reviewer, City Administrator (`agent.run.adjudication`) | City Administrator only (`agent.toggle`) |
 
-The workspace shows an **Agent recommendation** card at the Decision step:
-outcome pill, rationale, rule citations and "Advisory. The Permit Reviewer
-decides." The reviewer's decision form sits beside it; the reviewer can agree
-or disagree, and disagreeing requires a reason (`recommendation.stance`).
+**An agent is engaged only when it is awake, and only when a person runs
+it.** After a reset both agents sleep. A City Administrator wakes one on its
+screen (**Wake agent** / **Put agent to sleep**); until then every run is
+refused. A person then runs it: **Process one** / **Process all waiting** on
+the Intake agent screen, **Run** / **Run all** on the Adjudication agent
+screen, or **Re-run intake agent** / **Re-run adjudication** on the permit
+workspace. The same rules apply to a re-run.
+
+Each run is recorded as an `agent_runs` row (agent, application, start and
+finish, the acting service identity, the triggering person, the outcome) with
+one `agent_run_nodes` row per node (node id, label, dependency level, status
+`ok`/`warn`/`block` and a note).
+
+### Intake agent — six nodes
+
+| Level | Node | What it does |
+|---|---|---|
+| 1 | Classifier | Confirms the permit type and the channel and sets the review area from the type. |
+| 2 | Field extractor | Muse Spark extraction (replay by default) proposes values from the received documents. Where the validator scored the run, its real validation result is shown; no percentage is ever invented. |
+| 2 | Document QC | Flags the scan-quality problems carried by the intake record. An unreadable page blocks. |
+| 3 | Duplicate finder | Finds another live case that asks for the same project by the same applicant at the same address for the same permit type, and runs the identity matcher to propose applicant, parcel and contractor links for the steward. |
+| 3 | Completeness | Checks the required fields and documents of the type. |
+| 4 | Router | Any blocking finding → `needs_information` (**Route to early resolution**). A human-judgment finding (duplicate, conflict, low extraction quality) → `needs_information` (**Verify before review**). Otherwise → `ready_for_review` with its review area. |
+
+Findings are written as application findings with a type (missing field,
+missing document, unreadable, duplicate, conflict, low-confidence
+extraction, judgment), a message, the rule, an **Applicant must** line and a
+severity of `block` or `review`.
+
+### Adjudication agent — five nodes
+
+| Level | Node | What it does |
+|---|---|---|
+| 1 | Rule loader | Finds the type's published rules and flags a discretionary type (zoning variance, rezoning, certificate of appropriateness, site plan review). |
+| 2 | Rule evaluator | Runs the existing deterministic evaluator. |
+| 3 | Condition builder | Collects the conditions of approval from the `condition` results. |
+| 3 | Precedent check | Finds an earlier decided case of the same type on the same parcel. |
+| 4 | Disposition | `hold` when the type is discretionary, has no rules, or a rule needs judgment or a missing input; `deny` when a rule fails; `approve_with_conditions` when conditions apply; otherwise `approve`. |
+
+The rationale cites each rule id, the observed value with its unit, the limit
+and the citation — once.
+
+### Confirm and revert
+
+The recommendation card on the permit workspace shows the recommendation
+pill, the rule rows with their citations, the conditions of approval, any
+precedent warning, the pipeline trace and **"The agent recommends; a person
+confirms or reverts. Nothing is final until confirmed."** The status is
+`pending`, `confirmed` or `reverted`.
+
+- **Confirm** needs `permit.decide` (Permit Reviewer only). It records the
+  decision through the existing decision service with the confirming person
+  as the decider of record: `approve` becomes approved, `approve_with_conditions`
+  becomes approved with the conditions stored and shown as **Approved with
+  conditions**, and `deny` becomes denied. A `hold` cannot be confirmed; the
+  card says the reviewer decides with the normal decision form.
+- **Revert** needs `permit.decide` and a reason. The case returns to manual
+  review and the agent may run again.
+
+The old agree/disagree stance is gone; the recommendation's history stays in
+the audit trail.
 
 ## Where humans act
 
 | Persona | Screen | Action | What happens next |
 |---|---|---|---|
-| City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal`, applications are created and triaged; watch the workspace timeline |
+| City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
+| City Administrator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
+| Data Steward | Intake agent | Process one / Process all waiting | The six-node intake graph runs; the case is routed |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved (or not); proposals stay evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
-| Permit Reviewer | Permit workspace | Record stance on the agent recommendation | Agreement/disagreement (reason required to disagree) is recorded beside the decision |
+| Permit Reviewer | Adjudication agent | Run / Run all | The five-node adjudication graph runs and leaves a pending recommendation |
+| Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
 | Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
-| Permit Reviewer | Permit workspace | Re-run triage / Run validation | Agent steps or the deterministic evaluation run again for the current revision |
+| City Administrator | Administration | Permit types, users, reason codes | Every change is a governed, audited action and appears in the configuration log |
 | City Administrator | Reconciliation | Assess application, Import ERP payment, Confirm allocation, Reconcile assessment | Fee assessed from the published schedule; reconciliation must be exact (balance 0.00) before issuance |
 | Permit Reviewer | Permit workspace | Issue permit | Separate human action; idempotent on the command key; blocked until decision, links, assessment and exact reconciliation all hold |
-| Applicant | Permit workspace / Work queue | Submit application correction | Creates a new immutable revision; the case returns for re-triage/re-evaluation |
+| Applicant | Permit workspace / Work queue | Submit application correction | Creates a new immutable revision; the case returns for another intake run |
 
 Navigation is persona-scoped: the left bar and the bottom tab bar list only
 the screens the persona holds a grant for (`navigation()` uses the same
 `SCREEN_PERMISSIONS`/`holds_grant` logic as the screen guard, so a hidden
 screen is also a 403). Order and labels are canonical for everyone.
 
+| Persona | Screens |
+|---|---|
+| Applicant | Work queue, Applicants, Permit workspace |
+| Data Steward | the six above plus **Intake agent** |
+| Permit Reviewer | Work queue, Applicants, Permit workspace plus **Adjudication agent** |
+| City Administrator | the eight original screens plus **Intake agent**, **Adjudication agent** and **Administration** |
+
 ## Failure handling
 
-- **Missing documents/fields** — the intake step sets `needs_information` and
-  the recommendation is `request_information`, naming exactly what is missing.
-  The applicant supplies it (a new revision), then Re-run triage.
+- **Missing documents/fields** — the completeness node records a blocking
+  finding and the router sends the case to `needs_information`, naming
+  exactly what is missing. The applicant supplies it (a new revision), then
+  the intake agent runs again.
+- **Unreadable page** — the document QC node records a blocking finding, so
+  the case goes to early resolution even though the rest is complete.
+- **Duplicate submission** — the duplicate finder records a review finding
+  linked to the other case, and the router asks a person to verify before
+  review.
 - **Rule failures** — e.g. DF-1 (front fence 6 ft > 4 ft maximum) produces a
   `deny` recommendation. The reviewer may still decide (denials are not
   blocked); approvals are blocked by unresolved fail/review blockers.
+- **Held cases** — a discretionary type, a type with no published rule and a
+  rule that needs judgment all produce `hold`. The card says the reviewer
+  decides with the normal decision form.
 - **Muse failure** — a live error, refusal, incomplete response or a summary
   that names another outcome is recorded on the run and the deterministic
   rationale is shown. Replay is labelled `replay` and never substitutes for
@@ -129,17 +207,22 @@ screen is also a 403). Order and labels are canonical for everyone.
 ```mermaid
 sequenceDiagram
     participant P as ACME ePermit Portal (simulated)
-    participant I as Intake + triage (service identities)
-    participant S as Data Steward
-    participant R as Permit Reviewer
     participant A as City Administrator
-    P->>I: submit fence record (portal/counter_scan/email)
-    I->>I: stage raw, create application + revision + documents
-    I->>I: 1 intake completeness, 2 identity proposals
-    I->>I: 3 Muse extraction (replay), 4 deterministic rules
-    I->>I: 5 recommendation (e.g. deny, DF-1) — advisory
+    participant I as Intake agent (service identity)
+    participant S as Data Steward
+    participant J as Adjudication agent (service identity)
+    participant R as Permit Reviewer
+    P->>P: submit fence record (portal/counter_scan/email/mail/fax)
+    P->>I: stage raw, create application + revision + documents
+    I->>I: wait as "Awaiting intake agent"
+    A->>I: wake the intake agent
+    S->>I: Process all waiting (six-node graph)
+    I->>I: route to ready_for_review with the review area
     S->>I: approve identity links; accept/correct extracted values
-    R->>I: read recommendation, record stance, record decision
+    A->>J: wake the adjudication agent
+    R->>J: Run all (five-node graph)
+    J->>J: recommendation pending (e.g. deny, DF-1) — advisory
+    R->>J: Confirm (decision of record) or Revert (reason required)
     A->>I: assess fee, import payment, allocate, reconcile (exact)
     R->>I: issue permit (separate human action)
 ```

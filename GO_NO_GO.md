@@ -36,3 +36,17 @@ Date: October 27, 2026
 | Real municipal/client data | NO-GO | Fictional ACME data only |
 
 No external repository, deployment, public publication, entry change, terms acceptance, or submission has occurred. The checked architecture status remains available only in the authorized private AVA Library.
+
+## 2026-10-27 — Parity phase 1 (worktree `acme-permits-parity-wt`)
+
+| Item | Decision | Note |
+|---|---|---|
+| Two people-driven agents | GO / built | Intake and adjudication agents sleep after a reset; only the City Administrator wakes them (`agent.toggle`); a person with `agent.run.intake` / `agent.run.adjudication` runs them. Agents remain service identities, never personas. |
+| Adjudication confirm/revert | GO / built | Confirm needs `permit.decide` and records the reviewer's decision through the existing decision service; revert needs a reason. A held recommendation cannot be confirmed. The build-2 agree/disagree stance and its columns are removed. |
+| Administration screen | GO / built | City Administrator only. Permit types, users, reason codes and the configuration log; every change is a governed, audited action. |
+| Seventeen permit types | GO / built | Randall approved the requirements change. Twelve new ACME types with review areas, process categories, discretionary flags and published rules; the evaluator gained one presence check (`required`). Discretionary types carry no rule and are always held. |
+| Fee schedules for the new types | GO / documented deviation | The published fictional schedule already applies to every type, so the new types inherit it. No new published schedule was added, because the brief protects the fee arithmetic and the existing D01–D11 amounts. |
+| Configuration change scope | GO / built | A permit-type change takes effect for new intake only: the requirements in force at arrival are recorded on the case. |
+| Live provider calls | HOLD | None made in this phase; Muse stays in replay and the replay label is preserved. |
+| Commit / push | HOLD | The parent reviews and commits; nothing was committed or pushed in the worktree. |
+| Deployment/public publication/submission | HOLD | Not authorized |

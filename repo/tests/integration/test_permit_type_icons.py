@@ -526,7 +526,7 @@ def test_yesterday_attempts_do_not_count_toward_today(seeded) -> None:
 def test_work_queue_row_shows_icon_or_fallback(client: TestClient, seeded) -> None:
     _settings, _factory = seeded
     select_persona(client, ADMIN)
-    client.get("/rules-fees")  # seeds the bundled icons
+    client.get("/admin?tab=permit-types")  # seeds the bundled icons
     queue = client.get("/queue?view=all")
     assert queue.status_code == 200
     body = queue.text
@@ -534,10 +534,12 @@ def test_work_queue_row_shows_icon_or_fallback(client: TestClient, seeded) -> No
     # without an icon renders the labelled line-tile fallback.
     assert 'data-testid="permit-type-icon"' in body or "permit-type-icons/" in body
     assert 'data-testid="permit-type-icon-fallback"' in body
-    # Seeded assets are also reachable through the byte route.
+    # The icon card moved to Administration; Rules and fees keeps a pointer.
     rules = client.get("/rules-fees")
     assert 'data-testid="permit-type-icons"' in rules.text
-    assert rules.text.count('data-testid="permit-type-icon-row"') == 5
+    assert "Permit type icons are managed in Administration" in rules.text
+    admin = client.get("/admin?tab=permit-types")
+    assert admin.text.count('data-testid="permit-type-icon-row"') == 17
 
 
 def test_reset_loads_seed_icons_and_rules_render_writes_nothing(client: TestClient, seeded) -> None:

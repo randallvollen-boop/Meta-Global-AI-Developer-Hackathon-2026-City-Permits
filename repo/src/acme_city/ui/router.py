@@ -77,7 +77,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import view_models
+from acme_city.ui import agent_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
     allowed_actions_for,
@@ -244,6 +244,7 @@ def page_context(
         "personas": persona_options(session),
         "navigation": navigation(session, actor),
         "feedback": feedback(session, actor),
+        "agent_status": agent_views.sidebar_status(session, actor),
         "csrf_token": csrf_token(settings, actor.session_id),
         "fictional_demo": True,
         **extra,
@@ -723,6 +724,85 @@ def ui_governance_sources(
     return render(request, "governance_sources.html", context)
 
 
+@router.get("/agent/intake", operation_id="ui_agent_intake")
+def ui_agent_intake(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the intake agent screen."""
+    return _render_agent(request, session, actor, "agent_intake", "intake")
+
+
+@router.get("/agent/adjudication", operation_id="ui_agent_adjudication")
+def ui_agent_adjudication(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the adjudication agent screen."""
+    return _render_agent(request, session, actor, "agent_adjudication", "adjudication")
+
+
+def _render_agent(
+    request: Request,
+    session: Session,
+    actor: ActorContext | None,
+    screen: str,
+    agent_key: str,
+) -> Any:
+    """Render one agent screen with its banner, KPIs, graph and lists."""
+    resolved, refused = _guard(request, session, actor, screen)
+    if refused is not None:
+        return refused
+    view = agent_views.agent_screen(session, resolved, agent_key)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen=screen,
+        title=view["agent_label"],
+        agent=view,
+        evidence=view["evidence"],
+        model_runs=view["model_runs"],
+        history=view["audit_history"],
+    )
+    return render(request, "agent_screen.html", context)
+
+
+@router.get("/admin", operation_id="ui_administration")
+def ui_administration(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "permit-types",
+) -> Any:
+    """Show the administration screen."""
+    resolved, refused = _guard(request, session, actor, "admin")
+    if refused is not None:
+        return refused
+    view = agent_views.administration(session, resolved)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="admin",
+        title="Administration",
+        admin=view,
+        evidence=view["evidence"],
+        model_runs=view["model_runs"],
+        history=view["audit_history"],
+        tab=tab if tab in _ADMIN_TABS else _ADMIN_TABS[0],
+        admin_tabs=list(_ADMIN_TABS),
+    )
+    return render(request, "admin.html", context)
+
+
+#: The tabs of the administration screen.  They work without JavaScript: the
+#: tab is a link that carries the section to show.
+_ADMIN_TABS: tuple[str, ...] = ("permit-types", "users", "reason-codes", "log")
+
+
 @router.get("/permit-type-icons/{icon_id}", operation_id="ui_permit_type_icon")
 def ui_permit_type_icon(
     icon_id: str,
@@ -756,9 +836,7 @@ def ui_permit_type_icon(
             permit_models.PermitType.id == icon.permit_type_id
         )
     ).scalar_one_or_none()
-    if permit_type is None or permit_type.key not in {
-        "com_ti", "res_building", "sign", "deck_fence", "row_encroachment"
-    }:
+    if permit_type is None:
         return Response(status_code=404)
     return Response(
         content=icon.image_data,
@@ -1508,43 +1586,252 @@ def _intake_simulate(ctx: ActionContext) -> Outcome:
     )
 
 
-def _triage_rerun(ctx: ActionContext) -> Outcome:
-    """Re-run the agent triage pipeline for one application."""
-    from acme_city.triage.service import TriageService
+def _config_permit_type_document(ctx: ActionContext) -> Outcome:
+    """Require a document of a permit type, or stop requiring it."""
+    from acme_city.configuration.service import ConfigurationService
 
-    steps = TriageService(ctx.session, settings=ctx.settings).run(
-        ctx.text("application_id"), triggered_by=ctx.actor.actor_id
+    required = ctx.text("required").strip().lower() in {"yes", "true", "1", "required"}
+    row = ConfigurationService(ctx.session).set_required_document(
+        permit_type_id=ctx.text("permit_type_id"),
+        document_type=ctx.text("document_type"),
+        required=required,
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
     )
     return Outcome(
-        message="Re-ran triage: " + ", ".join(
-            f"{step.step_name} {step.outcome}" for step in steps
+        message=(
+            f"{'Require' if required else 'Stop requiring'} "
+            f"{ctx.text('document_type')} for {row.label}."
         ),
-        destination="Agent triage pipeline",
-        state=steps[-1].outcome if steps else "recorded",
-        target_type="application",
-        target_id=ctx.text("application_id"),
-        extra={"steps": [step.step_name for step in steps]},
+        destination="Permit type configuration",
+        state="updated",
+        target_type="permit_type",
+        target_id=row.id,
+        after_version=row.version,
     )
 
 
-def _recommendation_stance(ctx: ActionContext) -> Outcome:
-    """Record the reviewer's stance on the advisory recommendation."""
-    from acme_city.triage.service import record_reviewer_stance
+def _config_permit_type_create(ctx: ActionContext) -> Outcome:
+    """Create one new permit type."""
+    from acme_city.configuration.service import ConfigurationService
 
-    row = record_reviewer_stance(
+    row = ConfigurationService(ctx.session).create_permit_type(
+        key=ctx.text("key"),
+        label=ctx.text("label"),
+        description=ctx.text("description"),
+        review_area=ctx.text("review_area"),
+        process_category=ctx.text("process_category"),
+        discretionary=ctx.text("discretionary").strip().lower() in {"yes", "true", "1"},
+        required_fields=[
+            item.strip()
+            for item in ctx.text("required_fields").replace(",", " ").split()
+            if item.strip()
+        ],
+        required_documents=[
+            item.strip()
+            for item in ctx.text("required_documents").replace(",", " ").split()
+            if item.strip()
+        ],
+        fee_schedule_key=ctx.text("fee_schedule_key"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=(
+            f"Created the permit type {row.label}. It has no published rule, so the "
+            "adjudication agent will hold it for a person."
+        ),
+        destination="Permit type configuration",
+        state="created",
+        target_type="permit_type",
+        target_id=row.id,
+        after_version=row.version,
+    )
+
+
+def _config_reason_code_add(ctx: ActionContext) -> Outcome:
+    """Add one reason code."""
+    from acme_city.configuration.service import ConfigurationService
+
+    row = ConfigurationService(ctx.session).add_reason_code(
+        code=ctx.text("code"),
+        label=ctx.text("label"),
+        description=ctx.text("description"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=f"Added the reason code {row.code}.",
+        destination="Reason code configuration",
+        state="created",
+        target_type="reason_code",
+        target_id=row.id,
+        after_version=row.version,
+    )
+
+
+def _config_reason_code_retire(ctx: ActionContext) -> Outcome:
+    """Retire one reason code."""
+    from acme_city.configuration.service import ConfigurationService
+
+    row = ConfigurationService(ctx.session).retire_reason_code(
+        code=ctx.text("code"), actor=ctx.actor
+    )
+    return Outcome(
+        message=f"Retired the reason code {row.code}.",
+        destination="Reason code configuration",
+        state="retired",
+        target_type="reason_code",
+        target_id=row.id,
+        after_version=row.version,
+    )
+
+
+def _config_user_add(ctx: ActionContext) -> Outcome:
+    """Add one user with the grant template of a persona role."""
+    from acme_city.configuration.service import ConfigurationService
+
+    row = ConfigurationService(ctx.session).add_user(
+        name=ctx.text("name"),
+        department=ctx.text("department"),
+        persona_role=ctx.text("persona_role"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=(
+            f"Added the user {row.label}. Added users do not appear in the persona "
+            "switcher."
+        ),
+        destination="User list",
+        state="created",
+        target_type="actor",
+        target_id=row.actor_id,
+        after_version=1,
+    )
+
+
+def _agent_toggle(ctx: ActionContext) -> Outcome:
+    """Wake one agent or put it back to sleep."""
+    from acme_city.agents.control import AGENT_LABELS, AgentControlService
+
+    agent_key = ctx.text("agent_key")
+    mode = ctx.text("mode")
+    row = AgentControlService(ctx.session).set_mode(agent_key, mode, ctx.actor)
+    label = AGENT_LABELS.get(agent_key, agent_key)
+    verb = "awake" if row.mode == "awake" else "asleep"
+    return Outcome(
+        message=f"The {label.lower()} is {verb}.",
+        destination="Agent control",
+        state=verb,
+        target_type="agent_control",
+        target_id=row.id,
+        after_version=row.version,
+    )
+
+
+def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
+    """Run one agent on one case, or on every case that waits.
+
+    The agent is named by the action identifier, never by the form: the
+    browser does not choose which agent runs.
+    """
+    from acme_city.agents.adjudication import AdjudicationAgent
+    from acme_city.agents.control import AGENT_LABELS, AgentControlService
+    from acme_city.agents.intake import IntakeAgent
+
+    application_id = ctx.text("application_id")
+    control = AgentControlService(ctx.session)
+    control.authorize_run(ctx.actor, agent_key)
+    control.require_awake(agent_key)
+    label = AGENT_LABELS.get(agent_key, agent_key)
+    if agent_key == "intake":
+        agent = IntakeAgent(ctx.session, settings=ctx.settings)
+        if application_id:
+            run = agent.run(application_id, triggered_by=ctx.actor.actor_id)
+            return Outcome(
+                message=f"The {label.lower()} ran on {application_id}.",
+                destination=label,
+                state=run.outcome,
+                target_type="application",
+                target_id=application_id,
+            )
+        runs = [
+            agent.run(row.id, triggered_by=ctx.actor.actor_id)
+            for row in agent.waiting_applications()
+        ]
+        return Outcome(
+            message=f"The {label.lower()} ran on {len(runs)} waiting case(s).",
+            destination=label,
+            state="completed" if runs else "skipped",
+            target_type="agent",
+            target_id=agent_key,
+            affected=tuple(row.application_id or "" for row in runs),
+        )
+    agent = AdjudicationAgent(ctx.session, settings=ctx.settings)
+    if application_id:
+        run = agent.run(application_id, triggered_by=ctx.actor.actor_id)
+        return Outcome(
+            message=f"The {label.lower()} ran on {application_id}.",
+            destination=label,
+            state=run.outcome,
+            target_type="application",
+            target_id=application_id,
+        )
+    runs = [
+        agent.run(row.id, triggered_by=ctx.actor.actor_id)
+        for row in agent.candidates()
+    ]
+    return Outcome(
+        message=f"The {label.lower()} ran on {len(runs)} case(s) in review.",
+        destination=label,
+        state="completed" if runs else "skipped",
+        target_type="agent",
+        target_id=agent_key,
+        affected=tuple(row.application_id or "" for row in runs),
+    )
+
+
+def _recommendation_confirm(ctx: ActionContext) -> Outcome:
+    """Confirm an agent recommendation and record the reviewer's decision."""
+    from acme_city.agents.recommendation import confirm
+
+    row = confirm(
         ctx.session,
         recommendation_id=ctx.text("recommendation_id"),
         application_id=ctx.text("application_id"),
-        stance=ctx.text("stance"),
+        reason=ctx.text("reason"),
+        expected_application_version=ctx.integer("expected_application_version"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=(
+            f"Confirmed the agent recommendation ({row.proposed_outcome}); the decision "
+            "of record is yours."
+        ),
+        destination="Permit decision",
+        state=row.status,
+        target_type="application",
+        target_id=row.application_id,
+        after_version=row.version,
+    )
+
+
+def _recommendation_revert(ctx: ActionContext) -> Outcome:
+    """Revert an agent recommendation and return the case to manual review."""
+    from acme_city.agents.recommendation import revert
+
+    row = revert(
+        ctx.session,
+        recommendation_id=ctx.text("recommendation_id"),
+        application_id=ctx.text("application_id"),
         reason=ctx.text("reason"),
         actor=ctx.actor,
     )
     return Outcome(
-        message=f"Recorded your stance '{row.reviewer_stance}' on the agent recommendation.",
+        message="Reverted the agent recommendation; the case is back in manual review.",
         destination="Agent recommendation",
-        state=row.reviewer_stance or "",
+        state=row.status,
         target_type="application",
         target_id=row.application_id,
+        after_version=row.version,
     )
 
 
@@ -1572,8 +1859,16 @@ def _extraction_decide(ctx: ActionContext) -> Outcome:
 #: Every explicit action of the interface, keyed by its stable identifier.
 ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "intake.simulate": _intake_simulate,
-    "triage.rerun": _triage_rerun,
-    "recommendation.stance": _recommendation_stance,
+    "agent.toggle": _agent_toggle,
+    "agent.run.intake": lambda ctx: _agent_run(ctx, "intake"),
+    "agent.run.adjudication": lambda ctx: _agent_run(ctx, "adjudication"),
+    "recommendation.confirm": _recommendation_confirm,
+    "recommendation.revert": _recommendation_revert,
+    "config.permit_type.document": _config_permit_type_document,
+    "config.permit_type.create": _config_permit_type_create,
+    "config.reason_code.add": _config_reason_code_add,
+    "config.reason_code.retire": _config_reason_code_retire,
+    "config.user.add": _config_user_add,
     "extraction.decide": _extraction_decide,
     "registry.propose": _registry_propose,
     "registry.decide": _registry_decide,

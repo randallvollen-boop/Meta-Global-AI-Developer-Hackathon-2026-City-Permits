@@ -8,7 +8,7 @@ steps are proven automatically by
 All records are fictional. Deterministic note: the simulated scenarios always
 use portal references `PORTAL-2026-FENCE-FRONT-001` and
 `PORTAL-2026-FENCE-REAR-001` (first run on a fresh database) and create the
-next application numbers in sequence. Exact fee/payment amounts in step 6 are
+next application numbers in sequence. Exact fee/payment amounts in step 8 are
 taken from the Reconciliation screen of *your* run — read them off the page;
 do not expect a fixed total.
 
@@ -25,7 +25,9 @@ four personas: Applicant, Data Steward, Permit Reviewer, City Administrator.
 
 ## 2. As City Administrator, simulate the two fence cases
 
-1. Click **City Administrator**. The left navigation lists all eight screens.
+1. Click **City Administrator**. The left navigation lists all eleven
+   screens: the eight original ones plus **Intake agent**, **Adjudication
+   agent** and **Administration**.
 2. Click **Governance and sources** in the left navigation.
 3. Open **Simulate incoming permits**, set **Scenario** to
    `fence-front-too-tall`, and click **Simulate incoming permits**. You should
@@ -35,47 +37,77 @@ four personas: Applicant, Data Steward, Permit Reviewer, City Administrator.
 5. (Equivalent terminal path: `uv run python scripts/simulate_intake.py
    --scenario fence-front-too-tall` and `--scenario fence-conforming-rear`.)
 
-## 3. Watch the triage run
+Both cases now wait. Nothing has been triaged.
 
-1. Click **Work queue**. Both new fence applications are listed
-   (`deck_fence`, submitted through the portal).
-2. Open one. In **Recommendation and decision** you should see the
-   **Agent recommendation** card and the **Agent steps** table with five
-   steps — intake, identity, extraction, rules, recommendation — each naming
-   its service identity and outcome. The Muse run tab shows the replayed
-   extraction run labelled **Replay** with "Proposes values" wording.
+## 3. As City Administrator, wake the intake agent
 
-## 4. As Data Steward, approve identity links and extracted values
+1. Click **Intake agent** in the left navigation.
+2. The banner reads **asleep** and the run buttons are disabled with "The
+   agent is asleep. Wake the agent first."
+3. Click **Wake agent**. The banner now reads **awake** and the KPI cards
+   show **Waiting 2**, **Processed 0**, **Needs human 0**, **Errors 0**.
+4. The pipeline diagram shows the six nodes — Classifier, then Field
+   extractor and Document QC side by side, then Duplicate finder and
+   Completeness side by side, then Router — with the legend "Columns run in
+   parallel; arrows are dependencies".
+
+## 4. As Data Steward, run the intake agent
 
 1. Switch persona to **Data Steward** (top-right persona control). The left
-   navigation now lists only Queue, Applicants, Properties, Permit, Steward
-   review and Rules — Reconciliation and Governance are gone and return 403
-   if visited directly.
-2. Click **Steward review**. For each proposed link from `intake_portal` /
+   navigation now lists Work queue, Applicants, Properties, Permit
+   workspace, Steward review, Rules and fees plus **Intake agent**.
+   Reconciliation, Governance, Adjudication agent and Administration are
+   gone and return 403 if visited directly.
+2. Click **Intake agent**. The waiting list holds both fence cases.
+3. Click **Process all waiting**.
+4. The run history now shows one run with the six-node trace: Classifier
+   **ok**, Field extractor **ok**, Document QC **ok**, Duplicate finder
+   **ok**, Completeness **ok**, Router **ok**.
+5. Both cases are now **ready_for_review** in the **Building** review area,
+   and the identity links are proposed for you to approve.
+
+## 5. As Data Steward, approve the links and the extracted values
+
+1. Click **Steward review**. For each proposed link from `intake_portal` /
    `submitted_applications`, use **Confirm link** with a reason.
-3. Open each fence case from the **Work queue**. Where extracted values are
-   proposed, use **Accept or correct extracted …** next to the Decision
-   actions: accept the value, or correct it (corrected value + reason are
-   required).
+2. Open each fence case from the **Work queue**. Where extracted values are
+   proposed, use **Accept or correct extracted …**: accept the value, or
+   correct it (corrected value + reason are required).
 
-## 5. As Permit Reviewer, read the recommendation and decide
+## 6. As City Administrator, wake the adjudication agent
 
-1. Switch to **Permit Reviewer**. Navigation lists Queue, Applicants and
-   Permit workspace.
-2. Open the **front-yard** fence case. The Agent recommendation card shows
-   the outcome **deny** with the rationale citing **DF-1** ("Front yard fence
-   is above the 4 ft maximum … ACME Code §14-305", observed 6, limit 4) and
-   "Advisory. The Permit Reviewer decides."
-3. Optionally record your stance with **Record stance on the agent
-   recommendation** (disagreeing requires a reason).
-4. Record the decision with **Record reviewer decision**: outcome **denied**,
-   reason referring to DF-1. You should see "Recorded the reviewer decision
-   'denied'."
-5. Open the **rear-yard** fence case. The recommendation is **approve**
-   (DF-2 passed: 6 ft side/rear fence at the 6 ft limit). Record the decision
-   **approved** with your reason.
+1. Switch to **City Administrator** and open **Adjudication agent**.
+2. Click **Wake agent**. The banner reads **awake**; the KPIs show **In
+   review 2**, **Recommended 0**, **Awaiting confirmation 0**, **Held for a
+   person 0**.
+3. The pipeline diagram shows the five nodes — Rule loader, Rule evaluator,
+   then Condition builder and Precedent check side by side, then Disposition.
 
-## 6. Fees, reconciliation and issuance (approved rear case only)
+## 7. As Permit Reviewer, run the adjudication agent
+
+1. Switch to **Permit Reviewer**. The navigation lists Work queue,
+   Applicants, Permit workspace plus **Adjudication agent**.
+2. Click **Adjudication agent** and click **Run all**.
+3. The **front-yard** fence is recommended **deny**, citing **DF-1** (6 ft
+   above the 4 ft maximum, ACME Code §14-305).
+4. The **rear-yard** fence is recommended **approve**, citing **DF-2**
+   (6 ft at the 6 ft limit).
+
+## 8. As Permit Reviewer, confirm the denial and revert the approval
+
+1. Open the **front-yard** fence case. The **Agent recommendation** card
+   shows the outcome pill **deny**, the rule rows with their citations, the
+   pipeline trace and "The agent recommends; a person confirms or reverts.
+   Nothing is final until confirmed."
+2. Click **Confirm**. The decision of record is **denied**, by the Permit
+   Reviewer. The case shows **denied**.
+3. Open the **rear-yard** fence case and click **Revert** with a reason. The
+   recommendation becomes **reverted** and the case returns to manual review.
+   You may now either confirm the recommendation or decide the case yourself
+   with **Record reviewer decision**.
+4. Either way, the decision of record is yours: the agent never records it.
+
+## 9. Fees, reconciliation and issuance (approved rear case only)
 
 1. Switch to **City Administrator**, open **Reconciliation**.
 2. Use **Assess application** for the approved rear-fence application (the

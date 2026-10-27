@@ -4,13 +4,15 @@
 The records are fictional and deterministic.  The script signs in as a
 persona through the server-held session API (Data Steward by default, which
 holds the staging grant), then posts each record to the intake API, which
-stages it, creates the Permitting application and runs the triage pipeline.
+stages it and creates the Permitting application.  The case then waits as
+"Awaiting intake agent" until a person wakes the agent and runs it.
 
 Usage:
 
     uv run python scripts/simulate_intake.py --scenario fence-conforming-rear
     uv run python scripts/simulate_intake.py --scenario mixed --count 6 \
         --base-url http://127.0.0.1:8266
+    uv run python scripts/simulate_intake.py --scenario random --count 12
 """
 
 from __future__ import annotations
@@ -38,8 +40,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    records = build_scenario(args.scenario)
-    if args.count is not None:
+    records = build_scenario(args.scenario, count=args.count)
+    if args.count is not None and args.scenario != "random":
         records = records[: args.count]
     with httpx.Client(base_url=args.base_url, timeout=30.0) as client:
         selected = client.post("/api/session/select", json={"actor_id": args.actor})

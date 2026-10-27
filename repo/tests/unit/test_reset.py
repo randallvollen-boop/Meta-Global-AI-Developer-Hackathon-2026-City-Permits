@@ -95,12 +95,14 @@ def test_reset_seeds_the_declared_fixture_version(database: Settings, bundle: Fi
         with transaction(factory) as session:
             result = reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
         assert result.fixture_version == bundle.fixture_version
-        assert result.counts["roles"] == 12
-        assert result.counts["actors"] == 17
+        assert result.counts["roles"] == 14
+        assert result.counts["actors"] == 19
         assert result.counts["domains"] == 11
         assert result.counts["steward_queues"] == 10
         assert result.counts["authority_policies"] == 19
-        assert result.counts["permit_types"] == 5
+        assert result.counts["permit_types"] == 17
+        assert result.counts["agent_controls"] == 2
+        assert result.counts["reason_codes"] == 5
     finally:
         factory.dispose()
 
@@ -370,8 +372,8 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    # Head is 0003 since the agent-steps migration added by the intake brief.
-    assert revision == ("0003",)
+    # Head is 0004 since the agent-controls migration added by the parity brief.
+    assert revision == ("0004",)
     assert "demo_environment" in tables
 
 

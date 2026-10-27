@@ -27,7 +27,11 @@ RULE_RESULT_STATUSES: tuple[str, ...] = ("pass", "condition", "fail", "review")
 RULE_KINDS: tuple[str, ...] = ("executable", "fee_schedule")
 
 #: The operators an executable rule may declare.
-RULE_OPERATORS: tuple[str, ...] = ("min", "max", "equals")
+#:
+#: ``required`` is a presence check: the named field must have been supplied
+#: and must not be blank.  It compares nothing; it only asks whether the fact
+#: is there at all.
+RULE_OPERATORS: tuple[str, ...] = ("min", "max", "equals", "required")
 
 
 class RuleModel(BaseModel):
@@ -65,6 +69,9 @@ class RuleVersionView(RuleModel):
     approver_actor_id: str | None = None
     source_mapping: dict[str, Any] | None = None
     precedence: str | None = None
+    #: The unit of the observed value, for example ``ft`` or ``sq ft``.  It is
+    #: carried so that a rationale states "6 ft" and never a bare number.
+    unit: str | None = None
 
 
 class RuleSetView(RuleVersionView):
@@ -142,6 +149,8 @@ class RuleResult(RuleModel):
     condition_note: str | None = None
     reason: str | None = None
     detail: str | None = None
+    #: The unit of the observed value, when the rule names one.
+    unit: str | None = None
 
 
 class DraftRuleCommand(RuleModel):
