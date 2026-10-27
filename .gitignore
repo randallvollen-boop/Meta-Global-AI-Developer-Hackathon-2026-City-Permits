@@ -3,6 +3,7 @@
 /work/muse-jsx-review/
 *.jsx
 /work/ui-build/
+/work/jsx-parity/
 # Architecture-page build outputs and local runtime state (contain machine paths)
 /docs/solution-architecture/*/check/*
 !/docs/solution-architecture/*/check/verify_page.py

@@ -105,3 +105,19 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Cosmetic follow-ups: the recommendation card repeats the rationale up to three times, and the observed values lack "ft".
 - Demo on :8266 upgraded to migration 0003 and reset to ready-for-review.
 - Coder from here: MiniMax M3 (Randall, 11:05).
+
+## 2026-10-27 — Prototype parity: gap found, phased rebuild started
+
+- Randall asked whether the prototype's agents (wake an agent, process applications, then wake the next agents for recommendations) were in the requirements. Finding: they were in his prototype file (received 10-27 07:39), **not** in the requirements package the 10-26 build followed (8 required screens, 5 permit types, no agent panels, no Administration). The prototype was used only for visual guidance in the redesign; the 10-27 layout review flagged its agents and Administration screen, but the functional gap was not raised with Randall. That was a miss.
+- Full read of the prototype (3,079 lines). Parity inventory: `work/jsx-parity/PARITY.md` (git-ignored). Nine of fourteen prototype screens are missing.
+- Randall's decisions:
+  - map the prototype's 7 roles onto the 4 personas (clerk → Data Steward; reviewer and supervisor → Permit Reviewer; admin, auditor and support → City Administrator);
+  - add the other 12 permit types as ACME types (requirements revision approved);
+  - deliver in phases, merging each;
+  - icons belong in a new Administration screen, created alongside a new permit type;
+  - add an address locator and property lookup modelled on **Esri ArcGIS REST** (geocoder plus parcel feature service, LGIM field names), simulated in-app;
+  - match submitted addresses to **parcels** at intake and confirm the parcel at review;
+  - publish one property master consumed by other departments (simulated subscribers);
+  - add a map view for clerks.
+- Phase 1, by M3 via `run_m3.sh`, which passes only the MiniMax key: two wake/sleep agents with dependency-graph pipelines, adjudication confirm/revert, Administration, 17 permit types. Worktree `../acme-permits-parity-wt`, branch `feature/parity-p1`; brief in `../acme-permits-parity-notes/BRIEF.md`.
+- Phase 2 brief written (`BRIEF-P2-PROPERTY.md`): locator, parcel matching, property master, map. Phase 3: portal submit/track, queue views, early resolution, review queue, dashboard, audit log, support, checks, archive.
