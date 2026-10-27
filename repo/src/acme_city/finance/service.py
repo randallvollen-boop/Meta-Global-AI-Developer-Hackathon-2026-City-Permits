@@ -56,6 +56,7 @@ from acme_city.finance.schemas import (
     ReconciliationCommand,
     ReconciliationView,
 )
+from acme_city.permits.guard import require_mutable
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import finance, permit, registry
 
@@ -116,6 +117,7 @@ class FinanceService:
             actor, "finance.assessment.create", ResourceContext(domain_id=FINANCE_DOMAIN)
         )
         application = self._permits.load_application(command.application_id)
+        require_mutable(application, action="assessing the application")
         valuation_cents = self._valuation_cents(application, command.valuation)
         schedule, basis_at = self._fee_schedule(application)
         calculated = calculate_fee(
@@ -150,6 +152,7 @@ class FinanceService:
             actor, "finance.assessment.create", ResourceContext(domain_id=FINANCE_DOMAIN)
         )
         application = self._permits.load_application(command.application_id)
+        require_mutable(application, action="assessing the application again")
         current = self.current_assessment(application.id)
         if current is None:
             raise ValidationError("the application has no assessment to reassess")
@@ -682,6 +685,8 @@ class FinanceService:
         ).scalar_one_or_none()
         if assessment is None:
             raise NotFoundError("that assessment does not exist")
+        assessed = self._permits.load_application(assessment.application_id)
+        require_mutable(assessed, action="allocating a payment to the assessment")
         if assessment.status != "current":
             raise ValidationError(
                 "only the payable assessment version may receive an allocation"

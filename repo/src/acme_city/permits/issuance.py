@@ -37,6 +37,7 @@ from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult, VersionedResult
 from acme_city.finance.calculator import FIXED_FEE_CODE, VARIABLE_FEE_CODE, format_cents
 from acme_city.finance.service import FinanceService
+from acme_city.permits.guard import require_mutable
 from acme_city.permits.schemas import Blocker, PermitModel
 from acme_city.permits.service import PERMIT_DOMAIN, PermitService, build_inputs
 from acme_city.persistence.models import change, finance, permit, registry
@@ -163,6 +164,8 @@ class PermitIssuanceService:
                 ),
             ),
         )
+        # An archived case is closed: it issues nothing.
+        require_mutable(application, action="issuing the permit")
 
         existing = self._session.execute(
             select(permit.Permit).where(

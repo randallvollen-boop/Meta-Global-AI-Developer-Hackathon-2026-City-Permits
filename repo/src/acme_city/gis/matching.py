@@ -40,6 +40,7 @@ from acme_city.gis.adapter import (
     ParcelRecord,
     get_locator,
 )
+from acme_city.permits.guard import require_mutable
 from acme_city.persistence.models import gis, permit, registry
 from acme_city.persistence.models.gis import (
     MATCH_APPROVED,
@@ -131,6 +132,18 @@ class ParcelMatchService:
             raise NotFoundError("that application has no parcel match yet")
         return application, match
 
+    def _load_open(self, application_id: str, *, action: str) -> permit.Application:
+        """Return the application of a parcel operation, refusing an archived case.
+
+        The guard runs before the parcel match is read, so an archived case
+        is refused as an archived case and not as a case without a match.
+        """
+        application = self._session.get(permit.Application, application_id)
+        if application is None:
+            raise NotFoundError("that application does not exist")
+        require_mutable(application, action=action)
+        return application
+
     def registry_parcel(self, parcel_number: str | None) -> registry.Parcel | None:
         if not parcel_number:
             return None
@@ -177,6 +190,7 @@ class ParcelMatchService:
             self._permissions.authorize(
                 actor, PROPOSE_ACTION, ResourceContext(domain_id=PERMIT_DOMAIN)
             )
+        require_mutable(application, action="locating the property")
         actor_id = actor.actor_id if isinstance(actor, ActorContext) else actor
         existing = self.for_application(application.id)
         if existing is not None and existing.link_state == MATCH_APPROVED:
@@ -309,7 +323,8 @@ class ParcelMatchService:
             raise ValidationError("the decision must be approve or reject")
         if not reason.strip():
             raise ValidationError("a parcel link decision requires a reason")
-        application, match = self._load(application_id)
+        application = self._load_open(application_id, action="deciding the parcel link")
+        _application, match = self._load(application_id)
         self._check_version(match, expected_version)
         if decision == "approve":
             if match.link_state != MATCH_PROPOSED or not match.parcel_id:
@@ -377,6 +392,7 @@ class ParcelMatchService:
         )
         if not reason.strip():
             raise ValidationError("choosing another candidate requires a reason")
+        self._load_open(application_id, action="choosing another parcel candidate")
         _application, match = self._load(application_id)
         self._check_version(match, expected_version)
         chosen = next(
@@ -421,6 +437,7 @@ class ParcelMatchService:
             raise ValidationError("a parcel number is required")
         if not reason.strip():
             raise ValidationError("finding a parcel by number requires a reason")
+        self._load_open(application_id, action="looking a parcel up by number")
         _application, match = self._load(application_id)
         self._check_version(match, expected_version)
         parcel = self.locator.parcel_by_number(parcel_number)
@@ -514,7 +531,8 @@ class ParcelMatchService:
         self._permissions.authorize(
             actor, CONFIRM_ACTION, ResourceContext(domain_id=PERMIT_DOMAIN)
         )
-        application, match = self._load(application_id)
+        application = self._load_open(application_id, action="confirming the parcel")
+        _application, match = self._load(application_id)
         self._check_version(match, expected_version)
         if match.link_state != MATCH_APPROVED:
             raise ValidationError(

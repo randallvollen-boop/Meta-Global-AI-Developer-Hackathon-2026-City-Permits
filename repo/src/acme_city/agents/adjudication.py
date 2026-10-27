@@ -36,6 +36,7 @@ from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.core.ids import new_id
+from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
@@ -55,6 +56,8 @@ OUTCOME_APPROVE = "approve"
 STATUS_PENDING = "pending"
 STATUS_CONFIRMED = "confirmed"
 STATUS_REVERTED = "reverted"
+#: A recommendation that a later revision of the case made advisory only.
+STATUS_SUPERSEDED = "superseded"
 
 
 class AdjudicationAgent:
@@ -86,6 +89,10 @@ class AdjudicationAgent:
         self._control.require_awake(agent_models.AGENT_ADJUDICATION)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
+        # An archived case is closed: no agent may reopen it.
+        require_mutable(application, action="running the adjudication agent")
+        # A returned case is terminal: it is not adjudicated again.
+        require_not_returned(application, action="running the adjudication agent")
         correlation_id = application.correlation_id or new_id("corr")
         run = agent_models.AgentRun(
             id=new_id("agentrun"),
@@ -107,6 +114,8 @@ class AdjudicationAgent:
             self._session,
             application_id=application.id,
             correlation_id=correlation_id,
+            revision_number=application.revision,
+            run_id=run.id,
         )
 
         rules = self._node_rule_loader(run, application, findings)
@@ -558,6 +567,7 @@ __all__ = [
     "STATUS_CONFIRMED",
     "STATUS_PENDING",
     "STATUS_REVERTED",
+    "STATUS_SUPERSEDED",
     "AdjudicationAgent",
     "LoadedRule",
 ]

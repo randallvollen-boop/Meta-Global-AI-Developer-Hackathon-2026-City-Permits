@@ -27,6 +27,7 @@ from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
+from acme_city.permits.guard import require_mutable
 from acme_city.permits.schemas import DocumentVersionView
 from acme_city.persistence.models import permit
 
@@ -155,6 +156,8 @@ class DocumentService:
         ).scalar_one_or_none()
         if application is None:
             raise NotFoundError("that application does not exist")
+        # An archived case is closed: it takes no new document.
+        require_mutable(application, action="storing a document")
         self._permissions.authorize(
             actor,
             "application.submit",

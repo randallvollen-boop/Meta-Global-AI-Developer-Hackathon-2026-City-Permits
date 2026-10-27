@@ -25,10 +25,12 @@ from sqlalchemy.orm import Session
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
+from acme_city.configuration.reasons import ReasonCodeSnapshot, reason_code_snapshot
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult, VersionedResult
+from acme_city.permits.guard import require_mutable
 from acme_city.permits.schemas import Blocker, PermitModel
 from acme_city.permits.service import PERMIT_DOMAIN, PermitService
 from acme_city.persistence.models import permit
@@ -68,6 +70,9 @@ class PermitDecisionCommand(PermitModel):
     #: vocabulary is unchanged: an approval with conditions is still an
     #: ``approved`` decision.
     conditions: list[str] = []
+    #: The denial reason code.  A denial needs an active code of the denial
+    #: type; every other outcome ignores it.
+    reason_code: str = ""
 
 
 class DecisionView(PermitModel):
@@ -87,6 +92,10 @@ class DecisionView(PermitModel):
     stale: bool = False
     version: int = 1
     conditions: list[str] = []
+    reason_code: str = ""
+    reason_code_label: str = ""
+    reason_code_version: int | None = None
+    waivers: list[dict[str, Any]] = []
 
 
 class PermitDecisionService:
@@ -125,10 +134,13 @@ class PermitDecisionService:
         conflict = self._version_conflict(command, application)
         if conflict is not None:
             return conflict
+        # An archived case is closed: it takes no decision.
+        require_mutable(application, action="deciding the application")
         if application.status not in DECIDABLE_STATUSES:
             raise ValidationError(
                 f"an application in status {application.status!r} cannot take a reviewer decision"
             )
+        reason_code = self._reason_code(command, outcome)
 
         evaluation = self._permits.current_evaluation(application.id)
         if evaluation is None:
@@ -167,6 +179,7 @@ class PermitDecisionService:
             actor=actor,
             decision_type="review",
             conditions=list(command.conditions or []),
+            reason_code=reason_code,
         )
         event = self._audit.append(
             action="permit.decide",
@@ -177,6 +190,15 @@ class PermitDecisionService:
             reason=command.reason or None,
             references=[application.id, evaluation.id],
             correlation_id=application.correlation_id,
+            metadata=(
+                {}
+                if reason_code is None
+                else {
+                    "reason_code": reason_code.code,
+                    "reason_code_label": reason_code.label,
+                    "reason_code_version": reason_code.version,
+                }
+            ),
         )
         self._session.flush()
         return VersionedResult(
@@ -210,6 +232,9 @@ class PermitDecisionService:
         conflict = self._version_conflict(command, application)
         if conflict is not None:
             return conflict
+        # An archived case is closed: it takes no reconfirmation.
+        require_mutable(application, action="reconfirming the decision")
+        reason_code = self._reason_code(command, outcome)
 
         previous = self._permits.current_decision(application.id)
         if previous is None:
@@ -250,6 +275,7 @@ class PermitDecisionService:
             reason=command.reason,
             actor=actor,
             decision_type="reconfirmation",
+            reason_code=reason_code,
         )
         previous.status = "superseded"
         previous.version += 1
@@ -263,6 +289,15 @@ class PermitDecisionService:
             reason=command.reason or None,
             references=[application.id, evaluation.id, previous.id],
             correlation_id=application.correlation_id,
+            metadata=(
+                {}
+                if reason_code is None
+                else {
+                    "reason_code": reason_code.code,
+                    "reason_code_label": reason_code.label,
+                    "reason_code_version": reason_code.version,
+                }
+            ),
         )
         self._session.flush()
         return VersionedResult(
@@ -334,6 +369,19 @@ class PermitDecisionService:
                 )
         return blockers
 
+    def _reason_code(
+        self, command: PermitDecisionCommand, outcome: str
+    ) -> ReasonCodeSnapshot | None:
+        """Return the denial reason code of a decision, if it needs one.
+
+        A denial needs an active reason code of the denial type.  The check
+        happens in the service, so a request that names no code, an unknown
+        code or a code of another type is refused here.
+        """
+        if outcome != "denied":
+            return None
+        return reason_code_snapshot(self._session, command.reason_code, code_type="denial")
+
     def _record(
         self,
         *,
@@ -344,8 +392,11 @@ class PermitDecisionService:
         actor: ActorContext,
         decision_type: str,
         conditions: list[str] | None = None,
+        reason_code: ReasonCodeSnapshot | None = None,
     ) -> permit.Decision:
         """Write one decision and move the application to its new state."""
+        from acme_city.agents.findings import waiver_snapshot
+
         source_versions = dict(evaluation.source_versions or {})
         dependency_versions = dict(source_versions.get("dependency_versions") or {})
         decision = permit.Decision(
@@ -368,6 +419,11 @@ class PermitDecisionService:
             status="current",
             stale=False,
             conditions=list(conditions or []),
+            reason_code_id=None if reason_code is None else reason_code.reason_code_id,
+            reason_code=None if reason_code is None else reason_code.code,
+            reason_code_label=None if reason_code is None else reason_code.label,
+            reason_code_version=None if reason_code is None else reason_code.version,
+            waivers=waiver_snapshot(self._session, application.id),
         )
         self._session.add(decision)
         application.status = {
@@ -397,6 +453,10 @@ class PermitDecisionService:
             stale=decision.stale,
             version=decision.version,
             conditions=list(decision.conditions or []),
+            reason_code=decision.reason_code or "",
+            reason_code_label=decision.reason_code_label or "",
+            reason_code_version=decision.reason_code_version,
+            waivers=list(decision.waivers or []),
         )
 
 
