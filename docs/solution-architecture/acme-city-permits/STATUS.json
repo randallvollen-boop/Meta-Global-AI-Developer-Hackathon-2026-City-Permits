@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "solution_id": "acme-city-permits",
+  "as_of": "2026-10-27T06:19:59-04:00",
+  "overall_status": "verified",
+  "architecture_status": "as_built",
+  "requirements": {
+    "total": 57,
+    "outlined": 57,
+    "implemented": 57,
+    "verified": 57
+  },
+  "execution": {
+    "tasks_total": 22,
+    "tasks_verified": 22,
+    "current_phase": "Complete: local user test",
+    "current_tasks": []
+  },
+  "verification": {
+    "acceptance_total": 20,
+    "acceptance_passed": 20,
+    "supplementary_total": 8,
+    "supplementary_passed": 8,
+    "scenarios_total": 11,
+    "scenarios_recorded": 11,
+    "live_muse_primary_chain": "succeeded"
+  },
+  "phases": [
+    {
+      "id": "planning",
+      "label": "Requirements and executable plan",
+      "status": "verified"
+    },
+    {
+      "id": "foundation",
+      "label": "Governed foundation",
+      "status": "verified"
+    },
+    {
+      "id": "registry",
+      "label": "Registry and stewardship",
+      "status": "verified"
+    },
+    {
+      "id": "permits",
+      "label": "Permits, rules, finance and issuance",
+      "status": "verified"
+    },
+    {
+      "id": "muse_ui",
+      "label": "Muse and eight-screen interface",
+      "status": "verified"
+    },
+    {
+      "id": "acceptance",
+      "label": "Integrated verification and handoff",
+      "status": "verified"
+    }
+  ],
+  "personas": [
+    {
+      "id": "applicant",
+      "label": "Applicant",
+      "selectable": true
+    },
+    {
+      "id": "data_steward",
+      "label": "Data Steward",
+      "selectable": true
+    },
+    {
+      "id": "permit_reviewer",
+      "label": "Permit Reviewer",
+      "selectable": true
+    },
+    {
+      "id": "city_administrator",
+      "label": "City Administrator",
+      "selectable": true
+    }
+  ],
+  "library": {
+    "article_id": "acme-city-permits-architecture",
+    "published": true,
+    "last_published_at": "2026-10-27T10:21:25.326465+00:00",
+    "last_page_sha256": "995cace27a45958391deef05261e96fe3b60b31a636ada83e17ee50028399b83"
+  }
+}

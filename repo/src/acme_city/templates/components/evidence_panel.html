@@ -1,0 +1,49 @@
+{# The evidence panel of a governed record.
+
+   It lists the stored evidence and the recorded model runs.  Every model run
+   carries its explicit Live, Replay or Cached badge, and a proposal is never
+   shown as an accepted fact. #}
+<section class="panel panel-evidence" aria-labelledby="evidence-heading" data-testid="evidence-panel">
+  <h2 id="evidence-heading">Evidence</h2>
+  {% if model_runs %}
+  <h3>Model activity</h3>
+  <ul class="run-list" data-testid="model-runs">
+    {% for run in model_runs %}
+    <li data-testid="model-run" data-mode="{{ run.mode }}" data-status="{{ run.status }}">
+      <span class="badge badge-mode-{{ run.mode }}" data-testid="model-run-mode">{{ run.mode_label }}</span>
+      <span class="badge badge-{{ run.status }}">{{ run.status }}</span>
+      <span class="run-model">{{ run.model or 'no model recorded' }}</span>
+      <span class="run-versions">prompt {{ run.prompt_version or 'unknown' }} / schema {{ run.schema_version or 'unknown' }}</span>
+      {% if run.response_id %}<span class="run-response">response {{ run.response_id }}</span>{% endif %}
+      {% if run.replay_of_run_id %}<span class="run-replay">replay of {{ run.replay_of_run_id }}</span>{% endif %}
+      {% if run.error %}<span class="run-error">{{ run.error }}</span>{% endif %}
+      {% if run.validation_errors %}
+      <ul class="run-errors">
+        {% for issue in run.validation_errors %}<li>{{ issue }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if evidence %}
+  <table class="data-table" data-testid="evidence-table">
+    <caption class="visually-hidden">Stored evidence of this record</caption>
+    <thead>
+      <tr><th scope="col">Evidence</th><th scope="col">Kind</th><th scope="col">Detail</th><th scope="col">Received</th></tr>
+    </thead>
+    <tbody>
+      {% for item in evidence %}
+      <tr>
+        <th scope="row">{{ item.label }}</th>
+        <td>{{ item.kind }}</td>
+        <td class="mono">{{ item.detail }}</td>
+        <td>{{ item.received_at or 'unknown' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" data-testid="evidence-empty">No evidence is recorded for this record.</p>
+  {% endif %}
+</section>

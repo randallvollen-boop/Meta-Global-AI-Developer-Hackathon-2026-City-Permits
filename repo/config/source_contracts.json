@@ -1,0 +1,795 @@
+{
+  "catalog_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Each incoming dataset declares its key, entity type, schema version, required fields, allowed values, date meanings, field classes and correction route. Raw staging and profiling may proceed without a complete registration; trusted promotion and publication may not.",
+  "source_contracts": [
+    {
+      "contract_id": "contract_permitting_applicant_profiles",
+      "source_system_id": "permitting",
+      "dataset_key": "applicant_profiles",
+      "label": "Applicant contact profiles",
+      "domain_id": "applicants",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_applicants",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_applicant_contact",
+      "correction_route": "Permitting applicant profile",
+      "business_key_fields": [
+        "party_ref"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "contact_email": "email",
+        "contact_phone": "phone",
+        "preferred_contact": "enum"
+      },
+      "allowed_values": {
+        "preferred_contact": [
+          "email",
+          "phone",
+          "mail"
+        ]
+      },
+      "date_meanings": {
+        "updated_at": "source_update_time",
+        "submitted_at": "business_event_time"
+      },
+      "field_classes": {
+        "party_ref": "source_assertion",
+        "contact_email": "source_assertion",
+        "contact_phone": "source_assertion",
+        "preferred_contact": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_permitting_applications_and_permits",
+      "source_system_id": "permitting",
+      "dataset_key": "applications_and_permits",
+      "label": "Permit applications and issued permits",
+      "domain_id": "permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_permits",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_application_facts",
+      "correction_route": "Permitting application workspace",
+      "business_key_fields": [
+        "application_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "permit_type": "enum",
+        "submitted_at": "timestamp"
+      },
+      "allowed_values": {
+        "permit_type": [
+          "res_building",
+          "deck_fence",
+          "com_ti",
+          "sign",
+          "row_encroachment"
+        ]
+      },
+      "date_meanings": {
+        "submitted_at": "business_event_time",
+        "issued_at": "business_event_time"
+      },
+      "field_classes": {
+        "application_number": "source_assertion",
+        "applicant_ref": "source_assertion",
+        "submitted_at": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_permitting_application_revisions",
+      "source_system_id": "permitting",
+      "dataset_key": "application_revisions",
+      "label": "Immutable application revisions",
+      "domain_id": "permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_permits",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_application_facts",
+      "correction_route": "Permitting application revision",
+      "business_key_fields": [
+        "application_number",
+        "revision"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "revision": "integer",
+        "submitted_at": "timestamp"
+      },
+      "allowed_values": {},
+      "date_meanings": {
+        "submitted_at": "business_event_time"
+      },
+      "field_classes": {
+        "application_number": "source_assertion",
+        "revision": "source_assertion",
+        "submitted_at": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_permitting_contractor_register",
+      "source_system_id": "permitting",
+      "dataset_key": "contractor_register",
+      "label": "Contractor registrations",
+      "domain_id": "contractors",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_contractors",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_contractor",
+      "correction_route": "Permitting contractor register",
+      "business_key_fields": [
+        "registration_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "registration_number": "string",
+        "status": "enum",
+        "valid_from": "date",
+        "valid_to": "date"
+      },
+      "allowed_values": {
+        "status": [
+          "active",
+          "expired",
+          "inactive",
+          "suspended"
+        ]
+      },
+      "date_meanings": {
+        "valid_from": "business_validity_start",
+        "valid_to": "business_validity_end"
+      },
+      "field_classes": {
+        "registration_number": "source_assertion",
+        "status": "authoritative_fact",
+        "valid_from": "authoritative_fact",
+        "valid_to": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_permitting_permit_decisions",
+      "source_system_id": "permitting",
+      "dataset_key": "permit_decisions",
+      "label": "Reviewer decisions",
+      "domain_id": "permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_permits",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_permit_decision",
+      "correction_route": "Permitting case decision record",
+      "business_key_fields": [
+        "decision_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "outcome": "enum",
+        "decided_at": "timestamp"
+      },
+      "allowed_values": {
+        "outcome": [
+          "approved",
+          "denied",
+          "modified",
+          "information_requested"
+        ]
+      },
+      "date_meanings": {
+        "decided_at": "business_event_time"
+      },
+      "field_classes": {
+        "outcome": "authoritative_fact",
+        "decided_at": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_permitting_issued_permits",
+      "source_system_id": "permitting",
+      "dataset_key": "issued_permits",
+      "label": "Issued simulated permits",
+      "domain_id": "permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_permits",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_issuance",
+      "correction_route": "Permitting issuance record",
+      "business_key_fields": [
+        "permit_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "issued_at": "timestamp",
+        "status": "enum"
+      },
+      "allowed_values": {
+        "status": [
+          "issued",
+          "expired",
+          "revoked"
+        ]
+      },
+      "date_meanings": {
+        "issued_at": "business_event_time",
+        "expires_at": "business_validity_end"
+      },
+      "field_classes": {
+        "permit_number": "authoritative_fact",
+        "issued_at": "authoritative_fact",
+        "status": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_gis_parcel_register",
+      "source_system_id": "gis",
+      "dataset_key": "parcel_register",
+      "label": "Official parcels",
+      "domain_id": "parcels",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "steward_queue_id": "queue_parcels",
+      "system_custodian_actor_id": "service_custodian_gis",
+      "authority_policy_id": "authority_parcel",
+      "correction_route": "GIS parcel register",
+      "business_key_fields": [
+        "parcel_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "status": "enum",
+        "valid_from": "date"
+      },
+      "allowed_values": {
+        "status": [
+          "active",
+          "inactive",
+          "split",
+          "merged"
+        ]
+      },
+      "date_meanings": {
+        "valid_from": "business_validity_start",
+        "valid_to": "business_validity_end"
+      },
+      "field_classes": {
+        "parcel_number": "authoritative_fact",
+        "status": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_gis_address_register",
+      "source_system_id": "gis",
+      "dataset_key": "address_register",
+      "label": "Official addresses and units",
+      "domain_id": "addresses",
+      "accountable_owner_actor_id": "service_owner_cio",
+      "steward_queue_id": "queue_addresses",
+      "system_custodian_actor_id": "service_custodian_gis",
+      "authority_policy_id": "authority_address",
+      "correction_route": "GIS address register",
+      "business_key_fields": [
+        "address_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "street_number": "string",
+        "street_name": "string",
+        "unit_type": "enum"
+      },
+      "allowed_values": {
+        "unit_type": [
+          "unit",
+          "suite",
+          "space",
+          "floor"
+        ]
+      },
+      "date_meanings": {
+        "updated_at": "source_update_time"
+      },
+      "field_classes": {
+        "address_id": "authoritative_fact",
+        "street_number": "authoritative_fact",
+        "unit_number": "authoritative_fact",
+        "source_string": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_gis_zoning_register",
+      "source_system_id": "gis",
+      "dataset_key": "zoning_register",
+      "label": "Official zoning facts",
+      "domain_id": "zoning",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "steward_queue_id": "queue_zoning",
+      "system_custodian_actor_id": "service_custodian_gis",
+      "authority_policy_id": "authority_zoning",
+      "correction_route": "GIS zoning register",
+      "business_key_fields": [
+        "parcel_number",
+        "zoning_code"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "zoning_code": "string"
+      },
+      "allowed_values": {},
+      "date_meanings": {
+        "effective_from": "business_validity_start",
+        "effective_to": "business_validity_end"
+      },
+      "field_classes": {
+        "zoning_code": "authoritative_fact",
+        "label": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_erp_finance_business_licensing_register",
+      "source_system_id": "erp_finance",
+      "dataset_key": "business_licensing_register",
+      "label": "Business licences",
+      "domain_id": "businesses",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_businesses",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_business_identity",
+      "correction_route": "ERP business licensing register",
+      "business_key_fields": [
+        "license_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "status": "enum",
+        "valid_from": "date",
+        "valid_to": "date"
+      },
+      "allowed_values": {
+        "status": [
+          "active",
+          "expired",
+          "suspended",
+          "revoked"
+        ]
+      },
+      "date_meanings": {
+        "valid_from": "business_validity_start",
+        "valid_to": "business_validity_end"
+      },
+      "field_classes": {
+        "license_number": "source_assertion",
+        "status": "authoritative_fact",
+        "valid_from": "authoritative_fact",
+        "valid_to": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_erp_finance_finance_accounts",
+      "source_system_id": "erp_finance",
+      "dataset_key": "finance_accounts",
+      "label": "ERP finance accounts",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_accounts",
+      "correction_route": "ERP finance account register",
+      "business_key_fields": [
+        "source_account_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "account_role": "enum",
+        "currency": "currency"
+      },
+      "allowed_values": {
+        "account_role": [
+          "payer",
+          "owner",
+          "agent",
+          "holder"
+        ],
+        "currency": [
+          "USD"
+        ]
+      },
+      "date_meanings": {
+        "updated_at": "source_update_time"
+      },
+      "field_classes": {
+        "source_account_id": "source_assertion",
+        "account_role": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_erp_finance_financial_records",
+      "source_system_id": "erp_finance",
+      "dataset_key": "financial_records",
+      "label": "Financial records and receipts",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_payments",
+      "correction_route": "ERP financial ledger",
+      "business_key_fields": [
+        "source_transaction_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "amount": "money_minor_units",
+        "currency": "currency",
+        "settlement_status": "enum"
+      },
+      "allowed_values": {
+        "settlement_status": [
+          "unsettled",
+          "settled",
+          "reversed",
+          "failed"
+        ],
+        "currency": [
+          "USD"
+        ]
+      },
+      "date_meanings": {
+        "paid_at": "business_event_time",
+        "settled_at": "business_event_time"
+      },
+      "field_classes": {
+        "amount": "authoritative_fact",
+        "settlement_status": "authoritative_fact",
+        "currency": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_erp_finance_payment_events",
+      "source_system_id": "erp_finance",
+      "dataset_key": "payment_events",
+      "label": "Payment receipt events",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_payments",
+      "correction_route": "ERP payment event register",
+      "business_key_fields": [
+        "source_event_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "event_type": "enum",
+        "amount": "money_minor_units",
+        "currency": "currency"
+      },
+      "allowed_values": {
+        "event_type": [
+          "received",
+          "settled",
+          "reversed"
+        ],
+        "currency": [
+          "USD",
+          "EUR"
+        ]
+      },
+      "date_meanings": {
+        "occurred_at": "business_event_time"
+      },
+      "field_classes": {
+        "amount": "authoritative_fact",
+        "event_type": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_source_crosswalk",
+      "source_system_id": "registry",
+      "dataset_key": "source_crosswalk",
+      "label": "Registry source crosswalk",
+      "domain_id": "registry_links",
+      "accountable_owner_actor_id": null,
+      "steward_queue_id": null,
+      "system_custodian_actor_id": "service_custodian_platform",
+      "authority_policy_id": "authority_links",
+      "correction_route": "Registry crosswalk decision record",
+      "business_key_fields": [
+        "source_system_id",
+        "source_record_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "link_status": "enum"
+      },
+      "allowed_values": {
+        "link_status": [
+          "proposed",
+          "approved",
+          "rejected",
+          "superseded",
+          "removed",
+          "no_match"
+        ]
+      },
+      "date_meanings": {
+        "decided_at": "business_event_time"
+      },
+      "field_classes": {
+        "entity_id": "derived_value",
+        "link_status": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_approved_rules",
+      "source_system_id": "registry",
+      "dataset_key": "approved_rules",
+      "label": "Approved building and intake rule catalog",
+      "domain_id": "building_rules",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_building_rules",
+      "system_custodian_actor_id": "service_custodian_platform",
+      "authority_policy_id": "authority_building_rules",
+      "correction_route": "Governed rule catalog",
+      "business_key_fields": [
+        "rule_id",
+        "effective_from"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "operator": "enum"
+      },
+      "allowed_values": {
+        "operator": [
+          "min",
+          "max",
+          "equals",
+          "in",
+          "required"
+        ]
+      },
+      "date_meanings": {
+        "effective_from": "business_validity_start",
+        "effective_to": "business_validity_end"
+      },
+      "field_classes": {
+        "citation": "authoritative_fact",
+        "limit_value": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_approved_planning_rules",
+      "source_system_id": "registry",
+      "dataset_key": "approved_planning_rules",
+      "label": "Approved planning and zoning rule catalog",
+      "domain_id": "zoning",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "steward_queue_id": "queue_zoning",
+      "system_custodian_actor_id": "service_custodian_gis",
+      "authority_policy_id": "authority_planning_rules",
+      "correction_route": "Governed planning rule catalog",
+      "business_key_fields": [
+        "rule_id",
+        "effective_from"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "operator": "enum"
+      },
+      "allowed_values": {
+        "operator": [
+          "min",
+          "max",
+          "equals",
+          "in",
+          "required"
+        ]
+      },
+      "date_meanings": {
+        "effective_from": "business_validity_start",
+        "effective_to": "business_validity_end"
+      },
+      "field_classes": {
+        "citation": "authoritative_fact",
+        "limit_value": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_approved_fee_schedules",
+      "source_system_id": "registry",
+      "dataset_key": "approved_fee_schedules",
+      "label": "Approved fee schedule catalog",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_fee_schedules",
+      "correction_route": "Governed fee schedule catalog",
+      "business_key_fields": [
+        "fee_schedule_id",
+        "version_label"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "currency": "currency"
+      },
+      "allowed_values": {
+        "currency": [
+          "USD"
+        ]
+      },
+      "date_meanings": {
+        "effective_from": "business_validity_start",
+        "effective_to": "business_validity_end"
+      },
+      "field_classes": {
+        "definition": "authoritative_fact",
+        "currency": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_fee_assessments",
+      "source_system_id": "registry",
+      "dataset_key": "fee_assessments",
+      "label": "Fee assessments",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_assessments",
+      "correction_route": "Governed fee assessment",
+      "business_key_fields": [
+        "assessment_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "total": "money_minor_units",
+        "currency": "currency"
+      },
+      "allowed_values": {
+        "currency": [
+          "USD"
+        ]
+      },
+      "date_meanings": {
+        "assessed_at": "business_event_time"
+      },
+      "field_classes": {
+        "total": "derived_value",
+        "currency": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_payment_allocations",
+      "source_system_id": "registry",
+      "dataset_key": "payment_allocations",
+      "label": "Payment allocations",
+      "domain_id": "finance",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "steward_queue_id": "queue_finance",
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "authority_policy_id": "authority_allocations",
+      "correction_route": "Governed payment allocation",
+      "business_key_fields": [
+        "allocation_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "amount": "money_minor_units",
+        "currency": "currency",
+        "status": "enum"
+      },
+      "allowed_values": {
+        "status": [
+          "active",
+          "released",
+          "superseded",
+          "reversed"
+        ],
+        "currency": [
+          "USD"
+        ]
+      },
+      "date_meanings": {
+        "allocated_at": "business_event_time"
+      },
+      "field_classes": {
+        "amount": "derived_value",
+        "status": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_records_policy",
+      "source_system_id": "registry",
+      "dataset_key": "records_policy",
+      "label": "Document and audit retention policy",
+      "domain_id": "records",
+      "accountable_owner_actor_id": "service_owner_records",
+      "steward_queue_id": "queue_records",
+      "system_custodian_actor_id": "service_custodian_platform",
+      "authority_policy_id": "authority_retention",
+      "correction_route": "Records retention register",
+      "business_key_fields": [
+        "policy_id"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {},
+      "allowed_values": {},
+      "date_meanings": {
+        "effective_from": "business_validity_start"
+      },
+      "field_classes": {
+        "retention_label": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_document_and_audit_repository",
+      "source_system_id": "registry",
+      "dataset_key": "document_and_audit_repository",
+      "label": "Document and audit repository",
+      "domain_id": "records",
+      "accountable_owner_actor_id": "service_owner_records",
+      "steward_queue_id": "queue_records",
+      "system_custodian_actor_id": "service_custodian_platform",
+      "authority_policy_id": "authority_retention",
+      "correction_route": "Document and audit repository",
+      "business_key_fields": [
+        "document_id",
+        "version"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "version": "integer",
+        "content_hash": "string"
+      },
+      "allowed_values": {},
+      "date_meanings": {
+        "received_at": "business_event_time"
+      },
+      "field_classes": {
+        "content_hash": "source_assertion",
+        "document_type": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Local runtime state and evidence (never committed).
+.venv/
+var/
+evidence/*
+!evidence/README.md
+*.db
+*.sqlite
+*.sqlite3
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local environment / secret material
+.env
+*.env.local

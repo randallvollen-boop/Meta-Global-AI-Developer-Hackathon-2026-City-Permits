@@ -1,0 +1,154 @@
+{
+  "truth_version": "1",
+  "fixture_version": "2026.10.26-1",
+  "fictional_demo": true,
+  "note": "Evaluator-only ground truth. This file is never loaded by a runtime service, never placed in a model payload and never used to produce a candidate. It exists so that a separate evaluator can compare observed results with the expected outcome.",
+  "expected_links": [
+    {
+      "scenario_id": "D01",
+      "source_system_id": "erp_finance",
+      "source_dataset_key": "business_licensing_register",
+      "source_record_id": "ERP-BL-00412",
+      "entity_id": "party_cedarline",
+      "expected_disposition": "approved",
+      "reason": "Business licence holder name matches the permitted organization alias in the applicant profile."
+    },
+    {
+      "scenario_id": "D01",
+      "source_system_id": "permitting",
+      "source_dataset_key": "applicant_profiles",
+      "source_record_id": "PER-AP-0003",
+      "entity_id": "party_cedarline",
+      "expected_disposition": "approved",
+      "reason": "Alias spelling of the same organization in the applicant profile."
+    },
+    {
+      "scenario_id": "D01",
+      "source_system_id": "erp_finance",
+      "source_dataset_key": "finance_accounts",
+      "source_record_id": "ERP-ACC-77120-LEG",
+      "entity_id": "party_cedarline",
+      "expected_disposition": "approved",
+      "reason": "Legacy account carries the current account reference and the same holder name."
+    },
+    {
+      "scenario_id": "D01",
+      "source_system_id": "permitting",
+      "source_dataset_key": "contractor_register",
+      "source_record_id": "PER-CR-00188",
+      "entity_id": "party_ironvale",
+      "expected_disposition": "approved",
+      "reason": "Contractor registration holder is the named contractor on the application."
+    },
+    {
+      "scenario_id": "D02",
+      "source_system_id": "erp_finance",
+      "source_dataset_key": "business_licensing_register",
+      "source_record_id": "ERP-BL-00413",
+      "entity_id": "party_false_friend",
+      "expected_disposition": "approved",
+      "reason": "Distinct licence number and distinct unit; a separate party."
+    },
+    {
+      "scenario_id": "D02",
+      "source_system_id": "permitting",
+      "source_dataset_key": "applicant_profiles",
+      "source_record_id": "PER-AP-0004",
+      "entity_id": "party_false_friend",
+      "expected_disposition": "approved",
+      "reason": "Distinct organization with its own contact profile."
+    },
+    {
+      "scenario_id": "D02",
+      "source_system_id": "erp_finance",
+      "source_dataset_key": "business_licensing_register",
+      "source_record_id": "ERP-BL-00412",
+      "entity_id": "party_false_friend",
+      "expected_disposition": "no_match",
+      "reason": "Shared building and a similar name are not sufficient evidence of identity."
+    },
+    {
+      "scenario_id": "D03",
+      "source_system_id": "permitting",
+      "source_dataset_key": "contractor_register",
+      "source_record_id": "PER-CR-00977",
+      "entity_id": "party_halcyon",
+      "expected_disposition": "approved",
+      "reason": "Distinct registration number and issuer; credential expired before the decision date."
+    },
+    {
+      "scenario_id": "D04",
+      "source_system_id": "gis",
+      "source_dataset_key": "parcel_register",
+      "source_record_id": "ACME-P-9999",
+      "entity_id": null,
+      "expected_disposition": "unresolved",
+      "reason": "Submitted parcel does not resolve; no parcel may be invented."
+    }
+  ],
+  "expected_outcomes": [
+    {
+      "scenario_id": "D01",
+      "truth_expected_links": "approved",
+      "truth_expected_payment_state": "settled_and_unallocated_at_start",
+      "truth_expected_assessed_total_cents": 15000,
+      "truth_expected_outcome": "steward approves the alias, unit and legacy account links; a reviewer approves; Finance confirms the allocation; a simulated permit is issued separately."
+    },
+    {
+      "scenario_id": "D02",
+      "truth_expected_links": "rejected_false_candidate",
+      "truth_expected_outcome": "The false friend stays a separate party; the steward rejects the candidate and the evidence is retained."
+    },
+    {
+      "scenario_id": "D03",
+      "truth_expected_links": "approved",
+      "truth_expected_outcome": "The dependent action is held because the contractor registration expired on 2026-05-31, and the issue is routed to the registration steward."
+    },
+    {
+      "scenario_id": "D04",
+      "truth_expected_links": "unresolved",
+      "truth_expected_outcome": "Site dependent checks are held, the parcel is requested from GIS or the applicant, and no parcel is invented."
+    },
+    {
+      "scenario_id": "D05",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "The current profile shows version 2 while the submitted revision keeps the version 1 contact value."
+    },
+    {
+      "scenario_id": "D06",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "The approved GIS correction is rejected or delayed by the source, the last accepted value stays visible, and the dependent decision is held."
+    },
+    {
+      "scenario_id": "D07",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "The issued snapshot, decision, fee basis and allocation stay unchanged and a separate impact review is opened."
+    },
+    {
+      "scenario_id": "D08",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "Repeated imports, payment delivery, allocation command and publication create no duplicate record, receipt, allocation or task."
+    },
+    {
+      "scenario_id": "D09",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "Non-numeric, non-finite, missing and unsupported values produce explicit review results and never a crash or an approval."
+    },
+    {
+      "scenario_id": "D10",
+      "truth_expected_links": "unresolved",
+      "truth_expected_outcome": "The unregistered feed is staged and trusted publication is blocked until the dataset is registered."
+    },
+    {
+      "scenario_id": "D11",
+      "truth_expected_links": "unchanged",
+      "truth_expected_outcome": "Partial, overpaid, reversed, unsettled, unmatched and incompatible currency payments each show a specific exception and never a false completion."
+    }
+  ],
+  "truth_denominators": {
+    "truth_expected_scenarios": 11,
+    "truth_expected_links": 9,
+    "truth_expected_false_links": 1,
+    "truth_expected_unresolved": 2
+  }
+}

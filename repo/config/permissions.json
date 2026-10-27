@@ -1,0 +1,343 @@
+{
+  "catalog_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Explicit server-side permission catalogue. A permission is never inferred from a role label, a client-supplied field or a screen; the server resolves it from persisted grants. Administrative configuration access carries no business approval permission.",
+  "permissions": [
+    {
+      "permission_id": "applicant.profile.edit",
+      "action": "applicant.profile.edit",
+      "category": "profile",
+      "description": "Edit the current contact profile of an authorized applicant or represented party.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "applicant.case.respond",
+      "action": "applicant.case.respond",
+      "category": "case",
+      "description": "Answer a request for information on an authorized case.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "application.submit",
+      "action": "application.submit",
+      "category": "application",
+      "description": "Submit a new application draft for authorization.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "application.revision.submit",
+      "action": "application.revision.submit",
+      "category": "application",
+      "description": "Submit a correction that creates a new application revision.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "application.withdraw",
+      "action": "application.withdraw",
+      "category": "application",
+      "description": "Withdraw an application while preserving its history.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "application.evaluate",
+      "action": "application.evaluate",
+      "category": "application",
+      "description": "Run deterministic intake and permit checks against the current versions.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.decide",
+      "action": "permit.decide",
+      "category": "permit",
+      "description": "Record an authorized reviewer decision on an application.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "permit.issue",
+      "action": "permit.issue",
+      "category": "permit",
+      "description": "Issue a simulated permit from a current approved decision.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "registry.crosswalk.propose",
+      "action": "registry.crosswalk.propose",
+      "category": "registry",
+      "description": "Propose a source-to-canonical link from declared evidence.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.crosswalk.decide",
+      "action": "registry.crosswalk.decide",
+      "category": "registry",
+      "description": "Approve, reject or correct a source-to-canonical link.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "registry.provenance.view",
+      "action": "registry.provenance.view",
+      "category": "registry",
+      "description": "Read field-level provenance and trusted views.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "correction.request.submit",
+      "action": "correction.request.submit",
+      "category": "change",
+      "description": "Request a correction of a source fact or identity link.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "source.snapshot.stage",
+      "action": "source.snapshot.stage",
+      "category": "source",
+      "description": "Stage a raw source snapshot without publishing trusted facts.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "source.record.update",
+      "action": "source.record.update",
+      "category": "source",
+      "description": "Write a version to an authoritative source record.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "source.quarantine.resolve",
+      "action": "source.quarantine.resolve",
+      "category": "source",
+      "description": "Resolve a quarantined record and assign its responsible queue.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "change.case.transition",
+      "action": "change.case.transition",
+      "category": "change",
+      "description": "Move a change case to the next permitted state.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "finance.assessment.create",
+      "action": "finance.assessment.create",
+      "category": "finance",
+      "description": "Create a versioned fee assessment from approved inputs.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "finance.payment.import",
+      "action": "finance.payment.import",
+      "category": "finance",
+      "description": "Import a simulated ERP payment event.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "finance.allocation.confirm",
+      "action": "finance.allocation.confirm",
+      "category": "finance",
+      "description": "Confirm an allocation of settled funds to an assessment.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "finance.account.link",
+      "action": "finance.account.link",
+      "category": "finance",
+      "description": "Link an ERP finance account to a canonical party.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "rule.version.draft",
+      "action": "rule.version.draft",
+      "category": "rule",
+      "description": "Draft a rule or fee schedule version.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "rule.version.approve",
+      "action": "rule.version.approve",
+      "category": "rule",
+      "description": "Approve a rule or fee schedule version authored by somebody else.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "rule.version.publish",
+      "action": "rule.version.publish",
+      "category": "rule",
+      "description": "Publish an approved rule or fee schedule version.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "governance.dataset.register",
+      "action": "governance.dataset.register",
+      "category": "governance",
+      "description": "Register a source dataset with its required bindings.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "governance.assignment.manage",
+      "action": "governance.assignment.manage",
+      "category": "governance",
+      "description": "Create, reassign or end an effective-dated assignment.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "governance.queue.manage",
+      "action": "governance.queue.manage",
+      "category": "governance",
+      "description": "Maintain a stewardship queue and its bindings.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "governance.authority_policy.manage",
+      "action": "governance.authority_policy.manage",
+      "category": "governance",
+      "description": "Draft an authority policy version.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "governance.authority_policy.publish",
+      "action": "governance.authority_policy.publish",
+      "category": "governance",
+      "description": "Publish an authority policy version after an impact preview.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "records.document.view",
+      "action": "records.document.view",
+      "category": "records",
+      "description": "Read stored document versions and evidence.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "records.audit.view",
+      "action": "records.audit.view",
+      "category": "records",
+      "description": "Read the append-only application audit trail.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "records.configuration.view",
+      "action": "records.configuration.view",
+      "category": "records",
+      "description": "Read the configuration catalogue.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "admin.actor.manage",
+      "action": "admin.actor.manage",
+      "category": "admin",
+      "description": "Manage fictional demo actors and their grants.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "admin.session.revoke",
+      "action": "admin.session.revoke",
+      "category": "admin",
+      "description": "Revoke a server-held session.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "admin.health.view",
+      "action": "admin.health.view",
+      "category": "admin",
+      "description": "Read the service health and schema state.",
+      "sensitive": false
+    }
+  ],
+  "role_grants": {
+    "applicant": [
+      "applicant.case.respond",
+      "applicant.profile.edit",
+      "application.revision.submit",
+      "application.submit",
+      "correction.request.submit",
+      "records.document.view"
+    ],
+    "intake_clerk": [
+      "applicant.profile.edit",
+      "application.revision.submit",
+      "application.submit",
+      "application.withdraw",
+      "correction.request.submit",
+      "records.document.view",
+      "source.snapshot.stage"
+    ],
+    "domain_steward": [
+      "change.case.transition",
+      "correction.request.submit",
+      "records.document.view",
+      "registry.crosswalk.propose",
+      "registry.provenance.view",
+      "rule.version.draft",
+      "source.quarantine.resolve",
+      "source.record.update",
+      "source.snapshot.stage"
+    ],
+    "domain_mdm_steward": [
+      "change.case.transition",
+      "correction.request.submit",
+      "records.document.view",
+      "registry.crosswalk.decide",
+      "registry.crosswalk.propose",
+      "registry.provenance.view"
+    ],
+    "data_owner": [
+      "correction.request.submit",
+      "governance.authority_policy.manage",
+      "governance.authority_policy.publish",
+      "records.document.view",
+      "registry.provenance.view",
+      "rule.version.approve",
+      "rule.version.draft",
+      "rule.version.publish"
+    ],
+    "permit_reviewer": [
+      "application.evaluate",
+      "application.revision.submit",
+      "correction.request.submit",
+      "permit.decide",
+      "records.document.view"
+    ],
+    "issuing_officer": [
+      "permit.issue",
+      "records.document.view"
+    ],
+    "finance": [
+      "correction.request.submit",
+      "finance.account.link",
+      "finance.allocation.confirm",
+      "finance.assessment.create",
+      "finance.payment.import",
+      "records.document.view",
+      "registry.crosswalk.decide",
+      "registry.crosswalk.propose",
+      "rule.version.approve",
+      "rule.version.draft",
+      "rule.version.publish"
+    ],
+    "administrator": [
+      "admin.actor.manage",
+      "admin.session.revoke",
+      "records.configuration.view",
+      "records.document.view"
+    ],
+    "auditor": [
+      "records.audit.view",
+      "records.document.view",
+      "registry.provenance.view"
+    ],
+    "system_custodian": [
+      "admin.health.view",
+      "records.configuration.view",
+      "source.snapshot.stage"
+    ],
+    "governance_lead": [
+      "correction.request.submit",
+      "governance.assignment.manage",
+      "governance.authority_policy.manage",
+      "governance.dataset.register",
+      "governance.queue.manage",
+      "records.document.view",
+      "registry.provenance.view"
+    ]
+  }
+}

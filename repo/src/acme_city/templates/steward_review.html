@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% macro action_form(item, csrf_token) %}
+<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
+  <summary>
+    <span class="action-label">{{ item.label }}</span>
+    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
+  </summary>
+  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
+  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
+  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
+  {% if item.permitted %}
+  <form method="post" action="{{ item.path }}" class="action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="{{ item.action_id }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}">
+    {% for field in item.fields %}
+      {% if field.type == 'hidden' %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'select' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+          </select>
+        </p>
+      {% elif field.type == 'textarea' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+        </p>
+      {% else %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
+  </form>
+  {% else %}
+  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
+  {% endif %}
+</details>
+{% endmacro %}
+
+{% block content %}
+
+<h1>Steward review</h1>
+
+{% include "components/responsibility_panel.html" %}
+
+<section class="panel" aria-labelledby="proposals-heading">
+  <h2 id="proposals-heading">Candidate links awaiting a decision</h2>
+  {% for proposal in review.proposals %}
+  <article class="proposal" data-testid="match-proposal" data-proposal-id="{{ proposal.proposal_id }}">
+    <h3>{{ proposal.source_system_id }} / {{ proposal.source_dataset_key }} / {{ proposal.source_record_id }}</h3>
+    <p class="muted">
+      Method {{ proposal.method }}, disposition {{ proposal.disposition }},
+      proposed {{ proposal.created_at }} by {{ proposal.created_by_actor_id or 'unknown' }}.
+      {% if proposal.awaiting_decision %}
+      <span class="badge badge-blocking" data-testid="awaiting-decision">awaiting a steward decision</span>
+      {% else %}
+      <span class="badge badge-approved">decided</span>
+      {% endif %}
+      {% if proposal.proposal_score is not none %}
+      Proposal score {{ proposal.proposal_score }} ({{ proposal.score_label }}).
+      {% endif %}
+    </p>
+    <table class="data-table" data-testid="proposal-evidence">
+      <caption class="visually-hidden">Evidence behind the proposed link</caption>
+      <thead><tr><th scope="col">Direction</th><th scope="col">Field</th><th scope="col">Source value</th><th scope="col">Comparison value</th><th scope="col">Detail</th></tr></thead>
+      <tbody>
+        {% for evidence in proposal.supporting %}
+        <tr>
+          <td><span class="badge badge-supporting">supporting</span></td>
+          <th scope="row">{{ evidence.field }}</th>
+          <td>{{ evidence.raw_value }}</td>
+          <td>{{ evidence.normalized_value }}</td>
+          <td>{{ evidence.detail }}</td>
+        </tr>
+        {% endfor %}
+        {% for evidence in proposal.conflicting %}
+        <tr>
+          <td><span class="badge badge-conflicting">conflicting</span></td>
+          <th scope="row">{{ evidence.field }}</th>
+          <td>{{ evidence.raw_value }}</td>
+          <td>{{ evidence.normalized_value }}</td>
+          <td>{{ evidence.detail }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">Candidates: {{ proposal.candidate_ids|join(', ') if proposal.candidate_ids else 'none' }}.</p>
+  </article>
+  {% else %}
+  <p class="muted" data-testid="proposal-empty">No candidate link is waiting for a decision.</p>
+  {% endfor %}
+</section>
+
+<section class="panel" aria-labelledby="links-heading">
+  <h2 id="links-heading">Recorded source links</h2>
+  <table class="data-table" data-testid="crosswalk-table">
+    <caption class="visually-hidden">Source links and the decisions behind them</caption>
+    <thead>
+      <tr>
+        <th scope="col">Entity</th><th scope="col">Source</th><th scope="col">Record</th>
+        <th scope="col">Status</th><th scope="col">Decision</th><th scope="col">Decided by</th><th scope="col">Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in review.crosswalks %}
+      <tr data-testid="crosswalk-row" data-link-status="{{ link.link_status }}">
+        <th scope="row">{{ link.entity_id }}</th>
+        <td>{{ link.source_system_id }}</td>
+        <td>{{ link.source_record_id }}</td>
+        <td><span class="badge badge-{{ link.link_status }}">{{ link.link_status }}</span></td>
+        <td>{{ link.decision or '' }}</td>
+        <td>{{ link.decision_actor_id or '-' }}</td>
+        <td>{{ link.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No source link has been decided yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="cases-heading">
+  <h2 id="cases-heading">Change cases and their acknowledgement</h2>
+  <table class="data-table" data-testid="case-table">
+    <caption class="visually-hidden">Change cases</caption>
+    <thead>
+      <tr>
+        <th scope="col">Case</th><th scope="col">Target</th><th scope="col">Status</th>
+        <th scope="col">Destination</th><th scope="col">Assigned</th><th scope="col">Version</th>
+        <th scope="col">Next states</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for case in review.cases %}
+      <tr data-testid="case-row" data-status="{{ case.status }}">
+        <th scope="row">{{ case.title }}</th>
+        <td>{{ case.target_type }} {{ case.target_id }}</td>
+        <td><span class="badge badge-{{ case.status }}">{{ case.status }}</span></td>
+        <td>{{ case.destination or 'not declared' }}</td>
+        <td>{{ case.assignee_actor_id or 'unassigned' }}</td>
+        <td>{{ case.version }}</td>
+        <td>{{ case.allowed_transitions|join(', ') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No change case is open.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Source commands</h3>
+  <table class="data-table" data-testid="command-table">
+    <caption class="visually-hidden">Commands sent to a source and their acknowledgement</caption>
+    <thead>
+      <tr>
+        <th scope="col">Command</th><th scope="col">Source</th><th scope="col">Operation</th>
+        <th scope="col">Expected version</th><th scope="col">Accepted version</th><th scope="col">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for command in review.commands %}
+      <tr data-testid="command-row" data-status="{{ command.status }}">
+        <th scope="row">{{ command.source_command_id }}</th>
+        <td>{{ command.source_system_id }}</td>
+        <td>{{ command.operation }}</td>
+        <td>{{ command.expected_source_version or '-' }}</td>
+        <td>{{ command.accepted_source_version or '-' }}</td>
+        <td><span class="badge badge-{{ command.status }}">{{ command.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No command has been sent to a source.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Publication deliveries</h3>
+  <table class="data-table" data-testid="delivery-table">
+    <caption class="visually-hidden">Publication deliveries and their acknowledgements</caption>
+    <thead>
+      <tr><th scope="col">Delivery</th><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Acknowledged</th><th scope="col">Last error</th></tr>
+    </thead>
+    <tbody>
+      {% for delivery in review.deliveries %}
+      <tr data-testid="delivery-row" data-status="{{ delivery.status }}">
+        <th scope="row">{{ delivery.delivery_id }}</th>
+        <td>{{ delivery.destination }}</td>
+        <td><span class="badge badge-{{ delivery.status }}">{{ delivery.status }}</span></td>
+        <td>{{ delivery.attempts }}</td>
+        <td>{{ delivery.acknowledged_at or '-' }}</td>
+        <td>{{ delivery.last_error or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No publication is pending.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="source-records-heading">
+  <h2 id="source-records-heading">Source records available for comparison</h2>
+  <table class="data-table" data-testid="source-record-table">
+    <caption class="visually-hidden">Accepted source records</caption>
+    <thead>
+      <tr><th scope="col">Source</th><th scope="col">Dataset</th><th scope="col">Record</th><th scope="col">Version</th><th scope="col">Source update</th><th scope="col">Received</th></tr>
+    </thead>
+    <tbody>
+      {% for record in review.source_records %}
+      <tr>
+        <th scope="row">{{ record.source_system_id }}</th>
+        <td>{{ record.source_dataset_id }}</td>
+        <td>{{ record.source_record_id }}</td>
+        <td>{{ record.source_record_version }}</td>
+        <td>{{ record.source_updated_at or 'unknown' }}</td>
+        <td>{{ record.ingested_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/evidence_panel.html" %}
+{% include "components/history_panel.html" %}
+
+<section class="panel" aria-labelledby="steward-actions-heading">
+  <h2 id="steward-actions-heading">Actions</h2>
+  {% for item in actions %}
+    {{ action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}
+    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

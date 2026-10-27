@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% macro action_form(item, csrf_token) %}
+<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
+  <summary>
+    <span class="action-label">{{ item.label }}</span>
+    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
+  </summary>
+  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
+  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
+  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
+  {% if item.permitted %}
+  <form method="post" action="{{ item.path }}" class="action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="{{ item.action_id }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}">
+    {% for field in item.fields %}
+      {% if field.type == 'hidden' %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'select' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+          </select>
+        </p>
+      {% elif field.type == 'textarea' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+        </p>
+      {% else %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
+  </form>
+  {% else %}
+  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
+  {% endif %}
+</details>
+{% endmacro %}
+
+{% block content %}
+
+{% if detail %}
+<h1>Master record: {{ detail.party.display_name }}</h1>
+
+{% include "components/responsibility_panel.html" %}
+
+<section class="panel" aria-labelledby="master-credentials-heading">
+  <h2 id="master-credentials-heading">Authoritative credentials</h2>
+  <table class="data-table" data-testid="master-credentials">
+    <caption class="visually-hidden">Credentials of this master record</caption>
+    <thead><tr><th scope="col">Credential</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid from</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for credential in detail.credentials %}
+      <tr>
+        <th scope="row">{{ credential.credential_type }}</th>
+        <td>{{ credential.number }}</td>
+        <td>{{ credential.issuing_authority_id }}</td>
+        <td><span class="badge badge-{{ credential.status }}">{{ credential.status }}</span></td>
+        <td>{{ credential.valid_from or 'unknown' }}</td>
+        <td>{{ credential.valid_to or 'open' }}</td>
+        <td>{{ credential.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No credential is recorded for this master record.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if detail.accounts %}
+  <h3>Finance accounts</h3>
+  <table class="data-table" data-testid="master-accounts">
+    <caption class="visually-hidden">Finance accounts of this master record</caption>
+    <thead><tr><th scope="col">Account</th><th scope="col">Source account</th><th scope="col">Role</th><th scope="col">Link status</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for account in detail.accounts %}
+      <tr>
+        <th scope="row">{{ account.account_id }}</th>
+        <td>{{ account.source_account_id }}</td>
+        <td>{{ account.account_role }}</td>
+        <td>{{ account.link_status }}</td>
+        <td>{{ account.version }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="master-sources-heading">
+  <h2 id="master-sources-heading">Source links</h2>
+  <table class="data-table" data-testid="master-sources">
+    <caption class="visually-hidden">Source records linked to this master record</caption>
+    <thead><tr><th scope="col">Source</th><th scope="col">Dataset</th><th scope="col">Record</th><th scope="col">Status</th><th scope="col">Decided by</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for link in detail.sources %}
+      <tr>
+        <td>{{ link.source_system_id }}</td>
+        <td>{{ link.source_dataset_key or '' }}</td>
+        <td>{{ link.source_record_id }}</td>
+        <td><span class="badge badge-{{ link.link_status }}">{{ link.link_status }}</span></td>
+        <td>{{ link.decision_actor_id or '-' }}</td>
+        <td>{{ link.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No source record is linked yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/evidence_panel.html" %}
+{% include "components/history_panel.html" %}
+
+<section class="panel" aria-labelledby="master-actions-heading">
+  <h2 id="master-actions-heading">Actions</h2>
+  {% for item in actions %}
+    {{ action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}
+    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+{% else %}
+<h1>Properties, businesses and contractors</h1>
+
+<section class="panel" aria-labelledby="properties-heading">
+  <h2 id="properties-heading">Properties</h2>
+  <table class="data-table" data-testid="property-table">
+    <caption class="visually-hidden">Parcels and their official addresses</caption>
+    <thead><tr><th scope="col">Parcel</th><th scope="col">Number</th><th scope="col">Jurisdiction</th><th scope="col">Official addresses</th><th scope="col">Status</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for parcel in masters.properties %}
+      <tr>
+        <th scope="row">{{ parcel.parcel_id }}</th>
+        <td>{{ parcel.source_parcel_number }}</td>
+        <td>{{ parcel.jurisdiction_id }}</td>
+        <td>{% for address in parcel.addresses %}{{ address.source_string }}{% if address.unit_number %} (unit {{ address.unit_number }}){% endif %}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
+        <td>{{ parcel.status }}</td>
+        <td>{{ parcel.version }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% set responsibility = masters.responsibilities.parcels %}
+  {% include "components/responsibility_panel.html" %}
+{% include "components/evidence_panel.html" %}
+</section>
+
+<section class="panel" aria-labelledby="businesses-heading">
+  <h2 id="businesses-heading">Businesses</h2>
+  <table class="data-table" data-testid="business-table">
+    <caption class="visually-hidden">Business licences</caption>
+    <thead><tr><th scope="col">Business</th><th scope="col">Licence</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for business in masters.businesses %}
+      <tr>
+        <th scope="row"><a href="{{ business.href }}">{{ business.display_name }}</a></th>
+        <td>{{ business.credential_type }}</td>
+        <td>{{ business.number }}</td>
+        <td>{{ business.issuing_authority_id }}</td>
+        <td>{{ business.status }}</td>
+        <td>{{ business.valid_to or 'open' }}</td>
+        <td>{{ business.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No business licence is recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="contractors-heading">
+  <h2 id="contractors-heading">Contractors</h2>
+  <table class="data-table" data-testid="contractor-table">
+    <caption class="visually-hidden">Contractor registrations</caption>
+    <thead><tr><th scope="col">Contractor</th><th scope="col">Registration</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for contractor in masters.contractors %}
+      <tr>
+        <th scope="row"><a href="{{ contractor.href }}">{{ contractor.display_name }}</a></th>
+        <td>{{ contractor.credential_type }}</td>
+        <td>{{ contractor.number }}</td>
+        <td>{{ contractor.issuing_authority_id }}</td>
+        <td>{{ contractor.status }}</td>
+        <td>{{ contractor.valid_to or 'open' }}</td>
+        <td>{{ contractor.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No contractor registration is recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

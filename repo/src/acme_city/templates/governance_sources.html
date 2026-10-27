@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% macro action_form(item, csrf_token) %}
+<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
+  <summary>
+    <span class="action-label">{{ item.label }}</span>
+    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
+  </summary>
+  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
+  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
+  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
+  {% if item.permitted %}
+  <form method="post" action="{{ item.path }}" class="action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="{{ item.action_id }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}">
+    {% for field in item.fields %}
+      {% if field.type == 'hidden' %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'select' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+          </select>
+        </p>
+      {% elif field.type == 'textarea' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+        </p>
+      {% else %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
+  </form>
+  {% else %}
+  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
+  {% endif %}
+</details>
+{% endmacro %}
+
+{% block content %}
+
+<h1>Governance and sources</h1>
+
+{% include "components/responsibility_panel.html" %}
+
+<section class="panel" aria-labelledby="datasets-heading">
+  <h2 id="datasets-heading">Registered source datasets</h2>
+  <table class="data-table" data-testid="registration-table">
+    <caption class="visually-hidden">Source registrations</caption>
+    <thead>
+      <tr>
+        <th scope="col">Dataset</th><th scope="col">Source</th><th scope="col">Domain</th>
+        <th scope="col">Owner</th><th scope="col">Steward queue</th><th scope="col">Custodian</th>
+        <th scope="col">Correction route</th><th scope="col">Registration</th><th scope="col">Publishable</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for registration in governance.registrations %}
+      <tr data-testid="registration-row" data-state="{{ registration.registration_state }}">
+        <th scope="row">{{ registration.dataset_key }}</th>
+        <td>{{ registration.source_system_id }}</td>
+        <td>{{ registration.domain_id or 'not assigned' }}</td>
+        <td>{{ registration.accountable_owner_actor_id or 'not assigned' }}</td>
+        <td>{{ registration.steward_queue_id or 'not assigned' }}</td>
+        <td>{{ registration.system_custodian_actor_id or 'not assigned' }}</td>
+        <td>{{ registration.correction_route or 'not declared' }}</td>
+        <td><span class="badge badge-{{ registration.registration_state }}">{{ registration.registration_state }}</span></td>
+        <td>{{ 'yes' if registration.publishable else 'no' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="muted">No dataset is registered.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="domains-heading">
+  <h2 id="domains-heading">Domains and queues</h2>
+  <table class="data-table" data-testid="domain-table">
+    <caption class="visually-hidden">Governed domains</caption>
+    <thead>
+      <tr><th scope="col">Domain</th><th scope="col">Owner</th><th scope="col">Queue</th><th scope="col">Custodian</th><th scope="col">Default source</th><th scope="col">Version</th></tr>
+    </thead>
+    <tbody>
+      {% for domain in governance.domains %}
+      <tr data-testid="domain-row">
+        <th scope="row">{{ domain.domain_id }}</th>
+        <td>{{ domain.accountable_owner_actor_id or 'not assigned' }}</td>
+        <td>{{ domain.steward_queue_id or 'not assigned' }}</td>
+        <td>{{ domain.system_custodian_actor_id or 'not assigned' }}</td>
+        <td>{{ domain.default_source_system_id or 'not declared' }}</td>
+        <td>{{ domain.version }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>Steward queues</h3>
+  <table class="data-table" data-testid="queue-configuration-table">
+    <caption class="visually-hidden">Steward queues and their response targets</caption>
+    <thead>
+      <tr><th scope="col">Queue</th><th scope="col">Domain</th><th scope="col">Primary</th><th scope="col">Delegate</th><th scope="col">Escalation</th><th scope="col">First review target</th><th scope="col">Service promise</th></tr>
+    </thead>
+    <tbody>
+      {% for queue in governance.queues %}
+      <tr data-testid="queue-configuration-row">
+        <th scope="row">{{ queue.queue_id }}</th>
+        <td>{{ queue.domain_id }}</td>
+        <td>{{ queue.primary_actor_id or 'not assigned' }}</td>
+        <td>{{ queue.delegate_actor_id or 'not assigned' }}</td>
+        <td>{{ queue.escalation_actor_id or 'not assigned' }}</td>
+        <td>{{ queue.first_review_target_quantity }} {{ queue.first_review_target_unit }}</td>
+        <td>{{ 'yes' if queue.service_promise else 'no' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="assignments-heading">
+  <h2 id="assignments-heading">Effective assignments</h2>
+  <table class="data-table" data-testid="assignment-table">
+    <caption class="visually-hidden">Effective-dated assignments</caption>
+    <thead><tr><th scope="col">Subject</th><th scope="col">Responsibility</th><th scope="col">Actor</th><th scope="col">Queue</th><th scope="col">Effective from</th><th scope="col">Effective to</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for assignment in governance.assignments %}
+      <tr data-testid="assignment-row">
+        <th scope="row">{{ assignment.subject_type }} {{ assignment.subject_id }}</th>
+        <td>{{ assignment.responsibility }}</td>
+        <td>{{ assignment.actor_id or '-' }}</td>
+        <td>{{ assignment.queue_id or '-' }}</td>
+        <td>{{ assignment.effective_from }}</td>
+        <td>{{ assignment.effective_to or 'open' }}</td>
+        <td>{{ assignment.version }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No assignment is effective.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="policies-heading">
+  <h2 id="policies-heading">Attribute authority</h2>
+  <table class="data-table" data-testid="policy-table">
+    <caption class="visually-hidden">Authority policies</caption>
+    <thead>
+      <tr><th scope="col">Policy</th><th scope="col">Field group</th><th scope="col">Domain</th><th scope="col">Authoritative source</th><th scope="col">Change destination</th><th scope="col">User action</th><th scope="col">Source acknowledgement</th><th scope="col">Status</th></tr>
+    </thead>
+    <tbody>
+      {% for policy in governance.policies %}
+      <tr data-testid="policy-row" data-policy-id="{{ policy.policy_id }}">
+        <th scope="row">{{ policy.policy_id }}</th>
+        <td>{{ policy.field_group }}</td>
+        <td>{{ policy.domain_id or 'all' }}</td>
+        <td>{{ policy.authoritative_source_system_id or 'not declared' }}{% if policy.authoritative_dataset_key %} / {{ policy.authoritative_dataset_key }}{% endif %}</td>
+        <td>{{ policy.change_destination }}</td>
+        <td>{{ policy.user_action }}</td>
+        <td>{{ 'required' if policy.requires_source_ack else 'not required' }}</td>
+        <td><span class="badge badge-{{ policy.status }}">{{ policy.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">No authority policy is stored.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="intake-heading">
+  <h2 id="intake-heading">Unowned intake and quarantine</h2>
+  <table class="data-table" data-testid="staged-table">
+    <caption class="visually-hidden">Staged records that may not publish</caption>
+    <thead><tr><th scope="col">Record</th><th scope="col">Source</th><th scope="col">Dataset</th><th scope="col">Version</th><th scope="col">Received</th></tr></thead>
+    <tbody>
+      {% for record in governance.staged %}
+      <tr data-testid="staged-row">
+        <th scope="row">{{ record.source_record_id }}</th>
+        <td>{{ record.source_system_id }}</td>
+        <td>{{ record.source_dataset_id }}</td>
+        <td>{{ record.source_record_version }}</td>
+        <td>{{ record.ingested_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No staged record is waiting.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>Quarantine</h3>
+  <table class="data-table" data-testid="quarantine-table">
+    <caption class="visually-hidden">Quarantined records and their field errors</caption>
+    <thead><tr><th scope="col">Snapshot</th><th scope="col">Field</th><th scope="col">Code</th><th scope="col">Message</th><th scope="col">Queue</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for error in governance.quarantined %}
+      <tr data-testid="quarantine-row">
+        <th scope="row">{{ error.source_snapshot_id }}</th>
+        <td>{{ error.field_path }}</td>
+        <td>{{ error.error_code }}</td>
+        <td>{{ error.message }}</td>
+        <td>{{ error.responsible_queue_id or 'unassigned' }}</td>
+        <td>{{ error.status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No record is quarantined.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="synchronization-heading">
+  <h2 id="synchronization-heading">Synchronization</h2>
+  <table class="data-table" data-testid="synchronization-table">
+    <caption class="visually-hidden">Source commands and their acknowledgement</caption>
+    <thead><tr><th scope="col">Command</th><th scope="col">Case</th><th scope="col">Source</th><th scope="col">Operation</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for command in governance.commands %}
+      <tr data-testid="synchronization-row" data-status="{{ command.status }}">
+        <th scope="row">{{ command.source_command_id }}</th>
+        <td>{{ command.change_case_id or '-' }}</td>
+        <td>{{ command.source_system_id }}</td>
+        <td>{{ command.operation }}</td>
+        <td>{{ command.accepted_source_version or '-' }}</td>
+        <td><span class="badge badge-{{ command.status }}">{{ command.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No command has been sent to a source.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/evidence_panel.html" %}
+
+<section class="panel" aria-labelledby="governance-actions-heading">
+  <h2 id="governance-actions-heading">Actions</h2>
+  {% for item in actions %}
+    {{ action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}
+    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

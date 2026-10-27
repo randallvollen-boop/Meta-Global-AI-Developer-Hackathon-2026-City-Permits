@@ -1,0 +1,36 @@
+{# The history panel of a governed record.
+
+   The history is the append-only application audit trail: the actor, the
+   time, the action, the versions and the reason of every recorded step. #}
+<section class="panel panel-history" aria-labelledby="history-heading" data-testid="history-panel">
+  <h2 id="history-heading">History</h2>
+  {% if history %}
+  <table class="data-table" data-testid="history-table">
+    <caption class="visually-hidden">Recorded history of this record</caption>
+    <thead>
+      <tr>
+        <th scope="col">When</th>
+        <th scope="col">Who</th>
+        <th scope="col">Action</th>
+        <th scope="col">Outcome</th>
+        <th scope="col">Versions</th>
+        <th scope="col">Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in history %}
+      <tr>
+        <td>{{ entry.occurred_at }}</td>
+        <td>{{ entry.actor_label }}</td>
+        <td class="mono">{{ entry.action }}</td>
+        <td><span class="badge badge-{{ entry.outcome }}">{{ entry.outcome }}</span></td>
+        <td>{{ entry.before_version if entry.before_version is not none else '-' }} to {{ entry.after_version if entry.after_version is not none else '-' }}</td>
+        <td>{{ entry.reason or entry.denial_reason or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" data-testid="history-empty">No history is recorded for this record.</p>
+  {% endif %}
+</section>

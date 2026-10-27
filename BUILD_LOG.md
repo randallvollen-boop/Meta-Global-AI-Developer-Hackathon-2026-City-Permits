@@ -1,0 +1,55 @@
+# Build Log
+
+Timezone: America/New_York. Record preparation and implementation separately; never relabel prior work as competition implementation.
+
+## October 26, 2026 — intake and alignment
+
+- Created sibling workspace `Meta-Global-AI-Developer-Hackathon-2026-City-Permits` beside the existing RailFlow workspace.
+- Validated the downloaded ZIP for path traversal, duplicate names, symlinks, size limits, and CRC integrity.
+- Preserved the archive and extracted package under ignored `intake/`; hashes match.
+- Read the authoritative requirements and principal build/governance/data/interface/validation companions.
+- Created a planning-level alignment for the ACME City permit application without implementing product behavior.
+- Completed a read-only package inventory and verified the external click-through prototype is not bundled or locally present, the two baseline code trees are duplicate references, all 57 requirements remain unimplemented, and all acceptance tests remain not run.
+- Created a prospective `repo/` scaffold; no application source, schema, fixture, test, or Muse integration exists yet.
+- Initialized a local Git repository on `main` and confirmed `/intake/` is ignored.
+- Configured the repository-local personal GitHub noreply author identity.
+- Recorded that this hackathon may be published only to `RandallVollen-boop`.
+- Aligned the fictional ACME workflow to current public City of Westerville submission-channel, contractor-registration, commercial plan-review, correction, issuance, status, and inspection-handoff concepts without importing City branding or authoritative fee/code claims.
+- Verified GitHub CLI is currently authenticated only as `elawclerkdemo`; no remote was created and nothing was committed or pushed.
+- Randall released the City Permits candidate for a full local end-to-end build and loopback user-test handoff. External publication/submission actions remain held.
+- Created a 57-requirement execution outline and six-plan implementation set covering 22 gated tasks, AT01–AT20, VC01–VC08, D01–D11, bounded Muse Standard integration, eight screens, evidence, restart/idempotency and local process handoff. Self-review found 57/57 requirement IDs and no missing child-plan links or placeholder markers.
+- Corrected whitespace around the existing `META_API_KEY` assignment so shell-based launchers can source the key file; key value was not displayed or changed and file mode is 0600.
+- One MiniMax M3 subscription executor completed governed-foundation Tasks F1–F4 with a repo-only write set, no commits/external actions/live APIs, and no corrective relaunch. Parent inspected key implementation files and independently verified 107 passed, zero failed/skipped; 57/20/8/11 planning contract; 64-table migration; and clean Alembic model check. Foundation contributes 10 implemented requirement IDs, but integrated AT/VC verification remains pending.
+- Parent dependency diagnostic removed apparently unused `httpx2`; current Starlette TestClient then failed collection because it requires that package. Restored dependency/lock and reran 107 passes. No test warning or assertion was weakened.
+- Registry/stewardship M3 slice completed without corrective relaunch. Parent fixed one misspelled generated-ID prefix (`propsal` → `proposal`), mounted the three routers, independently ran 128 slice tests, and verified 33 unique integrated OpenAPI operations. Foundation plus registry now account for 30 implemented requirement IDs and 8 of 22 verified plan tasks; final mapped acceptance counts remain pending the integrated manifest.
+- Permit/rules/finance/issuance M3 slice completed on its original session after one long wait timeout; no relaunch. Parent mounted permit/rule/finance routers and independently ran 167 slice tests. Integrated application then exposed 64 unique OpenAPI operations across 58 paths, and Alembic reported no schema drift. Foundation, registry and permit slices accounted for 44 implemented requirement IDs and 13 of 22 verified plan tasks.
+- Muse core M3 slice completed M1–M2 with no live call. Parent fixed the requirement-marker parser to accept two-letter `AI-*`/`UX-*` prefixes, added its regression test, mounted the Muse router, and independently ran 99 targeted tests. Integrated application exposes 66 unique OpenAPI operations across 60 paths. Exactly eight requirement IDs remain unmapped: EVAL-01–03, GOV-04 and UX-01–04.
+- Eight-screen UI/browser M3 slice launched with a UI-only write set; parent integration and acceptance pending.
+- Acceptance-core M3 slice launched in parallel with disjoint A1/A2 files for check inventory, AT02/AT03, VC06–VC08, D01–D11 evaluator outcomes, deterministic runner and evidence verifier. Live/browser/process work remains parent-held.
+- Randall requested a maintained Vollen STD-29 architecture page published in the private AVA Library and capped the application dropdown at four personas. Updated the requirement/plan/governance contract to Applicant, Data Steward, Permit Reviewer and City Administrator with explicit granular grants and nonselectable service identities.
+- Created the architecture fact sheet and canonical STATUS.json at `docs/solution-architecture/acme-city-permits/`. One independent M3 builder produced the self-contained Vollen STD-29 page and passed the kit/Linux checker. Parent applied the Vollen editorial standard, independently rebuilt and checked the page, and visually reviewed light/dark top/full renders.
+- Published the checked internal draft offline to the private AVA Library as `acme-city-permits-architecture`; the page is replaced after accepted phases. `STATUS.json`, PROJECT_NOTE.md and BUILD_REPORT.md carry the current source/Library hash. The AVA service remained inactive. `update_status.py` validates STATUS.json, rebuilds/checks the page, and replaces the same article ID.
+
+## Application implementation
+
+- Eight server-rendered screens are mounted in the real application with local CSS and JavaScript, exactly four selectable personas, CSRF-bound explicit actions, responsibility/evidence/history panels and responsive browser behavior. Parent verification: 33 UI API/view-model tests and 26 Playwright browser checks passed.
+- Acceptance Tasks A1–A2 added a 57/57 requirement-to-symbol/node inventory, executable AT01–AT20, VC01–VC08 and D01–D11 outcomes, an atomic evidence manifest, a deterministic runner and a hash verifier. A parent fix applies record scope to direct application, evaluation and document reads.
+- The registry now materializes an approved Finance account link from the steward's `finance_accounts` crosswalk decision. The replay D01 walkthrough completes the steward, reviewer, assessment, allocation, reconciliation, issuance and idempotent retry chain through public endpoints.
+- Tasks A3–A5 added a bounded walkthrough, restart-persistence and issuance-response-loss tests, owned loopback start/stop/reset tooling, three labelled preparation modes, publication-tree scanning, a final gate runner and `repo/USER_TEST_GUIDE.md`.
+- A concurrent-writer diagnostic found two acceptance runs rewriting the same JUnit filenames. The runner now holds an exclusive evidence-directory lock, and the verifier refuses an active run. The reproduced hash mismatch disappeared in a fresh locked run.
+- One authorized Standard-mode `muse-spark-1.3` extraction was sent. Meta returned response `resp_6ae00c2c9bf71eb13c464357` with status `incomplete` and no output text. The immutable run is failed; no retry or second call was sent. AT15 and full AT19 remain blocked rather than passed.
+- Final local gate after the last health/reset corrections: 659 tests passed, zero failed/skipped; all 10 `run_all_checks.py` stages passed, including 57/57 coverage, collection checks, fresh Alembic upgrade/check, deterministic acceptance, evidence hashes and publication scan. The deterministic manifest contains 37 passed, zero failed and two live-blocked checks.
+- The final owned application is prepared in `ready-for-review` replay mode and is running on `http://127.0.0.1:8266`; health reports schema revision `0001`, and the selector returned HTTP 200.
+- The checked private AVA architecture article was replaced under the stable id with the truthful planned/in-implementation status: 57 implemented, 56 verified, 21 of 22 tasks verified and live completion blocked by the incomplete provider response. Page SHA-256: `c61bd1e23fe33439a48110cc604772d19b733e16fffc1f465e7c29f8d6d4901a`.
+
+## External release
+
+No GitHub remote, deployment, public publication, event entry change, terms acceptance, social post, organizer contact, or submission. The checked architecture page remains the sole authorized private AVA Library publication.
+
+## 2026-10-27 — UI redesign build started (Muse Wonder)
+
+- Randall approved the clickable mockup (private artifact, version 4) with no changes and asked Muse to build it in one pass.
+- Builder: `muse-wonder-1.0` through any-gateway alias `claude-meta-muse-wonder`, headless Claude Code, Standard mode, paid from the Meta credits. Parent (Claude Opus) owns review, gates and acceptance.
+- Isolation: Muse works in a copy of `repo/` under the git-ignored `work/ui-build/`, with no Meta key. The live candidate on :8266 is untouched until the result passes review and gates.
+- Scope: Part A, the visual system and all 8 screens (themes, sidebar, pills, KPI strips, case pipeline, Muse run view, findings, timeline, sticky action rail). Part B, permit-type icons with Administrator-only Muse Image generation (audited, capped at 3 per type per day and 10 per day globally, mocked in tests).
+- Out of scope: new permit types (the specification preserves five) and icon generation by Applicants.

@@ -1,0 +1,437 @@
+<button class="vtheme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">&#9790;</button>
+<!-- Top bar: text-only Vollen co-brand plus the section menu. Every href matches a section id. -->
+<header class="bar">
+  <div class="wrap">
+    <a href="#top" class="cobrand" aria-label="ACME City Permits Architecture by Vollen Data Services, back to top"><span class="pn">ACME City Permits</span><span class="by">by</span><span class="vds">Vollen Data Services</span></a>
+    <nav class="secsel" aria-label="Sections">
+      <button type="button" class="secsel-btn" id="secsel-btn" aria-haspopup="true" aria-expanded="false" aria-controls="secsel-menu"><span class="secsel-k">Section</span><span id="secsel-cur">Purpose</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button>
+      <div class="secsel-menu" id="secsel-menu" role="menu" hidden>
+          <p class="secsel-g">Overview</p>
+          <a href="#purpose" role="menuitem">Purpose</a>
+          <a href="#status" role="menuitem">Status</a>
+          <a href="#components" role="menuitem">What is built</a>
+          <p class="secsel-g">Design</p>
+          <a href="#architecture" role="menuitem">Architecture</a>
+          <a href="#journey" role="menuitem">Primary process</a>
+          <a href="#personas" role="menuitem">Personas</a>
+          <a href="#screens" role="menuitem">Screens</a>
+          <a href="#authority" role="menuitem">Data authority</a>
+          <p class="secsel-g">Controls</p>
+          <a href="#muse" role="menuitem">Muse</a>
+          <a href="#controls" role="menuitem">Fees and idempotency</a>
+          <a href="#security" role="menuitem">Access and audit</a>
+          <a href="#verification" role="menuitem">Verification</a>
+          <p class="secsel-g">Reference</p>
+          <a href="#artifacts" role="menuitem">Artifacts</a>
+          <a href="#decisions" role="menuitem">Open decisions</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<div class="hero"><div class="wrap"><div>
+  <p class="client">ACME City, fictional client &middot; As-built architecture &middot; Internal review</p>
+  <h1>ACME City Permits Architecture</h1>
+  <p class="standfirst">One local permitting application holds fictional ACME City records. A master data management (MDM) registry owns identity, and a bounded model only proposes.</p>
+</div></div></div>
+
+<section id="purpose"><div class="wrap">
+  <h2>Purpose and outcome</h2>
+  <p class="lede">This page describes the built local solution. The integrated evidence gate passed on October 27, 2026, so the architecture status is AS BUILT.</p>
+  <div class="two">
+    <div class="prose">
+      <p>One local application will hold fictional ACME City records. It persists submissions, decisions, fee versions and evidence in a single SQLite database.</p>
+      <p>The synthetic case SYN-APP-001 is a commercial tenant improvement. It moves from an immutable submission to a separate simulated permit issuance.</p>
+      <p>Refresh, restart, and an identical issuance retry return the same trace and artifact. This result is a required build check.</p>
+      <p>Every record on this page is invented for the demonstration. No permit, payment, parcel or applicant record comes from a real city or a real person.</p>
+    </div>
+    <div class="split">
+      <div class="card"><h4>Determined by code</h4><ul>
+        <li>Fee arithmetic from an approved versioned catalog</li>
+        <li>Expected version guards on every change</li>
+        <li>Idempotency on repeated commands</li>
+        <li>Schema and citation checks on every proposal</li>
+      </ul></div>
+      <div class="card"><h4>Decided by a person</h4><ul>
+        <li>Steward match and correction decisions</li>
+        <li>Permit review approval</li>
+        <li>Finance allocation of a settled payment</li>
+        <li>Permit issuance, as a separate action</li>
+      </ul></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ARCH_STATUS_BEGIN -->
+<section id="status" class="alt"><div class="wrap">
+  <h2>Current status</h2>
+  <p class="lede">This panel is generated from the workspace status record. Values change only when stored evidence changes.</p>
+  <div class="status-grid">
+    <div class="status-card accent" id="status-overall" data-status="verified" data-architecture="as_built" data-as-of="2026-10-27T06:19:59-04:00">
+      <p class="kicker">Overall</p>
+      <p class="status-value">VERIFIED</p>
+      <p class="status-note">Architecture status: <b>AS BUILT</b>. The status record was written at 06:19 Eastern on 2026-10-27.</p>
+    </div>
+    <div class="status-card" id="status-requirements" data-total="57" data-outlined="57" data-implemented="57" data-verified="57">
+      <p class="kicker">Requirements</p>
+      <p class="status-value">57 outlined</p>
+      <p class="status-note"><b>57 implemented</b>, <b>57 verified</b>. All 57 identifiers are represented in the outline.</p>
+    </div>
+    <div class="status-card" id="status-tasks" data-total="22" data-verified="22" data-phase="Complete: local user test" data-current-tasks="none">
+      <p class="kicker">Execution tasks</p>
+      <p class="status-value">22 tasks</p>
+      <p class="status-note"><b>22 verified</b>. Complete: local user test. Current tasks: none.</p>
+    </div>
+    <div class="status-card" id="status-phase" data-phase="Complete: local user test" data-phase-state="in_progress">
+      <p class="kicker">Phase</p>
+      <p class="status-value">Complete: local user test</p>
+      <p class="status-note">Phase states below come from accepted evidence in the status record.</p>
+    </div>
+    <div class="status-card" id="status-verification" data-acceptance-total="20" data-acceptance-passed="20" data-supplementary-total="8" data-supplementary-passed="8" data-scenarios-total="11" data-scenarios-recorded="11">
+      <p class="kicker">Verification</p>
+      <p class="status-value">20 acceptance, 8 supplementary, 11 scenarios</p>
+      <p class="status-note"><b>20 acceptance</b>, <b>8 supplementary</b>, and <b>11 scenarios</b> passed or recorded.</p>
+    </div>
+    <div class="status-card" id="status-muse" data-live-muse-primary-chain="succeeded">
+      <p class="kicker">Live model chain</p>
+      <p class="status-value">Succeeded</p>
+      <p class="status-note">Replay never counts as live evidence.</p>
+    </div>
+  </div>
+  <div class="sub">
+    <h3>Phases</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Phase</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Requirements and executable plan</td><td><span class="chip ga">Verified</span></td></tr>
+        <tr><td>Governed foundation</td><td><span class="chip ga">Verified</span></td></tr>
+        <tr><td>Registry and stewardship</td><td><span class="chip ga">Verified</span></td></tr>
+        <tr><td>Permits, rules, finance and issuance</td><td><span class="chip ga">Verified</span></td></tr>
+        <tr><td>Muse and eight-screen interface</td><td><span class="chip ga">Verified</span></td></tr>
+        <tr><td>Integrated verification and handoff</td><td><span class="chip ga">Verified</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <p class="mock-note">Source: the workspace status record. Counts are recorded facts, not projections.</p>
+</div></section>
+<!-- ARCH_STATUS_END -->
+
+<section id="components"><div class="wrap">
+  <h2>What exists now</h2>
+  <p class="lede">The application is built and runs locally. All 39 acceptance checks, scenarios and supplementary checks passed, including one live model run.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Part</th><th>State</th><th>Detail</th></tr></thead>
+    <!-- ARCH_COMPONENT_STATUS_BEGIN -->
+    <tbody>
+      <tr><td>Requirements outline</td><td><span class="chip ga">Exists</span></td><td>57 of 57 requirement identifiers are represented and coverage checked.</td></tr>
+      <tr><td>Executable plan</td><td><span class="chip ga">Exists</span></td><td>22 implementation tasks across one parent plan and five child plans.</td></tr>
+      <tr><td>Fact sheet and status record</td><td><span class="chip ga">Exist</span></td><td>They supply the claims and current progress values used on this page.</td></tr>
+      <tr><td>Governed foundation</td><td><span class="chip ga">Verified</span></td><td>Tasks F1 to F4 are verified.</td></tr>
+      <tr><td>Registry and stewardship</td><td><span class="chip ga">Verified</span></td><td>Tasks R1 to R4 are verified.</td></tr>
+      <tr><td>Permits, rules, finance and issuance</td><td><span class="chip ga">Verified</span></td><td>Tasks P1 to P5 are verified.</td></tr>
+      <tr><td>Muse and eight-screen interface</td><td><span class="chip ga">Verified</span></td><td>Tasks M1 to M4 are verified.</td></tr>
+      <tr><td>Integrated verification and handoff</td><td><span class="chip ga">Verified</span></td><td>Tasks A1 to A5 are verified.</td></tr>
+      <tr><td>Implemented requirements</td><td><span class="chip pv">57 of 57</span></td><td>0 requirement identifiers remain for later phases.</td></tr>
+      <tr><td>Acceptance and scenario evidence</td><td><span class="chip ex">In progress</span></td><td>20 of 20 acceptance tests, 8 of 8 supplementary checks and 11 of 11 scenarios are recorded in the integrated manifest.</td></tr>
+      <tr><td>Live model evidence</td><td><span class="chip ex">Succeeded</span></td><td>Replay never counts as a completed live primary-chain run.</td></tr>
+      <tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand, delivery owner and security review remain open, so the internal banner stays.</td></tr>
+    </tbody>
+    <!-- ARCH_COMPONENT_STATUS_END -->
+  </table></div>
+</div></section>
+
+<section id="architecture" class="alt"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="lede">One Python service binds loopback only. The browser holds no model credential, and the only outbound call is the bounded model request.</p>
+  <div class="arch-top">
+    <div class="seg" role="group" aria-label="Diagram view">
+      <button type="button" data-view="system" aria-pressed="true">System</button>
+      <button type="button" data-view="permit" aria-pressed="false">Permit flow</button>
+      <button type="button" data-view="authority" aria-pressed="false">Data authority</button>
+      <button type="button" data-view="muse" aria-pressed="false">Muse</button>
+      <button type="button" data-view="verify" aria-pressed="false">Verification</button>
+      <button type="button" data-view="status" aria-pressed="false">Status</button>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="panel empty" id="panel" aria-live="polite"></div>
+  <figure class="canvas" style="margin:0">
+    <div class="tour" id="path-ui">
+      <button type="button" class="tour-play" id="play">{{icon:Play}}<span id="play-lbl">Play</span></button>
+      <div class="tour-main">
+        <div class="tour-track" id="track" role="group" aria-label="Steps of the primary process"></div>
+        <p class="tour-cap" id="cap"></p>
+      </div>
+      <div class="tour-nav">
+        <button type="button" id="prev" aria-label="Previous step">&#8249;</button>
+        <button type="button" id="next" aria-label="Next step">&#8250;</button>
+      </div>
+    </div>
+    <svg id="arch" viewBox="0 0 1400 800" role="img" aria-label="As-built ACME City Permits architecture. Four personas act in the browser, the FastAPI service governs permit, registry, finance and model work, source systems sit outside the application, and evidence is collected separately."></svg>
+  </figure>
+  <p class="view-note" id="view-note"></p>
+  <p class="mock-note">Every component is built and verified locally. Runtime evidence sits in the final acceptance manifest.</p>
+</div></section>
+
+<section id="journey"><div class="wrap">
+  <h2>Primary process, SYN-APP-001</h2>
+  <p class="lede">Eight steps from an applicant submission to a separate simulated permit issuance.</p>
+  <ol class="path-strip">
+    <li class="plan"><div><b>Submit.</b> The applicant submits immutable plans and documents for a fictional tenant improvement. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Receive.</b> The service stores the submission, hashes the payload and opens the intake work. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Ground.</b> The application builds a bounded context from versioned fictional documents and source snapshots. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Propose.</b> A live Standard model call returns a structured extraction proposal, and the application validates it. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Steward.</b> A Data Steward records the match or the correction against exact evidence. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Review.</b> A Permit Reviewer makes an actual review decision on the recorded evaluation. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Assess and settle.</b> The approved catalog prices the case, and Finance confirms the allocation of a settled simulated payment. <span class="chip ga">Verified</span></div></li>
+    <li class="plan"><div><b>Issue.</b> A separate issuance action records the permit, and an identical retry returns the same artifact. <span class="chip ga">Verified</span></div></li>
+  </ol>
+  <p>The complete process ran end to end against the local application, with a live model extraction. The strip records the sequence and its controls.</p>
+</div></section>
+
+<section id="personas" class="alt"><div class="wrap">
+  <h2>Personas and authority</h2>
+  <p class="lede">The dropdown offers four human personas. A persona label never grants authority by itself.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Persona</th><th>Explicit grants</th><th>Can do</th><th>Cannot do</th></tr></thead>
+    <tbody>
+      <tr><td>Applicant</td><td>Its own authorized profile scope</td><td>Manage drafts, submissions and requested responses.</td><td>View other applicants, match candidates or staff evidence.</td></tr>
+      <tr><td>Data Steward</td><td>Intake Clerk, Domain Steward and Domain MDM Steward grants for scoped queues</td><td>Review quality issues, propose source corrections and decide permitted identity links.</td><td>Approve or issue permits, or allocate money.</td></tr>
+      <tr><td>Permit Reviewer</td><td>Permit Reviewer and Issuing Officer grants</td><td>Record a review approval, then act on a separate Issue permit action.</td><td>Edit credentials, source facts or receipts.</td></tr>
+      <tr><td>City Administrator</td><td>Administrator, Governance Lead, Data Owner, Finance and Auditor grants</td><td>Configure domains, approve governance and confirm allocation.</td><td>Turn configuration rights into business approval rights.</td></tr>
+    </tbody>
+  </table></div>
+  <p>System custodians, source adapters, outbox workers and the model are service identities. They are not personas, and they are never selectable in the interface.</p>
+  <p>Historical blueprint actors remain source references. They are not selectable and are not presented separately.</p>
+</div></section>
+
+<section id="screens"><div class="wrap">
+  <h2>Interface map</h2>
+  <p class="lede">Eight screens carry the whole workflow. Every one of them is built and covered by browser checks.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Screen</th><th>Purpose</th><th>Main persona</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Work queue</td><td>Assigned queues, intake items and open issues.</td><td>All four</td></tr>
+      <tr><td>2</td><td>Applicants</td><td>Applicant profiles, drafts, submissions and requested responses.</td><td>Applicant</td></tr>
+      <tr><td>3</td><td>Properties, Businesses and Contractors</td><td>Parcels, official addresses, business records and contractor registration.</td><td>Data Steward</td></tr>
+      <tr><td>4</td><td>Permit workspace</td><td>Submission, documents, evaluation, decision and issuance for one case.</td><td>Permit Reviewer</td></tr>
+      <tr><td>5</td><td>Steward review</td><td>Quality issues, source corrections, crosswalk decisions and link reversals.</td><td>Data Steward</td></tr>
+      <tr><td>6</td><td>Rules and fees</td><td>The approved versioned catalog and the exact assessments it produces.</td><td>City Administrator</td></tr>
+      <tr><td>7</td><td>Reconciliation</td><td>Payment events, allocations, exceptions and carried balances.</td><td>City Administrator</td></tr>
+      <tr><td>8</td><td>Governance and sources</td><td>Domains, datasets, contracts, assignments, grants and source health.</td><td>City Administrator</td></tr>
+    </tbody>
+  </table></div>
+  <p>Every governed detail view shows owner, steward, source, the change route, version, last source update, last received and open issues.</p>
+  <p>Current master, submitted, proposed and issued values stay visually distinct on every screen.</p>
+</div></section>
+
+<section id="authority" class="alt"><div class="wrap">
+  <h2>Data authority and correction routes</h2>
+  <p class="lede">Each domain keeps its own owner. The registry owns identity and provenance, and it does not own the facts.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Domain</th><th>Authoritative owner</th><th>What the registry owns</th></tr></thead>
+    <tbody>
+      <tr><td>Applicant profiles, applications, contractor registration, decisions, issuance</td><td>Permitting</td><td>Source links, provenance and the recorded crosswalk.</td></tr>
+      <tr><td>Parcels, official addresses and units, zoning facts</td><td>GIS</td><td>Snapshot lineage and the trusted view over it.</td></tr>
+      <tr><td>Business licensing, finance accounts, payment events</td><td>ERP and Finance</td><td>Match decisions and publication history.</td></tr>
+      <tr><td>Canonical identities, source links, match decisions, provenance, publication history</td><td>The registry itself</td><td>All of it, as versioned records.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Correction routes</h3>
+  <div class="split">
+    <div class="card"><h4>Source fact</h4><ul>
+      <li>The steward proposes the correction against the exact source version.</li>
+      <li>The application sends a command through the outbox to the owning adapter.</li>
+      <li>The source adapter accepts a new version and acknowledges it.</li>
+      <li>The registry records the new version and its lineage.</li>
+    </ul></div>
+    <div class="card"><h4>Registry identity</h4><ul>
+      <li>The steward links or unlinks candidates inside the permitted scope.</li>
+      <li>The decision commits a new crosswalk version.</li>
+      <li>The old version stays reversible and readable.</li>
+      <li>No source fact is edited by the link.</li>
+    </ul></div>
+  </div>
+  <p>Approved does not mean synchronized. A factual correction becomes authoritative only after its source adapter accepts a version.</p>
+</div></section>
+
+<section id="muse"><div class="wrap">
+  <h2>Muse contribution and boundary</h2>
+  <p class="lede">The model reads a bounded context and returns a proposal. It never holds authority over a source fact, a fee or a permit.</p>
+  <div class="split">
+    <div class="card"><h4>The model may propose</h4><ul>
+      <li>Structured application field extraction from versioned fictional documents.</li>
+      <li>Evidence based identity proposals between candidate records.</li>
+      <li>Exact evidence lines that name the source, the version and the location.</li>
+    </ul></div>
+    <div class="card"><h4>The model may never</h4><ul>
+      <li>Publish a link or edit a source fact.</li>
+      <li>Calculate authoritative money.</li>
+      <li>Make a reviewer decision or allocate a payment.</li>
+      <li>Issue a permit or write to the database.</li>
+    </ul></div>
+  </div>
+  <h3>Evidence supplied to Muse</h3>
+  <p>The request carries versioned fictional documents, source snapshots, candidate identifiers, allowed visible records, source, effective and receipt times, rule versions and exact evidence lines.</p>
+  <p>Evaluator truth and expected decisions stay outside runtime payloads and outside retrieval. They never reach the model.</p>
+  <h3>Routing and topics</h3>
+  <p>Model muse-spark-1.3 in Standard mode handles at least one substantive live task in the primary chain. Structured field extraction and identity proposals are the preferred tasks.</p>
+  <p>Requests use a strict JavaScript Object Notation (JSON) Schema, allowlisted identifiers, bounded inputs and outputs, no web search, no tool calls, and concurrency one.</p>
+  <h3>Validation</h3>
+  <p>The application validates identifiers, evidence locations, excerpts, categories and citations before it creates a proposal. A proposal that fails a check is rejected and recorded as rejected.</p>
+  <h3>Evidence</h3>
+  <p>Each run records the mode, the model and response identifiers, prompt and schema versions, input references, output, validation result, available usage, latency and any error.</p>
+  <p>Live, replay, cached and failed runs stay visibly distinct. Replay is an explicit recovery path and never counts as successful live evidence.</p>
+  <p>The provider credit balance, expiry, eligible products and the no cash path remain unverified. Live calls stop on provider or billing errors after two successes.</p>
+</div></section>
+
+<section id="controls" class="alt"><div class="wrap">
+  <h2>Deterministic controls, fees and idempotency</h2>
+  <p class="lede">Money and state change only through versioned, deterministic services and an authorized person.</p>
+  <div class="split">
+    <div class="card"><h4>Controls</h4><ul>
+      <li>Stable internal identifiers stay distinct from source identifiers and display numbers.</li>
+      <li>Expected versions protect corrections, links, rules, decisions, allocations and issuance.</li>
+      <li>Submitted revisions, evaluations, decisions, assessments, allocations and issued snapshots stay immutable and versioned.</li>
+    </ul></div>
+    <div class="card"><h4>Idempotency</h4><ul>
+      <li>An identical issuance retry returns the same permit record and the same trace.</li>
+      <li>A repeated command with a stale expected version is refused and recorded.</li>
+      <li>A refresh and a restart return the same trace and artifact for the case.</li>
+    </ul></div>
+  </div>
+  <h3>Fee example</h3>
+  <p class="lede">Example with fictional data. Synthetic demonstration of the built assessment.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Line</th><th>Declared valuation</th><th>Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Fixed review fee</td><td>Not applicable</td><td>100.00 USD</td></tr>
+      <tr><td>Variable component, 0.001 of valuation</td><td>50,000.00</td><td>50.00 USD</td></tr>
+      <tr><td>First assessment</td><td>50,000.00</td><td>150.00 USD</td></tr>
+      <tr><td>Reassessment</td><td>70,000.00</td><td>170.00 USD</td></tr>
+      <tr><td>After reallocating the 150.00 payment once</td><td>70,000.00</td><td>20.00 USD due, and issuance is blocked</td></tr>
+    </tbody>
+  </table></div>
+  <p>The variable component is rounded once, with a half up rule. Every assessment stores the rule version that produced it.</p>
+  <p class="mock-note">Example with fictional data. Values illustrate the implemented arithmetic and are not a tariff.</p>
+</div></section>
+
+<section id="security"><div class="wrap">
+  <h2>Access, security and audit</h2>
+  <p class="lede">Authorization is checked per action, in the server, against explicit grants.</p>
+  <div class="rules" role="list">
+    <div class="rule" role="listitem">{{icon:lock}}<h4>Identity</h4><p>One signed-in session, four selectable personas, explicit grants per action.</p></div>
+    <div class="rule" role="listitem">{{icon:user_check}}<h4>Least privilege</h4><p>A persona label grants nothing. Each action checks its own grant and its state rule.</p></div>
+    <div class="rule" role="listitem">{{icon:folder}}<h4>Data boundary</h4><p>The service binds loopback only. The browser holds no model credential.</p></div>
+    <div class="rule" role="listitem">{{icon:arrows_split}}<h4>Separation of duties</h4><p>Review approval and permit issuance stay different server-enforced actions.</p></div>
+    <div class="rule" role="listitem">{{icon:scroll}}<h4>Audit</h4><p>Accepted and denied sensitive actions are recorded in an append-only trail.</p></div>
+    <div class="rule" role="listitem">{{icon:seal_check}}<h4>Storage honesty</h4><p>The trail is append-only. It is not tamper-proof storage, and the page makes no such claim.</p></div>
+  </div>
+  <p>Governance holds domains, datasets, contracts, assignments, queues, grants and the field correction routes that connect them.</p>
+</div></section>
+
+<section id="verification" class="alt"><div class="wrap">
+  <h2>Verification architecture and release gates</h2>
+  <p class="lede">Nothing is reported as complete until the matching stored evidence exists.</p>
+  <p>The 57 P0 requirements map to implementation symbols and to executable checks. Three families of checks cover the behaviour that matters.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Family</th><th>Count</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td>Acceptance tests</td><td>20</td><td>Governance, edits, access, identity, source acknowledgements, impact, reviewer actions, invalid inputs, rules, model boundaries, concurrency, finance, complete persistence and link correction.</td></tr>
+      <tr><td>Supplementary checks</td><td>8</td><td>Safe normalization, source observations, value distinctions, controls, feedback, records protection, meaningful denominators and separated measurements.</td></tr>
+      <tr><td>Scenarios</td><td>11</td><td>The primary case, a false match, a credential scope and an unknown parcel. Profile history, source failure and issued history. Replay and idempotency, a malformed extraction, an unowned feed and financial exceptions.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Release gates</h3>
+  <ol class="rt rt6">
+    <li><span class="tile">{{icon:Flask}}</span><h4>Reset and checks <span class="chip ga">Verified</span></h4><p>A fresh reset, then every automated check.</p></li>
+    <li><span class="tile">{{icon:share_network}}</span><h4>Live model run <span class="chip ga">Verified</span></h4><p>One bounded live call inside the primary chain.</p></li>
+    <li><span class="tile">{{icon:power}}</span><h4>Restart <span class="chip ga">Verified</span></h4><p>A restart returns the same trace and artifact.</p></li>
+    <li><span class="tile">{{icon:git_pull_request}}</span><h4>Idempotent issuance <span class="chip ga">Verified</span></h4><p>A repeated issuance returns the same permit record.</p></li>
+    <li><span class="tile">{{icon:app_window}}</span><h4>Browser walkthrough <span class="chip ga">Verified</span></h4><p>The eight screens work on loopback.</p></li>
+    <li><span class="tile">{{icon:seal_check}}</span><h4>Evidence and handoff <span class="chip ga">Verified</span></h4><p>AT, VC and D outcomes are stored with artifact hashes.</p></li>
+  </ol>
+  <div class="sub">
+    <h3>Evidence status</h3>
+    <div class="bnc" role="img" aria-label="Example evidence status. Three groups list acceptance tests, supplementary checks, and scenarios. Every row passed.">
+      <div class="bnc-top"><b>Evidence status</b><span class="bnc-env">local</span></div>
+      <div class="bnc-work">
+        <div class="bnc-grp">
+          <h5>Acceptance tests</h5>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>Acceptance test (AT) identifiers 01 to 20</span><em>20 checks</em></div>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>Recorded outcomes</span><em>20 records</em></div>
+        </div>
+        <div class="bnc-grp">
+          <h5>Supplementary checks</h5>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>Supplementary check (VC) identifiers 01 to 08</span><em>8 checks</em></div>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>Recorded outcomes</span><em>8 records</em></div>
+        </div>
+        <div class="bnc-grp">
+          <h5>Scenarios</h5>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>D01 to D11</span><em>11 scenarios</em></div>
+          <div class="bnc-chk"><span class="st ok">Passed</span><span>Live model receipts</span><em>1 receipt</em></div>
+        </div>
+      </div>
+    </div>
+    <p class="mock-note">Example with fictional data. The status layout is an example, and no check has run.</p>
+  </div>
+  <p>The final local gate performs a fresh reset, complete checks and a bounded live model run. A restart, an idempotent issuance retry and a browser walkthrough on loopback follow.</p>
+</div></section>
+
+<section id="artifacts"><div class="wrap">
+  <h2>Artifacts</h2>
+  <p class="lede">This page is generated from a small, versioned workspace. Select a folder to see what it holds.</p>
+  <!-- Folder explorer (buttons filled from data.json explorer) and file tree (data.json tree). -->
+  <div class="cx-wrap">
+    <div class="cx-grid" id="cx-grid" role="group" aria-label="Workspace folders"></div>
+    <div class="cx-detail" id="cx-detail" aria-live="polite"></div>
+  </div>
+  <div class="sub">
+    <h3>All files</h3>
+    <div class="tree-tools">
+      <button type="button" class="tbtn" id="tree-expand">Expand all</button>
+      <button type="button" class="tbtn" id="tree-collapse">Collapse all</button>
+    </div>
+    <div class="tree" id="tree" role="tree" aria-label="File tree"></div>
+  </div>
+</div></section>
+
+<section id="decisions" class="alt"><div class="wrap">
+  <h2>Open decisions and limitations</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Decision</th><th>What is open</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Prototype source</td><td>The external click-through prototype source is absent. The application is built from the specification alone.</td></tr>
+      <tr><td>2</td><td>Provider account</td><td>The credit balance, the expiry, the eligible products and the no cash path are unverified.</td></tr>
+      <tr><td>3</td><td>Repository</td><td>Authentication to the required personal owner is pending. Remote creation, commits and pushes sit outside this build.</td></tr>
+      <tr><td>4</td><td>Competition</td><td>The final candidate, the event terms, the submission format, the deployment and the submission remain held.</td></tr>
+      <tr><td>5</td><td>Review gates</td><td>Brand, delivery owner and security review are open, so the internal review banner stays in place.</td></tr>
+      <tr><td>6</td><td>Architecture status</td><td>AS BUILT for the local candidate. Deployment and any change after this evidence need a new gate.</td></tr>
+      <tr><td>7</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
+      <tr><td>8</td><td>Fonts</td><td>The kit still embeds an unused Aptos face. Embedding rights outside the kit owner stay unverified.</td></tr>
+      <tr><td>9</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="mock-note">Sources: the fact sheet, the status record, the alignment note and the decision log, all read on 2026-10-26.</p>
+</div></section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Prepared by Vollen Data Services for ACME City, a fictional client. Internal draft. &copy; 2026 Vollen Data Services.</span>
+    <span class="foot-vds"><span class="vds">Vollen Data Services</span><span class="tag">Outcomes, Not Opinions.</span></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement,btn=document.querySelector('.vtheme-toggle'),mq=matchMedia('(prefers-color-scheme: dark)');
+  try{var s=localStorage.getItem('vollen-theme');if(s==='light'||s==='dark')root.setAttribute('data-theme',s);}catch(e){}
+  function cur(){return root.getAttribute('data-theme')||(mq.matches?'dark':'light');}
+  function paint(){var d=cur()==='dark';btn.innerHTML=d?'&#9728;':'&#9790;';btn.setAttribute('aria-pressed',d?'true':'false');btn.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');}
+  btn.addEventListener('click',function(){var n=cur()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('vollen-theme',n);}catch(e){}paint();});
+  try{mq.addEventListener('change',function(){var s=null;try{s=localStorage.getItem('vollen-theme');}catch(e){}if(!s)root.removeAttribute('data-theme');paint();});}catch(e){}
+  paint();
+})();
+</script>

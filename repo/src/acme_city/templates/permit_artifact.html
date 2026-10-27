@@ -1,0 +1,140 @@
+{#-
+  The printable artifact of a simulated permit.
+
+  The template renders only from the immutable snapshot of the permit, so the
+  same permit always produces the same bytes and the same artifact hash.
+  ACME City is fictional: the document never claims to be an official record
+  of a real municipality and it carries no other city's branding.
+-#}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ permit_number }} — simulated ACME City permit</title>
+    <style>
+{{ styles }}
+    </style>
+  </head>
+  <body>
+    <header class="banner">
+      <p class="simulated">Simulated demonstration document — not an official city record</p>
+      <h1>ACME City simulated building permit</h1>
+      <p class="fictional">
+        ACME City is a fictional municipality. Every record, fee, rule and permit in
+        this document is synthetic and exists only for this demonstration.
+      </p>
+    </header>
+
+    <section class="block">
+      <h2>Permit</h2>
+      <dl>
+        <dt>Permit number</dt>
+        <dd>{{ permit_number }}</dd>
+        <dt>Issued</dt>
+        <dd>{{ issued_at }}</dd>
+        <dt>Permit type</dt>
+        <dd>{{ permit_type }}</dd>
+        <dt>Application</dt>
+        <dd>{{ application_number }}</dd>
+        <dt>Status</dt>
+        <dd>{{ status }}</dd>
+      </dl>
+    </section>
+
+    <section class="block">
+      <h2>Project</h2>
+      <dl>
+        <dt>Description</dt>
+        <dd>{{ project_description }}</dd>
+        <dt>Applicant of record</dt>
+        <dd>{{ applicant }}</dd>
+        <dt>Site</dt>
+        <dd>{{ site }}</dd>
+        <dt>Declared valuation</dt>
+        <dd>{{ declared_valuation }}</dd>
+      </dl>
+    </section>
+
+    <section class="block">
+      <h2>Reviewer decision</h2>
+      <dl>
+        <dt>Outcome</dt>
+        <dd>{{ decision_outcome }}</dd>
+        <dt>Decided by</dt>
+        <dd>{{ decided_by }}</dd>
+        <dt>Decided at</dt>
+        <dd>{{ decided_at }}</dd>
+        <dt>Reason</dt>
+        <dd>{{ decision_reason }}</dd>
+      </dl>
+    </section>
+
+    <section class="block">
+      <h2>Rules applied</h2>
+      <p class="basis">Date basis: {{ date_basis }}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Version</th>
+            <th>Citation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rule in rules %}
+          <tr>
+            <td>{{ rule.rule_id }}</td>
+            <td>{{ rule.version }}</td>
+            <td>{{ rule.citation }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block">
+      <h2>Fee assessment</h2>
+      <p class="basis">
+        Fee schedule {{ fee_schedule_version }} — {{ fee_schedule_id }}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Charge</th>
+            <th>Quantity</th>
+            <th>Rate</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in fee_lines %}
+          <tr>
+            <td>{{ line.description }}</td>
+            <td>{{ line.quantity }}</td>
+            <td>{{ line.rate }}</td>
+            <td>{{ line.amount }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3">Total assessed</th>
+            <td>{{ assessed_total }}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="basis">Settled and allocated: {{ allocated_total }}</p>
+    </section>
+
+    <footer>
+      <p>
+        This permit was issued by a separate, authorized issuance action after a current
+        reviewer approval and an exact financial reconciliation. The artifact hash of
+        this document is recorded with the permit record, so that the printed copy can
+        be compared with the stored one.
+      </p>
+      <p class="simulated">Simulated demonstration document — not an official city record</p>
+    </footer>
+  </body>
+</html>

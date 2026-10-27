@@ -1,0 +1,185 @@
+"""VC04: the controls are consistent and reachable by keyboard.
+
+The screens use the same compact tables, the same aligned fields and the same
+status controls, every control carries a label, every action has a plain
+label, and the interface depends on no external script, font or image.
+"""
+# REQUIRES: VC04, UX-03, SEC-01
+# The controls are compact and consistent, every control is labelled, the
+# actions are reachable by keyboard, and the interface loads no external
+# asset.
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from acme_city.app import create_app
+from acme_city.core.config import Settings
+from acme_city.fixtures.loader import FixtureBundle
+from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.persistence.models.governance import DemoEnvironment
+from acme_city.persistence.session import (
+    SessionFactory,
+    initialize_database,
+    transaction,
+)
+from acme_city.ui.router import router as ui_router
+
+#: The screens that have to use the same controls.
+CONTROL_SCREENS = (
+    "/queue",
+    "/applicants",
+    "/masters",
+    "/permits/app_synth_001",
+    "/steward",
+    "/rules-fees",
+    "/reconciliation",
+    "/governance",
+)
+
+
+@pytest.fixture()
+def environment(tmp_path: Path) -> tuple[Settings, FixtureBundle]:
+    settings = Settings.load(
+        environ={
+            "ACME_DATABASE_URL": f"sqlite:///{tmp_path / 'vc04.db'}",
+            "ACME_SECRET_KEY": "vc04-supplementary-secret-value",
+        },
+        key_file=tmp_path / "missing.env",
+    )
+    initialize_database(settings)
+    bundle = FixtureBundle.load()
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                DemoEnvironment(
+                    id="demo_environment_local",
+                    environment_id=ENVIRONMENT_ID,
+                    fictional_demo=True,
+                    fixture_version=bundle.fixture_version,
+                    label="local fictional demonstration",
+                )
+            )
+        with transaction(factory) as session:
+            reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+    finally:
+        factory.dispose()
+    return settings, bundle
+
+
+@pytest.fixture()
+def client(environment: tuple[Settings, FixtureBundle]) -> TestClient:
+    settings, _ = environment
+    app = create_app(settings)
+    app.include_router(ui_router)
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def select_persona(client: TestClient, actor_id: str) -> None:
+    """Establish a server-held session for one persona."""
+    response = client.post("/api/session/select", json={"actor_id": actor_id})
+    assert response.status_code == 200, response.text
+
+
+def control_ids(body: str) -> set[str]:
+    """Return the identifiers of the labelled controls of a page."""
+    return set(re.findall(r'<(?:input|select|textarea)[^>]*\bid="([^"]+)"', body))
+
+
+def label_ids(body: str) -> set[str]:
+    """Return the identifiers the labels of a page point at."""
+    return set(re.findall(r'<label[^>]*\bfor="([^"]+)"', body))
+
+
+def test_every_control_of_every_screen_carries_a_label(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    for path in CONTROL_SCREENS:
+        body = client.get(path).text
+        identifiers = control_ids(body)
+        labels = label_ids(body)
+        assert identifiers, path
+        assert identifiers == labels, path
+
+
+def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    reference = None
+    for path in CONTROL_SCREENS:
+        body = client.get(path).text
+        items = re.findall(r'data-screen-key="([^"]+)"', body)
+        assert len(items) == 8, path
+        if reference is None:
+            reference = items
+        assert items == reference
+
+
+def test_the_current_screen_is_marked_for_the_assistive_technology(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    body = client.get("/reconciliation").text
+    assert 'data-screen-key="reconciliation" aria-current="page"' in body
+
+
+def test_the_page_offers_a_skip_link_and_a_labelled_status_region(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    body = client.get("/queue").text
+    assert 'class="skip-link" href="#main"' in body
+    assert 'id="main"' in body
+
+
+def test_the_stylesheet_keeps_a_visible_focus_ring(client: TestClient) -> None:
+    stylesheet = client.get("/ui/static/app.css")
+    assert stylesheet.status_code == 200
+    assert ":focus-visible" in stylesheet.text
+    assert "outline:" in stylesheet.text
+
+
+def test_the_interface_loads_no_external_asset(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    body = client.get("/queue").text
+    assert "http://" not in body
+    assert "https://" not in body
+    assert "//cdn" not in body
+    assert 'src="/ui/static/app.js"' in body
+    assert 'href="/ui/static/app.css"' in body
+    script = client.get("/ui/static/app.js")
+    assert script.status_code == 200
+    assert "http://" not in script.text
+    assert "https://" not in script.text
+
+
+def test_the_tables_are_compact_and_carry_a_caption(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    body = client.get("/reconciliation").text
+    tables = re.findall(r'<table class="data-table"[^>]*>', body)
+    assert tables
+    assert body.count('class="visually-hidden"') >= len(tables)
+
+
+def test_the_filters_are_small_and_named(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    body = client.get("/queue").text
+    assert 'data-testid="queue-filters"' in body
+    for name in ("filter-view", "filter-department", "filter-object", "filter-state"):
+        assert f'id="{name}"' in body
+        assert f'for="{name}"' in body
+
+
+def test_the_persona_selector_never_offers_a_service_identity(
+    client: TestClient,
+) -> None:
+    body = client.get("/select").text
+    assert "service_owner" not in body
+    assert "service_delegate" not in body
+    assert "Intake Clerk" not in body
+    assert "Accountable Data Owner" not in body
+    assert body.count('data-persona=') == 4

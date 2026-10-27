@@ -1,0 +1,62 @@
+{# The responsibility panel of a governed record.
+
+   It always answers the same eight questions: who owns the record, who
+   stewards it, which source owns the facts, where a correction is made, when
+   the source last updated the record, when it was last received, which
+   version is current, and which issues are open. #}
+<section class="panel panel-responsibility" aria-labelledby="responsibility-heading" data-testid="responsibility-panel">
+  <h2 id="responsibility-heading">Responsibility</h2>
+  <p class="muted">{{ responsibility.domain_label }} ({{ responsibility.domain_id }})</p>
+  <dl class="responsibility-grid">
+    <div class="responsibility-item">
+      <dt>Owner</dt>
+      <dd data-testid="responsibility-owner">{{ responsibility.owner_label }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Steward</dt>
+      <dd data-testid="responsibility-steward">{{ responsibility.steward_label }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Source</dt>
+      <dd data-testid="responsibility-source">{{ responsibility.source_label or 'not declared' }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Change this in</dt>
+      <dd data-testid="responsibility-change-this-in">{{ responsibility.change_this_in or 'not declared' }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Last source update</dt>
+      <dd data-testid="responsibility-last-source-update">{{ responsibility.last_source_update or 'unknown' }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Last received</dt>
+      <dd data-testid="responsibility-last-received">{{ responsibility.last_received or 'unknown' }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Version</dt>
+      <dd data-testid="responsibility-version">{{ responsibility.version if responsibility.version is not none else 'unknown' }}</dd>
+    </div>
+    <div class="responsibility-item">
+      <dt>Open issues</dt>
+      <dd data-testid="responsibility-open-issues">{{ responsibility.open_issues|length }}</dd>
+    </div>
+  </dl>
+  {% if responsibility.open_issues %}
+  <ul class="issue-list" data-testid="open-issues">
+    {% for issue in responsibility.open_issues %}
+    <li>
+      <span class="badge badge-{{ 'blocking' if issue.blocking else 'open' }}">{{ issue.status }}</span>
+      {{ issue.kind }}: {{ issue.type }} - {{ issue.detail }}
+      {% if issue.assigned_actor_id %}(assigned to {{ issue.assigned_actor_id }}){% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if responsibility.queue_label %}
+  <p class="muted" data-testid="responsibility-queue">
+    Queue {{ responsibility.queue }} ({{ responsibility.queue_label }}).
+    First review target: {{ responsibility.response_target }}. This is a configured
+    demonstration target and not a service promise.
+  </p>
+  {% endif %}
+</section>

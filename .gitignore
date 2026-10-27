@@ -1,0 +1,14 @@
+/intake/
+# Original prototype source and reviews of it stay local (Randall, 2026-10-27)
+/work/muse-jsx-review/
+*.jsx
+/work/ui-build/
+# Architecture-page build outputs and local runtime state (contain machine paths)
+/docs/solution-architecture/*/check/*
+!/docs/solution-architecture/*/check/verify_page.py
+/docs/solution-architecture/*/var/
+/docs/solution-architecture/*/work/
+/docs/solution-architecture/*/digests/
+/docs/solution-architecture/*/status-updates.jsonl
+/docs/solution-architecture/*/BUILD_REPORT.md
+__pycache__/

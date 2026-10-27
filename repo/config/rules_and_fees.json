@@ -1,0 +1,631 @@
+{
+  "catalog_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "One approved fictional catalogue. Every executable rule carries exactly one citation, the source mapping to the preserved baseline definition, an effective date and an approval state. Retrieval, execution, explanations and displayed citations use the same selected version. All values are synthetic demonstration inputs, not municipal law or fees.",
+  "permit_types": [
+    {
+      "permit_type_id": "permit_type_res_building",
+      "key": "res_building",
+      "label": "Residential building",
+      "review_route": "Building Safety plan review",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "valuation",
+        "contractor_license",
+        "front_setback_ft",
+        "lot_coverage_pct"
+      ],
+      "required_documents": [
+        "construction_plans",
+        "site_plan",
+        "energy_compliance_form"
+      ],
+      "source_mapping": {
+        "baseline_permit_type_key": "res_building",
+        "source_kind": "preserved_baseline_permit_configuration"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_deck_fence",
+      "key": "deck_fence",
+      "label": "Residential deck or fence",
+      "review_route": "Building Safety counter review",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "height_ft",
+        "setback_ft"
+      ],
+      "required_documents": [
+        "site_plan",
+        "material_spec"
+      ],
+      "source_mapping": {
+        "baseline_permit_type_key": "deck_fence",
+        "source_kind": "preserved_baseline_permit_configuration"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_com_ti",
+      "key": "com_ti",
+      "label": "Commercial tenant improvement",
+      "review_route": "Building Safety plan review with Fire",
+      "required_fields": [
+        "parcel_number",
+        "project_description",
+        "valuation",
+        "occupancy_load",
+        "contractor_license"
+      ],
+      "required_documents": [
+        "construction_plans",
+        "floor_plan",
+        "site_plan",
+        "fire_suppression_plan",
+        "business_license_copy"
+      ],
+      "source_mapping": {
+        "baseline_permit_type_key": "com_ti",
+        "source_kind": "preserved_baseline_permit_configuration"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_sign",
+      "key": "sign",
+      "label": "Sign",
+      "review_route": "Planning and zoning review",
+      "required_fields": [
+        "parcel_number",
+        "sign_type",
+        "sign_area_sqft"
+      ],
+      "required_documents": [
+        "sign_drawing",
+        "site_plan",
+        "owner_authorization"
+      ],
+      "source_mapping": {
+        "baseline_permit_type_key": "sign",
+        "source_kind": "preserved_baseline_permit_configuration"
+      }
+    },
+    {
+      "permit_type_id": "permit_type_row_encroachment",
+      "key": "row_encroachment",
+      "label": "Right-of-way or encroachment",
+      "review_route": "Public Works right-of-way review",
+      "required_fields": [
+        "work_description",
+        "work_duration_days",
+        "contractor_license"
+      ],
+      "required_documents": [
+        "traffic_control_plan",
+        "insurance_certificate",
+        "site_plan"
+      ],
+      "source_mapping": {
+        "baseline_permit_type_key": "row_encroachment",
+        "source_kind": "preserved_baseline_permit_configuration"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "rule_id": "RB-1",
+      "version": 1,
+      "permit_type": "res_building",
+      "kind": "executable",
+      "title": "Residential front setback",
+      "citation": "ACME Code §14-210",
+      "field_path": "front_setback_ft",
+      "operator": "min",
+      "limit_value": "20",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "Front setback is below the 20 ft minimum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RB-1",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-210",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RB-2",
+      "version": 1,
+      "permit_type": "res_building",
+      "kind": "executable",
+      "title": "Maximum lot coverage",
+      "citation": "ACME Code §14-212",
+      "field_path": "lot_coverage_pct",
+      "operator": "max",
+      "limit_value": "40",
+      "on_violate": "fail",
+      "condition": {
+        "field_above": {
+          "field": "lot_coverage_pct",
+          "value": 36
+        }
+      },
+      "message": "Lot coverage is above the 40 percent maximum.",
+      "condition_note": "Provide a lot coverage survey at final inspection.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RB-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-212",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RB-3",
+      "version": 1,
+      "permit_type": "res_building",
+      "kind": "executable",
+      "title": "Plan review and inspections",
+      "citation": "ACME Code §14-218",
+      "field_path": "valuation",
+      "operator": "max",
+      "limit_value": "400000",
+      "on_violate": "judgment",
+      "condition": null,
+      "message": "Valuation is above the administrative approval limit.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RB-3",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-218",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "DF-1",
+      "version": 1,
+      "permit_type": "deck_fence",
+      "kind": "executable",
+      "title": "Fence height, front yard",
+      "citation": "ACME Code §14-305",
+      "field_path": "height_ft",
+      "operator": "max",
+      "limit_value": "4",
+      "on_violate": "fail",
+      "condition": {
+        "structure_kind": "fence",
+        "location": "front"
+      },
+      "message": "Front yard fence is above the 4 ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "DF-1",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-305",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "DF-2",
+      "version": 1,
+      "permit_type": "deck_fence",
+      "kind": "executable",
+      "title": "Fence height, side and rear yard",
+      "citation": "ACME Code §14-306",
+      "field_path": "height_ft",
+      "operator": "max",
+      "limit_value": "6",
+      "on_violate": "fail",
+      "condition": {
+        "structure_kind": "fence",
+        "location": "side_rear"
+      },
+      "message": "Side or rear yard fence is above the 6 ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "DF-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-306",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "DF-3",
+      "version": 1,
+      "permit_type": "deck_fence",
+      "kind": "executable",
+      "title": "Deck rear setback",
+      "citation": "ACME Code §14-308",
+      "field_path": "setback_ft",
+      "operator": "min",
+      "limit_value": "8",
+      "on_violate": "fail",
+      "condition": {
+        "structure_kind": "deck"
+      },
+      "message": "Deck rear setback is below the 8 ft minimum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "DF-3",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-308",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "DF-4",
+      "version": 1,
+      "permit_type": "deck_fence",
+      "kind": "executable",
+      "title": "Deck footing inspection",
+      "citation": "ACME Code §14-311",
+      "field_path": "height_ft",
+      "operator": "max",
+      "limit_value": "2.5",
+      "on_violate": "condition",
+      "condition": {
+        "structure_kind": "deck"
+      },
+      "message": "Deck is above 30 in.",
+      "condition_note": "Footing inspection and guard rail required.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "DF-4",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-311",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CT-1",
+      "version": 1,
+      "permit_type": "com_ti",
+      "kind": "executable",
+      "title": "Fire review above 49 occupants",
+      "citation": "ACME Code §14-412",
+      "field_path": "occupancy_load",
+      "operator": "max",
+      "limit_value": "49",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "Occupancy load is above 49.",
+      "condition_note": "Fire Department sign-off before occupancy.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "CT-1",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-412",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CT-2",
+      "version": 1,
+      "permit_type": "com_ti",
+      "kind": "executable",
+      "title": "Large tenant improvement",
+      "citation": "ACME Code §14-415",
+      "field_path": "valuation",
+      "operator": "max",
+      "limit_value": "250000",
+      "on_violate": "judgment",
+      "condition": null,
+      "message": "Valuation is above the administrative approval limit.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "CT-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-415",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SG-1",
+      "version": 1,
+      "permit_type": "sign",
+      "kind": "executable",
+      "title": "Wall sign area",
+      "citation": "ACME Code §14-520",
+      "field_path": "sign_area_sqft",
+      "operator": "max",
+      "limit_value": "48",
+      "on_violate": "fail",
+      "condition": {
+        "sign_type": "wall"
+      },
+      "message": "Wall sign is above the 48 sq ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "SG-1",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-520",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SG-2",
+      "version": 1,
+      "permit_type": "sign",
+      "kind": "executable",
+      "title": "Monument sign area",
+      "citation": "ACME Code §14-521",
+      "field_path": "sign_area_sqft",
+      "operator": "max",
+      "limit_value": "64",
+      "on_violate": "fail",
+      "condition": {
+        "sign_type": "monument"
+      },
+      "message": "Monument sign is above the 64 sq ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "SG-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-521",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SG-3",
+      "version": 1,
+      "permit_type": "sign",
+      "kind": "executable",
+      "title": "Projecting sign area",
+      "citation": "ACME Code §14-522",
+      "field_path": "sign_area_sqft",
+      "operator": "max",
+      "limit_value": "24",
+      "on_violate": "fail",
+      "condition": {
+        "sign_type": "projecting"
+      },
+      "message": "Projecting sign is above the 24 sq ft maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "SG-3",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-522",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "SG-4",
+      "version": 1,
+      "permit_type": "sign",
+      "kind": "executable",
+      "title": "Illuminated sign electrical permit",
+      "citation": "ACME Code §14-523",
+      "field_path": "illuminated",
+      "operator": "equals",
+      "limit_value": "yes",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "Sign is illuminated.",
+      "condition_note": "Separate electrical permit required before installation.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "SG-4",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-523",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RW-1",
+      "version": 1,
+      "permit_type": "row_encroachment",
+      "kind": "executable",
+      "title": "Maximum encroachment term",
+      "citation": "ACME Code §16-118",
+      "field_path": "work_duration_days",
+      "operator": "max",
+      "limit_value": "90",
+      "on_violate": "fail",
+      "condition": null,
+      "message": "Work term is above the 90 day maximum.",
+      "condition_note": null,
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RW-1",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §16-118",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RW-2",
+      "version": 1,
+      "permit_type": "row_encroachment",
+      "kind": "executable",
+      "title": "Renewal beyond 30 days",
+      "citation": "ACME Code §16-114",
+      "field_path": "work_duration_days",
+      "operator": "max",
+      "limit_value": "30",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "Work term is above 30 days.",
+      "condition_note": "Renewal inspection at day 30.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RW-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §16-114",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "RW-3",
+      "version": 1,
+      "permit_type": "row_encroachment",
+      "kind": "executable",
+      "title": "Pavement restoration",
+      "citation": "ACME Code §16-120",
+      "field_path": "pavement_cut",
+      "operator": "equals",
+      "limit_value": "yes",
+      "on_violate": "condition",
+      "condition": null,
+      "message": "Work cuts the pavement.",
+      "condition_note": "Restore the pavement within 14 days of completion.",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "RW-3",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §16-120",
+        "citation_count": 1
+      }
+    },
+    {
+      "rule_id": "CT-2",
+      "version": 2,
+      "permit_type": "com_ti",
+      "kind": "executable",
+      "title": "Large tenant improvement",
+      "citation": "ACME Code §14-415",
+      "field_path": "valuation",
+      "operator": "max",
+      "limit_value": "300000",
+      "on_violate": "judgment",
+      "condition": null,
+      "message": "Valuation is above the administrative approval limit.",
+      "condition_note": null,
+      "effective_from": "2026-11-01T00:00:00Z",
+      "effective_to": null,
+      "status": "draft",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "baseline_rule_id": "CT-2",
+        "source_kind": "preserved_baseline_executable_rule",
+        "citation_selected": "ACME Code §14-415",
+        "citation_count": 1
+      }
+    }
+  ],
+  "fee_schedules": [
+    {
+      "fee_schedule_id": "fee_commercial_demo",
+      "version_label": "2026.1",
+      "effective_from": "2026-01-01T00:00:00Z",
+      "effective_to": null,
+      "currency": "USD",
+      "definition": {
+        "fixed_review_charge_cents": 10000,
+        "valuation_multiplier": "0.001",
+        "rounding": "ROUND_HALF_UP",
+        "rounding_scope": "variable_component_once",
+        "version_basis": "initial_submitted_at",
+        "formula": "100.00 USD fixed review charge plus 0.001 times the declared valuation; the variable component is rounded once to cents",
+        "example_valuation_cents": 5000000,
+        "example_variable_cents": 5000,
+        "example_total_cents": 15000,
+        "fictional_demo": true,
+        "classification": "fictional synthetic demonstration schedule, not a municipal fee schedule"
+      },
+      "status": "published",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    },
+    {
+      "fee_schedule_id": "fee_commercial_demo",
+      "version_label": "2026.2",
+      "effective_from": "2026-11-01T00:00:00Z",
+      "effective_to": null,
+      "currency": "USD",
+      "definition": {
+        "fixed_review_charge_cents": 10000,
+        "valuation_multiplier": "0.0015",
+        "rounding": "ROUND_HALF_UP",
+        "rounding_scope": "variable_component_once",
+        "version_basis": "initial_submitted_at",
+        "formula": "100.00 USD fixed review charge plus 0.0015 times the declared valuation; the variable component is rounded once to cents",
+        "fictional_demo": true,
+        "classification": "fictional synthetic demonstration schedule, not a municipal fee schedule"
+      },
+      "status": "draft",
+      "author_actor_id": "persona_data_steward",
+      "approver_actor_id": "persona_city_administrator",
+      "source_mapping": {
+        "source_kind": "proposed_demo_inputs_from_the_requirements_specification"
+      }
+    }
+  ]
+}

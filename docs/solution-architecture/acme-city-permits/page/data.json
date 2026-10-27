@@ -1,0 +1,1715 @@
+{
+  "defaultView": "system",
+  "stepsIntro": "Eight steps from an applicant submission to a separate simulated permit issuance.",
+  "zones": [
+    {
+      "x": 20,
+      "y": 40,
+      "w": 250,
+      "h": 600,
+      "label": "Signed-in personas"
+    },
+    {
+      "x": 290,
+      "y": 40,
+      "w": 800,
+      "h": 600,
+      "label": "Local application on loopback"
+    },
+    {
+      "x": 1140,
+      "y": 40,
+      "w": 270,
+      "h": 190,
+      "label": "External model service"
+    },
+    {
+      "x": 1140,
+      "y": 260,
+      "w": 270,
+      "h": 300,
+      "label": "Simulated source systems"
+    },
+    {
+      "x": 290,
+      "y": 660,
+      "w": 360,
+      "h": 110,
+      "label": "Architecture status record"
+    }
+  ],
+  "nodes": {
+    "p_applicant": {
+      "x": 34,
+      "y": 80,
+      "w": 222,
+      "h": 64,
+      "t": "Applicant",
+      "s": "Own profile, drafts, submissions",
+      "i": "users",
+      "cls": "plan"
+    },
+    "p_steward": {
+      "x": 34,
+      "y": 235,
+      "w": 222,
+      "h": 64,
+      "t": "Data Steward",
+      "s": "Intake, domain and MDM grants",
+      "i": "list_checks",
+      "cls": "plan"
+    },
+    "p_reviewer": {
+      "x": 34,
+      "y": 390,
+      "w": 222,
+      "h": 64,
+      "t": "Permit Reviewer",
+      "s": "Reviewer and issuing grants",
+      "i": "user_check",
+      "cls": "plan"
+    },
+    "p_admin": {
+      "x": 34,
+      "y": 545,
+      "w": 222,
+      "h": 64,
+      "t": "City Administrator",
+      "s": "Administrator, finance, auditor grants",
+      "i": "gear_six",
+      "cls": "plan"
+    },
+    "browser": {
+      "x": 310,
+      "y": 90,
+      "w": 230,
+      "h": 64,
+      "t": "Browser and UI",
+      "s": "Eight screens, no credential",
+      "i": "app_window",
+      "cls": "plan"
+    },
+    "api": {
+      "x": 580,
+      "y": 90,
+      "w": 230,
+      "h": 64,
+      "t": "FastAPI service",
+      "s": "Actions, validation, state machine",
+      "i": "code",
+      "cls": "plan"
+    },
+    "musead": {
+      "x": 850,
+      "y": 90,
+      "w": 230,
+      "h": 64,
+      "t": "Muse adapter",
+      "s": "Strict schema and validation",
+      "i": "head_circuit",
+      "cls": "plan"
+    },
+    "gov": {
+      "x": 310,
+      "y": 230,
+      "w": 230,
+      "h": 64,
+      "t": "Governance and authority",
+      "s": "Domains, grants, queues, routes",
+      "i": "lock",
+      "cls": "plan"
+    },
+    "ingest": {
+      "x": 310,
+      "y": 370,
+      "w": 230,
+      "h": 64,
+      "t": "Ingestion and adapters",
+      "s": "Snapshots, quarantine, ordering",
+      "i": "file_lock",
+      "cls": "plan"
+    },
+    "registry": {
+      "x": 850,
+      "y": 230,
+      "w": 230,
+      "h": 64,
+      "t": "Registry and stewardship",
+      "s": "Canonical identities, crosswalks",
+      "i": "share_network",
+      "cls": "plan"
+    },
+    "permits": {
+      "x": 580,
+      "y": 370,
+      "w": 230,
+      "h": 64,
+      "t": "Permit operations and rules",
+      "s": "Submissions, evaluations, decisions",
+      "i": "file_text",
+      "cls": "plan"
+    },
+    "finance": {
+      "x": 310,
+      "y": 510,
+      "w": 230,
+      "h": 64,
+      "t": "Finance and issuance",
+      "s": "Versioned fees, allocation, issue",
+      "i": "target",
+      "cls": "plan"
+    },
+    "db": {
+      "x": 850,
+      "y": 370,
+      "w": 230,
+      "h": 64,
+      "t": "SQLite, outbox, audit",
+      "s": "Versions, outbox, audit trail",
+      "i": "database",
+      "cls": "plan"
+    },
+    "evidence": {
+      "x": 580,
+      "y": 510,
+      "w": 230,
+      "h": 64,
+      "t": "Evidence and tests",
+      "s": "AT, VC, D outcomes, manifests",
+      "i": "Flask",
+      "cls": "plan"
+    },
+    "muse": {
+      "x": 1154,
+      "y": 80,
+      "w": 242,
+      "h": 64,
+      "t": "Meta Muse Standard",
+      "s": "muse-spark-1.3, bounded call",
+      "i": "Bolt"
+    },
+    "src_permit": {
+      "x": 1154,
+      "y": 300,
+      "w": 242,
+      "h": 64,
+      "t": "Permitting source",
+      "s": "Profiles, decisions, issuance",
+      "i": "stack",
+      "cls": "plan"
+    },
+    "src_gis": {
+      "x": 1154,
+      "y": 385,
+      "w": 242,
+      "h": 64,
+      "t": "GIS source",
+      "s": "Parcels, addresses, zoning",
+      "i": "path",
+      "cls": "plan"
+    },
+    "src_erp": {
+      "x": 1154,
+      "y": 470,
+      "w": 242,
+      "h": 64,
+      "t": "ERP and Finance source",
+      "s": "Licensing, accounts, payments",
+      "i": "cylinder",
+      "cls": "plan"
+    },
+    "status": {
+      "x": 310,
+      "y": 700,
+      "w": 230,
+      "h": 64,
+      "t": "Status record",
+      "s": "As Built, Verified",
+      "i": "scroll"
+    }
+  },
+  "edges": {
+    "e_p_app": {
+      "p": [
+        [
+          256,
+          112
+        ],
+        [
+          262,
+          112
+        ],
+        [
+          262,
+          100
+        ],
+        [
+          310,
+          100
+        ]
+      ]
+    },
+    "e_p_stw": {
+      "p": [
+        [
+          256,
+          267
+        ],
+        [
+          272,
+          267
+        ],
+        [
+          272,
+          110
+        ],
+        [
+          310,
+          110
+        ]
+      ]
+    },
+    "e_p_rev": {
+      "p": [
+        [
+          256,
+          422
+        ],
+        [
+          282,
+          422
+        ],
+        [
+          282,
+          120
+        ],
+        [
+          310,
+          120
+        ]
+      ]
+    },
+    "e_p_adm": {
+      "p": [
+        [
+          256,
+          577
+        ],
+        [
+          292,
+          577
+        ],
+        [
+          292,
+          130
+        ],
+        [
+          310,
+          130
+        ]
+      ]
+    },
+    "e_browser_api": {
+      "p": [
+        [
+          540,
+          122
+        ],
+        [
+          580,
+          122
+        ]
+      ],
+      "lbl": {
+        "permit": [
+          "request",
+          560,
+          78
+        ],
+        "system": [
+          "request",
+          560,
+          78
+        ],
+        "verify": [
+          "request",
+          560,
+          78
+        ]
+      }
+    },
+    "e_api_gov": {
+      "p": [
+        [
+          580,
+          112
+        ],
+        [
+          548,
+          112
+        ],
+        [
+          548,
+          262
+        ],
+        [
+          540,
+          262
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "grant check",
+          548,
+          190
+        ],
+        "system": [
+          "grant check",
+          548,
+          190
+        ],
+        "verify": [
+          "grant check",
+          548,
+          190
+        ]
+      }
+    },
+    "e_api_ingest": {
+      "p": [
+        [
+          580,
+          124
+        ],
+        [
+          556,
+          124
+        ],
+        [
+          556,
+          350
+        ],
+        [
+          460,
+          350
+        ],
+        [
+          460,
+          370
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "source intake",
+          508,
+          338
+        ],
+        "permit": [
+          "source intake",
+          508,
+          338
+        ],
+        "system": [
+          "source intake",
+          508,
+          338
+        ]
+      }
+    },
+    "e_api_registry": {
+      "p": [
+        [
+          810,
+          118
+        ],
+        [
+          840,
+          118
+        ],
+        [
+          840,
+          262
+        ],
+        [
+          850,
+          262
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "identity",
+          788,
+          262
+        ],
+        "permit": [
+          "identity",
+          788,
+          262
+        ],
+        "system": [
+          "identity",
+          788,
+          262
+        ]
+      }
+    },
+    "e_api_permits": {
+      "p": [
+        [
+          695,
+          154
+        ],
+        [
+          695,
+          370
+        ]
+      ],
+      "lbl": {
+        "permit": [
+          "permit decisions",
+          695,
+          265
+        ],
+        "system": [
+          "permit decisions",
+          695,
+          265
+        ]
+      }
+    },
+    "e_api_finance": {
+      "p": [
+        [
+          580,
+          136
+        ],
+        [
+          564,
+          136
+        ],
+        [
+          564,
+          542
+        ],
+        [
+          540,
+          542
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "fee assessment",
+          450,
+          470
+        ],
+        "permit": [
+          "fee assessment",
+          450,
+          470
+        ],
+        "system": [
+          "fee assessment",
+          450,
+          470
+        ]
+      }
+    },
+    "e_api_store": {
+      "p": [
+        [
+          810,
+          128
+        ],
+        [
+          818,
+          128
+        ],
+        [
+          818,
+          402
+        ],
+        [
+          850,
+          402
+        ]
+      ],
+      "lbl": {
+        "system": [
+          "records",
+          818,
+          308
+        ],
+        "verify": [
+          "records",
+          818,
+          308
+        ]
+      }
+    },
+    "e_api_evidence": {
+      "p": [
+        [
+          580,
+          148
+        ],
+        [
+          572,
+          148
+        ],
+        [
+          572,
+          542
+        ],
+        [
+          580,
+          542
+        ]
+      ],
+      "lbl": {
+        "permit": [
+          "check results",
+          572,
+          300
+        ],
+        "system": [
+          "check results",
+          572,
+          300
+        ]
+      }
+    },
+    "e_api_musead": {
+      "p": [
+        [
+          810,
+          98
+        ],
+        [
+          850,
+          98
+        ]
+      ],
+      "lbl": {
+        "muse": [
+          "model request",
+          830,
+          56
+        ],
+        "permit": [
+          "model request",
+          830,
+          56
+        ],
+        "system": [
+          "model request",
+          830,
+          56
+        ]
+      }
+    },
+    "e_muse_back": {
+      "p": [
+        [
+          850,
+          108
+        ],
+        [
+          810,
+          108
+        ]
+      ],
+      "lbl": {
+        "muse": [
+          "validated proposal",
+          830,
+          180
+        ],
+        "system": [
+          "validated proposal",
+          830,
+          180
+        ]
+      }
+    },
+    "e_muse_req": {
+      "p": [
+        [
+          1080,
+          104
+        ],
+        [
+          1154,
+          104
+        ]
+      ],
+      "lbl": {
+        "muse": [
+          "strict request",
+          1117,
+          164
+        ],
+        "permit": [
+          "strict request",
+          1117,
+          164
+        ],
+        "system": [
+          "strict request",
+          1117,
+          164
+        ]
+      }
+    },
+    "e_muse_resp": {
+      "p": [
+        [
+          1154,
+          126
+        ],
+        [
+          1080,
+          126
+        ]
+      ],
+      "lbl": {
+        "muse": [
+          "proposal only",
+          1117,
+          196
+        ],
+        "permit": [
+          "proposal only",
+          1117,
+          196
+        ],
+        "system": [
+          "proposal only",
+          1117,
+          196
+        ]
+      }
+    },
+    "e_db_evidence": {
+      "p": [
+        [
+          810,
+          410
+        ],
+        [
+          830,
+          410
+        ],
+        [
+          830,
+          542
+        ],
+        [
+          810,
+          542
+        ]
+      ],
+      "lbl": {
+        "muse": [
+          "evidence",
+          830,
+          470
+        ],
+        "permit": [
+          "evidence",
+          830,
+          470
+        ],
+        "system": [
+          "evidence",
+          830,
+          470
+        ],
+        "verify": [
+          "evidence",
+          830,
+          470
+        ]
+      }
+    },
+    "e_src_registry": {
+      "p": [
+        [
+          1154,
+          417
+        ],
+        [
+          1106,
+          417
+        ],
+        [
+          1106,
+          310
+        ],
+        [
+          965,
+          310
+        ],
+        [
+          965,
+          294
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "source snapshot",
+          1030,
+          310
+        ],
+        "system": [
+          "source snapshot",
+          1030,
+          310
+        ]
+      }
+    },
+    "e_write_permit": {
+      "p": [
+        [
+          1080,
+          390
+        ],
+        [
+          1106,
+          390
+        ],
+        [
+          1106,
+          332
+        ],
+        [
+          1154,
+          332
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "write",
+          1106,
+          362
+        ],
+        "system": [
+          "write",
+          1106,
+          362
+        ]
+      }
+    },
+    "e_ack_permit": {
+      "p": [
+        [
+          1154,
+          352
+        ],
+        [
+          1106,
+          352
+        ],
+        [
+          1106,
+          420
+        ],
+        [
+          1080,
+          420
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "acknowledged",
+          1106,
+          444
+        ]
+      }
+    },
+    "e_write_erp": {
+      "p": [
+        [
+          1080,
+          400
+        ],
+        [
+          1106,
+          400
+        ],
+        [
+          1106,
+          486
+        ],
+        [
+          1154,
+          486
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "publish",
+          1106,
+          480
+        ],
+        "system": [
+          "publish",
+          1106,
+          480
+        ]
+      }
+    },
+    "e_ack_erp": {
+      "p": [
+        [
+          1154,
+          516
+        ],
+        [
+          1106,
+          516
+        ],
+        [
+          1106,
+          410
+        ],
+        [
+          1080,
+          410
+        ]
+      ],
+      "lbl": {
+        "authority": [
+          "acknowledged",
+          1106,
+          548
+        ]
+      }
+    }
+  },
+  "views": {
+    "system": {
+      "edges": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm",
+        "e_browser_api",
+        "e_api_gov",
+        "e_api_ingest",
+        "e_api_registry",
+        "e_api_permits",
+        "e_api_finance",
+        "e_api_store",
+        "e_api_evidence",
+        "e_api_musead",
+        "e_muse_back",
+        "e_muse_req",
+        "e_muse_resp",
+        "e_db_evidence",
+        "e_src_registry",
+        "e_write_permit",
+        "e_write_erp"
+      ],
+      "user": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm"
+      ],
+      "nodes": [
+        "p_applicant",
+        "p_steward",
+        "p_reviewer",
+        "p_admin",
+        "browser",
+        "api",
+        "musead",
+        "gov",
+        "ingest",
+        "registry",
+        "permits",
+        "finance",
+        "db",
+        "evidence",
+        "muse",
+        "src_permit",
+        "src_gis",
+        "src_erp"
+      ],
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Signed-in user action"
+        ],
+        [
+          "var(--edge)",
+          "Built component link"
+        ]
+      ],
+      "note": "Every component is built and verified locally. Signed-in personas act through the browser, the service governs authority, and the model only proposes."
+    },
+    "permit": {
+      "edges": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_browser_api",
+        "e_api_ingest",
+        "e_api_registry",
+        "e_api_permits",
+        "e_api_finance",
+        "e_api_store",
+        "e_api_evidence",
+        "e_api_musead",
+        "e_muse_back",
+        "e_muse_req",
+        "e_muse_resp",
+        "e_db_evidence"
+      ],
+      "user": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev"
+      ],
+      "nodes": [
+        "p_applicant",
+        "p_steward",
+        "p_reviewer",
+        "browser",
+        "api",
+        "musead",
+        "ingest",
+        "registry",
+        "permits",
+        "finance",
+        "db",
+        "evidence",
+        "muse"
+      ],
+      "hide": [
+        "p_admin",
+        "gov",
+        "src_permit",
+        "src_gis",
+        "src_erp",
+        "status"
+      ],
+      "steps": true,
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Active step"
+        ],
+        [
+          "var(--edge)",
+          "Rest of the journey"
+        ]
+      ],
+      "note": "The primary journey SYN-APP-001. Decisions, money and issuance stay with deterministic services and named personas."
+    },
+    "authority": {
+      "edges": [
+        "e_p_app",
+        "e_p_stw",
+        "e_browser_api",
+        "e_api_gov",
+        "e_api_ingest",
+        "e_api_registry",
+        "e_api_finance",
+        "e_api_store",
+        "e_src_registry",
+        "e_write_permit",
+        "e_ack_permit",
+        "e_write_erp",
+        "e_ack_erp"
+      ],
+      "user": [
+        "e_p_app",
+        "e_p_stw"
+      ],
+      "nodes": [
+        "p_applicant",
+        "p_steward",
+        "browser",
+        "api",
+        "gov",
+        "ingest",
+        "registry",
+        "finance",
+        "db",
+        "src_permit",
+        "src_gis",
+        "src_erp"
+      ],
+      "hide": [
+        "p_reviewer",
+        "p_admin",
+        "permits",
+        "musead",
+        "muse",
+        "evidence",
+        "status"
+      ],
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Signed-in user action"
+        ],
+        [
+          "var(--edge)",
+          "Snapshot, write and acknowledgement"
+        ]
+      ],
+      "note": "Sources own their facts. The registry owns identity, and a write becomes authoritative only after the source adapter accepts a version."
+    },
+    "muse": {
+      "edges": [
+        "e_browser_api",
+        "e_api_musead",
+        "e_muse_req",
+        "e_muse_resp",
+        "e_muse_back",
+        "e_api_store",
+        "e_db_evidence"
+      ],
+      "nodes": [
+        "browser",
+        "api",
+        "musead",
+        "muse",
+        "db",
+        "evidence"
+      ],
+      "hide": [
+        "p_applicant",
+        "p_steward",
+        "p_reviewer",
+        "p_admin",
+        "gov",
+        "ingest",
+        "registry",
+        "permits",
+        "finance",
+        "src_permit",
+        "src_gis",
+        "src_erp",
+        "status"
+      ],
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Bounded model exchange"
+        ]
+      ],
+      "note": "The model reaches the application only through the adapter. It has no edge to the database and no edge to a source."
+    },
+    "verify": {
+      "edges": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm",
+        "e_browser_api",
+        "e_api_gov",
+        "e_api_store",
+        "e_db_evidence"
+      ],
+      "user": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm"
+      ],
+      "nodes": [
+        "p_applicant",
+        "p_steward",
+        "p_reviewer",
+        "p_admin",
+        "browser",
+        "api",
+        "gov",
+        "db",
+        "evidence"
+      ],
+      "hide": [
+        "ingest",
+        "registry",
+        "permits",
+        "finance",
+        "musead",
+        "muse",
+        "src_permit",
+        "src_gis",
+        "src_erp",
+        "status"
+      ],
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Signed-in user action"
+        ],
+        [
+          "var(--edge)",
+          "Evidence collection"
+        ]
+      ],
+      "note": "Evidence comes from the services and the checks. No figure counts as complete until the stored record exists."
+    },
+    "status": {
+      "edges": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm",
+        "e_browser_api",
+        "e_api_gov",
+        "e_api_ingest",
+        "e_api_registry",
+        "e_api_permits",
+        "e_api_finance",
+        "e_api_store",
+        "e_api_evidence",
+        "e_api_musead",
+        "e_muse_back",
+        "e_muse_req",
+        "e_muse_resp",
+        "e_db_evidence",
+        "e_src_registry",
+        "e_write_permit",
+        "e_write_erp"
+      ],
+      "user": [
+        "e_p_app",
+        "e_p_stw",
+        "e_p_rev",
+        "e_p_adm"
+      ],
+      "nodes": [
+        "p_applicant",
+        "p_steward",
+        "p_reviewer",
+        "p_admin",
+        "browser",
+        "api",
+        "musead",
+        "gov",
+        "ingest",
+        "registry",
+        "permits",
+        "finance",
+        "db",
+        "evidence",
+        "muse",
+        "src_permit",
+        "src_gis",
+        "src_erp",
+        "status"
+      ],
+      "legend": [
+        [
+          "var(--edge)",
+          "Dashed outline, built locally, not deployed"
+        ],
+        [
+          "var(--edge-on)",
+          "The one existing record"
+        ]
+      ],
+      "note": "The status record holds 57 outlined requirements, 57 implemented, 57 verified, 22 tasks, and 22 verified tasks."
+    }
+  },
+  "steps": [
+    {
+      "h": "Submit",
+      "d": "The applicant submits immutable plans and documents for a fictional tenant improvement.",
+      "n": [
+        "p_applicant",
+        "browser",
+        "api"
+      ],
+      "e": [
+        "e_p_app",
+        "e_browser_api"
+      ]
+    },
+    {
+      "h": "Receive",
+      "d": "The service stores the submission, hashes the payload and opens the intake work.",
+      "n": [
+        "api",
+        "ingest",
+        "db"
+      ],
+      "e": [
+        "e_api_ingest",
+        "e_api_store"
+      ]
+    },
+    {
+      "h": "Ground",
+      "d": "The application builds a bounded context from versioned fictional documents and source snapshots.",
+      "n": [
+        "ingest",
+        "registry",
+        "db"
+      ],
+      "e": [
+        "e_api_registry",
+        "e_api_store"
+      ]
+    },
+    {
+      "h": "Propose",
+      "d": "A live Standard call returns a structured proposal, and the application validates it.",
+      "n": [
+        "api",
+        "musead",
+        "muse"
+      ],
+      "e": [
+        "e_api_musead",
+        "e_muse_req",
+        "e_muse_resp"
+      ]
+    },
+    {
+      "h": "Steward",
+      "d": "A Data Steward records the match or the correction against exact evidence.",
+      "n": [
+        "p_steward",
+        "browser",
+        "api",
+        "registry"
+      ],
+      "e": [
+        "e_p_stw",
+        "e_browser_api",
+        "e_api_registry"
+      ]
+    },
+    {
+      "h": "Review",
+      "d": "A Permit Reviewer makes an actual review decision on the recorded evaluation.",
+      "n": [
+        "p_reviewer",
+        "browser",
+        "api",
+        "permits"
+      ],
+      "e": [
+        "e_p_rev",
+        "e_browser_api",
+        "e_api_permits"
+      ]
+    },
+    {
+      "h": "Assess",
+      "d": "The approved catalog prices the case, and Finance confirms the allocation.",
+      "n": [
+        "api",
+        "finance",
+        "db"
+      ],
+      "e": [
+        "e_api_finance",
+        "e_api_store"
+      ]
+    },
+    {
+      "h": "Issue",
+      "d": "A separate issuance action records the permit, and a retry returns the same artifact.",
+      "n": [
+        "api",
+        "permits",
+        "finance",
+        "evidence"
+      ],
+      "e": [
+        "e_api_permits",
+        "e_api_finance",
+        "e_db_evidence"
+      ]
+    }
+  ],
+  "badges": [
+    [
+      310,
+      90
+    ],
+    [
+      310,
+      370
+    ],
+    [
+      850,
+      230
+    ],
+    [
+      850,
+      90
+    ],
+    [
+      34,
+      235
+    ],
+    [
+      34,
+      390
+    ],
+    [
+      310,
+      510
+    ],
+    [
+      580,
+      370
+    ]
+  ],
+  "info": {
+    "p_applicant": {
+      "k": "Built persona",
+      "t": "Applicant",
+      "r": "Applicant persona",
+      "b": "Selectable in the dropdown. It manages its own authorized profile, its drafts, its submissions and its requested responses.",
+      "f": [
+        "Cannot see other applicants, match candidates or staff evidence.",
+        "A persona label grants no authority on its own."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "p_steward": {
+      "k": "Built persona",
+      "t": "Data Steward",
+      "r": "Data Steward persona",
+      "b": "Carries explicit Intake Clerk, Domain Steward and Domain MDM Steward grants for scoped queues.",
+      "f": [
+        "Reviews quality issues, proposes source corrections and decides permitted identity links.",
+        "Cannot approve or issue permits, and cannot allocate money."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "p_reviewer": {
+      "k": "Built persona",
+      "t": "Permit Reviewer",
+      "r": "Permit Reviewer persona",
+      "b": "Carries explicit Permit Reviewer and Issuing Officer grants.",
+      "f": [
+        "Review approval and the separate Issue permit action stay different server-enforced actions.",
+        "Cannot edit credentials, source facts or receipts."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "p_admin": {
+      "k": "Built persona",
+      "t": "City Administrator",
+      "r": "City Administrator persona",
+      "b": "Carries separately declared Administrator, Governance Lead, Data Owner, Finance and Auditor grants.",
+      "f": [
+        "Configuration rights do not create business approval rights.",
+        "Finance allocation and owner approvals follow their own grants and state rules."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "browser": {
+      "k": "Built",
+      "t": "Browser and UI",
+      "r": "Browser and UI",
+      "b": "Eight Jinja screens with small vanilla JavaScript enhancements, served by the local service on loopback.",
+      "f": [
+        "The browser holds no model credential and no write path to a source.",
+        "Current master, submitted, proposed and issued values stay visually distinct."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "api": {
+      "k": "Built",
+      "t": "FastAPI service",
+      "r": "FastAPI service",
+      "b": "One Python 3.12 service. It owns the action checks, the state machine, the deterministic arithmetic and the model adapter.",
+      "f": [
+        "Binds loopback only.",
+        "Every authoritative action is checked here against its grant and its expected version."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "musead": {
+      "k": "Built",
+      "t": "Muse adapter",
+      "r": "Muse adapter",
+      "b": "Builds the bounded request, calls the model and validates every returned identifier, excerpt and citation.",
+      "f": [
+        "Strict JSON Schema, allowlisted identifiers, bounded inputs and outputs, no web search, no tool calls, concurrency one.",
+        "A rejected proposal is recorded as rejected and creates nothing."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "gov": {
+      "k": "Built",
+      "t": "Governance and authority",
+      "r": "Governance and authority",
+      "b": "Domains, datasets, contracts, assignments, queues, grants and the field correction routes that connect them.",
+      "f": [
+        "Explicit grants per action, checked in the service.",
+        "Configuration rights never become business approval rights."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "ingest": {
+      "k": "Built",
+      "t": "Ingestion and adapters",
+      "r": "Ingestion and adapters",
+      "b": "Immutable snapshots, raw payload hashes, validation, quarantine, source ordering, freshness and denominators.",
+      "f": [
+        "Three persisted in-process adapters stand in for the Permitting, GIS and ERP and Finance sources.",
+        "Approved does not mean synchronized."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "registry": {
+      "k": "Built",
+      "t": "Registry and stewardship",
+      "r": "Registry and stewardship",
+      "b": "Stable canonical identities, proposals, crosswalk decisions, provenance, trusted views and reversible links.",
+      "f": [
+        "Owns identity, not source-owned facts.",
+        "A link correction commits a new crosswalk version and claims nothing about the source."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "permits": {
+      "k": "Built",
+      "t": "Permit operations and rules",
+      "r": "Permit operations and rules",
+      "b": "Profiles, immutable submissions, documents, evaluations, recommendations, actual decisions, issuance and impact review.",
+      "f": [
+        "One approved versioned catalog drives the fee assessment.",
+        "The model never makes a reviewer decision."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "finance": {
+      "k": "Built",
+      "t": "Finance and issuance",
+      "r": "Finance and issuance",
+      "b": "Exact assessments, payment events, allocations, reconciliation, exceptions and the separate issuance action.",
+      "f": [
+        "The variable component is rounded once, with a half up rule.",
+        "An outstanding balance blocks issuance."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "db": {
+      "k": "Built",
+      "t": "SQLite, outbox, audit",
+      "r": "SQLite, outbox, audit",
+      "b": "One SQLite database, one durable outbox for publication and acknowledgements, and an append-only action trail.",
+      "f": [
+        "The trail records accepted and denied sensitive actions.",
+        "It is append-only storage, and the page makes no tamper-proof claim."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "evidence": {
+      "k": "Built",
+      "t": "Evidence and tests",
+      "r": "Evidence and tests",
+      "b": "Requirement mappings, acceptance, supplementary and scenario outcomes, manifests, artifact hashes and browser checks.",
+      "f": [
+        "No figure counts as complete until the stored record exists.",
+        "The register currently holds no passed or recorded outcome."
+      ],
+      "status": "ex",
+      "sl": "Verified"
+    },
+    "muse": {
+      "k": "External service",
+      "t": "Meta Muse Standard",
+      "r": "Meta Muse Standard",
+      "b": "The model endpoint used for the live extraction in the primary chain.",
+      "f": [
+        "Standard mode only, and never a contributor model.",
+        "No primary-chain live call has completed, so no live receipt exists.",
+        "The provider balance and the no-cash path are unverified."
+      ],
+      "status": "ex",
+      "sl": "Not run"
+    },
+    "src_permit": {
+      "k": "Fictional source",
+      "t": "Permitting source",
+      "r": "Permitting source",
+      "b": "Owns applicant profiles, applications, contractor registration, decisions and issuance.",
+      "f": [
+        "A correction becomes authoritative only after this adapter accepts a version.",
+        "The adapter acknowledges the accepted version to the application."
+      ],
+      "status": "ex",
+      "sl": "Simulated"
+    },
+    "src_gis": {
+      "k": "Fictional source",
+      "t": "GIS source",
+      "r": "GIS source",
+      "b": "Owns parcels, official addresses and units, and zoning facts.",
+      "f": [
+        "Snapshots feed the registry and its trusted views.",
+        "The registry records lineage, and it never edits the parcel."
+      ],
+      "status": "ex",
+      "sl": "Simulated"
+    },
+    "src_erp": {
+      "k": "Fictional source",
+      "t": "ERP and Finance source",
+      "r": "ERP and Finance source",
+      "b": "Owns business licensing, finance accounts and payment events.",
+      "f": [
+        "The outbox publishes a payment command here, and the adapter acknowledges it.",
+        "Money is never set by a model output."
+      ],
+      "status": "ex",
+      "sl": "Simulated"
+    },
+    "status": {
+      "k": "Architecture status",
+      "t": "Status record",
+      "r": "STATUS.json",
+      "b": "The one architecture status record behind this page. It holds the counts that the status panel and this node report.",
+      "f": [
+        "57 requirements outlined, 57 implemented, 57 verified.",
+        "22 tasks, 22 verified. Complete: local user test.",
+        "20 acceptance tests with 20 passed, 8 supplementary checks with 8 passed, and 11 scenarios with 11 recorded.",
+        "Live Muse primary chain succeeded."
+      ],
+      "status": "ga",
+      "sl": "Verified"
+    }
+  },
+  "explorer": {
+    "initial": "facts",
+    "folders": {
+      "facts": {
+        "p": "facts.md",
+        "t": "Fact sheet",
+        "ic": "file_text",
+        "w": [
+          "<code>facts.md</code>: the single source for every claim and figure on this page."
+        ],
+        "y": "Parent owned. It changes only when a recorded source changes."
+      },
+      "status": {
+        "p": "STATUS.json",
+        "t": "Status record",
+        "ic": "file_code",
+        "w": [
+          "<code>STATUS.json</code>: the one architecture status record."
+        ],
+        "y": "The status panel and the status node are rewritten from it at each accepted phase transition."
+      },
+      "page": {
+        "p": "page/",
+        "t": "Page sources",
+        "ic": "folder",
+        "w": [
+          "<code>page.json</code>: title, description, brand, output and denylist.",
+          "<code>body.src.html</code>: the markup, including the status panel block.",
+          "<code>data.json</code>: diagram views, nodes, edges, steps and panel text.",
+          "<code>extra.css</code>: the brand layer plus the page styles."
+        ],
+        "y": "Rebuilt with the installed kit and the Linux checker wrapper."
+      },
+      "check": {
+        "p": "check/",
+        "t": "Check output",
+        "ic": "list_checks",
+        "w": [
+          "<code>check_report.md</code>: the functional probe and the writing checks.",
+          "<code>screenshot_light_top.png</code>: the other light and dark renders sit beside it."
+        ],
+        "y": "Written by the kit checker on the build host."
+      }
+    }
+  },
+  "tree": {
+    "n": "docs/solution-architecture/acme-city-permits/",
+    "open": true,
+    "ic": "folder",
+    "c": [
+      {
+        "n": "facts.md",
+        "ic": "file_text",
+        "h": "the fact sheet"
+      },
+      {
+        "n": "STATUS.json",
+        "ic": "file_code",
+        "h": "the status record"
+      },
+      {
+        "n": "page/",
+        "ic": "folder",
+        "c": [
+          {
+            "n": "page.json",
+            "ic": "file_code",
+            "h": "title, output, denylist"
+          },
+          {
+            "n": "body.src.html",
+            "ic": "file_code",
+            "h": "the page markup"
+          },
+          {
+            "n": "data.json",
+            "ic": "file_code",
+            "h": "diagram and panel data"
+          },
+          {
+            "n": "extra.css",
+            "ic": "file_code",
+            "h": "brand layer and page styles"
+          }
+        ]
+      },
+      {
+        "n": "check/",
+        "ic": "folder",
+        "c": [
+          {
+            "n": "check_report.md",
+            "ic": "file_text",
+            "h": "probe and writing checks"
+          },
+          {
+            "n": "screenshots",
+            "ic": "list_magnifying_glass",
+            "h": "light and dark renders"
+          }
+        ]
+      },
+      {
+        "n": "BUILD_REPORT.md",
+        "ic": "file_text",
+        "h": "commands, hashes, checker results"
+      },
+      {
+        "n": "PROJECT_NOTE.md",
+        "ic": "file_text",
+        "h": "output path and rebuild commands"
+      }
+    ]
+  }
+}

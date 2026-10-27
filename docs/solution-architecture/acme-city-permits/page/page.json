@@ -1,0 +1,30 @@
+{
+  "title": "ACME City Permits Architecture",
+  "description": "Registry MDM, governed permit operations, bounded Muse proposals and evidence-first delivery.",
+  "brand": "Globex",
+  "client": "ACME City",
+  "output": "vollen_acme-city-permits_solution-architecture_2026-10-26.html",
+  "banner": "Internal draft. [REVIEW REQUIRED] before external use. As built, local candidate.",
+  "denylist": [
+    "Globex",
+    "Initech",
+    "INITECH",
+    "RailFlow",
+    "Westerville",
+    "/home/",
+    "Randall",
+    "GB10",
+    "127.0.0.1",
+    "192.168",
+    "password",
+    "api key",
+    "apikey",
+    "api_key",
+    "META_API_KEY",
+    "secret",
+    "mailto:",
+    "gmail",
+    "grant balance",
+    "prize"
+  ]
+}

@@ -1,0 +1,695 @@
+{
+  "contract_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Requirement identifiers, titles and planned verification identifiers only. No requirement text, source path, or implementation claim is recorded here. A planned check identifier is a verification target, never proof that a behavior exists or passed.",
+  "requirement_count": 57,
+  "acceptance_test_count": 20,
+  "supplementary_check_count": 8,
+  "scenario_count": 11,
+  "requirements": [
+    {
+      "requirement_id": "AI-01",
+      "title": "Bounded model work",
+      "area": "Muse and model evidence",
+      "acceptance_test_ids": [
+        "AT14"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "AI-02",
+      "title": "Structured outputs",
+      "area": "Muse and model evidence",
+      "acceptance_test_ids": [
+        "AT14"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "AI-03",
+      "title": "Traceable runs",
+      "area": "Muse and model evidence",
+      "acceptance_test_ids": [
+        "AT15"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "AI-04",
+      "title": "Honest replay and failure",
+      "area": "Muse and model evidence",
+      "acceptance_test_ids": [
+        "AT15"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "AI-05",
+      "title": "Separated evaluation truth",
+      "area": "Muse and model evidence",
+      "acceptance_test_ids": [
+        "AT14"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-01",
+      "title": "Controlled transitions",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT08",
+        "AT13"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-02",
+      "title": "Accepted source changes only",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT08"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-03",
+      "title": "Impact and dependencies",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT09",
+        "AT20"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-04",
+      "title": "Historical preservation",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT10",
+        "AT20"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-05",
+      "title": "Reliable delivery",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT08",
+        "AT19"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "CHG-06",
+      "title": "Concurrent changes",
+      "area": "changes, publication and concurrency",
+      "acceptance_test_ids": [
+        "AT16"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EDIT-01",
+      "title": "Explicit actions",
+      "area": "explicit edits and history",
+      "acceptance_test_ids": [
+        "AT02"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EDIT-02",
+      "title": "Permission explanations",
+      "area": "explicit edits and history",
+      "acceptance_test_ids": [
+        "AT02"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EDIT-03",
+      "title": "Change preview",
+      "area": "explicit edits and history",
+      "acceptance_test_ids": [
+        "AT02"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EDIT-04",
+      "title": "Source acknowledgment",
+      "area": "explicit edits and history",
+      "acceptance_test_ids": [
+        "AT08"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EDIT-05",
+      "title": "Profile and historical facts",
+      "area": "explicit edits and history",
+      "acceptance_test_ids": [
+        "AT04"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "EVAL-01",
+      "title": "Meaningful denominators",
+      "area": "evaluation and evidence",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC07"
+      ]
+    },
+    {
+      "requirement_id": "EVAL-02",
+      "title": "Separate measurements",
+      "area": "evaluation and evidence",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC08"
+      ]
+    },
+    {
+      "requirement_id": "EVAL-03",
+      "title": "Reproducible evidence",
+      "area": "evaluation and evidence",
+      "acceptance_test_ids": [
+        "AT19"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "FIN-01",
+      "title": "Deterministic assessment",
+      "area": "fees and finance",
+      "acceptance_test_ids": [
+        "AT17"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "FIN-02",
+      "title": "Explicit reassessment",
+      "area": "fees and finance",
+      "acceptance_test_ids": [
+        "AT17"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "FIN-03",
+      "title": "Source payment integrity",
+      "area": "fees and finance",
+      "acceptance_test_ids": [
+        "AT18"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "FIN-04",
+      "title": "Governed allocations",
+      "area": "fees and finance",
+      "acceptance_test_ids": [
+        "AT17",
+        "AT18"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "FIN-05",
+      "title": "Financial completion",
+      "area": "fees and finance",
+      "acceptance_test_ids": [
+        "AT18"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-01",
+      "title": "Ownership before publication",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-02",
+      "title": "Inherited assignments",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-03",
+      "title": "Actionable stewardship",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-04",
+      "title": "Visible responsibility",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-05",
+      "title": "Attribute authority",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01",
+        "AT07"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-06",
+      "title": "Owner escalation",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "GOV-07",
+      "title": "Assignment maintenance",
+      "area": "governance and ownership",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "ING-01",
+      "title": "Registered contracts",
+      "area": "source registration and intake",
+      "acceptance_test_ids": [
+        "AT01"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "ING-02",
+      "title": "Raw preservation and validation",
+      "area": "source registration and intake",
+      "acceptance_test_ids": [
+        "AT12"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "ING-03",
+      "title": "Idempotent ingestion",
+      "area": "source registration and intake",
+      "acceptance_test_ids": [
+        "AT05",
+        "AT08"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "ING-04",
+      "title": "Safe normalization",
+      "area": "source registration and intake",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC01"
+      ]
+    },
+    {
+      "requirement_id": "ING-05",
+      "title": "Source observations",
+      "area": "source registration and intake",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC02"
+      ]
+    },
+    {
+      "requirement_id": "MDM-01",
+      "title": "Canonical identity and crosswalk",
+      "area": "registry MDM and identity",
+      "acceptance_test_ids": [
+        "AT05"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "MDM-02",
+      "title": "Evidence-based proposals",
+      "area": "registry MDM and identity",
+      "acceptance_test_ids": [
+        "AT06"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "MDM-03",
+      "title": "False-match prevention",
+      "area": "registry MDM and identity",
+      "acceptance_test_ids": [
+        "AT06"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "MDM-04",
+      "title": "Source authority and provenance",
+      "area": "registry MDM and identity",
+      "acceptance_test_ids": [
+        "AT07"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "MDM-05",
+      "title": "Reversible link decisions",
+      "area": "registry MDM and identity",
+      "acceptance_test_ids": [
+        "AT20"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-01",
+      "title": "Applicant contributions",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT04"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-02",
+      "title": "Validation before recommendation",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT12"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-03",
+      "title": "Versioned evaluation",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT09"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-04",
+      "title": "Actual human decision",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT11"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-05",
+      "title": "Separate issuance",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT10",
+        "AT19"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "PER-06",
+      "title": "Date basis",
+      "area": "permit workflow",
+      "acceptance_test_ids": [
+        "AT13"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "REF-01",
+      "title": "One approved catalog",
+      "area": "rule and reference catalogs",
+      "acceptance_test_ids": [
+        "AT13"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "REF-02",
+      "title": "Effective publication",
+      "area": "rule and reference catalogs",
+      "acceptance_test_ids": [
+        "AT13"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "SEC-01",
+      "title": "Server-enforced roles",
+      "area": "security and records",
+      "acceptance_test_ids": [
+        "AT03"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "SEC-02",
+      "title": "Record scope",
+      "area": "security and records",
+      "acceptance_test_ids": [
+        "AT03"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "SEC-03",
+      "title": "Controlled writes",
+      "area": "security and records",
+      "acceptance_test_ids": [
+        "AT03"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "SEC-04",
+      "title": "Minimum records protection",
+      "area": "security and records",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC06"
+      ]
+    },
+    {
+      "requirement_id": "UX-01",
+      "title": "Persistent responsibility panel",
+      "area": "user experience",
+      "acceptance_test_ids": [
+        "AT02"
+      ],
+      "supplementary_check_ids": []
+    },
+    {
+      "requirement_id": "UX-02",
+      "title": "Clear data distinctions",
+      "area": "user experience",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC03"
+      ]
+    },
+    {
+      "requirement_id": "UX-03",
+      "title": "Consistent controls",
+      "area": "user experience",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC04"
+      ]
+    },
+    {
+      "requirement_id": "UX-04",
+      "title": "Operational feedback",
+      "area": "user experience",
+      "acceptance_test_ids": [],
+      "supplementary_check_ids": [
+        "VC05"
+      ]
+    }
+  ],
+  "acceptance_tests": [
+    {
+      "test_id": "AT01",
+      "title": "Ownership and publication"
+    },
+    {
+      "test_id": "AT02",
+      "title": "Edit destinations"
+    },
+    {
+      "test_id": "AT03",
+      "title": "Direct access controls"
+    },
+    {
+      "test_id": "AT04",
+      "title": "Profile versus submission"
+    },
+    {
+      "test_id": "AT05",
+      "title": "Stable identities"
+    },
+    {
+      "test_id": "AT06",
+      "title": "Ambiguous and false matches"
+    },
+    {
+      "test_id": "AT07",
+      "title": "Source authority"
+    },
+    {
+      "test_id": "AT08",
+      "title": "Source acknowledgment"
+    },
+    {
+      "test_id": "AT09",
+      "title": "Pending case impact"
+    },
+    {
+      "test_id": "AT10",
+      "title": "Issued history"
+    },
+    {
+      "test_id": "AT11",
+      "title": "Actual reviewer action"
+    },
+    {
+      "test_id": "AT12",
+      "title": "Invalid inputs"
+    },
+    {
+      "test_id": "AT13",
+      "title": "Rule consistency and dates"
+    },
+    {
+      "test_id": "AT14",
+      "title": "Model boundary"
+    },
+    {
+      "test_id": "AT15",
+      "title": "Live and replay"
+    },
+    {
+      "test_id": "AT16",
+      "title": "Concurrent edits"
+    },
+    {
+      "test_id": "AT17",
+      "title": "Repeatable fees"
+    },
+    {
+      "test_id": "AT18",
+      "title": "Payments and allocations"
+    },
+    {
+      "test_id": "AT19",
+      "title": "Complete persisted chain"
+    },
+    {
+      "test_id": "AT20",
+      "title": "Link correction"
+    }
+  ],
+  "supplementary_checks": [
+    {
+      "check_id": "VC01",
+      "title": "Normalization preserves meaning"
+    },
+    {
+      "check_id": "VC02",
+      "title": "Import counts and freshness are explainable"
+    },
+    {
+      "check_id": "VC03",
+      "title": "Current submitted proposed and issued values are distinct"
+    },
+    {
+      "check_id": "VC04",
+      "title": "Usable record and review controls"
+    },
+    {
+      "check_id": "VC05",
+      "title": "Feedback reflects actual persistence and delivery"
+    },
+    {
+      "check_id": "VC06",
+      "title": "Fictional assets secrets and audit controls"
+    },
+    {
+      "check_id": "VC07",
+      "title": "Evaluation denominators match observed records"
+    },
+    {
+      "check_id": "VC08",
+      "title": "Baseline simulation and observed results stay separate"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "D01",
+      "title": "Main case"
+    },
+    {
+      "scenario_id": "D02",
+      "title": "False friend"
+    },
+    {
+      "scenario_id": "D03",
+      "title": "Credential"
+    },
+    {
+      "scenario_id": "D04",
+      "title": "Unknown parcel"
+    },
+    {
+      "scenario_id": "D05",
+      "title": "Profile update"
+    },
+    {
+      "scenario_id": "D06",
+      "title": "Source correction"
+    },
+    {
+      "scenario_id": "D07",
+      "title": "Historical change"
+    },
+    {
+      "scenario_id": "D08",
+      "title": "Replayed transactions"
+    },
+    {
+      "scenario_id": "D09",
+      "title": "Invalid extraction"
+    },
+    {
+      "scenario_id": "D10",
+      "title": "Unowned feed"
+    },
+    {
+      "scenario_id": "D11",
+      "title": "Financial exception"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{# The shared frame of the ACME City demonstration interface.
+
+   The banner states that every record on the screen is fictional.  The
+   navigation holds the eight required screens.  The feedback region reports
+   the outcome of the last action of the acting persona. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} - ACME City permit demonstration</title>
+  <link rel="stylesheet" href="/ui/static/app.css">
+</head>
+<body data-screen="{{ screen }}">
+<a class="skip-link" href="#main">Skip to the main content</a>
+
+<div class="demo-banner" role="note" data-testid="demo-banner">
+  <strong>Fictional ACME City demonstration.</strong>
+  Every person, address, rule, fee, payment and permit shown here is synthetic.
+  This service is not a municipal system and it is not connected to any real
+  city or to any real source system.
+</div>
+
+<header class="app-header">
+  <p class="app-title"><a href="/queue">ACME City permit workspace</a></p>
+  <div class="persona">
+    {% if actor %}
+    <form class="persona-form" method="post" action="/ui/actor">
+      <label for="persona-select">Acting persona</label>
+      <select id="persona-select" name="actor_id" data-testid="persona-select">
+        {% for persona in personas %}
+        <option value="{{ persona.actor_id }}" {% if persona.actor_id == actor.actor_id %}selected{% endif %}>{{ persona.label }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="next" value="{{ request.url.path }}">
+      <button type="submit" class="button">Switch persona</button>
+    </form>
+    <form method="post" action="/ui/end" class="persona-end">
+      <button type="submit" class="button button-quiet">End session</button>
+    </form>
+    <p class="persona-current" data-testid="acting-persona">
+      Acting as <strong>{{ actor.label }}</strong>
+    </p>
+    {% else %}
+    <p class="persona-current"><a class="button" href="/select">Choose a persona</a></p>
+    {% endif %}
+  </div>
+</header>
+
+{% if navigation %}
+<nav class="app-nav" aria-label="Screens">
+  <ul>
+    {% for item in navigation %}
+    <li><a href="{{ item.href }}" data-screen-key="{{ item.key }}" {% if item.key == screen %}aria-current="page"{% endif %}>{{ item.label }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+{% endif %}
+
+{% if feedback %}
+<section id="ui-feedback-region" class="feedback {% if feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
+         role="status" aria-live="polite" data-testid="feedback" data-outcome="{{ feedback.outcome }}">
+  <h2 class="feedback-title">Last action</h2>
+  <p class="feedback-message" data-testid="feedback-message">{{ feedback.reason }}</p>
+  <dl class="feedback-detail">
+    <div><dt>Destination</dt><dd data-testid="feedback-destination">{{ feedback.destination or 'not applicable' }}</dd></div>
+    <div><dt>State</dt><dd data-testid="feedback-state">{{ feedback.state or 'not applicable' }}</dd></div>
+    <div><dt>Pending</dt><dd data-testid="feedback-pending">{% if feedback.pending %}yes, the source or the consumer has not acknowledged yet{% else %}no{% endif %}</dd></div>
+    <div><dt>Version</dt><dd data-testid="feedback-version">{{ feedback.after_version if feedback.after_version is not none else 'not applicable' }}</dd></div>
+    <div><dt>Affected</dt><dd data-testid="feedback-affected">{{ feedback.affected|join(', ') if feedback.affected else 'none' }}</dd></div>
+    <div><dt>Recorded</dt><dd>{{ feedback.occurred_at }}</dd></div>
+  </dl>
+</section>
+{% else %}
+<section id="ui-feedback-region" class="feedback feedback-empty" role="status" aria-live="polite"
+         data-testid="feedback" data-outcome="none">
+  <h2 class="feedback-title">Last action</h2>
+  <p class="feedback-message" data-testid="feedback-message">No action has been performed in this session yet.</p>
+</section>
+{% endif %}
+
+<main id="main">
+  {% if error %}
+  <section class="panel panel-error" role="alert" data-testid="error-panel">
+    <h2>{{ error.title }}</h2>
+    <p>{{ error.message }}</p>
+    {% if error.code %}<p class="muted">Error code: {{ error.code }}</p>{% endif %}
+    {% if error.back %}<p><a href="{{ error.back }}">Return to the previous screen</a></p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if screen == 'select' %}
+  <section class="panel" aria-labelledby="select-heading">
+    <h1 id="select-heading">Choose a persona</h1>
+    <p>
+      The selector offers exactly the four human personas of the demonstration.
+      A service identity is never selectable, and the browser never sends a
+      role: the server resolves the acting persona and its grants.
+    </p>
+    <ul class="persona-list" data-testid="persona-list">
+      {% for persona in personas %}
+      <li>
+        <form method="post" action="/ui/actor">
+          <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
+          <input type="hidden" name="next" value="/queue">
+          <button type="submit" class="button" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}">{{ persona.label }}</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="app-footer">
+  <p>
+    Fictional ACME City demonstration. The rules, the fee schedule and the
+    permit numbers are synthetic and are not the law, the fees or the practice
+    of any real jurisdiction.
+  </p>
+</footer>
+
+<script src="/ui/static/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+{
+  "catalog_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Domain ownership is resolved through effective-dated assignments, never copied onto a record. Each queue binds an active primary steward, a delegate, an escalation owner and a configurable first-review target. The response target is a configured demonstration value, not a service promise.",
+  "domains": [
+    {
+      "domain_id": "applicants",
+      "label": "Applicant profiles and party relationships",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "accountable_owner_role_label": "Building Safety director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_applicants",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "default_source_system_id": "permitting",
+      "default_dataset_key": "applicant_profiles",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "permits",
+      "label": "Applications and issued permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "accountable_owner_role_label": "Building Safety director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_permits",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "default_source_system_id": "permitting",
+      "default_dataset_key": "applications_and_permits",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "contractors",
+      "label": "Contractor registration",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "accountable_owner_role_label": "Building Safety director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_contractors",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "default_source_system_id": "permitting",
+      "default_dataset_key": "contractor_register",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "businesses",
+      "label": "Businesses and business licenses",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "accountable_owner_role_label": "Finance director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_businesses",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "default_source_system_id": "erp_finance",
+      "default_dataset_key": "business_licensing_register",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "parcels",
+      "label": "Parcels",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "accountable_owner_role_label": "Planning and Development Services director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_parcels",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_gis",
+      "default_source_system_id": "gis",
+      "default_dataset_key": "parcel_register",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "addresses",
+      "label": "Official addresses and units",
+      "accountable_owner_actor_id": "service_owner_cio",
+      "accountable_owner_role_label": "Chief Information Officer through GIS",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_addresses",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_gis",
+      "default_source_system_id": "gis",
+      "default_dataset_key": "address_register",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "zoning",
+      "label": "Zoning and planning rules",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "accountable_owner_role_label": "Planning and Development Services director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_zoning",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_gis",
+      "default_source_system_id": "gis",
+      "default_dataset_key": "zoning_register",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "building_rules",
+      "label": "Building and intake rules",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "accountable_owner_role_label": "Building Safety director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_building_rules",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_platform",
+      "default_source_system_id": null,
+      "default_dataset_key": "approved_rules",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "finance",
+      "label": "Fee schedules assessments and payments",
+      "accountable_owner_actor_id": "service_owner_finance",
+      "accountable_owner_role_label": "Finance director",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_finance",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_erp_finance",
+      "default_source_system_id": "erp_finance",
+      "default_dataset_key": "financial_records",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "records",
+      "label": "Documents and records retention",
+      "accountable_owner_actor_id": "service_owner_records",
+      "accountable_owner_role_label": "City Clerk or Records owner",
+      "owner_strategy": null,
+      "steward_queue_id": "queue_records",
+      "steward_strategy": null,
+      "steward_queue_strategy": null,
+      "system_custodian_actor_id": "service_custodian_platform",
+      "default_source_system_id": null,
+      "default_dataset_key": "document_and_audit_repository",
+      "authoritative_component_id": null,
+      "cross_domain_dispute_actor_id": null,
+      "assignment_effective_from_basis": "configured_demo_assignment_epoch",
+      "assignment_effective_to": null,
+      "record_assignment_resolution": "effective domain plus dataset policy, then only approved scoped exceptions; preserve historical assignments"
+    },
+    {
+      "domain_id": "registry_links",
+      "label": "Canonical identities and source links",
+      "accountable_owner_actor_id": null,
+      "accountable_owner_role_label": null,
+      "owner_strategy": "resolve the relevant entity domain owner; no single universal business owner",
+      "steward_queue_id": null,
+      "steward_strategy": "explicit domain_mdm_steward grant in the relevant entity domain",
+      "steward_queue_strategy": "route through relevant entity domain queue",
+      "system_custodian_actor_id": "service_custodian_platform",
+      "default_source_system_id": null,
+      "default_dataset_key": null,
+      "authoritative_component_id": "registry",
+      "cross_domain_dispute_actor_id": "service_governance_lead",
+      "assignment_effective_from_basis": null,
+      "assignment_effective_to": null,
+      "record_assignment_resolution": null
+    }
+  ],
+  "steward_queues": [
+    {
+      "queue_id": "queue_applicants",
+      "domain_id": "applicants",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_building_safety",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_permits",
+      "domain_id": "permits",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_building_safety",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_contractors",
+      "domain_id": "contractors",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_building_safety",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_businesses",
+      "domain_id": "businesses",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_finance",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_parcels",
+      "domain_id": "parcels",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_planning",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_addresses",
+      "domain_id": "addresses",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_cio",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_zoning",
+      "domain_id": "zoning",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_planning",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_building_rules",
+      "domain_id": "building_rules",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_building_safety",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_finance",
+      "domain_id": "finance",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_finance",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    },
+    {
+      "queue_id": "queue_records",
+      "domain_id": "records",
+      "primary_actor_id": "persona_data_steward",
+      "delegate_actor_id": "service_delegate_steward",
+      "escalation_actor_id": "service_owner_records",
+      "cross_domain_escalation_actor_id": "service_governance_lead",
+      "first_review_target": {
+        "quantity": 1,
+        "unit": "business_day",
+        "calendar_basis": "configured_demo_calendar",
+        "configurable": true,
+        "service_promise": false
+      }
+    }
+  ],
+  "assignment_rules": [
+    "Resolve effective domain/dataset assignments with approved scoped overrides.",
+    "Store historical assignment references with completed actions.",
+    "Reassign active work before deactivating its steward.",
+    "Preview affected datasets and cases before authority-policy publication.",
+    "A rule or authority-policy author cannot approve their own version.",
+    "Ownership, technical administration, and business permissions are separate."
+  ],
+  "current_responsibility_display": [
+    "Owner",
+    "Steward",
+    "Source",
+    "Change this in",
+    "Version",
+    "Last source update",
+    "Last received",
+    "Open issues"
+  ],
+  "registration_publication_gate": {
+    "raw_staging_allowed_when_incomplete": true,
+    "trusted_publication_allowed_when_incomplete": false,
+    "required_bindings": [
+      "source_system_id",
+      "source_dataset_id",
+      "domain",
+      "accountable_owner",
+      "active_primary_steward",
+      "active_delegate",
+      "escalation_owner",
+      "system_custodian",
+      "data_contract",
+      "field_authority_policy",
+      "correction_route"
+    ],
+    "unassigned_record_behavior": "Create assigned governance registration work; do not invent authority or a trusted canonical fact."
+  },
+  "correction_paths": {
+    "source_owned_fact": [
+      "Requested",
+      "In review",
+      "Awaiting approval when policy requires",
+      "Approved",
+      "Sent to source",
+      "Source acknowledged",
+      "Published",
+      "Closed"
+    ],
+    "registry_identity_link": [
+      "Requested",
+      "In review",
+      "Awaiting approval when policy requires",
+      "Approved",
+      "Registry committed",
+      "Published",
+      "Closed"
+    ],
+    "failure_labels": [
+      "Rejected",
+      "Synchronization failed",
+      "Approved awaiting source",
+      "Source rejected"
+    ],
+    "invariants": [
+      "Source-owned facts change only after accepted source version acknowledgment.",
+      "Rejected/delayed corrections keep the last acknowledged display value.",
+      "Decision-relevant disputes hold dependent approval or issuance until resolved.",
+      "Registry committed is distinct from source acknowledged.",
+      "Identical command retry keeps operation, expected version, and payload identical.",
+      "Changed payload or expected version uses a new command linked to the case.",
+      "Late acknowledgments cannot replace a newer accepted source version.",
+      "Published work closes only after required acknowledgments and assignment of remaining review work."
+    ]
+  }
+}

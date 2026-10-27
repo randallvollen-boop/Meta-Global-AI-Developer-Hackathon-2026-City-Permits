@@ -1,0 +1,1863 @@
+{
+  "inventory_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "fixture_version": "2026.10.26-1",
+  "database_schema_revision": "0001",
+  "note": "The requirement-linked executable check inventory. Every requirement names the implementation symbols that satisfy it and the collected test nodes that verify it. A planned check identifier is a verification target, never proof that a behavior exists or passed.",
+  "families": {
+    "unit": {
+      "paths": [
+        "tests/unit"
+      ],
+      "mode": "deterministic"
+    },
+    "api": {
+      "paths": [
+        "tests/api"
+      ],
+      "mode": "deterministic"
+    },
+    "security": {
+      "paths": [
+        "tests/security"
+      ],
+      "mode": "deterministic"
+    },
+    "acceptance": {
+      "paths": [
+        "tests/acceptance"
+      ],
+      "mode": "deterministic"
+    },
+    "supplementary": {
+      "paths": [
+        "tests/supplementary"
+      ],
+      "mode": "deterministic"
+    },
+    "scenarios": {
+      "paths": [
+        "tests/scenarios"
+      ],
+      "mode": "deterministic"
+    },
+    "evaluator": {
+      "paths": [
+        "tests/evaluator"
+      ],
+      "mode": "deterministic"
+    },
+    "integration": {
+      "paths": [
+        "tests/integration"
+      ],
+      "mode": "deterministic"
+    },
+    "regression": {
+      "paths": [
+        "tests/regression"
+      ],
+      "mode": "deterministic"
+    },
+    "browser": {
+      "paths": [
+        "tests/browser"
+      ],
+      "mode": "browser"
+    }
+  },
+  "requirements": [
+    {
+      "requirement_id": "AI-01",
+      "title": "Bounded model work",
+      "area": "Muse and model evidence",
+      "implementation_symbols": [
+        "src/acme_city/muse/service.py:MuseService.run"
+      ],
+      "check_ids": [
+        "AT14"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at14.py::test_a_malformed_value_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_a_substantive_extraction_is_validated_against_the_stored_document",
+        "tests/acceptance/test_at14.py::test_an_invented_quotation_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unauthorized_document_instruction_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_an_unknown_identifier_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unsupported_citation_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_muse_never_publishes_prices_decides_or_issues",
+        "tests/acceptance/test_at14.py::test_output_that_is_not_json_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_the_runtime_payload_carries_no_evaluator_truth"
+      ]
+    },
+    {
+      "requirement_id": "AI-02",
+      "title": "Structured outputs",
+      "area": "Muse and model evidence",
+      "implementation_symbols": [
+        "src/acme_city/muse/validation.py:validate_extraction_output"
+      ],
+      "check_ids": [
+        "AT14"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at14.py::test_a_malformed_value_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_a_substantive_extraction_is_validated_against_the_stored_document",
+        "tests/acceptance/test_at14.py::test_an_invented_quotation_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unauthorized_document_instruction_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_an_unknown_identifier_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unsupported_citation_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_muse_never_publishes_prices_decides_or_issues",
+        "tests/acceptance/test_at14.py::test_output_that_is_not_json_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_the_runtime_payload_carries_no_evaluator_truth"
+      ]
+    },
+    {
+      "requirement_id": "AI-03",
+      "title": "Traceable runs",
+      "area": "Muse and model evidence",
+      "implementation_symbols": [
+        "src/acme_city/muse/service.py:MuseService.run"
+      ],
+      "check_ids": [
+        "AT15"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at15.py::test_a_failed_live_run_is_preserved",
+        "tests/acceptance/test_at15.py::test_a_live_run_records_every_field_of_the_trace",
+        "tests/acceptance/test_at15.py::test_a_proposal_score_is_labeled_uncalibrated",
+        "tests/acceptance/test_at15.py::test_a_replay_has_to_be_selected_explicitly",
+        "tests/acceptance/test_at15.py::test_an_applicant_never_reaches_the_model_boundary",
+        "tests/acceptance/test_at15.py::test_live_replay_and_cached_runs_are_three_different_records",
+        "tests/acceptance/test_at15.py::test_the_endpoints_expose_the_recorded_runs"
+      ]
+    },
+    {
+      "requirement_id": "AI-04",
+      "title": "Honest replay and failure",
+      "area": "Muse and model evidence",
+      "implementation_symbols": [
+        "src/acme_city/muse/service.py:MuseService.run"
+      ],
+      "check_ids": [
+        "AT15"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at15.py::test_a_failed_live_run_is_preserved",
+        "tests/acceptance/test_at15.py::test_a_live_run_records_every_field_of_the_trace",
+        "tests/acceptance/test_at15.py::test_a_proposal_score_is_labeled_uncalibrated",
+        "tests/acceptance/test_at15.py::test_a_replay_has_to_be_selected_explicitly",
+        "tests/acceptance/test_at15.py::test_an_applicant_never_reaches_the_model_boundary",
+        "tests/acceptance/test_at15.py::test_live_replay_and_cached_runs_are_three_different_records",
+        "tests/acceptance/test_at15.py::test_the_endpoints_expose_the_recorded_runs"
+      ]
+    },
+    {
+      "requirement_id": "AI-05",
+      "title": "Separated evaluation truth",
+      "area": "Muse and model evidence",
+      "implementation_symbols": [
+        "src/acme_city/muse/payloads.py:assert_no_truth_in_payload"
+      ],
+      "check_ids": [
+        "AT14"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at14.py::test_a_malformed_value_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_a_substantive_extraction_is_validated_against_the_stored_document",
+        "tests/acceptance/test_at14.py::test_an_invented_quotation_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unauthorized_document_instruction_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_an_unknown_identifier_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unsupported_citation_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_muse_never_publishes_prices_decides_or_issues",
+        "tests/acceptance/test_at14.py::test_output_that_is_not_json_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_the_runtime_payload_carries_no_evaluator_truth"
+      ]
+    },
+    {
+      "requirement_id": "CHG-01",
+      "title": "Controlled transitions",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/changes/state_machine.py:transition_rule"
+      ],
+      "check_ids": [
+        "AT08",
+        "AT13"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+      ]
+    },
+    {
+      "requirement_id": "CHG-02",
+      "title": "Accepted source changes only",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/changes/service.py:ChangeService.transition"
+      ],
+      "check_ids": [
+        "AT08"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent"
+      ]
+    },
+    {
+      "requirement_id": "CHG-03",
+      "title": "Impact and dependencies",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/changes/service.py:ChangeService.preview_impact"
+      ],
+      "check_ids": [
+        "AT09",
+        "AT20"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at09.py::test_a_change_before_review_invalidates_only_the_affected_case",
+        "tests/acceptance/test_at09.py::test_an_approval_becomes_stale_and_needs_a_reconfirmation",
+        "tests/acceptance/test_at20.py::test_at20_a_link_correction_keeps_the_earlier_decision",
+        "tests/acceptance/test_at20.py::test_at20_the_correction_registers_the_dependent_review_work",
+        "tests/acceptance/test_at20.py::test_at20_the_impact_preview_names_the_dependent_records",
+        "tests/acceptance/test_at20.py::test_at20_the_issued_history_is_not_rewritten"
+      ]
+    },
+    {
+      "requirement_id": "CHG-04",
+      "title": "Historical preservation",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/permits/impact.py:ImpactService.apply_change"
+      ],
+      "check_ids": [
+        "AT10",
+        "AT20"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at10.py::test_a_separate_impact_review_shows_the_amendment_route",
+        "tests/acceptance/test_at10.py::test_the_issued_history_survives_a_later_correction",
+        "tests/acceptance/test_at20.py::test_at20_a_link_correction_keeps_the_earlier_decision",
+        "tests/acceptance/test_at20.py::test_at20_the_correction_registers_the_dependent_review_work",
+        "tests/acceptance/test_at20.py::test_at20_the_impact_preview_names_the_dependent_records",
+        "tests/acceptance/test_at20.py::test_at20_the_issued_history_is_not_rewritten"
+      ]
+    },
+    {
+      "requirement_id": "CHG-05",
+      "title": "Reliable delivery",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/changes/dispatcher.py:ChangeDispatcher.dispatch_pending"
+      ],
+      "check_ids": [
+        "AT08",
+        "AT19"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent",
+        "tests/acceptance/test_at19_deterministic.py::test_an_identical_retry_after_a_timeout_returns_the_original_permit",
+        "tests/acceptance/test_at19_deterministic.py::test_the_chain_survives_a_restart",
+        "tests/acceptance/test_at19_deterministic.py::test_the_d01_chain_is_persisted_and_traceable"
+      ]
+    },
+    {
+      "requirement_id": "CHG-06",
+      "title": "Concurrent changes",
+      "area": "changes, publication and concurrency",
+      "implementation_symbols": [
+        "src/acme_city/changes/service.py:ChangeService.transition"
+      ],
+      "check_ids": [
+        "AT16"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at16.py::test_at16_a_stale_change_transition_returns_a_conflict",
+        "tests/acceptance/test_at16.py::test_at16_a_stale_link_decision_returns_a_conflict",
+        "tests/acceptance/test_at16.py::test_at16_a_stale_source_write_is_a_conflict_and_keeps_the_accepted_value"
+      ]
+    },
+    {
+      "requirement_id": "EDIT-01",
+      "title": "Explicit actions",
+      "area": "explicit edits and history",
+      "implementation_symbols": [
+        "src/acme_city/changes/service.py:ChangeService.request"
+      ],
+      "check_ids": [
+        "AT02"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at02.py::test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route",
+        "tests/acceptance/test_at02.py::test_at02_every_record_family_names_one_correction_destination",
+        "tests/acceptance/test_at02.py::test_at02_the_correction_is_previewed_before_it_is_approved",
+        "tests/acceptance/test_at02.py::test_at02_the_field_level_authority_is_available_on_demand",
+        "tests/acceptance/test_at02.py::test_at02_the_responsible_queue_is_resolved_for_every_family"
+      ]
+    },
+    {
+      "requirement_id": "EDIT-02",
+      "title": "Permission explanations",
+      "area": "explicit edits and history",
+      "implementation_symbols": [
+        "src/acme_city/core/errors.py:PermissionDeniedError"
+      ],
+      "check_ids": [
+        "AT02"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at02.py::test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route",
+        "tests/acceptance/test_at02.py::test_at02_every_record_family_names_one_correction_destination",
+        "tests/acceptance/test_at02.py::test_at02_the_correction_is_previewed_before_it_is_approved",
+        "tests/acceptance/test_at02.py::test_at02_the_field_level_authority_is_available_on_demand",
+        "tests/acceptance/test_at02.py::test_at02_the_responsible_queue_is_resolved_for_every_family"
+      ]
+    },
+    {
+      "requirement_id": "EDIT-03",
+      "title": "Change preview",
+      "area": "explicit edits and history",
+      "implementation_symbols": [
+        "src/acme_city/changes/service.py:ChangeService.preview_impact"
+      ],
+      "check_ids": [
+        "AT02"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at02.py::test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route",
+        "tests/acceptance/test_at02.py::test_at02_every_record_family_names_one_correction_destination",
+        "tests/acceptance/test_at02.py::test_at02_the_correction_is_previewed_before_it_is_approved",
+        "tests/acceptance/test_at02.py::test_at02_the_field_level_authority_is_available_on_demand",
+        "tests/acceptance/test_at02.py::test_at02_the_responsible_queue_is_resolved_for_every_family"
+      ]
+    },
+    {
+      "requirement_id": "EDIT-04",
+      "title": "Source acknowledgment",
+      "area": "explicit edits and history",
+      "implementation_symbols": [
+        "src/acme_city/changes/dispatcher.py:ChangeDispatcher.dispatch_pending"
+      ],
+      "check_ids": [
+        "AT08"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent"
+      ]
+    },
+    {
+      "requirement_id": "EDIT-05",
+      "title": "Profile and historical facts",
+      "area": "explicit edits and history",
+      "implementation_symbols": [
+        "src/acme_city/permits/service.py:PermitService.revise"
+      ],
+      "check_ids": [
+        "AT04"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at04.py::test_a_case_specific_correction_creates_a_revision",
+        "tests/acceptance/test_at04.py::test_the_application_facts_do_not_overwrite_the_shared_party_facts",
+        "tests/acceptance/test_at04.py::test_the_profile_moves_and_the_submission_does_not"
+      ]
+    },
+    {
+      "requirement_id": "EVAL-01",
+      "title": "Meaningful denominators",
+      "area": "evaluation and evidence",
+      "implementation_symbols": [
+        "src/acme_city/evidence/schemas.py:MetricGroup"
+      ],
+      "check_ids": [
+        "VC07"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc07.py::test_vc07_every_ratio_names_its_denominator",
+        "tests/supplementary/test_vc07.py::test_vc07_the_false_friend_is_never_offered_for_the_other_record",
+        "tests/supplementary/test_vc07.py::test_vc07_the_small_fixture_is_labelled_as_a_demonstration_check"
+      ]
+    },
+    {
+      "requirement_id": "EVAL-02",
+      "title": "Separate measurements",
+      "area": "evaluation and evidence",
+      "implementation_symbols": [
+        "src/acme_city/evidence/schemas.py:RunManifest.metrics_by_group"
+      ],
+      "check_ids": [
+        "VC08"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc08.py::test_vc08_a_model_score_is_never_a_calibrated_confidence",
+        "tests/supplementary/test_vc08.py::test_vc08_the_build_records_no_agreement_percentage",
+        "tests/supplementary/test_vc08.py::test_vc08_the_manifest_holds_no_figure_of_the_reference_package",
+        "tests/supplementary/test_vc08.py::test_vc08_the_reference_package_figures_never_reach_the_build",
+        "tests/supplementary/test_vc08.py::test_vc08_the_runner_keeps_the_three_measurement_groups_apart"
+      ]
+    },
+    {
+      "requirement_id": "EVAL-03",
+      "title": "Reproducible evidence",
+      "area": "evaluation and evidence",
+      "implementation_symbols": [
+        "src/acme_city/evidence/manifest.py:EvidenceRecorder.finalize"
+      ],
+      "check_ids": [
+        "AT19"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at19_deterministic.py::test_an_identical_retry_after_a_timeout_returns_the_original_permit",
+        "tests/acceptance/test_at19_deterministic.py::test_the_chain_survives_a_restart",
+        "tests/acceptance/test_at19_deterministic.py::test_the_d01_chain_is_persisted_and_traceable"
+      ]
+    },
+    {
+      "requirement_id": "FIN-01",
+      "title": "Deterministic assessment",
+      "area": "fees and finance",
+      "implementation_symbols": [
+        "src/acme_city/finance/calculator.py:calculate_fee"
+      ],
+      "check_ids": [
+        "AT17"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at17.py::test_a_later_schedule_does_not_recalculate_a_historical_assessment",
+        "tests/acceptance/test_at17.py::test_the_fee_is_repeatable_and_the_reassessment_carries_the_funds",
+        "tests/acceptance/test_at17.py::test_the_issuance_is_blocked_while_twenty_dollars_are_due"
+      ]
+    },
+    {
+      "requirement_id": "FIN-02",
+      "title": "Explicit reassessment",
+      "area": "fees and finance",
+      "implementation_symbols": [
+        "src/acme_city/finance/service.py:FinanceService.reassess"
+      ],
+      "check_ids": [
+        "AT17"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at17.py::test_a_later_schedule_does_not_recalculate_a_historical_assessment",
+        "tests/acceptance/test_at17.py::test_the_fee_is_repeatable_and_the_reassessment_carries_the_funds",
+        "tests/acceptance/test_at17.py::test_the_issuance_is_blocked_while_twenty_dollars_are_due"
+      ]
+    },
+    {
+      "requirement_id": "FIN-03",
+      "title": "Source payment integrity",
+      "area": "fees and finance",
+      "implementation_symbols": [
+        "src/acme_city/finance/service.py:FinanceService.import_payment"
+      ],
+      "check_ids": [
+        "AT18"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at18.py::test_a_replayed_payment_and_allocation_use_the_receipt_once",
+        "tests/acceptance/test_at18.py::test_a_reversal_flags_an_issued_permit_for_review",
+        "tests/acceptance/test_at18.py::test_a_reversal_reopens_the_exception_and_blocks_an_unissued_permit",
+        "tests/acceptance/test_at18.py::test_the_other_exceptions_never_satisfy_the_payment"
+      ]
+    },
+    {
+      "requirement_id": "FIN-04",
+      "title": "Governed allocations",
+      "area": "fees and finance",
+      "implementation_symbols": [
+        "src/acme_city/finance/service.py:FinanceService.allocate"
+      ],
+      "check_ids": [
+        "AT17",
+        "AT18"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at17.py::test_a_later_schedule_does_not_recalculate_a_historical_assessment",
+        "tests/acceptance/test_at17.py::test_the_fee_is_repeatable_and_the_reassessment_carries_the_funds",
+        "tests/acceptance/test_at17.py::test_the_issuance_is_blocked_while_twenty_dollars_are_due",
+        "tests/acceptance/test_at18.py::test_a_replayed_payment_and_allocation_use_the_receipt_once",
+        "tests/acceptance/test_at18.py::test_a_reversal_flags_an_issued_permit_for_review",
+        "tests/acceptance/test_at18.py::test_a_reversal_reopens_the_exception_and_blocks_an_unissued_permit",
+        "tests/acceptance/test_at18.py::test_the_other_exceptions_never_satisfy_the_payment"
+      ]
+    },
+    {
+      "requirement_id": "FIN-05",
+      "title": "Financial completion",
+      "area": "fees and finance",
+      "implementation_symbols": [
+        "src/acme_city/finance/service.py:FinanceService.reconcile"
+      ],
+      "check_ids": [
+        "AT18"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at18.py::test_a_replayed_payment_and_allocation_use_the_receipt_once",
+        "tests/acceptance/test_at18.py::test_a_reversal_flags_an_issued_permit_for_review",
+        "tests/acceptance/test_at18.py::test_a_reversal_reopens_the_exception_and_blocks_an_unissued_permit",
+        "tests/acceptance/test_at18.py::test_the_other_exceptions_never_satisfy_the_payment"
+      ]
+    },
+    {
+      "requirement_id": "GOV-01",
+      "title": "Ownership before publication",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.register_dataset"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "GOV-02",
+      "title": "Inherited assignments",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.current_assignments"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "GOV-03",
+      "title": "Actionable stewardship",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.responsibility_panel"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "GOV-04",
+      "title": "Visible responsibility",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.responsibility_panel",
+        "src/acme_city/ui/view_models.py"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "GOV-05",
+      "title": "Attribute authority",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/registry/provenance.py:build_trusted_view"
+      ],
+      "check_ids": [
+        "AT01",
+        "AT07"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled",
+        "tests/acceptance/test_at07.py::test_at07_a_missing_value_is_never_invented",
+        "tests/acceptance/test_at07.py::test_at07_an_unresolved_authority_raises_a_blocking_issue",
+        "tests/acceptance/test_at07.py::test_at07_the_view_keeps_the_disagreement_with_another_source",
+        "tests/acceptance/test_at07.py::test_at07_the_view_shows_the_authoritative_value_with_its_provenance"
+      ]
+    },
+    {
+      "requirement_id": "GOV-06",
+      "title": "Owner escalation",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.escalate_issue"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "GOV-07",
+      "title": "Assignment maintenance",
+      "area": "governance and ownership",
+      "implementation_symbols": [
+        "src/acme_city/governance/service.py:GovernanceService.reassign_steward"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "ING-01",
+      "title": "Registered contracts",
+      "area": "source registration and intake",
+      "implementation_symbols": [
+        "src/acme_city/fixtures/schemas.py:ContractFixture"
+      ],
+      "check_ids": [
+        "AT01"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ]
+    },
+    {
+      "requirement_id": "ING-02",
+      "title": "Raw preservation and validation",
+      "area": "source registration and intake",
+      "implementation_symbols": [
+        "src/acme_city/ingestion/validation.py:PayloadValidator"
+      ],
+      "check_ids": [
+        "AT12"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at12.py::test_a_negative_value_is_refused",
+        "tests/acceptance/test_at12.py::test_an_unknown_sign_type_with_a_large_area_is_not_approved",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_blank_location-DF-1-missing_condition_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback-DF-3-non_numeric_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback_nan-DF-3-nonfinite_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_unknown_sign-SG-1-unknown_category]",
+        "tests/acceptance/test_at12.py::test_no_evaluation_crashes_on_any_seeded_application"
+      ]
+    },
+    {
+      "requirement_id": "ING-03",
+      "title": "Idempotent ingestion",
+      "area": "source registration and intake",
+      "implementation_symbols": [
+        "src/acme_city/ingestion/service.py:IngestionService.ingest"
+      ],
+      "check_ids": [
+        "AT05",
+        "AT08"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at05.py::test_at05_a_changed_version_is_preserved_as_a_second_snapshot",
+        "tests/acceptance/test_at05.py::test_at05_a_late_version_is_history_only",
+        "tests/acceptance/test_at05.py::test_at05_a_repeated_delivery_is_unchanged",
+        "tests/acceptance/test_at05.py::test_at05_the_canonical_identities_are_typed_and_immutable",
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent"
+      ]
+    },
+    {
+      "requirement_id": "ING-04",
+      "title": "Safe normalization",
+      "area": "source registration and intake",
+      "implementation_symbols": [
+        "src/acme_city/ingestion/normalization.py:normalize_address"
+      ],
+      "check_ids": [
+        "VC01"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc01.py::test_vc01_a_normalized_value_carries_no_identity_or_authority",
+        "tests/supplementary/test_vc01.py::test_vc01_the_raw_payload_is_preserved_next_to_the_record",
+        "tests/supplementary/test_vc01.py::test_vc01_the_unit_distinction_survives_the_comparison_form"
+      ]
+    },
+    {
+      "requirement_id": "ING-05",
+      "title": "Source observations",
+      "area": "source registration and intake",
+      "implementation_symbols": [
+        "src/acme_city/ingestion/router.py:list_source_observations"
+      ],
+      "check_ids": [
+        "VC02"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc02.py::test_vc02_an_unknown_business_time_stays_empty",
+        "tests/supplementary/test_vc02.py::test_vc02_the_observations_report_the_denominators",
+        "tests/supplementary/test_vc02.py::test_vc02_the_source_effective_and_receipt_times_stay_apart"
+      ]
+    },
+    {
+      "requirement_id": "MDM-01",
+      "title": "Canonical identity and crosswalk",
+      "area": "registry MDM and identity",
+      "implementation_symbols": [
+        "src/acme_city/registry/service.py:RegistryService.propose"
+      ],
+      "check_ids": [
+        "AT05"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at05.py::test_at05_a_changed_version_is_preserved_as_a_second_snapshot",
+        "tests/acceptance/test_at05.py::test_at05_a_late_version_is_history_only",
+        "tests/acceptance/test_at05.py::test_at05_a_repeated_delivery_is_unchanged",
+        "tests/acceptance/test_at05.py::test_at05_the_canonical_identities_are_typed_and_immutable"
+      ]
+    },
+    {
+      "requirement_id": "MDM-02",
+      "title": "Evidence-based proposals",
+      "area": "registry MDM and identity",
+      "implementation_symbols": [
+        "src/acme_city/registry/candidates.py:generate_candidates"
+      ],
+      "check_ids": [
+        "AT06"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_carries_its_supporting_and_conflicting_evidence",
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_never_approves_a_link",
+        "tests/acceptance/test_at06.py::test_at06_a_record_without_a_shared_key_is_an_explicit_no_match",
+        "tests/acceptance/test_at06.py::test_at06_a_similar_name_and_a_shared_address_do_not_establish_a_link",
+        "tests/acceptance/test_at06.py::test_at06_the_proposal_score_is_never_presented_as_calibrated"
+      ]
+    },
+    {
+      "requirement_id": "MDM-03",
+      "title": "False-match prevention",
+      "area": "registry MDM and identity",
+      "implementation_symbols": [
+        "src/acme_city/registry/candidates.py:generate_candidates"
+      ],
+      "check_ids": [
+        "AT06"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_carries_its_supporting_and_conflicting_evidence",
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_never_approves_a_link",
+        "tests/acceptance/test_at06.py::test_at06_a_record_without_a_shared_key_is_an_explicit_no_match",
+        "tests/acceptance/test_at06.py::test_at06_a_similar_name_and_a_shared_address_do_not_establish_a_link",
+        "tests/acceptance/test_at06.py::test_at06_the_proposal_score_is_never_presented_as_calibrated"
+      ]
+    },
+    {
+      "requirement_id": "MDM-04",
+      "title": "Source authority and provenance",
+      "area": "registry MDM and identity",
+      "implementation_symbols": [
+        "src/acme_city/registry/provenance.py:build_trusted_view"
+      ],
+      "check_ids": [
+        "AT07"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at07.py::test_at07_a_missing_value_is_never_invented",
+        "tests/acceptance/test_at07.py::test_at07_an_unresolved_authority_raises_a_blocking_issue",
+        "tests/acceptance/test_at07.py::test_at07_the_view_keeps_the_disagreement_with_another_source",
+        "tests/acceptance/test_at07.py::test_at07_the_view_shows_the_authoritative_value_with_its_provenance"
+      ]
+    },
+    {
+      "requirement_id": "MDM-05",
+      "title": "Reversible link decisions",
+      "area": "registry MDM and identity",
+      "implementation_symbols": [
+        "src/acme_city/registry/service.py:RegistryService.decide"
+      ],
+      "check_ids": [
+        "AT20"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at20.py::test_at20_a_link_correction_keeps_the_earlier_decision",
+        "tests/acceptance/test_at20.py::test_at20_the_correction_registers_the_dependent_review_work",
+        "tests/acceptance/test_at20.py::test_at20_the_impact_preview_names_the_dependent_records",
+        "tests/acceptance/test_at20.py::test_at20_the_issued_history_is_not_rewritten"
+      ]
+    },
+    {
+      "requirement_id": "PER-01",
+      "title": "Applicant contributions",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/permits/service.py:PermitService.submit"
+      ],
+      "check_ids": [
+        "AT04"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at04.py::test_a_case_specific_correction_creates_a_revision",
+        "tests/acceptance/test_at04.py::test_the_application_facts_do_not_overwrite_the_shared_party_facts",
+        "tests/acceptance/test_at04.py::test_the_profile_moves_and_the_submission_does_not"
+      ]
+    },
+    {
+      "requirement_id": "PER-02",
+      "title": "Validation before recommendation",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/rules/evaluator.py:evaluate_rule"
+      ],
+      "check_ids": [
+        "AT12"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at12.py::test_a_negative_value_is_refused",
+        "tests/acceptance/test_at12.py::test_an_unknown_sign_type_with_a_large_area_is_not_approved",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_blank_location-DF-1-missing_condition_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback-DF-3-non_numeric_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback_nan-DF-3-nonfinite_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_unknown_sign-SG-1-unknown_category]",
+        "tests/acceptance/test_at12.py::test_no_evaluation_crashes_on_any_seeded_application"
+      ]
+    },
+    {
+      "requirement_id": "PER-03",
+      "title": "Versioned evaluation",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/permits/service.py:PermitService.evaluate"
+      ],
+      "check_ids": [
+        "AT09"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at09.py::test_a_change_before_review_invalidates_only_the_affected_case",
+        "tests/acceptance/test_at09.py::test_an_approval_becomes_stale_and_needs_a_reconfirmation"
+      ]
+    },
+    {
+      "requirement_id": "PER-04",
+      "title": "Actual human decision",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/permits/decisions.py:PermitDecisionService"
+      ],
+      "check_ids": [
+        "AT11"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at11.py::test_a_request_that_only_supplies_a_final_ruling_records_nothing",
+        "tests/acceptance/test_at11.py::test_a_reviewer_may_change_the_recommendation",
+        "tests/acceptance/test_at11.py::test_a_reviewer_records_an_actual_decision",
+        "tests/acceptance/test_at11.py::test_an_unauthorized_actor_records_nothing"
+      ]
+    },
+    {
+      "requirement_id": "PER-05",
+      "title": "Separate issuance",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/permits/issuance.py:PermitIssuanceService.issue"
+      ],
+      "check_ids": [
+        "AT10",
+        "AT19"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at10.py::test_a_separate_impact_review_shows_the_amendment_route",
+        "tests/acceptance/test_at10.py::test_the_issued_history_survives_a_later_correction",
+        "tests/acceptance/test_at19_deterministic.py::test_an_identical_retry_after_a_timeout_returns_the_original_permit",
+        "tests/acceptance/test_at19_deterministic.py::test_the_chain_survives_a_restart",
+        "tests/acceptance/test_at19_deterministic.py::test_the_d01_chain_is_persisted_and_traceable"
+      ]
+    },
+    {
+      "requirement_id": "PER-06",
+      "title": "Date basis",
+      "area": "permit workflow",
+      "implementation_symbols": [
+        "src/acme_city/rules/catalog.py:select_rule_versions"
+      ],
+      "check_ids": [
+        "AT13"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+      ]
+    },
+    {
+      "requirement_id": "REF-01",
+      "title": "One approved catalog",
+      "area": "rule and reference catalogs",
+      "implementation_symbols": [
+        "src/acme_city/rules/service.py:RuleCatalogService.resolve"
+      ],
+      "check_ids": [
+        "AT13"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+      ]
+    },
+    {
+      "requirement_id": "REF-02",
+      "title": "Effective publication",
+      "area": "rule and reference catalogs",
+      "implementation_symbols": [
+        "src/acme_city/rules/service.py:RuleCatalogService.publish"
+      ],
+      "check_ids": [
+        "AT13"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+      ]
+    },
+    {
+      "requirement_id": "SEC-01",
+      "title": "Server-enforced roles",
+      "area": "security and records",
+      "implementation_symbols": [
+        "src/acme_city/auth/permissions.py:PermissionResolver"
+      ],
+      "check_ids": [
+        "AT03"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at03.py::test_at03_a_clerk_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_a_reviewer_may_not_edit_a_receipt",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_a_source_link",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_foreign_evaluations_or_documents",
+        "tests/acceptance/test_at03.py::test_at03_the_city_administrator_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_the_work_queue_of_an_applicant_shows_only_its_own_records"
+      ]
+    },
+    {
+      "requirement_id": "SEC-02",
+      "title": "Record scope",
+      "area": "security and records",
+      "implementation_symbols": [
+        "src/acme_city/auth/permissions.py:Grant.covers_records"
+      ],
+      "check_ids": [
+        "AT03"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at03.py::test_at03_a_clerk_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_a_reviewer_may_not_edit_a_receipt",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_a_source_link",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_foreign_evaluations_or_documents",
+        "tests/acceptance/test_at03.py::test_at03_the_city_administrator_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_the_work_queue_of_an_applicant_shows_only_its_own_records"
+      ]
+    },
+    {
+      "requirement_id": "SEC-03",
+      "title": "Controlled writes",
+      "area": "security and records",
+      "implementation_symbols": [
+        "src/acme_city/auth/permissions.py:PermissionResolver.authorize"
+      ],
+      "check_ids": [
+        "AT03"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at03.py::test_at03_a_clerk_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_a_reviewer_may_not_edit_a_receipt",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_a_source_link",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_foreign_evaluations_or_documents",
+        "tests/acceptance/test_at03.py::test_at03_the_city_administrator_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_the_work_queue_of_an_applicant_shows_only_its_own_records"
+      ]
+    },
+    {
+      "requirement_id": "SEC-04",
+      "title": "Minimum records protection",
+      "area": "security and records",
+      "implementation_symbols": [
+        "src/acme_city/audit/service.py:AuditService.append"
+      ],
+      "check_ids": [
+        "VC06"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc06.py::test_vc06_a_denied_action_is_recorded_without_a_private_value",
+        "tests/supplementary/test_vc06.py::test_vc06_every_contact_of_the_demonstration_is_fictional",
+        "tests/supplementary/test_vc06.py::test_vc06_the_application_claims_no_compliance_it_cannot_support",
+        "tests/supplementary/test_vc06.py::test_vc06_the_application_holds_no_real_looking_identifier",
+        "tests/supplementary/test_vc06.py::test_vc06_the_audit_trail_only_grows",
+        "tests/supplementary/test_vc06.py::test_vc06_the_provider_credential_stays_on_the_server"
+      ]
+    },
+    {
+      "requirement_id": "UX-01",
+      "title": "Persistent responsibility panel",
+      "area": "user experience",
+      "implementation_symbols": [
+        "src/acme_city/ui/view_models.py"
+      ],
+      "check_ids": [
+        "AT02"
+      ],
+      "node_ids": [
+        "tests/acceptance/test_at02.py::test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route",
+        "tests/acceptance/test_at02.py::test_at02_every_record_family_names_one_correction_destination",
+        "tests/acceptance/test_at02.py::test_at02_the_correction_is_previewed_before_it_is_approved",
+        "tests/acceptance/test_at02.py::test_at02_the_field_level_authority_is_available_on_demand",
+        "tests/acceptance/test_at02.py::test_at02_the_responsible_queue_is_resolved_for_every_family"
+      ]
+    },
+    {
+      "requirement_id": "UX-02",
+      "title": "Clear data distinctions",
+      "area": "user experience",
+      "implementation_symbols": [
+        "src/acme_city/ui/view_models.py"
+      ],
+      "check_ids": [
+        "VC03"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc03.py::test_every_action_says_where_it_writes",
+        "tests/supplementary/test_vc03.py::test_the_evidence_panel_stays_stable_between_screens",
+        "tests/supplementary/test_vc03.py::test_the_four_value_bands_carry_their_own_mark",
+        "tests/supplementary/test_vc03.py::test_the_issued_value_carries_the_issued_snapshot",
+        "tests/supplementary/test_vc03.py::test_the_labels_are_plain_and_name_the_record",
+        "tests/supplementary/test_vc03.py::test_the_proposed_band_is_empty_when_nothing_is_proposed",
+        "tests/supplementary/test_vc03.py::test_the_submitted_value_keeps_the_first_submission_date"
+      ]
+    },
+    {
+      "requirement_id": "UX-03",
+      "title": "Consistent controls",
+      "area": "user experience",
+      "implementation_symbols": [
+        "src/acme_city/ui/view_models.py"
+      ],
+      "check_ids": [
+        "VC04"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc04.py::test_every_control_of_every_screen_carries_a_label",
+        "tests/supplementary/test_vc04.py::test_the_current_screen_is_marked_for_the_assistive_technology",
+        "tests/supplementary/test_vc04.py::test_the_filters_are_small_and_named",
+        "tests/supplementary/test_vc04.py::test_the_interface_loads_no_external_asset",
+        "tests/supplementary/test_vc04.py::test_the_navigation_is_the_same_on_every_screen",
+        "tests/supplementary/test_vc04.py::test_the_page_offers_a_skip_link_and_a_labelled_status_region",
+        "tests/supplementary/test_vc04.py::test_the_persona_selector_never_offers_a_service_identity",
+        "tests/supplementary/test_vc04.py::test_the_stylesheet_keeps_a_visible_focus_ring",
+        "tests/supplementary/test_vc04.py::test_the_tables_are_compact_and_carry_a_caption"
+      ]
+    },
+    {
+      "requirement_id": "UX-04",
+      "title": "Operational feedback",
+      "area": "user experience",
+      "implementation_symbols": [
+        "src/acme_city/ui/view_models.py"
+      ],
+      "check_ids": [
+        "VC05"
+      ],
+      "node_ids": [
+        "tests/supplementary/test_vc05.py::test_a_proposal_is_reported_as_pending_and_not_as_a_decision",
+        "tests/supplementary/test_vc05.py::test_a_refused_action_never_shows_a_success",
+        "tests/supplementary/test_vc05.py::test_an_action_reports_its_destination_its_state_and_its_version",
+        "tests/supplementary/test_vc05.py::test_the_feedback_is_recorded_in_the_append_only_audit_trail",
+        "tests/supplementary/test_vc05.py::test_the_feedback_survives_a_refresh_and_a_navigation"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "check_id": "AT01",
+      "kind": "acceptance",
+      "title": "every published dataset is registered and every responsibility resolves",
+      "expected": "every published dataset is registered and every responsibility resolves",
+      "node_ids": [
+        "tests/acceptance/test_at01.py::test_at01_every_published_dataset_is_fully_registered",
+        "tests/acceptance/test_at01.py::test_at01_the_responsibility_resolves_through_the_effective_assignments",
+        "tests/acceptance/test_at01.py::test_at01_a_governed_record_shows_its_destination_and_its_steward",
+        "tests/acceptance/test_at01.py::test_at01_the_source_systems_are_simulated_and_labeled"
+      ],
+      "evidence_refs": [
+        "contract_permitting_applicant_profiles",
+        "queue_permits",
+        "queue_applicants"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT02",
+      "kind": "acceptance",
+      "title": "each record family names one correction destination and one responsible queue",
+      "expected": "each record family names one correction destination and one responsible queue",
+      "node_ids": [
+        "tests/acceptance/test_at02.py::test_at02_every_record_family_names_one_correction_destination",
+        "tests/acceptance/test_at02.py::test_at02_the_responsible_queue_is_resolved_for_every_family",
+        "tests/acceptance/test_at02.py::test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route",
+        "tests/acceptance/test_at02.py::test_at02_the_correction_is_previewed_before_it_is_approved",
+        "tests/acceptance/test_at02.py::test_at02_the_field_level_authority_is_available_on_demand"
+      ],
+      "evidence_refs": [
+        "contract_permitting_applicant_profiles",
+        "contract_gis_parcel_register",
+        "contract_permitting_contractor_register",
+        "contract_permitting_applications_and_permits",
+        "contract_registry_fee_assessments"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT03",
+      "kind": "acceptance",
+      "title": "every attempt outside a grant is refused and no business record changes",
+      "expected": "every attempt outside a grant is refused and no business record changes",
+      "node_ids": [
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_the_work_queue_of_an_applicant_shows_only_its_own_records",
+        "tests/acceptance/test_at03.py::test_at03_a_clerk_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_the_city_administrator_may_not_approve_a_permit",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_change_a_source_link",
+        "tests/acceptance/test_at03.py::test_at03_a_reviewer_may_not_edit_a_receipt",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_another_applicants_record",
+        "tests/acceptance/test_at03.py::test_at03_an_applicant_may_not_read_foreign_evaluations_or_documents"
+      ],
+      "evidence_refs": [
+        "persona_applicant",
+        "persona_data_steward",
+        "persona_permit_reviewer",
+        "persona_city_administrator"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT04",
+      "kind": "acceptance",
+      "title": "the profile moves while the submitted facts keep their version",
+      "expected": "the profile moves while the submitted facts keep their version",
+      "node_ids": [
+        "tests/acceptance/test_at04.py::test_the_profile_moves_and_the_submission_does_not",
+        "tests/acceptance/test_at04.py::test_a_case_specific_correction_creates_a_revision",
+        "tests/acceptance/test_at04.py::test_the_application_facts_do_not_overwrite_the_shared_party_facts"
+      ],
+      "evidence_refs": [
+        "app_d05",
+        "party_applicant_1",
+        "contact_applicant_1_email"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT05",
+      "kind": "acceptance",
+      "title": "one canonical link stays active while the source version moves",
+      "expected": "one canonical link stays active while the source version moves",
+      "node_ids": [
+        "tests/acceptance/test_at05.py::test_at05_a_repeated_delivery_is_unchanged",
+        "tests/acceptance/test_at05.py::test_at05_a_changed_version_is_preserved_as_a_second_snapshot",
+        "tests/acceptance/test_at05.py::test_at05_a_late_version_is_history_only",
+        "tests/acceptance/test_at05.py::test_at05_the_canonical_identities_are_typed_and_immutable"
+      ],
+      "evidence_refs": [
+        "PER-AP-0003",
+        "party_cedarline"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT06",
+      "kind": "acceptance",
+      "title": "the steward approves the supported link and rejects the false match",
+      "expected": "the steward approves the supported link and rejects the false match",
+      "node_ids": [
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_carries_its_supporting_and_conflicting_evidence",
+        "tests/acceptance/test_at06.py::test_at06_a_proposal_never_approves_a_link",
+        "tests/acceptance/test_at06.py::test_at06_the_proposal_score_is_never_presented_as_calibrated",
+        "tests/acceptance/test_at06.py::test_at06_a_similar_name_and_a_shared_address_do_not_establish_a_link",
+        "tests/acceptance/test_at06.py::test_at06_a_record_without_a_shared_key_is_an_explicit_no_match"
+      ],
+      "evidence_refs": [
+        "PER-AP-0003",
+        "ERP-BL-00413",
+        "party_cedarline",
+        "party_false_friend"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT07",
+      "kind": "acceptance",
+      "title": "the trusted view follows the declared authority and keeps the disagreement",
+      "expected": "the trusted view follows the declared authority and keeps the disagreement",
+      "node_ids": [
+        "tests/acceptance/test_at07.py::test_at07_the_view_shows_the_authoritative_value_with_its_provenance",
+        "tests/acceptance/test_at07.py::test_at07_the_view_keeps_the_disagreement_with_another_source",
+        "tests/acceptance/test_at07.py::test_at07_an_unresolved_authority_raises_a_blocking_issue",
+        "tests/acceptance/test_at07.py::test_at07_a_missing_value_is_never_invented"
+      ],
+      "evidence_refs": [
+        "party_cedarline",
+        "authority_applicant_contact"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT08",
+      "kind": "acceptance",
+      "title": "a refused source change keeps the accepted value and publishes once",
+      "expected": "a refused source change keeps the accepted value and publishes once",
+      "node_ids": [
+        "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
+        "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
+        "tests/acceptance/test_at08.py::test_at08_a_late_acknowledgement_does_not_replace_a_newer_accepted_version",
+        "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent"
+      ],
+      "evidence_refs": [
+        "GIS-AD-0400",
+        "GIS-AD-0012",
+        "app_d06"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT09",
+      "kind": "acceptance",
+      "title": "a dependency change stales the evaluation and the approval",
+      "expected": "a dependency change stales the evaluation and the approval",
+      "node_ids": [
+        "tests/acceptance/test_at09.py::test_a_change_before_review_invalidates_only_the_affected_case",
+        "tests/acceptance/test_at09.py::test_an_approval_becomes_stale_and_needs_a_reconfirmation"
+      ],
+      "evidence_refs": [
+        "app_d03",
+        "app_d07"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT10",
+      "kind": "acceptance",
+      "title": "a change after issuance opens an impact review and keeps the snapshot",
+      "expected": "a change after issuance opens an impact review and keeps the snapshot",
+      "node_ids": [
+        "tests/acceptance/test_at10.py::test_the_issued_history_survives_a_later_correction",
+        "tests/acceptance/test_at10.py::test_a_separate_impact_review_shows_the_amendment_route"
+      ],
+      "evidence_refs": [
+        "app_d07",
+        "permit_d07",
+        "decision_d07",
+        "assess_d07_v1"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT11",
+      "kind": "acceptance",
+      "title": "an authorized reviewer records a decision with actor, time and reason",
+      "expected": "an authorized reviewer records a decision with actor, time and reason",
+      "node_ids": [
+        "tests/acceptance/test_at11.py::test_a_reviewer_records_an_actual_decision",
+        "tests/acceptance/test_at11.py::test_a_request_that_only_supplies_a_final_ruling_records_nothing",
+        "tests/acceptance/test_at11.py::test_an_unauthorized_actor_records_nothing",
+        "tests/acceptance/test_at11.py::test_a_reviewer_may_change_the_recommendation"
+      ],
+      "evidence_refs": [
+        "app_synth_001"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT12",
+      "kind": "acceptance",
+      "title": "an invalid input yields a validation or review result and never a crash",
+      "expected": "an invalid input yields a validation or review result and never a crash",
+      "node_ids": [
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback-DF-3-non_numeric_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_setback_nan-DF-3-nonfinite_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_blank_location-DF-1-missing_condition_input]",
+        "tests/acceptance/test_at12.py::test_each_invalid_input_yields_a_review_result[app_d09_unknown_sign-SG-1-unknown_category]",
+        "tests/acceptance/test_at12.py::test_an_unknown_sign_type_with_a_large_area_is_not_approved",
+        "tests/acceptance/test_at12.py::test_a_negative_value_is_refused",
+        "tests/acceptance/test_at12.py::test_no_evaluation_crashes_on_any_seeded_application"
+      ],
+      "evidence_refs": [
+        "app_d09_setback",
+        "app_d09_setback_nan",
+        "app_d09_blank_location",
+        "app_d09_unknown_sign"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT13",
+      "kind": "acceptance",
+      "title": "the rule versions, the citations and the dates stay consistent",
+      "expected": "the rule versions, the citations and the dates stay consistent",
+      "node_ids": [
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule"
+      ],
+      "evidence_refs": [
+        "fee_commercial_demo:2026.1",
+        "CT-1",
+        "CT-2"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT14",
+      "kind": "acceptance",
+      "title": "an invalid or injected model output is refused and writes nothing",
+      "expected": "an invalid or injected model output is refused and writes nothing",
+      "node_ids": [
+        "tests/acceptance/test_at14.py::test_a_substantive_extraction_is_validated_against_the_stored_document",
+        "tests/acceptance/test_at14.py::test_an_unknown_identifier_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_invented_quotation_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_a_malformed_value_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_output_that_is_not_json_fails_the_validation_and_writes_nothing",
+        "tests/acceptance/test_at14.py::test_an_unauthorized_document_instruction_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_an_unsupported_citation_fails_the_validation",
+        "tests/acceptance/test_at14.py::test_muse_never_publishes_prices_decides_or_issues",
+        "tests/acceptance/test_at14.py::test_the_runtime_payload_carries_no_evaluator_truth"
+      ],
+      "evidence_refs": [
+        "resp_at14",
+        "muse-spark-1.3"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT15",
+      "kind": "acceptance",
+      "title": "a live run, a replay and a timeout stay three different records",
+      "expected": "a live run, a replay and a timeout stay three different records",
+      "node_ids": [
+        "tests/acceptance/test_at15.py::test_a_live_run_records_every_field_of_the_trace",
+        "tests/acceptance/test_at15.py::test_a_proposal_score_is_labeled_uncalibrated",
+        "tests/acceptance/test_at15.py::test_live_replay_and_cached_runs_are_three_different_records",
+        "tests/acceptance/test_at15.py::test_a_failed_live_run_is_preserved",
+        "tests/acceptance/test_at15.py::test_a_replay_has_to_be_selected_explicitly",
+        "tests/acceptance/test_at15.py::test_the_endpoints_expose_the_recorded_runs",
+        "tests/acceptance/test_at15.py::test_an_applicant_never_reaches_the_model_boundary"
+      ],
+      "evidence_refs": [
+        "acme-extraction-prompt-v1",
+        "acme-extraction-schema-v1",
+        "muse-spark-1.3"
+      ],
+      "live_required": true,
+      "pending": false
+    },
+    {
+      "check_id": "AT16",
+      "kind": "acceptance",
+      "title": "a stale expected version is refused with a useful difference view",
+      "expected": "a stale expected version is refused with a useful difference view",
+      "node_ids": [
+        "tests/acceptance/test_at16.py::test_at16_a_stale_change_transition_returns_a_conflict",
+        "tests/acceptance/test_at16.py::test_at16_a_stale_source_write_is_a_conflict_and_keeps_the_accepted_value",
+        "tests/acceptance/test_at16.py::test_at16_a_stale_link_decision_returns_a_conflict"
+      ],
+      "evidence_refs": [
+        "app_synth_001"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT17",
+      "kind": "acceptance",
+      "title": "the fee is repeatable and the reassessment carries the funds forward once",
+      "expected": "the fee is repeatable and the reassessment carries the funds forward once",
+      "node_ids": [
+        "tests/acceptance/test_at17.py::test_the_fee_is_repeatable_and_the_reassessment_carries_the_funds",
+        "tests/acceptance/test_at17.py::test_the_issuance_is_blocked_while_twenty_dollars_are_due",
+        "tests/acceptance/test_at17.py::test_a_later_schedule_does_not_recalculate_a_historical_assessment"
+      ],
+      "evidence_refs": [
+        "fee_commercial_demo:2026.1",
+        "app_synth_001"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT18",
+      "kind": "acceptance",
+      "title": "a replayed payment uses the receipt once and a reversal reopens the exception",
+      "expected": "a replayed payment uses the receipt once and a reversal reopens the exception",
+      "node_ids": [
+        "tests/acceptance/test_at18.py::test_a_replayed_payment_and_allocation_use_the_receipt_once",
+        "tests/acceptance/test_at18.py::test_a_reversal_reopens_the_exception_and_blocks_an_unissued_permit",
+        "tests/acceptance/test_at18.py::test_a_reversal_flags_an_issued_permit_for_review",
+        "tests/acceptance/test_at18.py::test_the_other_exceptions_never_satisfy_the_payment"
+      ],
+      "evidence_refs": [
+        "payment_d01_settled",
+        "assess_d07_v1"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "AT19",
+      "kind": "acceptance",
+      "title": "the complete chain survives a restart and an issuance retry is idempotent",
+      "expected": "the complete chain survives a restart and an issuance retry is idempotent",
+      "node_ids": [
+        "tests/acceptance/test_at19_deterministic.py::test_the_d01_chain_is_persisted_and_traceable",
+        "tests/acceptance/test_at19_deterministic.py::test_the_chain_survives_a_restart",
+        "tests/acceptance/test_at19_deterministic.py::test_an_identical_retry_after_a_timeout_returns_the_original_permit"
+      ],
+      "evidence_refs": [
+        "app_synth_001",
+        "SYN-APP-001"
+      ],
+      "live_required": true,
+      "pending": false
+    },
+    {
+      "check_id": "AT20",
+      "kind": "acceptance",
+      "title": "a corrected link keeps the old decision and revalidates the pending work",
+      "expected": "a corrected link keeps the old decision and revalidates the pending work",
+      "node_ids": [
+        "tests/acceptance/test_at20.py::test_at20_a_link_correction_keeps_the_earlier_decision",
+        "tests/acceptance/test_at20.py::test_at20_the_correction_registers_the_dependent_review_work",
+        "tests/acceptance/test_at20.py::test_at20_the_impact_preview_names_the_dependent_records",
+        "tests/acceptance/test_at20.py::test_at20_the_issued_history_is_not_rewritten"
+      ],
+      "evidence_refs": [
+        "PER-AP-0003",
+        "party_cedarline"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC01",
+      "kind": "supplementary",
+      "title": "the raw value, the unit and the authority survive the normalization",
+      "expected": "the raw value, the unit and the authority survive the normalization",
+      "node_ids": [
+        "tests/supplementary/test_vc01.py::test_vc01_the_raw_payload_is_preserved_next_to_the_record",
+        "tests/supplementary/test_vc01.py::test_vc01_the_unit_distinction_survives_the_comparison_form",
+        "tests/supplementary/test_vc01.py::test_vc01_a_normalized_value_carries_no_identity_or_authority"
+      ],
+      "evidence_refs": [
+        "PER-AP-VC01-0001"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC02",
+      "kind": "supplementary",
+      "title": "the import counts state their denominators and their times",
+      "expected": "the import counts state their denominators and their times",
+      "node_ids": [
+        "tests/supplementary/test_vc02.py::test_vc02_the_observations_report_the_denominators",
+        "tests/supplementary/test_vc02.py::test_vc02_the_source_effective_and_receipt_times_stay_apart",
+        "tests/supplementary/test_vc02.py::test_vc02_an_unknown_business_time_stays_empty"
+      ],
+      "evidence_refs": [
+        "records_received",
+        "records_accepted",
+        "records_quarantined"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC03",
+      "kind": "supplementary",
+      "title": "the current, submitted, proposed and issued values stay distinct",
+      "expected": "the current, submitted, proposed and issued values stay distinct",
+      "node_ids": [
+        "tests/supplementary/test_vc03.py::test_the_four_value_bands_carry_their_own_mark",
+        "tests/supplementary/test_vc03.py::test_the_issued_value_carries_the_issued_snapshot",
+        "tests/supplementary/test_vc03.py::test_the_submitted_value_keeps_the_first_submission_date",
+        "tests/supplementary/test_vc03.py::test_every_action_says_where_it_writes",
+        "tests/supplementary/test_vc03.py::test_the_labels_are_plain_and_name_the_record",
+        "tests/supplementary/test_vc03.py::test_the_proposed_band_is_empty_when_nothing_is_proposed",
+        "tests/supplementary/test_vc03.py::test_the_evidence_panel_stays_stable_between_screens"
+      ],
+      "evidence_refs": [],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC04",
+      "kind": "supplementary",
+      "title": "the controls are compact, consistent and keyboard accessible",
+      "expected": "the controls are compact, consistent and keyboard accessible",
+      "node_ids": [
+        "tests/supplementary/test_vc04.py::test_every_control_of_every_screen_carries_a_label",
+        "tests/supplementary/test_vc04.py::test_the_navigation_is_the_same_on_every_screen",
+        "tests/supplementary/test_vc04.py::test_the_current_screen_is_marked_for_the_assistive_technology",
+        "tests/supplementary/test_vc04.py::test_the_page_offers_a_skip_link_and_a_labelled_status_region",
+        "tests/supplementary/test_vc04.py::test_the_stylesheet_keeps_a_visible_focus_ring",
+        "tests/supplementary/test_vc04.py::test_the_interface_loads_no_external_asset",
+        "tests/supplementary/test_vc04.py::test_the_tables_are_compact_and_carry_a_caption",
+        "tests/supplementary/test_vc04.py::test_the_filters_are_small_and_named",
+        "tests/supplementary/test_vc04.py::test_the_persona_selector_never_offers_a_service_identity"
+      ],
+      "evidence_refs": [],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC05",
+      "kind": "supplementary",
+      "title": "the feedback names the real destination and survives a refresh",
+      "expected": "the feedback names the real destination and survives a refresh",
+      "node_ids": [
+        "tests/supplementary/test_vc05.py::test_an_action_reports_its_destination_its_state_and_its_version",
+        "tests/supplementary/test_vc05.py::test_the_feedback_survives_a_refresh_and_a_navigation",
+        "tests/supplementary/test_vc05.py::test_a_proposal_is_reported_as_pending_and_not_as_a_decision",
+        "tests/supplementary/test_vc05.py::test_a_refused_action_never_shows_a_success",
+        "tests/supplementary/test_vc05.py::test_the_feedback_is_recorded_in_the_append_only_audit_trail"
+      ],
+      "evidence_refs": [],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC06",
+      "kind": "supplementary",
+      "title": "the records are fictional, the secrets stay on the server and the trail grows",
+      "expected": "the records are fictional, the secrets stay on the server and the trail grows",
+      "node_ids": [
+        "tests/supplementary/test_vc06.py::test_vc06_every_contact_of_the_demonstration_is_fictional",
+        "tests/supplementary/test_vc06.py::test_vc06_the_provider_credential_stays_on_the_server",
+        "tests/supplementary/test_vc06.py::test_vc06_the_audit_trail_only_grows",
+        "tests/supplementary/test_vc06.py::test_vc06_a_denied_action_is_recorded_without_a_private_value",
+        "tests/supplementary/test_vc06.py::test_vc06_the_application_claims_no_compliance_it_cannot_support",
+        "tests/supplementary/test_vc06.py::test_vc06_the_application_holds_no_real_looking_identifier"
+      ],
+      "evidence_refs": [
+        "audit_events",
+        "demo_environment_local"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC07",
+      "kind": "supplementary",
+      "title": "every reported ratio names the set it was measured over",
+      "expected": "every reported ratio names the set it was measured over",
+      "node_ids": [
+        "tests/supplementary/test_vc07.py::test_vc07_every_ratio_names_its_denominator",
+        "tests/supplementary/test_vc07.py::test_vc07_the_false_friend_is_never_offered_for_the_other_record",
+        "tests/supplementary/test_vc07.py::test_vc07_the_small_fixture_is_labelled_as_a_demonstration_check"
+      ],
+      "evidence_refs": [
+        "party_cedarline",
+        "party_false_friend"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "VC08",
+      "kind": "supplementary",
+      "title": "the synthetic baseline, the observed results and the outcomes stay apart",
+      "expected": "the synthetic baseline, the observed results and the outcomes stay apart",
+      "node_ids": [
+        "tests/supplementary/test_vc08.py::test_vc08_the_runner_keeps_the_three_measurement_groups_apart",
+        "tests/supplementary/test_vc08.py::test_vc08_the_reference_package_figures_never_reach_the_build",
+        "tests/supplementary/test_vc08.py::test_vc08_the_build_records_no_agreement_percentage",
+        "tests/supplementary/test_vc08.py::test_vc08_a_model_score_is_never_a_calibrated_confidence",
+        "tests/supplementary/test_vc08.py::test_vc08_the_manifest_holds_no_figure_of_the_reference_package"
+      ],
+      "evidence_refs": [
+        "baseline_synthetic",
+        "observed_model_registry",
+        "business_outcome"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D01",
+      "kind": "scenario",
+      "title": "the alias, the unit and the legacy account reach one canonical party",
+      "expected": "the alias, the unit and the legacy account reach one canonical party",
+      "node_ids": [
+        "tests/scenarios/test_d01_identity.py::test_the_alias_reaches_the_recorded_party",
+        "tests/scenarios/test_d01_identity.py::test_the_unit_variation_resolves_to_the_same_official_address",
+        "tests/scenarios/test_d01_identity.py::test_the_legacy_finance_identifier_reaches_the_same_party",
+        "tests/scenarios/test_d01_identity.py::test_the_decided_links_share_one_canonical_party",
+        "tests/evaluator/test_d01_d11.py::test_d01_the_alias_the_unit_and_the_legacy_account_reach_one_party"
+      ],
+      "evidence_refs": [
+        "app_synth_001",
+        "party_cedarline",
+        "payment_d01_settled"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D02",
+      "kind": "scenario",
+      "title": "the false friend stays a separate party",
+      "expected": "the false friend stays a separate party",
+      "node_ids": [
+        "tests/scenarios/test_d02_false_friend.py::test_the_similar_name_is_offered_with_its_contradicting_evidence",
+        "tests/scenarios/test_d02_false_friend.py::test_no_link_is_accepted_without_a_steward_decision",
+        "tests/scenarios/test_d02_false_friend.py::test_the_steward_decision_keeps_the_two_parties_apart",
+        "tests/scenarios/test_d02_false_friend.py::test_the_two_canonical_parties_keep_their_own_address",
+        "tests/evaluator/test_d01_d11.py::test_d02_the_false_friend_stays_a_separate_party"
+      ],
+      "evidence_refs": [
+        "app_d02",
+        "party_false_friend"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D03",
+      "kind": "scenario",
+      "title": "the expired credential holds the dependent action",
+      "expected": "the expired credential holds the dependent action",
+      "node_ids": [
+        "tests/scenarios/test_d03_credential.py::test_the_expired_credential_is_reported_with_its_status",
+        "tests/scenarios/test_d03_credential.py::test_the_trusted_view_shows_the_expired_registration",
+        "tests/scenarios/test_d03_credential.py::test_the_credential_record_keeps_its_own_validity_window",
+        "tests/scenarios/test_d03_credential_dates.py::test_the_expired_registration_is_recorded_and_holds_the_action",
+        "tests/scenarios/test_d03_credential_dates.py::test_the_issue_is_routed_to_the_registration_steward",
+        "tests/scenarios/test_d03_credential_dates.py::test_the_issuance_stays_held",
+        "tests/evaluator/test_d01_d11.py::test_d03_the_expired_credential_holds_the_dependent_action"
+      ],
+      "evidence_refs": [
+        "app_d03",
+        "cred_contractor_halcyon"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D04",
+      "kind": "scenario",
+      "title": "the unknown parcel stays unresolved and no parcel is invented",
+      "expected": "the unknown parcel stays unresolved and no parcel is invented",
+      "node_ids": [
+        "tests/scenarios/test_d04_unknown_parcel.py::test_an_unknown_parcel_has_an_explicit_no_match",
+        "tests/scenarios/test_d04_unknown_parcel.py::test_no_parcel_is_invented_for_the_unknown_number",
+        "tests/scenarios/test_d04_unknown_parcel.py::test_the_application_that_cites_the_unknown_parcel_stays_unresolved",
+        "tests/evaluator/test_d01_d11.py::test_d04_the_unknown_parcel_stays_unresolved"
+      ],
+      "evidence_refs": [
+        "app_d04",
+        "ACME-P-9999"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D05",
+      "kind": "scenario",
+      "title": "the profile shows version two while the submission keeps version one",
+      "expected": "the profile shows version two while the submission keeps version one",
+      "node_ids": [
+        "tests/scenarios/test_d05_profile_history.py::test_the_submitted_revision_keeps_the_first_contact",
+        "tests/scenarios/test_d05_profile_history.py::test_a_case_specific_correction_creates_a_new_revision",
+        "tests/evaluator/test_d01_d11.py::test_d05_the_profile_moves_and_the_submission_does_not"
+      ],
+      "evidence_refs": [
+        "app_d05",
+        "party_applicant_1"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D06",
+      "kind": "scenario",
+      "title": "a refused correction keeps the accepted value",
+      "expected": "a refused correction keeps the accepted value",
+      "node_ids": [
+        "tests/scenarios/test_d06_source_correction.py::test_a_refused_correction_keeps_the_accepted_value",
+        "tests/scenarios/test_d06_source_correction.py::test_a_delayed_correction_keeps_the_accepted_value",
+        "tests/scenarios/test_d06_source_correction.py::test_a_refused_correction_is_never_published",
+        "tests/scenarios/test_d06_source_correction.py::test_an_accepted_correction_is_published_after_the_source_acknowledges",
+        "tests/evaluator/test_d01_d11.py::test_d06_the_refused_correction_keeps_the_accepted_value"
+      ],
+      "evidence_refs": [
+        "app_d06",
+        "GIS-AD-0400"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D07",
+      "kind": "scenario",
+      "title": "the issued snapshot survives a later rule change",
+      "expected": "the issued snapshot survives a later rule change",
+      "node_ids": [
+        "tests/scenarios/test_d07_issued_history.py::test_a_change_after_issuance_opens_an_impact_review",
+        "tests/scenarios/test_d07_issued_history.py::test_the_same_change_does_not_open_a_second_review",
+        "tests/evaluator/test_d01_d11.py::test_d07_the_issued_history_survives_a_later_change"
+      ],
+      "evidence_refs": [
+        "app_d07",
+        "permit_d07",
+        "decision_d07",
+        "assess_d07_v1"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D08",
+      "kind": "scenario",
+      "title": "a replayed transaction creates no second record",
+      "expected": "a replayed transaction creates no second record",
+      "node_ids": [
+        "tests/scenarios/test_d08_replays.py::test_a_replayed_import_stores_no_second_snapshot",
+        "tests/scenarios/test_d08_replays.py::test_a_replayed_command_sends_one_command_and_one_acknowledgement",
+        "tests/scenarios/test_d08_replays.py::test_a_replayed_decision_leaves_one_active_link",
+        "tests/evaluator/test_d01_d11.py::test_d08_a_replayed_transaction_creates_no_second_record"
+      ],
+      "evidence_refs": [
+        "app_d08",
+        "PER-AP-REPLAY-0001"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D09",
+      "kind": "scenario",
+      "title": "an invalid input produces an explicit review result",
+      "expected": "an invalid input produces an explicit review result",
+      "node_ids": [
+        "tests/scenarios/test_d09_invalid_extraction.py::test_each_invalid_input_produces_a_review_result[app_d09_setback-DF-3-non_numeric_input]",
+        "tests/scenarios/test_d09_invalid_extraction.py::test_each_invalid_input_produces_a_review_result[app_d09_setback_nan-DF-3-nonfinite_input]",
+        "tests/scenarios/test_d09_invalid_extraction.py::test_each_invalid_input_produces_a_review_result[app_d09_blank_location-DF-1-missing_condition_input]",
+        "tests/scenarios/test_d09_invalid_extraction.py::test_each_invalid_input_produces_a_review_result[app_d09_unknown_sign-SG-1-unknown_category]",
+        "tests/scenarios/test_d09_invalid_extraction.py::test_an_unknown_sign_type_is_not_treated_as_a_pass",
+        "tests/scenarios/test_d09_invalid_extraction.py::test_the_evaluation_never_crashes_and_records_the_review",
+        "tests/evaluator/test_d01_d11.py::test_d09_an_invalid_input_produces_an_explicit_review_result"
+      ],
+      "evidence_refs": [
+        "app_d09_setback",
+        "app_d09_setback_nan",
+        "app_d09_blank_location",
+        "app_d09_unknown_sign"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D10",
+      "kind": "scenario",
+      "title": "an unowned feed is staged and never publishes",
+      "expected": "an unowned feed is staged and never publishes",
+      "node_ids": [
+        "tests/evaluator/test_d01_d11.py::test_d10_the_unowned_feed_is_staged_and_not_publishable"
+      ],
+      "evidence_refs": [
+        "PER-APP-UNREG-0001",
+        "unregistered_feeds"
+      ],
+      "live_required": false,
+      "pending": false
+    },
+    {
+      "check_id": "D11",
+      "kind": "scenario",
+      "title": "a financial exception never completes the payment",
+      "expected": "a financial exception never completes the payment",
+      "node_ids": [
+        "tests/evaluator/test_d01_d11.py::test_d11_a_financial_exception_never_completes_the_payment"
+      ],
+      "evidence_refs": [
+        "app_d11",
+        "payment_d11_partial",
+        "payment_d11_overpaid",
+        "payment_d11_reversed",
+        "payment_d11_unsettled",
+        "payment_d11_other_currency",
+        "payment_d11_unmatched"
+      ],
+      "live_required": false,
+      "pending": false
+    }
+  ]
+}

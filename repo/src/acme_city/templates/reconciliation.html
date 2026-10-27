@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% macro action_form(item, csrf_token) %}
+<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
+  <summary>
+    <span class="action-label">{{ item.label }}</span>
+    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
+  </summary>
+  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
+  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
+  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
+  {% if item.permitted %}
+  <form method="post" action="{{ item.path }}" class="action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="{{ item.action_id }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}">
+    {% for field in item.fields %}
+      {% if field.type == 'hidden' %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'select' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+          </select>
+        </p>
+      {% elif field.type == 'textarea' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+        </p>
+      {% else %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
+  </form>
+  {% else %}
+  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
+  {% endif %}
+</details>
+{% endmacro %}
+
+{% block content %}
+
+<h1>Reconciliation</h1>
+
+{% include "components/responsibility_panel.html" %}
+
+<section class="panel" aria-labelledby="assessments-heading">
+  <h2 id="assessments-heading">Fee assessments</h2>
+  <table class="data-table" data-testid="assessment-table">
+    <caption class="visually-hidden">Assessments and their reconciled positions</caption>
+    <thead>
+      <tr>
+        <th scope="col">Assessment</th><th scope="col">Application</th><th scope="col">Version</th>
+        <th scope="col">Assessed</th><th scope="col">Settled allocated</th><th scope="col">Balance</th>
+        <th scope="col">Status</th><th scope="col">Exception</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assessment in position.assessments %}
+      <tr data-testid="assessment-row" data-assessment-id="{{ assessment.assessment_id }}" data-application-id="{{ assessment.application_id }}" data-assessment-version="{{ assessment.version }}" data-status="{{ assessment.position.status }}">
+        <th scope="row">{{ assessment.assessment_id }}</th>
+        <td>{{ assessment.application_id }}</td>
+        <td>{{ assessment.version }}</td>
+        <td>{{ assessment.assessed_total }} {{ assessment.currency }}</td>
+        <td>{{ assessment.position.settled_allocated }}</td>
+        <td>{{ assessment.position.balance }}</td>
+        <td><span class="badge badge-{{ assessment.position.status }}">{{ assessment.position.status }}</span></td>
+        <td>{{ assessment.position.exception or 'none' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">No fee assessment is recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="payments-heading">
+  <h2 id="payments-heading">Receipts</h2>
+  <table class="data-table" data-testid="payment-table">
+    <caption class="visually-hidden">Simulated ERP receipts</caption>
+    <thead>
+      <tr>
+        <th scope="col">Transaction</th><th scope="col">Receipt</th><th scope="col">Amount</th>
+        <th scope="col">Currency</th><th scope="col">Settlement</th><th scope="col">Payer account</th>
+        <th scope="col">Events</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in position.payments %}
+      <tr data-testid="payment-row" data-settlement="{{ payment.settlement_status }}">
+        <th scope="row">{{ payment.source_transaction_id }}</th>
+        <td>{{ payment.payment_id }}</td>
+        <td>{{ payment.amount }}</td>
+        <td>{{ payment.currency }}</td>
+        <td><span class="badge badge-{{ payment.settlement_status }}">{{ payment.settlement_status }}</span></td>
+        <td>{{ payment.payer_account_id or '-' }}</td>
+        <td>{% for event in payment.events %}{{ event.event_type }} {{ event.amount }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No receipt is recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="allocations-heading">
+  <h2 id="allocations-heading">Confirmed allocations</h2>
+  <table class="data-table" data-testid="allocation-table">
+    <caption class="visually-hidden">Confirmed allocations</caption>
+    <thead>
+      <tr><th scope="col">Allocation</th><th scope="col">Receipt</th><th scope="col">Assessment</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Confirmed by</th></tr>
+    </thead>
+    <tbody>
+      {% for allocation in position.allocations %}
+      <tr data-testid="allocation-row" data-status="{{ allocation.status }}">
+        <th scope="row">{{ allocation.allocation_id }}</th>
+        <td>{{ allocation.payment_id }}</td>
+        <td>{{ allocation.assessment_id }}</td>
+        <td>{{ allocation.amount }} {{ allocation.currency }}</td>
+        <td>{{ allocation.status }}</td>
+        <td>{{ allocation.actor_id or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No allocation is confirmed.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="accounts-heading">
+  <h2 id="accounts-heading">Finance accounts</h2>
+  <table class="data-table" data-testid="account-table">
+    <caption class="visually-hidden">ERP finance accounts and their links</caption>
+    <thead><tr><th scope="col">Account</th><th scope="col">Source account</th><th scope="col">Role</th><th scope="col">Link status</th><th scope="col">Party</th><th scope="col">Version</th></tr></thead>
+    <tbody>
+      {% for account in position.accounts %}
+      <tr data-testid="account-row" data-link-status="{{ account.link_status }}">
+        <th scope="row">{{ account.account_id }}</th>
+        <td>{{ account.source_account_id }}</td>
+        <td>{{ account.account_role }}</td>
+        <td>{{ account.link_status }}</td>
+        <td>{{ account.party_id or 'not linked' }}</td>
+        <td>{{ account.version }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/evidence_panel.html" %}
+
+<section class="panel" aria-labelledby="reconciliation-actions-heading">
+  <h2 id="reconciliation-actions-heading">Actions</h2>
+  {% for item in actions %}
+    {{ action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}
+    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

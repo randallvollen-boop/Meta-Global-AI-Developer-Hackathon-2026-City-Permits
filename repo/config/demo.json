@@ -1,0 +1,151 @@
+{
+  "config_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "fixture_version": "2026.10.26-1",
+  "demo_timezone": "America/New_York",
+  "assignment_epoch": "2026-01-01T00:00:00Z",
+  "policy_epoch": "2026-01-01T00:00:00Z",
+  "calendar_basis": "configured_demo_calendar",
+  "business_day_definition": "Monday to Friday excluding no holidays in the demonstration calendar",
+  "session": {
+    "cookie_name": "acme_session",
+    "session_ttl_minutes": 480,
+    "httponly": true,
+    "samesite": "Lax",
+    "secure_cookie": false,
+    "secure_cookie_note": "Set to true behind a local TLS endpoint; the demonstration runs on loopback over plain HTTP."
+  },
+  "reset": {
+    "confirmation_phrase": "--confirm-fictional-demo",
+    "database_marker": "demo_environment.fictional_demo",
+    "refuse_unmarked_databases": true,
+    "refuse_non_sqlite_targets": true
+  },
+  "fee_schedule_basis": "initial_submitted_at",
+  "fee_schedule_currency": "USD",
+  "scenarios": [
+    {
+      "scenario_id": "D01",
+      "title": "Main case",
+      "condition": "An organization alias, an ambiguous unit address and a payment under a legacy finance account identifier.",
+      "related_records": [
+        "app_synth_001",
+        "party_cedarline",
+        "payment_d01_settled",
+        "facct_cedarline_legacy",
+        "address_400_lantern_unit_2"
+      ],
+      "starting_state": "links_unresolved_and_payment_unallocated"
+    },
+    {
+      "scenario_id": "D02",
+      "title": "False friend",
+      "condition": "A second organization in the same building with a similar name.",
+      "related_records": [
+        "app_d02",
+        "party_false_friend",
+        "address_400_lantern_unit_5",
+        "cred_license_false_friend"
+      ],
+      "starting_state": "distinct_party"
+    },
+    {
+      "scenario_id": "D03",
+      "title": "Expired contractor credential",
+      "condition": "A contractor registration that expired before the required decision date.",
+      "related_records": [
+        "app_d03",
+        "cred_contractor_halcyon"
+      ],
+      "starting_state": "credential_expired"
+    },
+    {
+      "scenario_id": "D04",
+      "title": "Unknown parcel",
+      "condition": "A submitted parcel identifier that no GIS record resolves.",
+      "related_records": [
+        "app_d04"
+      ],
+      "starting_state": "site_unresolved"
+    },
+    {
+      "scenario_id": "D05",
+      "title": "Profile update",
+      "condition": "An applicant updates contact details after submission.",
+      "related_records": [
+        "app_d05",
+        "party_applicant_1",
+        "contact_applicant_1_email"
+      ],
+      "starting_state": "profile_version_1"
+    },
+    {
+      "scenario_id": "D06",
+      "title": "Source correction failure",
+      "condition": "A GIS correction that the source rejects or delays.",
+      "related_records": [
+        "app_d06",
+        "address_12_marrow"
+      ],
+      "starting_state": "last_accepted_value_visible"
+    },
+    {
+      "scenario_id": "D07",
+      "title": "Post-issuance change",
+      "condition": "A rule, fee or master change after a permit was issued.",
+      "related_records": [
+        "app_d07",
+        "permit_d07",
+        "assess_d07_v1"
+      ],
+      "starting_state": "issued_snapshot_preserved"
+    },
+    {
+      "scenario_id": "D08",
+      "title": "Replayed transactions",
+      "condition": "Repeated imports, payment delivery, allocation command and publication.",
+      "related_records": [
+        "app_d08"
+      ],
+      "starting_state": "replay_safe"
+    },
+    {
+      "scenario_id": "D09",
+      "title": "Invalid extraction inputs",
+      "condition": "Non-numeric, non-finite, missing conditional and unsupported category values.",
+      "related_records": [
+        "app_d09_setback",
+        "app_d09_setback_nan",
+        "app_d09_blank_location",
+        "app_d09_unknown_sign"
+      ],
+      "starting_state": "explicit_review_results"
+    },
+    {
+      "scenario_id": "D10",
+      "title": "Unowned feed",
+      "condition": "A feed that arrives without an accountable owner or steward queue.",
+      "related_records": [
+        "PER-APP-UNREG-0001",
+        "PER-APP-UNREG-0002"
+      ],
+      "starting_state": "staged_not_publishable"
+    },
+    {
+      "scenario_id": "D11",
+      "title": "Financial exceptions",
+      "condition": "Partial, overpaid, reversed, unsettled, unmatched and incompatible currency payments.",
+      "related_records": [
+        "app_d11",
+        "payment_d11_partial",
+        "payment_d11_overpaid",
+        "payment_d11_reversed",
+        "payment_d11_unsettled",
+        "payment_d11_other_currency",
+        "payment_d11_unmatched"
+      ],
+      "starting_state": "exception_per_variant"
+    }
+  ]
+}

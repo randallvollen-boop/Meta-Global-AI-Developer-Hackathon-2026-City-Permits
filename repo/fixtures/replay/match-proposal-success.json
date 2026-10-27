@@ -1,0 +1,51 @@
+{
+  "fixture_kind": "muse_replay",
+  "fixture_version": "2026.10.26-1",
+  "note": "A recorded match-proposal output. It was produced by the live run named in source_run_id against the source record ERP-BL-00413. The disposition is a proposal: it was never a link, a decision or an approval.",
+  "task": "match_proposal",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "prompt_version": "acme-match-prompt-v1",
+  "schema_version": "acme-match-schema-v1",
+  "recorded_at": "2026-10-26T00:00:00Z",
+  "source_run_id": "modelrun_source_match_2026_10_26",
+  "source_response_id": "resp_fictional_source_match",
+  "usage": {
+    "input_tokens": 1104,
+    "cached_input_tokens": 0,
+    "output_tokens": 231,
+    "reasoning_tokens": 0,
+    "total_tokens": 1335
+  },
+  "latency_ms": 2140,
+  "output": {
+    "source_snapshot_id": "snap_erp_finance_ERP-BL-00413_v1",
+    "candidates": [
+      {
+        "entity_id": "party_false_friend",
+        "supporting": [
+          "the source record names this candidate in holder_ref",
+          "the holder name equals the recorded name of this candidate",
+          "the business address names the official address of this candidate",
+          "this candidate holds the business licence BL-2026-00413 with status active"
+        ],
+        "conflicting": [],
+        "proposal_score": 1.0
+      },
+      {
+        "entity_id": "party_cedarline",
+        "supporting": [
+          "the holder name shares most of its name tokens with this candidate"
+        ],
+        "conflicting": [
+          "the source reference names another party than this candidate",
+          "the business address names unit 5 while the official address of this candidate names unit 2",
+          "this candidate holds a different business licence number"
+        ],
+        "proposal_score": 0.0
+      }
+    ],
+    "recommended_disposition": "link",
+    "explanation": "The source record names party_false_friend in holder_ref, its holder name equals the recorded name and its licence number belongs to that candidate. The similar name of party_cedarline is not evidence on its own, and the source reference, the unit number and the licence number all contradict it. The proposal is a link to party_false_friend for a steward to decide."
+  }
+}

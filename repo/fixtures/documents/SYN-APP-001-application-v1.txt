@@ -1,0 +1,22 @@
+ACME CITY FICTIONAL DEMONSTRATION DOCUMENT - NOT A REAL APPLICATION
+This document is synthetic demo content. It records no real person, business, parcel, fee or permit.
+Application number: SYN-APP-001
+Document type: commercial tenant improvement application
+Document version: 1
+Received date: 2026-09-08
+SECTION 1 - APPLICANT
+Legal applicant name: Cedarline Coffee Roasters LLC
+Organization alias of record: Cedar Line Coffee Roasters
+Business licence reference: BL-2026-00412
+SECTION 2 - SITE
+Unit address: 400 Lantern Row Unit 2, ACME City
+Parcel reference: ACME-P-1001
+SECTION 3 - CONTRACTOR
+Contractor registration: CR-2026-00188
+Contractor of record: Ironvale Construction Group LLC
+SECTION 4 - PROJECT DESCRIPTION
+Project description: Interior tenant improvement for a coffee retail space including a new service counter, electrical panel upgrade and non-structural partitions.
+SECTION 5 - VALUATION AND OCCUPANCY
+Declared project valuation: 50000.00 USD
+Declared occupant load: 42 persons
+END OF FICTIONAL DOCUMENT - SYN-APP-001 APPLICATION VERSION 1

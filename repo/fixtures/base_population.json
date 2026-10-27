@@ -1,0 +1,1559 @@
+{
+  "fixture_version": "2026.10.26-1",
+  "fictional_demo": true,
+  "note": "Coherent fictional base population. Roles, addresses, credentials and accounts are related by identity, and the source variations are derived from these records rather than generated independently. Every value is synthetic.",
+  "parties": [
+    {
+      "party_id": "party_applicant_1",
+      "party_type": "person",
+      "display_name": "Tamsin Aldous",
+      "legal_name": "Tamsin Aldous",
+      "status": "active",
+      "scenario_id": "D05"
+    },
+    {
+      "party_id": "party_applicant_2",
+      "party_type": "person",
+      "display_name": "Quentin Orson",
+      "legal_name": "Quentin Orson",
+      "status": "active",
+      "scenario_id": null
+    },
+    {
+      "party_id": "party_cedarline",
+      "party_type": "organization",
+      "display_name": "Cedarline Coffee Roasters LLC",
+      "legal_name": "Cedarline Coffee Roasters LLC",
+      "status": "active",
+      "scenario_id": "D01"
+    },
+    {
+      "party_id": "party_false_friend",
+      "party_type": "organization",
+      "display_name": "Cedarline Coffee Works LLC",
+      "legal_name": "Cedarline Coffee Works LLC",
+      "status": "active",
+      "scenario_id": "D02"
+    },
+    {
+      "party_id": "party_ironvale",
+      "party_type": "organization",
+      "display_name": "Ironvale Construction Group LLC",
+      "legal_name": "Ironvale Construction Group LLC",
+      "status": "active",
+      "scenario_id": "D01"
+    },
+    {
+      "party_id": "party_halcyon",
+      "party_type": "organization",
+      "display_name": "Halcyon Framing and Build LLC",
+      "legal_name": "Halcyon Framing and Build LLC",
+      "status": "active",
+      "scenario_id": "D03"
+    },
+    {
+      "party_id": "party_marrow",
+      "party_type": "organization",
+      "display_name": "Marrow Creek Property Group LLC",
+      "legal_name": "Marrow Creek Property Group LLC",
+      "status": "active",
+      "scenario_id": "D07"
+    },
+    {
+      "party_id": "party_hollis",
+      "party_type": "organization",
+      "display_name": "Hollis Street Bakery LLC",
+      "legal_name": "Hollis Street Bakery LLC",
+      "status": "active",
+      "scenario_id": "D04"
+    },
+    {
+      "party_id": "party_quarry",
+      "party_type": "organization",
+      "display_name": "Quarry Lane Imports LLC",
+      "legal_name": "Quarry Lane Imports LLC",
+      "status": "active",
+      "scenario_id": "D11"
+    }
+  ],
+  "party_aliases": [
+    {
+      "alias_id": "alias_cedarline_spelling",
+      "party_id": "party_cedarline",
+      "alias_value": "Cedar Line Coffee Roasters",
+      "alias_type": "source_spelling",
+      "source_record_ref": "erp_finance:ERP-BL-00412",
+      "scenario_id": "D01"
+    },
+    {
+      "alias_id": "alias_cedarline_short",
+      "party_id": "party_cedarline",
+      "alias_value": "Cedarline Coffee",
+      "alias_type": "trading_name",
+      "source_record_ref": "permitting:PER-AP-0003",
+      "scenario_id": "D01"
+    },
+    {
+      "alias_id": "alias_false_friend_trading",
+      "party_id": "party_false_friend",
+      "alias_value": "Cedarline Coffee Works",
+      "alias_type": "trading_name",
+      "source_record_ref": "erp_finance:ERP-BL-00413",
+      "scenario_id": "D02"
+    },
+    {
+      "alias_id": "alias_halcyon_trading",
+      "party_id": "party_halcyon",
+      "alias_value": "Halcyon Build",
+      "alias_type": "trading_name",
+      "source_record_ref": "permitting:PER-CR-00977",
+      "scenario_id": "D03"
+    }
+  ],
+  "party_contacts": [
+    {
+      "contact_id": "contact_applicant_1_email",
+      "party_id": "party_applicant_1",
+      "contact_type": "email",
+      "value": "t.aldous@example.invalid",
+      "verification_state": "verified",
+      "source_record_ref": "permitting:PER-AP-0001",
+      "valid_from": "2026-01-05T00:00:00Z",
+      "valid_to": null,
+      "scenario_id": "D05"
+    },
+    {
+      "contact_id": "contact_applicant_1_phone",
+      "party_id": "party_applicant_1",
+      "contact_type": "phone",
+      "value": "+1-555-0141",
+      "verification_state": "unverified",
+      "source_record_ref": "permitting:PER-AP-0001",
+      "valid_from": "2026-01-05T00:00:00Z",
+      "valid_to": null,
+      "scenario_id": "D05"
+    },
+    {
+      "contact_id": "contact_applicant_2_email",
+      "party_id": "party_applicant_2",
+      "contact_type": "email",
+      "value": "q.orson@example.invalid",
+      "verification_state": "verified",
+      "source_record_ref": "permitting:PER-AP-0002",
+      "valid_from": "2026-02-11T00:00:00Z",
+      "valid_to": null,
+      "scenario_id": null
+    },
+    {
+      "contact_id": "contact_cedarline_email",
+      "party_id": "party_cedarline",
+      "contact_type": "email",
+      "value": "hello@cedarline.example.invalid",
+      "verification_state": "verified",
+      "source_record_ref": "permitting:PER-AP-0003",
+      "valid_from": "2026-03-02T00:00:00Z",
+      "valid_to": null,
+      "scenario_id": "D01"
+    },
+    {
+      "contact_id": "contact_cedarline_phone",
+      "party_id": "party_cedarline",
+      "contact_type": "phone",
+      "value": "+1-555-0170",
+      "verification_state": "unverified",
+      "source_record_ref": "permitting:PER-AP-0003",
+      "valid_from": "2026-03-02T00:00:00Z",
+      "valid_to": null,
+      "scenario_id": "D01"
+    }
+  ],
+  "parcels": [
+    {
+      "parcel_id": "parcel_1001",
+      "jurisdiction_id": "acme_city",
+      "source_parcel_number": "ACME-P-1001",
+      "status": "active",
+      "valid_from": "2019-04-01T00:00:00Z",
+      "valid_to": null,
+      "source_record_ref": "gis:GIS-PCL-1001",
+      "scenario_id": "D01"
+    },
+    {
+      "parcel_id": "parcel_1002",
+      "jurisdiction_id": "acme_city",
+      "source_parcel_number": "ACME-P-1002",
+      "status": "active",
+      "valid_from": "2019-04-01T00:00:00Z",
+      "valid_to": null,
+      "source_record_ref": "gis:GIS-PCL-1002",
+      "scenario_id": "D07"
+    }
+  ],
+  "addresses": [
+    {
+      "address_id": "address_400_lantern",
+      "street_number": "400",
+      "street_name": "Lantern Row",
+      "street_type": "Row",
+      "unit_type": null,
+      "unit_number": null,
+      "municipality": "ACME City",
+      "region": "AC",
+      "postcode": "ACM-01401",
+      "source_string": "400 Lantern Row",
+      "status": "active",
+      "source_record_ref": "gis:GIS-AD-0400",
+      "scenario_id": "D01"
+    },
+    {
+      "address_id": "address_400_lantern_unit_2",
+      "street_number": "400",
+      "street_name": "Lantern Row",
+      "street_type": "Row",
+      "unit_type": "unit",
+      "unit_number": "2",
+      "municipality": "ACME City",
+      "region": "AC",
+      "postcode": "ACM-01401",
+      "source_string": "400 Lantern Row Unit 2",
+      "status": "active",
+      "source_record_ref": "gis:GIS-AD-0400-U2",
+      "scenario_id": "D01"
+    },
+    {
+      "address_id": "address_400_lantern_unit_5",
+      "street_number": "400",
+      "street_name": "Lantern Row",
+      "street_type": "Row",
+      "unit_type": "unit",
+      "unit_number": "5",
+      "municipality": "ACME City",
+      "region": "AC",
+      "postcode": "ACM-01401",
+      "source_string": "400 Lantern Row Unit 5",
+      "status": "active",
+      "source_record_ref": "gis:GIS-AD-0400-U5",
+      "scenario_id": "D02"
+    },
+    {
+      "address_id": "address_12_marrow",
+      "street_number": "12",
+      "street_name": "Marrow Creek Road",
+      "street_type": "Road",
+      "unit_type": null,
+      "unit_number": null,
+      "municipality": "ACME City",
+      "region": "AC",
+      "postcode": "ACM-01402",
+      "source_string": "12 Marrow Creek Road",
+      "status": "active",
+      "source_record_ref": "gis:GIS-AD-0012",
+      "scenario_id": "D07"
+    }
+  ],
+  "parcel_addresses": [
+    {
+      "relationship_id": "pa_1001_building",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern",
+      "relationship_type": "official_address",
+      "effective_from": "2019-04-01T00:00:00Z",
+      "effective_to": null,
+      "evidence_ref": "gis:GIS-AD-0400",
+      "scenario_id": "D01"
+    },
+    {
+      "relationship_id": "pa_1001_unit_2",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_2",
+      "relationship_type": "official_unit",
+      "effective_from": "2024-11-01T00:00:00Z",
+      "effective_to": null,
+      "evidence_ref": "gis:GIS-AD-0400-U2",
+      "scenario_id": "D01"
+    },
+    {
+      "relationship_id": "pa_1001_unit_5",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_5",
+      "relationship_type": "official_unit",
+      "effective_from": "2024-11-01T00:00:00Z",
+      "effective_to": null,
+      "evidence_ref": "gis:GIS-AD-0400-U5",
+      "scenario_id": "D02"
+    },
+    {
+      "relationship_id": "pa_1002_building",
+      "parcel_id": "parcel_1002",
+      "address_id": "address_12_marrow",
+      "relationship_type": "official_address",
+      "effective_from": "2019-04-01T00:00:00Z",
+      "effective_to": null,
+      "evidence_ref": "gis:GIS-AD-0012",
+      "scenario_id": "D07"
+    }
+  ],
+  "credentials": [
+    {
+      "credential_id": "cred_license_cedarline",
+      "holder_party_id": "party_cedarline",
+      "credential_type": "business_license",
+      "issuing_authority_id": "erp_finance:business_licensing_register",
+      "number": "BL-2026-00412",
+      "status": "active",
+      "valid_from": "2026-01-15T00:00:00Z",
+      "valid_to": "2026-12-31T00:00:00Z",
+      "verified_at": "2026-09-02T09:00:00Z",
+      "source_system_id": "erp_finance",
+      "source_record_id": "ERP-BL-00412",
+      "scenario_id": "D01"
+    },
+    {
+      "credential_id": "cred_license_false_friend",
+      "holder_party_id": "party_false_friend",
+      "credential_type": "business_license",
+      "issuing_authority_id": "erp_finance:business_licensing_register",
+      "number": "BL-2026-00413",
+      "status": "active",
+      "valid_from": "2026-02-01T00:00:00Z",
+      "valid_to": "2026-12-31T00:00:00Z",
+      "verified_at": "2026-09-02T09:05:00Z",
+      "source_system_id": "erp_finance",
+      "source_record_id": "ERP-BL-00413",
+      "scenario_id": "D02"
+    },
+    {
+      "credential_id": "cred_license_quarry",
+      "holder_party_id": "party_quarry",
+      "credential_type": "business_license",
+      "issuing_authority_id": "erp_finance:business_licensing_register",
+      "number": "BL-2025-00710",
+      "status": "active",
+      "valid_from": "2025-04-01T00:00:00Z",
+      "valid_to": "2026-12-31T00:00:00Z",
+      "verified_at": "2026-01-10T10:00:00Z",
+      "source_system_id": "erp_finance",
+      "source_record_id": "ERP-BL-00710",
+      "scenario_id": "D11"
+    },
+    {
+      "credential_id": "cred_contractor_ironvale",
+      "holder_party_id": "party_ironvale",
+      "credential_type": "contractor_registration",
+      "issuing_authority_id": "permitting:contractor_register",
+      "number": "CR-2026-00188",
+      "status": "active",
+      "valid_from": "2026-02-01T00:00:00Z",
+      "valid_to": "2027-01-31T00:00:00Z",
+      "verified_at": "2026-02-03T08:30:00Z",
+      "source_system_id": "permitting",
+      "source_record_id": "PER-CR-00188",
+      "scenario_id": "D01"
+    },
+    {
+      "credential_id": "cred_contractor_halcyon",
+      "holder_party_id": "party_halcyon",
+      "credential_type": "contractor_registration",
+      "issuing_authority_id": "permitting:contractor_register",
+      "number": "CR-2025-00977",
+      "status": "expired",
+      "valid_from": "2024-06-01T00:00:00Z",
+      "valid_to": "2026-05-31T00:00:00Z",
+      "verified_at": "2025-06-02T08:30:00Z",
+      "source_system_id": "permitting",
+      "source_record_id": "PER-CR-00977",
+      "scenario_id": "D03"
+    }
+  ],
+  "finance_accounts": [
+    {
+      "account_id": "facct_cedarline_legacy",
+      "source_account_id": "ERP-ACC-77120-LEG",
+      "source_system_id": "erp_finance",
+      "party_id": null,
+      "account_role": "payer",
+      "source_version": "2",
+      "link_status": "unlinked",
+      "link_decision": null,
+      "scenario_id": "D01"
+    },
+    {
+      "account_id": "facct_cedarline_current",
+      "source_account_id": "ERP-ACC-88231",
+      "source_system_id": "erp_finance",
+      "party_id": null,
+      "account_role": "payer",
+      "source_version": "5",
+      "link_status": "unlinked",
+      "link_decision": null,
+      "scenario_id": "D01"
+    },
+    {
+      "account_id": "facct_quarry",
+      "source_account_id": "ERP-ACC-90044",
+      "source_system_id": "erp_finance",
+      "party_id": null,
+      "account_role": "payer",
+      "source_version": "1",
+      "link_status": "unlinked",
+      "link_decision": null,
+      "scenario_id": "D11"
+    }
+  ],
+  "applications": [
+    {
+      "application_id": "app_synth_001",
+      "source_application_number": "SYN-APP-001",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-09-08T14:30:00Z",
+      "revision_submitted_at": "2026-09-08T14:30:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement for a coffee retail space.",
+      "applicant_party_id": "party_cedarline",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a coffee retail space including a new service counter, electrical panel upgrade and non-structural partitions.",
+        "valuation": 50000.0,
+        "valuation_cents": 5000000,
+        "occupancy_load": 42,
+        "submitted_site_text": "400 Lantern Row, Suite 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D01"
+    },
+    {
+      "application_id": "app_d02",
+      "source_application_number": "SYN-APP-002",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-09-09T09:15:00Z",
+      "revision_submitted_at": "2026-09-09T09:15:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement for a neighbouring coffee retail space.",
+      "applicant_party_id": "party_false_friend",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a neighbouring coffee retail space with new shelving and a small seating area.",
+        "valuation": 48000.0,
+        "valuation_cents": 4800000,
+        "occupancy_load": 38,
+        "submitted_site_text": "400 Lantern Row Unit 5, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedarline Coffee Works",
+        "contact_email": "hello@cedarlineworks.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D02"
+    },
+    {
+      "application_id": "app_d03",
+      "source_application_number": "SYN-APP-003",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-10-02T11:05:00Z",
+      "revision_submitted_at": "2026-10-02T11:05:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement for a bakery unit.",
+      "applicant_party_id": "party_hollis",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a bakery unit including a service counter and extraction fan.",
+        "valuation": 62000.0,
+        "valuation_cents": 6200000,
+        "occupancy_load": 31,
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2025-00977",
+        "organization_name": "Hollis Street Bakery",
+        "contact_email": "permits@hollisstreet.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D03"
+    },
+    {
+      "application_id": "app_d04",
+      "source_application_number": "SYN-APP-004",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-10-05T16:40:00Z",
+      "revision_submitted_at": "2026-10-05T16:40:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement for a bakery unit at an unregistered site.",
+      "applicant_party_id": "party_hollis",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a bakery unit at a site the applicant cites by parcel number.",
+        "valuation": 54000.0,
+        "valuation_cents": 5400000,
+        "occupancy_load": 29,
+        "submitted_site_text": "1234 Kestrel Pass, ACME City",
+        "submitted_parcel": "ACME-P-9999",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Hollis Street Bakery",
+        "contact_email": "permits@hollisstreet.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D04"
+    },
+    {
+      "application_id": "app_d05",
+      "source_application_number": "SYN-APP-005",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-08-20T10:00:00Z",
+      "revision_submitted_at": "2026-08-20T10:00:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement submitted by an individual applicant.",
+      "applicant_party_id": "party_applicant_1",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a small studio space.",
+        "valuation": 31000.0,
+        "valuation_cents": 3100000,
+        "occupancy_load": 12,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": null,
+        "contact_email": "t.aldous@example.invalid",
+        "applicant_role": "individual"
+      },
+      "scenario_id": "D05"
+    },
+    {
+      "application_id": "app_d06",
+      "source_application_number": "SYN-APP-006",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-07-15T13:00:00Z",
+      "revision_submitted_at": "2026-07-15T13:00:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement with a disputed official address.",
+      "applicant_party_id": "party_marrow",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a ground floor office unit.",
+        "valuation": 40000.0,
+        "valuation_cents": 4000000,
+        "occupancy_load": 18,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Marrow Creek Property Group",
+        "contact_email": "facilities@marrowcreek.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D06"
+    },
+    {
+      "application_id": "app_d07",
+      "source_application_number": "SYN-APP-007",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-06-02T09:45:00Z",
+      "revision_submitted_at": "2026-06-02T09:45:00Z",
+      "status": "issued",
+      "revision": 1,
+      "description": "Historical interior tenant improvement used as the post-issuance change case.",
+      "applicant_party_id": "party_marrow",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a ground floor office unit with a new reception wall.",
+        "valuation": 120000.0,
+        "valuation_cents": 12000000,
+        "occupancy_load": 24,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Marrow Creek Property Group",
+        "contact_email": "facilities@marrowcreek.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D07"
+    },
+    {
+      "application_id": "app_d08",
+      "source_application_number": "SYN-APP-008",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-08-01T12:00:00Z",
+      "revision_submitted_at": "2026-08-01T12:00:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement used to exercise replayed transactions.",
+      "applicant_party_id": "party_cedarline",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a second coffee retail space.",
+        "valuation": 44000.0,
+        "valuation_cents": 4400000,
+        "occupancy_load": 26,
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D08"
+    },
+    {
+      "application_id": "app_d09_setback",
+      "source_application_number": "SYN-APP-009",
+      "permit_type": "deck_fence",
+      "initial_submitted_at": "2026-08-11T09:00:00Z",
+      "revision_submitted_at": "2026-08-11T09:00:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Deck application with a nonnumeric setback value.",
+      "applicant_party_id": "party_applicant_1",
+      "submitted_facts": {
+        "project_description": "Rear deck addition.",
+        "valuation": 9000.0,
+        "valuation_cents": 900000,
+        "structure_kind": "deck",
+        "setback_ft": "twenty",
+        "height_ft": 3.5,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual"
+      },
+      "scenario_id": "D09"
+    },
+    {
+      "application_id": "app_d09_setback_nan",
+      "source_application_number": "SYN-APP-010",
+      "permit_type": "deck_fence",
+      "initial_submitted_at": "2026-08-11T09:10:00Z",
+      "revision_submitted_at": "2026-08-11T09:10:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Deck application with a nonfinite setback value.",
+      "applicant_party_id": "party_applicant_1",
+      "submitted_facts": {
+        "project_description": "Rear deck addition.",
+        "valuation": 9000.0,
+        "valuation_cents": 900000,
+        "structure_kind": "deck",
+        "setback_ft": "nan",
+        "height_ft": 3.5,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual"
+      },
+      "scenario_id": "D09"
+    },
+    {
+      "application_id": "app_d09_blank_location",
+      "source_application_number": "SYN-APP-011",
+      "permit_type": "deck_fence",
+      "initial_submitted_at": "2026-08-11T09:20:00Z",
+      "revision_submitted_at": "2026-08-11T09:20:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Fence application with a blank conditional input.",
+      "applicant_party_id": "party_applicant_2",
+      "submitted_facts": {
+        "project_description": "Front yard fence replacement.",
+        "valuation": 4500.0,
+        "valuation_cents": 450000,
+        "structure_kind": "fence",
+        "location": "",
+        "height_ft": 4,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual"
+      },
+      "scenario_id": "D09"
+    },
+    {
+      "application_id": "app_d09_unknown_sign",
+      "source_application_number": "SYN-APP-012",
+      "permit_type": "sign",
+      "initial_submitted_at": "2026-08-11T09:30:00Z",
+      "revision_submitted_at": "2026-08-11T09:30:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Sign application with an unsupported sign type.",
+      "applicant_party_id": "party_cedarline",
+      "submitted_facts": {
+        "project_description": "New storefront sign.",
+        "valuation": 2500.0,
+        "valuation_cents": 250000,
+        "sign_type": "billboard",
+        "sign_area_sqft": 1000,
+        "illuminated": "no",
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D09"
+    },
+    {
+      "application_id": "app_d11",
+      "source_application_number": "SYN-APP-013",
+      "permit_type": "com_ti",
+      "initial_submitted_at": "2026-09-18T14:00:00Z",
+      "revision_submitted_at": "2026-09-18T14:00:00Z",
+      "status": "submitted",
+      "revision": 1,
+      "description": "Interior tenant improvement used for the financial exception variants.",
+      "applicant_party_id": "party_cedarline",
+      "submitted_facts": {
+        "project_description": "Interior tenant improvement for a coffee retail space.",
+        "valuation": 50000.0,
+        "valuation_cents": 5000000,
+        "occupancy_load": 42,
+        "submitted_site_text": "400 Lantern Row, Suite 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business"
+      },
+      "scenario_id": "D11"
+    }
+  ],
+  "application_parties": [
+    {
+      "application_party_id": "appparty_app_synth_001_applicant",
+      "application_id": "app_synth_001",
+      "party_id": "party_cedarline",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D01"
+    },
+    {
+      "application_party_id": "appparty_app_d02_applicant",
+      "application_id": "app_d02",
+      "party_id": "party_false_friend",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D02"
+    },
+    {
+      "application_party_id": "appparty_app_d03_applicant",
+      "application_id": "app_d03",
+      "party_id": "party_hollis",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D03"
+    },
+    {
+      "application_party_id": "appparty_app_d04_applicant",
+      "application_id": "app_d04",
+      "party_id": "party_hollis",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D04"
+    },
+    {
+      "application_party_id": "appparty_app_d05_applicant",
+      "application_id": "app_d05",
+      "party_id": "party_applicant_1",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D05"
+    },
+    {
+      "application_party_id": "appparty_app_d06_applicant",
+      "application_id": "app_d06",
+      "party_id": "party_marrow",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D06"
+    },
+    {
+      "application_party_id": "appparty_app_d07_applicant",
+      "application_id": "app_d07",
+      "party_id": "party_marrow",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D07"
+    },
+    {
+      "application_party_id": "appparty_app_d08_applicant",
+      "application_id": "app_d08",
+      "party_id": "party_cedarline",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D08"
+    },
+    {
+      "application_party_id": "appparty_app_d09_setback_applicant",
+      "application_id": "app_d09_setback",
+      "party_id": "party_applicant_1",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D09"
+    },
+    {
+      "application_party_id": "appparty_app_d09_setback_nan_applicant",
+      "application_id": "app_d09_setback_nan",
+      "party_id": "party_applicant_1",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D09"
+    },
+    {
+      "application_party_id": "appparty_app_d09_blank_location_applicant",
+      "application_id": "app_d09_blank_location",
+      "party_id": "party_applicant_2",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D09"
+    },
+    {
+      "application_party_id": "appparty_app_d09_unknown_sign_applicant",
+      "application_id": "app_d09_unknown_sign",
+      "party_id": "party_cedarline",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D09"
+    },
+    {
+      "application_party_id": "appparty_app_d11_applicant",
+      "application_id": "app_d11",
+      "party_id": "party_cedarline",
+      "party_role": "applicant",
+      "is_primary": true,
+      "authority_evidence_ref": null,
+      "scenario_id": "D11"
+    },
+    {
+      "application_party_id": "appparty_app_synth_001_contractor",
+      "application_id": "app_synth_001",
+      "party_id": "party_ironvale",
+      "party_role": "contractor",
+      "is_primary": false,
+      "authority_evidence_ref": "permitting:PER-CR-00188",
+      "scenario_id": "D01"
+    },
+    {
+      "application_party_id": "appparty_app_synth_001_owner",
+      "application_id": "app_synth_001",
+      "party_id": "party_marrow",
+      "party_role": "property_owner",
+      "is_primary": false,
+      "authority_evidence_ref": "gis:GIS-PCL-1001",
+      "scenario_id": "D01"
+    },
+    {
+      "application_party_id": "appparty_app_synth_001_payer",
+      "application_id": "app_synth_001",
+      "party_id": "party_cedarline",
+      "party_role": "payer",
+      "is_primary": false,
+      "authority_evidence_ref": "erp_finance:ERP-ACC-77120-LEG",
+      "scenario_id": "D01"
+    },
+    {
+      "application_party_id": "appparty_app_synth_001_holder",
+      "application_id": "app_synth_001",
+      "party_id": "party_cedarline",
+      "party_role": "permit_holder",
+      "is_primary": false,
+      "authority_evidence_ref": null,
+      "scenario_id": "D01"
+    },
+    {
+      "application_party_id": "appparty_app_d03_contractor",
+      "application_id": "app_d03",
+      "party_id": "party_halcyon",
+      "party_role": "contractor",
+      "is_primary": false,
+      "authority_evidence_ref": "permitting:PER-CR-00977",
+      "scenario_id": "D03"
+    },
+    {
+      "application_party_id": "appparty_app_d07_holder",
+      "application_id": "app_d07",
+      "party_id": "party_marrow",
+      "party_role": "permit_holder",
+      "is_primary": false,
+      "authority_evidence_ref": null,
+      "scenario_id": "D07"
+    }
+  ],
+  "application_sites": [
+    {
+      "application_site_id": "site_app_synth_001",
+      "application_id": "app_synth_001",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_2",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "400 Lantern Row, Suite 2, ACME City",
+      "scenario_id": "D01"
+    },
+    {
+      "application_site_id": "site_app_d02",
+      "application_id": "app_d02",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_5",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "400 Lantern Row Unit 5, ACME City",
+      "scenario_id": "D02"
+    },
+    {
+      "application_site_id": "site_app_d03",
+      "application_id": "app_d03",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_2",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "400 Lantern Row Unit 2, ACME City",
+      "scenario_id": "D03"
+    },
+    {
+      "application_site_id": "site_app_d04",
+      "application_id": "app_d04",
+      "parcel_id": null,
+      "address_id": null,
+      "is_primary": true,
+      "resolution_status": "unresolved",
+      "submitted_address_text": "1234 Kestrel Pass, ACME City",
+      "scenario_id": "D04"
+    },
+    {
+      "application_site_id": "site_app_d05",
+      "application_id": "app_d05",
+      "parcel_id": "parcel_1002",
+      "address_id": "address_12_marrow",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D05"
+    },
+    {
+      "application_site_id": "site_app_d06",
+      "application_id": "app_d06",
+      "parcel_id": "parcel_1002",
+      "address_id": "address_12_marrow",
+      "is_primary": true,
+      "resolution_status": "disputed",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D06"
+    },
+    {
+      "application_site_id": "site_app_d07",
+      "application_id": "app_d07",
+      "parcel_id": "parcel_1002",
+      "address_id": "address_12_marrow",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D07"
+    },
+    {
+      "application_site_id": "site_app_d08",
+      "application_id": "app_d08",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_2",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "400 Lantern Row Unit 2, ACME City",
+      "scenario_id": "D08"
+    },
+    {
+      "application_site_id": "site_app_d09_setback",
+      "application_id": "app_d09_setback",
+      "parcel_id": null,
+      "address_id": null,
+      "is_primary": true,
+      "resolution_status": "unresolved",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D09"
+    },
+    {
+      "application_site_id": "site_app_d09_setback_nan",
+      "application_id": "app_d09_setback_nan",
+      "parcel_id": null,
+      "address_id": null,
+      "is_primary": true,
+      "resolution_status": "unresolved",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D09"
+    },
+    {
+      "application_site_id": "site_app_d09_blank_location",
+      "application_id": "app_d09_blank_location",
+      "parcel_id": null,
+      "address_id": null,
+      "is_primary": true,
+      "resolution_status": "unresolved",
+      "submitted_address_text": "12 Marrow Creek Road, ACME City",
+      "scenario_id": "D09"
+    },
+    {
+      "application_site_id": "site_app_d09_unknown_sign",
+      "application_id": "app_d09_unknown_sign",
+      "parcel_id": null,
+      "address_id": null,
+      "is_primary": true,
+      "resolution_status": "unresolved",
+      "submitted_address_text": "400 Lantern Row Unit 2, ACME City",
+      "scenario_id": "D09"
+    },
+    {
+      "application_site_id": "site_app_d11",
+      "application_id": "app_d11",
+      "parcel_id": "parcel_1001",
+      "address_id": "address_400_lantern_unit_2",
+      "is_primary": true,
+      "resolution_status": "resolved",
+      "submitted_address_text": "400 Lantern Row, Suite 2, ACME City",
+      "scenario_id": "D11"
+    }
+  ],
+  "application_revisions": [
+    {
+      "revision_id": "rev_app_synth_001_1",
+      "application_id": "app_synth_001",
+      "revision_number": 1,
+      "submitted_at": "2026-09-08T14:30:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a coffee retail space including a new service counter, electrical panel upgrade and non-structural partitions.",
+        "valuation": 50000.0,
+        "valuation_cents": 5000000,
+        "occupancy_load": 42,
+        "submitted_site_text": "400 Lantern Row, Suite 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D01"
+    },
+    {
+      "revision_id": "rev_app_d02_1",
+      "application_id": "app_d02",
+      "revision_number": 1,
+      "submitted_at": "2026-09-09T09:15:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a neighbouring coffee retail space with new shelving and a small seating area.",
+        "valuation": 48000.0,
+        "valuation_cents": 4800000,
+        "occupancy_load": 38,
+        "submitted_site_text": "400 Lantern Row Unit 5, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedarline Coffee Works",
+        "contact_email": "hello@cedarlineworks.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D02"
+    },
+    {
+      "revision_id": "rev_app_d03_1",
+      "application_id": "app_d03",
+      "revision_number": 1,
+      "submitted_at": "2026-10-02T11:05:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a bakery unit including a service counter and extraction fan.",
+        "valuation": 62000.0,
+        "valuation_cents": 6200000,
+        "occupancy_load": 31,
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2025-00977",
+        "organization_name": "Hollis Street Bakery",
+        "contact_email": "permits@hollisstreet.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D03"
+    },
+    {
+      "revision_id": "rev_app_d04_1",
+      "application_id": "app_d04",
+      "revision_number": 1,
+      "submitted_at": "2026-10-05T16:40:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a bakery unit at a site the applicant cites by parcel number.",
+        "valuation": 54000.0,
+        "valuation_cents": 5400000,
+        "occupancy_load": 29,
+        "submitted_site_text": "1234 Kestrel Pass, ACME City",
+        "submitted_parcel": "ACME-P-9999",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Hollis Street Bakery",
+        "contact_email": "permits@hollisstreet.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D04"
+    },
+    {
+      "revision_id": "rev_app_d05_1",
+      "application_id": "app_d05",
+      "revision_number": 1,
+      "submitted_at": "2026-08-20T10:00:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a small studio space.",
+        "valuation": 31000.0,
+        "valuation_cents": 3100000,
+        "occupancy_load": 12,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": null,
+        "contact_email": "t.aldous@example.invalid",
+        "applicant_role": "individual",
+        "applicant_role_snapshot": "individual"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D05"
+    },
+    {
+      "revision_id": "rev_app_d06_1",
+      "application_id": "app_d06",
+      "revision_number": 1,
+      "submitted_at": "2026-07-15T13:00:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a ground floor office unit.",
+        "valuation": 40000.0,
+        "valuation_cents": 4000000,
+        "occupancy_load": 18,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Marrow Creek Property Group",
+        "contact_email": "facilities@marrowcreek.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D06"
+    },
+    {
+      "revision_id": "rev_app_d07_1",
+      "application_id": "app_d07",
+      "revision_number": 1,
+      "submitted_at": "2026-06-02T09:45:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a ground floor office unit with a new reception wall.",
+        "valuation": 120000.0,
+        "valuation_cents": 12000000,
+        "occupancy_load": 24,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Marrow Creek Property Group",
+        "contact_email": "facilities@marrowcreek.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D07"
+    },
+    {
+      "revision_id": "rev_app_d08_1",
+      "application_id": "app_d08",
+      "revision_number": 1,
+      "submitted_at": "2026-08-01T12:00:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a second coffee retail space.",
+        "valuation": 44000.0,
+        "valuation_cents": 4400000,
+        "occupancy_load": 26,
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D08"
+    },
+    {
+      "revision_id": "rev_app_d09_setback_1",
+      "application_id": "app_d09_setback",
+      "revision_number": 1,
+      "submitted_at": "2026-08-11T09:00:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Rear deck addition.",
+        "valuation": 9000.0,
+        "valuation_cents": 900000,
+        "structure_kind": "deck",
+        "setback_ft": "twenty",
+        "height_ft": 3.5,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual",
+        "applicant_role_snapshot": "individual"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D09"
+    },
+    {
+      "revision_id": "rev_app_d09_setback_nan_1",
+      "application_id": "app_d09_setback_nan",
+      "revision_number": 1,
+      "submitted_at": "2026-08-11T09:10:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Rear deck addition.",
+        "valuation": 9000.0,
+        "valuation_cents": 900000,
+        "structure_kind": "deck",
+        "setback_ft": "nan",
+        "height_ft": 3.5,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual",
+        "applicant_role_snapshot": "individual"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D09"
+    },
+    {
+      "revision_id": "rev_app_d09_blank_location_1",
+      "application_id": "app_d09_blank_location",
+      "revision_number": 1,
+      "submitted_at": "2026-08-11T09:20:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Front yard fence replacement.",
+        "valuation": 4500.0,
+        "valuation_cents": 450000,
+        "structure_kind": "fence",
+        "location": "",
+        "height_ft": 4,
+        "submitted_site_text": "12 Marrow Creek Road, ACME City",
+        "submitted_parcel": "ACME-P-1002",
+        "applicant_role": "individual",
+        "applicant_role_snapshot": "individual"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D09"
+    },
+    {
+      "revision_id": "rev_app_d09_unknown_sign_1",
+      "application_id": "app_d09_unknown_sign",
+      "revision_number": 1,
+      "submitted_at": "2026-08-11T09:30:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "New storefront sign.",
+        "valuation": 2500.0,
+        "valuation_cents": 250000,
+        "sign_type": "billboard",
+        "sign_area_sqft": 1000,
+        "illuminated": "no",
+        "submitted_site_text": "400 Lantern Row Unit 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D09"
+    },
+    {
+      "revision_id": "rev_app_d11_1",
+      "application_id": "app_d11",
+      "revision_number": 1,
+      "submitted_at": "2026-09-18T14:00:00Z",
+      "submitted_by_actor_id": "persona_applicant",
+      "snapshot": {
+        "project_description": "Interior tenant improvement for a coffee retail space.",
+        "valuation": 50000.0,
+        "valuation_cents": 5000000,
+        "occupancy_load": 42,
+        "submitted_site_text": "400 Lantern Row, Suite 2, ACME City",
+        "submitted_parcel": "ACME-P-1001",
+        "contractor_license": "CR-2026-00188",
+        "organization_name": "Cedar Line Coffee Roasters",
+        "contact_email": "hello@cedarline.example.invalid",
+        "applicant_role": "business",
+        "applicant_role_snapshot": "business"
+      },
+      "date_basis": "initial_submitted_at",
+      "scenario_id": "D11"
+    }
+  ],
+  "payments": [
+    {
+      "payment_id": "payment_d01_settled",
+      "source_transaction_id": "ERP-TXN-2026-04517",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04517-2",
+      "source_event_version": "2",
+      "payer_account_id": "facct_cedarline_legacy",
+      "party_id": null,
+      "paid_at": "2026-09-14T15:20:00Z",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "settlement_status": "settled",
+      "scenario_id": "D01"
+    },
+    {
+      "payment_id": "payment_d11_partial",
+      "source_transaction_id": "ERP-TXN-2026-04518",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04518-1",
+      "source_event_version": "1",
+      "payer_account_id": "facct_cedarline_current",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:00:00Z",
+      "amount_cents": 10000,
+      "currency": "USD",
+      "settlement_status": "settled",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d11_overpaid",
+      "source_transaction_id": "ERP-TXN-2026-04519",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04519-1",
+      "source_event_version": "1",
+      "payer_account_id": "facct_cedarline_current",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:05:00Z",
+      "amount_cents": 20000,
+      "currency": "USD",
+      "settlement_status": "settled",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d11_reversed",
+      "source_transaction_id": "ERP-TXN-2026-04520",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04520-2",
+      "source_event_version": "2",
+      "payer_account_id": "facct_cedarline_current",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:10:00Z",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "settlement_status": "reversed",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d11_unsettled",
+      "source_transaction_id": "ERP-TXN-2026-04521",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04521-1",
+      "source_event_version": "1",
+      "payer_account_id": "facct_cedarline_current",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:15:00Z",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "settlement_status": "unsettled",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d11_other_currency",
+      "source_transaction_id": "ERP-TXN-2026-04522",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04522-1",
+      "source_event_version": "1",
+      "payer_account_id": "facct_cedarline_current",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:20:00Z",
+      "amount_cents": 15000,
+      "currency": "EUR",
+      "settlement_status": "settled",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d11_unmatched",
+      "source_transaction_id": "ERP-TXN-2026-04523",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04523-1",
+      "source_event_version": "1",
+      "payer_account_id": "facct_quarry",
+      "party_id": null,
+      "paid_at": "2026-09-15T10:25:00Z",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "settlement_status": "settled",
+      "scenario_id": "D11"
+    },
+    {
+      "payment_id": "payment_d07_settled",
+      "source_transaction_id": "ERP-TXN-2026-04100",
+      "source_system_id": "erp_finance",
+      "source_event_id": "ERP-EVT-2026-04100-2",
+      "source_event_version": "2",
+      "payer_account_id": null,
+      "party_id": "party_marrow",
+      "paid_at": "2026-06-09T12:00:00Z",
+      "amount_cents": 22000,
+      "currency": "USD",
+      "settlement_status": "settled",
+      "scenario_id": "D07"
+    }
+  ],
+  "payment_events": [
+    {
+      "event_id": "payev_d01_received",
+      "payment_id": "payment_d01_settled",
+      "source_event_id": "ERP-EVT-2026-04517-1",
+      "source_event_version": "1",
+      "event_type": "received",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "occurred_at": "2026-09-14T15:20:00Z",
+      "scenario_id": "D01"
+    },
+    {
+      "event_id": "payev_d01_settled",
+      "payment_id": "payment_d01_settled",
+      "source_event_id": "ERP-EVT-2026-04517-2",
+      "source_event_version": "2",
+      "event_type": "settled",
+      "amount_cents": 15000,
+      "currency": "USD",
+      "occurred_at": "2026-09-15T09:05:00Z",
+      "scenario_id": "D01"
+    },
+    {
+      "event_id": "payev_d07_settled",
+      "payment_id": "payment_d07_settled",
+      "source_event_id": "ERP-EVT-2026-04100-2",
+      "source_event_version": "2",
+      "event_type": "settled",
+      "amount_cents": 22000,
+      "currency": "USD",
+      "occurred_at": "2026-06-09T12:00:00Z",
+      "scenario_id": "D07"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "decision_d07",
+      "application_id": "app_d07",
+      "decision_type": "review",
+      "outcome": "approved",
+      "decided_by_actor_id": "persona_permit_reviewer",
+      "decided_at": "2026-06-09T15:30:00Z",
+      "reason": "Fictional demonstration approval recorded as the historical starting condition of this scenario.",
+      "input_versions": {
+        "initial_submitted_at": "2026-06-02T09:45:00Z",
+        "declared_valuation_cents": 12000000
+      },
+      "rule_versions": {
+        "CT-1": 1,
+        "CT-2": 1
+      },
+      "status": "current",
+      "stale": false,
+      "scenario_id": "D07"
+    }
+  ],
+  "permits": [
+    {
+      "permit_id": "permit_d07",
+      "application_id": "app_d07",
+      "decision_id": "decision_d07",
+      "permit_number": "ACME-2026-000731",
+      "issued_at": "2026-06-10T10:00:00Z",
+      "expires_at": null,
+      "status": "issued",
+      "snapshot": {
+        "permit_number": "ACME-2026-000731",
+        "application_number": "SYN-APP-007",
+        "issued_at": "2026-06-10T10:00:00Z",
+        "decision_outcome": "approved",
+        "declared_valuation_cents": 12000000,
+        "fee_schedule_version": "fee_commercial_demo/2026.1",
+        "rule_versions": [
+          "CT-1@1",
+          "CT-2@1"
+        ],
+        "assessed_total_cents": 22000,
+        "allocated_cents": 22000,
+        "fictional_demo": true
+      },
+      "artifact_hash": "007d39c8343c26e1cb039c6a7b7e5ad2eec2e10a8607576e737a2c4d94e88895",
+      "issuance_command_key": "issue:demo:SYN-APP-007:1",
+      "issued_by_actor_id": "persona_permit_reviewer",
+      "fictional_demo": true,
+      "scenario_id": "D07"
+    }
+  ],
+  "assessments": [
+    {
+      "assessment_id": "assess_d07_v1",
+      "application_id": "app_d07",
+      "billed_party_id": "party_marrow",
+      "fee_schedule_version_id": "fee_commercial_demo:2026.1",
+      "input_versions": {
+        "initial_submitted_at": "2026-06-02T09:45:00Z",
+        "declared_valuation_cents": 12000000
+      },
+      "assessed_total_cents": 22000,
+      "currency": "USD",
+      "status": "current",
+      "scenario_id": "D07"
+    }
+  ],
+  "assessment_lines": [
+    {
+      "line_id": "line_d07_fixed",
+      "assessment_id": "assess_d07_v1",
+      "fee_code": "COM_REVIEW_FIXED",
+      "description": "Commercial plan review fixed charge",
+      "quantity": "1",
+      "rate_cents": 10000,
+      "amount_cents": 10000,
+      "currency": "USD",
+      "rule_version_id": null
+    },
+    {
+      "line_id": "line_d07_variable",
+      "assessment_id": "assess_d07_v1",
+      "fee_code": "COM_REVIEW_VARIABLE",
+      "description": "Commercial plan review valuation charge",
+      "quantity": "120000.00",
+      "rate_cents": 100,
+      "amount_cents": 12000,
+      "currency": "USD",
+      "rule_version_id": null
+    }
+  ],
+  "allocations": [
+    {
+      "allocation_id": "alloc_d07_v1",
+      "payment_id": "payment_d07_settled",
+      "assessment_id": "assess_d07_v1",
+      "assessment_line_id": null,
+      "amount_cents": 22000,
+      "currency": "USD",
+      "status": "active",
+      "actor_id": "persona_city_administrator",
+      "supersedes_allocation_id": null,
+      "idempotency_key": "alloc:demo:ERP-TXN-2026-04100:assess_d07_v1",
+      "scenario_id": "D07"
+    }
+  ]
+}

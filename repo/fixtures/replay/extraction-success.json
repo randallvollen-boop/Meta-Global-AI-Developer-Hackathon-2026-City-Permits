@@ -1,0 +1,100 @@
+{
+  "fixture_kind": "muse_replay",
+  "fixture_version": "2026.10.26-1",
+  "note": "A recorded extraction output. It was produced by the live run named in source_run_id against the document content whose hash is the hash of fixtures/documents/SYN-APP-001-application-v1.txt. The recorded application and document references are logical: a replay binds them to the records of the current run.",
+  "task": "extraction",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "prompt_version": "acme-extraction-prompt-v1",
+  "schema_version": "acme-extraction-schema-v1",
+  "recorded_at": "2026-10-26T00:00:00Z",
+  "source_run_id": "modelrun_source_extraction_2026_10_26",
+  "source_response_id": "resp_fictional_source_extraction",
+  "usage": {
+    "input_tokens": 742,
+    "cached_input_tokens": 0,
+    "output_tokens": 268,
+    "reasoning_tokens": 0,
+    "total_tokens": 1010
+  },
+  "latency_ms": 1873,
+  "output": {
+    "application_id": "SYN-APP-001",
+    "document_id": "SYN-APP-001-application-v1.txt",
+    "document_version": 1,
+    "observations": [
+      {
+        "field": "applicant_legal_name",
+        "proposed_value": "Cedarline Coffee Roasters LLC",
+        "evidence": {
+          "line_start": 8,
+          "line_end": 8,
+          "excerpt": "Legal applicant name: Cedarline Coffee Roasters LLC"
+        }
+      },
+      {
+        "field": "applicant_alias",
+        "proposed_value": "Cedar Line Coffee Roasters",
+        "evidence": {
+          "line_start": 9,
+          "line_end": 9,
+          "excerpt": "Organization alias of record: Cedar Line Coffee Roasters"
+        }
+      },
+      {
+        "field": "unit_address",
+        "proposed_value": "400 Lantern Row Unit 2, ACME City",
+        "evidence": {
+          "line_start": 12,
+          "line_end": 12,
+          "excerpt": "Unit address: 400 Lantern Row Unit 2, ACME City"
+        }
+      },
+      {
+        "field": "parcel_reference",
+        "proposed_value": "ACME-P-1001",
+        "evidence": {
+          "line_start": 13,
+          "line_end": 13,
+          "excerpt": "Parcel reference: ACME-P-1001"
+        }
+      },
+      {
+        "field": "contractor_registration",
+        "proposed_value": "CR-2026-00188",
+        "evidence": {
+          "line_start": 15,
+          "line_end": 15,
+          "excerpt": "Contractor registration: CR-2026-00188"
+        }
+      },
+      {
+        "field": "project_description",
+        "proposed_value": "Interior tenant improvement for a coffee retail space including a new service counter, electrical panel upgrade and non-structural partitions.",
+        "evidence": {
+          "line_start": 18,
+          "line_end": 18,
+          "excerpt": "Project description: Interior tenant improvement for a coffee retail space including a new service counter, electrical panel upgrade and non-structural partitions."
+        }
+      },
+      {
+        "field": "declared_valuation",
+        "proposed_value": "50000.00",
+        "evidence": {
+          "line_start": 20,
+          "line_end": 20,
+          "excerpt": "Declared project valuation: 50000.00 USD"
+        }
+      },
+      {
+        "field": "occupant_load",
+        "proposed_value": "42",
+        "evidence": {
+          "line_start": 21,
+          "line_end": 21,
+          "excerpt": "Declared occupant load: 42 persons"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,1817 @@
+{
+  "catalog_version": "2",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Exactly four selectable human personas are offered by the persona selector. The service identities below are organizational bindings - accountable owners, custodians, the shared delegate, the cross-domain governance routing identity and a second applicant identity used for record-scope checks. A service identity is never selectable. Every grant is explicit: a role label never authorizes an action and a client-supplied role field is never trusted. Administrator configuration access carries no permit approval.",
+  "roles": [
+    {
+      "role_id": "applicant",
+      "label": "Applicant",
+      "boundary": "Own authorized profile and case contributions only.",
+      "permission_ids": [
+        "applicant.case.respond",
+        "applicant.profile.edit",
+        "application.revision.submit",
+        "application.submit",
+        "correction.request.submit",
+        "records.document.view"
+      ]
+    },
+    {
+      "role_id": "intake_clerk",
+      "label": "Intake Clerk",
+      "boundary": "Delegated intake actions; no permit approval from this role.",
+      "permission_ids": [
+        "applicant.profile.edit",
+        "application.revision.submit",
+        "application.submit",
+        "application.withdraw",
+        "correction.request.submit",
+        "records.document.view",
+        "source.snapshot.stage"
+      ]
+    },
+    {
+      "role_id": "domain_steward",
+      "label": "Domain Steward",
+      "boundary": "Delegated issue review and corrections within explicit domain/action scope.",
+      "permission_ids": [
+        "change.case.transition",
+        "correction.request.submit",
+        "records.document.view",
+        "registry.crosswalk.propose",
+        "registry.provenance.view",
+        "rule.version.draft",
+        "source.quarantine.resolve",
+        "source.record.update",
+        "source.snapshot.stage"
+      ]
+    },
+    {
+      "role_id": "domain_mdm_steward",
+      "label": "Domain MDM Steward",
+      "boundary": "Explicitly granted registry-link decisions for specified entity domains.",
+      "permission_ids": [
+        "change.case.transition",
+        "correction.request.submit",
+        "records.document.view",
+        "registry.crosswalk.decide",
+        "registry.crosswalk.propose",
+        "registry.provenance.view"
+      ]
+    },
+    {
+      "role_id": "data_owner",
+      "label": "Accountable Data Owner",
+      "boundary": "Policy and dispute decisions; no automatic source or case write permission.",
+      "permission_ids": [
+        "correction.request.submit",
+        "governance.authority_policy.manage",
+        "governance.authority_policy.publish",
+        "records.document.view",
+        "registry.provenance.view",
+        "rule.version.approve",
+        "rule.version.draft",
+        "rule.version.publish"
+      ]
+    },
+    {
+      "role_id": "permit_reviewer",
+      "label": "Permit Reviewer",
+      "boundary": "Current-version application decisions within delegated scope.",
+      "permission_ids": [
+        "application.evaluate",
+        "application.revision.submit",
+        "correction.request.submit",
+        "permit.decide",
+        "records.document.view"
+      ]
+    },
+    {
+      "role_id": "issuing_officer",
+      "label": "Issuing Officer",
+      "boundary": "Separate permit issuance permission; prerequisites checked by server.",
+      "permission_ids": [
+        "permit.issue",
+        "records.document.view"
+      ]
+    },
+    {
+      "role_id": "finance",
+      "label": "Finance",
+      "boundary": "Authorized financial actions; distinct receipt and allocation permissions.",
+      "permission_ids": [
+        "correction.request.submit",
+        "finance.account.link",
+        "finance.allocation.confirm",
+        "finance.assessment.create",
+        "finance.payment.import",
+        "records.document.view",
+        "registry.crosswalk.decide",
+        "registry.crosswalk.propose",
+        "rule.version.approve",
+        "rule.version.draft",
+        "rule.version.publish"
+      ]
+    },
+    {
+      "role_id": "administrator",
+      "label": "Administrator",
+      "boundary": "Configuration and access management; no implicit business approval.",
+      "permission_ids": [
+        "admin.actor.manage",
+        "admin.session.revoke",
+        "records.configuration.view",
+        "records.document.view"
+      ]
+    },
+    {
+      "role_id": "auditor",
+      "label": "Auditor",
+      "boundary": "Read permitted audit evidence; no business mutation permission.",
+      "permission_ids": [
+        "records.audit.view",
+        "records.document.view",
+        "registry.provenance.view"
+      ]
+    },
+    {
+      "role_id": "system_custodian",
+      "label": "System Custodian",
+      "boundary": "Technical operation and integration recovery, not business meaning.",
+      "permission_ids": [
+        "admin.health.view",
+        "records.configuration.view",
+        "source.snapshot.stage"
+      ]
+    },
+    {
+      "role_id": "governance_lead",
+      "label": "Governance Lead",
+      "boundary": "Cross-domain ownership/authority dispute routing and assignments.",
+      "permission_ids": [
+        "correction.request.submit",
+        "governance.assignment.manage",
+        "governance.authority_policy.manage",
+        "governance.dataset.register",
+        "governance.queue.manage",
+        "records.document.view",
+        "registry.provenance.view"
+      ]
+    }
+  ],
+  "personas": [
+    {
+      "label": "Applicant",
+      "selectable": true,
+      "source_role_ids": [
+        "applicant"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits"
+      ],
+      "record_scope": [
+        "party_applicant_1",
+        "SYN-APP-005"
+      ],
+      "responsibility": "Manages their own authorized profile and case contributions.",
+      "grants": [
+        {
+          "permission_id": "applicant.case.respond",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "applicant.profile.edit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.revision.submit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.submit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        }
+      ],
+      "fictional": true,
+      "active_when_seeded": true,
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
+      "actor_id": "persona_applicant"
+    },
+    {
+      "label": "Data Steward",
+      "selectable": true,
+      "source_role_ids": [
+        "intake_clerk",
+        "domain_steward",
+        "domain_mdm_steward"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses",
+        "zoning",
+        "building_rules",
+        "finance",
+        "records"
+      ],
+      "record_scope": [],
+      "responsibility": "Handles intake, stewardship and registry-link work within the granted domain scope.",
+      "grants": [
+        {
+          "permission_id": "applicant.profile.edit",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.revision.submit",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.submit",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.withdraw",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "change.case.transition",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.decide",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.propose",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.quarantine.resolve",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.record.update",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "fictional": true,
+      "active_when_seeded": true,
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
+      "actor_id": "persona_data_steward"
+    },
+    {
+      "label": "Permit Reviewer",
+      "selectable": true,
+      "source_role_ids": [
+        "permit_reviewer",
+        "issuing_officer"
+      ],
+      "domain_scope": [
+        "permits"
+      ],
+      "record_scope": [],
+      "responsibility": "Records permit decisions and performs the separate issuance action.",
+      "grants": [
+        {
+          "permission_id": "application.evaluate",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.revision.submit",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.decide",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.issue",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "fictional": true,
+      "active_when_seeded": true,
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
+      "actor_id": "persona_permit_reviewer"
+    },
+    {
+      "label": "City Administrator",
+      "selectable": true,
+      "source_role_ids": [
+        "administrator",
+        "governance_lead",
+        "data_owner",
+        "finance",
+        "auditor"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses",
+        "zoning",
+        "building_rules",
+        "finance",
+        "records"
+      ],
+      "record_scope": [],
+      "responsibility": "Maintains configuration, assignments, authority policy, finance and audit evidence. Configuration access carries no permit approval.",
+      "grants": [
+        {
+          "permission_id": "admin.actor.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "admin.session.revoke",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "finance.account.link",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "finance.allocation.confirm",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "finance.assessment.create",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "finance.payment.import",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.assignment.manage",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.dataset.register",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.queue.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.audit.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.configuration.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.decide",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.propose",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "fictional": true,
+      "active_when_seeded": true,
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
+      "actor_id": "persona_city_administrator"
+    }
+  ],
+  "service_identities": [
+    {
+      "actor_id": "service_owner_building_safety",
+      "label": "Building Safety director (accountable owner)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "data_owner"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "building_rules"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_owner_finance",
+      "label": "Finance director (accountable owner)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "data_owner"
+      ],
+      "domain_scope": [
+        "businesses",
+        "finance"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "businesses",
+            "finance"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_owner_planning",
+      "label": "Planning and Development Services director (accountable owner)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "data_owner"
+      ],
+      "domain_scope": [
+        "parcels",
+        "zoning"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "parcels",
+            "zoning"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_owner_cio",
+      "label": "Chief Information Officer through GIS (accountable owner)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "data_owner"
+      ],
+      "domain_scope": [
+        "addresses"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_owner_records",
+      "label": "City Clerk or Records owner (accountable owner)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "data_owner"
+      ],
+      "domain_scope": [
+        "records"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.publish",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.approve",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.publish",
+          "domains": [
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_delegate_steward",
+      "label": "Shared stewardship delegate",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "domain_steward",
+        "domain_mdm_steward"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses",
+        "zoning",
+        "building_rules",
+        "finance",
+        "records"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "change.case.transition",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.decide",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.propose",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "rule.version.draft",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.quarantine.resolve",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.record.update",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_applicant_2",
+      "label": "Second applicant identity for record-scope checks",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "applicant"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits"
+      ],
+      "system_scope": [],
+      "record_scope": [
+        "party_applicant_2"
+      ],
+      "grants": [
+        {
+          "permission_id": "applicant.case.respond",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "applicant.profile.edit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.revision.submit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.submit",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_auditor",
+      "label": "Read-only auditor identity",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "auditor"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses",
+        "zoning",
+        "building_rules",
+        "finance",
+        "records"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "records.audit.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_governance_lead",
+      "label": "Cross-domain governance routing identity",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "governance_lead"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses",
+        "zoning",
+        "building_rules",
+        "finance",
+        "records"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "correction.request.submit",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.assignment.manage",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.authority_policy.manage",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.dataset.register",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "governance.queue.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_custodian_permitting",
+      "label": "Permitting system custodian",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "system_custodian"
+      ],
+      "domain_scope": [],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "admin.health.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.configuration.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_custodian_gis",
+      "label": "GIS system custodian",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "system_custodian"
+      ],
+      "domain_scope": [],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "admin.health.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.configuration.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_custodian_erp_finance",
+      "label": "ERP/Finance system custodian",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "system_custodian"
+      ],
+      "domain_scope": [],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "admin.health.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.configuration.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_custodian_platform",
+      "label": "Registry and governed application custodian",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "system_custodian"
+      ],
+      "domain_scope": [],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "admin.health.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.configuration.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "source.snapshot.stage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% macro action_form(item, csrf_token) %}
+<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
+  <summary>
+    <span class="action-label">{{ item.label }}</span>
+    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
+  </summary>
+  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
+  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
+  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
+  {% if item.permitted %}
+  <form method="post" action="{{ item.path }}" class="action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="{{ item.action_id }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}">
+    {% for field in item.fields %}
+      {% if field.type == 'hidden' %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'select' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+          </select>
+        </p>
+      {% elif field.type == 'textarea' %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+        </p>
+      {% else %}
+        <p class="field">
+          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
+  </form>
+  {% else %}
+  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
+  {% endif %}
+</details>
+{% endmacro %}
+
+{% block content %}
+
+<h1>Rules and fees</h1>
+
+{% include "components/responsibility_panel.html" %}
+
+<section class="panel" aria-labelledby="rule-versions-heading">
+  <h2 id="rule-versions-heading">Rule versions</h2>
+  <table class="data-table" data-testid="rule-table">
+    <caption class="visually-hidden">Stored rule versions</caption>
+    <thead>
+      <tr>
+        <th scope="col">Rule</th><th scope="col">Version</th><th scope="col">Permit type</th>
+        <th scope="col">Title</th><th scope="col">Citation</th><th scope="col">Status</th>
+        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">Effective from</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for version in catalogue.versions %}
+      <tr data-testid="rule-row" data-status="{{ version.status }}" data-rule-id="{{ version.row_id }}">
+        <th scope="row">{{ version.rule_id }}</th>
+        <td>{{ version.version_label }}</td>
+        <td>{{ version.permit_type_key or 'all' }}</td>
+        <td>{{ version.title }}</td>
+        <td class="mono">{{ version.citation }}</td>
+        <td><span class="badge badge-{{ version.status }}">{{ version.status }}</span></td>
+        <td>{{ version.author_actor_id or '-' }}</td>
+        <td>{{ version.approver_actor_id or '-' }}</td>
+        <td>{{ version.effective_from }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="muted">No rule version is stored.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" aria-labelledby="fee-heading">
+  <h2 id="fee-heading">Fee schedule versions</h2>
+  <table class="data-table" data-testid="fee-table">
+    <caption class="visually-hidden">Stored fee schedule versions</caption>
+    <thead>
+      <tr>
+        <th scope="col">Schedule</th><th scope="col">Version</th><th scope="col">Status</th>
+        <th scope="col">Currency</th><th scope="col">Effective from</th><th scope="col">Effective to</th>
+        <th scope="col">Author</th><th scope="col">Approver</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for schedule in catalogue.fee_schedules %}
+      <tr data-testid="fee-row" data-status="{{ schedule.status }}" data-fee-id="{{ schedule.row_id }}">
+        <th scope="row">{{ schedule.fee_schedule_id }}</th>
+        <td>{{ schedule.version_label }}</td>
+        <td><span class="badge badge-{{ schedule.status }}">{{ schedule.status }}</span></td>
+        <td>{{ schedule.currency }}</td>
+        <td>{{ schedule.effective_from }}</td>
+        <td>{{ schedule.effective_to or 'open' }}</td>
+        <td>{{ schedule.author_actor_id or '-' }}</td>
+        <td>{{ schedule.approver_actor_id or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">No fee schedule version is stored.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">
+    The fee schedule and every rule above are synthetic demonstration values. They
+    are not the fees, the codes or the practice of any real jurisdiction.
+  </p>
+</section>
+
+{% include "components/evidence_panel.html" %}
+
+<section class="panel" aria-labelledby="rules-actions-heading">
+  <h2 id="rules-actions-heading">Actions</h2>
+  {% for item in actions %}
+    {{ action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}
+    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}
