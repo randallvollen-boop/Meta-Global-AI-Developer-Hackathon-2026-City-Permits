@@ -175,6 +175,165 @@ screen is also a 403). Order and labels are canonical for everyone.
 | Permit Reviewer | Work queue, Applicants, Permit workspace plus **Adjudication agent** |
 | City Administrator | the eight original screens plus **Intake agent**, **Adjudication agent** and **Administration** |
 
+## The life of a case
+
+The status of a case is server state.  A person with the matching grant
+moves it; the browser never decides.
+
+| Status | What it means | Who moves it, and how |
+|---|---|---|
+| `submitted` | The City has the application and it waits for the intake agent | the intake agent, when a person runs it |
+| `needs_information` | The City needs something from the applicant | **Data Steward**: return it, or advance it to review |
+| `revisions_requested` | The reviewer has sent the case back for revisions | **Permit Reviewer**: request revisions with a reason code and a message |
+| `ready_for_review` | The case is complete and waits for a reviewer | **Data Steward**: advance to review |
+| `under_review` | A reviewer has the case | the adjudication agent and the reviewer |
+| `approved` / `denied` | A decision is recorded | the reviewer |
+| `issued` | The permit is issued | the reviewer with the issuance grant |
+| `returned` | The City gave the case back; the applicant starts a new application | **Data Steward**: return |
+| `archived` | The case is closed; its history stays | **City Administrator**: archive, then restore |
+
+**Return** (Data Steward) needs an active reason code of the `return` type.
+It is terminal: the applicant starts a new application rather than
+answering on the returned one.
+
+**Advance to review** (Data Steward) is refused while a **current, unwaived
+blocking finding** stands in the way.  Waive the finding first, or clear it.
+
+**Request revisions** (Permit Reviewer) needs an active reason code of the
+`revision` type and a message.  The message is written as a comment the
+applicant reads, so the applicant sees why the case came back.
+
+**Answer and resubmit** (Applicant) is available from `needs_information`
+and from `revisions_requested`.  The resubmission is atomic: the revised
+documents, the new submitted revision and the state of the case move
+together.  The case returns to `submitted` (awaiting the intake agent), the
+first submission date is kept, and the work done against the earlier
+revision — the evaluation, the recommendation and the decision — becomes
+stale.  A stale decision is never revived by a resubmission; a reviewer
+reconfirms it.
+
+**Archive and restore** (City Administrator) are the only actions an
+archived case accepts.  Archiving needs an active reason code of the
+`archive` type and is refused for an issued permit.  The restore returns the
+case to the status it held.  It never revives a stale approval or a stale
+recommendation: whatever was marked stale stays stale.
+
+Every one of these actions checks the grant, the archived guard and a
+**mandatory expected version** (a missing version is refused as well as a
+stale one), and writes an audit record and an action record.
+
+### The archive guard
+
+An archived case is closed.  Every service path that could change it asks
+the guard first and refuses it:
+
+| Path | Where |
+|---|---|
+| API revision | `permits/service.py` → `PermitService.revise` |
+| Document store | `documents/service.py` → `DocumentService.store_version` |
+| Evaluation | `permits/service.py` → `PermitService.evaluate` |
+| Intake agent | `agents/intake.py` → `IntakeAgent.run` |
+| Adjudication agent | `agents/adjudication.py` → `AdjudicationAgent.run` |
+| Recommendation confirm and revert | `agents/recommendation.py` → `confirm`, `revert` |
+| Parcel operations | `gis/matching.py` → `locate`, `decide_link`, `choose_candidate`, `find_by_number`, `confirm` |
+| Finance | `finance/service.py` → `assess`, `reassess`, `allocate` |
+| Portal upload and resubmission | `applicant_portal/service.py` → `revise_documents`, `resubmit` |
+| Decision and reconfirmation | `permits/decisions.py` → `decide`, `reconfirm` |
+| Issuance | `permits/issuance.py` → `issue` |
+
+## Reason codes
+
+A reason code names why a case was returned, denied, waived, sent back for
+revisions or archived.  Its **type** says which of those uses it may
+serve, so a denial code can never return a case.
+
+| Type | Used by |
+|---|---|
+| `return` | the Data Steward returning a case |
+| `denial` | a reviewer denying a case, by hand or by confirming a denial recommendation |
+| `waiver` | the Data Steward waiving a finding |
+| `revision` | the reviewer asking for revisions |
+| `archive` | the City Administrator archiving a case |
+
+The codes are configuration.  **Administration → Reason codes** lists them
+with their type and their state; an administrator adds a code with its type
+and retires a code.  A retired code keeps its label, its version and its
+history, and its code cannot be taken again.  The five codes the
+demonstration shipped with were backfilled explicitly when migration `0006`
+was applied: `INCOMPLETE_APPLICATION`, `WITHDRAWN_BY_APPLICANT` and
+`DUPLICATE_SUBMISSION` are `return` codes; `DOES_NOT_MEET_CODE` and
+`OUTSIDE_JURISDICTION` are `denial` codes.
+
+The code is checked **in the service that acts on the case**, not only in
+the form: an unknown code, a retired code and a code of the wrong type are
+all refused.  Each action record snapshots the code, its label and its
+version as they were at that moment, so the history of a case still reads
+correctly after a code is retired.  A denial needs a denial code on every
+path: a manual decision, a confirmation of a denial recommendation and a
+reconfirmation.
+
+## Findings and waivers
+
+A finding is evidence for a person.  It names what is wrong, the rule that
+applies, what the applicant must do and whether it blocks the case or only
+asks a person to look.  Nine types are recorded: `missing_field`,
+`missing_document`, `unreadable`, `wrong_type`, `duplicate`, `conflict`,
+`fee`, `low_confidence_extraction` and `judgment`.  The classifier records
+`wrong_type` when the intake record asked for another permit type, and
+`fee` when the City cannot price the case (the permit type names no fee
+schedule, or no published schedule is in force on the recorded basis date).
+
+Findings accumulate, so each one carries a state:
+
+* **current** — the live statement about the case;
+* **resolved** — a later run showed that the condition is gone;
+* **superseded** — a later run or a resubmission replaced it.
+
+The history is kept: a finding is never deleted.  A rerun supersedes the
+findings it recorded again and resolves the ones it did not; a resubmission
+supersedes the findings of the earlier revisions.
+
+**Waive** (Data Steward) applies to a **current finding of a waivable
+type** — `wrong_type`, `duplicate`, `conflict`, `low_confidence_extraction`
+and `judgment`.  A missing field, a missing document, an unreadable page
+and a fee question are not waivable: the applicant must supply them, and
+money is never waived.  A waiver records the reason code, the free-text
+reason, who waived it and when; the finding is then shown struck through
+with that detail.
+
+A waiver never clears a deterministic rule failure and never clears an
+identity, credential, finance or parcel-clearance check: those keep
+blocking a decision exactly as they did before.  Only the intake findings
+stop blocking the **advance to review** step.  Every decision snapshots the
+waivers that applied to the case when it was recorded.
+
+The primary finding of a case — the one it is grouped by — is the blocking
+one, or else the first in this stable order: `missing_field`,
+`missing_document`, `unreadable`, `wrong_type`, `duplicate`, `conflict`,
+`fee`, `low_confidence_extraction`, `judgment`, and then the finding
+identifier.
+
+## Comments
+
+A comment is either **visible to the applicant** or an **internal note**.
+The visibility is enforced by the server on every surface that shows a
+comment: the applicant portal ("Messages from the City"), the permit
+workspace, the history panel, the support lookup and the API.
+
+* A member of the City reads every comment.  An applicant reads only the
+  comments the City wrote for the applicant.
+* The identifier of an internal note is not a way to read it: an applicant
+  who asks for one by its identifier is told the comment does not exist.
+* A comment of another applicant's case is out of reach of the record
+  scope.
+* The audit record of a comment carries the comment identifier and its
+  visibility.  It never carries the text, so an internal note cannot
+  travel to an applicant through the audit trail.
+
+Writing a comment needs the `permit.case.comment` grant and the expected
+version of the case.  A comment does not change the state of the case, so
+it does not advance the case version.
+
 ## Failure handling
 
 - **Missing documents/fields** — the completeness node records a blocking
