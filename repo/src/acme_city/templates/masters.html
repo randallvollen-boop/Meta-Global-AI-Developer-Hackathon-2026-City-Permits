@@ -93,8 +93,12 @@
 {% else %}
 <div class="page-head"><div><h1>Properties, businesses and contractors</h1><p class="sub">Parcels, businesses and contractors, owned by GIS, ERP Finance and Permitting.</p></div></div>
 
+{% set query = '' %}
+{% include "components/property_search.html" %}
+
 <section class="panel" aria-labelledby="properties-heading">
   <h2 id="properties-heading">Properties</h2>
+  <p class="muted">Each property is keyed by its parcel number. Open a property record for its addresses, owner, zoning, applications and the departments it is shared with.</p>
   <table class="data-table" data-testid="property-table">
     <caption class="visually-hidden">Parcels and their official addresses</caption>
     <thead><tr><th scope="col">Parcel</th><th scope="col">Number</th><th scope="col">Jurisdiction</th><th scope="col">Official addresses</th><th scope="col">Status</th><th scope="col">Version</th></tr></thead>
@@ -102,7 +106,7 @@
       {% for parcel in masters.properties %}
       <tr>
         <th scope="row">{{ parcel.parcel_id }}</th>
-        <td>{{ parcel.source_parcel_number }}</td>
+        <td><a class="mono" href="/property/{{ parcel.source_parcel_number }}">{{ parcel.source_parcel_number }}</a></td>
         <td>{{ parcel.jurisdiction_id }}</td>
         <td>{% for address in parcel.addresses %}{{ address.source_string }}{% if address.unit_number %} (unit {{ address.unit_number }}){% endif %}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
         <td>{{ parcel.status }}</td>

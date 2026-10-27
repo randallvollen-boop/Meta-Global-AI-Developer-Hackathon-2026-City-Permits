@@ -108,6 +108,14 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
     "agent": ("agent_steps", "agent_controls", "agent_runs", "agent_run_nodes"),
     "configuration": ("reason_codes",),
     "finding": ("application_findings",),
+    "property_master": (
+        "gis_streets",
+        "zoning_districts",
+        "application_parcel_matches",
+        "dataset_subscribers",
+        "application_drafts",
+        "draft_documents",
+    ),
 }
 
 
@@ -295,8 +303,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0004 since the agent-controls migration added by the parity brief.
-    assert health.revision == "0004"
+    # Head is 0005 since the property-master migration added by parity phase 2.
+    assert health.revision == "0005"
     assert database.database_url not in str(health.to_dict())
 
 

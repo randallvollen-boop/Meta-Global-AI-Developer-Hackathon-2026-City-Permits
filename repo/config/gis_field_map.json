@@ -1,0 +1,44 @@
+{
+  "map_version": "1",
+  "note": "Maps the field names of an ArcGIS REST service (Local Government Information Model style) to the names the application uses. The simulated ACME services use these names as they are. Pointing ACME_GIS_BASE_URL at a real server means editing the right-hand side of the maps below and nothing else.",
+  "services": {
+    "locator": "AddressLocator/GeocodeServer",
+    "parcels": "Parcels/FeatureServer/0",
+    "address_points": "AddressPoints/FeatureServer/0"
+  },
+  "locator_candidate": {
+    "address": "address",
+    "x": "location.x",
+    "y": "location.y",
+    "score": "score",
+    "matched_address": "attributes.Match_addr",
+    "address_type": "attributes.Addr_type",
+    "status": "attributes.Status",
+    "address_id": "attributes.ADDRESSID",
+    "parcel_id": "attributes.PARCELID"
+  },
+  "parcel": {
+    "parcel_id": "PARCELID",
+    "site_address": "SITEADDRESS",
+    "owner": "OWNERNME1",
+    "use_code": "USECD",
+    "use_description": "USEDSCRP",
+    "zoning": "ZONING",
+    "subdivision": "CNVYNAME",
+    "area_acres": "STATEAREA",
+    "land_value": "LNDVALUE",
+    "improvement_value": "IMPVALUE",
+    "assessed_value": "CNTASSDVAL",
+    "tax_district": "TAXDIST",
+    "school_district": "SCHLDSCRP",
+    "flood_zone": "FLOODZONE"
+  },
+  "address_point": {
+    "address_id": "ADDRESSID",
+    "full_address": "FULLADDR",
+    "number": "ADDNUM",
+    "road_name": "ROADNAME",
+    "unit": "UNITID",
+    "parcel_id": "PARCELID"
+  }
+}

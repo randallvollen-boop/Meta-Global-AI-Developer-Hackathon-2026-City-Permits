@@ -1,0 +1,17 @@
+<section class="panel" id="record-shared" aria-labelledby="record-shared-heading" data-testid="shared-with">
+  <h2 id="record-shared-heading">Shared with</h2>
+  <p class="muted" data-testid="shared-notice">{{ record.department_notice }}</p>
+  <table class="data-table">
+    <caption class="visually-hidden">Departments that consume the property master</caption>
+    <thead><tr><th scope="col">Department (simulated)</th><th scope="col">Fields it consumes</th><th scope="col">Illustrative signal (simulated)</th></tr></thead>
+    <tbody>
+      {% for dept in record.subscribers %}
+      <tr data-department="{{ dept.department_key }}">
+        <th scope="row">{{ dept.department_label }}</th>
+        <td class="mono">{{ dept.consumed_fields|join(', ') }}</td>
+        <td>{{ dept.signal_label }}: <strong>{{ dept.signal_value }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>

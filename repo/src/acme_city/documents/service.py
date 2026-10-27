@@ -58,6 +58,11 @@ ALLOWED_DOCUMENT_TYPES: frozenset[str] = frozenset(
         "insurance_certificate",
         "contractor_license_copy",
         "change_of_use_notice",
+        "property_survey",
+        "legal_description",
+        "hardship_statement",
+        "photographs",
+        "design_drawings",
         "supporting_document",
     }
 )

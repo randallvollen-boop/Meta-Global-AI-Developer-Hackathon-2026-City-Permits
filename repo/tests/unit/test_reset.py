@@ -373,7 +373,7 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
             )
         }
     # Head is 0004 since the agent-controls migration added by the parity brief.
-    assert revision == ("0004",)
+    assert revision == ("0005",)
     assert "demo_environment" in tables
 
 

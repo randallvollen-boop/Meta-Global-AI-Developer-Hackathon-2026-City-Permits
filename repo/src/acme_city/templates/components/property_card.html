@@ -1,0 +1,59 @@
+{% import "components/action_form.html" as forms %}
+{# The Property card of the permit workspace: "Is this the right property?"  #}
+{% set prop = detail.property %}
+{% if prop %}
+<section class="panel card" aria-labelledby="property-heading" data-testid="property-card">
+  <div class="card-h">
+    <h2 id="property-heading">Property: is this the right property?</h2>
+    <span class="right">
+      <span class="pill {{ 'ok' if prop.confirmed else 'warn' }}" data-testid="parcel-confirmation">{{ 'Parcel confirmed by the reviewer' if prop.confirmed else 'Parcel not confirmed' }}</span>
+    </span>
+  </div>
+  <div class="card-b">
+    <p class="muted">The city identifies property by parcel number, not by address. The locator corrected what the applicant typed to the closest official address, then the parcel layer said which parcel that point falls in. <strong>Simulated enterprise GIS: every value is synthetic.</strong></p>
+    <div class="prop-grid">
+      <dl class="prop-facts" data-testid="property-facts">
+        <dt>Address the applicant typed</dt><dd data-testid="property-typed">{{ prop.submitted_text }}</dd>
+        <dt>Standardized address</dt><dd data-testid="property-standardized">{{ prop.matched_address or 'none chosen yet' }}</dd>
+        <dt>Parcel number <span class="faint">(the key the city uses)</span></dt>
+        <dd data-testid="property-parcel"><strong class="mono">{{ prop.parcel_number or 'none yet' }}</strong>{% if prop.record_href %} <a href="{{ prop.record_href }}">Open property record</a>{% endif %}</dd>
+        <dt>Locator score and status</dt>
+        <dd data-testid="property-score">{% if prop.score is not none %}{{ '%g' % prop.score }}{% else %}no score{% endif %}, {{ prop.status_word }}</dd>
+        <dt>Parcel link</dt>
+        <dd data-testid="property-link-state"><span class="pill plain">{{ prop.state_label }}</span>{% if prop.decided_by %} by {{ prop.decided_by }}{% endif %}</dd>
+        {% if prop.parcel %}
+        <dt>Zoning and flood zone</dt><dd>{{ prop.parcel.zoning }}, flood zone {{ prop.parcel.flood_zone }}</dd>
+        <dt>Owner (synthetic)</dt><dd>{{ prop.parcel.owner }}</dd>
+        {% endif %}
+      </dl>
+      <div class="prop-map" data-testid="property-inset">
+        {{ prop.inset|safe }}
+        {% if prop.can_open %}<p class="muted"><a href="{{ prop.map_href }}" data-testid="property-map-link">Open the full map</a></p>{% endif %}
+      </div>
+    </div>
+    {% if prop.note %}<p class="muted" data-testid="property-note">{{ prop.note }}</p>{% endif %}
+    <h3>Other candidates from the locator</h3>
+    <table class="data-table" data-testid="property-candidates">
+      <caption class="visually-hidden">Address candidates returned by the locator</caption>
+      <thead><tr><th scope="col">Address</th><th scope="col">Score</th><th scope="col">Status</th><th scope="col">Parcel</th></tr></thead>
+      <tbody>
+        {% for candidate in prop.candidates %}
+        <tr{% if candidate.current %} class="is-current"{% endif %}>
+          <th scope="row">{{ candidate.address }}{% if candidate.current %} <span class="pill plain">chosen</span>{% endif %}</th>
+          <td>{{ '%g' % candidate.score }}</td>
+          <td>{{ candidate.status_word }}</td>
+          <td class="mono">{{ candidate.parcel_number or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">The locator returned no candidate.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="act">
+      {% for item in actions if item.group == 'property' %}
+        {{ forms.action_form(item, csrf_token, '/permits/' ~ detail.application.application_id) }}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}

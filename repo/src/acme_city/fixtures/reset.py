@@ -23,6 +23,7 @@ from acme_city.persistence.models import (  # noqa: F401  (registers every table
     audit,
     change,
     finance,
+    gis,
     governance,
     model_run,
     permit,
@@ -578,6 +579,14 @@ def reset_demo(
             )
         )
     counts["parcel_addresses"] = len(population.parcel_addresses)
+    session.flush()
+
+    # The synthetic town: attributes on the base parcels and addresses, the rest
+    # of the town, the street layer, the zoning register and the simulated
+    # subscriber departments.
+    from acme_city.gis.seed import seed_gis
+
+    seed_gis(session, bundle.root, bundle.demo.assignment_epoch)
 
     for credential in population.credentials:
         session.add(

@@ -93,7 +93,10 @@ def test_no_parcel_is_invented_for_the_unknown_number(seeded: Settings) -> None:
             parcels = session.execute(select(registry.Parcel)).scalars().all()
             numbers = {parcel.source_parcel_number for parcel in parcels}
             assert "ACME-P-9999" not in numbers
-            assert numbers == {"ACME-P-1001", "ACME-P-1002"}
+            # Parity phase 2 adds the synthetic town to the parcel table; the
+            # base parcels remain and still no parcel is invented for 9999.
+            assert {"ACME-P-1001", "ACME-P-1002"} <= numbers
+            assert not any(number.endswith("9999") for number in numbers)
 
             entities = session.execute(
                 select(registry.CanonicalEntity).where(

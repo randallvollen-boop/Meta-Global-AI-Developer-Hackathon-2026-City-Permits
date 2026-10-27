@@ -159,6 +159,6 @@ def test_healthz_reports_the_migration_state_without_a_path(client: TestClient) 
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["database"] == "current"
-    # Head is 0004 since the agent-controls migration added by the parity brief.
-    assert payload["schema_revision"] == "0004"
+    # Head is 0005 since the agent-controls migration added by the parity brief.
+    assert payload["schema_revision"] == "0005"
     assert "sqlite" not in response.text

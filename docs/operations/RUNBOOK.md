@@ -96,16 +96,17 @@ finish, the acting service identity, the triggering person, the outcome) with
 one `agent_run_nodes` row per node (node id, label, dependency level, status
 `ok`/`warn`/`block` and a note).
 
-### Intake agent — six nodes
+### Intake agent — seven nodes
 
 | Level | Node | What it does |
 |---|---|---|
 | 1 | Classifier | Confirms the permit type and the channel and sets the review area from the type. |
 | 2 | Field extractor | Muse Spark extraction (replay by default) proposes values from the received documents. Where the validator scored the run, its real validation result is shown; no percentage is ever invented. |
 | 2 | Document QC | Flags the scan-quality problems carried by the intake record. An unreadable page blocks. |
-| 3 | Duplicate finder | Finds another live case that asks for the same project by the same applicant at the same address for the same permit type, and runs the identity matcher to propose applicant, parcel and contractor links for the steward. |
+| 3 | Address locator | Asks the city locator (`findAddressCandidates`) for candidates for the typed address, then asks the parcel layer which parcel the best point falls in. It records the typed text, matched address, score, status (M/T/U), coordinates, candidate list, parcel id and method. One candidate scoring at least 90 (setting `ACME_GIS_AUTO_PROPOSE_SCORE`) is **proposed**, never auto-approved. A tie or a low score raises "Address needs a person to choose the property"; no candidate raises "Address not found in the city locator". Both go to early resolution. |
 | 3 | Completeness | Checks the required fields and documents of the type. |
-| 4 | Router | Any blocking finding → `needs_information` (**Route to early resolution**). A human-judgment finding (duplicate, conflict, low extraction quality) → `needs_information` (**Verify before review**). Otherwise → `ready_for_review` with its review area. |
+| 4 | Duplicate finder | Finds another live case that asks for the same project by the same applicant at the same address for the same permit type, and runs the identity matcher to propose applicant, parcel and contractor links for the steward. |
+| 5 | Router | Any blocking finding → `needs_information` (**Route to early resolution**). A human-judgment finding (duplicate, conflict, low extraction quality) → `needs_information` (**Verify before review**). Otherwise → `ready_for_review` with its review area. |
 
 Findings are written as application findings with a type (missing field,
 missing document, unreadable, duplicate, conflict, low-confidence
@@ -202,6 +203,74 @@ screen is also a 403). Order and labels are canonical for everyone.
   with permission checks, CSRF, expected version and an audit record; denials
   are audited and shown as "The action was refused".
 
+## Property master
+
+The city identifies property by **parcel number**, not by address. A permit
+comes in with address text; the locator corrects it to the closest official
+address and the parcel layer says which parcel that point falls in. The
+steward approves that identity link, and the reviewer confirms the parcel
+before deciding.
+
+**Simulated enterprise GIS.** The app serves ArcGIS REST shaped services
+in-app under `/sim/arcgis/rest/services/ACME/` (labelled simulated on every
+page and response): `AddressLocator/GeocodeServer` (`findAddressCandidates`,
+`suggest`, `reverseGeocode`), `Parcels/FeatureServer/0/query` (LGIM-style
+`PARCELID`, `SITEADDRESS`, `OWNERNME1`, `USECD`, `ZONING`, `CNVYNAME`,
+`STATEAREA`, `LNDVALUE`, `IMPVALUE`, `CNTASSDVAL`, `TAXDIST`, `SCHLDSCRP`,
+`FLOODZONE`) and `AddressPoints/FeatureServer/0/query`. They read the one
+parcel and address truth of the registry tables, so nothing disagrees. The
+town (69 parcels, 71 address points, 6 streets) is synthetic and
+deterministic (`fixtures/gis_town.json`, rebuilt by `scripts/build_gis_town.py`).
+
+The app's own code reaches them only through the `GisLocator` adapter over
+HTTP. `ACME_GIS_BASE_URL` (default: the in-app simulator) plus
+`config/gis_field_map.json` is all it takes to point at a real ArcGIS server.
+
+**Who does what.**
+
+| Step | Who | Action id |
+|---|---|---|
+| Propose the parcel link from the typed address | Intake agent | (Address locator node) |
+| Approve or reject the parcel link, with the locator evidence | Data Steward | `parcel.link.decide` |
+| Choose another candidate / find a parcel by number | Permit Reviewer (or Steward) | `parcel.candidate.choose`, `parcel.find` |
+| Confirm the parcel ("Is this the right property?") | Permit Reviewer | `parcel.confirm` |
+| Flag a wrong address to GIS | anyone with `correction.request.submit` | `change.request` |
+
+No approval is possible until the parcel link is approved **and** confirmed
+(blockers `parcel_link_unapproved`, `parcel_unconfirmed`). Rule inputs that
+come from the parcel (zoning, flood zone) are read from the confirmed parcel
+only. A seeded case without a locator match is unchanged.
+
+**Screens.** The permit workspace has a **Property** card (typed address,
+standardized address, parcel number, score and status, other candidates, and
+a small SVG inset). Steward review lists the open parcel-link proposals with
+the submitted point against the candidate parcels. `/property/{parcel}` is the
+property record (parcel attributes, addresses and units, applications and
+permits, a "Shared with" panel, a map, source and history). `/property?q=`
+is "Find a property". `/map` is the town map (SVG, no outside tiles; pan, zoom
+and click with JavaScript, plain links without it; every parcel and marker
+has a text label and a parcel table sits beside it). Staff personas only; the
+Applicant sees only the case's own parcel.
+
+**Shared with.** The published dataset "Property master (parcel, address,
+owner, zoning)" has four simulated subscriber departments (Tax / Assessor,
+Fire and life safety, Code enforcement, Utilities), each with a contract
+listing the fields it consumes (Governance and sources). No such system is
+built; the signals are synthetic and labelled so.
+
+**Scenarios.** `address-typo` ("412 Mapel Rdg Dr" corrects to 412 Maple Ridge
+Drive, score 96), `address-ambiguous` ("400 Lantern Row Unit 3": the building
+and two units, a person must choose) and `address-unknown` (no match). The
+fence scenarios use "400 Lantren Row".
+
+**Applicant portal.** `/apply` (Applicant persona only): the guided chooser
+of 17 types, the per-type form with a live completeness banner (computed by
+the server on every preview, save and submit), the locator's "Did you mean",
+a document checklist with drag and drop, the certification, **Submit
+application** (refused server-side unless complete and certified), **Save and
+exit** (a draft) and **Track an application**. Arrivals land as "Awaiting
+intake agent".
+
 ## Fence flow
 
 ```mermaid
@@ -212,14 +281,15 @@ sequenceDiagram
     participant S as Data Steward
     participant J as Adjudication agent (service identity)
     participant R as Permit Reviewer
-    P->>P: submit fence record (portal/counter_scan/email/mail/fax)
+    P->>P: submit fence record (portal/counter_scan/email/mail/fax); the address is typed slightly wrong
     P->>I: stage raw, create application + revision + documents
     I->>I: wait as "Awaiting intake agent"
     A->>I: wake the intake agent
-    S->>I: Process all waiting (six-node graph)
+    S->>I: Process all waiting (seven-node graph; the locator corrects the address and proposes the parcel)
     I->>I: route to ready_for_review with the review area
-    S->>I: approve identity links; accept/correct extracted values
+    S->>I: approve identity links, the parcel link and extracted values
     A->>J: wake the adjudication agent
+    R->>R: confirm the parcel (Is this the right property?)
     R->>J: Run all (five-node graph)
     J->>J: recommendation pending (e.g. deny, DF-1) — advisory
     R->>J: Confirm (decision of record) or Revert (reason required)

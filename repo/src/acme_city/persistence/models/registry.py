@@ -105,6 +105,24 @@ class Parcel(IdMixin, VersionMixin, CreatedAtMixin, Base):
     valid_from: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     valid_to: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     source_snapshot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Synthetic Local Government Information Model (LGIM) style attributes that
+    # the simulated parcel feature service serves.  They live on the one parcel
+    # table, so the registry and the simulated GIS never disagree.
+    owner_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    use_code: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    use_description: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    zoning_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    subdivision: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)
+    land_value_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    improvement_value_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tax_district: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    school_district: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    flood_zone: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    #: The outline as ``[[x, y], ...]`` rings on the local grid.
+    geometry: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    #: Synthetic signals the simulated subscriber departments show.
+    department_signals: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 class Address(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -124,6 +142,9 @@ class Address(IdMixin, VersionMixin, CreatedAtMixin, Base):
     source_string: Mapped[str | None] = mapped_column(String(320), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     source_snapshot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: The address point on the local grid of the simulated GIS.
+    x: Mapped[float | None] = mapped_column(Float, nullable=True)
+    y: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class ParcelAddress(IdMixin, CreatedAtMixin, Base):

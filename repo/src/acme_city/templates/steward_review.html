@@ -18,6 +18,8 @@
   <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-link"/></svg>Change cases</div><div class="v num">{{ review.cases|length }}</div><div class="s">open cases</div></div>
 </div>
 
+{% include "components/parcel_proposals.html" %}
+
 <section class="panel card" aria-labelledby="proposals-heading">
   <div class="card-h"><h2 id="proposals-heading">Candidate links awaiting a decision</h2></div>
   <div class="card-b" style="display:grid;gap:14px">
@@ -228,8 +230,8 @@
 <section class="panel card" aria-labelledby="steward-actions-heading">
   <div class="card-h"><h2 id="steward-actions-heading">Next actions</h2></div>
   <div class="card-b act">
-  {% for item in actions %}
-    {{ forms.action_form(item, csrf_token) }}
+  {% for item in actions if not item.application_id %}
+    {{ forms.action_form(item, csrf_token, '/steward') }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">

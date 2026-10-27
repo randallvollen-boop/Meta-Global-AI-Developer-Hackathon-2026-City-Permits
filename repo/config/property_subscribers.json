@@ -1,0 +1,69 @@
+{
+  "dataset_key": "property_master",
+  "label": "Property master (parcel, address, owner, zoning)",
+  "note": "Simulated subscriber departments. None of these systems is built; each row shows what one shared property master would give a department. Every signal is synthetic.",
+  "subscribers": [
+    {
+      "department_key": "tax_assessor",
+      "department_label": "Tax / Assessor",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "OWNERNME1",
+        "USECD",
+        "LNDVALUE",
+        "IMPVALUE",
+        "CNTASSDVAL",
+        "TAXDIST",
+        "SCHLDSCRP"
+      ],
+      "contract_text": "Reads parcel identity, owner, use and valuation to prepare assessment notices. Writes nothing back to the property master.",
+      "signal_key": "assessed_value",
+      "signal_label": "Assessed value (from the parcel layer)"
+    },
+    {
+      "department_key": "fire_safety",
+      "department_label": "Fire and life safety",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "ADDRESSID",
+        "USECD",
+        "USEDSCRP",
+        "ZONING",
+        "FLOODZONE"
+      ],
+      "contract_text": "Reads parcel use, units and flood zone to plan inspections and pre-incident plans. Writes nothing back.",
+      "signal_key": "fire_last_inspection",
+      "signal_label": "Last inspection date (synthetic)"
+    },
+    {
+      "department_key": "code_enforcement",
+      "department_label": "Code enforcement",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "OWNERNME1",
+        "ZONING",
+        "USEDSCRP"
+      ],
+      "contract_text": "Reads parcel owner and zoning to route complaints to the right owner and code section. Writes nothing back.",
+      "signal_key": "code_open_cases",
+      "signal_label": "Open cases (synthetic)"
+    },
+    {
+      "department_key": "utilities",
+      "department_label": "Utilities",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "ADDRESSID",
+        "UNITID",
+        "OWNERNME1"
+      ],
+      "contract_text": "Reads the official address and unit list to match service accounts to a parcel. Writes nothing back.",
+      "signal_key": "utility_account_active",
+      "signal_label": "Service account active (synthetic)"
+    }
+  ]
+}

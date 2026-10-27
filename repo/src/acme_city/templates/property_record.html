@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set parcel = record.parcel %}
+<div class="page-head">
+  <div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+      <span class="ref mono" data-testid="record-parcel-number">{{ record.parcel_number }}</span>
+      <span class="pill plain">Property record</span>
+      <span class="pill plain">Simulated GIS data</span>
+    </div>
+    <h1>Property record: {{ record.site_address or record.parcel_number }}</h1>
+    <p class="sub">The parcel number is the key. Addresses, units, owner, zoning and every permit hang off it.</p>
+  </div>
+</div>
+
+{% include "components/property_search.html" %}
+{% include "components/responsibility_panel.html" %}
+
+<nav class="tabs" aria-label="Property record sections" data-testid="record-tabs">
+  <a href="#record-parcel">Parcel</a> <a href="#record-addresses">Addresses</a> <a href="#record-permits">Applications and permits</a> <a href="#record-shared">Shared with</a> <a href="#record-map">Map</a> <a href="#record-source">Source and stewardship</a>
+</nav>
+
+<section class="panel" id="record-parcel" aria-labelledby="record-parcel-heading">
+  <h2 id="record-parcel-heading">Parcel attributes</h2>
+  <table class="data-table" data-testid="parcel-attributes">
+    <caption class="visually-hidden">Attributes of parcel {{ record.parcel_number }}</caption>
+    <tbody>
+      <tr><th scope="row">Parcel number (PARCELID)</th><td class="mono">{{ parcel.parcel_number }}</td></tr>
+      <tr><th scope="row">Owner (synthetic)</th><td data-testid="record-owner">{{ parcel.owner }}</td></tr>
+      <tr><th scope="row">Land use</th><td>{{ parcel.use }}{% if parcel.use_code %} ({{ parcel.use_code }}){% endif %}</td></tr>
+      <tr><th scope="row">Zoning</th><td data-testid="record-zoning">{{ parcel.zoning }}{% if record.zoning_district.name %}: {{ record.zoning_district.name }}{% endif %}</td></tr>
+      <tr><th scope="row">Subdivision</th><td>{{ parcel.subdivision or '-' }}</td></tr>
+      <tr><th scope="row">Area</th><td>{{ parcel.acres }} acres</td></tr>
+      <tr><th scope="row">Land value / improvements / total assessed</th><td>{{ parcel.land_value }} / {{ parcel.improvement_value }} / {{ parcel.assessed_value }}</td></tr>
+      <tr><th scope="row">Tax district / school district</th><td>{{ parcel.tax_district }} / {{ parcel.school_district }}</td></tr>
+      <tr><th scope="row">Flood zone</th><td>{{ parcel.flood_zone }}</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" id="record-addresses" aria-labelledby="record-addresses-heading">
+  <h2 id="record-addresses-heading">Addresses and units on this parcel</h2>
+  <table class="data-table" data-testid="record-addresses">
+    <caption class="visually-hidden">Official addresses on this parcel</caption>
+    <thead><tr><th scope="col">Official address</th><th scope="col">Kind</th><th scope="col">Address id</th></tr></thead>
+    <tbody>
+      {% for address in record.addresses %}
+      <tr><th scope="row">{{ address.label }}</th><td>{{ address.kind }}{% if address.unit %} {{ address.unit }}{% endif %}</td><td class="mono">{{ address.address_id }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No official address is recorded.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel" id="record-permits" aria-labelledby="record-permits-heading">
+  <h2 id="record-permits-heading">Applications and permits on this parcel</h2>
+  <p class="muted">A permit locks to one parcel.</p>
+  <table class="data-table" data-testid="record-applications">
+    <caption class="visually-hidden">Applications and permits on this parcel</caption>
+    <thead><tr><th scope="col">Application</th><th scope="col">Permit type</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for item in record.applications %}
+      <tr><th scope="row"><a href="{{ item.href }}">{{ item.number }}</a></th><td>{{ item.permit_type }}</td><td>{{ item.status_label }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No application is linked to this parcel yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% include "components/shared_with.html" %}
+
+<section class="panel" id="record-map" aria-labelledby="record-map-heading">
+  <h2 id="record-map-heading">Map</h2>
+  <div class="prop-map" data-testid="record-inset">{{ record.inset|safe }}</div>
+  <p><a href="{{ record.map_href }}" data-testid="record-map-link">Open the full town map on this parcel</a></p>
+</section>
+
+<section class="panel" id="record-source" aria-labelledby="record-source-heading">
+  <h2 id="record-source-heading">Source and stewardship</h2>
+  <p data-testid="record-source">{{ record.source.system }}, version {{ record.source.version }}, status {{ record.source.status }}{% if record.source.valid_from %}, valid from {{ record.source.valid_from }}{% endif %}.</p>
+  <p class="muted">{{ record.source.label }}</p>
+</section>
+{% set history = record.history %}
+{% include "components/history_panel.html" %}
+{% endblock %}

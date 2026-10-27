@@ -37,6 +37,11 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.documents.service import DocumentService
+from acme_city.gis.matching import (
+    AMBIGUOUS_MESSAGE,
+    NOT_FOUND_MESSAGE,
+    ParcelMatchService,
+)
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit, registry
@@ -155,8 +160,9 @@ class IntakeAgent:
         self._node_classifier(run, application, findings)
         self._node_field_extractor(run, application, findings, actor)
         self._node_document_qc(run, application, findings)
-        self._node_duplicate_finder(run, application, findings, actor)
+        self._node_address_locator(run, application, findings, actor)
         self._node_completeness(run, application, findings)
+        self._node_duplicate_finder(run, application, findings, actor)
         self._node_router(run, application, findings)
 
         run.finished_at = utc_now()
@@ -228,7 +234,7 @@ class IntakeAgent:
         findings: FindingWriter,
     ) -> None:
         """Confirm the permit type and the channel and set the review area."""
-        node = graphs.INTAKE_GRAPH[0]
+        node = graphs.node_for('intake', graphs.INTAKE_CLASSIFIER)
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
         permit_type = permits.permit_type(application)
@@ -283,7 +289,7 @@ class IntakeAgent:
         actor: ActorContext,
     ) -> None:
         """Propose field values from the received documents."""
-        node = graphs.INTAKE_GRAPH[1]
+        node = graphs.node_for('intake', graphs.INTAKE_FIELD_EXTRACTOR)
         row = self._begin(run, node)
         try:
             result = replay_extraction(self._session, application, actor)
@@ -344,6 +350,104 @@ class IntakeAgent:
             actor=actor,
         )
 
+    def _node_address_locator(
+        self,
+        run: agent_models.AgentRun,
+        application: permit.Application,
+        findings: FindingWriter,
+        actor: ActorContext,
+    ) -> None:
+        """Correct the typed address to the closest official one and find its parcel.
+
+        The node asks the city locator for candidates, then asks the parcel
+        layer which parcel the best point falls in.  It only proposes: the
+        Data Steward approves the parcel link and the Permit Reviewer confirms
+        the parcel before a decision.
+        """
+        node = graphs.node_for("intake", graphs.INTAKE_ADDRESS_LOCATOR)
+        row = self._begin(run, node)
+        try:
+            outcome = ParcelMatchService(
+                self._session, settings=self._settings, now=self._now
+            ).locate(application, actor)
+        except Exception as exc:  # noqa: BLE001 - a failed node is recorded
+            findings.add(
+                finding_type="judgment",
+                message=f"{AMBIGUOUS_MESSAGE}: the city locator could not be used ({exc}).",
+                rule="ACME Code §13-701",
+                applicant_must="Confirm which property the work is for.",
+                severity="block",
+            )
+            self._finish(
+                run,
+                row,
+                status="warn",
+                note=f"The city locator failed; a person must find the property: {exc}",
+                actor=actor,
+            )
+            return
+        match = outcome.match
+        if outcome.kind == "reused":
+            self._finish(
+                run,
+                row,
+                status="ok",
+                note=(
+                    f"The parcel link ({match.parcel_number}) is already approved, so the "
+                    "locator was not asked again."
+                ),
+                actor=actor,
+            )
+            return
+        typed = match.submitted_text or "(no address text)"
+        if outcome.kind == "proposed":
+            status = "ok"
+            note = (
+                f"Corrected {typed!r} to {match.matched_address!r} (score {match.score:g}, "
+                f"status {match.locator_status}); the point falls in parcel "
+                f"{match.parcel_number}. Proposed for the Data Steward to approve."
+            )
+            if outcome.parcel_conflict:
+                status = "warn"
+                findings.add(
+                    finding_type="conflict",
+                    message=outcome.parcel_conflict
+                    + " A person must confirm which parcel is meant.",
+                    rule="ACME Code §13-702",
+                    applicant_must="Confirm the parcel number or the street address of the work.",
+                    severity="review",
+                )
+                note += " " + outcome.parcel_conflict
+        elif outcome.kind == "needs_choice":
+            status = "warn"
+            findings.add(
+                finding_type="judgment",
+                message=(
+                    f"{AMBIGUOUS_MESSAGE}. The locator returned {len(match.candidates or [])} "
+                    f"candidate(s) for {typed!r} and none was clearly the best. {match.note}"
+                ),
+                rule="ACME Code §13-701",
+                applicant_must="Confirm which property the work is for.",
+                severity="block",
+            )
+            note = f"{AMBIGUOUS_MESSAGE}: {match.note}"
+        else:
+            status = "block"
+            findings.add(
+                finding_type="conflict",
+                message=(
+                    f"{NOT_FOUND_MESSAGE}. Nothing in the official address list matches "
+                    f"{typed!r}."
+                ),
+                rule="ACME Code §13-703",
+                applicant_must=(
+                    "Give the street address of the property, or its parcel number."
+                ),
+                severity="block",
+            )
+            note = f"{NOT_FOUND_MESSAGE} ({typed!r})."
+        self._finish(run, row, status=status, note=note, actor=actor)
+
     def _node_document_qc(
         self,
         run: agent_models.AgentRun,
@@ -351,7 +455,7 @@ class IntakeAgent:
         findings: FindingWriter,
     ) -> None:
         """Flag the scan-quality problems the intake record carried."""
-        node = graphs.INTAKE_GRAPH[2]
+        node = graphs.node_for('intake', graphs.INTAKE_DOCUMENT_QC)
         row = self._begin(run, node)
         documents = self._session.execute(
             select(permit.Document).where(permit.Document.application_id == application.id)
@@ -418,7 +522,7 @@ class IntakeAgent:
         actor: ActorContext,
     ) -> None:
         """Find a duplicate case and propose the identity links."""
-        node = graphs.INTAKE_GRAPH[3]
+        node = graphs.node_for('intake', graphs.INTAKE_DUPLICATE_FINDER)
         row = self._begin(run, node)
         notes: list[str] = []
         status = "ok"
@@ -577,7 +681,7 @@ class IntakeAgent:
         received, so a later configuration change never rewrites what this
         case was measured against.
         """
-        node = graphs.INTAKE_GRAPH[4]
+        node = graphs.node_for('intake', graphs.INTAKE_COMPLETENESS)
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
         permit_type = permits.permit_type(application)
@@ -667,7 +771,7 @@ class IntakeAgent:
         findings: FindingWriter,
     ) -> None:
         """Route the case to early resolution or to review."""
-        node = graphs.INTAKE_GRAPH[5]
+        node = graphs.node_for('intake', graphs.INTAKE_ROUTER)
         row = self._begin(run, node)
         blocking = findings.blocking
         judging = findings.judging

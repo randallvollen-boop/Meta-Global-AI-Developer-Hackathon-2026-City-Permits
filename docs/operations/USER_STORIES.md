@@ -34,6 +34,20 @@ other organisational identity are service identities.
   - Acceptance: use **Submit application correction** with the missing facts;
     a new immutable revision is created and the earlier revision is unchanged.
 
+- As an Applicant, I want to choose what I am trying to do and fill in the
+  form for that project, so that I only give what that kind of project needs.
+  - Acceptance: **Start a new application** (Work queue) opens "What are you
+    trying to do?"; the form shows the type's fields, a completeness banner
+    ("Ready to submit..." or "Still needed: ..."), the locator's "Did you
+    mean", a document checklist and the certification; **Submit application**
+    stays disabled until complete and certified, and the server refuses an
+    incomplete submit too; the confirmation shows the reference number.
+- As an Applicant, I want to save a draft and track an application, so that I
+  can finish later and see what the City says.
+  - Acceptance: **Save and exit** keeps a draft; **Track an application**
+    shows the status, "Messages from the City" and, when the City asked,
+    **Submit revised documents**.
+
 ## Data Steward
 
 - As a Data Steward, I want to run the intake agent when it is awake, so
@@ -52,6 +66,13 @@ other organisational identity are service identities.
   so that I can approve only links the evidence supports.
   - Acceptance: **Steward review** shows proposals with supporting/conflicting
     evidence; **Confirm link** records my decision, my id and the reason.
+- As a Data Steward, I want to approve the parcel a permit was matched to, so
+  that the case is tied to the right property by parcel number.
+  - Acceptance: **Steward review** → "Parcel links awaiting a decision" shows
+    the typed address, the standardized address, the score and status, the
+    candidates and a small map of the submitted point against the candidate
+    parcels; **Approve parcel link** records my decision and reason; it
+    never approves the permit.
 - As a Data Steward, I want to accept or correct Muse's proposed values, so
   that proposed values never silently become submitted facts.
   - Acceptance: in the Permit workspace, **Accept or correct extracted …**
@@ -88,6 +109,15 @@ other organisational identity are service identities.
   - Acceptance: **Issue permit** requires a current approved decision, valid
     links/credentials and an exact reconciliation; the command key is
     idempotent.
+
+- As a Permit Reviewer, I want to confirm that the matched parcel is the right
+  property, so that I never decide a case on the wrong parcel.
+  - Acceptance: the **Property** card on the permit workspace shows the
+    address the applicant typed, the standardized address, the parcel number
+    (the key the city uses), the locator score and the other candidates, with
+    **Confirm parcel**, **Choose another candidate**, **Find parcel by number**
+    and **Flag address correction to GIS**; approval stays blocked until the
+    parcel link is approved and confirmed.
 
 ## City Administrator
 
