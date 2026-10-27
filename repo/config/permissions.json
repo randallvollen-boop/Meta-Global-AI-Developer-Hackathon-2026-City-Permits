@@ -297,6 +297,69 @@
       "category": "property",
       "description": "Confirm, as the reviewer, that the approved parcel is the right property before a decision.",
       "sensitive": true
+    },
+    {
+      "permission_id": "permit.case.return",
+      "action": "permit.case.return",
+      "category": "permit",
+      "description": "Return a case to the applicant with an active reason code of the return type. A return is terminal.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.case.advance",
+      "action": "permit.case.advance",
+      "category": "permit",
+      "description": "Advance a case to the review area of its permit type once no current blocking finding stands in the way.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.case.request_revisions",
+      "action": "permit.case.request_revisions",
+      "category": "permit",
+      "description": "Ask the applicant for revisions with an active reason code of the revision type and a message the applicant reads.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.case.archive",
+      "action": "permit.case.archive",
+      "category": "permit",
+      "description": "Archive a case with an active reason code of the archive type. Archiving is a soft delete.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "permit.case.restore",
+      "action": "permit.case.restore",
+      "category": "permit",
+      "description": "Restore an archived case to the status it held. A restore never revives a stale approval or recommendation.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "permit.case.priority",
+      "action": "permit.case.priority",
+      "category": "permit",
+      "description": "Change the priority of a case between normal and high.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.case.assign",
+      "action": "permit.case.assign",
+      "category": "permit",
+      "description": "Route a case to a staff member eligible for its stage. Assignment is routing metadata and grants no authority.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.case.comment",
+      "action": "permit.case.comment",
+      "category": "permit",
+      "description": "Write a comment on a case, either visible to the applicant or internal.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.finding.waive",
+      "action": "permit.finding.waive",
+      "category": "permit",
+      "description": "Waive a current intake finding of a waivable type with an active reason code of the waiver type. A waiver never clears a deterministic rule failure or an identity, credential, finance or parcel-clearance check.",
+      "sensitive": false
     }
   ],
   "role_grants": {
@@ -315,6 +378,12 @@
       "application.submit",
       "application.withdraw",
       "correction.request.submit",
+      "permit.case.advance",
+      "permit.case.assign",
+      "permit.case.comment",
+      "permit.case.priority",
+      "permit.case.return",
+      "permit.finding.waive",
       "records.document.view",
       "source.snapshot.stage"
     ],
@@ -358,6 +427,9 @@
       "correction.request.submit",
       "parcel.confirm",
       "parcel.match.propose",
+      "permit.case.assign",
+      "permit.case.comment",
+      "permit.case.request_revisions",
       "permit.decide",
       "property.view",
       "records.document.view"
@@ -386,6 +458,8 @@
       "agent.run.intake",
       "agent.toggle",
       "config.manage",
+      "permit.case.archive",
+      "permit.case.restore",
       "permit.icon.generate",
       "property.view",
       "records.configuration.view",

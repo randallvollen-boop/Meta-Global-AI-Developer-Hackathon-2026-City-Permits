@@ -307,6 +307,66 @@ async def ui_portal_revise(
     return RedirectResponse(f"{back}&revised={count}", status_code=303)
 
 
+@router.post("/apply/track/{application_id}/resubmit", operation_id="ui_portal_resubmit")
+async def ui_portal_resubmit(
+    application_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Answer the City and send the case back to intake.
+
+    The resubmission is atomic: the revised documents and the new submitted
+    revision move together, and the case returns to the intake agent.
+    """
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    back = "/apply/track"
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        application_ref = str(form.get("reference", ""))
+        back = f"/apply/track?ref={application_ref}"
+        uploads = []
+        for key, upload in form.multi_items():
+            if key.startswith("file__") and hasattr(upload, "read") and upload.filename:
+                content = await upload.read()
+                if content:
+                    uploads.append((key[len("file__"):], upload.filename, content))
+        expected_version = str(form.get("expected_version", "")).strip()
+        service.resubmit(
+            application_id,
+            resolved,
+            uploads=uploads,
+            answers={},
+            expected_version=int(expected_version) if expected_version else None,
+        )
+        session.commit()
+    except AcmeError as error:
+        session.rollback()
+        AuditService(session).record_denied(
+            action="portal.application.resubmit",
+            actor=resolved,
+            target_type="application",
+            target_id=application_id,
+            denial_reason=error.code,
+        )
+        session.commit()
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=error.status_code,
+            title="The answer was refused",
+            message=error.message,
+            code=error.code,
+            back=back,
+        )
+    return RedirectResponse(f"{back}&resubmitted=1", status_code=303)
+
+
 @router.get("/apply/submitted/{reference}", operation_id="ui_portal_submitted")
 def ui_portal_submitted(
     reference: str,

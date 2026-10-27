@@ -530,6 +530,54 @@
           ],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.advance",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.assign",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.comment",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.priority",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.return",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.finding.waive",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,
@@ -618,6 +666,30 @@
         },
         {
           "permission_id": "parcel.confirm",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.assign",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.comment",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.request_revisions",
           "domains": [
             "permits"
           ],
@@ -961,6 +1033,22 @@
         {
           "permission_id": "property.view",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.archive",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.case.restore",
+          "domains": [
+            "permits"
+          ],
           "record_scope": [],
           "source": "explicit"
         }

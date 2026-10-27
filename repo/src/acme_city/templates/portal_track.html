@@ -35,6 +35,17 @@
     {% endfor %}
     <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
   </form>
+  <h3>Send the answer back to the City</h3>
+  <p class="muted">Sending the answer creates a new revision of your application. The City assesses it again from the start.</p>
+  <form method="post" action="/apply/track/{{ tracked.application_id }}/resubmit" enctype="multipart/form-data" data-testid="resubmit-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="reference" value="{{ tracked.reference }}">
+    <input type="hidden" name="expected_version" value="{{ tracked.application_version }}">
+    {% for doc in tracked.documents %}
+    <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+    {% endfor %}
+    <p><button type="submit" class="btn primary" data-testid="resubmit-submit">Send the answer to the City</button></p>
+  </form>
   {% endif %}
 </section>
 {% endif %}
