@@ -73,7 +73,7 @@ def _portal_guard(
     return resolved, None
 
 #: Names the form posts that are not application fields.
-_RESERVED = {CSRF_FIELD, "intent", "draft", "certified", "next"}
+_RESERVED = {CSRF_FIELD, "intent", "draft", "certification_accepted", "next"}
 
 
 def _values(form: Any, spec: forms.FormSpec) -> dict[str, str]:
@@ -113,13 +113,13 @@ def _form_context(
     spec: forms.FormSpec,
     *,
     values: dict[str, str],
-    certified: bool,
+    certification_accepted: bool,
     draft: Any,
     error: str = "",
     notice: str = "",
 ) -> dict[str, Any]:
     documents = service.draft_documents(draft)
-    state = service.completeness(spec, values, set(documents), certified=certified)
+    state = service.completeness(spec, values, set(documents), certification_accepted=certification_accepted)
     icon = None
     row = service._type_row(spec.type_key)  # noqa: SLF001 - same package
     icon = view_models.icon_for_permit_type(session, row)
@@ -370,12 +370,12 @@ def ui_portal_form(
         )
     row = service.draft(draft, resolved) if draft else None
     values = _default_values(session, resolved)
-    certified = False
+    certification_accepted = False
     if row is not None:
         values.update(dict(row.data.get("values") or {}))
-        certified = bool(row.data.get("certified"))
+        certification_accepted = bool(row.data.get("certification_accepted"))
     context = _form_context(
-        request, session, resolved, service, spec, values=values, certified=certified, draft=row
+        request, session, resolved, service, spec, values=values, certification_accepted=certification_accepted, draft=row
     )
     return render(request, "portal_form.html", context)
 
@@ -403,7 +403,7 @@ async def ui_portal_check(
         spec,
         _values(form, spec),
         have,
-        certified=str(form.get("certified", "")).lower() in {"on", "true", "1"},
+        certification_accepted=str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"},
     )
     return JSONResponse(state)
 
@@ -429,7 +429,7 @@ async def ui_portal_post(
             message=error.message, code="not_found", back="/apply",
         )
     values = _values(form, spec)
-    certified = str(form.get("certified", "")).lower() in {"on", "true", "1"}
+    certification_accepted = str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"}
     intent = str(form.get("intent", "update"))
     draft = None
     error_text = ""
@@ -437,12 +437,12 @@ async def ui_portal_post(
     try:
         verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
         draft = service.save_draft(
-            spec, values, certified, resolved, reference=str(form.get("draft", ""))
+            spec, values, certification_accepted, resolved, reference=str(form.get("draft", ""))
         )
         for doc_type, filename, content in await _files(form, spec):
             service.store_upload(draft, doc_type, filename, content, resolved)
         if intent == "submit":
-            application = service.submit(spec, values, certified, draft, resolved)
+            application = service.submit(spec, values, certification_accepted, draft, resolved)
             session.commit()
             return RedirectResponse(
                 f"/apply/submitted/{application.source_application_number}", status_code=303
@@ -462,6 +462,6 @@ async def ui_portal_post(
             )
     context = _form_context(
         request, session, resolved, service, spec,
-        values=values, certified=certified, draft=draft, error=error_text, notice=notice,
+        values=values, certification_accepted=certification_accepted, draft=draft, error=error_text, notice=notice,
     )
     return render(request, "portal_form.html", context, status_code=422 if error_text else 200)

@@ -6,7 +6,7 @@ browser script only mirrors that answer while the applicant types.
 """
 # REQUIRES: PORTAL-01, PORTAL-02, PORTAL-03
 # Submission is refused server-side unless the application is complete and
-# certified; a draft keeps the applicant's work; uploads are limited by size
+# accompanied by the certification; a draft keeps the applicant's work; uploads are limited by size
 # and type and stored as real files.
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ class PortalService:
         values: dict[str, str],
         uploaded_types: set[str],
         *,
-        certified: bool = False,
+        certification_accepted: bool = False,
     ) -> dict[str, Any]:
         """Return what is still needed, by plain label."""
         missing: list[str] = []
@@ -192,8 +192,8 @@ class PortalService:
         return {
             "complete": complete,
             "missing": missing,
-            "certified": certified,
-            "can_submit": complete and certified,
+            "certification_accepted": certification_accepted,
+            "can_submit": complete and certification_accepted,
             "banner": (
                 "Ready to submit. All required fields and documents are provided."
                 if complete
@@ -291,14 +291,14 @@ class PortalService:
         self,
         spec: forms.FormSpec,
         values: dict[str, str],
-        certified: bool,
+        certification_accepted: bool,
         actor: ActorContext,
         *,
         reference: str = "",
     ) -> gis.ApplicationDraft:
         """Keep the applicant's work as a draft (a draft is not an application)."""
         self._authorize(actor)
-        data = {"values": dict(values), "certified": bool(certified)}
+        data = {"values": dict(values), "certification_accepted": bool(certification_accepted)}
         draft = self.draft(reference, actor) if reference else None
         if draft is not None and draft.status != "open":
             raise ValidationError("that draft was already submitted")
@@ -404,20 +404,20 @@ class PortalService:
         self,
         spec: forms.FormSpec,
         values: dict[str, str],
-        certified: bool,
+        certification_accepted: bool,
         draft: gis.ApplicationDraft,
         actor: ActorContext,
     ) -> permit.Application:
-        """Submit a complete, certified application through the existing path."""
+        """Submit a complete application with its certification accepted through the existing path."""
         from acme_city.portal_intake.schemas import IntakeRecordCommand
         from acme_city.portal_intake.service import IntakeService
 
         self._authorize(actor)
         documents = self.draft_documents(draft)
-        state = self.completeness(spec, values, set(documents), certified=certified)
+        state = self.completeness(spec, values, set(documents), certification_accepted=certification_accepted)
         if not state["complete"]:
             raise ValidationError(state["banner"])
-        if not certified:
+        if not certification_accepted:
             raise ValidationError("the certification must be accepted before you submit")
         if draft.status != "open":
             raise ValidationError("that application was already submitted")
@@ -445,7 +445,7 @@ class PortalService:
             facts["property_address"] = values["address_text"].strip()
         if values.get("business_name", "").strip():
             facts["business_name"] = values["business_name"].strip()
-        facts["certified"] = True
+        facts["certification_accepted"] = True
         facts["applicant_phone"] = values.get("applicant_phone", "").strip()
 
         record = IntakeRecordCommand(

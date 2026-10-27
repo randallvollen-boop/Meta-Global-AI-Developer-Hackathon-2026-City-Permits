@@ -85,15 +85,15 @@ FENCE_FIELDS = {
 }
 
 
-def post_form(client, type_key, fields, files=None, intent="update", draft="", certified=True):
+def post_form(client, type_key, fields, files=None, intent="update", draft="", certification_accepted=True):
     data = {
         "csrf_token": token(client, f"/apply/{type_key}"),
         "intent": intent,
         "draft": draft,
         **fields,
     }
-    if certified:
-        data["certified"] = "on"
+    if certification_accepted:
+        data["certification_accepted"] = "on"
     return client.post(
         f"/apply/{type_key}", data=data, files=files or None, follow_redirects=False
     )
@@ -131,7 +131,7 @@ def test_every_type_has_a_form_with_its_documents(client) -> None:
 
 def test_banner_lists_what_is_missing_then_ready(client) -> None:
     choose(client, "persona_applicant")
-    first = post_form(client, "deck_fence", {**FENCE_FIELDS, "fence_material": ""}, certified=False)
+    first = post_form(client, "deck_fence", {**FENCE_FIELDS, "fence_material": ""}, certification_accepted=False)
     assert first.status_code == 200
     assert "Still needed:" in first.text and "Fence material" in first.text
     assert "Site sketch or site plan" in first.text and "Material specification" in first.text
@@ -175,16 +175,16 @@ def test_submit_creates_an_application_awaiting_intake(client, environment) -> N
     assert "Messages from the City" in tracked and "Awaiting intake agent" in tracked
 
 
-def test_submit_is_refused_server_side_when_incomplete_or_uncertified(client) -> None:
+def test_submit_is_refused_server_side_when_incomplete_or_without_certification(client) -> None:
     choose(client, "persona_applicant")
     incomplete = post_form(client, "deck_fence", FENCE_FIELDS, intent="submit")
     assert incomplete.status_code == 422
     assert "Still needed" in incomplete.text
-    uncertified = post_form(
-        client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit", certified=False
+    no_certification = post_form(
+        client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit", certification_accepted=False
     )
-    assert uncertified.status_code == 422
-    assert "certification" in uncertified.text
+    assert no_certification.status_code == 422
+    assert "certification" in no_certification.text
 
 
 def test_save_and_exit_keeps_a_draft_and_it_resumes(client, environment) -> None:
