@@ -28,6 +28,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.documents.service import DOCUMENT_ROOT, DocumentService, StoreDocumentCommand
+from acme_city.permits.guard import require_mutable
 from acme_city.persistence.models import gis, permit
 
 SUBMIT_ACTION = "application.submit"
@@ -48,13 +49,21 @@ STATUS_WORDS: dict[str, str] = {
     "draft": "Draft",
     "submitted": "Awaiting intake agent",
     "needs_information": "The City needs more information",
+    "revisions_requested": "The City has asked for revisions",
     "ready_for_review": "Ready for review",
     "under_review": "Under review",
     "approved": "Approved",
     "denied": "Denied",
     "withdrawn": "Withdrawn",
     "issued": "Permit issued",
+    "returned": "Returned to the applicant",
+    "archived": "Archived by the City",
 }
+
+#: The statuses an applicant may answer in.
+RESPONDABLE_STATUSES: frozenset[str] = frozenset(
+    {"needs_information", "revisions_requested"}
+)
 
 _SAFE = re.compile(r"[^A-Za-z0-9]+")
 
@@ -506,6 +515,7 @@ class PortalService:
 
     def track(self, reference: str, actor: ActorContext) -> dict[str, Any] | None:
         """Return the tracking view of an application the actor may see."""
+        from acme_city.permits.comments import comments_for
         from acme_city.ui.view_models import _application_in_scope
 
         reference = reference.strip()
@@ -525,19 +535,15 @@ class PortalService:
         if application is None or not _application_in_scope(actor, application):
             return None
         permit_type = self._session.get(permit.PermitType, application.permit_type_id)
-        findings = self._session.execute(
-            select(permit.ApplicationFinding)
-            .where(permit.ApplicationFinding.application_id == application.id)
-            .order_by(permit.ApplicationFinding.created_at, permit.ApplicationFinding.id)
-        ).scalars().all()
+        # "Messages from the City" are the comments the City wrote for the
+        # applicant.  An internal note is never one of them.
         messages = [
             {
-                "message": row.message,
-                "applicant_must": row.applicant_must or "",
-                "severity": row.severity,
+                "message": row.body,
+                "applicant_must": "",
+                "severity": "review",
             }
-            for row in findings
-            if row.applicant_must
+            for row in comments_for(self._session, application.id, actor)
         ]
         decision = self._session.execute(
             select(permit.Decision)
@@ -559,7 +565,8 @@ class PortalService:
             "status_word": STATUS_WORDS.get(application.status, application.status),
             "messages": messages,
             "decision_reason": decision.reason if decision is not None and decision.reason else "",
-            "revisions_requested": application.status == "needs_information",
+            "revisions_requested": application.status in RESPONDABLE_STATUSES,
+            "application_version": application.version,
             "documents": [
                 {"type": key, "label": label, "have": key in have}
                 for key, label in (spec.documents if spec else [])
@@ -580,7 +587,9 @@ class PortalService:
         application = self._session.get(permit.Application, application_id)
         if application is None or not _application_in_scope(actor, application):
             raise NotFoundError("that application is not available to you")
-        if application.status != "needs_information":
+        # An archived case is closed: it takes no revised document.
+        require_mutable(application, action="uploading a revised document")
+        if application.status not in RESPONDABLE_STATUSES:
             raise ValidationError("the City has not asked for revised documents")
         store = DocumentService(self._session, root=self._root)
         count = 0
@@ -610,6 +619,66 @@ class PortalService:
             reason=f"submitted {count} revised document(s) through the applicant portal",
         )
         return count
+
+    def resubmit(
+        self,
+        application_id: str,
+        actor: ActorContext,
+        *,
+        uploads: list[tuple[str, str, bytes]] | None = None,
+        answers: dict[str, Any] | None = None,
+        expected_version: int | None,
+    ) -> permit.Application:
+        """Answer the City and send the case back to intake.
+
+        The resubmission is atomic: the revised documents, the new submitted
+        revision and the state of the case move together.  The case returns
+        to intake, the work that was done against the earlier revision
+        becomes stale, and the date the applicant first submitted is kept.
+        """
+        from acme_city.permits.schemas import ReviseApplicationCommand
+        from acme_city.permits.service import PermitService
+        from acme_city.ui.view_models import _application_in_scope
+
+        self._authorize(actor)
+        application = self._session.get(permit.Application, application_id)
+        if application is None or not _application_in_scope(actor, application):
+            raise NotFoundError("that application is not available to you")
+        # An archived case is closed: it takes no answer.
+        require_mutable(application, action="resubmitting the application")
+        if application.status not in RESPONDABLE_STATUSES:
+            raise ValidationError("the City has not asked for a response")
+        if expected_version is None:
+            raise ValidationError("an expected version is required to resubmit")
+        if application.version != expected_version:
+            raise ValidationError(
+                "the application changed since it was read; read it again and retry"
+            )
+        if uploads:
+            self.revise_documents(application.id, list(uploads), actor)
+        permits = PermitService(self._session)
+        permits.revise(
+            ReviseApplicationCommand(
+                application_id=application.id,
+                facts=dict(answers or {}),
+                reason="the applicant answered the City and sent the case back",
+                expected_version=application.version,
+            ),
+            actor,
+        )
+        self._audit.append(
+            action="portal.application.resubmit",
+            actor=actor,
+            target_type="application",
+            target_id=application.id,
+            after_version=application.version,
+            reason=(
+                "answered the City and sent the case back to intake; "
+                f"{len(uploads or [])} revised document(s)"
+            ),
+        )
+        self._session.flush()
+        return application
 
 
 __all__ = [

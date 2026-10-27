@@ -21,6 +21,7 @@ from acme_city.auth.router import get_actor, get_session
 from acme_city.core.errors import NotFoundError, PermissionDeniedError
 from acme_city.core.results import ConflictResult
 from acme_city.documents.service import DocumentService, StoreDocumentCommand
+from acme_city.permits.comments import comment_view, comments_for
 from acme_city.permits.decisions import PermitDecisionCommand
 from acme_city.permits.impact import ChangeImpactCommand, ImpactService
 from acme_city.permits.issuance import IssuePermitCommand
@@ -303,6 +304,44 @@ def download_document_version(
     service = document_service(session)
     content = service.read_bytes(document_id)
     return Response(content=content, media_type="application/octet-stream")
+
+
+@router.get(
+    "/applications/{application_id}/comments", operation_id="list_application_comments"
+)
+def list_application_comments(
+    application_id: str,
+    session: Session = Depends(get_session),
+    actor: ActorContext = Depends(get_actor),
+) -> dict:
+    """Return the comments of an application the actor may read.
+
+    An applicant reads only the comments the City wrote for the applicant.
+    """
+    _load_visible_application(permit_service(session), application_id, actor)
+    rows = comments_for(session, application_id, actor)
+    return {"comments": [comment_view(row) for row in rows]}
+
+
+@router.get("/comments/{comment_id}", operation_id="get_application_comment")
+def get_application_comment(
+    comment_id: str,
+    session: Session = Depends(get_session),
+    actor: ActorContext = Depends(get_actor),
+) -> dict:
+    """Return one comment of an application the actor may read.
+
+    A comment outside the actor's scope is refused, and an internal comment
+    is refused for an applicant: the identifier of an internal note is not a
+    way to read it.
+    """
+    row = session.get(permit.ApplicationComment, comment_id)
+    if row is None or row.application_id is None:
+        raise NotFoundError("that comment does not exist")
+    _load_visible_application(permit_service(session), row.application_id, actor)
+    if row not in comments_for(session, row.application_id, actor):
+        raise NotFoundError("that comment does not exist")
+    return comment_view(row)
 
 
 @router.post("/impacts", operation_id="apply_change_impact")
