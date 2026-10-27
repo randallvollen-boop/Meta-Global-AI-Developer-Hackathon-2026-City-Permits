@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 from acme_city.agents import graphs
 from acme_city.agents.control import AgentControlService
 from acme_city.agents.extraction import replay_extraction
-from acme_city.agents.findings import FindingWriter
+from acme_city.agents.findings import FindingWriter, resolve_replaced_findings
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
@@ -42,12 +42,14 @@ from acme_city.gis.matching import (
     NOT_FOUND_MESSAGE,
     ParcelMatchService,
 )
+from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit, registry
 from acme_city.registry.candidates import generate_candidates
 from acme_city.registry.schemas import MatchProposalCommand
 from acme_city.registry.service import RegistryService
+from acme_city.rules.catalog import select_fee_schedule
 
 #: The service identity the intake agent acts as.
 INTAKE_AGENT_ID = "service_agent_intake"
@@ -134,6 +136,10 @@ class IntakeAgent:
         self._control.require_awake(agent_models.AGENT_INTAKE)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
+        # An archived case is closed: no agent may reopen it.
+        require_mutable(application, action="running the intake agent")
+        # A returned case is terminal: the applicant starts a new one.
+        require_not_returned(application, action="running the intake agent")
         correlation_id = application.correlation_id or new_id("corr")
         run = agent_models.AgentRun(
             id=new_id("agentrun"),
@@ -154,6 +160,8 @@ class IntakeAgent:
             self._session,
             application_id=application.id,
             correlation_id=correlation_id,
+            revision_number=application.revision,
+            run_id=run.id,
         )
         actor = service_actor(self._session, INTAKE_AGENT_ID)
 
@@ -165,6 +173,17 @@ class IntakeAgent:
         self._node_duplicate_finder(run, application, findings, actor)
         self._node_router(run, application, findings)
 
+        # A rerun replaces the findings of the same revision: a finding the
+        # run recorded again is superseded by the new one, and a finding the
+        # run did not record again is resolved.
+        resolve_replaced_findings(
+            self._session,
+            application.id,
+            revision_number=application.revision,
+            produced=[(row.finding_type, row.message) for row in findings.findings],
+            exclude_run_id=run.id,
+            at=self._now,
+        )
         run.finished_at = utc_now()
         self._session.flush()
         return run
@@ -233,7 +252,13 @@ class IntakeAgent:
         application: permit.Application,
         findings: FindingWriter,
     ) -> None:
-        """Confirm the permit type and the channel and set the review area."""
+        """Confirm the permit type and the channel and set the review area.
+
+        The node also records the two findings that belong to the type of the
+        case: a declared type that differs from the recorded one, and a case
+        the City cannot price because no fee schedule is in force for its
+        type.
+        """
         node = graphs.node_for('intake', graphs.INTAKE_CLASSIFIER)
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
@@ -248,7 +273,7 @@ class IntakeAgent:
         if declared and declared != permit_type.key:
             status = "warn"
             findings.add(
-                finding_type="conflict",
+                finding_type="wrong_type",
                 message=(
                     f"The intake record asked for {declared!r} but the case was created as "
                     f"{permit_type.key!r}. A person must confirm which permit type applies."
@@ -271,15 +296,81 @@ class IntakeAgent:
                 severity="block",
             )
             notes.append("The permit type is not active.")
+        self._check_fee_schedule(run, application, permit_type, findings, notes)
         review_area = (
             str((application.requirements_snapshot or {}).get("review_area") or "")
             or permit_type.review_area
             or permit_type.review_route
         )
         application.review_area = review_area
+        application.priority = self._priority_of(facts, application.priority)
         self._session.flush()
         notes.append(f"Review area: {review_area}.")
         self._finish(run, row, status=status, note=" ".join(notes))
+
+    @staticmethod
+    def _priority_of(facts: dict[str, Any], current: str) -> str:
+        """Return the priority the intake record carried.
+
+        The intake record may state that the case is high priority.  A record
+        that says nothing leaves the priority as it is.
+        """
+        stated = str(facts.get("priority") or "").strip().lower()
+        if stated in {"high", "normal"}:
+            return stated
+        return current if current in {"normal", "high"} else "normal"
+
+    def _check_fee_schedule(
+        self,
+        run: agent_models.AgentRun,
+        application: permit.Application,
+        permit_type: permit.PermitType,
+        findings: FindingWriter,
+        notes: list[str],
+    ) -> None:
+        """Record a fee finding when the City cannot price the case.
+
+        The fee facts are the fee schedule the permit type names and the
+        published schedule in force on the recorded basis date.  A case the
+        City cannot price cannot be carried through review, so the finding
+        blocks.
+        """
+        basis_at = application.initial_submitted_at or self._now
+        if not permit_type.fee_schedule_key:
+            findings.add(
+                finding_type="fee",
+                message=(
+                    f"The permit type {permit_type.key!r} names no fee schedule, so the "
+                    "City cannot price this case."
+                ),
+                rule="ACME Code §13-105",
+                applicant_must=(
+                    "Ask the City which fee applies to this permit type; the fee "
+                    "schedule is being updated."
+                ),
+                severity="block",
+            )
+            notes.append("The permit type names no fee schedule.")
+            return
+        schedule = select_fee_schedule(self._session, basis_at, permit_type.key)
+        if schedule is not None:
+            notes.append(f"Fee schedule {schedule.fee_schedule_id} is in force.")
+            return
+        findings.add(
+            finding_type="fee",
+            message=(
+                f"No published fee schedule is in force for the permit type "
+                f"{permit_type.key!r} on the recorded basis date, so the City cannot "
+                "price this case."
+            ),
+            rule="ACME Code §13-105",
+            applicant_must=(
+                "Ask the City which fee applies to this permit type; the fee schedule "
+                "is being updated."
+            ),
+            severity="block",
+        )
+        notes.append("No fee schedule is in force for the permit type.")
 
     def _node_field_extractor(
         self,
