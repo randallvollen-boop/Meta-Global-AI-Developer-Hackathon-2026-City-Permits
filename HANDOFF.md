@@ -47,3 +47,10 @@ No GitHub remote, commit, push, deployment, public publication, hackathon submis
 - The redesign is in `repo/` (commit `52eeb68`) and running on :8266 in ready-for-review mode. 675 tests and all 10 gates pass.
 - The AVA article was republished with a "How it was built" section and before and after screens.
 - Not yet done: a live Muse Image generation through the app (needs Randall's go), pushing to GitHub (needs `gh` login as the personal owner), and the post-build Muse capability review (see the BUILD_LOG list).
+
+## Update 2026-10-27 12:40: build 2 merged
+
+- Main at `7e8ad40`: persona-scoped navigation, the simulated ACME ePermit Portal intake, five-step agent triage with an advisory recommendation, and `docs/operations/` (RUNBOOK, USER_STORIES, USE_CASE_FENCE). 697 tests and all 10 gates pass.
+- :8266 runs it in ready-for-review mode. To walk the fence case, follow `docs/operations/USE_CASE_FENCE.md`; step 1 resets the demo with `--mode fresh`.
+- Coder from here is MiniMax M3. Meta spend is about $52 of $150.
+- Not yet done: screens of build 2, the AVA republish, the cosmetic recommendation-card follow-ups, plus the earlier holds (live Muse Image, GitHub push).

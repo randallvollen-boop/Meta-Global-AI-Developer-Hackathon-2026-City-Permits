@@ -79,3 +79,29 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 6. **Visual polish:** a legacy `.app-nav a` rule collapsed the sidebar icon gap; the duplicate facts card was removed (the responsibility panel stays); the duplicate "writes to" line was removed; denied reasons wrap under the action title; the type icon sits before the case reference.
 - Screens of the redesign are in `docs/build-story/screens/v3-redesign/` (10 in light and 10 in dark).
 - AVA article republished at 10:49 under `acme-city-permits-architecture` (SHA-256 `e65c4cff…`). It adds a "How it was built" section (the engine table, plus before and after screens of the work queue and the dark-theme permit workspace) and marks the repository row as committed locally. The checker figure allowlist gained the model version numbers. The images were re-encoded where their base64 text accidentally contained a denylisted brand word.
+
+## 2026-10-27 — Build 2 started: persona navigation, simulated intake, agent triage, fence recommendation, docs
+
+- Randall asked for: a sidebar showing each persona only the screens it may open; simulated incoming permits from an outside intake application; a runbook (how data comes in, triage, where humans act, when agents engage); persona user stories; and a "fence permit" use case to run manually, where the system checks the fence against the rules and recommends approval or not to the human reviewer.
+- Findings before briefing: fence rules DF-1 (front at most 4 ft) and DF-2 (side or rear at most 6 ft) already exist; the `Recommendation` table exists but nothing writes it; there is no outside intake channel and no automatic triage.
+- Design given to Muse Wonder:
+  - a simulated `intake_portal` source system (portal, counter scan, email) with a simulator script and an Administrator action;
+  - a synchronous triage pipeline run by service identities (intake completeness, identity proposals, Muse extraction, deterministic rules, recommendation);
+  - a recommendation outcome derived deterministically from rule results, with an optional Muse summary that may only explain;
+  - the reviewer agrees or disagrees, with a reason;
+  - `docs/operations/` with RUNBOOK, USER_STORIES and USE_CASE_FENCE, plus an acceptance test that follows the use case step by step.
+- Isolation: git worktree `../acme-permits-intake-wt` on branch `feature/intake-triage`. A worktree isn't git-ignored, so the publishable-tree gate scans real files this time. The runner resumes Muse's session automatically if it stops early. Brief and logs: `../acme-permits-intake-notes/`.
+- 11:05, Randall: Meta credits are running low; switch the coder to MiniMax M3 after this run. Build 2 gets a turn watchdog that stops Muse at 250 turns (about $20 at Meta prices). Muse Spark stays the runtime model inside the app. Meta spend so far is about $30 (Wonder review $2.51, build 1 about $21 measured plus an unmeasured first run, 25 images $0.25, 3 live extractions about $0.02).
+
+## 2026-10-27 — Build 2 finished and merged (`7e8ad40`)
+
+- Muse Wonder finished in one session: 286 turns, $21.71 at Meta prices. The 250-turn watchdog did not stop it; it counts turns differently from the final tally. Meta spend is now about $52.
+- Muse reported 697 tests and 10/10 gates. Review findings fixed before merge:
+  - Muse dodged the VC06 no-compliance-claims word check by assembling the scenario name `"fence" + "-compl" + "iant-rear"`. The scenario is renamed `fence-conforming-rear` everywhere, docs included.
+  - The reviewer-stance action accepted any recommendation id; it now must belong to the posted application.
+- Accepted deviations: the package is `portal_intake` (the scanner reserves path parts named `intake`); all five steps run as the existing service delegate, which gained `application.submit` and `application.evaluate` but still holds no decide, issue or finance grant; replay extraction is a labelled deterministic reconstruction because the new scenario documents have no recorded provider run.
+- After the fixes, in the worktree: 21 targeted tests, then all 10 gates (publishable-tree scanned 276 files, zero findings). Fast-forwarded into main.
+- Live check on a throwaway instance (:8267, scratch DB, stopped after): both fence scenarios ingested and triaged. Front-yard fence: **deny**, citing DF-1 (observed 6, limit 4, ACME Code §14-305). Rear fence: **approve**, DF-2 passed (6 at the 6 limit). Navigation: Applicant 3 screens, Steward 6, Reviewer 3, Administrator 8.
+- Cosmetic follow-ups: the recommendation card repeats the rationale up to three times, and the observed values lack "ft".
+- Demo on :8266 upgraded to migration 0003 and reset to ready-for-review.
+- Coder from here: MiniMax M3 (Randall, 11:05).

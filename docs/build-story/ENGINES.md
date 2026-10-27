@@ -10,12 +10,12 @@ Source material for the final article. It records which AI engines and tools pro
 | MiniMax M3 | MiniMax subscription, as headless Claude Code executors | Implementation slices, each reviewed by the orchestrator | Governed foundation (F1–F4), registry and stewardship (R1–R4), permits, rules, finance and issuance (P1–P5), Muse core (M1–M2), eight-screen UI and browser slice, acceptance core, and the first architecture page build |
 | Claude Opus 5.5 | Anthropic, Claude Code | Lead from 2026-10-27 morning | Diagnosed and fixed the live Muse failure (output budget, field-name schema), reran all gates, moved the status to as built, the redesign mockup, Muse integration in the gateway, the baseline commit, and review of Muse's build. Six review fixes: icon access for every persona, seed icons at reset, a vacuous scanner gate, schema upgrade on reset, the Muse-run lookup bug from the original build, and visual polish |
 | Muse Spark 1.3 | Meta Model API, Standard mode | Runtime model inside the app | Structured extraction of permit-application documents; proposals only, validated by the app and decided by people |
-| Muse Wonder 1.0 | Meta Model API, Standard mode, through the gateway | Design reviewer, then builder | A cited review of the original prototype against the built app (42 steps, about $2.50). Then the UI redesign and the permit-type icon feature: about 2,170 lines changed across 26 files, 3 new modules, a migration and 14 new tests. It took three runs: the first thrashed on a 200k context limit and was stopped; the second stopped after step 1; the resumed third finished in 48 minutes. About $21 measured |
+| Muse Wonder 1.0 | Meta Model API, Standard mode, through the gateway | Design reviewer, then builder | A cited review of the original prototype against the built app (42 steps, about $2.50). Then the UI redesign and the permit-type icon feature: about 2,170 lines changed across 26 files, 3 new modules, a migration and 14 new tests. It took three runs: the first thrashed on a 200k context limit and was stopped; the second stopped after step 1; the resumed third finished in 48 minutes. About $21 measured. Then build 2: persona-scoped navigation, the simulated ePermit intake portal, the five-step agent triage with a deterministic recommendation, and the operations runbook, user stories and fence use case (286 turns, $21.71) |
 | Muse Image 1.0 | Meta Model API | Image generation | 25 test icons ($0.25). Randall kept only the permit-type icons for work-queue rows, and the build adds Administrator-only icon generation per permit type |
 
 ## Tools
 
-FastAPI, SQLAlchemy and Alembic on SQLite; Jinja2 server-rendered pages with vanilla JavaScript; pytest and Playwright (659 tests); uv; a local Claude Code gateway (any-gateway) that routes Claude Code to OpenAI, MiniMax and Meta models; the Vollen solution-architecture page kit; and the private AVA Library.
+FastAPI, SQLAlchemy and Alembic on SQLite; Jinja2 server-rendered pages with vanilla JavaScript; pytest and Playwright (697 tests); uv; a local Claude Code gateway (any-gateway) that routes Claude Code to OpenAI, MiniMax and Meta models; the Vollen solution-architecture page kit; and the private AVA Library.
 
 ## Screens along the way
 
@@ -29,5 +29,5 @@ FastAPI, SQLAlchemy and Alembic on SQLite; Jinja2 server-rendered pages with van
 
 ## Costs recorded so far
 
-- Meta: three live Muse Spark extraction calls (about $0.02), the Muse Wonder review (about $2.50), 25 Muse Image icons ($0.25), and the redesign build (about $21 measured, plus the stopped first run, which had no usage record).
+- Meta: three live Muse Spark extraction calls (about $0.02), the Muse Wonder review (about $2.50), 25 Muse Image icons ($0.25), the redesign build (about $21 measured, plus the stopped first run, which had no usage record), and build 2 ($21.71).
 - OpenAI, MiniMax and Anthropic work ran on subscriptions; no per-call charge is recorded for them.
