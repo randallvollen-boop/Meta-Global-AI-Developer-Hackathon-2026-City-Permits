@@ -9,6 +9,7 @@
     <h1>Work queue</h1>
     <p class="sub">Everything waiting on someone, with the next step spelled out. Open a row to see where it stands.</p>
   </div>
+  {% if can_apply %}<a class="btn primary" href="/apply" data-testid="start-application">Start a new application</a>{% endif %}
 </div>
 
 <div class="kpis" data-testid="queue-kpis">

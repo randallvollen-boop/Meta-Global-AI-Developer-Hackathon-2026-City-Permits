@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div></div>
+<section class="panel">
+  <form method="get" action="/apply/track" role="search" data-testid="track-form">
+    <p class="field"><label for="track-ref">Reference number</label><input id="track-ref" name="ref" value="{{ ref }}" required></p>
+    <p><button type="submit" class="btn primary">Track</button> <a class="btn" href="/apply">Start an application</a></p>
+  </form>
+  {% if not_found %}<p class="action-denied" role="alert" data-testid="track-none">No application with that reference is in your records.</p>{% endif %}
+  {% if revised %}<p class="muted" role="status" data-testid="revised-notice">{{ revised }} revised document(s) received. The City will review them.</p>{% endif %}
+</section>
+
+{% if tracked %}
+<section class="panel" data-testid="tracked-application">
+  <h2>{{ tracked.reference }}: {{ tracked.type_label }}</h2>
+  <p>Status: <span class="pill info" data-testid="tracked-status">{{ tracked.status_word }}</span></p>
+  <p><a href="{{ tracked.workspace_href }}" data-testid="open-case">Open the case</a></p>
+  <h3>Messages from the City</h3>
+  <ul data-testid="city-messages">
+    {% for item in tracked.messages %}
+    <li>{{ item.message }}{% if item.applicant_must %} <strong>You must:</strong> {{ item.applicant_must }}{% endif %}</li>
+    {% else %}
+    <li class="muted">No message from the City yet.</li>
+    {% endfor %}
+    {% if tracked.decision_reason %}<li>Decision note: {{ tracked.decision_reason }}</li>{% endif %}
+  </ul>
+  {% if tracked.revisions_requested %}
+  <h3>Submit revised documents</h3>
+  <form method="post" action="/apply/track/{{ tracked.application_id }}/revise" enctype="multipart/form-data" data-testid="revise-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="reference" value="{{ tracked.reference }}">
+    {% for doc in tracked.documents %}
+    <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+    {% endfor %}
+    <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

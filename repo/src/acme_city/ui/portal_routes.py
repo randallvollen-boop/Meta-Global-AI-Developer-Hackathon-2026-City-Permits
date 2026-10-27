@@ -1,0 +1,467 @@
+"""The applicant portal pages: choose, fill in, submit and track.
+
+Server-rendered forms.  The submission is governed: the CSRF token, the acting
+persona's own ``application.submit`` grant and an audit record.  The script on
+the page only mirrors the server's completeness answer while the applicant
+types; the server decides again on every preview, save and submit.
+"""
+# REQUIRES: PORTAL-01, PORTAL-02, PORTAL-03, PORTAL-04
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
+from acme_city.applicant_portal import forms
+from acme_city.applicant_portal.service import PortalService, applicant_party
+from acme_city.audit.service import AuditService
+from acme_city.auth.context import ActorContext
+from acme_city.auth.router import get_session
+from acme_city.core.errors import AcmeError, NotFoundError
+from acme_city.ui.router import (
+    CSRF_FIELD,
+    error_response,
+    _guard,
+    page_context,
+    render,
+    ui_actor,
+    verify_csrf,
+)
+from acme_city.ui import view_models
+
+router = APIRouter(tags=["portal"])
+
+
+async def posted_form(request: Request) -> Any:
+    """Read a posted form and close its temporary upload files afterwards."""
+    form = await request.form()
+    try:
+        yield form
+    finally:
+        await form.close()
+
+
+def _portal_guard(
+    request: Request, session: Session, actor: ActorContext | None
+) -> tuple[ActorContext | None, Any]:
+    """Return the acting applicant, or the refused response.
+
+    The portal is the applicant's own self-service: it needs the
+    ``application.submit`` grant *and* a grant that is limited to the actor's
+    own records.  Staff who may file on behalf of others use the intake screens.
+    """
+    resolved, refused = _guard(request, session, actor, "portal")
+    if refused is not None:
+        return None, refused
+    if not resolved.record_scope:
+        return None, error_response(
+            request,
+            session,
+            resolved,
+            status_code=403,
+            title="The applicant portal is for applicants",
+            message=(
+                "The portal is the applicant's own self-service. Staff personas "
+                "work from the work queue and the agent screens."
+            ),
+            code="permission_denied",
+            back="/queue",
+        )
+    return resolved, None
+
+#: Names the form posts that are not application fields.
+_RESERVED = {CSRF_FIELD, "intent", "draft", "certified", "next"}
+
+
+def _values(form: Any, spec: forms.FormSpec) -> dict[str, str]:
+    """Return the typed values of a posted form (text only)."""
+    names = {field.key for field in spec.fields} | {
+        "applicant_name",
+        "applicant_email",
+        "applicant_phone",
+        "business_name",
+        "address_text",
+    }
+    out: dict[str, str] = {}
+    for name in names:
+        value = form.get(name)
+        out[name] = str(value).strip() if isinstance(value, str) else ""
+    return out
+
+
+async def _files(form: Any, spec: forms.FormSpec) -> list[tuple[str, str, bytes]]:
+    """Return the files posted in the document slots of a form."""
+    files = []
+    for doc_type, _label in spec.documents:
+        upload = form.get(f"file__{doc_type}")
+        if upload is None or not hasattr(upload, "read") or not getattr(upload, "filename", ""):
+            continue
+        content = await upload.read()
+        if content:
+            files.append((doc_type, upload.filename, content))
+    return files
+
+
+def _form_context(
+    request: Request,
+    session: Session,
+    actor: ActorContext,
+    service: PortalService,
+    spec: forms.FormSpec,
+    *,
+    values: dict[str, str],
+    certified: bool,
+    draft: Any,
+    error: str = "",
+    notice: str = "",
+) -> dict[str, Any]:
+    documents = service.draft_documents(draft)
+    state = service.completeness(spec, values, set(documents), certified=certified)
+    icon = None
+    row = service._type_row(spec.type_key)  # noqa: SLF001 - same package
+    icon = view_models.icon_for_permit_type(session, row)
+    return page_context(
+        request,
+        session,
+        actor,
+        screen="portal",
+        title=f"Apply: {spec.label}",
+        spec=spec,
+        values=values,
+        draft=draft,
+        draft_documents={key: doc.filename for key, doc in documents.items()},
+        state=state,
+        icon_url=icon["url"] if icon else "",
+        certification=forms.CERTIFICATION_TEXT,
+        portal_notice=forms.PORTAL_NOTICE,
+        form_error=error,
+        form_notice=notice,
+        located=service.locate(values.get("address_text", "")),
+    )
+
+
+def _default_values(session: Session, actor: ActorContext) -> dict[str, str]:
+    from acme_city.persistence.models import registry
+
+    party = applicant_party(actor)
+    row = session.get(registry.Party, party) if party else None
+    return {
+        "applicant_name": row.display_name if row is not None else "",
+        "applicant_email": "",
+        "applicant_phone": "",
+        "address_text": "",
+        "business_name": "",
+    }
+
+
+def _service(request: Request, session: Session) -> PortalService:
+    return PortalService(session, settings=request.app.state.settings)
+
+
+@router.get("/apply", operation_id="ui_portal_chooser")
+def ui_portal_chooser(
+    request: Request,
+    saved: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show "What are you trying to do?"."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="portal",
+        title="What are you trying to do?",
+        groups=service.chooser(),
+        drafts=[
+            {"reference": row.reference, "type_key": row.permit_type_key}
+            for row in service.my_drafts(resolved)
+        ],
+        saved=saved,
+        portal_notice=forms.PORTAL_NOTICE,
+        process_pills=forms.PROCESS_PILLS,
+    )
+    return render(request, "portal_chooser.html", context)
+
+
+@router.get("/apply/locate", operation_id="ui_portal_locate")
+def ui_portal_locate(
+    request: Request,
+    text: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Return "Did you mean" for typed address text."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    return JSONResponse({**_service(request, session).locate(text), "simulated": True})
+
+
+@router.get("/apply/suggest", operation_id="ui_portal_suggest")
+def ui_portal_suggest(
+    request: Request,
+    text: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Return address suggestions as the applicant types."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    from acme_city.gis.adapter import GisServiceError, get_locator
+
+    try:
+        suggestions = (
+            get_locator(request.app.state.settings).suggest(text, 6) if text.strip() else []
+        )
+    except GisServiceError:
+        suggestions = []
+    return JSONResponse({"suggestions": suggestions, "simulated": True})
+
+
+@router.get("/apply/track", operation_id="ui_portal_track")
+def ui_portal_track(
+    request: Request,
+    ref: str = "",
+    revised: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Look an application up by reference."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    tracked = service.track(ref, resolved) if ref.strip() else None
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="portal",
+        title="Track an application",
+        ref=ref,
+        tracked=tracked,
+        not_found=bool(ref.strip()) and tracked is None,
+        revised=revised,
+        portal_notice=forms.PORTAL_NOTICE,
+    )
+    return render(request, "portal_track.html", context)
+
+
+@router.post("/apply/track/{application_id}/revise", operation_id="ui_portal_revise")
+async def ui_portal_revise(
+    application_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Submit revised documents for an application the City asked about."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    back = "/apply/track"
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        application_ref = str(form.get("reference", ""))
+        back = f"/apply/track?ref={application_ref}"
+        uploads = []
+        for key, upload in form.multi_items():
+            if key.startswith("file__") and hasattr(upload, "read") and upload.filename:
+                content = await upload.read()
+                if content:
+                    uploads.append((key[len("file__"):], upload.filename, content))
+        if not uploads:
+            raise NotFoundError("choose at least one revised file")
+        count = service.revise_documents(application_id, uploads, resolved)
+        session.commit()
+    except AcmeError as error:
+        session.rollback()
+        AuditService(session).record_denied(
+            action="portal.documents.revise",
+            actor=resolved,
+            target_type="application",
+            target_id=application_id,
+            denial_reason=error.code,
+        )
+        session.commit()
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=error.status_code,
+            title="The revised documents were refused",
+            message=error.message,
+            code=error.code,
+            back=back,
+        )
+    return RedirectResponse(f"{back}&revised={count}", status_code=303)
+
+
+@router.get("/apply/submitted/{reference}", operation_id="ui_portal_submitted")
+def ui_portal_submitted(
+    reference: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Confirm a submitted application."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    tracked = _service(request, session).track(reference, resolved)
+    if tracked is None:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="That application is not available to you",
+            message="No application with that reference is in your records.",
+            code="not_found",
+            back="/apply",
+        )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="portal",
+        title="Application submitted",
+        tracked=tracked,
+        portal_notice=forms.PORTAL_NOTICE,
+    )
+    return render(request, "portal_submitted.html", context)
+
+
+@router.get("/apply/{type_key}", operation_id="ui_portal_form")
+def ui_portal_form(
+    type_key: str,
+    request: Request,
+    draft: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the application form of one permit type."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    try:
+        spec = service.form(type_key)
+    except NotFoundError as error:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="That permit type is not available",
+            message=error.message,
+            code="not_found",
+            back="/apply",
+        )
+    row = service.draft(draft, resolved) if draft else None
+    values = _default_values(session, resolved)
+    certified = False
+    if row is not None:
+        values.update(dict(row.data.get("values") or {}))
+        certified = bool(row.data.get("certified"))
+    context = _form_context(
+        request, session, resolved, service, spec, values=values, certified=certified, draft=row
+    )
+    return render(request, "portal_form.html", context)
+
+
+@router.post("/apply/{type_key}/check", operation_id="ui_portal_check")
+async def ui_portal_check(
+    type_key: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Return the server's completeness answer for the typed values (writes nothing)."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    spec = service.form(type_key)
+    row = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
+    have = set(service.draft_documents(row))
+    for doc_type, _filename, _content in await _files(form, spec):
+        have.add(doc_type)
+    have |= {key[len("have__"):] for key in form.keys() if key.startswith("have__")}
+    state = service.completeness(
+        spec,
+        _values(form, spec),
+        have,
+        certified=str(form.get("certified", "")).lower() in {"on", "true", "1"},
+    )
+    return JSONResponse(state)
+
+
+@router.post("/apply/{type_key}", operation_id="ui_portal_post")
+async def ui_portal_post(
+    type_key: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Preview, save a draft, or submit an application."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    try:
+        spec = service.form(type_key)
+    except NotFoundError as error:
+        return error_response(
+            request, session, resolved, status_code=404, title="That permit type is not available",
+            message=error.message, code="not_found", back="/apply",
+        )
+    values = _values(form, spec)
+    certified = str(form.get("certified", "")).lower() in {"on", "true", "1"}
+    intent = str(form.get("intent", "update"))
+    draft = None
+    error_text = ""
+    notice = ""
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        draft = service.save_draft(
+            spec, values, certified, resolved, reference=str(form.get("draft", ""))
+        )
+        for doc_type, filename, content in await _files(form, spec):
+            service.store_upload(draft, doc_type, filename, content, resolved)
+        if intent == "submit":
+            application = service.submit(spec, values, certified, draft, resolved)
+            session.commit()
+            return RedirectResponse(
+                f"/apply/submitted/{application.source_application_number}", status_code=303
+            )
+        session.commit()
+        if intent == "save":
+            return RedirectResponse(f"/apply?saved={draft.reference}", status_code=303)
+        notice = "Your changes are kept in a draft. Nothing has been submitted."
+    except AcmeError as error:
+        session.rollback()
+        error_text = error.message
+        draft = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
+        if error.code == "permission_denied":
+            return error_response(
+                request, session, resolved, status_code=error.status_code,
+                title="The action was refused", message=error.message, code=error.code, back="/apply",
+            )
+    context = _form_context(
+        request, session, resolved, service, spec,
+        values=values, certified=certified, draft=draft, error=error_text, notice=notice,
+    )
+    return render(request, "portal_form.html", context, status_code=422 if error_text else 200)

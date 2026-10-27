@@ -251,6 +251,9 @@ def application_property(
             ),
             linked=False,
         )
+    from acme_city.ui.view_models import allows
+
+    can_open = allows(session, actor, "property.view")
     return {
         "match_id": match.id,
         "version": match.version,
@@ -273,8 +276,9 @@ def application_property(
         "candidates": candidates,
         "parcel": parcel_summary(parcel) if parcel is not None else None,
         "inset": inset,
+        "can_open": can_open,
         "map_href": f"/map?application={application.id}",
-        "record_href": f"/property/{match.parcel_number}" if match.parcel_number else "",
+        "record_href": f"/property/{match.parcel_number}" if match.parcel_number and can_open else "",
         "simulated_label": SIMULATED_LABEL,
     }
 

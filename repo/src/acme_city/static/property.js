@@ -142,3 +142,90 @@
     document.querySelectorAll("[data-map]").forEach(initMap);
   });
 })();
+
+/* Applicant portal enhancements: live completeness, "Did you mean", drag and drop.
+   Without this script the form still posts: the server checks every submit. */
+(function () {
+  "use strict";
+  function debounce(fn, ms) {
+    var timer = null;
+    return function () { var a = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(null, a); }, ms); };
+  }
+  function init(form) {
+    var banner = form.querySelector("[data-banner]");
+    var card = form.querySelector("[data-testid='completeness-banner']");
+    var submit = form.querySelector("[data-testid='submit-application']");
+    var dym = form.querySelector("[data-did-you-mean]");
+    var address = form.querySelector("[name='address_text']");
+    function refresh() {
+      if (!window.fetch || !window.FormData) { return; }
+      var data = new FormData(form);
+      data.delete("csrf_token");
+      form.querySelectorAll("input[type=file]").forEach(function (input) {
+        data.delete(input.name);
+        if (input.files && input.files.length) { data.append("have__" + input.name.replace("file__", ""), "1"); }
+      });
+      fetch(form.getAttribute("data-check-url"), { method: "POST", body: data, credentials: "same-origin", headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (state) {
+          if (!state) { return; }
+          banner.textContent = state.banner;
+          card.classList.toggle("ok", state.complete);
+          card.classList.toggle("warn", !state.complete);
+          card.setAttribute("data-complete", state.complete ? "true" : "false");
+          if (submit) { submit.disabled = !state.can_submit; }
+        }).catch(function () { /* the server still checks on submit */ });
+    }
+    var slow = debounce(refresh, 250);
+    form.addEventListener("input", slow);
+    form.addEventListener("change", function (event) {
+      refresh();
+      var input = event.target;
+      if (input && input.type === "file") {
+        var row = input.closest(".doc-row");
+        if (row) {
+          var pill = row.querySelector("[data-testid='doc-status']");
+          var has = input.files && input.files.length > 0;
+          pill.textContent = has ? "Added" : "Add file";
+          pill.className = "pill " + (has ? "ok" : "warn");
+        }
+      }
+    });
+    function locate() {
+      if (!address || !dym || !window.fetch) { return; }
+      var text = address.value.trim();
+      if (text.length < 3) { dym.textContent = ""; return; }
+      fetch(form.getAttribute("data-locate-url") + "?text=" + encodeURIComponent(text), { credentials: "same-origin", headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (body) {
+          if (!body) { return; }
+          dym.textContent = body.message || "";
+        }).catch(function () {});
+    }
+    if (address) { address.addEventListener("input", debounce(locate, 300)); }
+    form.querySelectorAll("[data-drop-zone]").forEach(function (zone) {
+      var row = zone.closest(".doc-row");
+      var input = zone.querySelector("input[type=file]");
+      var hint = zone.querySelector("[data-drop-hint]");
+      if (hint) { hint.hidden = false; }
+      ["dragenter", "dragover"].forEach(function (name) {
+        row.addEventListener(name, function (e) { e.preventDefault(); row.classList.add("is-over"); });
+      });
+      ["dragleave", "drop"].forEach(function (name) {
+        row.addEventListener(name, function (e) { e.preventDefault(); row.classList.remove("is-over"); });
+      });
+      row.addEventListener("drop", function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length && window.DataTransfer) {
+          var dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          input.files = dt.files;
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
+    // Suggest-as-you-type uses the same datalist mechanism.
+  }
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[data-portal-form]").forEach(init);
+  });
+})();

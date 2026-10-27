@@ -437,6 +437,8 @@ def ui_work_queue(
         screen="queue",
         title="Work queue",
         queue=queue,
+        can_apply=bool(resolved.record_scope)
+        and view_models.holds_grant(session, resolved, "application.submit", "permits"),
     )
     return render(request, "work_queue.html", context)
 
@@ -2292,6 +2294,11 @@ async def run_ui_action(
             },
         )
     return RedirectResponse(destination, status_code=303)
+
+
+from acme_city.ui import portal_routes as _portal_routes  # noqa: E402
+
+router.include_router(_portal_routes.router)
 
 
 __all__ = [

@@ -158,6 +158,7 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("agent.toggle", None),
     ),
     "property": (("property.view", None),),
+    "portal": (("application.submit", "permits"),),
     "admin": (
         ("config.manage", None),
         ("admin.actor.manage", None),

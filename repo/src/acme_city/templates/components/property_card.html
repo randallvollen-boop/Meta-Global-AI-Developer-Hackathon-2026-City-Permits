@@ -28,7 +28,7 @@
       </dl>
       <div class="prop-map" data-testid="property-inset">
         {{ prop.inset|safe }}
-        <p class="muted"><a href="{{ prop.map_href }}" data-testid="property-map-link">Open the full map</a></p>
+        {% if prop.can_open %}<p class="muted"><a href="{{ prop.map_href }}" data-testid="property-map-link">Open the full map</a></p>{% endif %}
       </div>
     </div>
     {% if prop.note %}<p class="muted" data-testid="property-note">{{ prop.note }}</p>{% endif %}

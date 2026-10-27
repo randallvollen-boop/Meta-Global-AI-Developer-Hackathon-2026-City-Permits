@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+      {% if icon_url %}<img class="type-ic" src="{{ icon_url }}" alt="" data-testid="form-icon">{% endif %}
+      <span class="pill info" data-testid="form-pill">{{ spec.pill }}</span>
+    </div>
+    <h1 data-testid="form-title">{{ spec.label }}</h1>
+    <p class="sub">{{ spec.description }}</p>
+    {% if spec.note %}<p class="muted" data-testid="form-note">{{ spec.note }}</p>{% endif %}
+  </div>
+</div>
+<p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
+{% if form_error %}<p class="action-denied" role="alert" data-testid="form-error">{{ form_error }}</p>{% endif %}
+{% if form_notice %}<p class="muted" role="status" data-testid="form-notice">{{ form_notice }}</p>{% endif %}
+
+<form method="post" action="/apply/{{ spec.type_key }}" enctype="multipart/form-data" class="portal-form" data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-locate-url="/apply/locate" data-testid="application-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="draft" value="{{ draft.reference if draft else '' }}">
+
+  <div class="card completeness {{ 'ok' if state.complete else 'warn' }}" role="status" aria-live="polite" data-testid="completeness-banner" data-complete="{{ 'true' if state.complete else 'false' }}">
+    <strong data-banner>{{ state.banner }}</strong>
+  </div>
+
+  <fieldset class="panel">
+    <legend>About you</legend>
+    <p class="field"><label for="f-applicant_name">Applicant name</label><input id="f-applicant_name" name="applicant_name" value="{{ values.applicant_name }}" required></p>
+    <p class="field"><label for="f-applicant_email">Email</label><input id="f-applicant_email" type="email" name="applicant_email" value="{{ values.applicant_email }}" required></p>
+    <p class="field"><label for="f-applicant_phone">Phone</label><input id="f-applicant_phone" name="applicant_phone" value="{{ values.applicant_phone }}"></p>
+    {% if spec.needs_business %}<p class="field"><label for="f-business_name">Business name</label><input id="f-business_name" name="business_name" value="{{ values.business_name }}" required></p>{% endif %}
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>Property</legend>
+    <p class="field">
+      <label for="f-address_text">Property address</label>
+      <input id="f-address_text" name="address_text" value="{{ values.address_text }}" autocomplete="off" list="address-suggest" data-suggest-url="/apply/suggest" required>
+      <datalist id="address-suggest"></datalist>
+    </p>
+    <div class="did-you-mean" role="status" aria-live="polite" data-testid="did-you-mean" data-did-you-mean>
+      {% if located.message %}
+        <p>{{ located.message }}{% if located.found %} <span class="muted">Score {{ '%g' % located.score }}. Simulated city locator.</span>{% endif %}</p>
+        {% if located.found and located.alternatives %}<p class="muted">Other possibilities: {% for alt in located.alternatives %}{{ alt.address }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+        {% if located.found and located.ambiguous %}<p class="muted">More than one address fits; a person at the City will confirm the property.</p>{% endif %}
+      {% endif %}
+    </div>
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>About the project</legend>
+    {% for field in spec.fields %}
+    <p class="field">
+      {% if field.kind == 'checkbox' %}
+        <label><input type="checkbox" name="{{ field.key }}" {% if values.get(field.key) in ('on', 'true', '1') %}checked{% endif %}> {{ field.label }}</label>
+      {% elif field.kind == 'select' %}
+        <label for="f-{{ field.key }}">{{ field.label }}</label>
+        <select id="f-{{ field.key }}" name="{{ field.key }}"><option value="">Choose</option>{% for value, label in field.options %}<option value="{{ value }}" {% if values.get(field.key) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      {% elif field.kind == 'textarea' %}
+        <label for="f-{{ field.key }}">{{ field.label }}</label>
+        <textarea id="f-{{ field.key }}" name="{{ field.key }}" rows="3">{{ values.get(field.key, '') }}</textarea>
+      {% else %}
+        <label for="f-{{ field.key }}">{{ field.label }}</label>
+        <input id="f-{{ field.key }}" name="{{ field.key }}" type="{{ 'number' if field.kind == 'number' else 'text' }}" {% if field.kind == 'number' %}step="any" min="0"{% endif %} value="{{ values.get(field.key, '') }}">
+      {% endif %}
+    </p>
+    {% endfor %}
+  </fieldset>
+
+  <fieldset class="panel" data-testid="document-checklist">
+    <legend>Required documents</legend>
+    <p class="muted">PDF, PNG, JPG or plain text, up to 5 MB each.</p>
+    <ul class="doc-list">
+      {% for doc_type, label in spec.documents %}
+      <li class="doc-row" data-doc-type="{{ doc_type }}" data-added="{{ 'true' if doc_type in draft_documents else 'false' }}">
+        <span class="doc-label">{{ label }}</span>
+        <span class="pill {{ 'ok' if doc_type in draft_documents else 'warn' }}" data-testid="doc-status">{{ 'Added' if doc_type in draft_documents else 'Add file' }}</span>
+        {% if doc_type in draft_documents %}<span class="muted mono">{{ draft_documents[doc_type] }}</span>{% endif %}
+        <span class="drop-zone" data-drop-zone>
+          <label for="file-{{ doc_type }}" class="visually-hidden">{{ label }} file</label>
+          <input id="file-{{ doc_type }}" type="file" name="file__{{ doc_type }}" accept=".pdf,.png,.jpg,.jpeg,.txt">
+          <span class="muted" data-drop-hint hidden>Drop a file here</span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>Certification</legend>
+    <p><label><input type="checkbox" name="certified" id="f-certified" {% if state.certified %}checked{% endif %} data-testid="certify"> {{ certification }}</label></p>
+  </fieldset>
+
+  <p class="form-buttons">
+    <button type="submit" name="intent" value="submit" class="btn primary" data-testid="submit-application" {% if not state.can_submit %}disabled{% endif %}>Submit application</button>
+    <button type="submit" name="intent" value="update" class="btn" data-testid="update-checklist" formnovalidate>Update checklist</button>
+    <button type="submit" name="intent" value="save" class="btn" data-testid="save-exit" formnovalidate>Save and exit</button>
+    <a class="btn" href="/apply">Choose a different project</a>
+  </p>
+  <p class="muted" data-testid="submit-hint">The Submit button stays disabled until every required item is provided and the certification is checked. The server checks again when you submit.</p>
+</form>
+{% endblock %}
