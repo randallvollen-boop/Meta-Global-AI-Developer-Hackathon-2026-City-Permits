@@ -405,6 +405,7 @@ def reset_demo(
                 code=reason_code.code,
                 label=reason_code.label,
                 description=reason_code.description or None,
+                code_type=reason_code.code_type,
                 active=True,
                 version=1,
                 changed_by=None,

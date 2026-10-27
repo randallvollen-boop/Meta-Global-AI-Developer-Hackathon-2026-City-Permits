@@ -67,7 +67,7 @@ def test_expected_configuration_inventory(bundle: FixtureBundle) -> None:
     assert len(bundle.domains.steward_queues) == 10
     assert len(bundle.policies.authority_policies) == 19
     assert len(bundle.rules.permit_types) == 17
-    assert len(bundle.demo.reason_codes) == 5
+    assert len(bundle.demo.reason_codes) == 12
 
 
 def test_exactly_four_selectable_personas(bundle: FixtureBundle) -> None:

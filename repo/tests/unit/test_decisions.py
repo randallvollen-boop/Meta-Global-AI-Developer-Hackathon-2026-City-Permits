@@ -229,14 +229,52 @@ def test_a_denial_is_allowed_even_with_an_unresolved_blocker(seeded: Settings) -
                     application_id="app_d03",
                     outcome="denied",
                     reason="The contractor registration has to be renewed.",
+                    # A denial names an active denial reason code; the code is
+                    # snapshotted on the decision.
+                    reason_code="DOES_NOT_MEET_CODE",
                     expected_evaluation_version=evaluation.version,
                 ),
                 reviewer,
             )
             assert not isinstance(result, ConflictResult)
             assert result.value.outcome == "denied"
+            assert result.value.reason_code == "DOES_NOT_MEET_CODE"
             application = service.load_application("app_d03")
             assert application.status == "denied"
+    finally:
+        factory.dispose()
+
+
+def test_a_denial_without_a_denial_reason_code_is_refused(seeded: Settings) -> None:
+    """A denial needs an active reason code of the denial type."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            service = PermitService(session)
+            reviewer = context_for(session, "persona_permit_reviewer")
+            evaluation = service.evaluate("app_d03", reviewer)
+            with pytest.raises(ValidationError):
+                service.decide(
+                    PermitDecisionCommand(
+                        application_id="app_d03",
+                        outcome="denied",
+                        reason="No reason code was named.",
+                        expected_evaluation_version=evaluation.version,
+                    ),
+                    reviewer,
+                )
+            # A code of another type is refused as well.
+            with pytest.raises(ValidationError):
+                service.decide(
+                    PermitDecisionCommand(
+                        application_id="app_d03",
+                        outcome="denied",
+                        reason="The wrong kind of code was named.",
+                        reason_code="INCOMPLETE_APPLICATION",
+                        expected_evaluation_version=evaluation.version,
+                    ),
+                    reviewer,
+                )
     finally:
         factory.dispose()
 

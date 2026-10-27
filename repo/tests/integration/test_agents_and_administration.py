@@ -219,7 +219,7 @@ def test_the_administration_screen_lists_the_configuration(client: TestClient) -
     assert 'data-testid="admin-add-user"' in body
 
     body = client.get("/admin?tab=reason-codes").text
-    assert body.count('data-testid="admin-reason-code-row"') == 5
+    assert body.count('data-testid="admin-reason-code-row"') == 12
     assert "DOES_NOT_MEET_CODE" in body
 
     body = client.get("/admin?tab=log").text
@@ -354,6 +354,8 @@ def test_a_reason_code_can_be_added_and_retired(client: TestClient, environment)
             "code": "INCOMPLETE_DRAWING",
             "label": "Incomplete drawing",
             "description": "The drawing set is incomplete.",
+            # A reason code names the use it may serve.
+            "code_type": "return",
         },
         "/admin?tab=reason-codes",
     )

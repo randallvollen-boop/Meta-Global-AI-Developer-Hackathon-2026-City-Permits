@@ -283,6 +283,9 @@ class ReasonCodeFixture(StrictModel):
     code: str
     label: str
     description: str = ""
+    #: The use the code may serve: ``return``, ``denial``, ``waiver``,
+    #: ``revision`` or ``archive``.
+    code_type: str = "return"
 
 
 class DemoConfig(CatalogModel):

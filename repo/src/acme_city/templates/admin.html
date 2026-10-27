@@ -318,12 +318,13 @@
   <div class="card-b" style="display:grid;gap:16px">
     <table class="data-table" data-testid="admin-reason-codes">
       <caption class="visually-hidden">Reason codes</caption>
-      <thead><tr><th scope="col">Code</th><th scope="col">Label</th><th scope="col">State</th><th scope="col">Action</th></tr></thead>
+      <thead><tr><th scope="col">Code</th><th scope="col">Label</th><th scope="col">Type</th><th scope="col">State</th><th scope="col">Action</th></tr></thead>
       <tbody>
         {% for code in admin.reason_codes %}
         <tr data-testid="admin-reason-code-row" data-code="{{ code.code }}">
           <th scope="row">{{ code.code }}</th>
           <td>{{ code.label }}</td>
+          <td><span class="badge">{{ code.code_type }}</span></td>
           <td><span class="badge badge-{{ 'current' if code.active else 'superseded' }}">{{ 'active' if code.active else 'retired' }}</span></td>
           <td>
             {% if admin.can_manage and code.active %}
@@ -358,6 +359,16 @@
       <div class="fieldset">
         <label for="rc-description">Description</label>
         <input id="rc-description" name="description">
+      </div>
+      <div class="fieldset">
+        <label for="rc-code-type">Type</label>
+        <select id="rc-code-type" name="code_type" required>
+          <option value="return">Return</option>
+          <option value="denial">Denial</option>
+          <option value="waiver">Waiver</option>
+          <option value="revision">Revision</option>
+          <option value="archive">Archive</option>
+        </select>
       </div>
       <p><button type="submit" class="btn sm primary" data-testid="admin-add-reason-code-submit">Add reason code</button></p>
     </form>
