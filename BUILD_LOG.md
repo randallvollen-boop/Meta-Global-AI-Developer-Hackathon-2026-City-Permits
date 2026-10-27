@@ -135,3 +135,13 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Intake gained the `mail` and `fax` channels, per-document scan-quality flags and six new scenarios, including a deterministic `random --count N` across all seventeen types and five channels.
 - A configuration change takes effect for new intake only: the requirements in force when a case arrived are recorded on the case, so a later change never rewrites what an already-received case was measured against.
 - Execution: M3 wrote the code and ran out of credits during the full suite; a Sonnet agent ran the suite and gates (no changes); the lead review added the "Approved with conditions" label the brief required and re-ran all 10 gates (pass). Merged as `07755ae`.
+
+## 2026-10-27 parity phase 2: address locator, property master, applicant portal, map
+
+- A simulated ArcGIS-shaped GIS service runs in-app (69 parcels, 71 addresses; no outside calls). The intake agent gained an Address locator node ahead of the duplicate finder (seven nodes); it proposes the parcel link and never approves it.
+- Review shows a Property card (typed and standardized address, parcel, score, other candidates, map inset). A permit decision is blocked until the parcel link is approved and confirmed. "Flag address correction to GIS" reuses the change request.
+- The property master at `/property/{parcel}` is shared with four simulated departments; `/map` is an SVG town map with no outside tiles and a plain-link fallback.
+- The applicant portal at `/apply` has a chooser for the seventeen types, a form per type with a completeness banner, uploads (PDF/PNG/JPG/text, 5 MB), drafts, certification, confirmation and tracking. It is reached from the Applicant work queue; the navigation tables are unchanged.
+- New scenarios: `address-typo`, `address-ambiguous`, `address-unknown`; the fence scenario now starts from "400 Lantren Row".
+- Execution: a Sonnet agent resumed the work after a machine crash interrupted the first agent, finished every brief section and renamed a flag to `certification_accepted` to satisfy VC06 (a real rename; no string splitting). Lead review re-ran all 10 gates on merged main: pass; pytest 762 passed; acceptance passed=37 failed=0 blocked=2 (AT15, AT19 need a live provider). Merged as `e2528a4`.
+- Demo on :8266 restarted in ready-for-review mode; `/healthz` reports schema revision `0005`. No browser check of the map or portal yet.
