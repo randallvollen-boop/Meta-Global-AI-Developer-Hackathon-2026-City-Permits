@@ -53,3 +53,8 @@ No GitHub remote, deployment, public publication, event entry change, terms acce
 - Isolation: Muse works in a copy of `repo/` under the git-ignored `work/ui-build/`, with no Meta key. The live candidate on :8266 is untouched until the result passes review and gates.
 - Scope: Part A, the visual system and all 8 screens (themes, sidebar, pills, KPI strips, case pipeline, Muse run view, findings, timeline, sticky action rail). Part B, permit-type icons with Administrator-only Muse Image generation (audited, capped at 3 per type per day and 10 per day globally, mocked in tests).
 - Out of scope: new permit types (the specification preserves five) and icon generation by Applicants.
+
+## 2026-10-27 — Baseline commit and build story
+
+- Randall approved a local baseline commit: `0a5cbb8`, 271 files, under his noreply identity, with no remote. Before committing, machine paths were kept out: architecture-page build outputs are ignored, `page.json` carries a relative output path, and the leak scanner uses generic patterns.
+- Randall asked for the final article to show the screens along the way and which engines built what (Claude, Muse, M3, OpenAI). Started `docs/build-story/`: an engine and tool ledger (`ENGINES.md`), `capture_screens.py`, 10 screenshots of the original build (`screens/v1-original/`) and 12 of the approved mockup in light and dark (`screens/v2-mockup/`).
