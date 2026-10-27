@@ -140,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 3
+        # A marked demo from an older build is upgraded only after the marker check.
+        factory.dispose()
+        initialize_database(settings)
 
     factory = get_session_factory(settings.database_url)
     with transaction(factory) as session:

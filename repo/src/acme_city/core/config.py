@@ -22,6 +22,7 @@ DEFAULT_DEMO_TIMEZONE: Final = "America/New_York"
 DEFAULT_MUSE_MODEL_ALLOWLIST: Final = ("muse-spark-1.3",)
 DEFAULT_MUSE_LIVE_CALL_CAP: Final = 2
 DEFAULT_EVIDENCE_ROOT: Final = Path("evidence/runs")
+DEFAULT_MUSE_IMAGE_DAILY_CAP: Final = 10
 
 #: Names that may be read from the local key file.  Nothing else is consumed
 #: from that file, so unrelated personal secrets never enter the process.
@@ -33,6 +34,7 @@ ENV_SECRET_KEY: Final = "ACME_SECRET_KEY"
 ENV_DEMO_TIMEZONE: Final = "ACME_DEMO_TIMEZONE"
 ENV_MUSE_ALLOWLIST: Final = "ACME_MUSE_MODEL_ALLOWLIST"
 ENV_MUSE_LIVE_CALL_CAP: Final = "ACME_MUSE_LIVE_CALL_CAP"
+ENV_MUSE_IMAGE_DAILY_CAP: Final = "ACME_MUSE_IMAGE_DAILY_CAP"
 ENV_EVIDENCE_ROOT: Final = "ACME_EVIDENCE_ROOT"
 ENV_KEY_FILE: Final = "ACME_KEY_FILE"
 ENV_META_API_KEY: Final = "META_API_KEY"
@@ -96,6 +98,7 @@ class Settings(BaseModel):
     demo_timezone: str = DEFAULT_DEMO_TIMEZONE
     muse_model_allowlist: tuple[str, ...] = DEFAULT_MUSE_MODEL_ALLOWLIST
     muse_live_call_cap: int = DEFAULT_MUSE_LIVE_CALL_CAP
+    muse_image_daily_cap: int = DEFAULT_MUSE_IMAGE_DAILY_CAP
     evidence_root: Path = Path(DEFAULT_EVIDENCE_ROOT)
     meta_api_key: SecretStr | None = None
     key_file: Path | None = None
@@ -140,6 +143,13 @@ class Settings(BaseModel):
     def _cap_is_positive(cls, value: int) -> int:
         if value < 0:
             raise ValueError("muse_live_call_cap must not be negative")
+        return value
+
+    @field_validator("muse_image_daily_cap")
+    @classmethod
+    def _image_cap_is_positive(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("muse_image_daily_cap must not be negative")
         return value
 
     def model_is_allowed(self, model: str) -> bool:
@@ -204,6 +214,11 @@ class Settings(BaseModel):
             DEFAULT_MUSE_LIVE_CALL_CAP if cap_raw is None else int(cap_raw)
         )
 
+        image_cap_raw = pick(ENV_MUSE_IMAGE_DAILY_CAP)
+        muse_image_daily_cap = (
+            DEFAULT_MUSE_IMAGE_DAILY_CAP if image_cap_raw is None else int(image_cap_raw)
+        )
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -221,6 +236,7 @@ class Settings(BaseModel):
             demo_timezone=demo_timezone,
             muse_model_allowlist=muse_model_allowlist,
             muse_live_call_cap=muse_live_call_cap,
+            muse_image_daily_cap=muse_image_daily_cap,
             evidence_root=evidence_root,
             meta_api_key=meta_api_key,
             key_file=resolved_key_file,
@@ -234,6 +250,7 @@ __all__ = [
     "DEFAULT_EVIDENCE_ROOT",
     "DEFAULT_KEY_FILE",
     "DEFAULT_MUSE_LIVE_CALL_CAP",
+    "DEFAULT_MUSE_IMAGE_DAILY_CAP",
     "DEFAULT_MUSE_MODEL_ALLOWLIST",
     "KEY_FILE_ALLOWED_NAMES",
     "Settings",

@@ -1,71 +1,69 @@
 {% extends "base.html" %}
-{% macro action_form(item, csrf_token) %}
-<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
-  <summary>
-    <span class="action-label">{{ item.label }}</span>
-    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
-  </summary>
-  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
-  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
-  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
-  {% if item.permitted %}
-  <form method="post" action="{{ item.path }}" class="action-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="action_id" value="{{ item.action_id }}">
-    <input type="hidden" name="next" value="{{ request.url.path }}">
-    {% for field in item.fields %}
-      {% if field.type == 'hidden' %}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-      {% elif field.type == 'select' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-          </select>
-        </p>
-      {% elif field.type == 'textarea' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-        </p>
-      {% else %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
-        </p>
-      {% endif %}
-    {% endfor %}
-    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
-  </form>
-  {% else %}
-  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
-  {% endif %}
-</details>
-{% endmacro %}
+{% import "components/action_form.html" as forms %}
 
 {% block content %}
-
-<h1>Steward review</h1>
+<div class="page-head">
+  <div>
+    <h1>Steward review</h1>
+    <p class="sub">Muse and the matcher propose; you decide which records are the same business or person.</p>
+  </div>
+</div>
 
 {% include "components/responsibility_panel.html" %}
 
-<section class="panel" aria-labelledby="proposals-heading">
-  <h2 id="proposals-heading">Candidate links awaiting a decision</h2>
+<div class="kpis" data-testid="steward-kpis">
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-spark"/></svg>Proposals</div><div class="v num">{{ review.proposals|length }}</div><div class="s"><span class="pill muse">awaiting decision</span></div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-check"/></svg>Decided links</div><div class="v num">{{ review.crosswalks|selectattr('link_status', 'ne', 'proposed')|list|length }}</div><div class="s">recorded source links</div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>Conflicts</div><div class="v num">{{ review.proposals|map(attribute='conflicting')|map('length')|sum }}</div><div class="s"><span class="pill bad">check evidence</span></div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-link"/></svg>Change cases</div><div class="v num">{{ review.cases|length }}</div><div class="s">open cases</div></div>
+</div>
+
+<section class="panel card" aria-labelledby="proposals-heading">
+  <div class="card-h"><h2 id="proposals-heading">Candidate links awaiting a decision</h2></div>
+  <div class="card-b" style="display:grid;gap:14px">
   {% for proposal in review.proposals %}
   <article class="proposal" data-testid="match-proposal" data-proposal-id="{{ proposal.proposal_id }}">
-    <h3>{{ proposal.source_system_id }} / {{ proposal.source_dataset_key }} / {{ proposal.source_record_id }}</h3>
+    <div class="card-h" style="padding:0">
+      <span class="ref">{{ proposal.source_record_id }}</span>
+      <h3 style="margin:0">{{ proposal.source_system_id }} / {{ proposal.source_dataset_key }} / {{ proposal.source_record_id }}</h3>
+      <span class="right">
+        {% if proposal.awaiting_decision %}
+        <span class="badge badge-blocking pill bad" data-testid="awaiting-decision">awaiting a steward decision</span>
+        {% else %}
+        <span class="badge badge-approved pill ok">decided</span>
+        {% endif %}
+      </span>
+    </div>
     <p class="muted">
       Method {{ proposal.method }}, disposition {{ proposal.disposition }},
       proposed {{ proposal.created_at }} by {{ proposal.created_by_actor_id or 'unknown' }}.
-      {% if proposal.awaiting_decision %}
-      <span class="badge badge-blocking" data-testid="awaiting-decision">awaiting a steward decision</span>
-      {% else %}
-      <span class="badge badge-approved">decided</span>
-      {% endif %}
-      {% if proposal.proposal_score is not none %}
-      Proposal score {{ proposal.proposal_score }} ({{ proposal.score_label }}).
-      {% endif %}
     </p>
+    {% if proposal.proposal_score is not none %}
+    <div class="score" data-testid="proposal-score">
+      <span>Match score</span>
+      <span class="meter" role="img" aria-label="Match score {{ proposal.proposal_score }}"><i style="width:{{ (proposal.proposal_score * 100)|round|int }}%"></i></span>
+      <b class="num">{{ proposal.proposal_score }}</b>
+      <span class="faint">uncalibrated heuristic, not a probability ({{ proposal.score_label }})</span>
+    </div>
+    {% endif %}
+    <div class="ev">
+      <div class="ev-col">
+        <h3><span class="pill ok">Supporting</span></h3>
+        {% for evidence in proposal.supporting %}
+        <div class="ev-item sup"><span><strong>{{ evidence.field }}</strong>: {{ evidence.raw_value }} → {{ evidence.normalized_value }}{% if evidence.detail %} — {{ evidence.detail }}{% endif %}</span><span class="src">{{ proposal.source_system_id }}</span></div>
+        {% else %}
+        <p class="muted">No supporting evidence is recorded.</p>
+        {% endfor %}
+      </div>
+      <div class="ev-col">
+        <h3><span class="pill bad">Conflicting</span></h3>
+        {% for evidence in proposal.conflicting %}
+        <div class="ev-item con"><span><strong>{{ evidence.field }}</strong>: {{ evidence.raw_value }} → {{ evidence.normalized_value }}{% if evidence.detail %} — {{ evidence.detail }}{% endif %}</span><span class="src">{{ proposal.source_system_id }}</span></div>
+        {% else %}
+        <p class="muted">No conflicting evidence is recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
     <table class="data-table" data-testid="proposal-evidence">
       <caption class="visually-hidden">Evidence behind the proposed link</caption>
       <thead><tr><th scope="col">Direction</th><th scope="col">Field</th><th scope="col">Source value</th><th scope="col">Comparison value</th><th scope="col">Detail</th></tr></thead>
@@ -95,6 +93,7 @@
   {% else %}
   <p class="muted" data-testid="proposal-empty">No candidate link is waiting for a decision.</p>
   {% endfor %}
+  </div>
 </section>
 
 <section class="panel" aria-labelledby="links-heading">
@@ -226,10 +225,11 @@
 {% include "components/evidence_panel.html" %}
 {% include "components/history_panel.html" %}
 
-<section class="panel" aria-labelledby="steward-actions-heading">
-  <h2 id="steward-actions-heading">Actions</h2>
+<section class="panel card" aria-labelledby="steward-actions-heading">
+  <div class="card-h"><h2 id="steward-actions-heading">Next actions</h2></div>
+  <div class="card-b act">
   {% for item in actions %}
-    {{ action_form(item, csrf_token) }}
+    {{ forms.action_form(item, csrf_token) }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">
@@ -238,5 +238,6 @@
     {% endfor %}
   </ul>
   {% endif %}
+  </div>
 </section>
 {% endblock %}

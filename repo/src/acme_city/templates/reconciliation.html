@@ -1,53 +1,22 @@
 {% extends "base.html" %}
-{% macro action_form(item, csrf_token) %}
-<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
-  <summary>
-    <span class="action-label">{{ item.label }}</span>
-    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
-  </summary>
-  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
-  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
-  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
-  {% if item.permitted %}
-  <form method="post" action="{{ item.path }}" class="action-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="action_id" value="{{ item.action_id }}">
-    <input type="hidden" name="next" value="{{ request.url.path }}">
-    {% for field in item.fields %}
-      {% if field.type == 'hidden' %}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-      {% elif field.type == 'select' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-          </select>
-        </p>
-      {% elif field.type == 'textarea' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-        </p>
-      {% else %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
-        </p>
-      {% endif %}
-    {% endfor %}
-    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
-  </form>
-  {% else %}
-  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
-  {% endif %}
-</details>
-{% endmacro %}
+{% import "components/action_form.html" as forms %}
 
 {% block content %}
-
-<h1>Reconciliation</h1>
+<div class="page-head">
+  <div>
+    <h1>Reconciliation</h1>
+    <p class="sub">Assessments, receipts and allocations. A permit is issued only at a $0.00 balance.</p>
+  </div>
+</div>
 
 {% include "components/responsibility_panel.html" %}
+
+<div class="kpis" data-testid="recon-kpis">
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-coins"/></svg>Assessments</div><div class="v num">{{ position.assessments|length }}</div><div class="s">recorded assessments</div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-check"/></svg>Allocations</div><div class="v num">{{ position.allocations|length }}</div><div class="s"><span class="pill ok">confirmed</span></div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-scale"/></svg>Receipts</div><div class="v num">{{ position.payments|length }}</div><div class="s">simulated ERP receipts</div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>Exceptions</div><div class="v num">{{ position.assessments|selectattr('position.exception')|list|length }}</div><div class="s"><span class="pill warn">needs review</span></div></div>
+</div>
 
 <section class="panel" aria-labelledby="assessments-heading">
   <h2 id="assessments-heading">Fee assessments</h2>
@@ -78,6 +47,21 @@
     </tbody>
   </table>
 </section>
+
+{% if position.assessments %}
+<section class="card" aria-labelledby="alloc-bar-heading">
+  <div class="card-h"><h2 id="alloc-bar-heading">Allocation position</h2><span class="right"><span class="pill plain">from recorded amounts</span></span></div>
+  <div class="card-b" style="display:grid;gap:14px">
+    {% for assessment in position.assessments %}
+    <div>
+      <div class="fee-row"><span class="muted">{{ assessment.assessment_id }} · {{ assessment.application_id }}</span><span>{{ assessment.position.settled_allocated }} of {{ assessment.assessed_total }} {{ assessment.currency }} allocated</span></div>
+      <div class="alloc" role="img" aria-label="{{ assessment.position.settled_allocated }} of {{ assessment.assessed_total }} allocated"><i style="width:{{ assessment.position.alloc_pct }}%"></i></div>
+      <div class="fee-row"><span class="muted">Balance</span><span>{{ assessment.position.balance }} {{ assessment.currency }} ({{ assessment.position.status }})</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <section class="panel" aria-labelledby="payments-heading">
   <h2 id="payments-heading">Receipts</h2>
@@ -154,10 +138,11 @@
 
 {% include "components/evidence_panel.html" %}
 
-<section class="panel" aria-labelledby="reconciliation-actions-heading">
-  <h2 id="reconciliation-actions-heading">Actions</h2>
+<section class="panel card" aria-labelledby="reconciliation-actions-heading">
+  <div class="card-h"><h2 id="reconciliation-actions-heading">Next actions</h2></div>
+  <div class="card-b act">
   {% for item in actions %}
-    {{ action_form(item, csrf_token) }}
+    {{ forms.action_form(item, csrf_token) }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">
@@ -166,5 +151,6 @@
     {% endfor %}
   </ul>
   {% endif %}
+  </div>
 </section>
 {% endblock %}

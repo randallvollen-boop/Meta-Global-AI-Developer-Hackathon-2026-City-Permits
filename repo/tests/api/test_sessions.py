@@ -159,5 +159,6 @@ def test_healthz_reports_the_migration_state_without_a_path(client: TestClient) 
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["database"] == "current"
-    assert payload["schema_revision"] == "0001"
+    # Head is 0002 since the permit-type-icon migration added by the UI brief.
+    assert payload["schema_revision"] == "0002"
     assert "sqlite" not in response.text

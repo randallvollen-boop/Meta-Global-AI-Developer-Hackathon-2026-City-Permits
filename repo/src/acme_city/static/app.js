@@ -4,13 +4,83 @@
    without it.  When it is present an action form is submitted in the
    background and the typed outcome of the action is rendered in the
    feedback region, so the user learns what changed, where it was written
-   and whether a source or a consumer still has to acknowledge it. */
+   and whether a source or a consumer still has to acknowledge it.
+
+   Progressive enhancements (no server round-trip for chrome):
+   - theme toggle persisted in localStorage (system setting otherwise);
+   - persona segmented control submits its server form on click;
+   - tabs on the permit workspace (all panels stacked without JS);
+   - Replay run animates the recorded 5-node strip client-side only and
+     never sends a request;
+   - work-queue rows navigate to their case;
+   - toast mirrors the feedback outcome. */
 
 (function () {
   "use strict";
 
   var REGION_ID = "ui-feedback-region";
 
+  function reducedMotion() {
+    try {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /* -------------------------------------------------------------- theme */
+  function syncThemeIcon() {
+    var button = document.getElementById("theme-toggle");
+    if (!button) return;
+    var root = document.documentElement;
+    var dark = root.getAttribute("data-theme")
+      ? root.getAttribute("data-theme") === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    button.innerHTML =
+      '<svg aria-hidden="true"><use href="#i-' + (dark ? "sun" : "moon") + '"/></svg>';
+  }
+  function initTheme() {
+    try {
+      var stored = window.localStorage.getItem("acme-theme");
+      if (stored === "dark" || stored === "light") {
+        document.documentElement.setAttribute("data-theme", stored);
+      }
+    } catch (error) {
+      /* Storage may be unavailable; the system setting then applies. */
+    }
+    syncThemeIcon();
+    var button = document.getElementById("theme-toggle");
+    if (button) {
+      button.addEventListener("click", function () {
+        var root = document.documentElement;
+        var dark = root.getAttribute("data-theme")
+          ? root.getAttribute("data-theme") === "dark"
+          : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var next = dark ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try {
+          window.localStorage.setItem("acme-theme", next);
+        } catch (error) {
+          /* The choice then lasts for this page only. */
+        }
+        syncThemeIcon();
+      });
+    }
+  }
+
+  /* -------------------------------------------------------------- toast */
+  function toast(message) {
+    var node = document.getElementById("toast");
+    if (!node) return;
+    node.textContent = message;
+    node.classList.add("on");
+    window.clearTimeout(toast.timer);
+    toast.timer = window.setTimeout(function () {
+      node.classList.remove("on");
+    }, 2400);
+  }
+
+  /* ----------------------------------------------------------- feedback */
   function feedbackRegion() {
     var region = document.getElementById(REGION_ID);
     if (region) {
@@ -81,6 +151,7 @@
       list.appendChild(wrapper);
     });
     region.appendChild(list);
+    if (outcome.message) toast(outcome.message);
   }
 
   function submit(form) {
@@ -112,6 +183,13 @@
           button.removeAttribute("aria-busy");
         }
         form.removeAttribute("aria-busy");
+        // Icon save/generate changes what the page shows: reload so the
+        // server-rendered icon, history and caps stay authoritative.
+        if (form.closest("[data-icon-panel]")) {
+          window.setTimeout(function () {
+            window.location.reload();
+          }, 350);
+        }
       })
       .catch(function () {
         renderOutcome(feedbackRegion(), {
@@ -124,6 +202,122 @@
         }
         form.removeAttribute("aria-busy");
       });
+  }
+
+  /* --------------------------------------------------------------- tabs */
+  function initTabs() {
+    var tablist = document.querySelector('[data-testid="workspace-tabs"]');
+    if (!tablist) return;
+    var tabs = Array.prototype.slice.call(tablist.querySelectorAll('[role="tab"]'));
+    var panels = {};
+    tabs.forEach(function (tab) {
+      var panel = document.getElementById(tab.getAttribute("aria-controls") || "");
+      if (panel) panels[tab.id] = panel;
+    });
+    function select(tab, focus) {
+      tabs.forEach(function (item) {
+        var selected = item === tab;
+        item.setAttribute("aria-selected", selected ? "true" : "false");
+        item.tabIndex = selected ? 0 : -1;
+        var panel = panels[item.id];
+        if (panel) panel.hidden = !selected;
+      });
+      if (focus) tab.focus();
+    }
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener("click", function () {
+        select(tab, false);
+      });
+      tab.addEventListener("keydown", function (event) {
+        var next = null;
+        if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
+        if (event.key === "ArrowLeft") next = tabs[(index - 1 + tabs.length) % tabs.length];
+        if (event.key === "Home") next = tabs[0];
+        if (event.key === "End") next = tabs[tabs.length - 1];
+        if (next) {
+          event.preventDefault();
+          select(next, true);
+        }
+      });
+    });
+    if (tabs.length) select(tabs[0], false);
+  }
+
+  /* -------------------------------------------------------- muse replay */
+  function initReplay() {
+    var button = document.querySelector("[data-replay-run]");
+    if (!button) return;
+    button.addEventListener("click", function () {
+      var strip = document.querySelector("[data-testid='muse-run-strip']");
+      if (!strip) return;
+      var nodes = Array.prototype.slice.call(strip.querySelectorAll(".rnode"));
+      if (!nodes.length || button.disabled) return;
+      var original = nodes.map(function (node) {
+        return node.className;
+      });
+      var reduce = reducedMotion();
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      var index = 0;
+      function finish() {
+        nodes.forEach(function (node, position) {
+          node.className = original[position];
+        });
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+      }
+      function tick() {
+        nodes.forEach(function (node, position) {
+          node.className = original[position]
+            .replace(/\bpending\b/g, "")
+            .replace(/\brunning\b/g, "");
+          if (position < index) {
+            if (node.className.indexOf("ok") === -1) node.className += " ok";
+          } else if (position === index) {
+            node.className += " running";
+          } else {
+            node.className += " pending";
+          }
+        });
+        index += 1;
+        if (index <= nodes.length) {
+          window.setTimeout(tick, reduce ? 0 : 420);
+        } else {
+          finish();
+        }
+      }
+      tick();
+    });
+  }
+
+  /* --------------------------------------------------- queue row links */
+  function initQueueRows() {
+    document.querySelectorAll("tr.row[data-href]").forEach(function (row) {
+      row.addEventListener("click", function (event) {
+        if (event.target.closest("a, button, input, select, textarea, form, details")) return;
+        window.location.href = row.getAttribute("data-href");
+      });
+    });
+  }
+
+  /* ------------------------------------------------------ icon picker */
+  function initIconPicker() {
+    document.querySelectorAll("[data-icon-history]").forEach(function (group) {
+      var targetId = group.getAttribute("data-icon-history");
+      var input = document.getElementById(targetId || "");
+      if (!input) return;
+      group.querySelectorAll("[data-icon-pick]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          input.value = button.getAttribute("data-icon-pick") || "";
+          group.querySelectorAll("[data-icon-pick]").forEach(function (other) {
+            other.setAttribute(
+              "aria-pressed",
+              other === button ? "true" : "false"
+            );
+          });
+        });
+      });
+    });
   }
 
   document.addEventListener("submit", function (event) {
@@ -140,5 +334,15 @@
     if (region && !region.id) {
       region.id = REGION_ID;
     }
+    initTheme();
+    initTabs();
+    initReplay();
+    initQueueRows();
+    initIconPicker();
   });
+  // The script is deferred, so DOMContentLoaded may already have fired in
+  // some embedding contexts; initTheme is idempotent, run it now as well.
+  if (document.readyState !== "loading") {
+    initTheme();
+  }
 })();

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -61,6 +61,7 @@ from acme_city.governance.schemas import (
     RegisterDatasetCommand,
 )
 from acme_city.governance.service import GovernanceService
+from acme_city.permits import icons as permit_icons
 from acme_city.permits.decisions import PermitDecisionCommand
 from acme_city.permits.issuance import IssuePermitCommand
 from acme_city.permits.schemas import ReviseApplicationCommand
@@ -650,6 +651,11 @@ def ui_rules_fees(
     if refused is not None:
         return refused
     catalogue = view_models.rules_fees(session, resolved)
+    settings: Settings = request.app.state.settings
+    catalogue["permit_type_icons"] = {
+        **catalogue["permit_type_icons"],
+        "global_cap": settings.muse_image_daily_cap,
+    }
     actions = allowed_actions_for(session, resolved, "rules")
     context = page_context(
         request,
@@ -715,6 +721,50 @@ def ui_governance_sources(
         denied_action_explanations=view_models.denied_action_explanations(actions),
     )
     return render(request, "governance_sources.html", context)
+
+
+@router.get("/permit-type-icons/{icon_id}", operation_id="ui_permit_type_icon")
+def ui_permit_type_icon(
+    icon_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Serve one permit type icon's bytes to an actor who may view its type.
+
+    Viewing a permit type follows the rules screen: the actor must hold one
+    of that screen's grants.  The bytes are served with the icon's recorded
+    media type and are never cached across icon changes.
+    """
+    from sqlalchemy import select as sa_select
+
+    from acme_city.persistence.models import permit as permit_models
+
+    # Icons are decorative and carry no record data. Every signed-in persona
+    # sees them on work-queue rows, so a session is the only requirement.
+    if actor is None:
+        return RedirectResponse("/select", status_code=303)
+    icon = session.execute(
+        sa_select(permit_models.PermitTypeIcon).where(
+            permit_models.PermitTypeIcon.id == icon_id
+        )
+    ).scalar_one_or_none()
+    if icon is None:
+        return Response(status_code=404)
+    permit_type = session.execute(
+        sa_select(permit_models.PermitType).where(
+            permit_models.PermitType.id == icon.permit_type_id
+        )
+    ).scalar_one_or_none()
+    if permit_type is None or permit_type.key not in {
+        "com_ti", "res_building", "sign", "deck_fence", "row_encroachment"
+    }:
+        return Response(status_code=404)
+    return Response(
+        content=icon.image_data,
+        media_type=icon.media_type,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 # ------------------------------------------------------------------ actions
@@ -1467,6 +1517,8 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "governance.authority_preview": _governance_authority_preview,
     "governance.authority_publish": _governance_authority_publish,
     "governance.escalate": _governance_escalate,
+    "permit.icon.generate": lambda ctx: permit_icons.generate_icon(ctx),
+    "permit.icon.save": lambda ctx: permit_icons.save_icon(ctx),
 }
 
 

@@ -1,53 +1,94 @@
 {% extends "base.html" %}
-{% macro action_form(item, csrf_token) %}
-<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
-  <summary>
-    <span class="action-label">{{ item.label }}</span>
-    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
-  </summary>
-  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
-  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
-  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
-  {% if item.permitted %}
-  <form method="post" action="{{ item.path }}" class="action-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="action_id" value="{{ item.action_id }}">
-    <input type="hidden" name="next" value="{{ request.url.path }}">
-    {% for field in item.fields %}
-      {% if field.type == 'hidden' %}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-      {% elif field.type == 'select' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-          </select>
-        </p>
-      {% elif field.type == 'textarea' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-        </p>
-      {% else %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
-        </p>
-      {% endif %}
-    {% endfor %}
-    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
-  </form>
-  {% else %}
-  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
-  {% endif %}
-</details>
-{% endmacro %}
+{% import "components/action_form.html" as forms %}
 
 {% block content %}
-
-<h1>Rules and fees</h1>
+<div class="page-head">
+  <div>
+    <h1>Rules and fees</h1>
+    <p class="sub">Versioned rule sets and fee schedules. Synthetic ACME values.</p>
+  </div>
+</div>
 
 {% include "components/responsibility_panel.html" %}
+
+<section class="panel card" aria-labelledby="permit-type-icons-heading" data-testid="permit-type-icons">
+  <div class="card-h">
+    <h2 id="permit-type-icons-heading">Permit type icons</h2>
+    <span class="right"><span class="pill muse">Muse Image</span><span class="pill plain">{{ catalogue.permit_type_icons.attempts_today }} of {{ catalogue.permit_type_icons.global_cap or '—' }} generations today</span></span>
+  </div>
+  <div class="card-b" style="display:grid;gap:16px">
+    <p class="muted" style="margin:0">One icon per permit type, shown on work-queue rows and the permit workspace. Describe a new icon in a sentence and Muse Image creates a candidate; it stays pending until you save it. About $0.01 per generation. City Administrator only — at most {{ catalogue.permit_type_icons.per_type_cap }} generations per type per day.</p>
+    {% for type in catalogue.permit_type_icons.types %}
+    <div class="icon-type" data-testid="permit-type-icon-row" data-permit-type="{{ type.permit_type_key }}" style="border-top:1px solid var(--line-soft);padding-top:14px">
+      <div class="item" style="align-items:flex-start">
+        {% if type.current_icon %}
+        <img class="type-ic" src="{{ type.current_icon.url }}" alt="" data-testid="permit-type-current-icon" style="width:48px;height:48px;border-radius:12px">
+        {% else %}
+        <span class="type-ic line" data-testid="permit-type-current-icon" style="width:48px;height:48px;border-radius:12px"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
+        {% endif %}
+        <div style="min-width:0;flex:1">
+          <div class="t1">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></div>
+          <div class="t2">Current icon: {{ type.current_icon.source if type.current_icon else 'none — line-icon fallback' }} · {{ catalogue.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
+        </div>
+      </div>
+
+      {% if catalogue.permit_type_icons.can_generate %}
+      <details class="action icon-editor" data-testid="icon-editor" data-permit-type="{{ type.permit_type_key }}" style="margin-top:10px">
+        <summary><span class="btn sm">Change icon</span></summary>
+        <div class="icongen" data-icon-panel style="margin-top:10px">
+          <div class="icon-preview">
+            {% if type.current_icon %}<img src="{{ type.current_icon.url }}" alt="Current icon for {{ type.label }}">{% else %}<svg aria-hidden="true"><use href="#i-spark"/></svg>{% endif %}
+          </div>
+          <div style="display:grid;gap:10px;min-width:0">
+            <form method="post" action="/ui/actions/permit.icon.generate" class="action-form" data-testid="icon-generate-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="permit.icon.generate">
+              <input type="hidden" name="next" value="/rules-fees">
+              <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
+              <input type="hidden" name="expected_version" value="{{ type.version }}">
+              <div class="fieldset">
+                <label for="icon-prompt-{{ type.permit_type_key }}">Describe an icon <span class="pill muse" style="margin-left:4px">Muse Image</span></label>
+                <textarea class="inp" id="icon-prompt-{{ type.permit_type_key }}" name="prompt" rows="2" required></textarea>
+                <span class="hint">One sentence. The server wraps it in the fixed civic style: flat vector icon, no text, no letters, no logos.</span>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <button type="submit" class="btn sm muse" data-testid="icon-generate"><svg aria-hidden="true"><use href="#i-spark"/></svg>Generate icon</button>
+                <span class="hint">Try another by generating again. Candidates stay pending until saved.</span>
+              </div>
+            </form>
+
+            <form method="post" action="/ui/actions/permit.icon.save" class="action-form" data-testid="icon-save-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="permit.icon.save">
+              <input type="hidden" name="next" value="/rules-fees">
+              <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
+              <input type="hidden" name="expected_version" value="{{ type.version }}">
+              <div class="fieldset">
+                <label for="icon-choice-{{ type.permit_type_key }}">Icon history — pick one to save</label>
+                <input type="hidden" id="icon-choice-{{ type.permit_type_key }}" name="icon_id" value="{{ type.current_icon.icon_id if type.current_icon else '' }}">
+                <div class="history history-thumbs" data-icon-history="icon-choice-{{ type.permit_type_key }}" data-testid="icon-history">
+                  {% for icon in type.icons %}
+                  <button type="button" class="icon-thumb" data-icon-pick="{{ icon.icon_id }}" data-testid="icon-thumb" aria-pressed="{{ 'true' if icon.is_current else 'false' }}" title="{{ icon.source }} · {{ icon.created_at }} · {{ icon.prompt }}"><img src="{{ icon.url }}" alt="{{ icon.source }} icon from {{ icon.created_at }}"></button>
+                  {% else %}
+                  <span class="muted">No icon yet. Generate the first candidate.</span>
+                  {% endfor %}
+                </div>
+                <span class="hint">Thumbnails are labelled with their source and date; picking one keeps the choice as text until you save.</span>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <button type="submit" class="btn sm primary" data-testid="icon-save">Save icon</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </details>
+      {% else %}
+      <p class="lock" style="margin-top:8px"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change a permit type icon. Your persona does not hold the 'permit.icon.generate' grant.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
 
 <section class="panel" aria-labelledby="rule-versions-heading">
   <h2 id="rule-versions-heading">Rule versions</h2>
@@ -116,10 +157,11 @@
 
 {% include "components/evidence_panel.html" %}
 
-<section class="panel" aria-labelledby="rules-actions-heading">
-  <h2 id="rules-actions-heading">Actions</h2>
+<section class="panel card" aria-labelledby="rules-actions-heading">
+  <div class="card-h"><h2 id="rules-actions-heading">Next actions</h2></div>
+  <div class="card-b act">
   {% for item in actions %}
-    {{ action_form(item, csrf_token) }}
+    {{ forms.action_form(item, csrf_token) }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">
@@ -128,5 +170,6 @@
     {% endfor %}
   </ul>
   {% endif %}
+  </div>
 </section>
 {% endblock %}

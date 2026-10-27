@@ -78,6 +78,7 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "permit": (
         "permit_types",
+        "permit_type_icons",
         "applications",
         "application_revisions",
         "application_parties",
@@ -290,7 +291,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    assert health.revision == "0001"
+    # Head is 0002 since the permit-type-icon migration added by the UI brief.
+    assert health.revision == "0002"
     assert database.database_url not in str(health.to_dict())
 
 

@@ -120,7 +120,9 @@ def test_the_submitted_value_keeps_the_first_submission_date(
 def test_every_action_says_where_it_writes(client: TestClient) -> None:
     select_persona(client, "persona_city_administrator")
     body = client.get("/permits/app_synth_001").text
-    destinations = re.findall(r'<p class="action-destination">Writes to: ([^<]+)</p>', body)
+    # The destination moved from a <p> into the mockup action row's <span>;
+    # the text and the class are the same, so the regex follows the element.
+    destinations = re.findall(r'<span class="action-destination[^"]*">Writes to: ([^<]+)</span>', body)
     assert destinations
     assert all(destination.strip() for destination in destinations)
     assert any("Permitting" in destination for destination in destinations)
@@ -129,7 +131,9 @@ def test_every_action_says_where_it_writes(client: TestClient) -> None:
 def test_the_labels_are_plain_and_name_the_record(client: TestClient) -> None:
     select_persona(client, "persona_city_administrator")
     body = client.get("/permits/app_synth_001").text
-    labels = re.findall(r'<span class="action-label">([^<]+)</span>', body)
+    # The label span gained the mockup's act-title class; the assertion on
+    # the label text is unchanged.
+    labels = re.findall(r'<span class="action-label[^"]*">([^<]+)</span>', body)
     assert labels
     for label in labels:
         lowered = label.lower()

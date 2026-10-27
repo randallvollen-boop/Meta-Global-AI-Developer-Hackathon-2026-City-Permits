@@ -29,7 +29,9 @@ def make_settings(tmp_path: Path, name: str = "migrations.db") -> Settings:
 def test_upgrade_from_empty_database_creates_the_schema(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     revision = initialize_database(settings)
-    assert revision == "0001"
+    # Head is 0002 since the permit-type-icon migration; the brief adds it
+    # deliberately, so the expected head moved with the schema.
+    assert revision == "0002"
 
     engine = create_engine(settings.database_url, future=True)
     try:
@@ -40,7 +42,7 @@ def test_upgrade_from_empty_database_creates_the_schema(tmp_path: Path) -> None:
         engine.dispose()
 
     assert "alembic_version" in tables
-    assert recorded == "0001"
+    assert recorded == "0002"
     assert set(Base.metadata.tables) <= tables
 
 
@@ -49,7 +51,7 @@ def test_downgrade_and_upgrade_again_on_a_disposable_database(tmp_path: Path) ->
     config = alembic_config(settings)
 
     command.upgrade(config, "head")
-    assert current_revision(settings) == "0001"
+    assert current_revision(settings) == "0002"
 
     command.downgrade(config, "base")
     assert current_revision(settings) is None
@@ -63,7 +65,7 @@ def test_downgrade_and_upgrade_again_on_a_disposable_database(tmp_path: Path) ->
     assert "applications" not in tables
 
     command.upgrade(config, "head")
-    assert current_revision(settings) == "0001"
+    assert current_revision(settings) == "0002"
 
 
 def test_alembic_check_reports_no_ungenerated_changes(tmp_path: Path) -> None:

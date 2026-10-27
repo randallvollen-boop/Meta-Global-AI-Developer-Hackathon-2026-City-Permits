@@ -166,6 +166,13 @@
       "sensitive": true
     },
     {
+      "permission_id": "permit.icon.generate",
+      "action": "permit.icon.generate",
+      "category": "permit",
+      "description": "Generate a permit type icon with Muse Image and save a chosen icon for a permit type. Generating an icon never approves, prices or issues a permit.",
+      "sensitive": false
+    },
+    {
       "permission_id": "governance.dataset.register",
       "action": "governance.dataset.register",
       "category": "governance",
@@ -317,6 +324,7 @@
     "administrator": [
       "admin.actor.manage",
       "admin.session.revoke",
+      "permit.icon.generate",
       "records.configuration.view",
       "records.document.view"
     ],

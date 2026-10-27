@@ -289,3 +289,26 @@ def test_the_navigation_holds_the_eight_screens(session: Session) -> None:
     ]
     permit_item = next(item for item in items if item["key"] == "permit")
     assert permit_item["href"].startswith("/permits/")
+
+
+def test_model_runs_match_an_application_stored_in_an_input_refs_object(
+    session: Session,
+) -> None:
+    from datetime import UTC, datetime
+
+    from acme_city.persistence.models.model_run import ModelRun
+
+    session.add(
+        ModelRun(
+            id="modelrun_regression_refs",
+            mode="replay",
+            input_refs={"task": "extraction", "application_id": "app_synth_001", "documents": []},
+            started_at=datetime(2026, 10, 27, tzinfo=UTC),
+            correlation_id="corr_regression_refs",
+        )
+    )
+    session.flush()
+    actor = actor_for(session, "persona_data_steward")
+    matched = view_models.model_runs(session, actor, application_id="app_synth_001")
+    assert [run["run_id"] for run in matched] == ["modelrun_regression_refs"]
+    assert view_models.model_runs(session, actor, application_id="app_synth_002") == []

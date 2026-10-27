@@ -16,6 +16,7 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
 )
@@ -37,6 +38,36 @@ class PermitType(IdMixin, VersionMixin, CreatedAtMixin, Base):
     required_fields: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     required_documents: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    icon_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("permit_type_icons.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+    )
+
+
+class PermitTypeIcon(IdMixin, CreatedAtMixin, Base):
+    """One icon image for a permit type: a seeded asset or a saved generation.
+
+    A generated candidate stays pending (``is_current`` false) until an
+    administrator saves it; saving flips the previous current icon off.
+    The image bytes live in the database so the icon survives with the
+    record it decorates; the type row points at its current icon.
+    """
+
+    __tablename__ = "permit_type_icons"
+
+    permit_type_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("permit_types.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    image_data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    media_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="seed")
+    is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    __table_args__ = (
+        CheckConstraint("source IN ('seed', 'generated')", name="source_allowed"),
+    )
 
 
 class Application(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base):
@@ -273,5 +304,6 @@ __all__ = [
     "ImpactReview",
     "Permit",
     "PermitType",
+    "PermitTypeIcon",
     "Recommendation",
 ]

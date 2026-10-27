@@ -1,10 +1,23 @@
 {# The history panel of a governed record.
 
    The history is the append-only application audit trail: the actor, the
-   time, the action, the versions and the reason of every recorded step. #}
+   time, the action, the versions and the reason of every recorded step.
+   It is restyled as a vertical rail; the data and the test ids are the
+   same table the record always showed. #}
 <section class="panel panel-history" aria-labelledby="history-heading" data-testid="history-panel">
   <h2 id="history-heading">History</h2>
   {% if history %}
+  <div class="tl" data-testid="history-timeline">
+    {% for entry in history %}
+    <div class="tl-i">
+      <span class="tl-dot {{ 'muse' if entry.action.startswith('muse.') or '.icon.' in entry.action else 'ok' if entry.outcome == 'accepted' else 'acc' }}"><svg aria-hidden="true"><use href="#i-{{ 'spark' if entry.action.startswith('muse.') or '.icon.' in entry.action else 'check' if entry.outcome == 'accepted' else 'clock' }}"/></svg></span>
+      <div>
+        <div class="a">{{ entry.action }} <span class="badge badge-{{ entry.outcome }}">{{ entry.outcome }}</span></div>
+        <div class="m">{{ entry.actor_label }} · {{ entry.occurred_at }} · versions {{ entry.before_version if entry.before_version is not none else '-' }} to {{ entry.after_version if entry.after_version is not none else '-' }}{% if entry.reason or entry.denial_reason %} · {{ entry.reason or entry.denial_reason }}{% endif %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
   <table class="data-table" data-testid="history-table">
     <caption class="visually-hidden">Recorded history of this record</caption>
     <thead>

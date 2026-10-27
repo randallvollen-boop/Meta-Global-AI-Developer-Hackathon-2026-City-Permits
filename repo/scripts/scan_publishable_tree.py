@@ -43,6 +43,18 @@ for _index, _term in enumerate(t for t in os.environ.get("ACME_SCAN_PRIVATE_TERM
     DENY_PATTERNS[f"private term {_index + 1}"] = re.compile(re.escape(_term.strip()), re.IGNORECASE)
 
 
+#: The only binary files the tree may carry: bundled permit-type icons.
+ALLOWED_IMAGE_DIR = Path("src/acme_city/static/permit-type-icons")
+
+
+def is_allowed_image(relative: Path, path: Path) -> bool:
+    """Return whether a binary file is a genuine WebP permit-type icon."""
+    if relative.parent != ALLOWED_IMAGE_DIR or path.suffix.lower() != ".webp":
+        return False
+    header = path.read_bytes()[:12]
+    return header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+
+
 def is_ignored(path: Path) -> bool:
     relative = path.relative_to(REPO_ROOT)
     result = subprocess.run(
@@ -77,6 +89,8 @@ def scan() -> list[str]:
             findings.append(f"{relative}: file exceeds the 5 MiB source-tree limit")
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES:
+            if is_allowed_image(relative, path):
+                continue
             findings.append(f"{relative}: unexpected binary or file type")
             continue
         try:

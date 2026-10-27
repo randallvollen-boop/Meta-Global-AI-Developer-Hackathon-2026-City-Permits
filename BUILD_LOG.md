@@ -58,3 +58,23 @@ No GitHub remote, deployment, public publication, event entry change, terms acce
 
 - Randall approved a local baseline commit: `0a5cbb8`, 271 files, under his noreply identity, with no remote. Before committing, machine paths were kept out: architecture-page build outputs are ignored, `page.json` carries a relative output path, and the leak scanner uses generic patterns.
 - Randall asked for the final article to show the screens along the way and which engines built what (Claude, Muse, M3, OpenAI). Started `docs/build-story/`: an engine and tool ledger (`ENGINES.md`), `capture_screens.py`, 10 screenshots of the original build (`screens/v1-original/`) and 12 of the approved mockup in light and dark (`screens/v2-mockup/`).
+
+## 2026-10-27 — Muse build run 1 stopped (context thrash) and relaunched
+
+- Run 1 (08:24–08:54) made no edits. Claude Code treated `claude-meta-muse-wonder` as an unknown model with a 200k window, so it auto-compacted 7 times (each at about 165k tokens). Each compaction dropped what Muse had read, so 110 of its 208 file reads were repeats (`ui/view_models.py` alone 20 times). The parent stopped it; no code was lost, since it had written nothing. Log kept as `work/ui-build/muse-run-1-thrashed.jsonl`.
+- Fixes: the gateway aliases for Muse Wonder and Spark now allow 1,000,000 input tokens, and the run uses `claude-meta-muse-wonder[1m]` so Claude Code assumes the real 1M window. The brief gained a "Working efficiently" section: a file map, read each file once, grep the big Python files, start editing within 20 tool calls, and a step-by-step `PROGRESS.md`.
+- Run 2 launched at 08:56.
+- Run 2 (08:56–09:13, 96 turns, $5.61 at Meta prices: 707k input, 7.8M cached-read, 61k output tokens) ran with no compactions. It finished step 1, the shell (`app.css`, `base.html`, `app.js`, one nav-test selector scoped to the sidebar; UI, API and navigation tests green). It then ended its turn with a statement of intent instead of a tool call, which ends a print-mode run. The parent resumed the same session with a "keep going until done" instruction, up to 6 continuations.
+- Merge note: the build copy predates the baseline's scanner and `test_config.py` privacy fixes. Keep the baseline versions of those two files when merging.
+- Continuation (09:13–10:01, 192 turns, 48 min): finished all steps in one resume. Meta-priced cost $15.22 (470k input, 57.2M cached-read, 74k output tokens). Muse reported 673 tests passing and all 10 gates green. Muse build total: about $20.8 measured (run 2 plus continuation) plus run 1, which had no usage record (estimated a few dollars).
+
+## 2026-10-27 — Parent review of the Muse build, merge and fixes
+
+The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed the code, merged it into `repo/`, and fixed the following:
+1. **Icon images 403 for Reviewer and Steward.** The icon route required a Rules-and-fees grant, but every persona's work queue shows icons. Icons are decorative and carry no record data, so any signed-in persona may load them; signed-out visitors are redirected. Muse's test was updated to match.
+2. **Page views wrote data.** Seed icons were created lazily on the first Rules-and-fees render, with no audit record. Seeding moved into the fixture reset, with fixed ids so two resets stay identical. Rendering now writes nothing, and a new test proves it. A dead helper (`ensure_seeded_committed`) was removed.
+3. **Vacuous gate in the build copy.** In `work/ui-build` (git-ignored), `scan_publishable_tree.py` scanned 0 files, so its pass meant nothing. In `repo/` it correctly flagged the 6 WebP icons. The scanner now allows only genuine WebP files (RIFF/WEBP header) in `static/permit-type-icons/`; a fake one is still caught.
+4. **Demo reset could not move to schema 0002.** `reset_demo.py` now upgrades an existing marked demo, but only after the fictional-demo marker check, so an unmarked database is refused untouched.
+5. **Pre-existing bug: Muse runs never appeared on the permit workspace.** `model_runs()` treated `input_refs` as a list, but it is stored as an object, so no application ever matched. Fixed, with a regression test. The redesigned Muse run tab now shows the stored run and its 5 real checks.
+6. **Visual polish:** a legacy `.app-nav a` rule collapsed the sidebar icon gap; the duplicate facts card was removed (the responsibility panel stays); the duplicate "writes to" line was removed; denied reasons wrap under the action title; the type icon sits before the case reference.
+- Screens of the redesign are in `docs/build-story/screens/v3-redesign/` (10 in light and 10 in dark).

@@ -254,18 +254,28 @@ def visible_parties(session: Session, actor: ActorContext) -> list[registry.Part
     return [row for row in rows if row.id in actor.record_scope]
 
 
-def navigation(session: Session, actor: ActorContext) -> list[dict[str, str]]:
+def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     """Return the navigation of the eight screens for the acting persona."""
     permit_href = ""
     applications = visible_applications(session, actor)
     if applications:
         permit_href = f"/permits/{applications[0].id}"
-    items: list[dict[str, str]] = []
+    items: list[dict[str, Any]] = []
     for screen in SCREENS:
         item = dict(screen)
         if item["key"] == "permit":
             item["href"] = permit_href
         items.append(item)
+    # Count badges come only from counts the view models already have: the
+    # acting persona's work queue, scoped exactly as the queue scopes it.
+    try:
+        queue = work_queue(session, actor)
+        total = len(queue.get("entries") or [])
+    except Exception:
+        total = 0
+    for item in items:
+        if item["key"] == "queue" and total:
+            item["count"] = total
     return items
 
 
@@ -1503,6 +1513,100 @@ def _applicant_source_record(
 
 
 
+# -------------------------------------------------------------- permit icons
+
+
+def permit_type_icons(session: Session, actor: ActorContext) -> dict[str, Any]:
+    """Return the five permit types with their current and candidate icons.
+
+    Seed icons are loaded by the fixture reset, so rendering writes nothing.
+    Generation is never
+    automatic: candidates appear only after an administrator's governed
+    generate action, and stay pending until a save.
+    """
+    from acme_city.permits import icons as icon_service
+
+    per_type_counts, total_today = icon_service.icon_attempt_counts(session)
+    can_generate = allows(session, actor, icon_service.ICON_PERMISSION)
+    types: list[dict[str, Any]] = []
+    rows = session.execute(
+        select(permit.PermitType).order_by(permit.PermitType.label)
+    ).scalars().all()
+    for row in rows:
+        icons = session.execute(
+            select(permit.PermitTypeIcon)
+            .where(permit.PermitTypeIcon.permit_type_id == row.id)
+            .order_by(permit.PermitTypeIcon.created_at, permit.PermitTypeIcon.id)
+        ).scalars().all()
+        icon_entries = [
+            {
+                "icon_id": icon.id,
+                "media_type": icon.media_type,
+                "prompt": icon.prompt,
+                "source": icon.source,
+                "is_current": bool(icon.is_current),
+                "created_by": icon.created_by,
+                "created_at": _iso(icon.created_at),
+                "url": f"/permit-type-icons/{icon.id}",
+            }
+            for icon in icons
+        ]
+        current = next((entry for entry in icon_entries if entry["is_current"]), None)
+        if current is None and row.icon_id:
+            current = next(
+                (entry for entry in icon_entries if entry["icon_id"] == row.icon_id), None
+            )
+        types.append(
+            {
+                "permit_type_id": row.id,
+                "permit_type_key": row.key,
+                "key": row.key,
+                "label": row.label,
+                "version": row.version,
+                "current_icon": current,
+                "icons": icon_entries,
+            }
+        )
+    return {
+        "types": types,
+        "can_generate": can_generate,
+        "attempts_today": total_today,
+        "per_type_counts": per_type_counts,
+        "per_type_cap": icon_service.PER_TYPE_DAILY_CAP,
+        "global_cap": None,
+    }
+
+
+def icon_for_permit_type(
+    session: Session, permit_type_row: permit.PermitType | None
+) -> dict[str, Any] | None:
+    """Return the current icon of one permit type row, or ``None``."""
+    if permit_type_row is None:
+        return None
+    icon = None
+    if permit_type_row.icon_id:
+        icon = session.execute(
+            select(permit.PermitTypeIcon).where(
+                permit.PermitTypeIcon.id == permit_type_row.icon_id
+            )
+        ).scalar_one_or_none()
+    if icon is None:
+        icon = session.execute(
+            select(permit.PermitTypeIcon).where(
+                permit.PermitTypeIcon.permit_type_id == permit_type_row.id,
+                permit.PermitTypeIcon.is_current.is_(True),
+            )
+        ).scalar_one_or_none()
+    if icon is None:
+        return None
+    return {
+        "icon_id": icon.id,
+        "media_type": icon.media_type,
+        "source": icon.source,
+        "url": f"/permit-type-icons/{icon.id}",
+    }
+
+
 # ------------------------------------------------------------------ work queue
 
 
@@ -1533,6 +1637,27 @@ def _application_blockers(
         seen.add(key)
         unique.append(blocker)
     return unique
+
+
+def _application_step(
+    application: permit.Application, has_assessment: bool
+) -> tuple[int, str]:
+    """Return the 0..5 mini-progress position of an application and its tone.
+
+    Derived only from the recorded application status (and whether a fee
+    was assessed): 0 submitted, 1 validated, 2 decision, 3 fee assessed,
+    4 paid (not derivable per row, so assessed stays 3), 5 issued.
+    """
+    status = application.status
+    if status == "issued":
+        return 5, "done"
+    if status in ("approved", "denied"):
+        return (3, "done") if has_assessment else (2, "done")
+    if status in ("under_review", "ready_for_review"):
+        return 2, "current"
+    if status == "needs_information":
+        return 1, "blocked"
+    return 0, "current"
 
 
 def _next_action(
@@ -1597,13 +1722,20 @@ def work_queue(
             .order_by(finance.Assessment.version.desc())
         ).scalars().first()
         age = _age_days(application.initial_submitted_at, now)
+        type_row = service.permit_type(application)
+        step, step_state = _application_step(application, assessment is not None)
         items.append(
             {
                 "kind": "application",
                 "object_type": "Application",
                 "id": application.id,
                 "title": application.source_application_number,
-                "subtitle": service.permit_type(application).label,
+                "subtitle": type_row.label,
+                "permit_type_id": type_row.id,
+                "permit_type_key": type_row.key,
+                "icon": icon_for_permit_type(session, type_row),
+                "step": step,
+                "step_state": step_state,
                 "state": application.status,
                 "department": "permits",
                 "assignee": application.applicant_party_id,
@@ -2396,8 +2528,112 @@ def permit_workspace(
     ]
     blockers = _application_blockers(service, application)
     runs = model_runs(session, actor, application_id=application.id)
+    # Workspace derivations use only fields already returned above: the
+    # pipeline position, the extracted fields of the latest run, the fee
+    # preview lines and the applicant-facing tracker/what-next box.
+    app_status = application.status
+    evaluation_row = evaluation
+    decision_row = current_decision
+    finance_view_local = finance_view
+    issued_rows = issued
+    if app_status == "issued" or issued_rows:
+        pipe_index = 5
+    elif app_status in ("approved", "denied") or decision_row is not None:
+        pipe_index = (
+            3 if (finance_view_local.get("assessment") if finance_view_local else None) else 2
+        )
+        if finance_view_local and finance_view_local.get("reconciliation"):
+            pipe_index = 3
+    elif evaluation_row is not None or app_status in ("under_review", "ready_for_review"):
+        pipe_index = 2
+    elif app_status == "needs_information":
+        pipe_index = 1
+    elif app_status in ("submitted", "draft"):
+        pipe_index = 1 if evaluation_row is not None else 0
+    else:
+        pipe_index = 0
+    steps_meta = [
+        ("Submitted", "send"),
+        ("Validated", "shield"),
+        ("Decision", "stamp"),
+        ("Fee and payment", "coins"),
+        ("Issued", "file"),
+    ]
+    pipeline: list[dict[str, Any]] = []
+    for index, (label, icon_name) in enumerate(steps_meta):
+        if index < pipe_index:
+            state_name = "done"
+        elif index == pipe_index:
+            state_name = "blocked" if blockers and index in (1, 2) else "current"
+        else:
+            state_name = ""
+        pipeline.append(
+            {"label": label, "icon": icon_name, "state": state_name, "index": index}
+        )
+    latest_run = runs[0] if runs else None
+    extracted_fields: list[dict[str, Any]] = []
+    if latest_run is not None:
+        observations = session.execute(
+            select(permit.ExtractionObservation)
+            .where(permit.ExtractionObservation.model_run_id == latest_run["run_id"])
+            .order_by(permit.ExtractionObservation.field_path)
+        ).scalars().all()
+        extracted_fields = [
+            {
+                "field": row.field_path,
+                "value": row.proposed_value or "",
+                "cite": row.page_region or "",
+                "state": row.validation_state,
+            }
+            for row in observations
+        ]
+    fee_lines: list[dict[str, Any]] = []
+    fee_total: Any = None
+    if finance_view_local and finance_view_local.get("assessment"):
+        assessment_vm = finance_view_local["assessment"]
+        fee_lines = list(assessment_vm.get("lines") or [])
+        fee_total = assessment_vm.get("assessed_total")
+    tracker_steps = [
+        "Submitted", "Checked", "In review", "Fee", "Paid", "Permit issued",
+    ]
+    if app_status == "issued" or issued_rows:
+        tracker_index = 5
+    elif finance_view_local and finance_view_local.get("reconciliation"):
+        tracker_index = 4
+    elif finance_view_local and finance_view_local.get("assessment"):
+        tracker_index = 3
+    elif app_status in ("under_review", "ready_for_review", "approved"):
+        tracker_index = 2
+    elif app_status == "needs_information":
+        tracker_index = 1
+    else:
+        tracker_index = 0
+    type_row = service.permit_type(application)
     return {
         "application": application_view,
+        "permit_type": {
+            "permit_type_id": type_row.id,
+            "key": type_row.key,
+            "label": type_row.label,
+            "icon": icon_for_permit_type(session, type_row),
+        },
+        "pipeline": pipeline,
+        "pipeline_index": pipe_index,
+        "extracted_fields": extracted_fields,
+        "fee_lines": fee_lines,
+        "fee_total": fee_total,
+        "tracker": [
+            {
+                "label": label,
+                "state": (
+                    "done" if i < tracker_index
+                    else "current" if i == tracker_index
+                    else ""
+                ),
+            }
+            for i, label in enumerate(tracker_steps)
+        ],
+        "next_step_text": _next_action(session, actor, service, application, blockers),
         "current": {
             "status": application.status,
             "version": application.version,
@@ -2644,6 +2880,7 @@ def rules_fees(session: Session, actor: ActorContext) -> dict[str, Any]:
     return {
         "versions": versions,
         "fee_schedules": fee_schedules,
+        "permit_type_icons": permit_type_icons(session, actor),
         "responsibility": responsibility(
             session,
             domain_id="building_rules",
@@ -2673,6 +2910,22 @@ def reconciliation(session: Session, actor: ActorContext) -> dict[str, Any]:
         position = service.compute_reconciliation(
             assessment, [], actor, persist=False
         ).model_dump(mode="json")
+        assessed_cents = view_model.get("assessed_total_cents")
+        if assessed_cents is None:
+            raw_total = view_model.get("assessed_total")
+            try:
+                assessed_cents = int(round(float(str(raw_total)) * 100))
+            except (TypeError, ValueError):
+                assessed_cents = 0
+        position["assessed_total_cents"] = assessed_cents
+        position["settled_allocated_cents"] = int(
+            position.get("settled_allocated_cents") or 0
+        )
+        position["alloc_pct"] = (
+            min(100, round(100 * position["settled_allocated_cents"] / assessed_cents))
+            if assessed_cents
+            else 0
+        )
         assessments.append({**view_model, "position": position})
     payments = [
         service.payment_view(row).model_dump(mode="json")
@@ -2854,8 +3107,12 @@ def model_runs(
     rows = session.execute(statement).scalars().all()
     runs: list[dict[str, Any]] = []
     for row in rows:
-        refs = list(row.input_refs or [])
-        if application_id and application_id not in refs:
+        # input_refs is stored as an object ({"application_id": ..., "documents": [...]});
+        # older rows may be a plain list of references.
+        raw_refs = row.input_refs or {}
+        refs = list(raw_refs) if not isinstance(raw_refs, dict) else [raw_refs]
+        run_application = raw_refs.get("application_id") if isinstance(raw_refs, dict) else None
+        if application_id and application_id != run_application and application_id not in refs:
             continue
         validation = dict(row.validation_result or {})
         runs.append(
@@ -2878,6 +3135,9 @@ def model_runs(
                 "replay_of_run_id": row.replay_of_run_id,
                 "input_refs": refs,
                 "validation_errors": list(validation.get("errors") or []),
+                "validation_result": validation,
+                "output": dict(row.output or {}),
+                "usage": dict(row.usage or {}),
             }
         )
     return runs
@@ -2985,8 +3245,9 @@ __all__ = [
     "navigation",
     "open_issues",
     "party_detail",
-    "persona_options",
+    "permit_type_icons",
     "permit_workspace",
+    "persona_options",
     "reconciliation",
     "responsibility",
     "rules_fees",

@@ -40,7 +40,7 @@ def test_the_eight_screens_render_without_a_page_error(
 def test_the_navigation_holds_the_eight_screens(page, server: BrowserServer, login) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
-    items = page.locator(".app-nav a")
+    items = page.locator(".side .app-nav a")
     assert items.count() == 8
     keys = [items.nth(index).get_attribute("data-screen-key") for index in range(8)]
     assert keys == [

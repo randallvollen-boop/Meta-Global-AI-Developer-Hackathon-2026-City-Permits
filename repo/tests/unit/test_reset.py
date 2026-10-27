@@ -370,7 +370,8 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    assert revision == ("0001",)
+    # Head is 0002 since the permit-type-icon migration added by the UI brief.
+    assert revision == ("0002",)
     assert "demo_environment" in tables
 
 

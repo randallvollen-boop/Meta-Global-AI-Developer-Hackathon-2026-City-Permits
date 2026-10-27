@@ -807,6 +807,15 @@ def reset_demo(
     )
     counts["demo_environment"] = 1
 
+    # Bundled permit-type icons are part of the seeded population, so no
+    # page view has to create them later.
+    from acme_city.permits.icons import ensure_seeded
+
+    ensure_seeded(session)
+    counts["permit_type_icons"] = session.execute(
+        select(func.count()).select_from(permit.PermitTypeIcon)
+    ).scalar_one()
+
     session.flush()
     return ResetResult(
         fixture_version=bundle.fixture_version, counts=counts, reset_at=utc_now()

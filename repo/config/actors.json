@@ -121,6 +121,7 @@
       "permission_ids": [
         "admin.actor.manage",
         "admin.session.revoke",
+        "permit.icon.generate",
         "records.configuration.view",
         "records.document.view"
       ]
@@ -573,6 +574,12 @@
       "grants": [
         {
           "permission_id": "admin.actor.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.icon.generate",
           "domains": [],
           "record_scope": [],
           "source": "explicit"

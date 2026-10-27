@@ -1,128 +1,123 @@
 {% extends "base.html" %}
-{% macro action_form(item, csrf_token) %}
-<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
-  <summary>
-    <span class="action-label">{{ item.label }}</span>
-    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
-  </summary>
-  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
-  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
-  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
-  {% if item.permitted %}
-  <form method="post" action="{{ item.path }}" class="action-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="action_id" value="{{ item.action_id }}">
-    <input type="hidden" name="next" value="{{ request.url.path }}">
-    {% for field in item.fields %}
-      {% if field.type == 'hidden' %}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-      {% elif field.type == 'select' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-          </select>
-        </p>
-      {% elif field.type == 'textarea' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-        </p>
-      {% else %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
-        </p>
-      {% endif %}
-    {% endfor %}
-    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
-  </form>
-  {% else %}
-  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
-  {% endif %}
-</details>
-{% endmacro %}
+{% import "components/action_form.html" as forms %}
 
 {% block content %}
+{% set state_tones = {"issued": "ok", "approved": "ok", "submitted": "info", "under_review": "info", "ready_for_review": "info", "needs_information": "warn", "open": "warn", "denied": "bad"} %}
 
-<h1>Work queue</h1>
+<div class="page-head">
+  <div>
+    <h1>Work queue</h1>
+    <p class="sub">Everything waiting on someone, with the next step spelled out. Open a row to see where it stands.</p>
+  </div>
+</div>
 
-<form class="filters" method="get" action="/queue" data-testid="queue-filters">
-  <p class="field">
-    <label for="filter-view">Show</label>
-    <select id="filter-view" name="view">
-      <option value="my" {% if queue.filters.view == 'my' %}selected{% endif %}>My work</option>
-      <option value="all" {% if queue.filters.view == 'all' %}selected{% endif %}>Everything in scope</option>
-    </select>
-  </p>
-  <p class="field">
-    <label for="filter-department">Department</label>
-    <select id="filter-department" name="department">
-      <option value="">Every department</option>
-      {% for department in queue.departments %}
-      <option value="{{ department }}" {% if queue.filters.department == department %}selected{% endif %}>{{ department }}</option>
+<div class="kpis" data-testid="queue-kpis">
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-inbox"/></svg>In view</div><div class="v num">{{ queue.entries|length }}</div><div class="s">{{ queue.counts.get('Application', 0) }} application(s) · {{ queue.entries|length - queue.counts.get('Application', 0) }} data item(s)</div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>Blocked</div><div class="v num">{{ queue.entries|selectattr('blocker')|list|length }}</div><div class="s"><span class="pill bad">needs action</span></div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-stamp"/></svg>Applications</div><div class="v num">{{ queue.counts.get('Application', 0) }}</div><div class="s">in this view</div></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-spark"/></svg>Change cases</div><div class="v num">{{ queue.counts.get('Change case', 0) }}</div><div class="s"><span class="pill muse">steward work</span></div></div>
+</div>
+
+<section class="card">
+  <form class="filters toolbar" method="get" action="/queue" data-testid="queue-filters">
+    <p class="field">
+      <label for="filter-view">Show</label>
+      <select id="filter-view" name="view">
+        <option value="my" {% if queue.filters.view == 'my' %}selected{% endif %}>My work</option>
+        <option value="all" {% if queue.filters.view == 'all' %}selected{% endif %}>Everything in scope</option>
+      </select>
+    </p>
+    <p class="field">
+      <label for="filter-department">Department</label>
+      <select id="filter-department" name="department">
+        <option value="">Every department</option>
+        {% for department in queue.departments %}
+        <option value="{{ department }}" {% if queue.filters.department == department %}selected{% endif %}>{{ department }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="filter-object">Object</label>
+      <select id="filter-object" name="object_type">
+        <option value="">Every object</option>
+        {% for object_type in queue.object_types %}
+        <option value="{{ object_type }}" {% if queue.filters.object_type == object_type %}selected{% endif %}>{{ object_type }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="filter-state">State</label>
+      <select id="filter-state" name="state">
+        <option value="">Every state</option>
+        {% for state in queue.states %}
+        <option value="{{ state }}" {% if queue.filters.state == state %}selected{% endif %}>{{ state }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p><button type="submit" class="button btn">Apply filters</button></p>
+  </form>
+
+  <p class="muted" data-testid="queue-count" style="padding:0 16px">{{ queue.entries|length }} item(s) in view.</p>
+
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="queue-table">
+    <caption class="visually-hidden">Work queue items</caption>
+    <thead>
+      <tr>
+        <th scope="col">Reference</th>
+        <th scope="col">Item</th>
+        <th scope="col">State</th>
+        <th scope="col">Progress</th>
+        <th scope="col">Next step</th>
+        <th scope="col">Age</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in queue.entries %}
+      <tr class="row" data-testid="queue-item" data-object-type="{{ item.object_type }}" data-state="{{ item.state }}"{% if item.href %} data-href="{{ item.href }}"{% endif %}>
+        <td><span class="ref">{{ item.title }}</span><div class="t2">{{ item.object_type }}</div></td>
+        <td>
+          <div class="item">
+            {% if item.kind == 'application' %}
+              {% if item.icon %}<img class="type-ic" src="{{ item.icon.url }}" alt="" data-testid="permit-type-icon">{% else %}<span class="type-ic line" data-testid="permit-type-icon-fallback"><svg aria-hidden="true"><use href="#i-file"/></svg></span>{% endif %}
+            {% elif item.kind == 'change_case' %}
+              <span class="type-ic line"><svg aria-hidden="true"><use href="#i-users"/></svg></span>
+            {% elif item.kind == 'issue' %}
+              <span class="type-ic line"><svg aria-hidden="true"><use href="#i-shield"/></svg></span>
+            {% else %}
+              <span class="type-ic line"><svg aria-hidden="true"><use href="#i-link"/></svg></span>
+            {% endif %}
+            <div style="min-width:0">
+              <div class="t1"><a href="{{ item.href }}">{{ item.subtitle or item.title }}</a></div>
+              <div class="t2">{{ item.object_type }}{% if item.assignee %} · {{ item.assignee }}{% endif %}</div>
+              {% if item.blocker %}<div class="t2"><span class="badge badge-blocking">{{ item.blocker_code or 'blocked' }}</span> {{ item.blocker }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td><span class="pill {{ state_tones.get(item.state, 'info') }}">{{ item.state }}</span></td>
+        <td>
+          {% if item.kind == 'application' %}
+          <span class="mini-steps" role="img" aria-label="Step {{ item.step + 1 }} of 5">{% for i in range(5) %}<i class="{{ 'd' if i < item.step else 'c' if i == item.step else 'b' if item.step_state == 'blocked' and i == item.step else '' }}"></i>{% endfor %}</span>
+          {% else %}<span class="faint" style="font-size:.74rem">—</span>{% endif %}
+        </td>
+        <td><div style="font-size:.82rem">{{ item.next_action }}</div><div class="t2">{{ item.target }}</div></td>
+        <td>{% if item.age_days is not none %}<span class="age {{ 'old' if item.age_days >= 7 else '' }}">{{ item.age_days }}d</span>{% else %}-{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Nothing is waiting in this view.</td></tr>
       {% endfor %}
-    </select>
-  </p>
-  <p class="field">
-    <label for="filter-object">Object</label>
-    <select id="filter-object" name="object_type">
-      <option value="">Every object</option>
-      {% for object_type in queue.object_types %}
-      <option value="{{ object_type }}" {% if queue.filters.object_type == object_type %}selected{% endif %}>{{ object_type }}</option>
-      {% endfor %}
-    </select>
-  </p>
-  <p class="field">
-    <label for="filter-state">State</label>
-    <select id="filter-state" name="state">
-      <option value="">Every state</option>
-      {% for state in queue.states %}
-      <option value="{{ state }}" {% if queue.filters.state == state %}selected{% endif %}>{{ state }}</option>
-      {% endfor %}
-    </select>
-  </p>
-  <p><button type="submit" class="button">Apply filters</button></p>
-</form>
-
-<p class="muted" data-testid="queue-count">{{ queue.entries|length }} item(s) in view.</p>
-
-<table class="data-table" data-testid="queue-table">
-  <caption class="visually-hidden">Work queue items</caption>
-  <thead>
-    <tr>
-      <th scope="col">Object</th>
-      <th scope="col">Title</th>
-      <th scope="col">Assigned</th>
-      <th scope="col">Blocker</th>
-      <th scope="col">Age</th>
-      <th scope="col">Target</th>
-      <th scope="col">Next action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in queue.entries %}
-    <tr data-testid="queue-item" data-object-type="{{ item.object_type }}" data-state="{{ item.state }}">
-      <td>{{ item.object_type }}</td>
-      <th scope="row"><a href="{{ item.href }}">{{ item.title }}</a>{% if item.subtitle %}<span class="muted"> {{ item.subtitle }}</span>{% endif %}</th>
-      <td>{{ item.assignee or 'unassigned' }}</td>
-      <td>{% if item.blocker %}<span class="badge badge-blocking">{{ item.blocker_code or 'blocked' }}</span> {{ item.blocker }}{% else %}<span class="muted">none</span>{% endif %}</td>
-      <td>{{ item.age_days if item.age_days is not none else '-' }} day(s)</td>
-      <td>{{ item.target }}</td>
-      <td>{{ item.next_action }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="7" class="muted">Nothing is waiting in this view.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+  </div>
+</section>
 
 {% include "components/evidence_panel.html" %}
 
-<section class="panel" aria-labelledby="queue-actions-heading">
-  <h2 id="queue-actions-heading">Queue actions</h2>
+<section class="panel card" aria-labelledby="queue-actions-heading">
+  <div class="card-h"><h2 id="queue-actions-heading">Queue actions</h2></div>
+  <div class="card-b act">
   {% for item in actions %}
-    {{ action_form(item, csrf_token) }}
+    {{ forms.action_form(item, csrf_token) }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">
@@ -131,5 +126,6 @@
     {% endfor %}
   </ul>
   {% endif %}
+  </div>
 </section>
 {% endblock %}

@@ -1,52 +1,10 @@
 {% extends "base.html" %}
-{% macro action_form(item, csrf_token) %}
-<details class="action" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
-  <summary>
-    <span class="action-label">{{ item.label }}</span>
-    {% if not item.permitted %}<span class="badge badge-denied">not available</span>{% endif %}
-  </summary>
-  <p class="action-destination">Writes to: {{ item.destination or 'no external destination' }}</p>
-  {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
-  {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
-  {% if item.permitted %}
-  <form method="post" action="{{ item.path }}" class="action-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="action_id" value="{{ item.action_id }}">
-    <input type="hidden" name="next" value="{{ request.url.path }}">
-    {% for field in item.fields %}
-      {% if field.type == 'hidden' %}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
-      {% elif field.type == 'select' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
-          </select>
-        </p>
-      {% elif field.type == 'textarea' %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-        </p>
-      {% else %}
-        <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
-        </p>
-      {% endif %}
-    {% endfor %}
-    <p><button type="submit" class="button button-primary" data-testid="action-submit">{{ item.label }}</button></p>
-  </form>
-  {% else %}
-  <p class="action-denied" data-testid="action-denied-reason">{{ item.reason }}</p>
-  {% endif %}
-</details>
-{% endmacro %}
+{% import "components/action_form.html" as forms %}
 
 {% block content %}
 
 {% if detail %}
-<h1>Master record: {{ detail.party.display_name }}</h1>
+<div class="page-head"><div><h1>Master record: {{ detail.party.display_name }}</h1><p class="sub">Parcels, businesses and contractors, owned by GIS, ERP Finance and Permitting.</p></div></div>
 
 {% include "components/responsibility_panel.html" %}
 
@@ -116,10 +74,11 @@
 {% include "components/evidence_panel.html" %}
 {% include "components/history_panel.html" %}
 
-<section class="panel" aria-labelledby="master-actions-heading">
-  <h2 id="master-actions-heading">Actions</h2>
+<section class="panel card" aria-labelledby="master-actions-heading">
+  <div class="card-h"><h2 id="master-actions-heading">Next actions</h2></div>
+  <div class="card-b act">
   {% for item in actions %}
-    {{ action_form(item, csrf_token) }}
+    {{ forms.action_form(item, csrf_token) }}
   {% endfor %}
   {% if denied_action_explanations %}
   <ul class="denied-list" data-testid="denied-actions">
@@ -128,10 +87,11 @@
     {% endfor %}
   </ul>
   {% endif %}
+  </div>
 </section>
 
 {% else %}
-<h1>Properties, businesses and contractors</h1>
+<div class="page-head"><div><h1>Properties, businesses and contractors</h1><p class="sub">Parcels, businesses and contractors, owned by GIS, ERP Finance and Permitting.</p></div></div>
 
 <section class="panel" aria-labelledby="properties-heading">
   <h2 id="properties-heading">Properties</h2>
