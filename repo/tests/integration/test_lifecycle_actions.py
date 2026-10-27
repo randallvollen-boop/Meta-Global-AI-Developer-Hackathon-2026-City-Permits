@@ -74,6 +74,7 @@ def token(client: TestClient, path: str) -> str:
         "/agent/intake",
         "/agent/adjudication",
         "/admin?tab=reason-codes",
+        "/apply/deck_fence",
         "/apply",
     ):
         match = re.search(
@@ -125,6 +126,210 @@ def case_row(environment, application_id: str) -> dict:
             }
     finally:
         factory.dispose()
+
+
+#: Every new record action of phase 3a, with the persona that holds its
+#: grant, the persona that does not, the state the case needs and the
+#: fields the action posts.
+NEW_ACTIONS: tuple[dict, ...] = (
+    {
+        "action_id": "permit.case.return",
+        "holder": "persona_data_steward",
+        "refused": "persona_permit_reviewer",
+        "status": "needs_information",
+        "fields": {"reason_code": "INCOMPLETE_APPLICATION"},
+    },
+    {
+        "action_id": "permit.case.advance",
+        "holder": "persona_data_steward",
+        "refused": "persona_permit_reviewer",
+        "status": "needs_information",
+        "fields": {},
+    },
+    {
+        "action_id": "permit.case.request_revisions",
+        "holder": "persona_permit_reviewer",
+        "refused": "persona_data_steward",
+        "status": "ready_for_review",
+        "fields": {
+            "reason_code": "REVISION_NEEDS_PLANS",
+            "message": "The plans must show the setback.",
+        },
+    },
+    {
+        "action_id": "permit.case.archive",
+        "holder": "persona_city_administrator",
+        "refused": "persona_data_steward",
+        "status": "submitted",
+        "fields": {"reason_code": "ARCHIVE_DUPLICATE_RECORD"},
+    },
+    {
+        "action_id": "permit.case.restore",
+        "holder": "persona_city_administrator",
+        "refused": "persona_data_steward",
+        "status": "archived",
+        "fields": {},
+    },
+    {
+        "action_id": "permit.case.priority",
+        "holder": "persona_data_steward",
+        "refused": "persona_permit_reviewer",
+        "status": "submitted",
+        "fields": {"priority": "high"},
+    },
+    {
+        "action_id": "permit.case.assign",
+        "holder": "persona_data_steward",
+        "refused": "persona_city_administrator",
+        "status": "submitted",
+        "fields": {"owner_actor_id": "persona_data_steward"},
+    },
+    {
+        "action_id": "permit.case.comment",
+        "holder": "persona_data_steward",
+        "refused": "persona_applicant",
+        "status": "submitted",
+        "fields": {"body": "A note.", "visibility": "internal"},
+    },
+    {
+        "action_id": "permit.finding.waive",
+        "holder": "persona_data_steward",
+        "refused": "persona_permit_reviewer",
+        "status": "needs_information",
+        "fields": {
+            "reason_code": "WAIVE_VERIFIED_DUPLICATE",
+            "reason": "A person confirmed the duplicate.",
+        },
+    },
+)
+
+
+def prepare_case(environment, *, status: str) -> tuple[str, int, str]:
+    """Put the seeded case in the state an action needs and return its identity."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(permit.Application, "app_synth_001")
+            application.status = status
+            version = application.version
+            finding_id = ""
+            if status == "needs_information":
+                finding = permit.ApplicationFinding(
+                    id="finding_permission_1",
+                    correlation_id="corr_permission",
+                    application_id=application.id,
+                    finding_type="duplicate",
+                    message="A person must confirm the duplicate.",
+                    rule="ACME Code §13-401",
+                    applicant_must="Confirm the duplicate.",
+                    severity="review",
+                    state="current",
+                    revision_number=application.revision,
+                    version=1,
+                )
+                session.add(finding)
+                session.flush()
+                finding_id = finding.id
+        return application.id, version, finding_id
+    finally:
+        factory.dispose()
+
+
+@pytest.mark.parametrize("action_spec", NEW_ACTIONS, ids=lambda spec: spec["action_id"])
+def test_every_new_action_is_refused_without_the_grant(
+    client: TestClient, environment, action_spec: dict
+) -> None:
+    application_id, version, finding_id = prepare_case(
+        environment, status=action_spec["status"]
+    )
+    fields = {
+        "application_id": application_id,
+        **action_spec["fields"],
+    }
+    if action_spec["action_id"] == "permit.finding.waive":
+        fields["finding_id"] = finding_id
+    choose(client, action_spec["refused"])
+    result = post(
+        client,
+        action_spec["action_id"],
+        {**fields, "expected_version": str(version)},
+        "/queue",
+    )
+    assert result["status"] == "denied", result
+    assert result["code"] == "permission_denied", result
+
+
+@pytest.mark.parametrize("action_spec", NEW_ACTIONS, ids=lambda spec: spec["action_id"])
+def test_every_new_action_is_refused_without_the_csrf_token(
+    client: TestClient, environment, action_spec: dict
+) -> None:
+    application_id, version, finding_id = prepare_case(
+        environment, status=action_spec["status"]
+    )
+    fields = {
+        "application_id": application_id,
+        **action_spec["fields"],
+    }
+    if action_spec["action_id"] == "permit.finding.waive":
+        fields["finding_id"] = finding_id
+    choose(client, action_spec["holder"])
+    result = post(
+        client,
+        action_spec["action_id"],
+        {**fields, "expected_version": str(version)},
+        "/queue",
+        csrf="not-the-session-token",
+    )
+    assert result["code"] == "permission_denied", result
+    assert "token" in result["message"], result
+
+
+@pytest.mark.parametrize("action_spec", NEW_ACTIONS, ids=lambda spec: spec["action_id"])
+def test_every_new_action_is_refused_without_an_expected_version(
+    client: TestClient, environment, action_spec: dict
+) -> None:
+    application_id, _version, finding_id = prepare_case(
+        environment, status=action_spec["status"]
+    )
+    fields = {
+        "application_id": application_id,
+        **action_spec["fields"],
+    }
+    if action_spec["action_id"] == "permit.finding.waive":
+        fields["finding_id"] = finding_id
+    choose(client, action_spec["holder"])
+    result = post(
+        client,
+        action_spec["action_id"],
+        fields,
+        "/queue",
+    )
+    assert result["status"] == "denied", result
+    assert "expected version" in result["message"], result
+
+
+@pytest.mark.parametrize("action_spec", NEW_ACTIONS, ids=lambda spec: spec["action_id"])
+def test_every_new_action_is_refused_with_a_stale_expected_version(
+    client: TestClient, environment, action_spec: dict
+) -> None:
+    application_id, version, finding_id = prepare_case(
+        environment, status=action_spec["status"]
+    )
+    fields = {
+        "application_id": application_id,
+        **action_spec["fields"],
+    }
+    if action_spec["action_id"] == "permit.finding.waive":
+        fields["finding_id"] = finding_id
+    choose(client, action_spec["holder"])
+    result = post(
+        client,
+        action_spec["action_id"],
+        {**fields, "expected_version": str(version + 9)},
+        "/queue",
+    )
+    assert result["status"] == "denied", result
+    assert "changed since it was read" in result["message"], result
 
 
 def set_status(environment, application_id: str, status: str) -> None:
