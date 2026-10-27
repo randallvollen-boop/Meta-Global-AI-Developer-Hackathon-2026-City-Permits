@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "solution_id": "acme-city-permits",
-  "as_of": "2026-10-27T06:19:59-04:00",
+  "as_of": "2026-10-27T10:49:49-04:00",
   "overall_status": "verified",
   "architecture_status": "as_built",
   "requirements": {
@@ -13,7 +13,7 @@
   "execution": {
     "tasks_total": 22,
     "tasks_verified": 22,
-    "current_phase": "Complete: local user test",
+    "current_phase": "Complete: redesigned interface, local user test",
     "current_tasks": []
   },
   "verification": {
@@ -82,7 +82,7 @@
   "library": {
     "article_id": "acme-city-permits-architecture",
     "published": true,
-    "last_published_at": "2026-10-27T10:21:25.326465+00:00",
-    "last_page_sha256": "995cace27a45958391deef05261e96fe3b60b31a636ada83e17ee50028399b83"
+    "last_published_at": "2026-10-27T14:49:53.753428+00:00",
+    "last_page_sha256": "e65c4cff38b148c64d365e51897f6e86948e295af55ea9f58c184983576c19c6"
   }
 }

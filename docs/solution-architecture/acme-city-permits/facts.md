@@ -21,12 +21,12 @@ Use only fictional ACME City records and examples. Vollen Data Services text bra
 ## Current status and progress source
 
 <!-- FACT_STATUS_BEGIN -->
-`STATUS.json` is the one architecture-status record. Current state at 2026-10-27 06:19 Eastern:
+`STATUS.json` is the one architecture-status record. Current state at 2026-10-27 10:49 Eastern:
 
 - Overall: VERIFIED.
 - Architecture: AS BUILT.
 - Requirements: 57 total, 57 outlined, 57 implemented, 57 verified through integrated mapped checks.
-- Execution tasks: 22 total, 22 verified; Complete: local user test.
+- Execution tasks: 22 total, 22 verified; Complete: redesigned interface, local user test.
 - Verification inventory: 20 acceptance tests with 20 passed, 8 supplementary checks with 8 passed, and 11 scenarios with 11 recorded.
 - Live Muse primary-chain evidence: SUCCEEDED.
 <!-- FACT_STATUS_END -->
@@ -124,3 +124,11 @@ No implementation or verification figure is shown as complete until the correspo
 ## Kit provenance
 
 Build with the installed Solution Architecture Kit and Vollen Linux brand layer. No shared kit edits are planned. The kit-required `brand: Globex` value remains internal builder configuration while all visible and source output excludes wrong-brand words through the denylist. Record kit hashes, Linux wrapper use and the known unused Aptos embedding-rights limitation in `BUILD_REPORT.md`.
+
+## How it was built (2026-10-27)
+
+- OpenAI GPT-5.6 Sol with GPT-6 Astra led the first build: requirements, plans, integration and acceptance.
+- MiniMax M3 executors built the implementation slices; the orchestrator reviewed each.
+- Claude Opus 5.5 fixed the live Muse extraction, ran the gates, designed the redesign mockup and reviewed the Muse build.
+- Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made the permit-type icons.
+- Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.

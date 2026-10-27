@@ -33,6 +33,10 @@ LEAK_OUT = _leak_pattern()
 
 # Figures that may appear on the page, with the source that allows each one.
 ALLOWED_FIGURES = {
+    "5.6": "model name GPT-5.6",
+    "5.5": "model name Claude Opus 5.5",
+    "1.3": "model name Muse Spark 1.3",
+    "1.0": "model names Muse Wonder 1.0 and Muse Image 1.0",
     "0": "zero implemented, zero verified, zero records",
     "1": "status values and list positions",
     "01": "identifier fragment for AT, VC and D identifiers",

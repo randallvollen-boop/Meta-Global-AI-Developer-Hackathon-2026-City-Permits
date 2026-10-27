@@ -6,7 +6,7 @@ Date: 2026-10-26. Status: PLANNED, in implementation. Internal draft.
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 711746 bytes. SHA-256 `995cace27a45958391deef05261e96fe3b60b31a636ada83e17ee50028399b83`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 885954 bytes. SHA-256 `e65c4cff38b148c64d365e51897f6e86948e295af55ea9f58c184983576c19c6`. It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 

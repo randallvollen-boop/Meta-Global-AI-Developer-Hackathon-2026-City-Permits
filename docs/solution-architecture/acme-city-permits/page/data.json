@@ -1590,7 +1590,7 @@
       "b": "The one architecture status record behind this page. It holds the counts that the status panel and this node report.",
       "f": [
         "57 requirements outlined, 57 implemented, 57 verified.",
-        "22 tasks, 22 verified. Complete: local user test.",
+        "22 tasks, 22 verified. Complete: redesigned interface, local user test.",
         "20 acceptance tests with 20 passed, 8 supplementary checks with 8 passed, and 11 scenarios with 11 recorded.",
         "Live Muse primary chain succeeded."
       ],

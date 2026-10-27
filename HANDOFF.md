@@ -41,3 +41,9 @@ No GitHub remote, commit, push, deployment, public publication, hackathon submis
 - The approved mockup (no changes requested) is being built by Muse Wonder in `work/ui-build/repo` (git-ignored copy). Brief: `work/ui-build/BRIEF.md`. Run log: `work/ui-build/muse-run.jsonl`.
 - `repo/` and the :8266 demo are unchanged until parent review, the full pytest suite and all 10 gates pass on the copy.
 - Muse Image icon batch on 10-27: 25 images, $0.25. Randall rejected them for general UI, except permit-type icons on work-queue rows; 6 type icons are staged in the build copy.
+
+## Update 2026-10-27 10:50: redesign shipped locally
+
+- The redesign is in `repo/` (commit `52eeb68`) and running on :8266 in ready-for-review mode. 675 tests and all 10 gates pass.
+- The AVA article was republished with a "How it was built" section and before and after screens.
+- Not yet done: a live Muse Image generation through the app (needs Randall's go), pushing to GitHub (needs `gh` login as the personal owner), and the post-build Muse capability review (see the BUILD_LOG list).
