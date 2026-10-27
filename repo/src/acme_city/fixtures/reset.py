@@ -338,6 +338,7 @@ def reset_demo(
         ("permitting", "Permitting", True, True),
         ("gis", "GIS", True, True),
         ("erp_finance", "ERP/Finance", True, True),
+        ("intake_portal", "ACME ePermit Portal (simulated)", True, True),
         ("registry", "Registry and governed application components", False, False),
     ]
     for source_system_id, label, simulated, incoming in systems:

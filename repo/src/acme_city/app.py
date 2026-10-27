@@ -68,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from acme_city.finance.router import router as finance_router
     from acme_city.governance.router import router as governance_router
     from acme_city.ingestion.router import router as ingestion_router
+    from acme_city.portal_intake.router import router as intake_router
     from acme_city.muse.router import router as muse_router
     from acme_city.permits.router import router as permit_router
     from acme_city.registry.router import router as registry_router
@@ -77,6 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(session_router)
     app.include_router(governance_router)
     app.include_router(ingestion_router)
+    app.include_router(intake_router)
     app.include_router(registry_router)
     app.include_router(changes_router)
     app.include_router(permit_router)

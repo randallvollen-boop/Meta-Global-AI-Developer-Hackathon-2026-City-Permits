@@ -226,6 +226,18 @@ class Recommendation(IdMixin, VersionMixin, CreatedAtMixin, Base):
     evidence_refs: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     run_ref: Mapped[str | None] = mapped_column(String(96), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="proposed")
+    #: Deterministic plain-language rationale citing each rule. Written by the
+    #: recommendation agent step; a Muse summary, when present, never replaces it.
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: Optional Muse explanatory summary. Advisory wording only; validated
+    #: to carry no outcome different from ``proposed_outcome``.
+    muse_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The model run that produced ``muse_summary``, when one ran.
+    muse_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: The reviewer stance on this recommendation: agree/disagree + reason.
+    reviewer_stance: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    reviewer_stance_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewer_stance_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):

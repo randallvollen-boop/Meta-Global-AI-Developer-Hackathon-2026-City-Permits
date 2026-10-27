@@ -20,6 +20,7 @@ ID_PREFIXES: frozenset[str] = frozenset(
     {
         "actor",
         "act",
+        "agentstep",
         "addr",
         "alloc",
         "app",

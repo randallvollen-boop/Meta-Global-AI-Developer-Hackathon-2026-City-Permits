@@ -5,6 +5,54 @@
   "note": "Each incoming dataset declares its key, entity type, schema version, required fields, allowed values, date meanings, field classes and correction route. Raw staging and profiling may proceed without a complete registration; trusted promotion and publication may not.",
   "source_contracts": [
     {
+      "contract_id": "contract_intake_portal_submitted_applications",
+      "source_system_id": "intake_portal",
+      "dataset_key": "submitted_applications",
+      "label": "Submitted applications (outside intake)",
+      "domain_id": "permits",
+      "accountable_owner_actor_id": "service_owner_building_safety",
+      "steward_queue_id": "queue_permits",
+      "system_custodian_actor_id": "service_custodian_permitting",
+      "authority_policy_id": "authority_application_facts",
+      "correction_route": "ACME ePermit Portal (simulated) submission",
+      "business_key_fields": [
+        "portal_reference"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "portal_reference": "text",
+        "channel": "enum",
+        "permit_type_key": "enum"
+      },
+      "allowed_values": {
+        "channel": [
+          "portal",
+          "counter_scan",
+          "email"
+        ],
+        "permit_type_key": [
+          "res_building",
+          "deck_fence",
+          "com_ti",
+          "sign",
+          "row_encroachment"
+        ]
+      },
+      "date_meanings": {
+        "received_at": "receipt_time",
+        "submitted_at": "business_event_time"
+      },
+      "field_classes": {
+        "portal_reference": "source_assertion",
+        "applicant": "source_assertion",
+        "site_address": "source_assertion",
+        "submitted_facts": "source_assertion",
+        "document_text": "source_assertion"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
+    },
+    {
       "contract_id": "contract_permitting_applicant_profiles",
       "source_system_id": "permitting",
       "dataset_key": "applicant_profiles",

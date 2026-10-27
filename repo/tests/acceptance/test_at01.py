@@ -182,7 +182,8 @@ def test_at01_the_source_systems_are_simulated_and_labeled(client: TestClient) -
     assert systems["registry"]["simulated"] is False
 
     adapters = {row["source_system_id"]: row for row in payload["adapters"]}
-    assert set(adapters) == {"permitting", "gis", "erp_finance"}
+    # intake_portal is the simulated outside application (intake brief).
+    assert set(adapters) == {"permitting", "gis", "erp_finance", "intake_portal"}
     for row in adapters.values():
         assert row["simulated"] is True
         assert "simulated" in row["label"].lower()

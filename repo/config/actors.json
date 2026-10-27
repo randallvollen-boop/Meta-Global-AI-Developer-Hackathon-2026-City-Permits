@@ -1441,6 +1441,31 @@
           "domains": [],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "application.submit",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses",
+            "zoning",
+            "building_rules",
+            "finance",
+            "records"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "application.evaluate",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"

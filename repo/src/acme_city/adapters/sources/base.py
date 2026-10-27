@@ -371,7 +371,7 @@ def register_adapter(adapter_class: type[SourceAdapter]) -> type[SourceAdapter]:
 
 def available_adapters() -> tuple[str, ...]:
     """Return the source systems this demonstration can answer for."""
-    from acme_city.adapters.sources import erp_finance, gis, permitting  # noqa: F401
+    from acme_city.adapters.sources import erp_finance, gis, intake_portal, permitting  # noqa: F401
 
     return tuple(sorted(_ADAPTERS))
 
@@ -382,7 +382,7 @@ def adapter_for(source_system_id: str, session: Session, *, now: datetime | None
     Raises:
         NotFoundError: when no adapter answers for the source system.
     """
-    from acme_city.adapters.sources import erp_finance, gis, permitting  # noqa: F401
+    from acme_city.adapters.sources import erp_finance, gis, intake_portal, permitting  # noqa: F401
     from acme_city.core.errors import NotFoundError
 
     adapter_class = _ADAPTERS.get(source_system_id)

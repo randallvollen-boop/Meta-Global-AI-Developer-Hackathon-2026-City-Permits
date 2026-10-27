@@ -1483,8 +1483,98 @@ def _governance_escalate(ctx: ActionContext) -> Outcome:
     )
 
 
+def _intake_simulate(ctx: ActionContext) -> Outcome:
+    """Simulate a batch of incoming permits and run triage for each."""
+    from acme_city.portal_intake.router import SimulateCommand
+    from acme_city.portal_intake.service import IntakeService
+
+    count = ctx.integer("count")
+    service = IntakeService(ctx.session, settings=ctx.settings)
+    results = service.simulate(
+        ctx.text("scenario"), count=count, actor=ctx.actor
+    )
+    created = [r.source_application_number for r in results if r.status == "created"]
+    return Outcome(
+        message=(
+            f"Simulated {len(results)} incoming permit(s); "
+            f"{len(created)} new application(s): {', '.join(created) or 'none'}."
+        ),
+        destination="ACME ePermit Portal (simulated) intake",
+        state="simulated",
+        affected=tuple(created),
+        target_type="source_dataset",
+        target_id="submitted_applications",
+        extra={"results": [r.model_dump(mode="json") for r in results]},
+    )
+
+
+def _triage_rerun(ctx: ActionContext) -> Outcome:
+    """Re-run the agent triage pipeline for one application."""
+    from acme_city.triage.service import TriageService
+
+    steps = TriageService(ctx.session, settings=ctx.settings).run(
+        ctx.text("application_id"), triggered_by=ctx.actor.actor_id
+    )
+    return Outcome(
+        message="Re-ran triage: " + ", ".join(
+            f"{step.step_name} {step.outcome}" for step in steps
+        ),
+        destination="Agent triage pipeline",
+        state=steps[-1].outcome if steps else "recorded",
+        target_type="application",
+        target_id=ctx.text("application_id"),
+        extra={"steps": [step.step_name for step in steps]},
+    )
+
+
+def _recommendation_stance(ctx: ActionContext) -> Outcome:
+    """Record the reviewer's stance on the advisory recommendation."""
+    from acme_city.triage.service import record_reviewer_stance
+
+    row = record_reviewer_stance(
+        ctx.session,
+        recommendation_id=ctx.text("recommendation_id"),
+        application_id=ctx.text("application_id"),
+        stance=ctx.text("stance"),
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=f"Recorded your stance '{row.reviewer_stance}' on the agent recommendation.",
+        destination="Agent recommendation",
+        state=row.reviewer_stance or "",
+        target_type="application",
+        target_id=row.application_id,
+    )
+
+
+def _extraction_decide(ctx: ActionContext) -> Outcome:
+    """Accept or correct one proposed extracted value."""
+    from acme_city.triage.extraction import decide_extraction
+
+    row = decide_extraction(
+        ctx.session,
+        observation_id=ctx.text("observation_id"),
+        decision=ctx.text("decision"),
+        corrected_value=ctx.text("corrected_value") or None,
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=f"Recorded the steward decision on extracted {row.field_path}: {row.validation_state}.",
+        destination="Extraction proposal",
+        state=row.validation_state,
+        target_type="application",
+        target_id=ctx.text("application_id"),
+    )
+
+
 #: Every explicit action of the interface, keyed by its stable identifier.
 ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
+    "intake.simulate": _intake_simulate,
+    "triage.rerun": _triage_rerun,
+    "recommendation.stance": _recommendation_stance,
+    "extraction.decide": _extraction_decide,
     "registry.propose": _registry_propose,
     "registry.decide": _registry_decide,
     "change.request": _change_request,

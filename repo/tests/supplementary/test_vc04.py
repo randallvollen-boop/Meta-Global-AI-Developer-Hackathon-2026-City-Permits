@@ -108,6 +108,9 @@ def test_every_control_of_every_screen_carries_a_label(client: TestClient) -> No
 
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
+    # City Administrator holds grants for all eight screens, so for that
+    # persona the navigation is the full canonical list on every screen.
+    # Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
     reference = None
     for path in CONTROL_SCREENS:
@@ -117,6 +120,55 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
         if reference is None:
             reference = items
         assert items == reference
+
+
+#: Screen key -> path, in canonical navigation order.
+SCREEN_PATHS = {
+    "queue": "/queue",
+    "applicants": "/applicants",
+    "masters": "/masters",
+    "permit": "/permits/app_synth_001",
+    "steward": "/steward",
+    "rules": "/rules-fees",
+    "reconciliation": "/reconciliation",
+    "governance": "/governance",
+}
+
+#: The screens each persona may open (same table as the view-model tests).
+EXPECTED_NAVIGATION = {
+    "persona_applicant": ["queue", "applicants", "permit"],
+    "persona_data_steward": [
+        "queue",
+        "applicants",
+        "masters",
+        "permit",
+        "steward",
+        "rules",
+    ],
+    "persona_permit_reviewer": ["queue", "applicants", "permit"],
+    "persona_city_administrator": list(SCREEN_PATHS),
+}
+
+
+@pytest.mark.parametrize("actor_id", sorted(EXPECTED_NAVIGATION))
+def test_listed_screens_open_and_hidden_screens_refuse(
+    client: TestClient, actor_id: str
+) -> None:
+    select_persona(client, actor_id)
+    body = client.get("/queue").text
+    listed = re.findall(r'data-screen-key="([^"]+)"', body)
+    assert listed == EXPECTED_NAVIGATION[actor_id]
+    # The permit entry points at an application inside the persona's record
+    # scope, which is not necessarily app_synth_001.
+    permit_match = re.search(r'href="([^"]+)" data-screen-key="permit"', body)
+    for key, path in SCREEN_PATHS.items():
+        if key == "permit" and permit_match:
+            path = permit_match.group(1)
+        response = client.get(path)
+        if key in listed:
+            assert response.status_code == 200, (actor_id, key, path)
+        else:
+            assert response.status_code == 403, (actor_id, key, path)
 
 
 def test_the_current_screen_is_marked_for_the_assistive_technology(

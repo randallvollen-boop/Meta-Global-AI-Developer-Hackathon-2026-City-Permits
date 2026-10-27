@@ -287,6 +287,44 @@
 
     <section class="panel" aria-labelledby="decision-heading">
       <h2 id="decision-heading">Recommendation and decision</h2>
+      {% if detail.current_recommendation %}
+      {% set rec = detail.current_recommendation %}
+      <div class="card" data-testid="agent-recommendation">
+        <div class="card-b">
+          <h3>Agent recommendation</h3>
+          <p>
+            <span class="pill {{ 'ok' if rec.proposed_outcome == 'approve' else 'bad' if rec.proposed_outcome == 'deny' else 'warn' }}" data-testid="recommendation-outcome">{{ rec.proposed_outcome }}</span>
+            <span class="muted">Advisory. The Permit Reviewer decides.</span>
+          </p>
+          <p data-testid="recommendation-rationale">{{ rec.rationale }}</p>
+          {% if rec.muse_summary %}<p class="muted" data-testid="recommendation-summary">{{ rec.muse_summary }}</p>{% endif %}
+          <ul class="issue-list" data-testid="recommendation-citations">
+            {% for ref in rec.evidence_refs %}
+            <li>{{ ref.rule_id }}: {{ ref.status }} — observed {{ ref.observed_value }}, limit {{ ref.limit_value }}, {{ ref.citation }}</li>
+            {% endfor %}
+          </ul>
+          {% if rec.reviewer_stance %}<p data-testid="recommendation-stance-recorded">Reviewer stance: {{ rec.reviewer_stance }}{% if rec.reviewer_stance_reason %} — {{ rec.reviewer_stance_reason }}{% endif %}</p>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% if detail.agent_steps %}
+      <h3>Agent steps</h3>
+      <table class="data-table" data-testid="agent-steps">
+        <caption class="visually-hidden">Recorded agent triage steps</caption>
+        <thead><tr><th scope="col">Step</th><th scope="col">Service identity</th><th scope="col">Outcome</th><th scope="col">Detail</th><th scope="col">Finished</th></tr></thead>
+        <tbody>
+          {% for step in detail.agent_steps %}
+          <tr data-testid="agent-step" data-step-name="{{ step.step_name }}">
+            <th scope="row">{{ step.step_name }}</th>
+            <td>{{ step.service_identity_label }}</td>
+            <td><span class="badge badge-{{ step.outcome }}">{{ step.outcome }}</span></td>
+            <td>{{ step.outcome_detail or '' }}</td>
+            <td>{{ step.ended_at or step.started_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
       {% if detail.recommendations %}
       <h3>Advisory recommendation</h3>
       <ul class="issue-list" data-testid="recommendations">

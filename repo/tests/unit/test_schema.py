@@ -13,6 +13,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.config import Settings
 from acme_city.persistence.base import Base
 from acme_city.persistence.models import (  # noqa: F401  (registers every table)
+    agent,
     audit,
     change,
     finance,
@@ -104,6 +105,7 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "model_run": ("model_runs", "model_inputs", "model_outputs", "evidence_references"),
     "audit": ("audit_events", "audit_references"),
+    "agent": ("agent_steps",),
 }
 
 
@@ -291,8 +293,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0002 since the permit-type-icon migration added by the UI brief.
-    assert health.revision == "0002"
+    # Head is 0003 since the agent-steps migration added by the intake brief.
+    assert health.revision == "0003"
     assert database.database_url not in str(health.to_dict())
 
 

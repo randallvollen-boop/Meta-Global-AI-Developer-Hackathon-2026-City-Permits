@@ -274,10 +274,20 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
     assert runs == []
 
 
-def test_the_navigation_holds_the_eight_screens(session: Session) -> None:
-    actor = actor_for(session, "persona_data_steward")
-    items = view_models.navigation(session, actor)
-    assert [item["key"] for item in items] == [
+#: The screens each persona may open, in canonical navigation order. Derived
+#: from the seeded grants through SCREEN_PERMISSIONS; hidden screens 403.
+EXPECTED_NAVIGATION: dict[str, list[str]] = {
+    "persona_applicant": ["queue", "applicants", "permit"],
+    "persona_data_steward": [
+        "queue",
+        "applicants",
+        "masters",
+        "permit",
+        "steward",
+        "rules",
+    ],
+    "persona_permit_reviewer": ["queue", "applicants", "permit"],
+    "persona_city_administrator": [
         "queue",
         "applicants",
         "masters",
@@ -286,7 +296,17 @@ def test_the_navigation_holds_the_eight_screens(session: Session) -> None:
         "rules",
         "reconciliation",
         "governance",
-    ]
+    ],
+}
+
+
+@pytest.mark.parametrize("actor_id", sorted(EXPECTED_NAVIGATION))
+def test_the_navigation_is_scoped_to_the_persona_grants(
+    session: Session, actor_id: str
+) -> None:
+    actor = actor_for(session, actor_id)
+    items = view_models.navigation(session, actor)
+    assert [item["key"] for item in items] == EXPECTED_NAVIGATION[actor_id]
     permit_item = next(item for item in items if item["key"] == "permit")
     assert permit_item["href"].startswith("/permits/")
 

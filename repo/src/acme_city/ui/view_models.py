@@ -27,6 +27,7 @@ from acme_city.core.clock import utc_now
 from acme_city.finance.service import FinanceService
 from acme_city.governance.service import GovernanceService
 from acme_city.persistence.models import (
+    agent,
     audit,
     change,
     finance,
@@ -255,13 +256,30 @@ def visible_parties(session: Session, actor: ActorContext) -> list[registry.Part
 
 
 def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
-    """Return the navigation of the eight screens for the acting persona."""
+    """Return the navigation entries the acting persona may open.
+
+    Only screens for which the persona holds at least one grant in
+    ``SCREEN_PERMISSIONS`` are listed, using the exact predicate the screen
+    guard uses, so the menu and a 403 can never disagree. Order and labels
+    stay the canonical ``SCREENS`` order for every persona. The Permit
+    workspace entry appears only when the persona may open a permit *and*
+    a visible application exists to open.
+    """
     permit_href = ""
     applications = visible_applications(session, actor)
     if applications:
         permit_href = f"/permits/{applications[0].id}"
     items: list[dict[str, Any]] = []
     for screen in SCREENS:
+        key = screen["key"]
+        permissions = SCREEN_PERMISSIONS.get(key, ())
+        if not any(
+            holds_grant(session, actor, permission, domain_id)
+            for permission, domain_id in permissions
+        ):
+            continue
+        if key == "permit" and not permit_href:
+            continue
         item = dict(screen)
         if item["key"] == "permit":
             item["href"] = permit_href
@@ -765,7 +783,103 @@ def allowed_actions_for(
         application = payload.get("application") or {}
         evaluation = payload.get("evaluation") or {}
         decision = payload.get("current_decision") or {}
+        recommendation = payload.get("current_recommendation") or {}
         application_version = application.get("application_version") or 0
+        if recommendation.get("recommendation_id"):
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="triage.rerun",
+                    label="Re-run triage",
+                    path="/ui/actions/triage.rerun",
+                    permission="application.evaluate",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Agent triage pipeline",
+                    description=(
+                        "Run the intake, identity, extraction, rules and "
+                        "recommendation agent steps again for this case."
+                    ),
+                    expected_version=application_version,
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                    ),
+                )
+            )
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="recommendation.stance",
+                    label="Record stance on the agent recommendation",
+                    path="/ui/actions/recommendation.stance",
+                    permission="permit.decide",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Agent recommendation",
+                    description=(
+                        "Say whether you agree with the advisory recommendation. "
+                        "Disagreeing requires a reason. The recommendation never decides."
+                    ),
+                    expected_version=application_version,
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                        _field(
+                            "recommendation_id",
+                            "Recommendation",
+                            value=str(recommendation.get("recommendation_id", "")),
+                            field_type="hidden",
+                        ),
+                        _field(
+                            "stance",
+                            "Stance",
+                            field_type="select",
+                            options=("agree", "disagree"),
+                            required=True,
+                        ),
+                        _field("reason", "Reason (required when disagreeing)", field_type="textarea"),
+                    ),
+                )
+            )
+        for field_row in payload.get("extracted_fields") or []:
+            if field_row.get("state") != "proposed":
+                continue
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="extraction.decide",
+                    label=f"Accept or correct extracted {field_row.get('field', 'value')}",
+                    path="/ui/actions/extraction.decide",
+                    permission="application.revision.submit",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Extraction proposal",
+                    description=(
+                        "Accept the proposed value, or correct it with a "
+                        "replacement value and a reason."
+                    ),
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                        _field(
+                            "observation_id",
+                            "Observation",
+                            value=str(field_row.get("observation_id", "")),
+                            field_type="hidden",
+                        ),
+                        _field(
+                            "decision",
+                            "Decision",
+                            field_type="select",
+                            options=("accept", "correct"),
+                            required=True,
+                        ),
+                        _field("corrected_value", "Corrected value"),
+                        _field("reason", "Reason (required when correcting)", field_type="textarea"),
+                    ),
+                )
+            )
         actions.append(
             action(
                 session,
@@ -1306,6 +1420,38 @@ def allowed_actions_for(
         )
 
     if screen == "governance":
+        actions.append(
+            action(
+                session,
+                actor,
+                action_id="intake.simulate",
+                label="Simulate incoming permits",
+                path="/ui/actions/intake.simulate",
+                permission="governance.dataset.register",
+                destination="ACME ePermit Portal (simulated) intake",
+                description=(
+                    "Post a deterministic batch of fictional incoming permits "
+                    "from the outside portal and run the agent triage pipeline "
+                    "for each one."
+                ),
+                fields=(
+                    _field(
+                        "scenario",
+                        "Scenario",
+                        field_type="select",
+                        options=(
+                            "fence-conforming-rear",
+                            "fence-front-too-tall",
+                            "fence-missing-site-plan",
+                            "deck-high",
+                            "mixed",
+                        ),
+                        required=True,
+                    ),
+                    _field("count", "Count (optional)", field_type="number"),
+                ),
+            )
+        )
         actions.append(
             action(
                 session,
@@ -2424,11 +2570,38 @@ def permit_workspace(
             "evidence_refs": list(row.evidence_refs or []),
             "run_ref": row.run_ref,
             "status": row.status,
+            "rationale": row.rationale,
+            "muse_summary": row.muse_summary,
+            "muse_run_id": row.muse_run_id,
+            "reviewer_stance": row.reviewer_stance,
+            "reviewer_stance_reason": row.reviewer_stance_reason,
         }
         for row in session.execute(
             select(permit.Recommendation).where(
                 permit.Recommendation.application_id == application.id
             )
+        ).scalars().all()
+    ]
+    agent_steps = [
+        {
+            "step_id": row.id,
+            "step_name": row.step_name,
+            "service_identity_id": row.service_identity_id,
+            "service_identity_label": actor_label(session, row.service_identity_id),
+            "started_at": _iso(row.started_at),
+            "ended_at": _iso(row.ended_at),
+            "inputs": dict(row.inputs or {}),
+            "outcome": row.outcome,
+            "outcome_detail": row.outcome_detail,
+            "model_run_id": row.model_run_id,
+            "evaluation_id": row.evaluation_id,
+            "recommendation_id": row.recommendation_id,
+            "triggered_by": row.triggered_by,
+        }
+        for row in session.execute(
+            select(agent.AgentStep)
+            .where(agent.AgentStep.application_id == application.id)
+            .order_by(agent.AgentStep.created_at, agent.AgentStep.id)
         ).scalars().all()
     ]
     documents = [
@@ -2580,6 +2753,7 @@ def permit_workspace(
         ).scalars().all()
         extracted_fields = [
             {
+                "observation_id": row.id,
                 "field": row.field_path,
                 "value": row.proposed_value or "",
                 "cite": row.page_region or "",
@@ -2587,6 +2761,29 @@ def permit_workspace(
             }
             for row in observations
         ]
+        # Triage may record its run after an earlier manual run; fall back to
+        # the newest run that actually produced observations.
+        if not extracted_fields:
+            for candidate in runs:
+                observations = session.execute(
+                    select(permit.ExtractionObservation)
+                    .where(
+                        permit.ExtractionObservation.model_run_id == candidate["run_id"]
+                    )
+                    .order_by(permit.ExtractionObservation.field_path)
+                ).scalars().all()
+                if observations:
+                    extracted_fields = [
+                        {
+                            "observation_id": row.id,
+                            "field": row.field_path,
+                            "value": row.proposed_value or "",
+                            "cite": row.page_region or "",
+                            "state": row.validation_state,
+                        }
+                        for row in observations
+                    ]
+                    break
     fee_lines: list[dict[str, Any]] = []
     fee_total: Any = None
     if finance_view_local and finance_view_local.get("assessment"):
@@ -2668,6 +2865,10 @@ def permit_workspace(
             else None
         ),
         "recommendations": recommendations,
+        "current_recommendation": next(
+            (row for row in recommendations if row["status"] == "proposed"), None
+        ),
+        "agent_steps": agent_steps,
         "finance": finance_view,
         "blockers": blockers,
         "crosswalks": crosswalks,

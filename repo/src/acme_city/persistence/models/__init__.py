@@ -5,6 +5,7 @@ which is what the Alembic migration and the schema tests compare against.
 """
 
 from acme_city.persistence.models import (
+    agent,
     audit,
     change,
     finance,
@@ -16,6 +17,7 @@ from acme_city.persistence.models import (
 )
 
 __all__ = [
+    "agent",
     "audit",
     "change",
     "finance",
