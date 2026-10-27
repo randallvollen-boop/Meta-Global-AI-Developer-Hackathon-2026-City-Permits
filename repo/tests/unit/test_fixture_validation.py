@@ -60,12 +60,14 @@ def test_bundle_loads_and_validates(bundle: FixtureBundle) -> None:
 
 
 def test_expected_configuration_inventory(bundle: FixtureBundle) -> None:
-    assert len(bundle.actors.roles) == 12
+    assert len(bundle.actors.roles) == 14
     assert len(bundle.actors.personas) == 4
-    assert len(bundle.actors.service_identities) == 13
+    assert len(bundle.actors.service_identities) == 15
     assert len(bundle.domains.domains) == 11
     assert len(bundle.domains.steward_queues) == 10
     assert len(bundle.policies.authority_policies) == 19
+    assert len(bundle.rules.permit_types) == 17
+    assert len(bundle.demo.reason_codes) == 5
 
 
 def test_exactly_four_selectable_personas(bundle: FixtureBundle) -> None:
@@ -140,11 +142,29 @@ def test_every_queue_has_a_primary_delegate_escalation_and_target(
 
 def test_permit_configurations_and_baseline_rules_are_preserved(bundle: FixtureBundle) -> None:
     permit_types = {permit_type.key for permit_type in bundle.rules.permit_types}
-    assert permit_types == {"res_building", "deck_fence", "com_ti", "sign", "row_encroachment"}
+    assert permit_types == {
+        "res_building",
+        "deck_fence",
+        "com_ti",
+        "sign",
+        "row_encroachment",
+        "patio",
+        "shed",
+        "pod",
+        "hvac",
+        "water_heater",
+        "residential_electric",
+        "fire_alarm",
+        "change_occupancy",
+        "site_plan_review",
+        "rezoning",
+        "zoning_variance",
+        "certificate_appropriateness",
+    }
     baseline = {
         rule.rule_id for rule in bundle.rules.rules if rule.source_mapping.get("baseline_rule_id")
     }
-    assert len(baseline) == 16
+    assert len(baseline) == 27
 
 
 def test_each_executable_rule_has_exactly_one_citation(bundle: FixtureBundle) -> None:

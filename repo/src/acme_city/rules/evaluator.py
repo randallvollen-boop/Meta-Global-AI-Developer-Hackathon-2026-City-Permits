@@ -217,6 +217,45 @@ def evaluate_rule(
     observed = inputs.get(field_path, MISSING)
     operator = (rule.operator or "").strip().lower()
 
+    if operator == "required":
+        # A presence check.  The fact has to have been supplied and must not
+        # be blank; nothing is compared with a limit.
+        limit = (rule.limit_value or "").strip()
+        if observed is MISSING or is_blank(observed):
+            return RuleResult(
+                rule_id=rule.rule_id,
+                version_label=rule.version_label,
+                citation=rule.citation,
+                status=ON_VIOLATE_STATUS.get(
+                    (rule.on_violate or "").strip().lower(), "review"
+                ),
+                applicable=True,
+                field_path=field_path,
+                observed_value=None,
+                limit_value=limit or None,
+                operator=operator,
+                message=rule.message,
+                condition_note=rule.condition_note,
+                reason="missing_input",
+                detail=f"the value for {field_path!r} was not supplied",
+                unit=rule.unit,
+            )
+        return RuleResult(
+            rule_id=rule.rule_id,
+            version_label=rule.version_label,
+            citation=rule.citation,
+            status="pass",
+            applicable=True,
+            field_path=field_path,
+            observed_value=_observed(rule, inputs),
+            limit_value=limit or None,
+            operator=operator,
+            message=rule.message,
+            condition_note=rule.condition_note,
+            reason="rule_satisfied",
+            unit=rule.unit,
+        )
+
     if operator == "equals":
         limit = (rule.limit_value or "").strip().lower()
         if observed is MISSING or is_blank(observed):

@@ -24,6 +24,33 @@
   },
   "fee_schedule_basis": "initial_submitted_at",
   "fee_schedule_currency": "USD",
+  "reason_codes": [
+    {
+      "code": "INCOMPLETE_APPLICATION",
+      "label": "Incomplete application",
+      "description": "The application does not state everything the permit type requires."
+    },
+    {
+      "code": "WITHDRAWN_BY_APPLICANT",
+      "label": "Withdrawn by applicant",
+      "description": "The applicant asked for the application to be withdrawn."
+    },
+    {
+      "code": "DUPLICATE_SUBMISSION",
+      "label": "Duplicate submission",
+      "description": "The application repeats an application the City already holds."
+    },
+    {
+      "code": "DOES_NOT_MEET_CODE",
+      "label": "Does not meet code",
+      "description": "The proposed work does not meet the published ACME Code rules."
+    },
+    {
+      "code": "OUTSIDE_JURISDICTION",
+      "label": "Outside jurisdiction",
+      "description": "The property lies outside the jurisdiction of ACME City."
+    }
+  ],
   "scenarios": [
     {
       "scenario_id": "D01",

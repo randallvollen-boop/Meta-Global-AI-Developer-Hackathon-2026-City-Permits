@@ -1,18 +1,18 @@
-"""The browser walkthrough of the eight screens.
+"""The browser walkthrough of the screens.
 
 The walkthrough visits every screen, checks that nothing overflows at 390
 pixels, that the keyboard reaches the controls and that no page reports an
 error.
 """
 # REQUIRES: UX-01, UX-02, UX-03, UX-04, GOV-04, SEC-01
-# The eight screens render, stay inside a 390 pixel viewport, keep their
-# labels and their status region, and reach the keyboard controls.
+# The screens render, stay inside a 390 pixel viewport, keep their labels and
+# their status region, and reach the keyboard controls.
 
 from __future__ import annotations
 
 from conftest import BrowserServer
 
-#: The eight screens of the demonstration and the path of their detail.
+#: The screens of the demonstration and the path of their detail.
 SCREENS = (
     ("/queue", "Work queue"),
     ("/applicants", "Applicants"),
@@ -22,10 +22,57 @@ SCREENS = (
     ("/rules-fees", "Rules and fees"),
     ("/reconciliation", "Reconciliation"),
     ("/governance", "Governance and sources"),
+    ("/agent/intake", "Intake agent"),
+    ("/agent/adjudication", "Adjudication agent"),
+    ("/admin", "Administration"),
 )
 
+#: The screens each persona may open.  The order is the canonical order of
+#: the navigation.
+NAVIGATION_BY_PERSONA = {
+    "persona_applicant": ["queue", "applicants", "permit"],
+    "persona_data_steward": [
+        "queue",
+        "applicants",
+        "masters",
+        "permit",
+        "steward",
+        "rules",
+        "agent_intake",
+    ],
+    "persona_permit_reviewer": [
+        "queue",
+        "applicants",
+        "permit",
+        "agent_adjudication",
+    ],
+    "persona_city_administrator": [
+        "queue",
+        "applicants",
+        "masters",
+        "permit",
+        "steward",
+        "rules",
+        "reconciliation",
+        "governance",
+        "agent_intake",
+        "agent_adjudication",
+        "admin",
+    ],
+}
 
-def test_the_eight_screens_render_without_a_page_error(
+#: The screens a persona may not open; each one answers 403.
+HIDDEN_SCREENS = {
+    "persona_applicant": ["/steward", "/rules-fees", "/reconciliation", "/governance",
+                           "/agent/intake", "/agent/adjudication", "/admin"],
+    "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin"],
+    "persona_permit_reviewer": ["/steward", "/rules-fees", "/reconciliation", "/governance",
+                                "/agent/intake", "/admin"],
+    "persona_city_administrator": [],
+}
+
+
+def test_the_screens_render_without_a_page_error(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_city_administrator")
@@ -37,22 +84,25 @@ def test_the_eight_screens_render_without_a_page_error(
     assert page.recorded_errors == []
 
 
-def test_the_navigation_holds_the_eight_screens(page, server: BrowserServer, login) -> None:
-    login("persona_city_administrator")
-    page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
-    items = page.locator(".side .app-nav a")
-    assert items.count() == 8
-    keys = [items.nth(index).get_attribute("data-screen-key") for index in range(8)]
-    assert keys == [
-        "queue",
-        "applicants",
-        "masters",
-        "permit",
-        "steward",
-        "rules",
-        "reconciliation",
-        "governance",
-    ]
+def test_the_navigation_holds_the_screens_of_the_persona(
+    page, server: BrowserServer, login
+) -> None:
+    for actor_id, expected in NAVIGATION_BY_PERSONA.items():
+        login(actor_id)
+        page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
+        items = page.locator(".side .app-nav a")
+        assert items.count() == len(expected), actor_id
+        keys = [items.nth(index).get_attribute("data-screen-key") for index in range(len(expected))]
+        assert keys == expected, actor_id
+
+
+def test_a_hidden_screen_answers_403(page, server: BrowserServer, login) -> None:
+    for actor_id, paths in HIDDEN_SCREENS.items():
+        login(actor_id)
+        for path in paths:
+            response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+            assert response is not None
+            assert response.status == 403, (actor_id, path)
 
 
 def test_no_screen_overflows_at_390_pixels(page, server: BrowserServer, login) -> None:

@@ -285,8 +285,9 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "permit",
         "steward",
         "rules",
+        "agent_intake",
     ],
-    "persona_permit_reviewer": ["queue", "applicants", "permit"],
+    "persona_permit_reviewer": ["queue", "applicants", "permit", "agent_adjudication"],
     "persona_city_administrator": [
         "queue",
         "applicants",
@@ -296,6 +297,9 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "rules",
         "reconciliation",
         "governance",
+        "agent_intake",
+        "agent_adjudication",
+        "admin",
     ],
 }
 
@@ -332,3 +336,15 @@ def test_model_runs_match_an_application_stored_in_an_input_refs_object(
     matched = view_models.model_runs(session, actor, application_id="app_synth_001")
     assert [run["run_id"] for run in matched] == ["modelrun_regression_refs"]
     assert view_models.model_runs(session, actor, application_id="app_synth_002") == []
+
+
+def test_an_approval_with_conditions_reads_as_approved_with_conditions() -> None:
+    from acme_city.persistence.models import permit
+    from acme_city.ui.view_models import decision_outcome_label
+
+    with_conditions = permit.Decision(outcome="approved", conditions=["Deck guard required"])
+    plain = permit.Decision(outcome="approved", conditions=None)
+    denied = permit.Decision(outcome="denied", conditions=None)
+    assert decision_outcome_label(with_conditions) == "Approved with conditions"
+    assert decision_outcome_label(plain) == "Approved"
+    assert decision_outcome_label(denied) == "Denied"

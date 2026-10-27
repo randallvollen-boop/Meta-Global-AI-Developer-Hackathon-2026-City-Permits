@@ -105,3 +105,15 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Cosmetic follow-ups: the recommendation card repeats the rationale up to three times, and the observed values lack "ft".
 - Demo on :8266 upgraded to migration 0003 and reset to ready-for-review.
 - Coder from here: MiniMax M3 (Randall, 11:05).
+
+## 2026-10-27 — Parity phase 1: two people-driven agents, administration, 17 permit types
+
+- Randall authorized the parity brief in `../acme-permits-parity-notes/`: the prototype's agents become two agents a person wakes and runs, the adjudication card becomes confirm/revert, the Administration screen appears, and the permit catalogue grows from five types to seventeen. Isolation: git worktree `../acme-permits-parity-wt` on branch `feature/parity-p1`.
+- Arrival no longer runs a pipeline. A record is staged, becomes an application in status `submitted` and waits as "Awaiting intake agent". Both agents sleep after a reset; only the City Administrator wakes them (`agent.toggle`); a person with `agent.run.intake` or `agent.run.adjudication` runs them.
+- The intake agent is a six-node dependency graph (classifier; field extractor and document QC in parallel; duplicate finder and completeness in parallel; router). The adjudication agent is a five-node graph (rule loader; rule evaluator; condition builder and precedent check in parallel; disposition). Each run is recorded as an `agent_runs` row with a per-node trace (`agent_run_nodes`).
+- Confirm records the reviewer's decision through the existing decision service and is the decider of record; revert needs a reason and returns the case to manual review; a held recommendation cannot be confirmed. The agree/disagree stance and its columns are gone.
+- Both build-2 cosmetic follow-ups are fixed: the rationale is listed once (the replay summary no longer repeats it) and the observed value now carries its unit ("6 ft", "4 ft").
+- The permit catalogue grew to seventeen types. Twelve new ACME types carry a review area, a process category, a discretionary flag and one or two published rules; the evaluator learned one presence check (`required`). Discretionary types carry no rule and are always held for a person.
+- The Administration screen (City Administrator only) holds the permit-type configuration, the users and the service identities, the reason codes and the configuration log. The permit-type icon card moved there from Rules and fees, keeping its action ids, caps and audit; Rules and fees keeps a one-line pointer.
+- Intake gained the `mail` and `fax` channels, per-document scan-quality flags and six new scenarios, including a deterministic `random --count N` across all seventeen types and five channels.
+- A configuration change takes effect for new intake only: the requirements in force when a case arrived are recorded on the case, so a later change never rewrites what an already-received case was measured against.

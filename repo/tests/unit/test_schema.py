@@ -105,7 +105,9 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "model_run": ("model_runs", "model_inputs", "model_outputs", "evidence_references"),
     "audit": ("audit_events", "audit_references"),
-    "agent": ("agent_steps",),
+    "agent": ("agent_steps", "agent_controls", "agent_runs", "agent_run_nodes"),
+    "configuration": ("reason_codes",),
+    "finding": ("application_findings",),
 }
 
 
@@ -293,8 +295,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0003 since the agent-steps migration added by the intake brief.
-    assert health.revision == "0003"
+    # Head is 0004 since the agent-controls migration added by the parity brief.
+    assert health.revision == "0004"
     assert database.database_url not in str(health.to_dict())
 
 

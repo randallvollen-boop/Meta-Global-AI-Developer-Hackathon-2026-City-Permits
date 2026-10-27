@@ -77,6 +77,7 @@ def rule_view(row: finance.RuleVersion, permit_type_key: str | None = None) -> R
         approver_actor_id=row.approver_actor_id,
         source_mapping=mapping or None,
         precedence=mapping.get("precedence"),
+        unit=mapping.get("unit"),
     )
 
 

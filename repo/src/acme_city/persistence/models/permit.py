@@ -27,7 +27,12 @@ from acme_city.persistence.types import UTCDateTime
 
 
 class PermitType(IdMixin, VersionMixin, CreatedAtMixin, Base):
-    """One of the five preserved fictional permit-type configurations."""
+    """One fictional permit-type configuration.
+
+    A type names its review area, its process category (simple, with plans or
+    formal review), whether the type is discretionary, the fields and the
+    documents it requires and the fee schedule that applies to it.
+    """
 
     __tablename__ = "permit_types"
 
@@ -43,6 +48,15 @@ class PermitType(IdMixin, VersionMixin, CreatedAtMixin, Base):
         ForeignKey("permit_type_icons.id", ondelete="SET NULL", use_alter=True),
         nullable=True,
     )
+    #: The review area the intake router sends a ready case to.
+    review_area: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    #: ``simple``, ``with_plans`` or ``formal_review``.
+    process_category: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    #: A discretionary type is always held for a person or a board.
+    discretionary: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The fee schedule key that applies to this type.
+    fee_schedule_key: Mapped[str | None] = mapped_column(String(96), nullable=True)
 
 
 class PermitTypeIcon(IdMixin, CreatedAtMixin, Base):
@@ -93,6 +107,15 @@ class Application(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base)
         String(64), ForeignKey("parties.id", ondelete="SET NULL"), nullable=True
     )
     scenario_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
+    #: The review area the intake router recorded for this case.  It is set
+    #: once, when the case is routed, so that a later configuration change
+    #: cannot move an already-submitted case.
+    review_area: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    #: The permit-type requirements that were in force when the case was
+    #: received.  A later configuration change takes effect for new intake
+    #: only; it never rewrites what an already-submitted case was measured
+    #: against.
+    requirements_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "status IN ('draft', 'submitted', 'needs_information', 'ready_for_review', "
@@ -167,6 +190,43 @@ class Document(IdMixin, VersionMixin, CreatedAtMixin, Base):
     received_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
     uploaded_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     fictional_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    #: The scan-quality flags carried by the intake record, for example
+    #: ``rotated``, ``low_res``, ``handwritten``, ``unreadable`` and
+    #: ``duplicate_page``.
+    quality: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+
+
+class ApplicationFinding(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
+    """One finding an intake or adjudication agent recorded on a case.
+
+    A finding is evidence for a person, never a decision: it names what is
+    wrong, the rule that applies, what the applicant must do and whether it
+    blocks the case or only asks a person to look.
+    """
+
+    __tablename__ = "application_findings"
+
+    application_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    finding_type: Mapped[str] = mapped_column(String(48), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    rule: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    applicant_must: Mapped[str | None] = mapped_column(Text, nullable=True)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False, default="review")
+    source_node: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    related_application_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    __table_args__ = (
+        CheckConstraint(
+            "finding_type IN ('missing_field', 'missing_document', 'unreadable', "
+            "'duplicate', 'conflict', 'low_confidence_extraction', 'judgment')",
+            name="finding_type_allowed",
+        ),
+        CheckConstraint(
+            "severity IN ('block', 'review')",
+            name="severity_allowed",
+        ),
+    )
 
 
 class ExtractionObservation(IdMixin, CreatedAtMixin, Base):
@@ -234,10 +294,17 @@ class Recommendation(IdMixin, VersionMixin, CreatedAtMixin, Base):
     muse_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: The model run that produced ``muse_summary``, when one ran.
     muse_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    #: The reviewer stance on this recommendation: agree/disagree + reason.
-    reviewer_stance: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    reviewer_stance_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reviewer_stance_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: The conditions of approval the agent collected, when it proposed any.
+    conditions: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    #: The person who confirmed the recommendation, and when.
+    confirmed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    #: The person who reverted the recommendation, when and why.
+    reverted_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reverted_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    revert_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The decision that confirmed this recommendation, when it was confirmed.
+    decision_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -261,12 +328,34 @@ class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="current")
     stale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     scenario_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
+    #: The conditions of approval that were recorded with this decision.  The
+    #: decision outcome vocabulary is unchanged; a confirmed recommendation
+    #: with conditions is still an ``approved`` decision.
+    conditions: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "outcome IN ('approved', 'denied', 'modified', 'information_requested')",
             name="outcome_allowed",
         ),
     )
+
+
+class ReasonCode(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
+    """One ACME reason code.
+
+    A reason code names why a case was returned, denied or waived.  The codes
+    are configuration: an administrator adds and retires them, and every
+    change is audited.
+    """
+
+    __tablename__ = "reason_codes"
+
+    code: Mapped[str] = mapped_column(String(48), nullable=False, unique=True)
+    label: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    changed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    changed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
 
 
 class Permit(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -306,6 +395,7 @@ class ImpactReview(IdMixin, VersionMixin, CreatedAtMixin, Base):
 
 __all__ = [
     "Application",
+    "ApplicationFinding",
     "ApplicationParty",
     "ApplicationRevision",
     "ApplicationSite",
@@ -317,5 +407,6 @@ __all__ = [
     "Permit",
     "PermitType",
     "PermitTypeIcon",
+    "ReasonCode",
     "Recommendation",
 ]

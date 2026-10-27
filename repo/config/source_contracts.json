@@ -28,14 +28,28 @@
         "channel": [
           "portal",
           "counter_scan",
-          "email"
+          "email",
+          "mail",
+          "fax"
         ],
         "permit_type_key": [
           "res_building",
           "deck_fence",
           "com_ti",
           "sign",
-          "row_encroachment"
+          "row_encroachment",
+          "patio",
+          "shed",
+          "pod",
+          "hvac",
+          "water_heater",
+          "residential_electric",
+          "fire_alarm",
+          "change_occupancy",
+          "site_plan_review",
+          "rezoning",
+          "zoning_variance",
+          "certificate_appropriateness"
         ]
       },
       "date_meanings": {
@@ -44,9 +58,19 @@
       },
       "field_classes": {
         "portal_reference": "source_assertion",
+        "channel": "source_assertion",
+        "received_at": "source_assertion",
         "applicant": "source_assertion",
+        "display_name": "source_assertion",
         "site_address": "source_assertion",
+        "submitted_site_text": "source_assertion",
+        "parcel_text": "source_assertion",
+        "parcel_number": "source_assertion",
+        "submitted_parcel": "source_assertion",
+        "license_number": "source_assertion",
+        "permit_type_key": "source_assertion",
         "submitted_facts": "source_assertion",
+        "documents": "source_assertion",
         "document_text": "source_assertion"
       },
       "registration_state": "complete",

@@ -294,36 +294,146 @@
           <h3>Agent recommendation</h3>
           <p>
             <span class="pill {{ 'ok' if rec.proposed_outcome == 'approve' else 'bad' if rec.proposed_outcome == 'deny' else 'warn' }}" data-testid="recommendation-outcome">{{ rec.proposed_outcome }}</span>
-            <span class="muted">Advisory. The Permit Reviewer decides.</span>
+            <span class="pill plain" data-testid="recommendation-status">{{ rec.status }}</span>
+          </p>
+          <p class="muted" data-testid="recommendation-notice">
+            The agent recommends; a person confirms or reverts. Nothing is final until confirmed.
           </p>
           <p data-testid="recommendation-rationale">{{ rec.rationale }}</p>
-          {% if rec.muse_summary %}<p class="muted" data-testid="recommendation-summary">{{ rec.muse_summary }}</p>{% endif %}
+          {% if rec.conditions %}
+          <div data-testid="recommendation-conditions">
+            <h4>Conditions of approval</h4>
+            <ul class="issue-list">
+              {% for condition in rec.conditions %}<li>{{ condition }}</li>{% endfor %}
+            </ul>
+          </div>
+          {% endif %}
           <ul class="issue-list" data-testid="recommendation-citations">
             {% for ref in rec.evidence_refs %}
-            <li>{{ ref.rule_id }}: {{ ref.status }} — observed {{ ref.observed_value }}, limit {{ ref.limit_value }}, {{ ref.citation }}</li>
+            <li data-rule-id="{{ ref.rule_id }}" data-status="{{ ref.status }}">
+              {{ ref.rule_id }}: {{ ref.status }} — observed {{ ref.observed_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, limit {{ ref.limit_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, {{ ref.citation }}
+            </li>
             {% endfor %}
           </ul>
-          {% if rec.reviewer_stance %}<p data-testid="recommendation-stance-recorded">Reviewer stance: {{ rec.reviewer_stance }}{% if rec.reviewer_stance_reason %} — {{ rec.reviewer_stance_reason }}{% endif %}</p>{% endif %}
+          {% if rec.proposed_outcome == 'hold' %}
+          <p class="lock" data-testid="recommendation-held">
+            <svg aria-hidden="true"><use href="#i-lock"/></svg>
+            This recommendation is held for a person. Decide the case with the normal decision form.
+          </p>
+          {% else %}
+          <details class="action act-card" data-testid="recommendation-confirm" data-permitted="{{ 'true' if detail.can_decide else 'false' }}">
+            <summary class="act-summary">
+              <span class="act-main">
+                <span class="action-label act-title">Confirm the recommendation</span>
+                <span class="action-destination act-sub">Records your decision; you become the decider of record.</span>
+              </span>
+            </summary>
+            {% if detail.can_decide %}
+            <form method="post" action="/ui/actions/recommendation.confirm" class="action-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="recommendation.confirm">
+              <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+              <input type="hidden" name="recommendation_id" value="{{ rec.recommendation_id }}">
+              <input type="hidden" name="application_id" value="{{ app.application_id }}">
+              <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
+              <div class="fieldset">
+                <label for="confirm-reason-{{ rec.recommendation_id }}">Reason (optional)</label>
+                <input id="confirm-reason-{{ rec.recommendation_id }}" name="reason">
+              </div>
+              <p><button type="submit" class="btn sm primary" data-testid="recommendation-confirm-submit">Confirm</button></p>
+            </form>
+            {% else %}
+            <p class="action-denied">Only a person with the 'permit.decide' grant can confirm this recommendation.</p>
+            {% endif %}
+          </details>
+          <details class="action act-card" data-testid="recommendation-revert" data-permitted="{{ 'true' if detail.can_decide else 'false' }}">
+            <summary class="act-summary">
+              <span class="act-main">
+                <span class="action-label act-title">Revert the recommendation</span>
+                <span class="action-destination act-sub">Returns the case to manual review; a reason is required.</span>
+              </span>
+            </summary>
+            {% if detail.can_decide %}
+            <form method="post" action="/ui/actions/recommendation.revert" class="action-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="recommendation.revert">
+              <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+              <input type="hidden" name="recommendation_id" value="{{ rec.recommendation_id }}">
+              <input type="hidden" name="application_id" value="{{ app.application_id }}">
+              <div class="fieldset">
+                <label for="revert-reason-{{ rec.recommendation_id }}">Reason</label>
+                <input id="revert-reason-{{ rec.recommendation_id }}" name="reason" required>
+              </div>
+              <p><button type="submit" class="btn sm" data-testid="recommendation-revert-submit">Revert</button></p>
+            </form>
+            {% else %}
+            <p class="action-denied">Only a person with the 'permit.decide' grant can revert this recommendation.</p>
+            {% endif %}
+          </details>
+          {% endif %}
         </div>
       </div>
       {% endif %}
-      {% if detail.agent_steps %}
-      <h3>Agent steps</h3>
+      {% if detail.findings %}
+      <h3>What the agent found</h3>
+      <ul class="issue-list" data-testid="application-findings">
+        {% for finding in detail.findings %}
+        <li data-testid="application-finding" data-finding-type="{{ finding.finding_type }}" data-severity="{{ finding.severity }}">
+          <strong>{{ finding.finding_type|replace('_', ' ') }}</strong> ({{ finding.severity }}):
+          {{ finding.message }}
+          {% if finding.rule %}<span class="mono"> — {{ finding.rule }}</span>{% endif %}
+          {% if finding.applicant_must %}<div class="muted">Applicant must: {{ finding.applicant_must }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <h3>Agent runs</h3>
       <table class="data-table" data-testid="agent-steps">
-        <caption class="visually-hidden">Recorded agent triage steps</caption>
+        <caption class="visually-hidden">Recorded agent run trace</caption>
         <thead><tr><th scope="col">Step</th><th scope="col">Service identity</th><th scope="col">Outcome</th><th scope="col">Detail</th><th scope="col">Finished</th></tr></thead>
         <tbody>
           {% for step in detail.agent_steps %}
-          <tr data-testid="agent-step" data-step-name="{{ step.step_name }}">
-            <th scope="row">{{ step.step_name }}</th>
+          <tr data-testid="agent-step" data-step-name="{{ step.step_name }}" data-status="{{ step.outcome }}">
+            <th scope="row">{{ step.label or step.step_name }}</th>
             <td>{{ step.service_identity_label }}</td>
             <td><span class="badge badge-{{ step.outcome }}">{{ step.outcome }}</span></td>
             <td>{{ step.outcome_detail or '' }}</td>
             <td>{{ step.ended_at or step.started_at }}</td>
           </tr>
+          {% else %}
+          <tr><td colspan="5" class="muted" data-testid="agent-steps-empty">No agent has run on this case yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
+      <div class="row" style="margin-top:10px">
+        <form method="post" action="/ui/actions/agent.run.intake" class="action-form" data-testid="rerun-intake-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="action_id" value="agent.run.intake">
+          <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+          <input type="hidden" name="application_id" value="{{ app.application_id }}">
+          <button type="submit" class="btn sm" data-testid="rerun-intake"
+                  {% if not detail.can_run_intake or detail.agent_states.intake.mode != 'awake' %}disabled{% endif %}>
+            Re-run intake agent
+          </button>
+        </form>
+        <form method="post" action="/ui/actions/agent.run.adjudication" class="action-form" data-testid="rerun-adjudication-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="action_id" value="agent.run.adjudication">
+          <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+          <input type="hidden" name="application_id" value="{{ app.application_id }}">
+          <button type="submit" class="btn sm" data-testid="rerun-adjudication"
+                  {% if not detail.can_run_adjudication or detail.agent_states.adjudication.mode != 'awake' %}disabled{% endif %}>
+            Re-run adjudication
+          </button>
+        </form>
+      </div>
+      {% if not detail.can_run_intake or detail.agent_states.intake.mode != 'awake' or not detail.can_run_adjudication or detail.agent_states.adjudication.mode != 'awake' %}
+      <p class="lock" data-testid="rerun-locked">
+        <svg aria-hidden="true"><use href="#i-lock"/></svg>
+        An agent runs only when it is awake and a person holds its run grant.
+        {% if detail.agent_states.intake.mode != 'awake' %}The intake agent is asleep.{% endif %}
+        {% if detail.agent_states.adjudication.mode != 'awake' %}The adjudication agent is asleep.{% endif %}
+      </p>
       {% endif %}
       {% if detail.recommendations %}
       <h3>Advisory recommendation</h3>
@@ -339,9 +449,14 @@
       {% if detail.current_decision %}
       <div class="value-band value-current" data-testid="value-current">
         <span class="badge badge-current">current master value</span>
-        Decision {{ detail.current_decision.outcome }} by {{ detail.current_decision.decided_by_actor_id }}
+        Decision <span data-testid="decision-outcome-label">{{ detail.current_decision.outcome_label }}</span> by {{ detail.current_decision.decided_by_actor_id }}
         at {{ detail.current_decision.decided_at }}, version {{ detail.current_decision.version }}
         {% if detail.current_decision.stale %}<span class="badge badge-blocking">stale</span>{% endif %}
+        {% if detail.current_decision.conditions %}
+        <ul data-testid="decision-conditions">
+          {% for condition in detail.current_decision.conditions %}<li>{{ condition }}</li>{% endfor %}
+        </ul>
+        {% endif %}
       </div>
       {% else %}
       <p class="muted" data-testid="decision-empty">No reviewer decision is recorded yet.</p>
@@ -354,7 +469,7 @@
           <tr>
             <td>{{ decision.decided_at }}</td>
             <td>{{ decision.decided_by_actor_id }}</td>
-            <td><span class="badge badge-{{ decision.outcome }}">{{ decision.outcome }}</span></td>
+            <td><span class="badge badge-{{ decision.outcome }}">{{ decision.outcome_label }}</span></td>
             <td>{{ decision.status }}{% if decision.stale %} (stale){% endif %}</td>
             <td>{{ decision.reason or '' }}</td>
           </tr>

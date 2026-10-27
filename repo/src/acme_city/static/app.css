@@ -383,6 +383,23 @@ main > *, .ws-main > *, .rail > * { min-width: 0; }
 .tabs button[aria-selected="true"], .tabs a[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
 .tabs .n { font: 500 .68rem var(--f-mono); background: var(--surface-2); border-radius: 99px; padding: 0 6px; color: var(--fg-2); }
 
+/* Agent pipeline: columns of nodes, arrows are dependencies */
+.pipe-cols { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+.pipe-col { flex: 1 1 180px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.pipe-node {
+  border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 11px; display: grid;
+  gap: 4px; background: var(--surface);
+}
+.pipe-node .lbl { font-weight: 600; font-size: .82rem; }
+.pipe-node .s { font-size: .74rem; color: var(--fg-2); }
+.pipe-arrow { align-self: center; color: var(--fg-3); font-size: 1.1rem; }
+
+/* Sidebar agent status */
+.agent-status {
+  margin: 0 12px 10px; padding: 8px 10px; border-radius: var(--r-md);
+  background: var(--surface-2); color: var(--fg-2); font-size: .74rem; line-height: 1.35;
+}
+
 /* Muse run */
 .run { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; align-items: stretch; }
 .rnode {

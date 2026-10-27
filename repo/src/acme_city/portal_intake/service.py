@@ -7,7 +7,8 @@ The flow never writes tables directly:
 2. a Permitting application, its first immutable revision and its site are
    created through :class:`PermitService`;
 3. each typed document is stored through :class:`DocumentService`;
-4. the agent triage pipeline runs synchronously.
+4. nothing else happens: the case waits as "Awaiting intake agent" until a
+   person wakes the intake agent and runs it.
 
 A repeated portal reference is idempotent: the already-created application
 is reported as a duplicate and nothing is created twice.
@@ -40,18 +41,17 @@ from acme_city.permits.schemas import (
 )
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import permit, source
-from acme_city.triage.service import (
-    INTAKE_AGENT_ID,
-    TriageService,
-    service_actor,
-)
+from acme_city.triage.service import service_actor
+
+#: The service identity that stages an incoming record.
+INTAKE_AGENT_ID = "service_agent_intake"
 
 #: The simulated outside source system and its only dataset.
 SOURCE_SYSTEM_ID = "intake_portal"
 DATASET_KEY = "submitted_applications"
 
 #: Channels the outside application gathers through.
-CHANNELS: tuple[str, ...] = ("portal", "counter_scan", "email")
+CHANNELS: tuple[str, ...] = ("portal", "counter_scan", "email", "mail", "fax")
 
 
 class IntakeService:
@@ -80,12 +80,13 @@ class IntakeService:
     def submit_record(
         self, record: IntakeRecordCommand, actor: ActorContext
     ) -> IntakeSubmitResult:
-        """Ingest one record, create its application and run triage.
+        """Ingest one record and create its application.
 
         ``actor`` is who submitted the record (the portal custodian for an
         API post, the administrator for a governed simulation).  Staging is
         authorized against that actor; every later write runs as the seeded
-        intake service identity.
+        intake service identity.  The case waits as "Awaiting intake agent":
+        the intake agent only runs when a person runs it.
         """
         duplicate = self._existing_application(record.portal_reference)
         if duplicate is not None:
@@ -156,6 +157,26 @@ class IntakeService:
         )
         application_id = view.application_id
 
+        # The permit-type requirements that are in force right now are
+        # recorded on the case, so a later configuration change takes effect
+        # for new intake only and never rewrites what this case was measured
+        # against.
+        application_row = self._session.get(permit.Application, application_id)
+        if application_row is not None:
+            permit_type = self._session.get(
+                permit.PermitType, application_row.permit_type_id
+            )
+            if permit_type is not None:
+                application_row.requirements_snapshot = {
+                    "permit_type_key": permit_type.key,
+                    "permit_type_label": permit_type.label,
+                    "required_fields": list(permit_type.required_fields or []),
+                    "required_documents": list(permit_type.required_documents or []),
+                    "review_area": permit_type.review_area,
+                    "process_category": permit_type.process_category,
+                }
+                self._session.flush()
+
         # Link the staged raw record to the application it created, so the
         # identity agent (and any later reader) can find its source.
         snapshot = self._session.execute(
@@ -171,7 +192,7 @@ class IntakeService:
             self._session.flush()
 
         documents = DocumentService(self._session, root=self._document_root)
-        for index, document in enumerate(self._documents(record), start=1):
+        for document in self._documents(record):
             text = document["text"]
             if not text.strip():
                 continue
@@ -182,19 +203,10 @@ class IntakeService:
                     filename=f"{record.portal_reference}-{document['document_type']}.txt",
                     media_type="text/plain",
                     content=text.encode("utf-8"),
+                    quality=list(document.get("quality") or []),
                 ),
                 agent,
             )
-
-        steps = TriageService(
-            self._session,
-            settings=self._settings,
-            now=self._now,
-            live_muse=self._live_muse,
-            muse_client=self._muse_client,
-            document_root=self._document_root,
-        ).run(application_id, triggered_by=actor.actor_id)
-        triage_outcome = steps[-1].outcome if steps else None
 
         self._audit.append(
             action="intake.record.submit",
@@ -203,7 +215,7 @@ class IntakeService:
             target_id=application_id,
             reason=f"intake via {record.channel} as {record.portal_reference}",
             references=[record.portal_reference, outcome.source_snapshot_id or ""],
-            metadata={"channel": record.channel, "triage_outcome": triage_outcome},
+            metadata={"channel": record.channel, "awaiting": "intake_agent"},
         )
         return IntakeSubmitResult(
             portal_reference=record.portal_reference,
@@ -211,16 +223,16 @@ class IntakeService:
             application_id=application_id,
             source_application_number=view.source_application_number,
             snapshot_id=outcome.source_snapshot_id,
-            triage_outcome=triage_outcome,
+            triage_outcome="awaiting_intake_agent",
         )
 
     def simulate(
         self, scenario: str, *, count: int | None, actor: ActorContext
     ) -> list[IntakeSubmitResult]:
         """Submit one deterministic scenario through the same governed path."""
-        base = build_scenario(scenario)
+        base = build_scenario(scenario, count=count)
         records = list(base)
-        if count is not None and count > len(records):
+        if count is not None and scenario != "random" and count > len(records):
             # Extra records repeat the scenario with fresh portal references;
             # an exact repeat would (correctly) be an idempotent duplicate.
             index = len(records)
@@ -238,7 +250,7 @@ class IntakeService:
                         )
                     )
                     index += 1
-        elif count is not None:
+        elif count is not None and scenario != "random":
             records = records[:count]
         results = [self.submit_record(record, actor) for record in records]
         self._audit.append(
@@ -298,18 +310,33 @@ class IntakeService:
         return None
 
     def _payload(self, record: IntakeRecordCommand) -> dict[str, Any]:
-        return {
+        """Return the raw payload of one intake record.
+
+        The payload carries the applicant's name, the parcel reference and the
+        site address as well as the nested record, so that the deterministic
+        matcher can compare them with the canonical records.
+        """
+        facts = dict(record.submitted_facts)
+        payload = {
             "portal_reference": record.portal_reference,
             "channel": record.channel,
             "received_at": record.received_at.isoformat() if record.received_at else None,
             "applicant": record.applicant.model_dump(mode="json"),
+            "display_name": record.applicant.name,
             "site_address": record.site_address,
+            "submitted_site_text": record.site_address,
             "parcel_text": record.parcel_text,
+            "parcel_number": record.parcel_text or facts.get("parcel_number", ""),
+            "submitted_parcel": record.parcel_text or facts.get("parcel_number", ""),
             "permit_type_key": record.permit_type_key,
             "submitted_facts": dict(record.submitted_facts),
             "documents": [doc.model_dump(mode="json") for doc in record.documents],
             "document_text": record.document_text,
         }
+        contractor = str(facts.get("contractor_license") or "")
+        if contractor:
+            payload["license_number"] = contractor
+        return payload
 
     def _facts(self, record: IntakeRecordCommand) -> dict[str, Any]:
         facts = dict(record.submitted_facts)
@@ -320,16 +347,25 @@ class IntakeService:
         facts["applicant_email"] = record.applicant.email
         facts["portal_reference"] = record.portal_reference
         facts["channel"] = record.channel
+        facts["permit_type_key"] = record.permit_type_key
         return facts
 
-    def _documents(self, record: IntakeRecordCommand) -> list[dict[str, str]]:
-        documents = [
-            {"document_type": doc.document_type, "text": doc.text}
+    def _documents(self, record: IntakeRecordCommand) -> list[dict[str, Any]]:
+        documents: list[dict[str, Any]] = [
+            {
+                "document_type": doc.document_type,
+                "text": doc.text,
+                "quality": list(doc.quality or []),
+            }
             for doc in record.documents
         ]
         if not documents and record.document_text.strip():
             documents.append(
-                {"document_type": "supporting_document", "text": record.document_text}
+                {
+                    "document_type": "supporting_document",
+                    "text": record.document_text,
+                    "quality": [],
+                }
             )
         return documents
 

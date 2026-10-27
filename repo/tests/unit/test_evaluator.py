@@ -169,6 +169,132 @@ def test_a_missing_input_is_never_an_implicit_pass(catalog) -> None:
     assert overall_status(results) == "review"
 
 
+def test_a_required_rule_passes_when_the_fact_is_there(catalog) -> None:
+    """A presence check passes when the field was supplied and is not blank."""
+    rule_set = catalog.resolve("executable", "hvac", BASIS)
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "contractor_license": "ACME-LIC-1042"}, rule_set
+    )
+    assert status_of(results, "HV-1") == "pass"
+    assert overall_status(results) == "pass"
+
+
+def test_a_required_rule_fails_when_the_fact_is_absent(catalog) -> None:
+    """A presence check fails when the field was never supplied."""
+    rule_set = catalog.resolve("executable", "hvac", BASIS)
+    results = evaluate({"parcel_number": "ACME-P-1001"}, rule_set)
+    assert status_of(results, "HV-1") == "fail"
+    assert overall_status(results) == "fail"
+
+
+def test_a_required_rule_fails_when_the_fact_is_blank(catalog) -> None:
+    """A blank value is not a supplied fact."""
+    rule_set = catalog.resolve("executable", "hvac", BASIS)
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "contractor_license": "   "}, rule_set
+    )
+    assert status_of(results, "HV-1") == "fail"
+
+
+def test_a_required_rule_may_carry_a_condition(catalog) -> None:
+    """A presence check may carry a condition instead of a failure."""
+    rule_set = catalog.resolve("executable", "change_occupancy", BASIS)
+    results = evaluate(
+        {
+            "parcel_number": "ACME-P-1001",
+            "prior_use": "Small retail unit",
+            "proposed_use": "Restaurant",
+        },
+        rule_set,
+    )
+    assert status_of(results, "CO-1") == "pass"
+    assert status_of(results, "CO-2") == "pass"
+    assert status_of(results, "CO-3") == "condition"
+    assert overall_status(results) == "condition"
+
+
+def test_the_shed_area_rule_has_three_bands(catalog) -> None:
+    """At most 200 sq ft passes, 200 to 600 is a condition, over 600 fails."""
+    rule_set = catalog.resolve("executable", "shed", BASIS)
+
+    results = evaluate({"parcel_number": "ACME-P-1001", "shed_area_sqft": 150}, rule_set)
+    assert status_of(results, "SH-1") == "pass"
+    assert status_of(results, "SH-2") == "pass"
+    assert overall_status(results) == "pass"
+
+    results = evaluate({"parcel_number": "ACME-P-1001", "shed_area_sqft": 400}, rule_set)
+    assert status_of(results, "SH-1") == "pass"
+    assert status_of(results, "SH-2") == "condition"
+    assert overall_status(results) == "condition"
+
+    results = evaluate({"parcel_number": "ACME-P-1001", "shed_area_sqft": 700}, rule_set)
+    assert status_of(results, "SH-1") == "fail"
+    assert overall_status(results) == "fail"
+
+
+def test_the_container_duration_rule_conditions_beyond_thirty_days(catalog) -> None:
+    """At most 30 days passes; more is a condition."""
+    rule_set = catalog.resolve("executable", "pod", BASIS)
+    results = evaluate({"parcel_number": "ACME-P-1001", "pod_duration_days": 30}, rule_set)
+    assert status_of(results, "PD-1") == "pass"
+    results = evaluate({"parcel_number": "ACME-P-1001", "pod_duration_days": 45}, rule_set)
+    assert status_of(results, "PD-1") == "condition"
+
+
+def test_the_licensed_contractor_rules_fail_without_a_contractor(catalog) -> None:
+    """The HVAC, water-heater and electric rules all need a contractor."""
+    for permit_type, rule_id in (
+        ("hvac", "HV-1"),
+        ("water_heater", "WH-1"),
+        ("residential_electric", "RE-1"),
+    ):
+        rule_set = catalog.resolve("executable", permit_type, BASIS)
+        results = evaluate({"parcel_number": "ACME-P-1001"}, rule_set)
+        assert status_of(results, rule_id) == "fail", permit_type
+        results = evaluate(
+            {"parcel_number": "ACME-P-1001", "contractor_license": "ACME-LIC-1042"}, rule_set
+        )
+        assert status_of(results, rule_id) == "pass", permit_type
+
+
+def test_the_fire_alarm_rule_requires_construction_plans(catalog) -> None:
+    """A commercial fire alarm needs the construction plans."""
+    rule_set = catalog.resolve("executable", "fire_alarm", BASIS)
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "construction_plans_received": "no"}, rule_set
+    )
+    assert status_of(results, "FA-1") == "fail"
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "construction_plans_received": "yes"}, rule_set
+    )
+    assert status_of(results, "FA-1") == "pass"
+
+
+def test_the_patio_rule_conditions_without_the_acknowledgement(catalog) -> None:
+    """The patio rule conditions when the setback is not acknowledged."""
+    rule_set = catalog.resolve("executable", "patio", BASIS)
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "setback_acknowledged": "no"}, rule_set
+    )
+    assert status_of(results, "PA-1") == "condition"
+    results = evaluate(
+        {"parcel_number": "ACME-P-1001", "setback_acknowledged": "yes"}, rule_set
+    )
+    assert status_of(results, "PA-1") == "pass"
+
+
+def test_a_discretionary_type_carries_no_rule(catalog) -> None:
+    """A discretionary type has no published rule, so nothing is evaluated."""
+    for permit_type in (
+        "site_plan_review",
+        "rezoning",
+        "zoning_variance",
+        "certificate_appropriateness",
+    ):
+        rule_set = catalog.resolve("executable", permit_type, BASIS)
+        assert list(rule_set.rules) == [], permit_type
+
+
 def test_evaluation_is_deterministic(catalog) -> None:
     rule_set = catalog.resolve("executable", "deck_fence", BASIS)
     inputs = {"structure_kind": "deck", "setback_ft": 10, "height_ft": 3.5}

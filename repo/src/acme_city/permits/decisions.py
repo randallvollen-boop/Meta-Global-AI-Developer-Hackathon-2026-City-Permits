@@ -64,6 +64,10 @@ class PermitDecisionCommand(PermitModel):
     reason: str = ""
     expected_application_version: int | None = None
     expected_evaluation_version: int | None = None
+    #: The conditions of approval the reviewer records.  The decision outcome
+    #: vocabulary is unchanged: an approval with conditions is still an
+    #: ``approved`` decision.
+    conditions: list[str] = []
 
 
 class DecisionView(PermitModel):
@@ -82,6 +86,7 @@ class DecisionView(PermitModel):
     status: str = "current"
     stale: bool = False
     version: int = 1
+    conditions: list[str] = []
 
 
 class PermitDecisionService:
@@ -161,6 +166,7 @@ class PermitDecisionService:
             reason=command.reason,
             actor=actor,
             decision_type="review",
+            conditions=list(command.conditions or []),
         )
         event = self._audit.append(
             action="permit.decide",
@@ -332,6 +338,7 @@ class PermitDecisionService:
         reason: str,
         actor: ActorContext,
         decision_type: str,
+        conditions: list[str] | None = None,
     ) -> permit.Decision:
         """Write one decision and move the application to its new state."""
         source_versions = dict(evaluation.source_versions or {})
@@ -355,6 +362,7 @@ class PermitDecisionService:
             rule_versions=dict(evaluation.rule_versions or {}),
             status="current",
             stale=False,
+            conditions=list(conditions or []),
         )
         self._session.add(decision)
         application.status = {
@@ -383,6 +391,7 @@ class PermitDecisionService:
             status=decision.status,
             stale=decision.stale,
             version=decision.version,
+            conditions=list(decision.conditions or []),
         )
 
 

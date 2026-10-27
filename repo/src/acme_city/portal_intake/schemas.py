@@ -33,12 +33,16 @@ class IntakeDocument(IntakeModel):
 
     document_type: str
     text: str = ""
+    #: The scan-quality flags the intake record carried for this document:
+    #: ``rotated``, ``low_res``, ``handwritten``, ``unreadable`` and
+    #: ``duplicate_page``.
+    quality: list[str] = Field(default_factory=list)
 
 
 class IntakeRecordCommand(IntakeModel):
     """One application gathered by the outside intake application."""
 
-    channel: Literal["portal", "counter_scan", "email"]
+    channel: Literal["portal", "counter_scan", "email", "mail", "fax"]
     received_at: datetime | None = None
     portal_reference: str = Field(min_length=1, max_length=96)
     applicant: IntakeApplicant = Field(default_factory=IntakeApplicant)
