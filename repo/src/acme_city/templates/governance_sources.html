@@ -38,6 +38,23 @@
   </table>
 </section>
 
+<section class="panel" aria-labelledby="published-heading" data-testid="published-datasets">
+  <h2 id="published-heading">Published datasets and their subscribers</h2>
+  {% for dataset in governance.published_datasets %}
+  <h3 data-testid="published-dataset">{{ dataset.label }}</h3>
+  <p class="muted">Owner: {{ dataset.owner }}. {{ dataset.notice }}</p>
+  <table class="data-table" data-testid="dataset-subscribers">
+    <caption class="visually-hidden">Subscriber departments of {{ dataset.label }}</caption>
+    <thead><tr><th scope="col">Subscriber (simulated)</th><th scope="col">Contract</th><th scope="col">Fields it consumes</th></tr></thead>
+    <tbody>
+      {% for dept in dataset.subscribers %}
+      <tr><th scope="row">{{ dept.department_label }}</th><td>{{ dept.contract_text }}</td><td class="mono">{{ dept.consumed_fields|join(', ') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+</section>
+
 <section class="panel" aria-labelledby="domains-heading">
   <h2 id="domains-heading">Domains and queues</h2>
   <table class="data-table" data-testid="domain-table">

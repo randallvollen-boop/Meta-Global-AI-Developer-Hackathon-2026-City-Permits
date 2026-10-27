@@ -29,20 +29,20 @@
         <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
       {% elif field.type == 'select' %}
         <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <select id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <select id="{{ item.dom_id or item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
             {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
           </select>
         </p>
       {% elif field.type == 'textarea' %}
         <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <textarea id="{{ item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <textarea id="{{ item.dom_id or item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
         </p>
       {% else %}
         <p class="field">
-          <label for="{{ item.action_id }}-{{ field.name }}">{{ field.label }}</label>
-          <input id="{{ item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}</label>
+          <input id="{{ item.dom_id or item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
         </p>
       {% endif %}
     {% endfor %}

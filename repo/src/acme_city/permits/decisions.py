@@ -310,7 +310,12 @@ class PermitDecisionService:
         blockers: list[Blocker] = []
         stored = dict(evaluation.source_versions or {}).get("blockers") or []
         for blocker in stored:
+            # The site may have been resolved (the steward approved the parcel
+            # link) since the evaluation ran, so its state is read again below.
+            if str(blocker.get("code")) in {"site_missing", "site_unresolved"}:
+                continue
             blockers.append(Blocker(**blocker))
+        blockers.extend(self._permits.site_blockers(application))
         blockers.extend(self._permits.identity_link_blockers(application))
         blockers.extend(self._permits.finance_link_blockers(application))
         for result in evaluation.results or []:

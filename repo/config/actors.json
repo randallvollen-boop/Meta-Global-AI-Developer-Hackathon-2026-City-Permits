@@ -38,6 +38,8 @@
       "permission_ids": [
         "change.case.transition",
         "correction.request.submit",
+        "parcel.match.propose",
+        "property.view",
         "records.document.view",
         "registry.crosswalk.propose",
         "registry.provenance.view",
@@ -54,6 +56,7 @@
       "permission_ids": [
         "change.case.transition",
         "correction.request.submit",
+        "property.view",
         "records.document.view",
         "registry.crosswalk.decide",
         "registry.crosswalk.propose",
@@ -83,7 +86,10 @@
         "application.evaluate",
         "application.revision.submit",
         "correction.request.submit",
+        "parcel.confirm",
+        "parcel.match.propose",
         "permit.decide",
+        "property.view",
         "records.document.view"
       ]
     },
@@ -123,6 +129,7 @@
         "admin.session.revoke",
         "config.manage",
         "permit.icon.generate",
+        "property.view",
         "records.configuration.view",
         "records.document.view"
       ]
@@ -168,6 +175,7 @@
       "permission_ids": [
         "application.evaluate",
         "application.submit",
+        "parcel.match.propose",
         "records.document.view",
         "registry.crosswalk.propose",
         "source.snapshot.stage"
@@ -508,6 +516,20 @@
           ],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "property.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "parcel.match.propose",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,
@@ -574,6 +596,28 @@
         },
         {
           "permission_id": "agent.run.adjudication",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "property.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "parcel.match.propose",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "parcel.confirm",
           "domains": [
             "permits"
           ],
@@ -910,6 +954,12 @@
         },
         {
           "permission_id": "config.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "property.view",
           "domains": [],
           "record_scope": [],
           "source": "explicit"
@@ -1966,6 +2016,14 @@
         {
           "permission_id": "source.snapshot.stage",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "parcel.match.propose",
+          "domains": [
+            "permits"
+          ],
           "record_scope": [],
           "source": "explicit"
         }

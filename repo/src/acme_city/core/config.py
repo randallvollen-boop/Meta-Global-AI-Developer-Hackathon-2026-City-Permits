@@ -37,6 +37,12 @@ ENV_MUSE_LIVE_CALL_CAP: Final = "ACME_MUSE_LIVE_CALL_CAP"
 ENV_MUSE_IMAGE_DAILY_CAP: Final = "ACME_MUSE_IMAGE_DAILY_CAP"
 ENV_EVIDENCE_ROOT: Final = "ACME_EVIDENCE_ROOT"
 ENV_KEY_FILE: Final = "ACME_KEY_FILE"
+ENV_GIS_BASE_URL: Final = "ACME_GIS_BASE_URL"
+ENV_GIS_AUTO_PROPOSE_SCORE: Final = "ACME_GIS_AUTO_PROPOSE_SCORE"
+
+#: The locator score at or above which the intake agent auto-proposes a parcel
+#: link (it never auto-approves one).
+DEFAULT_GIS_AUTO_PROPOSE_SCORE: Final = 90
 ENV_META_API_KEY: Final = "META_API_KEY"
 
 #: Model suffixes that may never be selected, in any configuration.
@@ -100,6 +106,11 @@ class Settings(BaseModel):
     muse_live_call_cap: int = DEFAULT_MUSE_LIVE_CALL_CAP
     muse_image_daily_cap: int = DEFAULT_MUSE_IMAGE_DAILY_CAP
     evidence_root: Path = Path(DEFAULT_EVIDENCE_ROOT)
+    #: The base URL of the ArcGIS REST ``ACME`` folder.  Empty means the
+    #: in-app simulator.  Pointing this at a real server needs a field map
+    #: (``config/gis_field_map.json``) and nothing else.
+    gis_base_url: str = ""
+    gis_auto_propose_score: int = DEFAULT_GIS_AUTO_PROPOSE_SCORE
     meta_api_key: SecretStr | None = None
     key_file: Path | None = None
     secret_is_ephemeral: bool = False
@@ -138,6 +149,21 @@ class Settings(BaseModel):
             seen.add(lowered)
         return tuple(model.strip() for model in value)
 
+    @field_validator("gis_auto_propose_score")
+    @classmethod
+    def _gis_score_in_range(cls, value: int) -> int:
+        if not 1 <= value <= 100:
+            raise ValueError("gis_auto_propose_score must be between 1 and 100")
+        return value
+
+    @field_validator("gis_base_url")
+    @classmethod
+    def _gis_url_is_http(cls, value: str) -> str:
+        value = value.strip().rstrip("/")
+        if value and not value.startswith(("http://", "https://")):
+            raise ValueError("gis_base_url must be empty or an http(s) URL")
+        return value
+
     @field_validator("muse_live_call_cap")
     @classmethod
     def _cap_is_positive(cls, value: int) -> int:
@@ -167,6 +193,7 @@ class Settings(BaseModel):
             "muse_model_allowlist": list(self.muse_model_allowlist),
             "muse_live_call_cap": self.muse_live_call_cap,
             "secret_is_ephemeral": self.secret_is_ephemeral,
+            "gis_source": "external" if self.gis_base_url else "in-app simulator",
             "meta_api_key_present": self.meta_api_key is not None,
         }
 
@@ -219,6 +246,12 @@ class Settings(BaseModel):
             DEFAULT_MUSE_IMAGE_DAILY_CAP if image_cap_raw is None else int(image_cap_raw)
         )
 
+        gis_base_url = pick(ENV_GIS_BASE_URL, "") or ""
+        gis_score_raw = pick(ENV_GIS_AUTO_PROPOSE_SCORE)
+        gis_auto_propose_score = (
+            DEFAULT_GIS_AUTO_PROPOSE_SCORE if gis_score_raw is None else int(gis_score_raw)
+        )
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -238,6 +271,8 @@ class Settings(BaseModel):
             muse_live_call_cap=muse_live_call_cap,
             muse_image_daily_cap=muse_image_daily_cap,
             evidence_root=evidence_root,
+            gis_base_url=gis_base_url,
+            gis_auto_propose_score=gis_auto_propose_score,
             meta_api_key=meta_api_key,
             key_file=resolved_key_file,
             secret_is_ephemeral=ephemeral,

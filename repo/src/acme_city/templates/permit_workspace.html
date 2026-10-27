@@ -285,6 +285,8 @@
       </table>
     </section>
 
+    {% include "components/property_card.html" %}
+
     <section class="panel" aria-labelledby="decision-heading">
       <h2 id="decision-heading">Recommendation and decision</h2>
       {% if detail.current_recommendation %}
@@ -574,7 +576,7 @@
     <section class="card" aria-labelledby="permit-actions-heading">
       <div class="card-h"><h2 id="permit-actions-heading">Next actions</h2><span class="right"><span class="pill plain">{{ actor.label if actor else '' }}</span></span></div>
       <div class="card-b act">
-        {% for item in actions %}
+        {% for item in actions if item.group != 'property' %}
           {{ forms.action_form(item, csrf_token) }}
         {% endfor %}
         {% if denied_action_explanations %}

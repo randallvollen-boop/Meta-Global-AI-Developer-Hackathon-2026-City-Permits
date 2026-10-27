@@ -77,7 +77,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views, view_models
+from acme_city.ui import agent_views, property_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
     allowed_actions_for,
@@ -615,6 +615,176 @@ def ui_permit_workspace(
     return render(request, "permit_workspace.html", context)
 
 
+
+# ------------------------------------------------------------- property master
+
+
+def _locator_for(request: Request, session: Session) -> Any:
+    from acme_city.gis.adapter import get_locator
+
+    return get_locator(request.app.state.settings)
+
+
+@router.get("/property", operation_id="ui_property_find")
+def ui_property_find(
+    request: Request,
+    q: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Find a property: the locator corrects the address, the parcel is the key."""
+    resolved, refused = _guard(request, session, actor, "property")
+    if refused is not None:
+        return refused
+    results: list[dict[str, Any]] = []
+    error = ""
+    query = q.strip()
+    if query:
+        from acme_city.gis.adapter import GisServiceError
+        from acme_city.gis.catalog import SIMULATED_LABEL as _unused  # noqa: F401
+
+        try:
+            locator = _locator_for(request, session)
+            for candidate in locator.find_candidates(query, 8):
+                parcel = locator.parcel_at(candidate.x, candidate.y)
+                results.append(
+                    {
+                        "address": candidate.address,
+                        "score": candidate.score,
+                        "status_word": property_views.STATUS_WORDS.get(
+                            candidate.status, candidate.status
+                        ),
+                        "parcel_number": parcel.parcel_number if parcel else "",
+                        "zoning": parcel.zoning if parcel else "",
+                    }
+                )
+        except GisServiceError as exc:
+            error = f"The city locator could not be used: {exc}"
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="masters",
+        title="Find a property",
+        query=query,
+        results=results,
+        error=error,
+    )
+    return render(request, "property_find.html", context)
+
+
+@router.get("/property/suggest", operation_id="ui_property_suggest")
+def ui_property_suggest(
+    request: Request,
+    text: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Return locator suggestions for the Find a property box."""
+    resolved, refused = _guard(request, session, actor, "property")
+    if refused is not None:
+        return refused
+    from acme_city.gis.adapter import GisServiceError
+
+    try:
+        suggestions = _locator_for(request, session).suggest(text, 6) if text.strip() else []
+    except GisServiceError:
+        suggestions = []
+    return JSONResponse({"suggestions": suggestions, "simulated": True})
+
+
+@router.get("/property/{parcel_number}", operation_id="ui_property_record")
+def ui_property_record(
+    parcel_number: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the property record of one parcel."""
+    resolved, refused = _guard(request, session, actor, "property")
+    if refused is not None:
+        return refused
+    record = property_views.property_record(session, resolved, parcel_number)
+    if not record:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="That property is not in the property master",
+            message="No parcel with that number exists in the parcel register.",
+            code="not_found",
+            back="/property",
+        )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="masters",
+        title=f"Property record: {record['parcel_number']}",
+        record=record,
+        responsibility=record["responsibility"],
+    )
+    return render(request, "property_record.html", context)
+
+
+@router.get("/map", operation_id="ui_town_map")
+def ui_town_map(
+    request: Request,
+    parcel: str = "",
+    application: str = "",
+    q: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the map of the fictional town (staff personas)."""
+    resolved, refused = _guard(request, session, actor, "property")
+    if refused is not None:
+        return refused
+    candidates: list[dict[str, Any]] = []
+    error = ""
+    query = q.strip()
+    if query:
+        from acme_city.gis.adapter import GisServiceError
+
+        try:
+            locator = _locator_for(request, session)
+            found = locator.find_candidates(query, 5)
+            candidates = [
+                {
+                    "address": item.address,
+                    "score": item.score,
+                    "location": {"x": item.x, "y": item.y},
+                    "attributes": {"PARCELID": item.parcel_number},
+                }
+                for item in found
+            ]
+            if found and not parcel:
+                hit = locator.parcel_at(found[0].x, found[0].y)
+                parcel = hit.parcel_number if hit else ""
+        except GisServiceError as exc:
+            error = f"The city locator could not be used: {exc}"
+    town = property_views.town_map(
+        session, resolved, parcel=parcel, application=application, candidates=candidates
+    )
+    subject = None
+    if town["subject"]:
+        subject = property_views.property_record(session, resolved, town["subject"]) or None
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="masters",
+        title="Town map",
+        town=town,
+        subject=subject,
+        query=query,
+        candidates=candidates,
+        error=error,
+    )
+    return render(request, "town_map.html", context)
+
+
 @router.get("/steward", operation_id="ui_steward_review")
 def ui_steward_review(
     request: Request,
@@ -626,7 +796,7 @@ def ui_steward_review(
     if refused is not None:
         return refused
     review = view_models.steward_review(session, resolved)
-    actions = allowed_actions_for(session, resolved, "steward")
+    actions = allowed_actions_for(session, resolved, "steward", None, review)
     context = page_context(
         request,
         session,
@@ -1856,6 +2026,103 @@ def _extraction_decide(ctx: ActionContext) -> Outcome:
     )
 
 
+
+def _parcel_service(ctx: ActionContext) -> Any:
+    from acme_city.gis.matching import ParcelMatchService
+
+    return ParcelMatchService(ctx.session, settings=ctx.settings)
+
+
+def _parcel_link_decide(ctx: ActionContext) -> Outcome:
+    """The Data Steward approves or rejects the proposed parcel link."""
+    decision = ctx.text("decision")
+    match = _parcel_service(ctx).decide_link(
+        ctx.text("application_id"),
+        decision=decision,
+        reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
+        actor=ctx.actor,
+    )
+    verb = "Approved" if decision == "approve" else "Rejected"
+    return Outcome(
+        message=(
+            f"{verb} the parcel link {match.parcel_number or ''} for the application. "
+            "The Permit Reviewer still confirms the parcel before a decision."
+            if decision == "approve"
+            else "Rejected the proposed parcel link. A person must find the right property."
+        ),
+        destination="Parcel link (identity)",
+        state=match.link_state,
+        target_type="application",
+        target_id=match.application_id,
+        after_version=match.version,
+    )
+
+
+def _parcel_confirm(ctx: ActionContext) -> Outcome:
+    """The Permit Reviewer confirms that this is the right property."""
+    match = _parcel_service(ctx).confirm(
+        ctx.text("application_id"),
+        reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=f"Confirmed parcel {match.parcel_number} as the right property.",
+        destination="Parcel link (identity)",
+        state="confirmed",
+        target_type="application",
+        target_id=match.application_id,
+        after_version=match.version,
+    )
+
+
+def _parcel_candidate_choose(ctx: ActionContext) -> Outcome:
+    """Propose another locator candidate; the steward must approve it."""
+    match = _parcel_service(ctx).choose_candidate(
+        ctx.text("application_id"),
+        address_id=ctx.text("address_id"),
+        reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=(
+            f"Proposed {match.matched_address} on parcel {match.parcel_number}. "
+            "The Data Steward must approve the new parcel link."
+        ),
+        destination="Parcel link (identity)",
+        state=match.link_state,
+        pending=True,
+        target_type="application",
+        target_id=match.application_id,
+        after_version=match.version,
+    )
+
+
+def _parcel_find(ctx: ActionContext) -> Outcome:
+    """Find a parcel by number in the parcel layer and propose it."""
+    match = _parcel_service(ctx).find_by_number(
+        ctx.text("application_id"),
+        parcel_number=ctx.text("parcel_number"),
+        reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
+        actor=ctx.actor,
+    )
+    return Outcome(
+        message=(
+            f"Found parcel {match.parcel_number} in the parcel layer and proposed it. "
+            "The Data Steward must approve the new parcel link."
+        ),
+        destination="Parcel link (identity)",
+        state=match.link_state,
+        pending=True,
+        target_type="application",
+        target_id=match.application_id,
+        after_version=match.version,
+    )
+
+
 #: Every explicit action of the interface, keyed by its stable identifier.
 ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "intake.simulate": _intake_simulate,
@@ -1870,6 +2137,10 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "config.reason_code.retire": _config_reason_code_retire,
     "config.user.add": _config_user_add,
     "extraction.decide": _extraction_decide,
+    "parcel.link.decide": _parcel_link_decide,
+    "parcel.confirm": _parcel_confirm,
+    "parcel.candidate.choose": _parcel_candidate_choose,
+    "parcel.find": _parcel_find,
     "registry.propose": _registry_propose,
     "registry.decide": _registry_decide,
     "change.request": _change_request,

@@ -276,6 +276,27 @@
       "category": "configuration",
       "description": "Change the permit-type configuration and the reason codes of the City.",
       "sensitive": false
+    },
+    {
+      "permission_id": "property.view",
+      "action": "property.view",
+      "category": "property",
+      "description": "View the property master: the property record, the town map and the parcel card.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "parcel.match.propose",
+      "action": "parcel.match.propose",
+      "category": "property",
+      "description": "Propose a different parcel for an application: choose another locator candidate or find a parcel by number. A steward still approves the link.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "parcel.confirm",
+      "action": "parcel.confirm",
+      "category": "property",
+      "description": "Confirm, as the reviewer, that the approved parcel is the right property before a decision.",
+      "sensitive": true
     }
   ],
   "role_grants": {
@@ -301,6 +322,8 @@
       "agent.run.intake",
       "change.case.transition",
       "correction.request.submit",
+      "parcel.match.propose",
+      "property.view",
       "records.document.view",
       "registry.crosswalk.propose",
       "registry.provenance.view",
@@ -312,6 +335,7 @@
     "domain_mdm_steward": [
       "change.case.transition",
       "correction.request.submit",
+      "property.view",
       "records.document.view",
       "registry.crosswalk.decide",
       "registry.crosswalk.propose",
@@ -332,7 +356,10 @@
       "application.evaluate",
       "application.revision.submit",
       "correction.request.submit",
+      "parcel.confirm",
+      "parcel.match.propose",
       "permit.decide",
+      "property.view",
       "records.document.view"
     ],
     "issuing_officer": [
@@ -360,6 +387,7 @@
       "agent.toggle",
       "config.manage",
       "permit.icon.generate",
+      "property.view",
       "records.configuration.view",
       "records.document.view"
     ],

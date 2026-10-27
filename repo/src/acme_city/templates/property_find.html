@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-head"><div><h1>Find a property</h1><p class="sub">Type an address. The city locator (simulated ArcGIS) corrects it to the closest official address and names the parcel: the key the city uses.</p></div></div>
+
+<section class="panel" aria-labelledby="find-heading">
+  <h2 id="find-heading">Search</h2>
+  {% include "components/property_search.html" %}
+  {% if error %}<p class="action-denied" role="alert">{{ error }}</p>{% endif %}
+  {% if query %}
+  <table class="data-table" data-testid="find-results">
+    <caption class="visually-hidden">Locator results for {{ query }}</caption>
+    <thead><tr><th scope="col">Address</th><th scope="col">Score</th><th scope="col">Status</th><th scope="col">Parcel number</th><th scope="col">Zoning</th></tr></thead>
+    <tbody>
+      {% for item in results %}
+      <tr>
+        <th scope="row">{{ item.address }}</th>
+        <td>{{ '%g' % item.score }}</td>
+        <td>{{ item.status_word }}</td>
+        <td>{% if item.parcel_number %}<a class="mono" href="/property/{{ item.parcel_number }}">{{ item.parcel_number }}</a>{% else %}-{% endif %}</td>
+        <td>{{ item.zoning or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted" data-testid="find-none">Address not found in the city locator.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if results %}<p><a href="/map?q={{ query|urlencode }}">Show these on the map</a></p>{% endif %}
+  {% endif %}
+</section>
+{% endblock %}

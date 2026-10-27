@@ -27,6 +27,9 @@ SCENARIO_NAMES: tuple[str, ...] = (
     "hvac-no-contractor",
     "fax-unreadable",
     "duplicate-fence",
+    "address-typo",
+    "address-ambiguous",
+    "address-unknown",
     "random",
 )
 
@@ -259,9 +262,10 @@ def build_scenario(
                     "structure_kind": "fence",
                     "location": "side_rear",
                     "submitted_parcel": "ACME-P-1001",
-                    "submitted_site_text": "400 Lantern Row, ACME City",
+                    "submitted_site_text": "400 Lantren Row, ACME City",
                 },
                 documents=_fence_docs("6", "side_rear"),
+                site_address="400 Lantren Row, ACME City",
             )
         ]
     if name == "fence-front-too-tall":
@@ -280,9 +284,10 @@ def build_scenario(
                     "structure_kind": "fence",
                     "location": "front",
                     "submitted_parcel": "ACME-P-1001",
-                    "submitted_site_text": "400 Lantern Row, ACME City",
+                    "submitted_site_text": "400 Lantren Row, ACME City",
                 },
                 documents=_fence_docs("6", "front"),
+                site_address="400 Lantren Row, ACME City",
             )
         ]
     if name == "fence-missing-site-plan":
@@ -471,6 +476,44 @@ def build_scenario(
             update={"portal_reference": f"{original.portal_reference}-DUP"}
         )
         return [original, repeat]
+    if name in {"address-typo", "address-ambiguous", "address-unknown"}:
+        typed, parcel = {
+            # Corrects to 412 Maple Ridge Drive with a score of at least 90.
+            "address-typo": ("412 Mapel Rdg Dr", "ACME-P-1004"),
+            # A unit that does not exist: the building and two units tie for a
+            # person to choose.
+            "address-ambiguous": ("400 Lantern Row Unit 3, ACME City", "ACME-P-1001"),
+            # Nothing in the city locator matches.
+            "address-unknown": ("9 Nowhere Boulevard, ACME City", ""),
+        }[name]
+        return [
+            _record(
+                suffix=suffix(name.upper()),
+                channel="portal",
+                applicant_name="Tamsin Aldous",
+                email="t.aldous@example.invalid",
+                facts={
+                    "parcel_number": parcel,
+                    "project_description": "4 ft side-yard picket fence",
+                    "valuation": "800.00",
+                    "height_ft": 4,
+                    "setback_ft": 2,
+                    "structure_kind": "fence",
+                    "location": "side_rear",
+                    "submitted_parcel": parcel,
+                    "submitted_site_text": typed,
+                },
+                documents=[
+                    _simple_doc(
+                        "site_plan",
+                        "ACME CITY FICTIONAL SITE PLAN\nStructure: fence, side_rear, 4 ft.\n",
+                    ),
+                    _simple_doc("material_spec", "Material specification: picket panels.\n"),
+                ],
+                site_address=typed,
+                parcel_text=parcel,
+            )
+        ]
     if name == "random":
         return _random_records(count if count is not None else 5, sequence_start)
     if name == "mixed":

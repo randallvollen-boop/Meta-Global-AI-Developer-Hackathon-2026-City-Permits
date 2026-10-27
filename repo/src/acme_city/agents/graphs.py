@@ -18,6 +18,7 @@ from dataclasses import dataclass
 INTAKE_CLASSIFIER = "classifier"
 INTAKE_FIELD_EXTRACTOR = "field_extractor"
 INTAKE_DOCUMENT_QC = "document_qc"
+INTAKE_ADDRESS_LOCATOR = "address_locator"
 INTAKE_DUPLICATE_FINDER = "duplicate_finder"
 INTAKE_COMPLETENESS = "completeness"
 INTAKE_ROUTER = "router"
@@ -56,8 +57,8 @@ def _nodes(rows: tuple[tuple[str, str, int, str], ...]) -> tuple[GraphNode, ...]
 
 
 #: The intake agent graph: classifier, then extraction and document QC in
-#: parallel, then duplicate finder and completeness in parallel, then the
-#: router.
+#: parallel, then the address locator and completeness in parallel, then the
+#: duplicate finder, then the router.
 INTAKE_GRAPH: tuple[GraphNode, ...] = _nodes(
     (
         (
@@ -79,10 +80,11 @@ INTAKE_GRAPH: tuple[GraphNode, ...] = _nodes(
             "Flags the scan-quality problems carried by the intake record.",
         ),
         (
-            INTAKE_DUPLICATE_FINDER,
-            "Duplicate finder",
+            INTAKE_ADDRESS_LOCATOR,
+            "Address locator",
             3,
-            "Finds a duplicate case and proposes the identity links.",
+            "Corrects the typed address to the closest official one and finds the parcel "
+            "it falls in (simulated ArcGIS locator and parcel layer).",
         ),
         (
             INTAKE_COMPLETENESS,
@@ -91,9 +93,15 @@ INTAKE_GRAPH: tuple[GraphNode, ...] = _nodes(
             "Checks the required fields and documents of the permit type.",
         ),
         (
+            INTAKE_DUPLICATE_FINDER,
+            "Duplicate finder",
+            4,
+            "Finds a duplicate case and proposes the identity links.",
+        ),
+        (
             INTAKE_ROUTER,
             "Router",
-            4,
+            5,
             "Routes the case to early resolution or to review.",
         ),
     )
@@ -141,6 +149,14 @@ GRAPHS: dict[str, tuple[GraphNode, ...]] = {
     "intake": INTAKE_GRAPH,
     "adjudication": ADJUDICATION_GRAPH,
 }
+
+
+def node_for(agent_key: str, node_id: str) -> GraphNode:
+    """Return one node of an agent graph by its identifier."""
+    for node in GRAPHS.get(agent_key, ()):
+        if node.node_id == node_id:
+            return node
+    raise KeyError(f"{agent_key} has no node {node_id!r}")
 
 
 def graph_for(agent_key: str) -> tuple[GraphNode, ...]:

@@ -220,6 +220,22 @@ class AdjudicationAgent:
             + "."
         ]
         status = "ok"
+        from acme_city.gis.matching import ParcelMatchService
+
+        parcel_service = ParcelMatchService(self._session, now=self._now)
+        if parcel_service.for_application(application.id) is not None:
+            confirmed = parcel_service.confirmed_parcel(application.id)
+            if confirmed is not None:
+                notes.append(
+                    f"Parcel inputs come from the confirmed parcel {confirmed.source_parcel_number}: "
+                    f"zoning {confirmed.zoning_code}, flood zone {confirmed.flood_zone}."
+                )
+            else:
+                status = "warn"
+                notes.append(
+                    "Parcel inputs (zoning, flood zone) are read from the confirmed parcel "
+                    "only. The parcel is not confirmed yet, so none were used."
+                )
         if permit_type.discretionary:
             status = "warn"
             notes.append(

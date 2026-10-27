@@ -320,6 +320,8 @@ class PermitService:
             "executable", permit_type.key, basis_at, basis_label=DEFAULT_DATE_BASIS
         )
         inputs = build_inputs(revision.snapshot or {})
+        # Inputs that come from the parcel are read from the confirmed parcel only.
+        inputs.update(self.parcel_inputs(application))
         results = evaluate_inputs(inputs, rule_set)
         blockers = self.evaluation_blockers(application, inputs, permit_type)
         dependencies, dependency_versions = self.dependency_state(
@@ -759,6 +761,7 @@ class PermitService:
             if party.party_role in {APPLICANT_ROLE, CONTRACTOR_ROLE, PAYER_ROLE}
         ]
         blockers: list[Blocker] = []
+        blockers.extend(self.parcel_link_blockers(application))
         for party in required:
             approved = self._session.execute(
                 select(registry.Crosswalk).where(
@@ -778,6 +781,44 @@ class PermitService:
                     )
                 )
         return blockers
+
+    def parcel_link_blockers(self, application: permit.Application) -> list[Blocker]:
+        """Return the parcel-link conditions that block an approval.
+
+        A case the address locator matched needs its parcel link approved by
+        the Data Steward and the parcel confirmed by the Permit Reviewer.  A
+        case with no parcel match (a seeded demonstration case) is unchanged.
+        """
+        from acme_city.gis.matching import ParcelMatchService
+
+        return [
+            Blocker(
+                code=code,
+                detail=detail,
+                subject_type="application",
+                subject_id=application.id,
+            )
+            for code, detail in ParcelMatchService(
+                self._session, now=self._now
+            ).blocker_states(application.id)
+        ]
+
+    def parcel_inputs(self, application: permit.Application) -> dict[str, Any]:
+        """Return the rule inputs that come from the parcel.
+
+        They come from the confirmed parcel only.  Until the Permit Reviewer
+        confirms the parcel nothing is read from it.
+        """
+        from acme_city.gis.matching import ParcelMatchService
+
+        parcel = ParcelMatchService(self._session, now=self._now).confirmed_parcel(application.id)
+        if parcel is None:
+            return {}
+        return {
+            "parcel_zoning": parcel.zoning_code,
+            "parcel_flood_zone": parcel.flood_zone,
+            "parcel_inputs_source": f"confirmed parcel {parcel.source_parcel_number}",
+        }
 
     def finance_link_blockers(self, application: permit.Application) -> list[Blocker]:
         """Return the payer link conditions that block a dependent action.

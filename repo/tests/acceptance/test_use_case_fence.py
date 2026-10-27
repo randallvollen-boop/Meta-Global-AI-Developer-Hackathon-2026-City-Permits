@@ -24,7 +24,7 @@ from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
-from acme_city.persistence.models import permit, registry
+from acme_city.persistence.models import gis, permit, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -205,6 +205,34 @@ def approve_links_and_values(client: TestClient, settings) -> None:
         )
 
 
+def parcel_match_version(settings, application_id: str) -> int:
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            return session.execute(
+                select(gis.ApplicationParcelMatch).where(
+                    gis.ApplicationParcelMatch.application_id == application_id
+                )
+            ).scalar_one().version
+    finally:
+        factory.dispose()
+
+
+def approve_parcel_link(client: TestClient, settings, application_id: str) -> None:
+    result = act(
+        client,
+        "parcel.link.decide",
+        {
+            "application_id": application_id,
+            "decision": "approve",
+            "expected_version": str(parcel_match_version(settings, application_id)),
+            "reason": "the corrected address falls inside this parcel",
+        },
+        "/steward",
+    )
+    assert result["status"] == "accepted", result
+
+
 def test_use_case_fence(client: TestClient, environment) -> None:
     # 1-2. Administrator simulates both fence scenarios; they wait.
     choose(client, "persona_city_administrator")
@@ -248,7 +276,14 @@ def test_use_case_fence(client: TestClient, environment) -> None:
         assert f'data-node-id="{node}"' in trace
 
     # 5. The steward approves the proposed links and the extracted values.
+    # The applicant typed "400 Lantren Row": the locator corrected it to the
+    # official address and proposed the parcel; the steward approves that link.
+    for application_id in (front_id, rear_id):
+        body = client.get(f"/permits/{application_id}").text
+        assert "400 Lantren Row" in body and "ACME-P-1001" in body
     approve_links_and_values(client, environment)
+    for application_id in (front_id, rear_id):
+        approve_parcel_link(client, environment, application_id)
 
     # 6. The administrator wakes the adjudication agent.
     choose(client, "persona_city_administrator")
@@ -303,6 +338,33 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     )
     assert reverted["status"] == "accepted", reverted
     assert application_row(environment, rear_id)["status"] == "under_review"
+
+    # The approval is blocked until the reviewer confirms the parcel.
+    rear_version = application_row(environment, rear_id)["version"]
+    blocked = client.post(
+        "/ui/actions/permit.decide",
+        data={
+            "csrf_token": csrf(client, f"/permits/{rear_id}"),
+            "application_id": rear_id,
+            "expected_application_version": str(rear_version),
+            "outcome": "approved",
+            "reason": "premature",
+        },
+        headers={"Accept": "application/json"},
+        follow_redirects=False,
+    )
+    assert blocked.status_code == 422 or blocked.json()["status"] == "denied"
+    confirmed_parcel = act(
+        client,
+        "parcel.confirm",
+        {
+            "application_id": rear_id,
+            "expected_version": str(parcel_match_version(environment, rear_id)),
+            "reason": "this is the right property",
+        },
+        f"/permits/{rear_id}",
+    )
+    assert confirmed_parcel["status"] == "accepted", confirmed_parcel
 
     rear_version = application_row(environment, rear_id)["version"]
     decided = act(

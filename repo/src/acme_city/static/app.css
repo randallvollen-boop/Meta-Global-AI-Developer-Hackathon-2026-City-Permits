@@ -726,3 +726,36 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---- Property master: Property card, property record, town map ---- */
+.prop-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .prop-grid { grid-template-columns: 1fr; } }
+.prop-facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+.prop-facts dt { color: var(--ink-2, #55616d); font-size: .82rem; }
+.prop-facts dd { margin: 0; }
+.prop-map svg, .map-wrap svg { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, #f6f8fa); }
+.gis-parcel path { fill: var(--surface, #fff); stroke: var(--ink-2, #55616d); stroke-width: 1; }
+.gis-parcel.is-subject path { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+.gis-parcel.is-candidate path { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 2; stroke-dasharray: 5 3; }
+.gis-parcel.is-picked path { stroke: var(--accent); stroke-width: 3; }
+.gis-parcel:hover path { fill: var(--accent-soft); }
+.gis-street path { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.gis-street-name { font-size: 11px; fill: var(--ink-2, #55616d); pointer-events: none; }
+.gis-point.gis-address circle { fill: var(--accent); }
+.gis-point.gis-submitted path { stroke: var(--bad); stroke-width: 2.5; fill: none; }
+.gis-point.gis-candidate path { fill: var(--warn); stroke: var(--ink, #1b2630); stroke-width: 1; }
+.gis-marker circle { fill: var(--surface, #fff); stroke: var(--ink, #1b2630); stroke-width: 1.5; }
+.gis-marker.st-approved circle, .gis-marker.st-issued circle { fill: var(--ok-soft); stroke: var(--ok); }
+.gis-marker.st-denied circle { fill: var(--bad-soft); stroke: var(--bad); }
+.gis-marker.st-needs_information circle, .gis-marker.st-submitted circle { fill: var(--warn-soft); stroke: var(--warn); }
+.gis-marker.st-ready_for_review circle, .gis-marker.st-under_review circle { fill: var(--accent-soft); stroke: var(--accent); }
+.gis-marker text { fill: var(--ink, #1b2630); font-weight: 700; }
+.gis-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0; margin: 10px 0 0; font-size: .84rem; }
+.gis-key { display: inline-block; min-width: 1.4em; text-align: center; border: 1.5px solid var(--ink, #1b2630); border-radius: 50%; font-weight: 700; font-size: .75rem; }
+.gis-key-point { border: 0; }
+.map-wrap { position: relative; }
+.map-tools { display: flex; gap: 8px; margin-bottom: 8px; }
+.map-card { margin-top: 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.map-card[hidden], .map-tools[hidden] { display: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 14px; }
+tr.is-current th, tr.is-subject th { background: var(--accent-soft); }

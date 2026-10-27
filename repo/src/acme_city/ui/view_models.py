@@ -13,6 +13,8 @@ here so that every governed view shows the same eight facts.
 
 from __future__ import annotations
 
+import json
+
 from datetime import datetime
 from typing import Any
 
@@ -41,7 +43,7 @@ from acme_city.permits.service import PermitService
 from acme_city.registry.provenance import crosswalk_view
 from acme_city.registry.service import RegistryService
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views
+from acme_city.ui import agent_views, property_views
 
 #: The required screens, in the order the navigation shows them.
 SCREENS: tuple[dict[str, str], ...] = (
@@ -155,6 +157,7 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("agent.run.adjudication", "permits"),
         ("agent.toggle", None),
     ),
+    "property": (("property.view", None),),
     "admin": (
         ("config.manage", None),
         ("admin.actor.manage", None),
@@ -846,6 +849,136 @@ def allowed_actions_for(
                     ),
                 )
             )
+        match_view = payload.get("property") or {}
+        if match_view:
+            match_version = match_view.get("version")
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="parcel.confirm",
+                    label="Confirm parcel",
+                    path="/ui/actions/parcel.confirm",
+                    permission="parcel.confirm",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Parcel link (identity)",
+                    description=(
+                        "Confirm that the approved parcel is the right property. A decision "
+                        "needs this confirmation."
+                    ),
+                    expected_version=match_version,
+                    state_allowed=bool(match_view.get("approved")) and not match_view.get("confirmed"),
+                    state_reason=(
+                        "the parcel is already confirmed"
+                        if match_view.get("confirmed")
+                        else "the Data Steward must approve the parcel link first"
+                    ),
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                        _field("expected_version", "Expected version", value=str(match_version), field_type="hidden"),
+                        _field("reason", "Note (optional)", field_type="textarea"),
+                    ),
+                )
+            )
+            candidate_options = tuple(
+                str(item.get("address_id"))
+                for item in match_view.get("candidates") or []
+                if item.get("address_id")
+            )
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="parcel.candidate.choose",
+                    label="Choose another candidate",
+                    path="/ui/actions/parcel.candidate.choose",
+                    permission="parcel.match.propose",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Parcel link (identity)",
+                    description=(
+                        "Propose another address of the locator. The Data Steward approves "
+                        "the new parcel link again."
+                    ),
+                    expected_version=match_version,
+                    state_allowed=bool(candidate_options),
+                    state_reason="the locator returned no other candidate",
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                        _field("expected_version", "Expected version", value=str(match_version), field_type="hidden"),
+                        _field(
+                            "address_id",
+                            "Candidate address id",
+                            field_type="select",
+                            options=candidate_options,
+                            required=True,
+                        ),
+                        _field("reason", "Reason", field_type="textarea", required=True),
+                    ),
+                )
+            )
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="parcel.find",
+                    label="Find parcel by number",
+                    path="/ui/actions/parcel.find",
+                    permission="parcel.match.propose",
+                    domain_id="permits",
+                    record_ids=(record_id or "",),
+                    destination="Parcel link (identity)",
+                    description=(
+                        "Query the parcel layer by PARCELID and propose that parcel. The "
+                        "Data Steward approves the new parcel link."
+                    ),
+                    expected_version=match_version,
+                    fields=(
+                        _field("application_id", "Application", value=record_id or "", field_type="hidden"),
+                        _field("expected_version", "Expected version", value=str(match_version), field_type="hidden"),
+                        _field("parcel_number", "Parcel number (PARCELID)", required=True),
+                        _field("reason", "Reason", field_type="textarea", required=True),
+                    ),
+                )
+            )
+            actions.append(
+                action(
+                    session,
+                    actor,
+                    action_id="change.request",
+                    label="Flag address correction to GIS",
+                    path="/ui/actions/change.request",
+                    permission="correction.request.submit",
+                    destination="GIS parcel register (steward queue)",
+                    description=(
+                        "Ask the responsible steward to correct the address in the GIS. "
+                        "Nothing is written to the source from here."
+                    ),
+                    fields=(
+                        _field("target_type", "Target type", value="application", field_type="hidden"),
+                        _field("target_id", "Target", value=record_id or "", field_type="hidden"),
+                        _field("change_kind", "Change kind", value="factual", field_type="hidden"),
+                        _field(
+                            "title",
+                            "Summary",
+                            value="Address correction for GIS",
+                            required=True,
+                        ),
+                        _field("reason", "Reason", field_type="textarea", required=True),
+                        _field(
+                            "old_value",
+                            "Current value (JSON)",
+                            value=json.dumps({"address": match_view.get("matched_address") or match_view.get("submitted_text")}),
+                            field_type="textarea",
+                        ),
+                        _field("proposed_value", "Proposed value (JSON)", field_type="textarea"),
+                    ),
+                )
+            )
+            for item in actions[-4:]:
+                item["group"] = "property"
+            actions[-1]["dom_id"] = "address-correction"
         actions.append(
             action(
                 session,
@@ -1057,6 +1190,37 @@ def allowed_actions_for(
         )
 
     if screen == "steward":
+        for proposal in payload.get("parcel_proposals") or []:
+            for label, decision_value in (
+                ("Approve parcel link", "approve"),
+                ("Reject parcel link", "reject"),
+            ):
+                actions.append(
+                    action(
+                        session,
+                        actor,
+                        action_id="parcel.link.decide",
+                        label=f"{label} for {proposal['number']}",
+                        path="/ui/actions/parcel.link.decide",
+                        permission="registry.crosswalk.decide",
+                        domain_id="parcels",
+                        destination="Parcel link (identity)",
+                        description=(
+                            "The Data Steward approves the identity link between the "
+                            "application and the parcel, with the locator evidence shown."
+                        ),
+                        expected_version=proposal["version"],
+                        state_allowed=decision_value == "reject" or proposal["can_approve"],
+                        state_reason="this proposal names no parcel; reject it or choose another candidate",
+                        fields=(
+                            _field("application_id", "Application", value=proposal["application_id"], field_type="hidden"),
+                            _field("decision", "Decision", value=decision_value, field_type="hidden"),
+                            _field("expected_version", "Expected version", value=str(proposal["version"]), field_type="hidden"),
+                            _field("reason", "Reason", field_type="textarea", required=True),
+                        ),
+                    )
+                )
+                actions[-1]["application_id"] = proposal["application_id"]
         actions.append(
             action(
                 session,
@@ -2903,6 +3067,7 @@ def permit_workspace(
             session, actor, "agent.run.adjudication", "permits"
         ),
         "can_decide": allows(session, actor, "permit.decide", "permits"),
+        "property": property_views.application_property(session, actor, application),
         "agent_steps": agent_steps,
         "finance": finance_view,
         "blockers": blockers,
@@ -3068,6 +3233,7 @@ def steward_review(session: Session, actor: ActorContext) -> dict[str, Any]:
             }
         )
     return {
+        "parcel_proposals": property_views.steward_parcel_proposals(session, actor),
         "proposals": proposals,
         "crosswalks": crosswalks,
         "cases": cases,
@@ -3310,7 +3476,17 @@ def governance_sources(session: Session, actor: ActorContext) -> dict[str, Any]:
             select(change.SourceCommand).order_by(change.SourceCommand.id)
         ).scalars().all()
     ]
+    subscriber_rows = property_views.subscribers_for(session, None)
     return {
+        "published_datasets": [
+            {
+                "dataset_key": "property_master",
+                "label": "Property master (parcel, address, owner, zoning)",
+                "owner": "Planning and Development Services (simulated GIS parcel register)",
+                "subscribers": subscriber_rows,
+                "notice": property_views.DEPARTMENT_NOTICE,
+            }
+        ],
         "registrations": registrations,
         "domains": domains,
         "queues": queues,

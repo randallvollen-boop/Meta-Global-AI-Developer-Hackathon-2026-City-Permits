@@ -249,8 +249,9 @@ def test_the_rear_fence_is_routed_to_the_building_review_area(
                 "classifier",
                 "field_extractor",
                 "document_qc",
-                "duplicate_finder",
+                "address_locator",
                 "completeness",
+                "duplicate_finder",
                 "router",
             ]
             assert {node.status for node in nodes} <= {"ok", "warn", "block"}

@@ -862,6 +862,34 @@
       },
       "registration_state": "complete",
       "fictional_demo": true
+    },
+    {
+      "contract_id": "contract_registry_property_master",
+      "source_system_id": "registry",
+      "dataset_key": "property_master",
+      "label": "Property master (parcel, address, owner, zoning)",
+      "domain_id": "parcels",
+      "accountable_owner_actor_id": "service_owner_planning",
+      "steward_queue_id": "queue_parcels",
+      "system_custodian_actor_id": "service_custodian_gis",
+      "authority_policy_id": "authority_parcel",
+      "correction_route": "GIS parcel register",
+      "business_key_fields": [
+        "parcel_number"
+      ],
+      "schema_version": "1.0",
+      "required_fields": {
+        "parcel_number": "string",
+        "site_address": "string"
+      },
+      "allowed_values": {},
+      "date_meanings": {},
+      "field_classes": {
+        "parcel_number": "authoritative_fact",
+        "site_address": "authoritative_fact"
+      },
+      "registration_state": "complete",
+      "fictional_demo": true
     }
   ]
 }
