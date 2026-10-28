@@ -28,16 +28,24 @@ from acme_city.muse.payloads import (
     assert_no_truth_in_payload,
 )
 from acme_city.muse.schemas import (
+    APPLICANT_ASSIST_SCHEMA_VERSION,
+    APPLICANT_ASSIST_TASK,
     EXTRACTION_SCHEMA_VERSION,
     EXTRACTION_TASK,
     MATCH_SCHEMA_VERSION,
     MATCH_TASK,
+    AssistantOutput,
     ExtractionOutput,
     MatchOutput,
     strict_json_schema,
     task_schema,
 )
-from acme_city.muse.service import MuseRunCommand, MuseService, ModelRunView
+from acme_city.muse.service import (
+    MuseRunCommand,
+    MuseService,
+    ModelRunView,
+    live_budget_error,
+)
 from acme_city.muse.validation import (
     ValidationIssue,
     ValidationOutcome,
@@ -46,12 +54,15 @@ from acme_city.muse.validation import (
 )
 
 __all__ = [
+    "APPLICANT_ASSIST_SCHEMA_VERSION",
+    "APPLICANT_ASSIST_TASK",
     "EXTRACTION_SCHEMA_VERSION",
     "EXTRACTION_TASK",
     "MAX_OUTPUT_TOKENS",
     "MATCH_SCHEMA_VERSION",
     "MATCH_TASK",
     "META_RESPONSES_URL",
+    "AssistantOutput",
     "CandidateRef",
     "DocumentRef",
     "ExtractionOutput",
@@ -67,6 +78,7 @@ __all__ = [
     "ValidationOutcome",
     "VisibleEvidenceBundle",
     "assert_no_truth_in_payload",
+    "live_budget_error",
     "strict_json_schema",
     "task_schema",
     "validate_extraction_output",

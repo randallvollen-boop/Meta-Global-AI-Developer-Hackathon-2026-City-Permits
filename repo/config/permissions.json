@@ -388,12 +388,20 @@
       "category": "applicant",
       "description": "Ask a person at the City to answer a question. The request is the only route by which a member of the City reads the applicant's question.",
       "sensitive": false
+    },
+    {
+      "permission_id": "applicant.help.assist",
+      "action": "applicant.help.assist",
+      "category": "applicant",
+      "description": "Receive an answer the applicant help assistant wrote from the City's published sources. The answer is validated against the source bundle it was given, and an answer that fails the validation is never shown.",
+      "sensitive": false
     }
   ],
   "role_grants": {
     "applicant": [
       "applicant.case.respond",
       "applicant.help.ask",
+      "applicant.help.assist",
       "applicant.help.escalate",
       "applicant.profile.edit",
       "application.revision.submit",

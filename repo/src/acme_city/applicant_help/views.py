@@ -232,9 +232,10 @@ def panel_context(
             for row in requests
         ],
         "help_last_question": turns[-1].question if turns else "",
+        "help_demo_mode": service.demo_mode,
         "help_suggestions": [
             {"id": identifier, "text": text}
-            for identifier, text in config.suggested_questions
+            for identifier, text in config.questions(demo_mode=service.demo_mode)
         ],
         "help_max_length": config.max_message_length,
         "help_no_match_text": config.no_match_text,

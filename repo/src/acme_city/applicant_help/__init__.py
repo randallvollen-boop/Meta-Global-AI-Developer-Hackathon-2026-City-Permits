@@ -8,9 +8,11 @@ deliberately small and honest:
   published rule versions, the stored permit-type configuration, the fixed
   applicant-facing passages and, when the applicant asks about their own
   case, the facts of that case;
-* the answer is **deterministic** in this part of the work: the matching is
-  a stable ranking over that bundle, and the answer quotes the matching
-  passages.  The model path is a later part;
+* the answer is either **deterministic** — the matching is a stable ranking
+  over that bundle, and the answer quotes the matching passages — or
+  **written by the assistant**: the model path of this package, whose prose
+  is validated against the very bundle it was given before the applicant
+  reads it;
 * it **never decides**: it explains, it cites, and it hands the applicant to
   a person when it cannot answer;
 * the conversation is **private**: it belongs to the applicant who opened it,
@@ -23,4 +25,12 @@ deliberately small and honest:
 
 from __future__ import annotations
 
-__all__ = ["config", "matching", "service", "sources", "views"]
+__all__ = [
+    "assist",
+    "assist_validation",
+    "config",
+    "matching",
+    "service",
+    "sources",
+    "views",
+]

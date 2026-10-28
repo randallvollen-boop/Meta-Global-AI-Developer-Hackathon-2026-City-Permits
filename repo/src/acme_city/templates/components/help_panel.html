@@ -41,17 +41,29 @@
     {% endif %}
     <ol class="help-turns" data-testid="help-turns">
       {% for turn in help_turns %}
-      <li data-testid="help-turn" data-outcome="{{ turn.outcome }}">
+      <li data-testid="help-turn" data-outcome="{{ turn.outcome }}" data-mode="{{ turn.mode }}">
         <p class="help-question-text">{{ turn.question }}</p>
         <p class="muted" data-testid="help-answer-label">{{ turn.label }}</p>
         {% if turn.paragraphs %}
         <ul class="help-citations" data-testid="help-citations">
           {% for paragraph in turn.paragraphs %}
           <li>
+            {% if paragraph.text != paragraph.quote %}
+            <p data-testid="help-paragraph-text">{{ paragraph.text }}</p>
+            {% endif %}
+            {% if paragraph.citations %}
+              {% for citation in paragraph.citations %}
+            <details>
+              <summary data-testid="help-citation">{{ citation.source_id }}{% if citation.citation %} — {{ citation.citation }}{% endif %}</summary>
+              <blockquote data-testid="help-quote">{{ citation.quote }}</blockquote>
+            </details>
+              {% endfor %}
+            {% else %}
             <details>
               <summary data-testid="help-citation">{{ paragraph.source_id }}{% if paragraph.citation %} — {{ paragraph.citation }}{% endif %}</summary>
               <blockquote data-testid="help-quote">{{ paragraph.quote }}</blockquote>
             </details>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>

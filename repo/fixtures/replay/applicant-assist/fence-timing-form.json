@@ -1,0 +1,41 @@
+{
+  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "context": {
+    "application_reference": "",
+    "permit_type_key": "deck_fence"
+  },
+  "fixture_kind": "applicant_assist_replay",
+  "fixture_version": "2026.10.28-1",
+  "note": "A deterministic, labelled demonstration fixture of the applicant help assistant. It was written for this demonstration against the published text it quotes; it is not a recording of a Muse answer and it is never presented as one.",
+  "output": {
+    "answer": [
+      {
+        "citations": [
+          {
+            "quote": "Service target for Residential deck or fence (deck_fence): 5 days.",
+            "source_id": "service_target.deck_fence"
+          }
+        ],
+        "text": "The City aims to review a residential deck or fence case in 5 days."
+      },
+      {
+        "citations": [
+          {
+            "quote": "This is the fictional number of days the City aims to review a case of this type in. It is a target the City works to, it is not a promise about your application, and it is not a completion date.",
+            "source_id": "service_target.deck_fence"
+          }
+        ],
+        "text": "That figure is the target the City works to. It is not a promise about your application and it is not a completion date."
+      }
+    ],
+    "cannot_answer": false,
+    "next_steps": [],
+    "reason": ""
+  },
+  "prompt_version": "acme-assist-prompt-v1",
+  "question_key": "how long will my fence permit take",
+  "recorded_at": "2026-10-28T00:00:00Z",
+  "replay_key": "6de154449d330e3f685f2a46ea4da792a6acf5c30622d40926176e92dedcbfc4",
+  "schema_version": "acme-assist-schema-v1",
+  "task": "applicant_assist"
+}
