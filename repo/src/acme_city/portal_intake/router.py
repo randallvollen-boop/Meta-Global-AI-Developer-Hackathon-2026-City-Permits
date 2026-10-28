@@ -22,6 +22,8 @@ from acme_city.portal_intake.schemas import IntakeRecordCommand
 from acme_city.portal_intake.service import IntakeService
 
 router = APIRouter(prefix="/api/intake", tags=["intake"])
+#: The intake simulator endpoints.  Mounted in demo mode only.
+simulator_router = APIRouter(prefix="/api/intake", tags=["intake"])
 
 
 class SimulateCommand(BaseModel):
@@ -50,7 +52,7 @@ def submit_intake_record(
     return result.model_dump(mode="json")
 
 
-@router.post("/simulate", operation_id="simulate_intake")
+@simulator_router.post("/simulate", operation_id="simulate_intake")
 def simulate_intake(
     command: SimulateCommand,
     request: Request,
@@ -77,7 +79,7 @@ def simulate_intake(
     }
 
 
-@router.get("/scenarios", operation_id="list_intake_scenarios")
+@simulator_router.get("/scenarios", operation_id="list_intake_scenarios")
 def list_intake_scenarios(
     session: Session = Depends(get_session),
     actor: ActorContext = Depends(get_actor),
@@ -86,4 +88,4 @@ def list_intake_scenarios(
     return {"scenarios": list(SCENARIO_NAMES)}
 
 
-__all__ = ["router"]
+__all__ = ["router", "simulator_router"]

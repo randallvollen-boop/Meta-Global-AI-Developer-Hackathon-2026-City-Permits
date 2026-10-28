@@ -1,0 +1,54 @@
+# Two profiles from one image recipe.
+#
+#   docker compose --profile demo up        the fictional demonstration (judged setup)
+#   docker compose --profile production up  production mode (needs ACME_SECRET_KEY)
+#
+# Production keeps its data in the `acme-prod-data` volume (database and
+# documents).  Put a TLS-terminating reverse proxy in front of it and set
+# ACME_TRUST_PROXY_HEADERS / ACME_FORWARDED_ALLOW_IPS to that proxy only.
+
+services:
+  demo:
+    profiles: ["demo"]
+    build:
+      context: .
+      target: demo
+    environment:
+      ACME_DEPLOYMENT_MODE: demo
+      ACME_SCENARIO_CLOCK: ${ACME_SCENARIO_CLOCK:-auto}
+      ACME_DATABASE_URL: sqlite:////app/var/acme_city.db
+      # Demo works with an ephemeral key; set one for stable sessions.
+      ACME_SECRET_KEY: ${ACME_SECRET_KEY:-}
+      # Set to true when the demo is served over HTTPS.
+      ACME_COOKIE_SECURE: ${ACME_COOKIE_SECURE:-false}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - acme-demo-data:/app/var
+
+  production:
+    profiles: ["production"]
+    build:
+      context: .
+      target: production
+    environment:
+      ACME_DEPLOYMENT_MODE: production
+      # Required: production mode refuses to start without a stable key.
+      ACME_SECRET_KEY: ${ACME_SECRET_KEY:-}
+      ACME_DATABASE_URL: sqlite:////app/var/acme_city.db
+      ACME_COOKIE_SECURE: ${ACME_COOKIE_SECURE:-true}
+      ACME_TRUST_PROXY_HEADERS: ${ACME_TRUST_PROXY_HEADERS:-false}
+      ACME_FORWARDED_ALLOW_IPS: ${ACME_FORWARDED_ALLOW_IPS:-127.0.0.1}
+      ACME_MUSE_PROVIDER_ENABLED: ${ACME_MUSE_PROVIDER_ENABLED:-false}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - acme-prod-data:/app/var
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+volumes:
+  acme-demo-data:
+  acme-prod-data:

@@ -157,6 +157,34 @@ class DatabaseHealth:
         return {"reachable": self.reachable, "state": self.state, "revision": self.revision}
 
 
+def expected_head_revision(settings: Settings) -> str | None:
+    """Return the single Alembic head revision this build expects."""
+    from alembic.script import ScriptDirectory
+
+    heads = ScriptDirectory.from_config(alembic_config(settings)).get_heads()
+    return heads[0] if len(heads) == 1 else None
+
+
+def database_is_demo(engine: Engine) -> bool:
+    """Return whether the database carries the fictional-demo marker."""
+    try:
+        with engine.connect() as connection:
+            exists = connection.execute(
+                text(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='demo_environment'"
+                )
+            ).scalar_one()
+            if not exists:
+                return False
+            flagged = connection.execute(
+                text("SELECT COUNT(*) FROM demo_environment WHERE fictional_demo = 1")
+            ).scalar_one()
+            return bool(flagged)
+    except Exception:
+        return False
+
+
 def database_health(settings: Settings, *, engine: Engine | None = None) -> DatabaseHealth:
     """Report whether the database is reachable and up to date with migrations.
 
@@ -205,6 +233,8 @@ __all__ = [
     "alembic_config",
     "current_revision",
     "database_health",
+    "database_is_demo",
+    "expected_head_revision",
     "get_session_factory",
     "initialize_database",
     "transaction",

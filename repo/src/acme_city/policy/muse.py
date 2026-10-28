@@ -521,7 +521,12 @@ def dispatch(
         if not isinstance(data, dict):
             return Dispatch(error="the run returned output that is not a JSON object", provider_error=True, **common)
         return Dispatch(output=data, **common)
-    fixture = load_replay_fixtures(fixture_root_path).get(replay_key(task, basis))
+    # Production mode never substitutes a recorded demonstration answer.
+    fixture = (
+        None
+        if getattr(settings, "is_production", False)
+        else load_replay_fixtures(fixture_root_path).get(replay_key(task, basis))
+    )
     if fixture is None:
         return Dispatch(
             error="no recorded demonstration answer matches this request",

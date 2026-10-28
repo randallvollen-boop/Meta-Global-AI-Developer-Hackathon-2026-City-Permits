@@ -2367,21 +2367,36 @@ def work_queue(
         ).scalars().all()
     }
 
+    # One query for the current assessments of every visible application; the
+    # highest version of each wins, exactly as the per-application lookup did.
+    current_assessments: dict[str, finance.Assessment] = {}
+    type_rows: dict[str, Any] = {}
+    icons: dict[str, Any] = {}
+    visible_ids = [a.id for a in visible if a.status != "archived"]
+    if visible_ids:
+        for row in session.execute(
+            select(finance.Assessment)
+            .where(
+                finance.Assessment.application_id.in_(visible_ids),
+                finance.Assessment.status == "current",
+            )
+            .order_by(finance.Assessment.version.desc())
+        ).scalars():
+            current_assessments.setdefault(row.application_id, row)
+
     for application in visible:
         # An archived case is closed: it is not an active queue entry.
         if application.status == "archived":
             continue
         blockers = _application_blockers(service, application)
-        assessment = session.execute(
-            select(finance.Assessment)
-            .where(
-                finance.Assessment.application_id == application.id,
-                finance.Assessment.status == "current",
-            )
-            .order_by(finance.Assessment.version.desc())
-        ).scalars().first()
+        assessment = current_assessments.get(application.id)
         age = _age_days(application.initial_submitted_at, now)
-        type_row = service.permit_type(application)
+        type_row = type_rows.get(application.permit_type_id)
+        if type_row is None:
+            type_row = type_rows[application.permit_type_id] = service.permit_type(application)
+        if type_row.id not in icons:
+            icons[type_row.id] = icon_for_permit_type(session, type_row)
+        icon = icons[type_row.id]
         step, step_state = _application_step(application, assessment is not None)
         items.append(
             {
@@ -2392,7 +2407,7 @@ def work_queue(
                 "subtitle": type_row.label,
                 "permit_type_id": type_row.id,
                 "permit_type_key": type_row.key,
-                "icon": icon_for_permit_type(session, type_row),
+                "icon": icon,
                 "step": step,
                 "step_state": step_state,
                 "state": application.status,

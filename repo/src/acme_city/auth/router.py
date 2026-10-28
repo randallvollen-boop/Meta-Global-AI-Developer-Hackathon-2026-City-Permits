@@ -22,6 +22,8 @@ from acme_city.auth.service import SessionService
 from acme_city.persistence.models import governance
 
 router = APIRouter(prefix="/api/session", tags=["session"])
+#: The demonstration persona selector.  Mounted in demo mode only.
+selector_router = APIRouter(prefix="/api/session", tags=["session"])
 
 
 class SelectActorRequest(BaseModel):
@@ -59,7 +61,7 @@ def session_service(request: Request, session: Session) -> SessionService:
     return SessionService(session, request.app.state.settings)
 
 
-@router.get("/actors", operation_id="list_demo_actors")
+@selector_router.get("/actors", operation_id="list_demo_actors")
 def list_demo_actors(session: Session = Depends(get_session)) -> dict:
     """List the four fictional personas a demonstration session may select.
 
@@ -78,7 +80,7 @@ def list_demo_actors(session: Session = Depends(get_session)) -> dict:
     }
 
 
-@router.post("/select", operation_id="select_demo_actor")
+@selector_router.post("/select", operation_id="select_demo_actor")
 def select_demo_actor(
     payload: SelectActorRequest,
     request: Request,
@@ -129,4 +131,4 @@ def end_current_session(
     return {"revoked": True, "actor_id": actor.actor_id}
 
 
-__all__ = ["SelectActorRequest", "get_actor", "get_session", "router", "session_service"]
+__all__ = ["SelectActorRequest", "get_actor", "get_session", "router", "selector_router", "session_service"]

@@ -101,8 +101,16 @@ STATIC_ROOT = Path(__file__).resolve().parents[1] / "static"
 STATIC_PREFIX = "/ui/static"
 
 router = APIRouter(tags=["ui"])
+#: The demonstration persona selector pages.  Mounted in demo mode only.
+persona_router = APIRouter(tags=["ui"])
+#: The /select page in production mode: the "Sign-in is not configured" page.
+signin_router = APIRouter(tags=["ui"])
 templates = Jinja2Templates(directory=str(TEMPLATE_ROOT))
 router.mount(STATIC_PREFIX, StaticFiles(directory=str(STATIC_ROOT)), name="ui-static")
+
+#: Interface actions that exist only in the demonstration (simulators).  In
+#: production mode they are neither listed nor accepted.
+PRODUCTION_BLOCKED_ACTIONS: frozenset[str] = frozenset({"intake.simulate"})
 
 #: The name of the field that carries the CSRF token of a form.
 CSRF_FIELD = "csrf_token"
@@ -310,6 +318,17 @@ def render(
     status_code: int = 200,
 ) -> Any:
     """Render one template."""
+    if request.app.state.settings.is_production:
+        # No persona switch and no simulator action is shown in production mode.
+        context = {**context, "personas": []}
+        actions = context.get("actions")
+        if isinstance(actions, list):
+            context["actions"] = [
+                item
+                for item in actions
+                if (item.get("action_id") if isinstance(item, dict) else getattr(item, "action_id", None))
+                not in PRODUCTION_BLOCKED_ACTIONS
+            ]
     return templates.TemplateResponse(request, name, context, status_code=status_code)
 
 
@@ -358,7 +377,7 @@ def error_response(
 # ------------------------------------------------------------------ persona
 
 
-@router.get("/select", operation_id="select_persona", name="select_persona")
+@persona_router.get("/select", operation_id="select_persona", name="select_persona")
 def select_persona(
     request: Request,
     session: Session = Depends(get_session),
@@ -389,7 +408,35 @@ def select_persona(
     return render(request, "base.html", context)
 
 
-@router.post("/ui/actor", operation_id="switch_persona")
+@signin_router.get("/select", operation_id="sign_in_not_configured")
+def sign_in_not_configured(request: Request, session: Session = Depends(get_session)) -> Any:
+    """Production mode: say that sign-in is not configured instead of offering personas."""
+    from acme_city.auth.identity import (
+        SIGN_IN_NOT_CONFIGURED_MESSAGE,
+        SIGN_IN_NOT_CONFIGURED_TITLE,
+    )
+
+    context: dict[str, Any] = {
+        "screen": "error",
+        "title": SIGN_IN_NOT_CONFIGURED_TITLE,
+        "personas": [],
+        "navigation": [],
+        "home": None,
+        "feedback": None,
+        "csrf_token": "",
+        "fictional_demo": False,
+        "actor": None,
+        "error": {
+            "title": SIGN_IN_NOT_CONFIGURED_TITLE,
+            "message": SIGN_IN_NOT_CONFIGURED_MESSAGE,
+            "code": "sign_in_not_configured",
+            "back": "",
+        },
+    }
+    return render(request, "base.html", context, status_code=503)
+
+
+@persona_router.post("/ui/actor", operation_id="switch_persona")
 async def switch_persona(
     request: Request,
     session: Session = Depends(get_session),
@@ -2667,6 +2714,8 @@ async def run_ui_action(
     JSON receives the typed outcome instead of the next page.
     """
     handler = ACTION_HANDLERS.get(action_id)
+    if request.app.state.settings.is_production and action_id in PRODUCTION_BLOCKED_ACTIONS:
+        handler = None
     wants_json = "application/json" in request.headers.get("accept", "")
     if handler is None:
         if wants_json:
