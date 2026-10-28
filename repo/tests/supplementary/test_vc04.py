@@ -115,25 +115,32 @@ def label_ids(body: str) -> set[str]:
 
 def test_every_control_of_every_screen_carries_a_label(client: TestClient) -> None:
     select_persona(client, "persona_city_administrator")
+    # Changed deliberately: the top bar no longer carries the hidden persona <select>, which
+    # used to be the one control every page had. A screen with no form control is correct
+    # (labels must still match controls exactly); the guard against a vacuous sweep is that
+    # the screens as a whole still expose labelled controls.
+    seen = 0
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         identifiers = control_ids(body)
-        labels = label_ids(body)
-        assert identifiers, path
-        assert identifiers == labels, path
+        assert identifiers == label_ids(body), path
+        seen += len(identifiers)
+    assert seen > 10
 
 
 def test_every_control_of_every_new_screen_carries_a_label(
     client: TestClient,
 ) -> None:
     """The three phase 3b screens are checked with their own persona."""
+    # Same deliberate change as above: no page is required to carry a control any more.
+    seen = 0
     for actor_id, path in PERSONA_CONTROL_SCREENS:
         select_persona(client, actor_id)
         body = client.get(path).text
         identifiers = control_ids(body)
-        labels = label_ids(body)
-        assert identifiers, (actor_id, path)
-        assert identifiers == labels, (actor_id, path)
+        assert identifiers == label_ids(body), (actor_id, path)
+        seen += len(identifiers)
+    assert seen > 0
 
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
@@ -231,7 +238,14 @@ def test_listed_screens_open_and_hidden_screens_refuse(
     client: TestClient, actor_id: str
 ) -> None:
     select_persona(client, actor_id)
-    body = client.get("/queue").text
+    if actor_id == "persona_applicant":
+        # Changed deliberately: the Applicant's /queue landing now redirects to the City
+        # website, so its staff navigation is read from another staff-layout screen.
+        redirect = client.get("/queue", follow_redirects=False)
+        assert redirect.status_code == 303 and redirect.headers["location"] == "/city/"
+        body = client.get("/applicants").text
+    else:
+        body = client.get("/queue").text
     listed = re.findall(r'data-screen-key="([^"]+)"', body)
     assert listed == EXPECTED_NAVIGATION[actor_id]
     # The permit entry points at an application inside the persona's record
