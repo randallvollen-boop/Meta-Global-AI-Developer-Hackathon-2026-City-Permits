@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
   "context": {
     "application_reference": "",
     "permit_type_key": "deck_fence"
@@ -16,7 +16,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "will my fence permit be approved",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "9460c44e8638e657d5872b9fe2427713213bc2cfb055d10018733b7d184293ab",
+  "replay_key": "6e42f8fae63f8b6ffac8fe44b4a77e3472fd17f5ca04450e872bf3c0df9eccfb",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }
