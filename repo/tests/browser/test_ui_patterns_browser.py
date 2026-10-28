@@ -65,7 +65,8 @@ def test_drawer_opens_traps_focus_and_returns_it(page, server, login, muse_run) 
     page.goto(f"{server.base_url}/permits/{APPLICATION}", wait_until="domcontentloaded")
     drawer = page.locator("#ui-drawer")
     assert drawer.is_hidden()
-    link = page.locator('[data-testid="ui-detail-link"]').first
+    # The workspace header now carries a Technical details link first; this test is about the Muse run drawer.
+    link = page.locator('[data-detail-kind="muse-run"]').first
     link.focus()
     link.click()
     drawer.wait_for(state="visible")
@@ -111,8 +112,9 @@ def test_deep_link_opens_the_drawer_and_closes(page, server, login, muse_run) ->
 def test_info_popover_opens_and_esc_returns_focus(page, server, login, muse_run) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/permits/{APPLICATION}", wait_until="domcontentloaded")
-    button = page.locator('[data-testid="ui-info-btn"]').first
-    pop = page.locator('[data-testid="ui-info-pop"]').first
+    # The Review tab now opens with other definitions first; this test is about the Muse label popover.
+    button = page.locator('[data-testid="ui-info-btn"][data-info-key="muse_provenance"]').first
+    pop = page.locator('[data-ui-info]:has([data-info-key="muse_provenance"]) [data-testid="ui-info-pop"]').first
     assert button.get_attribute("aria-expanded") == "false"
     assert pop.is_hidden()
     button.click()

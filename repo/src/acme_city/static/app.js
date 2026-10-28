@@ -245,7 +245,10 @@
         }
       });
     });
-    if (tabs.length) select(tabs[0], false);
+    var initial = tabs.filter(function (item) {
+      return item.getAttribute("aria-selected") === "true";
+    })[0];
+    if (tabs.length) select(initial || tabs[0], false);
   }
 
   /* -------------------------------------------------------- muse replay */
