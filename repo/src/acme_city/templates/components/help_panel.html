@@ -1,0 +1,126 @@
+{# The applicant help panel.
+
+   The panel is offered on the chooser, on the application form and on the
+   tracker.  Its question form is a form of its own: it is never part of the
+   application form, so the applicant's typed fields and files stay intact.
+   On the application form the answer opens in a separate browsing context,
+   which is what keeps that form untouched without JavaScript. #}
+<section class="panel help-panel" id="help-panel" data-testid="help-panel" data-placement="{{ help_placement }}" data-help-no-match="{{ help_no_match_text }}">
+  <h2>Ask about your permit</h2>
+  <p class="muted" data-testid="help-notice">{{ help_notice }}</p>
+
+  <form method="post" action="/apply/help" class="help-form" data-help-form{% if help_placement == 'form' %} target="_blank"{% endif %} data-testid="help-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="placement" value="{{ help_placement }}">
+    <input type="hidden" name="type_key" value="{{ help_type_key }}">
+    <input type="hidden" name="application_id" value="{{ help_application_id }}">
+    <input type="hidden" name="conversation_id" value="{{ help_conversation_id }}">
+    <input type="hidden" name="conversation_version" value="{{ help_conversation_version }}">
+    <input type="hidden" name="return_ref" value="{{ help_reference }}">
+    <p class="field">
+      <label for="help-question">Your question</label>
+      <textarea id="help-question" name="question" rows="3" maxlength="{{ help_max_length }}" data-testid="help-question">{{ help_question }}</textarea>
+    </p>
+    <p><button type="submit" class="btn primary" data-testid="help-submit">Ask</button></p>
+  </form>
+
+  {% if help_suggestions %}
+  <p class="muted" id="help-suggestions-label">Questions the City is often asked:</p>
+  <ul class="help-suggestions" aria-labelledby="help-suggestions-label" data-testid="help-suggestions">
+    {% for item in help_suggestions %}
+    <li><a class="btn ghost" href="?{% if help_query %}{{ help_query }}&amp;{% endif %}help_question={{ item.text | urlencode }}" data-help-suggestion="{{ item.text }}" data-testid="help-suggestion">{{ item.text }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <div data-help-conversation>
+    {% if help_turns %}
+    <h3>Your questions</h3>
+    {% if help_earlier_turns %}
+    <p class="muted" data-testid="help-earlier-turns">{{ help_earlier_turns }} earlier question(s) of yours are in your history.</p>
+    {% endif %}
+    <ol class="help-turns" data-testid="help-turns">
+      {% for turn in help_turns %}
+      <li data-testid="help-turn" data-outcome="{{ turn.outcome }}">
+        <p class="help-question-text">{{ turn.question }}</p>
+        <p class="muted" data-testid="help-answer-label">{{ turn.label }}</p>
+        {% if turn.paragraphs %}
+        <ul class="help-citations" data-testid="help-citations">
+          {% for paragraph in turn.paragraphs %}
+          <li>
+            <details>
+              <summary data-testid="help-citation">{{ paragraph.source_id }}{% if paragraph.citation %} — {{ paragraph.citation }}{% endif %}</summary>
+              <blockquote data-testid="help-quote">{{ paragraph.quote }}</blockquote>
+            </details>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p data-testid="help-no-match">{{ help_no_match_text }}</p>
+        {% endif %}
+        <p class="muted">{{ turn.created_at }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </div>
+
+  <h3>Ask a person at the City</h3>
+  <p class="muted">Your question goes to the City's support desk. A person answers it.</p>
+  <form method="post" action="/apply/help/escalate" class="help-form" data-help-form{% if help_placement == 'form' %} target="_blank"{% endif %} data-testid="help-escalate-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="placement" value="{{ help_placement }}">
+    <input type="hidden" name="type_key" value="{{ help_type_key }}">
+    <input type="hidden" name="application_id" value="{{ help_application_id }}">
+    <input type="hidden" name="conversation_id" value="{{ help_conversation_id }}">
+    <input type="hidden" name="conversation_version" value="{{ help_conversation_version }}">
+    <input type="hidden" name="return_ref" value="{{ help_reference }}">
+    {% if help_last_question %}
+    <input type="hidden" name="question" value="{{ help_last_question }}">
+    <p class="muted" data-testid="help-escalate-question">Your question: {{ help_last_question }}</p>
+    {% else %}
+    <p class="field">
+      <label for="help-escalate-question">Your question</label>
+      <textarea id="help-escalate-question" name="question" rows="2" maxlength="{{ help_max_length }}" required data-testid="help-escalate-question"></textarea>
+    </p>
+    {% endif %}
+    <p><button type="submit" class="btn" data-testid="help-ask-the-city">Ask the City</button></p>
+  </form>
+
+  {% if help_requests %}
+  <h3>Your requests to the City</h3>
+  <ul data-testid="help-requests">
+    {% for item in help_requests %}
+    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} — {{ item.status }}{% if item.reply %}: {{ item.reply }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if help_timing.service_target or help_timing.review_area %}
+  <h3>How long review takes</h3>
+  <ul class="help-timing" data-testid="help-timing">
+    {% if help_timing.service_target %}
+    <li data-testid="help-service-target">
+      Service target for {{ help_timing.permit_type_label }}: {{ help_timing.service_target.days }} days.
+      <span class="muted">{{ help_timing.service_target.definition }}</span>
+    </li>
+    {% endif %}
+    {% if help_timing.review_area %}
+    <li data-testid="help-review-backlog">
+      Cases in the {{ help_timing.review_area.name }} review area right now: {{ help_timing.review_area.count }} ({{ help_timing.review_area.statuses | join(', ') }}).
+      <span class="muted">{{ help_timing.review_area.definition }} Read at {{ help_timing.as_of }}.</span>
+    </li>
+    {% endif %}
+  </ul>
+  <p class="muted" data-testid="help-timing-note">{{ help_timing.note }}</p>
+  {% else %}
+  <p class="muted" data-testid="help-timing-none">Choose a permit type to see its service target and the backlog of its review area.</p>
+  {% endif %}
+
+  {% if help_next_steps %}
+  <h3>What you can do now</h3>
+  <ul data-testid="help-next-steps">
+    {% for step in help_next_steps %}<li>{{ step }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</section>

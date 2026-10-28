@@ -4,17 +4,26 @@ Server-rendered forms.  The submission is governed: the CSRF token, the acting
 persona's own ``application.submit`` grant and an audit record.  The script on
 the page only mirrors the server's completeness answer while the applicant
 types; the server decides again on every preview, save and submit.
+
+The help panel is part of the portal.  It answers from the City's published
+rules and from the applicant's own case, it keeps its conversation private to
+the applicant, and it hands the applicant to a person when it cannot answer.
+The panel works without JavaScript: the question is a form of its own, never
+part of the application form, so the applicant's typed fields and files stay
+untouched.
 """
-# REQUIRES: PORTAL-01, PORTAL-02, PORTAL-03, PORTAL-04
+# REQUIRES: PORTAL-01, PORTAL-02, PORTAL-03, PORTAL-04, PER-04, SEC-03
 
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from acme_city.applicant_help import views as help_views
+from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_portal import forms
 from acme_city.applicant_portal.service import PortalService, applicant_party
 from acme_city.audit.service import AuditService
@@ -117,6 +126,8 @@ def _form_context(
     draft: Any,
     error: str = "",
     notice: str = "",
+    help_conversation_id: str = "",
+    help_question: str = "",
 ) -> dict[str, Any]:
     documents = service.draft_documents(draft)
     state = service.completeness(spec, values, set(documents), certification_accepted=certification_accepted)
@@ -140,6 +151,15 @@ def _form_context(
         form_error=error,
         form_notice=notice,
         located=service.locate(values.get("address_text", "")),
+        help_question=help_question,
+        **_help_panel(
+            request,
+            session,
+            actor,
+            placement="form",
+            permit_type_key=spec.type_key,
+            conversation_id=help_conversation_id,
+        ),
     )
 
 
@@ -161,10 +181,42 @@ def _service(request: Request, session: Session) -> PortalService:
     return PortalService(session, settings=request.app.state.settings)
 
 
+def _help_service(request: Request, session: Session) -> ApplicantHelpService:
+    """Return the help service of the portal."""
+    return ApplicantHelpService(session, settings=request.app.state.settings)
+
+
+def _help_panel(
+    request: Request,
+    session: Session,
+    actor: ActorContext,
+    *,
+    placement: str,
+    permit_type_key: str = "",
+    application_id: str = "",
+    conversation_id: str = "",
+    reference: str = "",
+) -> dict[str, Any]:
+    """Return the context of the help panel of a portal page."""
+    service = _help_service(request, session)
+    return help_views.panel_context(
+        session,
+        actor,
+        service=service,
+        placement=placement,
+        permit_type_key=permit_type_key,
+        application_id=application_id,
+        conversation_id=conversation_id,
+        reference=reference,
+    )
+
+
 @router.get("/apply", operation_id="ui_portal_chooser")
 def ui_portal_chooser(
     request: Request,
     saved: str = "",
+    help_conversation: str = Query("", alias="help"),
+    help_question: str = "",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -187,6 +239,14 @@ def ui_portal_chooser(
         saved=saved,
         portal_notice=forms.PORTAL_NOTICE,
         process_pills=forms.PROCESS_PILLS,
+        help_question=help_question,
+        **_help_panel(
+            request,
+            session,
+            resolved,
+            placement="chooser",
+            conversation_id=help_conversation,
+        ),
     )
     return render(request, "portal_chooser.html", context)
 
@@ -232,6 +292,8 @@ def ui_portal_track(
     request: Request,
     ref: str = "",
     revised: str = "",
+    help_conversation: str = Query("", alias="help"),
+    help_question: str = "",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -252,6 +314,16 @@ def ui_portal_track(
         not_found=bool(ref.strip()) and tracked is None,
         revised=revised,
         portal_notice=forms.PORTAL_NOTICE,
+        help_question=help_question,
+        **_help_panel(
+            request,
+            session,
+            resolved,
+            placement="track",
+            application_id=(tracked or {}).get("application_id", ""),
+            conversation_id=help_conversation,
+            reference=ref,
+        ),
     )
     return render(request, "portal_track.html", context)
 
@@ -407,6 +479,8 @@ def ui_portal_form(
     type_key: str,
     request: Request,
     draft: str = "",
+    help_conversation: str = Query("", alias="help"),
+    help_question: str = "",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -435,7 +509,8 @@ def ui_portal_form(
         values.update(dict(row.data.get("values") or {}))
         certification_accepted = bool(row.data.get("certification_accepted"))
     context = _form_context(
-        request, session, resolved, service, spec, values=values, certification_accepted=certification_accepted, draft=row
+        request, session, resolved, service, spec, values=values, certification_accepted=certification_accepted, draft=row,
+        help_conversation_id=help_conversation, help_question=help_question,
     )
     return render(request, "portal_form.html", context)
 

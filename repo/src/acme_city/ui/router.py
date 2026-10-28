@@ -2667,7 +2667,11 @@ async def run_ui_action(
 
 
 from acme_city.ui import portal_routes as _portal_routes  # noqa: E402
+from acme_city.ui import help_routes as _help_routes  # noqa: E402
 
+# The help endpoints come first: their paths are under ``/apply`` and must
+# not be captured by the application form of a permit type.
+router.include_router(_help_routes.router)
 router.include_router(_portal_routes.router)
 
 

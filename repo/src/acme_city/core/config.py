@@ -39,6 +39,7 @@ ENV_EVIDENCE_ROOT: Final = "ACME_EVIDENCE_ROOT"
 ENV_KEY_FILE: Final = "ACME_KEY_FILE"
 ENV_GIS_BASE_URL: Final = "ACME_GIS_BASE_URL"
 ENV_GIS_AUTO_PROPOSE_SCORE: Final = "ACME_GIS_AUTO_PROPOSE_SCORE"
+ENV_APPLICANT_ASSIST_LIVE: Final = "ACME_APPLICANT_ASSIST_LIVE_ENABLED"
 
 #: The locator score at or above which the intake agent auto-proposes a parcel
 #: link (it never auto-approves one).
@@ -111,6 +112,14 @@ class Settings(BaseModel):
     #: (``config/gis_field_map.json``) and nothing else.
     gis_base_url: str = ""
     gis_auto_propose_score: int = DEFAULT_GIS_AUTO_PROPOSE_SCORE
+    #: Whether the applicant help assistant may call the provider.
+    #:
+    #: The setting is off by default and stays off when a credential is
+    #: present: a credential alone never enables a live answer for an
+    #: applicant.  The live path of the assistant is delivered with the part
+    #: of the work that adds the model; until then this flag is read by the
+    #: settings and by nothing else.
+    applicant_assist_live_enabled: bool = False
     meta_api_key: SecretStr | None = None
     key_file: Path | None = None
     secret_is_ephemeral: bool = False
@@ -195,6 +204,7 @@ class Settings(BaseModel):
             "secret_is_ephemeral": self.secret_is_ephemeral,
             "gis_source": "external" if self.gis_base_url else "in-app simulator",
             "meta_api_key_present": self.meta_api_key is not None,
+            "applicant_assist_live_enabled": self.applicant_assist_live_enabled,
         }
 
     @classmethod
@@ -252,6 +262,14 @@ class Settings(BaseModel):
             DEFAULT_GIS_AUTO_PROPOSE_SCORE if gis_score_raw is None else int(gis_score_raw)
         )
 
+        live_raw = pick(ENV_APPLICANT_ASSIST_LIVE)
+        applicant_assist_live_enabled = str(live_raw or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -273,6 +291,7 @@ class Settings(BaseModel):
             evidence_root=evidence_root,
             gis_base_url=gis_base_url,
             gis_auto_propose_score=gis_auto_propose_score,
+            applicant_assist_live_enabled=applicant_assist_live_enabled,
             meta_api_key=meta_api_key,
             key_file=resolved_key_file,
             secret_is_ephemeral=ephemeral,
@@ -287,6 +306,7 @@ __all__ = [
     "DEFAULT_MUSE_LIVE_CALL_CAP",
     "DEFAULT_MUSE_IMAGE_DAILY_CAP",
     "DEFAULT_MUSE_MODEL_ALLOWLIST",
+    "ENV_APPLICANT_ASSIST_LIVE",
     "KEY_FILE_ALLOWED_NAMES",
     "Settings",
     "parse_key_file",
