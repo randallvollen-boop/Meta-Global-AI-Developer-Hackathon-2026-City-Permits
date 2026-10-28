@@ -1,7 +1,7 @@
 # City permit application alignment
 
 Date: October 26, 2026  
-State: aligned for planning; implementation not started
+State: built and merged on main (Phases 1 to 3 verified by the 10 checks in `repo/scripts/run_all_checks.py`); see `HANDOFF.md`
 
 ## 1. Authoritative target
 
@@ -19,7 +19,7 @@ It contributes a fictional permit domain, five permit-type configurations, synth
 
 The source run guide also names an external click-through prototype, `PROTO-PERMIT-01` at `Prototypes/permit-processing`, but explicitly says it is not bundled. A scoped local search found no such directory. The alignment therefore treats that prototype as unavailable input and does not reuse it as code or implementation evidence.
 
-The package preserves duplicate baseline code trees at `reference/acme-city/uc01/` and `reference/acme-city/files/uc01-code/`. If implementation is released, use `uc01/` as the single read-only reference and do not let the copies diverge. Its narrative PR rules and executable rules also contain citation conflicts that must be reconciled into one approved catalog before publication. Four named evaluator defects (nonnumeric setback, nonfinite setback, blank fence location, and unsupported sign type) remain explicit regression gates.
+The package preserves duplicate baseline code trees at `reference/acme-city/uc01/` and `reference/acme-city/files/uc01-code/`. If implementation is released, use `uc01/` as the single read-only reference and do not let the copies diverge. Its narrative pull request (PR) rules and executable rules also contain citation conflicts that must be reconciled into one approved catalog before publication. Four named evaluator defects (nonnumeric setback, nonfinite setback, blank fence location, and unsupported sign type) remain explicit regression gates.
 
 ## 2. Product story
 
@@ -183,8 +183,7 @@ No milestone is verified from a screenshot, static report, generated role label,
 ### Pending
 
 - Randall's final choice between hackathon build options.
-- Explicit implementation release.
-- Concrete stack/database selection.
+
 - GitHub repository name and visibility; owner is fixed to `RandallVollen-boop` only.
 - Full event/Rules acceptance and any submission-format requirements.
 - Independent confirmation of credit balance, expiration, eligible products, and no-cash controls.

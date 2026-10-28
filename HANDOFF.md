@@ -11,7 +11,7 @@ Updated: 2026-10-26 23:35 America/New_York
 - Prepared the user-test database in clearly labelled `ready-for-review` replay mode.
 - Started the owned loopback application at `http://127.0.0.1:8266`; health is OK at schema revision `0001`.
 - Wrote `repo/USER_TEST_GUIDE.md`.
-- Rebuilt, checked, and replaced the architecture article `acme-city-permits-architecture` in the private AVA Library.
+- Rebuilt, checked, and replaced the architecture article `acme-city-permits-architecture` in the team's internal knowledge library.
 - Updated `BUILD_LOG.md`, `EVIDENCE_LOG.md`, `GO_NO_GO.md`, `RISK_LIST.md`, and architecture `STATUS.json`.
 
 ## Open blocker (resolved 2026-10-27, see EVIDENCE_LOG)
@@ -31,7 +31,7 @@ No GitHub remote, commit, push, deployment, public publication, hackathon submis
 - Live Muse fixed and verified: output budget 1200→4000 with `reasoning.effort: low`; extraction `field` constrained by a JSON-schema enum. Live run `modelrun_76acb90ce89d4a709de4dd5de44585ae` succeeded.
 - `run_acceptance.py --all --live-muse`: 39 passed, 0 failed, 0 blocked, including browser checks. Evidence: `repo/evidence/runs/final-live/`.
 - All 10 `run_all_checks.py` gates passed again (06:19).
-- STATUS.json is AS BUILT / verified (57/57, 22/22). AVA page republished, SHA-256 `995cace27a45958391deef05261e96fe3b60b31a636ada83e17ee50028399b83`.
+- STATUS.json is AS BUILT / verified (57/57, 22/22). Library page republished, SHA-256 `995cace27a45958391deef05261e96fe3b60b31a636ada83e17ee50028399b83`.
 - The demo restarted at http://127.0.0.1:8266 in ready-for-review mode.
 - Host note: earlyoom killed pytest and the 8266 demo at 06:08 under memory pressure from other workloads. A full test run needs free memory.
 - Still held for Randall: schema version label (left v1), GitHub auth/remote/commit, terms, submission.
@@ -45,7 +45,7 @@ No GitHub remote, commit, push, deployment, public publication, hackathon submis
 ## Update 2026-10-27 10:50, redesign shipped locally
 
 - The redesign is in `repo/` (commit `52eeb68`) and running on :8266 in ready-for-review mode. 675 tests and all 10 gates pass.
-- The AVA article was republished with a "How it was built" section and before and after screens.
+- The library article was republished with a "How it was built" section and before and after screens.
 - Not yet done: a live Muse Image generation through the app (needs Randall's go), pushing to GitHub (needs `gh` login as the personal owner), and the post-build Muse capability review (see the BUILD_LOG list).
 
 ## Update 2026-10-27 12:40, build 2 merged
@@ -53,4 +53,4 @@ No GitHub remote, commit, push, deployment, public publication, hackathon submis
 - Main at `7e8ad40`: persona-scoped navigation, the simulated ACME ePermit Portal intake, five-step agent triage with an advisory recommendation, and `docs/operations/` (RUNBOOK, USER_STORIES, USE_CASE_FENCE). 697 tests and all 10 gates pass.
 - :8266 runs it in ready-for-review mode. To walk the fence case, follow `docs/operations/USE_CASE_FENCE.md`; step 1 resets the demo with `--mode fresh`.
 - Coder from here is MiniMax M3. Meta spend is about $52 of $150.
-- Not yet done: screens of build 2, the AVA republish, the cosmetic recommendation-card follow-ups, plus the earlier holds (live Muse Image, GitHub push).
+- Not yet done: screens of build 2, the library republish, the cosmetic recommendation-card follow-ups, plus the earlier holds (live Muse Image, GitHub push).

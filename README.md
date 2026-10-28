@@ -6,10 +6,10 @@ Sibling workspace for the ACME City permitting option, built on registry master 
 
 - Package copied and extracted: complete.
 - Requirements aligned to the city-permit target: complete at planning and scaffold level.
-- Application implementation: in progress under `repo/`.
+- Application implementation: built under `repo/`. Phases 1, 2 and 3 are merged on main and verified by the 10 checks in `repo/scripts/run_all_checks.py`.
 - Full requirement outline: `repo/docs/REQUIREMENTS_OUTLINE.md`.
 - Executable parent plan: `repo/docs/plans/2026-10-26-acme-city-end-to-end.md`.
-- Vollen architecture: a checked internal draft is published in the private AVA Library as `acme-city-permits-architecture`. Progress is recorded in `docs/solution-architecture/acme-city-permits/STATUS.json`.
+- Vollen architecture: a checked internal draft is published in the team's internal knowledge library as `acme-city-permits-architecture`. Progress is recorded in `docs/solution-architecture/acme-city-permits/STATUS.json`.
 - Deployment, submission and public publication: not authorized.
 
 ## Workspace map

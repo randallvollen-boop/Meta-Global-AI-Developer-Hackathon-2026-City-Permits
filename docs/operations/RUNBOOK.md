@@ -97,7 +97,7 @@ one `agent_run_nodes` row per node (node id, label, dependency level, status
 |---|---|---|
 | 1 | Classifier | Confirms the permit type and the channel and sets the review area from the type. |
 | 2 | Field extractor | Muse Spark extraction (replay by default) proposes values from the received documents. Where the validator scored the run, its real validation result is shown, and no percentage is invented. |
-| 2 | Document QC (quality control) | Flags the scan-quality problems recorded on the intake record. An unreadable page blocks. |
+| 2 | Document QC (quality check) | Flags the scan-quality problems recorded on the intake record. An unreadable page blocks. |
 | 3 | Address locator | Asks the city locator (`findAddressCandidates`) for candidates for the typed address, then asks the parcel layer which parcel the best point falls in. It records the typed text, matched address, score, status (M/T/U), coordinates, candidate list, parcel id and method. One candidate scoring at least 90 (setting `ACME_GIS_AUTO_PROPOSE_SCORE`) is **proposed** only. A tie or a low score raises "Address needs a person to choose the property"; no candidate raises "Address not found in the city locator". Both go to early resolution. |
 | 3 | Completeness | Checks the required fields and documents of the type. |
 | 4 | Duplicate finder | Finds another live case that asks for the same project by the same applicant at the same address for the same permit type, and runs the identity matcher to propose applicant, parcel and contractor links for the steward. |
@@ -147,7 +147,7 @@ the audit trail.
 |---|---|---|---|
 | City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
 | City Administrator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
-| Data Steward | Intake agent | Process one / Process all waiting | The six-node intake graph runs; the case is routed |
+| Data Steward | Intake agent | Process one / Process all waiting | The seven-node intake graph runs; the case is routed |
 | Data Steward | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved or stay unapproved; proposals remain evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
@@ -577,8 +577,7 @@ before deciding.
 **Simulated enterprise geographic information system (GIS).** The app serves ArcGIS REST-style services
 in-app under `/sim/arcgis/rest/services/ACME/` (labelled simulated on every
 page and response): `AddressLocator/GeocodeServer` (`findAddressCandidates`,
-`suggest`, `reverseGeocode`), `Parcels/FeatureServer/0/query` (LGIM-style
-`PARCELID`, `SITEADDRESS`, `OWNERNME1`, `USECD`, `ZONING`, `CNVYNAME`,
+`suggest`, `reverseGeocode`), `Parcels/FeatureServer/0/query` (field names follow Esri's Local Government Information Model (LGIM): `PARCELID`, `SITEADDRESS`, `OWNERNME1`, `USECD`, `ZONING`, `CNVYNAME`,
 `STATEAREA`, `LNDVALUE`, `IMPVALUE`, `CNTASSDVAL`, `TAXDIST`, `SCHLDSCRP`,
 `FLOODZONE`) and `AddressPoints/FeatureServer/0/query`. They all read the same
 parcel and address records in the registry tables and cannot disagree. The

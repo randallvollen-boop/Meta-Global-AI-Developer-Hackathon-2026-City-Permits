@@ -75,7 +75,7 @@ other organizational identity are service identities.
   - Acceptance: **Intake agent** shows whether the agent is awake; the run
     buttons are disabled with "Wake the agent first" while it sleeps; a person
     with `agent.run.intake` runs **Process one** or **Process all waiting**
-    and the six-node trace is recorded.
+    and the seven-node trace is recorded.
 - As a Data Steward, I want the intake agent's findings to name what the
   applicant must do, so that a needs-information case asks for exactly what
   is missing.
@@ -179,12 +179,12 @@ other organizational identity are service identities.
 
 ## Service agents (system actors)
 
-- As the Intake agent (service identity), I want to run a six-node graph on
+- As the Intake agent (service identity), I want to run a seven-node graph on
   one case, so that the case is classified, read, checked for duplicates,
   checked for completeness and routed the same way every time.
 - As the Field extractor, I want to propose values from the received document
   text (replay by default), so that a steward can accept or correct each one.
-- As the Document QC (quality control) node, I want to flag the scan-quality problems the record
+- As the Document QC (quality check) node, I want to flag the scan-quality problems the record
   carried, so that an unreadable page blocks the case.
 - As the Duplicate finder, I want to find the case that asks for the same
   project, so that a person decides whether it is a resubmission and an

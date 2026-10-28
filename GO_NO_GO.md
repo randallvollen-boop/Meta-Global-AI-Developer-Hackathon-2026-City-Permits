@@ -31,11 +31,11 @@ Date: October 27, 2026
 | Meta city-permit inference | GO / verified | Full live walkthrough passed; `run_acceptance.py --all --live-muse`: 39 passed, 0 failed, 0 blocked (`repo/evidence/runs/final-live/`) |
 | Credits and cash controls | PARTIAL | Randall reports $150 credits; provider balance, expiry and no-cash controls have not been independently inspected |
 | Rules/terms acceptance | HOLD | The user's action and a broader review of the original project are still required |
-| Private AVA Library architecture page | GO / AS BUILT internal draft | Replaced 2026-10-27 under `acme-city-permits-architecture`. 57/57 requirements verified, 22/22 tasks done, live Muse succeeded, SHA-256 `995cace2…`, and the service stayed inactive |
+| Internal knowledge library architecture page | GO / AS BUILT internal draft | Replaced 2026-10-27 under `acme-city-permits-architecture`. 57/57 requirements verified, 22/22 tasks done, live Muse succeeded, SHA-256 `995cace2…`, and the service stayed inactive |
 | Deployment/public publication/submission | HOLD | Not authorized |
 | Real municipal/client data | NO-GO | Fictional ACME data only |
 
-No external repository, deployment, public publication, entry change, terms acceptance, or submission has occurred. The checked architecture status is available only in the authorized private AVA Library.
+No external repository, deployment, public publication, entry change, terms acceptance, or submission has occurred. The checked architecture status is available only in the authorized internal knowledge library.
 
 ## 2026-10-27, parity phase 1 (worktree `acme-permits-parity-wt`)
 

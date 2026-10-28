@@ -44,9 +44,7 @@ Both cases now wait. Nothing has been triaged.
    agent is asleep. Wake the agent first."
 3. Click **Wake agent**. The banner now reads **awake** and the KPI cards
    show **Waiting 2**, **Processed 0**, **Needs human 0**, **Errors 0**.
-4. The pipeline diagram shows the six nodes in this order: Classifier, then
-   Field extractor and Document QC (quality control) side by side, then
-   Duplicate finder and Completeness side by side, then Router. The legend
+4. The pipeline diagram shows the seven nodes in this order: Classifier, then Field extractor and Document QC (quality check) side by side, then Address locator and Completeness side by side, then Duplicate finder, then Router. The legend
    reads "Columns run in parallel; arrows are dependencies".
 
 ## 4. As Data Steward, run the intake agent
@@ -58,9 +56,7 @@ Both cases now wait. Nothing has been triaged.
    gone and return 403 when opened directly.
 2. Click **Intake agent**. The waiting list holds both fence cases.
 3. Click **Process all waiting**.
-4. The run history now shows one run with the six-node trace: Classifier
-   **ok**, Field extractor **ok**, Document QC **ok**, Duplicate finder
-   **ok**, Completeness **ok**, Router **ok**.
+4. The run history now shows one run with the seven-node trace: Classifier **ok**, Field extractor **ok**, Document QC **ok**, Address locator **ok**, Completeness **ok**, Duplicate finder **ok**, Router **ok**.
 5. Both cases are now **ready_for_review** in the **Building** review area,
    and the identity links are proposed for the steward to approve.
 
