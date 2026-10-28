@@ -26,7 +26,7 @@
         <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
         <tbody>
           {% for candidate in proposal.candidates %}
-          <tr><th scope="row">{{ candidate.address }}</th><td>{{ '%g' % candidate.score }}</td><td class="mono">{{ candidate.parcel_number or '-' }}</td></tr>
+          <tr><th scope="row">{{ candidate.address }}</th><td>{{ '%g' % candidate.score }}</td><td class="mono">{{ candidate.parcel_number or 'none' }}</td></tr>
           {% else %}<tr><td colspan="3" class="muted">No candidate.</td></tr>{% endfor %}
         </tbody>
       </table>

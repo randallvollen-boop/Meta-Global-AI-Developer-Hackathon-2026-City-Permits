@@ -30,7 +30,7 @@
 {% if position.tab == 'assessments' %}
 <div class="kpis" data-testid="recon-kpis">
   <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-coins"/></svg>Assessments</div><div class="v num">{{ position.rows|length }}</div><div class="s">recorded assessments</div></div>
-  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-check"/></svg>Allocations</div><div class="v num">{{ position.allocations|length }}</div><div class="s"><span class="pill ok">confirmed</span></div><p class="t2" style="margin:6px 0 0">Confirmed allocations of receipts to assessments, in the register.</p></div>
+  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-check"/></svg>Allocations</div><div class="v num">{{ position.allocations|length }}</div><div class="s"><span class="pill ok">confirmed</span></div><p class="t2" style="margin:6px 0 0">Confirmed allocations of receipts to assessments.</p></div>
   <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-scale"/></svg>Receipts</div><div class="v num">{{ position.receipts|length }}</div><div class="s">simulated ERP receipts</div></div>
   <div class="card kpi" data-testid="recon-exceptions-tile" data-exception-count="{{ position.exceptions.count }}">
     <div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>Assessments with a recorded exception</div>
@@ -88,7 +88,7 @@
   </div>
   <p class="muted">
     The application is shown by its readable reference. The internal identifier
-    is a second name of the same record, never a second case. {{ ui.info('identifier_integrity') }}
+    is another name for the same case. {{ ui.info('identifier_integrity') }}
   </p>
 </section>
 
@@ -233,7 +233,7 @@
   <div class="card-b act">
     <p class="muted">
       These actions act on the selected assessment when one is selected. The
-      receipt register has its own tab.
+      receipts have their own tab.
     </p>
     {% for item in position.actions %}
       {{ forms.action_form(item, csrf_token, request.url.path + ('?' + request.url.query if request.url.query else '')) }}
@@ -250,14 +250,14 @@
 
 {% elif position.tab == 'receipts' %}
 <section class="panel" aria-labelledby="payments-heading">
-  <h2 id="payments-heading">Receipt register</h2>
+  <h2 id="payments-heading">Receipts</h2>
   <p class="muted">
-    Every receipt the simulated ERP ledger has sent, whether or not it is
+    Every receipt the simulated ERP finance system has sent, whether or not it is
     allocated to an assessment. {{ position.receipt_count_label }}
   </p>
   <div class="tbl-wrap">
   <table class="data-table" data-testid="payment-table">
-    <caption class="visually-hidden">The simulated ERP receipt register</caption>
+    <caption class="visually-hidden">The simulated ERP receipts</caption>
     <thead>
       <tr>
         <th scope="col">Transaction</th><th scope="col">Receipt</th><th scope="col">Amount</th>
@@ -288,14 +288,14 @@
     Receipt settlement, payment allocation and the account identity link are three
     separate facts. {{ ui.info('finance_statuses') }}
   </p>
-  <h3>Allocations of the register</h3>
+  <h3>Allocations of receipts</h3>
   <p class="muted">
     Every allocation of a receipt to an assessment. The allocations of one
     assessment are shown with that assessment.
   </p>
   <div class="tbl-wrap">
   <table class="data-table" data-testid="allocation-table">
-    <caption class="visually-hidden">The allocations of the receipt register</caption>
+    <caption class="visually-hidden">The allocations of receipts</caption>
     <thead><tr><th scope="col">Allocation</th><th scope="col">Receipt</th><th scope="col">Assessment</th><th scope="col">Amount</th><th scope="col">Currency</th><th scope="col">Payment allocation</th><th scope="col">Confirmed by</th></tr></thead>
     <tbody>
       {% for allocation in position.allocations %}

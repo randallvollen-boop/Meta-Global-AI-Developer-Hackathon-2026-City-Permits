@@ -2,7 +2,7 @@
   "catalog_version": "1",
   "scope": "acme_city",
   "fictional_demo": true,
-  "note": "Domain ownership is resolved through effective-dated assignments, never copied onto a record. Each queue binds an active primary steward, a delegate, an escalation owner and a configurable first-review target. The response target is a configured demonstration value, not a service promise.",
+  "note": "Domain ownership is resolved through effective-dated assignments, never copied onto a record. Each queue binds an active primary steward, a delegate, an escalation owner and a configurable first-review target. The response target is a configured demonstration value that makes no service promise.",
   "domains": [
     {
       "domain_id": "applicants",

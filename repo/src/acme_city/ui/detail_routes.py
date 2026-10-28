@@ -468,7 +468,7 @@ def _resolve_source(ctx: DetailContext, source_system_id: str) -> DetailView | N
         Row("Change this in", overview["correction_path"] or "not declared"),
     ]
     return DetailView(
-        title=f"{row.label} — source",
+        title=f"{row.label}: source",
         subtitle=overview["records"],
         sections=(Section("Source", tuple(rows)),),
     )

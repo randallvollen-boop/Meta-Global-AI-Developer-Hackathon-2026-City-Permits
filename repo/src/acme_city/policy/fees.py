@@ -32,8 +32,8 @@ from acme_city.policy.population import CaseInput
 TOTAL_LABEL = "hypothetical assessed fees"
 TOTAL_NOTE = (
     "Hypothetical assessed fees for the cases in this population, calculated "
-    "with the published fee schedule arithmetic. They are not money collected "
-    "and not a forecast of it."
+    "with the published fee schedule arithmetic. No money is collected "
+    "and none is forecast."
 )
 
 UNPRICEABLE_NO_VALUATION = "no_valuation"

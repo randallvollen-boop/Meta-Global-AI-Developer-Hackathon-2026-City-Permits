@@ -1547,7 +1547,7 @@ def allowed_actions_for(
                 destination="Registry candidate comparison",
                 description=(
                     "Compare a source record with the canonical parties. The proposal "
-                    "is evidence, never a decision."
+                    "is evidence for a person to weigh."
                 ),
                 fields=(
                     _field("source_system_id", "Source system", value="permitting", required=True),
@@ -2230,6 +2230,47 @@ def _application_blockers(
     return unique
 
 
+def open_blockers(session: Session, application_id: str) -> list[dict[str, str]]:
+    """Return every blocker that holds a decision on one application.
+
+    The validation outcome measures the rule checks only. These blockers also
+    cover the identity, parcel and payer links, which the validation does not
+    test, so the message after a validation names both.
+    """
+    service = PermitService(session)
+    application = service.load_application(application_id)
+    return _application_blockers(service, application)
+
+
+def rule_result_wording(result: dict[str, Any]) -> str:
+    """Return the text one rule row shows, labelled by what the rule result is.
+
+    The rule keeps one message, written for the case where the rule fails. A
+    passing rule must not show it as a finding, so each status gets a label:
+    pass shows when the rule would fail, fail and condition show what was
+    found, and a review that has its own reason shows that reason first.
+    """
+    status = str(result.get("status") or "")
+    message = str(result.get("message") or "").strip()
+    reason = str(result.get("reason") or "").strip()
+    detail = str(result.get("detail") or "").strip()
+    note = str(result.get("condition_note") or "").strip()
+    if not message:
+        return reason.replace("_", " ") or note
+    if status in ("pass", "passed"):
+        return f"Fails when: {message}"
+    if status in ("fail", "failed", "violation"):
+        return f"Failed: {message}"
+    if status == "condition":
+        return f"Condition applies: {message}"
+    if reason == "rule_violated":
+        return f"Needs a person: {message}"
+    why = detail or reason.replace("_", " ")
+    if not why:
+        return f"Needs a person. Fails when: {message}"
+    return f"Needs a person: {why.rstrip('.')}. Fails when: {message}"
+
+
 def _application_step(
     application: permit.Application, has_assessment: bool
 ) -> tuple[int, str]:
@@ -2265,9 +2306,9 @@ def _next_action(
         select(permit.Permit).where(permit.Permit.application_id == application.id)
     ).scalars().first()
     if permit_row is not None:
-        return "Issued - read the permit artifact"
+        return "Issued: read the permit artifact"
     if application.status == "returned":
-        return "Returned to the applicant - the applicant starts a new application"
+        return "Returned to the applicant: the applicant starts a new application"
     if application.status == "revisions_requested":
         return "Waiting for the applicant's answer"
     if application.status == "needs_information":
@@ -2367,7 +2408,7 @@ def work_queue(
                 "blockers": blockers,
                 "age_days": age,
                 "target": "first review within 1 business day",
-                "target_note": "configured demonstration target, not a service promise",
+                "target_note": "configured demonstration target that makes no service promise",
                 "next_action": _next_action(session, actor, service, application, blockers),
                 "href": f"/permits/{application.id}",
                 "version": application.version,
@@ -2417,7 +2458,7 @@ def work_queue(
                 "blockers": [],
                 "age_days": _age_days(case.created_at, now),
                 "target": "first review within 1 business day",
-                "target_note": "configured demonstration target, not a service promise",
+                "target_note": "configured demonstration target that makes no service promise",
                 "next_action": (
                     "Move the case to "
                     + (", ".join(permitted_targets(case.status, case.change_kind)) or "close")
@@ -2452,7 +2493,7 @@ def work_queue(
                 "blockers": [],
                 "age_days": _age_days(task.created_at, now),
                 "target": "first review within 1 business day",
-                "target_note": "configured demonstration target, not a service promise",
+                "target_note": "configured demonstration target that makes no service promise",
                 "next_action": "Review the affected record",
                 "href": "/steward",
                 "version": 1,
@@ -2483,7 +2524,7 @@ def work_queue(
                 "blockers": [],
                 "age_days": _age_days(issue.created_at, now),
                 "target": "first review within 1 business day",
-                "target_note": "configured demonstration target, not a service promise",
+                "target_note": "configured demonstration target that makes no service promise",
                 "next_action": "Route the issue to the accountable owner",
                 "href": "/governance",
                 "version": issue.version,
@@ -3080,6 +3121,9 @@ def permit_workspace(
         if evaluation is not None
         else None
     )
+    if evaluation_view is not None:
+        for result in evaluation_view["results"]:
+            result["wording"] = rule_result_wording(result)
     evaluations = [
         service.evaluation_view(row).model_dump(mode="json")
         for row in session.execute(

@@ -2125,11 +2125,11 @@ def reconciliation_screen(
         "query": query,
         "receipts": receipt_rows,
         "receipt_count_label": (
-            f"{len(receipt_rows)} receipt(s) in the register · synthetic ERP events"
+            f"{len(receipt_rows)} receipt(s) recorded · synthetic ERP events"
         ),
         "allocations": allocation_rows,
         "accounts": accounts,
-        "account_count_label": f"{len(accounts)} finance account(s) in the register",
+        "account_count_label": f"{len(accounts)} finance account(s) recorded",
         "selected": selected,
         "actions": actions,
         "denied_action_explanations": view_models.denied_action_explanations(actions),

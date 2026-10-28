@@ -2,7 +2,7 @@
   "catalog_version": "1",
   "scope": "acme_city",
   "fictional_demo": true,
-  "note": "Explicit server-side permission catalogue. A permission is never inferred from a role label, a client-supplied field or a screen; the server resolves it from persisted grants. Administrative configuration access carries no business approval permission.",
+  "note": "Explicit server-side permission catalogue. A permission is never inferred from a role label, a client-supplied field or a screen; the server resolves it from persisted grants. Administrative configuration access has no business approval permission.",
   "permissions": [
     {
       "permission_id": "applicant.profile.edit",
@@ -372,7 +372,7 @@
       "permission_id": "ops.audit_log.view",
       "action": "ops.audit_log.view",
       "category": "ops",
-      "description": "Open the audit log: a read-only, paged view of the append-only audit records, filtered by actor type, action and search. It adds no second trail.",
+      "description": "Open the audit log: a read-only, paged view of the append-only audit records, filtered by actor type, action and search. It reads the one audit trail.",
       "sensitive": true
     },
     {

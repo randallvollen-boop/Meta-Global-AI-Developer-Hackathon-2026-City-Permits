@@ -234,7 +234,7 @@ def source_summary(
     dataset_key: str | None,
     record_id: str | None = None,
 ) -> dict[str, Any]:
-    """Return Source, Source last changed, Last received and the details address."""
+    """Return Source, Source last changed, Last received or checked and the details address."""
     changed, received = view_models.source_times(session, system_id, dataset_key, record_id)
     detail_id = ":".join(item for item in (system_id, dataset_key, record_id) if item) if system_id else ""
     return {
@@ -689,7 +689,7 @@ def _resolve_record(ctx: DetailContext, party_id: str) -> DetailView | None:
             (
                 Row("Source", summary["name"]),
                 Row("Source last changed", display.readable_date(summary["changed"]) or "unknown", info="source_last_changed"),
-                Row("Last received", display.readable_date(summary["received"]) or "unknown"),
+                Row("Last received or checked", display.readable_date(summary["received"]) or "unknown"),
             ),
         )
     )
@@ -842,7 +842,7 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
             (
                 Row("Source", display.source_name(ctx.session, system_id, dataset_key or None)),
                 Row("Source last changed", display.readable_date(summary["changed"]) or "unknown", info="source_last_changed"),
-                Row("Last received", display.readable_date(summary["received"]) or "unknown"),
+                Row("Last received or checked", display.readable_date(summary["received"]) or "unknown"),
             ),
         ),
         Section(
@@ -852,7 +852,7 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
                 Row("Steward", panel["steward_label"]),
                 Row("Source system", panel["source_label"] or "not declared"),
                 Row("Change this in", panel["change_this_in"] or "not declared"),
-                Row("Open issues", str(len(panel["open_issues"]))),
+                Row("Open recorded issues", str(len(panel["open_issues"]))),
             ),
         ),
     ]
@@ -864,7 +864,7 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
                 Row(
                     "Queue",
                     f"{panel['queue_label']}; first review target {panel['response_target']} "
-                    "(a configured demonstration target, not a service promise)",
+                    "(a configured demonstration target that makes no service promise)",
                 ),
             ),
         )
@@ -874,7 +874,7 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
         Row("Source system id", system_id, mono=True),
         Row("Dataset key", dataset_key or "not named", mono=True),
         Row("Last source update", display.precise_time(summary["changed"]) or "unknown", mono=True),
-        Row("Last received", display.precise_time(summary["received"]) or "unknown", mono=True),
+        Row("Last received or checked", display.precise_time(summary["received"]) or "unknown", mono=True),
         Row(
             "Version",
             str(snapshot.source_record_version if snapshot is not None and snapshot.source_record_version else (panel["version"] if panel["version"] is not None else "not recorded")),
@@ -942,7 +942,7 @@ def _resolve_credential(ctx: DetailContext, credential_id: str) -> DetailView | 
             (
                 Row("Source", summary["name"]),
                 Row("Source last changed", display.readable_date(summary["changed"]) or "unknown", info="source_last_changed"),
-                Row("Last received", display.readable_date(summary["received"]) or "unknown"),
+                Row("Last received or checked", display.readable_date(summary["received"]) or "unknown"),
             ),
         ),
         Section(
@@ -1095,7 +1095,7 @@ def _resolve_parcel(ctx: DetailContext, parcel_key: str) -> DetailView | None:
             (
                 Row("Source", summary["name"]),
                 Row("Source last changed", display.readable_date(summary["changed"]) or "unknown", info="source_last_changed"),
-                Row("Last received", display.readable_date(summary["received"]) or "unknown"),
+                Row("Last received or checked", display.readable_date(summary["received"]) or "unknown"),
             ),
         )
     )
@@ -1858,7 +1858,7 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
                     description="Take the link away again, with a reason. The earlier decision stays in the history.",
                     expected_version=decided.version,
                     state_allowed=dataset_key != "finance_accounts",
-                    state_reason="A finance account link is not removed; correct it to the right party instead.",
+                    state_reason="A finance account link cannot be removed. Correct it by linking the right party.",
                     fields=(
                         *common_fields,
                         view_models._field("decision", "Decision", value="remove", field_type="hidden"),

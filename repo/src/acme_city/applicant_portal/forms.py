@@ -370,7 +370,7 @@ _SPECS: dict[str, dict[str, Any]] = {
         "documents": ("site_plan", "property_survey"),
     },
     "rezoning": {
-        "note": "A rezoning is decided by a person or a board, never by the portal.",
+        "note": "A rezoning is decided by a person or a board. The portal decides nothing.",
         "fields": (
             _f("current_zoning"),
             _f("proposed_zoning"),
@@ -390,7 +390,7 @@ _SPECS: dict[str, dict[str, Any]] = {
         "documents": ("traffic_control_plan", "insurance_certificate", "site_plan"),
     },
     "zoning_variance": {
-        "note": "A variance is decided by a person or a board, never by the portal.",
+        "note": "A variance is decided by a person or a board. The portal decides nothing.",
         "fields": (
             _f("variance_reason", "Variance requested", "textarea"),
             _f("hardship_description", "Hardship description", "textarea"),

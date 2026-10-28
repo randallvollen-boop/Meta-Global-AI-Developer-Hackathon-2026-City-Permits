@@ -177,13 +177,21 @@
           <h2>Application checks {{ ui.info('application_checks') }}</h2>
           <p class="muted">Rules run against the application itself. These are separate from the extraction checks above.</p>
           <div data-testid="findings-panel">
+        {% if detail.blockers %}
+        <p class="notice" role="status" data-testid="checks-summary">
+          {% if detail.evaluation %}Rule checks: {{ detail.evaluation.outcome }}. {% else %}Rule checks: not run yet. {% endif %}
+          {{ detail.blockers|length }} blocker{{ '' if detail.blockers|length == 1 else 's' }} still prevent{{ 's' if detail.blockers|length == 1 else '' }} a decision:
+          {% for blocker in detail.blockers %}<a href="#application-blockers">{{ blocker.code }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
+          The rule checks do not test these links.
+        </p>
+        {% endif %}
         <div class="issues">
           {% for blocker in detail.blockers %}
-          <div class="issue bad"><span class="ic"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><div><div class="t">{{ blocker.code }}<span class="pill bad">Blocker</span></div><div class="d">{{ blocker.detail }}</div><div class="fix"><b>Next</b>Resolve this blocker, then run the application checks again.</div></div></div>
+          <div class="issue bad"{% if loop.first %} id="application-blockers"{% endif %}><span class="ic"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><div><div class="t">{{ blocker.code }}<span class="pill bad">Blocker</span></div><div class="d">{{ blocker.detail }}</div><div class="fix"><b>Next</b>Resolve this blocker, then run the application checks again.</div></div></div>
           {% endfor %}
           {% if detail.evaluation %}
             {% for result in detail.evaluation.results %}
-            <div class="issue {{ 'ok' if result.status in ('pass', 'passed') else 'warn' if result.status not in ('fail', 'failed', 'violation') else 'bad' }}"><span class="ic"><svg aria-hidden="true"><use href="#i-{{ 'check' if result.status in ('pass', 'passed') else 'alert' }}"/></svg></span><div><div class="t">{{ result.rule_id }}<span class="pill {{ 'ok' if result.status in ('pass', 'passed') else 'warn' }}">{{ result.status }}</span></div><div class="d">{{ result.message or result.reason or result.condition_note or '' }} Observed: {{ result.observed_value or '-' }} · Citation {{ result.citation }}</div>{% if result.status not in ('pass', 'passed') %}<div class="fix"><b>Next</b>Reviewer confirms the recorded value against the citation.</div>{% endif %}</div></div>
+            <div class="issue {{ 'ok' if result.status in ('pass', 'passed') else 'warn' if result.status not in ('fail', 'failed', 'violation') else 'bad' }}"><span class="ic"><svg aria-hidden="true"><use href="#i-{{ 'check' if result.status in ('pass', 'passed') else 'alert' }}"/></svg></span><div><div class="t">{{ result.rule_id }}<span class="pill {{ 'ok' if result.status in ('pass', 'passed') else 'warn' }}">{{ result.status }}</span></div><div class="d">{{ result.wording }} Observed: {{ result.observed_value or 'none recorded' }} · Citation {{ result.citation }}</div>{% if result.status not in ('pass', 'passed') %}<div class="fix"><b>Next</b>Reviewer confirms the recorded value against the citation.</div>{% endif %}</div></div>
             {% endfor %}
           {% endif %}
           {% if not detail.blockers and not detail.evaluation %}
@@ -195,7 +203,7 @@
         {% if detail.evaluation %}
         <p class="value-band value-current" data-testid="value-current">
           <span class="badge badge-current">current master value</span>
-          Evaluation version {{ detail.evaluation.version }}, outcome {{ detail.evaluation.outcome }},
+          Evaluation version {{ detail.evaluation.version }}, rule outcome {{ detail.evaluation.outcome }},
           performed {{ detail.evaluation.performed_at }} by {{ detail.evaluation.performed_by_actor_id or 'unknown' }}.
           {% if detail.evaluation.stale %}<span class="badge badge-blocking">stale</span>{% endif %}
         </p>
@@ -209,8 +217,8 @@
               <td>{{ result.version_label }}</td>
               <td class="mono">{{ result.citation }}</td>
               <td><span class="badge badge-{{ result.status }}">{{ result.status }}</span></td>
-              <td>{{ result.observed_value or '-' }}</td>
-              <td>{{ result.message or result.reason or result.condition_note or '' }}</td>
+              <td>{{ result.observed_value or 'none recorded' }}</td>
+              <td>{{ result.wording }}</td>
             </tr>
             {% else %}
             <tr><td colspan="6" class="muted">No rule result is recorded.</td></tr>

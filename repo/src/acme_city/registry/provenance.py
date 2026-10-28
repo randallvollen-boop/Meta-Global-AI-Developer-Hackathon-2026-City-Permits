@@ -65,13 +65,13 @@ ENTITY_ATTRIBUTES: dict[str, tuple[AttributeRule, ...]] = {
             "business_license_status",
             "authority_business_identity",
             ("status",),
-            "Business licence status",
+            "Business license status",
         ),
         AttributeRule(
             "business_license_number",
             "authority_business_identity",
             ("license_number",),
-            "Business licence number",
+            "Business license number",
         ),
         AttributeRule(
             "contractor_registration_status",
@@ -383,8 +383,8 @@ def build_trusted_view(
                         authority_policy_id=None,
                         state="disagreement",
                         reasons=[
-                            f"the value is not owned by {rule.policy_id!r}, so it is preserved "
-                            "but not displayed as authoritative"
+                            f"the value is not owned by {rule.policy_id!r}; it is preserved "
+                            "and marked as a disagreement"
                         ],
                     )
                 )

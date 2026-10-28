@@ -58,13 +58,13 @@
             {% if paragraph.citations %}
               {% for citation in paragraph.citations %}
             <details>
-              <summary data-testid="help-citation">{{ citation.source_id }}{% if citation.citation %} — {{ citation.citation }}{% endif %}</summary>
+              <summary data-testid="help-citation">{{ citation.source_id }}{% if citation.citation %}: {{ citation.citation }}{% endif %}</summary>
               <blockquote data-testid="help-quote">{{ citation.quote }}</blockquote>
             </details>
               {% endfor %}
             {% else %}
             <details>
-              <summary data-testid="help-citation">{{ paragraph.source_id }}{% if paragraph.citation %} — {{ paragraph.citation }}{% endif %}</summary>
+              <summary data-testid="help-citation">{{ paragraph.source_id }}{% if paragraph.citation %}: {{ paragraph.citation }}{% endif %}</summary>
               <blockquote data-testid="help-quote">{{ paragraph.quote }}</blockquote>
             </details>
             {% endif %}
@@ -112,7 +112,7 @@
   <h3>Your requests to the City</h3>
   <ul data-testid="help-requests">
     {% for item in help_requests %}
-    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} — {{ item.status }}{% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
+    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} ({{ item.status }}){% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
     {% endfor %}
   </ul>
   {% endif %}

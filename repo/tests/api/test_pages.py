@@ -59,12 +59,6 @@ RESPONSIBILITY_FIELDS = (
     "Open recorded issues",
 )
 
-#: Labels the steward screens use for fields the Administrator screens renamed.
-STEWARD_LABEL_ALTERNATIVES = {
-    "Last received or checked": ("Last received",),
-    "Open recorded issues": ("Open issues", "open issues"),
-}
-
 
 @pytest.fixture()
 def environment(tmp_path: Path) -> tuple[Settings, FixtureBundle]:
@@ -201,14 +195,7 @@ def test_every_governed_detail_view_shows_the_eight_responsibility_fields(
         response = client.get(address)
         assert response.status_code == 200, path
         for field in RESPONSIBILITY_FIELDS:
-            # Changed deliberately (merge of the steward restyle): the steward
-            # record screens keep their own shorter labels for the two fields
-            # the Administrator screens renamed; the Administrator screens keep
-            # the full labels.
-            accepted = STEWARD_LABEL_ALTERNATIVES.get(field, ()) if path.startswith(
-                ("/applicants", "/masters", "/permits", "/steward")
-            ) else ()
-            assert any(label in response.text for label in (field, *accepted)), (path, field)
+            assert field in response.text, (path, field)
 
 
 def test_the_pages_use_no_external_script_or_font(client: TestClient) -> None:
