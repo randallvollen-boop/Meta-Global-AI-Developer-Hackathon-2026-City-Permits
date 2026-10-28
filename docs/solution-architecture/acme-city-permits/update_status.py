@@ -327,7 +327,7 @@ def _build_and_check(output: Path) -> tuple[Path, str]:
     run_checked([sys.executable, "-I", str(KIT / "build_page.py"), str(PAGE_DIR)])
     run_checked([str(SKILL / "scripts/check_linux.sh"), str(output), str(check_dir)])
     run_checked([sys.executable, "-I", str(WORKSPACE / "check/verify_page.py"), str(output), str(STATUS_PATH), str(PAGE_CONFIG_PATH)])
-    run_checked([sys.executable, str(VOLLENCOMS / "scripts/lint_copy.py"), str(BODY_SOURCE_PATH)])
+    lint_copy_split(check_dir)
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     return output, digest
 
@@ -364,6 +364,30 @@ def update_current_metadata(output: Path, digest: str) -> None:
     BUILD_REPORT_PATH.write_text(report, encoding="utf-8")
 
 
+NARRATION_BEGIN = '<div class="stack" data-narration>'
+
+
+def lint_copy_split(check_dir: Path) -> None:
+    """Lint page copy, with the quoted video narration linted under the narration exemption.
+
+    Narration is spoken by the presenter, so the copy standard lets it address the viewer
+    directly; the rest of the page keeps every rule.
+    """
+    body = BODY_SOURCE_PATH.read_text(encoding="utf-8")
+    start = body.find(NARRATION_BEGIN)
+    if start < 0:
+        run_checked([sys.executable, str(VOLLENCOMS / "scripts/lint_copy.py"), str(BODY_SOURCE_PATH)])
+        return
+    end = body.index("\n  </div>", start)
+    check_dir.mkdir(parents=True, exist_ok=True)
+    page_part = check_dir / "lint-page.html"
+    narration_part = check_dir / "lint-narration.html"
+    page_part.write_text(body[:start] + body[end:], encoding="utf-8")
+    narration_part.write_text(body[start:end], encoding="utf-8")
+    run_checked([sys.executable, str(VOLLENCOMS / "scripts/lint_copy.py"), str(page_part)])
+    run_checked([sys.executable, str(VOLLENCOMS / "scripts/lint_copy.py"), "--allow-second-person", str(narration_part)])
+
+
 def publish_ava(output: Path, status: dict, digest: str) -> dict:
     source_path = "Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/"
     command = [
@@ -385,7 +409,7 @@ def publish_ava(output: Path, status: dict, digest: str) -> dict:
         "--kind",
         "architecture",
         "--summary",
-        "Planned registry MDM permit application with four personas, bounded Muse proposals, and evidence-backed progress.",
+        "Registry MDM permit application with four personas, Muse Spark agents that propose and people who decide, built during the hackathon week.",
         "--tag",
         "ACME City",
         "--tag",

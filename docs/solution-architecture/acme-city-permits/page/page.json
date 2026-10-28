@@ -1,6 +1,6 @@
 {
   "title": "ACME City Permits Architecture",
-  "description": "Registry MDM, governed permit operations, bounded Muse proposals and evidence-first delivery.",
+  "description": "Registry MDM, governed permit operations, bounded Muse proposals and delivery backed by evidence.",
   "brand": "Globex",
   "client": "ACME City",
   "output": "vollen_acme-city-permits_solution-architecture_2026-10-26.html",

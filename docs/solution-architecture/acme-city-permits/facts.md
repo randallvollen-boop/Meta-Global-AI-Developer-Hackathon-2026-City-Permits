@@ -144,7 +144,7 @@ Source: `BUILD_LOG.md` sections "Parity phase 1" and "Parity phase 2"; merges `0
 - Administration (City Administrator only) holds permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.
 - Intake channels include mail and fax, with per-document scan-quality flags.
 - Phase 2, merged `e2528a4`. A simulated GIS service runs in the app: 69 parcels, 71 addresses, no outside calls. The address locator proposes a parcel link and never approves it, and a permit decision is blocked until the parcel link is approved and confirmed.
-- The property master at `/property/{parcel}` is shared with four simulated subscriber departments: tax and assessor, fire and life safety, code enforcement, and utilities. Each reads fields and writes nothing back (`config/property_subscribers.json`). `/map` is a server-rendered SVG town map with no outside tiles.
+- The property master at `/property/{parcel}` is shared with simulated subscriber departments: tax and assessor, fire and life safety, code enforcement and utilities from phase 2, with sanitation and police added in P3insight (six in all, `config/property_subscribers.json`). Each reads fields and writes nothing back. `/map` is a server-rendered SVG town map with no outside tiles.
 - The applicant portal at `/apply` has a chooser for the 17 types, a form per type with a completeness banner, uploads, drafts, certification, confirmation and tracking.
 - Verification at the phase 2 merge, lead review on merged main: 10 of 10 gates pass; pytest 762 passed; acceptance 37 passed, 0 failed, 2 blocked. AT15 and AT19 need a live provider.
 
@@ -187,3 +187,41 @@ Source: `repo/var/check-run-main-p3a/` and `repo/var/check-run-main-city/` (`run
 - Main at `b7ce8bd` (phase 3a merged): all 10 gates pass; 866 passed in 848.51 s; acceptance 37 passed, 0 failed, 2 blocked.
 - Main at `ead8790` (phase 3a and the City of Acme website merged): all 10 gates pass; 879 passed in 882.39 s; acceptance 37 passed, 0 failed, 2 blocked (AT15 and AT19 need live evidence). The page reports this run.
 - The demo restarted at schema revision 0006 with the city website at `/city/`.
+
+## Phase 3 progress, Muse-first build credit and video plan (2026-10-28, afternoon)
+
+- P3b built: merge `9a7b8ed` "Merge parity phase 3b: queues, bulk intake, review queue, conditions". Source: `git log main`.
+- P3chat run 1 merged (`7d4c0fd`, main `604949d`): help panel, sources, conversation, Ask the City; the answer is deterministic with no model call; the Muse path arrives in run 2. Source: BUILD_LOG.md line 184.
+- P3policy run 1 merged (`4f14a36`): evaluation kernels and impact engine, no screens. Source: BUILD_LOG.md line 231.
+- P3insight: on branch `feature/p3-insight`, not merged. Source: `git branch --contains`.
+- Also merged: guarded buttons (`d3bad15`), shared UI patterns (`1590701`), seed icons for the remaining 14 permit types (`6f976e0`; Muse Image `muse-image-1.0`, 14 calls). Source: BUILD_LOG.md line 206.
+- Muse Spark 1.3 runtime uses: intake field extraction (`agents/extraction.py`, model `muse-spark-1.3`), reviewer case summary that explains only (`triage/summary.py`). Replay is the default; live extraction succeeded earlier (see Merged-main verification).
+- Muse Wonder 1.0: cited prototype review; built the UI redesign, the permit-type icon feature, the simulated intake portal and the first automated triage with recommendation. Source: BUILD_LOG.md lines 64 to 100.
+- Muse Image 1.0: icons for all 17 permit types; in-app icon generation for City Administrators (`permits/icons.py`, `muse/image_client.py`).
+- Other models are listed as notes (Randall, 2026-10-28: "Lead with how muse was used, and keep the other models as notes"). None runs inside the application.
+- Video plan: about 2:40 under the organisers' 3 minute limit; narration about 1:31 at the chosen pace (Randall chose 2.75 on the review page; measured 3.08 to 3.35 words per second); presenter bottom left over screens (Randall, 2026-10-28); scripted browser recording test `acme-permits-parity-notes/screen-test-01/screen-test-01b.mp4`; opening "built this week" line proposed, per the organisers' FAQ.
+
+## Phase 3 merges, prose pass and draft video (2026-10-28, midday)
+
+- Merged to main: P3insight `d5844ef` (city view, community permits, synthetic year, Sanitation and Police); P3policy run 2 `ee78093`; P3chat2 `36c2017` (Muse applicant assistant in replay, validation, decline, fallback); P3policy runs 3 and 4 `016d44c` (Muse briefing, explanation, proposals, draft conversion); restyles `fad956f`, `2b3272b`, `b28ce38`. Source: `git log main --merges`.
+- App wording checked in templates: fallback shows "the rule text that matches your words"; draft action "Save as a draft rule change"; drafts need independent approval. "fewer than 3" present in source.
+- Prose pass under vollencoms at Randall's request (relayed by HackathonMuse; Randall: "We need to run vollencoms across any prose").
+- Draft cut 1: `acme-permits-parity-notes/draft-01/acme-permits-draft-01.mp4`, 2:14, narration r9 (`VIDEO-SCRIPT-r9.md`, approved by Randall 2026-10-28), wardrobe D, 13 clips, FFmpeg assembly.
+
+## As-built diagram contents (2026-10-28, main at `4ea0497`)
+
+The diagram on the page (`#arch`) shows every block below. Each line names the source that backs it. The status block, its dates and the verification gates are unchanged. The evidence for the added parts is the build log entries cited here. No new gate is claimed.
+
+- Public visitor persona, no sign-in, reaches the City of Acme website and "Permits in my community" (`/city/`, `/city/community`). Source: `repo/BUILD_LOG.md`, 2026-10-28 "Parity phase 3 insight" (public allowlist model, 17 fields) and 2026-10-27 "Parity phase 3a and the City of Acme website merged"; routes in `repo/src/acme_city/city/router.py`.
+- Applicant help assistant (`/apply/help`, `/apply/help/panel`, `/apply/help/escalate`): cited source bundle, Muse Spark `applicant_assist` in labelled replay by default, live only behind a server setting, "Ask the City" fallback. Source: BUILD_LOG.md 2026-10-28 "Parity phase 3 chat 1" and "chat 2"; `repo/src/acme_city/applicant_help/`, `ui/help_routes.py`.
+- What-if policy agent (`/policy/scenarios`, `/policy/runs/*`, `/policy/propose`): immutable runs on a synthetic year, Muse Spark explanations and proposals (`policy_propose`), draft conversion needing independent approval. Source: BUILD_LOG.md 2026-10-28 "P3policy run 1" to "run 4"; `repo/src/acme_city/policy/`, `ui/policy_routes.py`.
+- Council briefing (`/policy/runs/{id}/briefing`): typed facts first, Muse Spark `policy_brief` optional, whole-response rejection of an uncited figure. Source: BUILD_LOG.md "P3policy run 3"; `policy/briefing.py`, `muse/schemas.py` (`POLICY_BRIEF_TASK`).
+- Permit insight map (`/insight/city`, City Administrator, grant `insight.city.view`). Source: BUILD_LOG.md "Parity phase 3 insight"; `repo/src/acme_city/insight/city_view.py`, `ui/router.py`.
+- Operations screens (`/ops/dashboard`, `/ops/audit`, `/ops/support`, `/ops/checks`, City Administrator, one grant each). Source: BUILD_LOG.md "P3c: operations dashboard, audit log, support, checks"; merged as `c412079`; `repo/src/acme_city/ops/`, `ui/ops_routes.py`.
+- Synthetic history generator (`generate_synthetic_year` in `portal_intake/scenarios.py`, `config/synthetic_distributions.json`), records flagged synthetic, adapted by `policy/synthetic_feed.py`. Source: BUILD_LOG.md "Parity phase 3 insight" and "P3policy run 2".
+- Meta Muse Image (`muse-image-1.0`): 14 seed icons made on 2026-10-28 (14 calls), plus in-app icon generation for City Administrators at `/admin?tab=appearance` (`permits/icons.py`, `muse/image_client.py`). Source: BUILD_LOG.md "Permit type icons for all 17 types".
+- Sanitation and Police as simulated subscribers, six departments in all (`config/property_subscribers.json` holds `tax_assessor`, `fire_safety`, `code_enforcement`, `utilities`, `sanitation`, `police`). Source: BUILD_LOG.md "Parity phase 3 insight".
+
+Layout notes for the diagram: the persona tier gains the public visitor, the application tier gains two rows for the phase 3 blocks, and the external tier gains Muse Image beside Muse Spark. The status record block moved to the lower right so the application tier could grow. Two earlier details were corrected in the same pass: the `db_evidence` edge now starts at the database block, and the Muse request and proposal labels sit on their lines.
+
+Left out because it could not be verified: nothing is drawn for a live Muse Spark call on the help or briefing paths, because both default to replay and the log records no live run for them.

@@ -2,11 +2,15 @@
 
 Date: 2026-10-27 (parity phases 1 and 2 added; originally 2026-10-26). Status: PLANNED, in implementation. Internal draft.
 
+## Revision 2026-10-28
+
+The diagram now shows the parts built through repo commit `4ea0497`. See the revision section at the end of `BUILD_REPORT.md` and `facts.md` under "As-built diagram contents". Standalone copies for the video: `diagram/arch-as-built.svg` and `diagram/arch-as-built-1920x1080.png`.
+
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 911003 bytes. SHA-256 `51e3c8266389385bc0e1faa9b4bbb1d8a19b48b3b90fb9de2c26f736e44bdbc6`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 932654 bytes. SHA-256 `93e6cd0554f8c7e8481fdc3885a67476f0ec7d22151860876fc738e50649b55f`. It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
