@@ -157,3 +157,10 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Migration 0006 carries the whole phase 3a schema, so one migration covers the new columns and tables as the brief asks. Nine new grants are seeded explicitly on the right personas.
 - Execution: M3 wrote the code; the seven checkpoint commits are ordered by dependency (reason codes and guards first, the wiring with the schema), because one file carries the work of several steps.
 
+
+## 2026-10-27 — Parity phase 3a and the City of Acme website merged
+
+- P3a (lifecycle, typed reason codes, archive guard, findings with waivers, comments, priority and owner) was built by M3 from `BRIEF-P3-OPERATIONS.md` (revised after an Astra review) and merged as `b7ce8bd`. Lead re-ran the 10 gates on merged main: pass; 866 passed; acceptance 37/0/2 blocked (AT15, AT19 need a live provider).
+- The fictional City of Acme website (`/city/`) and the applicant pages in the city layout, with a "Demo: switch user" control through the existing persona selector, were built by a Sonnet agent on `feature/city-website` and merged as `ead8790`. Gates on merged main: pass; 879 passed; acceptance 37/0/2 blocked.
+- Phase 3 now runs P3a → P3b → applicant help chat (3 runs) → P3c → community insight → what-if policy agent (4 runs); P3b is building.
+- Demo on :8266 restarted in ready-for-review mode at schema `0006`; the city website is at `http://127.0.0.1:8266/city/`.
