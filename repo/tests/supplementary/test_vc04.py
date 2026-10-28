@@ -37,6 +37,8 @@ CONTROL_SCREENS = (
     "/masters",
     "/permits/app_synth_001",
     "/steward",
+    "/source-records",
+    "/activity",
     "/rules-fees",
     "/reconciliation",
     "/governance",
@@ -148,7 +150,8 @@ def test_every_control_of_every_new_screen_carries_a_label(
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # City Administrator holds grants for all eleven of the original screens and the
     # P3insight City view (twelve) and the policy 2 What-if screen (thirteen, a
-    # deliberate change of this count),
+    # deliberate change of this count), the four P3c operations screens, and the steward restyle (18 in all, a deliberate
+    # change: Master records absorbs Applicants, Source records and Activity are new),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
@@ -156,7 +159,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 17, path
+        assert len(items) == 18, path
         if reference is None:
             reference = items
         assert items == reference
@@ -183,6 +186,9 @@ SCREEN_PATHS = {
     "masters": "/masters",
     "permit": "/permits/app_synth_001",
     "steward": "/steward",
+    # Steward restyle: Source records and Activity follow Data issues.
+    "source_records": "/source-records",
+    "activity": "/activity",
     "rules": "/rules-fees",
     "reconciliation": "/reconciliation",
     "governance": "/governance",
@@ -214,10 +220,11 @@ EXPECTED_NAVIGATION = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "agent_intake",
         "intake_queue",
@@ -232,10 +239,11 @@ EXPECTED_NAVIGATION = {
     ],
     "persona_city_administrator": [
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "reconciliation",
         "governance",
@@ -280,7 +288,11 @@ def test_listed_screens_open_and_hidden_screens_refuse(
         if key == "permit" and permit_match:
             path = permit_match.group(1)
         response = client.get(path)
-        if key in listed:
+        # Changed deliberately (steward restyle): People & organizations is a tab of
+        # Master records.  Its address still opens (it renders that tab), so it is
+        # open for a persona whose navigation lists the parent screen, though it
+        # is not listed a second time.
+        if key in listed or (key == "applicants" and "masters" in listed):
             assert response.status_code == 200, (actor_id, key, path)
         else:
             assert response.status_code == 403, (actor_id, key, path)

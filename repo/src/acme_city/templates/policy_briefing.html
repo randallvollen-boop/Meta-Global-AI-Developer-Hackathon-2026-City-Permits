@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
 <div class="policy-screen">
@@ -15,6 +16,39 @@
   </div>
 </div>
 
+{% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
+
+<section class="card" aria-labelledby="writer-heading" data-testid="policy-writer">
+  <h2 id="writer-heading">Who wrote this briefing</h2>
+  {% if briefing.writer == 'muse' %}
+  <p data-testid="policy-writer-muse">Written by Muse from the typed facts of this run and checked claim by claim. {{ muse_source(muse.source) }}</p>
+  {% else %}
+  <p data-testid="policy-writer-deterministic">{{ briefing.source_label }}</p>
+  {% endif %}
+  {% if muse.rejected %}
+  <div class="callout" data-testid="policy-writer-fallback">
+    <p><strong>The Muse briefing was not used.</strong> {{ muse.fallback }}</p>
+    <p class="muted" data-testid="policy-writer-source">{{ muse_source(muse.source) }}</p>
+    {% if muse.issues %}
+    <details><summary>Why it was rejected ({{ muse.issues|length }} shown)</summary>
+      <ul data-testid="policy-writer-issues">{% for i in muse.issues %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+  <p class="muted" data-testid="policy-writer-mode">{{ muse.mode_note }}</p>
+  {% if muse.can %}
+  <form method="post" action="/policy/runs/{{ run_id }}/briefing/muse" data-testid="policy-writer-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="{{ muse.version }}">
+    <button type="submit" class="button btn primary button-primary" data-testid="policy-write-with-muse">{% if muse.latest %}Ask Muse again{% else %}Write the briefing with Muse{% endif %}</button>
+    <span class="muted">Muse describes the impact; it recommends nothing. A rejected answer leaves the deterministic briefing in place.</span>
+  </form>
+  {% else %}
+  <p class="muted" data-testid="policy-writer-guard">Your role cannot ask Muse to write the briefing.</p>
+  {% endif %}
+</section>
+
 <article class="card briefing" data-testid="policy-briefing">
   {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples, not real applications.</p>{% endif %}
   <p data-testid="policy-briefing-population">Population: <strong>{{ briefing.population_label }}</strong></p>
@@ -23,6 +57,7 @@
   <section data-testid="policy-briefing-section">
     <h2>{{ section.heading }}</h2>
     {% for p in section.paragraphs %}<p>{{ p }}</p>{% endfor %}
+    {% if briefing.writer == 'muse' and section.fact_ids %}<p class="muted" data-testid="policy-section-cites">Cites: {{ section.fact_ids|join(', ') }}</p>{% endif %}
     {% if section.bullets %}<ul>{% for b in section.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
     {% if section.table %}
     <div class="tbl-wrap"><table class="data-table">

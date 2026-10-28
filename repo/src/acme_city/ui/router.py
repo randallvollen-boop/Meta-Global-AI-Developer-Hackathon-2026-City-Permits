@@ -63,6 +63,7 @@ from acme_city.governance.schemas import (
     RegisterDatasetCommand,
 )
 from acme_city.governance.service import GovernanceService
+from acme_city.persistence.models import finance as finance_models
 from acme_city.permits import icons as permit_icons
 from acme_city.permits import queues
 from acme_city.permits.decisions import PermitDecisionCommand
@@ -80,7 +81,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views, patterns, property_views, view_models
+from acme_city.ui import agent_views, display, patterns, property_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
     allowed_actions_for,
@@ -675,139 +676,6 @@ def ui_insight_city(
     return render(request, "insight_city.html", context)
 
 
-@router.get("/applicants", operation_id="ui_applicants")
-def ui_applicants(
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-    q: str = "",
-) -> Any:
-    """Show the shared applicant view."""
-    resolved, refused = _guard(request, session, actor, "applicants")
-    if refused is not None:
-        return refused
-    applicants = view_models.applicants(session, resolved, query=q)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="applicants",
-        title="Applicants",
-        applicants=applicants,
-        responsibility=view_models.responsibility(
-            session,
-            domain_id="applicants",
-            source_system_id="permitting",
-            dataset_key="applicant_profiles",
-        ),
-    )
-    return render(request, "applicants.html", context)
-
-
-@router.get("/applicants/{party_id}", operation_id="ui_applicant_detail")
-def ui_applicant_detail(
-    party_id: str,
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-) -> Any:
-    """Show one applicant profile with its sources, evidence and history."""
-    resolved, refused = _guard(request, session, actor, "applicants")
-    if refused is not None:
-        return refused
-    detail = view_models.party_detail(session, resolved, party_id)
-    if not detail:
-        return error_response(
-            request,
-            session,
-            resolved,
-            status_code=404,
-            title="That applicant record is not available to you",
-            message=(
-                "The record does not exist or it is outside the record scope of "
-                "your persona."
-            ),
-            code="not_found",
-            back="/applicants",
-        )
-    actions = allowed_actions_for(session, resolved, "applicants", party_id, detail)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="applicants",
-        title=f"Applicant: {detail['party']['display_name']}",
-        detail=detail,
-        responsibility=detail["responsibility"],
-        actions=actions,
-        denied_action_explanations=view_models.denied_action_explanations(actions),
-    )
-    return render(request, "applicants.html", context)
-
-
-@router.get("/masters", operation_id="ui_masters")
-def ui_masters(
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-) -> Any:
-    """Show the properties, businesses and contractors."""
-    resolved, refused = _guard(request, session, actor, "masters")
-    if refused is not None:
-        return refused
-    masters = view_models.masters(session, resolved)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="masters",
-        title="Properties, businesses and contractors",
-        masters=masters,
-    )
-    return render(request, "masters.html", context)
-
-
-@router.get("/masters/{party_id}", operation_id="ui_master_detail")
-def ui_master_detail(
-    party_id: str,
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-) -> Any:
-    """Show one business or contractor master record."""
-    resolved, refused = _guard(request, session, actor, "masters")
-    if refused is not None:
-        return refused
-    detail = view_models.master_detail(session, resolved, party_id)
-    if not detail:
-        return error_response(
-            request,
-            session,
-            resolved,
-            status_code=404,
-            title="That master record is not available to you",
-            message=(
-                "The record does not exist or it is outside the record scope of "
-                "your persona."
-            ),
-            code="not_found",
-            back="/masters",
-        )
-    actions = allowed_actions_for(session, resolved, "masters", party_id, detail)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="masters",
-        title=f"Master record: {detail['party']['display_name']}",
-        detail=detail,
-        responsibility=detail["responsibility"],
-        actions=actions,
-        denied_action_explanations=view_models.denied_action_explanations(actions),
-    )
-    return render(request, "masters.html", context)
-
-
 @router.get("/permits/{application_id}", operation_id="ui_permit_workspace")
 def ui_permit_workspace(
     application_id: str,
@@ -1018,32 +886,6 @@ def ui_town_map(
         error=error,
     )
     return render(request, "town_map.html", context)
-
-
-@router.get("/steward", operation_id="ui_steward_review")
-def ui_steward_review(
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-) -> Any:
-    """Show the steward review screen."""
-    resolved, refused = _guard(request, session, actor, "steward")
-    if refused is not None:
-        return refused
-    review = view_models.steward_review(session, resolved)
-    actions = allowed_actions_for(session, resolved, "steward", None, review)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="steward",
-        title="Steward review",
-        review=review,
-        responsibility=review["responsibility"],
-        actions=actions,
-        denied_action_explanations=view_models.denied_action_explanations(actions),
-    )
-    return render(request, "steward_review.html", context)
 
 
 @router.get("/rules-fees", operation_id="ui_rules_fees")
@@ -1263,6 +1105,17 @@ def _conflict(result: ConflictResult) -> AcmeError:
     )
 
 
+def _stale_link(result: ConflictResult) -> AcmeError:
+    """A stale link version is a 409, with the two versions."""
+    from acme_city.core.errors import ConflictError
+
+    return ConflictError(
+        "the record changed since it was read; read it again and retry",
+        expected_version=result.expected_version,
+        current_version=result.current_version,
+    )
+
+
 def _registry_propose(ctx: ActionContext) -> Outcome:
     """Propose the candidate links of one source record."""
     command = MatchProposalCommand(
@@ -1296,11 +1149,12 @@ def _registry_decide(ctx: ActionContext) -> Outcome:
         dataset_key=ctx.text("dataset_key") or None,
         source_record_id=ctx.text("source_record_id") or None,
         entity_id=ctx.text("entity_id") or None,
+        crosswalk_id=ctx.text("crosswalk_id") or None,
         expected_version=ctx.integer("expected_version"),
     )
     result = RegistryService(ctx.session).decide(command, ctx.actor)
     if isinstance(result, ConflictResult):
-        raise _conflict(result)
+        raise _stale_link(result)
     view = result.value
     return Outcome(
         message=(
@@ -1309,6 +1163,31 @@ def _registry_decide(ctx: ActionContext) -> Outcome:
         ),
         destination="Registry crosswalk",
         state=view.link_status,
+        target_type="crosswalk",
+        target_id=view.crosswalk_id,
+        after_version=result.version,
+    )
+
+
+def _registry_defer(ctx: ActionContext) -> Outcome:
+    """Put a proposed link aside with a note; nothing is linked or changed."""
+    record = ctx.text("source_record_id")
+    result = RegistryService(ctx.session).defer(
+        source_system_id=ctx.text("source_system_id"),
+        dataset_key=ctx.text("dataset_key"),
+        source_record_id=record,
+        reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
+        actor=ctx.actor,
+    )
+    if isinstance(result, ConflictResult):
+        raise _stale_link(result)
+    view = result.value
+    return Outcome(
+        message=f"Deferred the decision on {record}. The issue stays open with your note.",
+        destination="Registry crosswalk",
+        state=view.link_status,
+        pending=True,
         target_type="crosswalk",
         target_id=view.crosswalk_id,
         after_version=result.version,
@@ -1825,8 +1704,25 @@ def _rule_submit(ctx: ActionContext) -> Outcome:
     )
 
 
+def _refuse_own_version(ctx: ActionContext, model: Any) -> None:
+    """Say plainly why an author cannot approve or publish their own version.
+
+    The service refuses it too; this only gives the refusal its plain words.
+    """
+    row = ctx.session.get(model, ctx.text("rule_version_id") or ctx.text("fee_schedule_version_id"))
+    if row is not None and row.author_actor_id is not None and row.author_actor_id == ctx.actor.actor_id:
+        raise PermissionDeniedError(
+            "You authored this version; another administrator must approve it.",
+            actor_id=ctx.actor.actor_id,
+            action="ui.action",
+            target_type=model.__tablename__,
+            target_id=row.id,
+        )
+
+
 def _rule_approve(ctx: ActionContext) -> Outcome:
     """Approve a rule version that somebody else authored."""
+    _refuse_own_version(ctx, finance_models.RuleVersion)
     command = RuleLifecycleCommand(
         rule_version_id=ctx.text("rule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
@@ -1847,6 +1743,7 @@ def _rule_approve(ctx: ActionContext) -> Outcome:
 
 def _rule_publish(ctx: ActionContext) -> Outcome:
     """Publish an approved rule version."""
+    _refuse_own_version(ctx, finance_models.RuleVersion)
     command = PublishRuleCommand(
         rule_version_id=ctx.text("rule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
@@ -1913,6 +1810,8 @@ def _fee_transition(
     message: str,
 ) -> Outcome:
     """Move one fee schedule version through its lifecycle."""
+    if transition in ("approve", "publish"):
+        _refuse_own_version(ctx, finance_models.FeeScheduleVersion)
     command = FeeScheduleLifecycleCommand(
         fee_schedule_version_id=ctx.text("fee_schedule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
@@ -2626,6 +2525,7 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "parcel.find": _parcel_find,
     "registry.propose": _registry_propose,
     "registry.decide": _registry_decide,
+    "registry.defer": _registry_defer,
     "change.request": _change_request,
     "change.transition": _change_transition,
     "change.dispatch": _change_dispatch,
@@ -2805,12 +2705,15 @@ from acme_city.ui import detail_routes as _detail_routes  # noqa: E402
 from acme_city.ui import reviewer_details as _reviewer_details  # noqa: E402,F401
 from acme_city.ui import ops_routes as _ops_routes  # noqa: E402
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
+from acme_city.ui import steward_routes as _steward_routes  # noqa: E402
 
 patterns.install(templates)
+display.install(templates)
 router.include_router(_detail_routes.router)
 router.include_router(_policy_routes.router)
 router.include_router(_ops_routes.router)
 ACTION_HANDLERS.update(_ops_routes.HANDLERS)
+router.include_router(_steward_routes.router)
 
 
 __all__ = [

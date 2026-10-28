@@ -321,8 +321,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0012 since the P3c migration (support cases), after 0011 (the chat 2 outcomes).
-    assert health.revision == "0012"
+    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
+    assert health.revision == "0013"
     assert database.database_url not in str(health.to_dict())
 
 

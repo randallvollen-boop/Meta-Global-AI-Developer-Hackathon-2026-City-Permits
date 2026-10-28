@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% import "components/steward.html" as st with context %}
+{% import "components/action_form.html" as forms %}
+
+{% block content %}
+{% set p = profile %}
+{% set summary = p.source_summary %}
+{% set _ = summary.update({'may_open': may_read_source}) %}
+<p class="crumb"><a href="{{ back_href }}">&larr; {{ 'Master records' if back_href == '/masters' else 'People &amp; organizations'|safe }}</a></p>
+<div class="page-head">
+  <div>
+    <h1 data-testid="record-name">{{ p.name }}</h1>
+    <p class="sub">
+      {{ p.type }}
+      · <span data-testid="record-status-label">Record status: <b>{{ p.record_status }}</b></span> {{ ui.info('party_record_status') }}
+      {% if p.issues %}· <span class="pill warn nowrap" data-testid="record-data-issue">Data issue: {{ p.issues|length }} open</span> {{ ui.info('data_issue') }}{% endif %}
+    </p>
+  </div>
+  <div class="actions">{{ ui.detail_link('record', p.party.id, 'Open as side panel', 'button button-quiet btn sm') }}{{ ui.help_button(help_screen) }}</div>
+</div>
+
+{{ st.source_summary(summary) }}
+
+<nav class="tabs profile-tabs" aria-label="Views of this record" data-testid="profile-tabs">
+  {% for item in profile_tabs %}<a href="{{ item.href }}" data-testid="profile-tab" data-view="{{ item.key }}"{% if item.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ item.label }}</a>{% endfor %}
+</nav>
+
+{% if profile_view == 'overview' %}
+<section class="panel" aria-labelledby="identity-heading" data-testid="profile-overview">
+  <h2 id="identity-heading">Identity</h2>
+  <dl class="pair-list">
+    <dt>Name</dt><dd>{{ p.name }}</dd>
+    {% if p.legal_name and p.legal_name != p.name %}<dt>Legal name</dt><dd>{{ p.legal_name }}</dd>{% endif %}
+    <dt>Type</dt><dd>{{ p.type }}</dd>
+    <dt>Record status {{ ui.info('party_record_status') }}</dt><dd>{{ p.record_status }}</dd>
+  </dl>
+  {% if p.aliases %}
+  <h3>Aliases</h3>
+  <ul class="alias-list" data-testid="current-aliases">
+    {% for alias in p.detail.current.aliases %}<li>{{ alias.value }} <span class="muted">({{ alias.alias_type|pretty }})</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  <h3>Contacts</h3>
+  <table class="data-table" data-testid="current-contacts">
+    <caption class="visually-hidden">Current contact register</caption>
+    <thead><tr><th scope="col">Type</th><th scope="col">Value</th><th scope="col">Verification</th><th scope="col">Valid from</th><th scope="col">Valid through</th></tr></thead>
+    <tbody>
+      {% for contact in p.contacts %}
+      <tr>
+        <td>{{ contact.contact_type|pretty }}</td>
+        <td>{{ contact.value }}</td>
+        <td>{{ contact.verification_state|pretty }}</td>
+        <td>{{ ui_time(contact.valid_from) }}</td>
+        <td>{{ ui_time(contact.valid_to, 'Open') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No contact is recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% if p.credentials %}
+<section class="panel" aria-labelledby="credentials-heading">
+  <h2 id="credentials-heading">Licenses and registrations</h2>
+  <p class="muted">The record status above and the status of a license or registration are separate: an active organization can hold an expired registration.</p>
+  <table class="data-table" data-testid="credentials">
+    <caption class="visually-hidden">Licenses and registrations held by this record</caption>
+    <thead><tr><th scope="col">Type</th><th scope="col">Number</th><th scope="col">License or registration status {{ ui.info('license_status') }}</th><th scope="col">Valid through</th><th scope="col">Issued by</th></tr></thead>
+    <tbody>
+      {% for credential in p.credentials %}
+      <tr>
+        <th scope="row">{{ credential.type_label }}</th>
+        <td>{% if may_read_source %}{{ ui.detail_link('credential', credential.credential_id, credential.number, 'mono') }}{% else %}<span class="mono">{{ credential.number }}</span>{% endif %}</td>
+        <td class="nowrap"><span class="pill {{ 'ok' if credential.status == 'active' else 'bad' }}">{{ credential.status_label }}</span></td>
+        <td class="nowrap">{{ ui_time(credential.valid_to, 'No end date') }}</td>
+        <td>{{ credential.issuer_label }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if accounts %}
+<section class="panel" aria-labelledby="accounts-heading">
+  <h2 id="accounts-heading">Finance accounts</h2>
+  <table class="data-table" data-testid="master-accounts">
+    <caption class="visually-hidden">Finance accounts of this record</caption>
+    <thead><tr><th scope="col">Source account</th><th scope="col">Role</th><th scope="col">Link status</th></tr></thead>
+    <tbody>
+      {% for account in accounts %}<tr><td class="mono">{{ account.source_account_id }}</td><td>{{ account.account_role|pretty }}</td><td>{{ account.link_status|pretty }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+<section class="panel" aria-labelledby="related-heading">
+  <h2 id="related-heading">Related records and open issues</h2>
+  <h3>Applications and issued permits</h3>
+  <ul class="plain-list" data-testid="related-applications">
+    {% for item in p.applications if not item.synthetic %}<li><a href="{{ item.href }}">{{ item.number }}</a> <span class="muted">{{ item.status }}</span></li>{% else %}<li class="muted">No application names this record.</li>{% endfor %}
+  </ul>
+  {% for entry in p.detail.issued %}
+  <p class="value-band value-issued" data-testid="value-issued"><span class="badge badge-issued">issued</span> {{ entry.permit_number }} ({{ entry.status|pretty }}, {{ ui_time(entry.issued_at) }})</p>
+  {% endfor %}
+  <h3>Data issues {{ ui.info('data_issue') }}</h3>
+  <ul class="plain-list" data-testid="record-issues">
+    {% for issue in p.issues %}<li><a href="{{ issue.href }}">{{ issue.text }}</a></li>{% else %}<li class="muted">No open data issue.</li>{% endfor %}
+  </ul>
+  <h3>Proposed corrections</h3>
+  {% for proposal in p.detail.proposed %}
+  <div class="value-band value-proposed" data-testid="value-proposed"><span class="badge badge-proposed">proposed correction</span> {{ proposal.title }} · {{ proposal.status|pretty }}</div>
+  <dl class="pair-list">
+    <dt>Current</dt><dd>{{ proposal.old_value }}</dd>
+    <dt>Proposed</dt><dd>{{ proposal.proposed_value }}</dd>
+    <dt>Destination</dt><dd>{{ proposal.destination or 'not declared' }}</dd>
+    <dt>Reason</dt><dd>{{ proposal.reason or '' }}</dd>
+  </dl>
+  {% else %}
+  <p class="muted" data-testid="proposed-empty">No correction is proposed.</p>
+  {% endfor %}
+</section>
+
+{% elif profile_view == 'sources' %}
+<section class="panel" aria-labelledby="sources-heading" data-testid="profile-sources">
+  <h2 id="sources-heading">Where each value came from</h2>
+  <table class="data-table" data-testid="{{ 'master-sources' if screen == 'masters' else 'source-links' }}">
+    <caption class="visually-hidden">Source records linked to this record</caption>
+    <thead><tr><th scope="col">Source</th><th scope="col">Record</th><th scope="col">Link</th><th scope="col">Decided by</th><th scope="col">Details</th></tr></thead>
+    <tbody>
+      {% for link in p.sources %}
+      <tr>
+        <td>{{ link.source }}</td>
+        <td class="mono">{{ link.record_id }}</td>
+        <td class="nowrap"><span class="badge badge-{{ link.status_key }}">{{ link.status }}</span></td>
+        <td>{{ link.decided_by if link.status_key != 'proposed' else 'Waiting for a decision' }}{% if link.decided_at %}, {{ ui_time(link.decided_at) }}{% endif %}</td>
+        <td>{% if may_read_source %}{{ ui.detail_link('source', link.detail_id, 'Source details') }}{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No source record is linked to this record yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% set trusted = p.detail.trusted_fields|selectattr("value", "ne", none)|list %}
+  {% if trusted %}
+  <h3>Values the policy trusts</h3>
+  <table class="data-table" data-testid="trusted-view">
+    <caption class="visually-hidden">Values selected by the authority policy</caption>
+    <thead><tr><th scope="col">Field</th><th scope="col">Value</th><th scope="col">Source</th><th scope="col">State</th></tr></thead>
+    <tbody>
+      {% for field in trusted %}
+      <tr><th scope="row">{{ field.attribute_path|pretty }}</th><td>{{ field.value }}</td><td>{{ field.source_system_id|pretty or 'Not declared' }}</td><td>{{ field.state|pretty }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if p.detail.trusted_disagreements %}
+  <h3>Unresolved disagreements</h3>
+  <ul class="issue-list">{% for field in p.detail.trusted_disagreements %}<li>{{ field.attribute_path|pretty }}: {{ field.value }} ({{ field.state|pretty }})</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+<section class="panel" aria-labelledby="submitted-heading">
+  <h2 id="submitted-heading">Submitted declarations</h2>
+  {% for revision in p.detail.submitted %}
+  <div class="value-band value-submitted" data-testid="value-submitted"><span class="badge badge-submitted">submitted</span> {{ revision.source_application_number }} revision {{ revision.revision_number }} ({{ ui_time(revision.submitted_at) }})</div>
+  <table class="data-table">
+    <caption class="visually-hidden">Submitted facts of revision {{ revision.revision_number }}</caption>
+    <thead><tr><th scope="col">Field</th><th scope="col">Submitted value</th></tr></thead>
+    <tbody>{% for key, value in revision.facts.items() %}<tr><th scope="row">{{ key|pretty }}</th><td>{{ value }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <p class="muted" data-testid="submitted-empty">No submitted declaration is on record.</p>
+  {% endfor %}
+</section>
+{% include "components/evidence_panel.html" %}
+
+{% else %}
+{% include "components/history_panel.html" %}
+{% endif %}
+
+<section class="panel card" aria-labelledby="record-actions-heading">
+  <div class="card-h"><h2 id="record-actions-heading">Next actions</h2></div>
+  <div class="card-b act">
+  {% for item in actions %}
+    {{ forms.action_form(item, csrf_token) }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}<li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

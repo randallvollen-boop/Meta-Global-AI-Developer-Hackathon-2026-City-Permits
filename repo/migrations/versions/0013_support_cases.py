@@ -1,7 +1,7 @@
 """Parity phase 3c: support cases.
 
-Revision ID: 0012
-Revises: 0011
+Revision ID: 0013
+Revises: 0012
 Create Date: 2026-10-28
 
 Adds the table of support cases the City Administrator records on the
@@ -17,8 +17,8 @@ from alembic import op
 
 import acme_city.persistence.types
 
-revision: str = '0012'
-down_revision: str | None = '0011'
+revision: str = '0013'
+down_revision: str | None = '0012'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

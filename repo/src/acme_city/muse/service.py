@@ -65,7 +65,7 @@ from acme_city.muse.payloads import (
     read_document_fixture,
 )
 from acme_city.muse.schemas import (
-    APPLICANT_ASSIST_TASK,
+    PRIVATE_TASKS,
     DEFAULT_MUSE_MODEL,
     EXTRACTION_TASK,
     MATCH_TASK,
@@ -292,11 +292,11 @@ class MuseService:
         if config is None:
             raise ValidationError(f"unknown Muse task: {command.task!r}")
         if command.task not in PROPOSING_TASKS:
-            # The applicant assistant is not a proposing task.  It is
-            # dispatched by the applicant-help service, which owns the source
-            # bundle, the grant and the privacy of the conversation.
+            # The applicant assistant and the what-if policy tasks are not
+            # proposing tasks.  Each is dispatched by its own service, which
+            # owns the source bundle or the run, the grant and the privacy.
             raise ValidationError(
-                "the applicant assistant task is dispatched by its own path and never "
+                "this task is dispatched by its own path and never "
                 "by the proposing run service"
             )
         if command.prompt_version and command.prompt_version != config["prompt_version"]:
@@ -367,10 +367,10 @@ class MuseService:
             refs = row.input_refs or {}
             run_application = str(refs.get("application_id") or "")
             run_reference = str(refs.get("source_application_number") or "")
-            if str(refs.get("task") or "") == APPLICANT_ASSIST_TASK:
-                # A chat run belongs to the applicant who asked.  Staff never
-                # read an un-escalated conversation, so the run is not listed
-                # here at all.
+            if str(refs.get("task") or "") in PRIVATE_TASKS:
+                # A chat run belongs to the applicant who asked, and a what-if
+                # run belongs to the holders of the policy Muse grants.  Neither
+                # is listed here at all.
                 continue
             if not self._record_is_visible(actor, run_application, run_reference):
                 continue

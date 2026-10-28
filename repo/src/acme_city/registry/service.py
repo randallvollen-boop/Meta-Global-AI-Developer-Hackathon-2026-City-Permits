@@ -324,6 +324,8 @@ class RegistryService:
             raise NotFoundError(
                 "no source link was found for the stated source record; propose the link first"
             )
+        if command.decision == "remove" and command.expected_version is None:
+            raise ValidationError("an expected version is required to remove a link")
         if command.expected_version is not None and crosswalk.version != command.expected_version:
             return ConflictResult(
                 code="version_conflict",
@@ -337,10 +339,17 @@ class RegistryService:
                     },
                 ),
             )
-        if command.decision not in {"approve", "reject", "no_match", "correct"}:
+        if command.decision not in {"approve", "reject", "no_match", "correct", "remove"}:
             raise ValidationError(
-                "a link decision is one of approve, reject, no_match or correct"
+                "a link decision is one of approve, reject, no_match, correct or remove"
             )
+        if command.decision == "remove":
+            if crosswalk.link_status != "approved":
+                raise ValidationError("only an approved link can be removed")
+            if crosswalk.source_dataset_key == "finance_accounts":
+                raise ValidationError(
+                    "a finance account link is not removed; correct it to the right party instead"
+                )
 
         decision_proposal = self._record_decision_proposal(
             command=command, crosswalk=crosswalk, actor=actor
@@ -363,6 +372,63 @@ class RegistryService:
             metadata={"decision": command.decision, "link_status": view.link_status},
         )
         return VersionedResult(value=view, version=view.version, audit_event_id=event.id)
+
+    def defer(
+        self,
+        *,
+        source_system_id: str,
+        dataset_key: str,
+        source_record_id: str,
+        reason: str,
+        expected_version: int | None,
+        actor: ActorContext,
+    ) -> VersionedResult[CrosswalkView] | ConflictResult:
+        """Put a proposed link aside with a note, without deciding it.
+
+        Nothing is linked, rejected or changed: the proposal stays open and the
+        audit trail records who deferred it, when and why.
+        """
+        domain_id = self._domain_for(source_system_id, dataset_key)
+        self._permissions.authorize(
+            actor,
+            DECIDE_ACTION,
+            ResourceContext(
+                domain_id=domain_id,
+                record_type="source_record",
+                record_ids=(source_record_id,),
+            ),
+        )
+        if not reason.strip():
+            raise ValidationError("a deferral states why the decision is put aside")
+        rows = self._crosswalk_rows(source_system_id, source_record_id)
+        proposed = next((row for row in rows if row.link_status == "proposed"), None)
+        if proposed is None:
+            raise NotFoundError("no proposed link exists for the stated source record")
+        if expected_version is None:
+            raise ValidationError("an expected version is required to defer a decision")
+        if proposed.version != expected_version:
+            return ConflictResult(
+                code="version_conflict",
+                expected_version=expected_version,
+                current_version=proposed.version,
+                differences=(
+                    {"field": "link_status", "expected": expected_version, "current": proposed.version},
+                ),
+            )
+        event = self._audit.append(
+            action="registry.crosswalk.defer",
+            actor=actor,
+            target_type="source_record",
+            target_id=source_record_id,
+            before_version=proposed.version,
+            after_version=proposed.version,
+            reason=reason,
+            references=[proposed.id, proposed.entity_id],
+            metadata={"decision": "defer", "link_status": proposed.link_status},
+        )
+        return VersionedResult(
+            value=crosswalk_view(proposed), version=proposed.version, audit_event_id=event.id
+        )
 
     def _resolve_crosswalk(
         self, command: MatchDecisionCommand
@@ -401,6 +467,10 @@ class RegistryService:
             self._register_revalidation(crosswalk, actor)
         elif command.decision == "reject":
             crosswalk.link_status = "rejected"
+        elif command.decision == "remove":
+            crosswalk.link_status = "removed"
+            crosswalk.valid_to = self._now
+            self._register_revalidation(crosswalk, actor)
         else:
             crosswalk.link_status = "no_match"
         crosswalk.version = before_version + 1

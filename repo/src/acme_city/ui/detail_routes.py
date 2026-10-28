@@ -19,6 +19,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.muse.schemas import PRIVATE_TASKS
 from acme_city.auth.router import get_session
 from acme_city.persistence.models import model_run, permit
 from acme_city.ui import patterns, view_models
@@ -59,6 +60,7 @@ def ui_detail(
         "message": outcome.message,
         "close_href": safe_next(request.query_params.get("from"), "/"),
     }
+    state["tabs"] = patterns.tab_links(outcome.view, str(state["close_href"]))
     return HTMLResponse(
         render_drawer_inner(templates, state),
         status_code=outcome.status,
@@ -111,7 +113,7 @@ def _resolve_muse_run(ctx: DetailContext, run_id: str) -> DetailView | None:
     if run is None:
         return None
     refs = run.input_refs if isinstance(run.input_refs, dict) else {}
-    if str(refs.get("task") or "") == "applicant_assist":
+    if str(refs.get("task") or "") in PRIVATE_TASKS:
         # A run of the applicant help assistant is the record of a private
         # conversation.  Staff never open it.
         return None

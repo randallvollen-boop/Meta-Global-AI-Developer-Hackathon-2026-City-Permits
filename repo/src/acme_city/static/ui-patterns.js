@@ -83,7 +83,8 @@
     var el = drawerEl();
     if (!el) return false;
     closeInfo(false);
-    if (trigger) opener = trigger;
+    /* A link inside the open drawer (a view tab) keeps the original trigger. */
+    if (trigger && !el.contains(trigger)) opener = trigger;
     var from = urlWithDetail(null);
     var url = "/detail/" + encodeURIComponent(kind) + "/" + encodeURIComponent(id) + "?from=" + encodeURIComponent(from);
     return fetch(url, { credentials: "same-origin", headers: { Accept: "text/html" } })

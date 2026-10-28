@@ -1114,6 +1114,24 @@
           "source": "explicit"
         },
         {
+          "permission_id": "policy.muse.brief",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.draft.convert",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.muse.propose",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "permit.case.archive",
           "domains": [
             "permits"
