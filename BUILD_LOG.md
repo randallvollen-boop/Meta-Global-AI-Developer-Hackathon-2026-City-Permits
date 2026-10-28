@@ -364,3 +364,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Commit: `16d82c3` on `feature/ui-admin`. Nothing pushed, merged or published.
 
 
+
+## 2026-10-28: City Administrator restyle, takeover and merge of main (`feature/ui-admin`)
+
+- Takeover audit of M3's `16d82c3` and `e4d36e3`: every item of `BRIEF-UI-ADMIN.md` was present. No assertion was weakened or deleted, no test was skipped, and `rules/service.py` and the finance commands are untouched. The existing tests M3 changed were changed for stated reasons (navigation, the `/rules` address, the icon cards moving to Administration, the freshness labels).
+- Identifier integrity: `app_d07` is the primary key and `SYN-APP-007` is the `source_application_number` of the same `applications` row (`fixtures/base_population.json`). They are one record. The screens show the readable reference and keep the key in the details.
+- Diffable content: the seeded CT-2@2 and fee schedule 2026.2 diff against their predecessors (limit 250000 to 300000, multiplier 0.001 to 0.0015, effective date). A version without a predecessor says the stored records hold nothing to compare.
+- Finished: supporting material on the selected version, readable freshness dates in the shared responsibility panel, plain denial reason in `action_form.html` (it said "not available to your persona" for state reasons too), policy draft links ("Made from a what-if run") listed on `/rules` for every view, Operations dashboard link on `/overview`, dashes and "not USD" removed from admin copy (vollencoms).
+- Merged `main` (3f06430, 43d93c7, 7a8c9f3). Conflicts: `base.html` (main's short names plus the overview entry), `action_form.html` (kept the `*` and "(optional)" labels, dropped main's duplicate legend), `router.py` (imports merged, old steward route removed because main moved it to `steward_routes.py`), `view_models.py` (main's steward entries with `/rules`), `rules_fees.html` (kept the register, added the policy draft links), `ui_glossary.json` and `BUILD_LOG.md` (both sides), `test_navigation.py` and `test_vc04.py` (both sides; the vc04 "same on every screen" count is 19: 18 from main plus the overview).
+- Tests changed deliberately: `test_admin_pages.py` and `test_admin_views.py` (the Operations link now exists; "different currency"; effective period wording), `test_pages.py` (steward screens keep their shorter freshness labels).
