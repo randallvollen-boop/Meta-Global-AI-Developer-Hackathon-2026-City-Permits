@@ -39,8 +39,10 @@ def pytest_only_paths() -> list[str]:
     return sorted(
         path.relative_to(REPO_ROOT).as_posix()
         for path in (REPO_ROOT / "tests").iterdir()
-        if path.is_dir()
-        and path.name != "__pycache__"
+        if (
+            (path.is_dir() and path.name != "__pycache__")
+            or (path.is_file() and path.name.startswith("test_") and path.suffix == ".py")
+        )
         and path.relative_to(REPO_ROOT).as_posix() not in covered
     )
 
@@ -142,13 +144,18 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, "scripts/check_test_collection.py", str(collection)],
             None,
         ),
-        ("pytest", [sys.executable, "-m", "pytest", "-q", *pytest_only_paths()], None),
         (
             "alembic-upgrade",
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             None,
         ),
         ("alembic", [sys.executable, "-m", "alembic", "check"], None),
+        (
+            "publishable-tree",
+            [sys.executable, "scripts/scan_publishable_tree.py"],
+            None,
+        ),
+        ("pytest", [sys.executable, "-m", "pytest", "-q", *pytest_only_paths()], None),
         (
             "deterministic-acceptance",
             [
@@ -163,11 +170,6 @@ def main(argv: list[str] | None = None) -> int:
         (
             "evidence-verification",
             [sys.executable, "scripts/verify_evidence.py", str(deterministic)],
-            None,
-        ),
-        (
-            "publishable-tree",
-            [sys.executable, "scripts/scan_publishable_tree.py"],
             None,
         ),
     ]
