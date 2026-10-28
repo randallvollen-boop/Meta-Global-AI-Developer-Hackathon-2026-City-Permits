@@ -362,6 +362,13 @@
       "sensitive": true
     },
     {
+      "permission_id": "policy.draft.convert",
+      "action": "policy.draft.convert",
+      "category": "policy",
+      "description": "Save a what-if run as draft rule and fee schedule versions through the existing draft commands. The drafts stay drafts: the author cannot approve or publish them, and nothing published changes.",
+      "sensitive": true
+    },
+    {
       "permission_id": "policy.muse.propose",
       "action": "policy.muse.propose",
       "category": "policy",

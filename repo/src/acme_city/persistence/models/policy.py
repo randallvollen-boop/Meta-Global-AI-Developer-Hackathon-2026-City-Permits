@@ -128,6 +128,29 @@ class ImmutableRunError(RuntimeError):
     """Raised when something tries to change or delete a stored run."""
 
 
+class PolicyDraftConversion(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base):
+    """The one conversion of a run into draft rule and fee versions.
+
+    A run converts at most once (``run_id`` is unique), so a repeated press
+    finds this row instead of making a second set of drafts.  The row names the
+    drafts and the content hash of the run it was made from; it never holds the
+    drafts' content, which lives in the rule and fee version rows.
+    """
+
+    __tablename__ = "policy_draft_conversions"
+
+    run_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("policy_runs.id"), nullable=False, unique=True
+    )
+    scenario_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: The run's content hash when it was converted (the version the draft is bound to).
+    run_content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: The Administrator who authored the drafts.
+    converted_by_actor_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: Ordered mappings ``{"kind": "rule"|"fee", "id", "label", "change_index"}``.
+    drafts: Mapped[list[Any]] = mapped_column(JSON, nullable=False)
+
+
 @event.listens_for(PolicyRun, "before_update")
 def _refuse_update(mapper: Any, connection: Any, target: PolicyRun) -> None:
     raise ImmutableRunError("a policy run is immutable; make a new run instead")
@@ -145,6 +168,7 @@ def _refuse_revision_update(mapper: Any, connection: Any, target: Any) -> None:
 
 __all__ = [
     "ImmutableRunError",
+    "PolicyDraftConversion",
     "PolicyRun",
     "PolicyScenario",
     "PolicyScenarioRevision",

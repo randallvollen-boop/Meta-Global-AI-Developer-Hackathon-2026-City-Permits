@@ -32,8 +32,8 @@ The path has three modes:
 
 The validation of what comes back lives in
 :mod:`acme_city.policy.muse_validation`.  Draft conversion and "needs
-independent approval" belong to policy 4; ``DRAFT_CONVERSION_SEAM`` marks the
-place.
+independent approval" are in :mod:`acme_city.policy.drafts` (policy 4);
+``DRAFT_CONVERSION_SEAM`` names it.  Muse itself never converts anything.
 """
 # REQUIRES: AI-01, AI-03, AI-04, PER-04, SEC-01, SEC-03
 # The what-if agent reaches the provider only behind a server-only switch and a shared call
@@ -112,8 +112,8 @@ LIVE_LABEL: Final = "Muse Spark (live)"
 #: The longest question an administrator may ask.
 MAX_QUESTION_LENGTH: Final = 500
 
-#: The place policy 4 plugs draft conversion into.  Policy 3 stops at a saved what-if.
-DRAFT_CONVERSION_SEAM: Final = None
+#: Where draft conversion lives.  Muse stops at a saved what-if; a person converts a run.
+DRAFT_CONVERSION_SEAM: Final = "acme_city.policy.drafts"
 
 #: What a screen says when it shows the deterministic briefing instead.
 FALLBACK_NOTICE: Final = (
