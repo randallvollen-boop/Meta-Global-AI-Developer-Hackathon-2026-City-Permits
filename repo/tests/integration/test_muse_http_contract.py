@@ -27,6 +27,7 @@ from acme_city.documents.service import DocumentService, StoreDocumentCommand
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.muse.client import (
+    MAX_OUTPUT_CEILING,
     MAX_OUTPUT_TOKENS,
     META_RESPONSES_URL,
     MuseClient,
@@ -345,7 +346,9 @@ def test_an_unbounded_output_budget_is_refused_before_the_dispatch(seeded) -> No
         "model": DEFAULT_MUSE_MODEL,
         "input": "x",
         "text": {"format": {"type": "json_schema", "name": "n", "schema": {}, "strict": True}},
-        "max_output_tokens": MAX_OUTPUT_TOKENS + 1,
+        # Changed deliberately (the policy tasks reserve more output): the
+        # refused budget is one above the hard ceiling.
+        "max_output_tokens": MAX_OUTPUT_CEILING + 1,
     }
     with pytest.raises(MuseRequestError):
         client.create_response(payload)

@@ -62,7 +62,7 @@ from acme_city.core.config import Settings
 from acme_city.core.errors import ConflictError, NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.muse.client import (
-    MAX_OUTPUT_TOKENS,
+    POLICY_MAX_OUTPUT_TOKENS,
     MuseClient,
     MuseRequestError,
     ProviderResponse,
@@ -128,9 +128,10 @@ BRIEF_INSTRUCTIONS: Final = (
     "You explain; you compute nothing and you recommend nothing. A person decides every case.\n"
     "Write short sentences. Every sentence that states a figure must list one claim for each\n"
     "figure, copying every field of the typed fact exactly: fact_id, value, unit, direction,\n"
-    "population, baseline_id, scenario_id. Never state a figure that is not the value of a typed\n"
+    "population, baseline_id, scenario_id. Copy the whole text between the quotes, words included. Never state a figure that is not the value of a typed\n"
     "fact or the limit of a rule source. Name an ACME Code section, a rule id or a threshold\n"
-    "only through a rule_ref copied exactly from the rule sources of the sentence.\n"
+    "only through a rule_ref copied exactly from the rule sources of the sentence: copy each\n"
+    "named field (configuration, rule_id, version, citation, limit_value, unit) as written.\n"
     "Say fewer or decrease only for a decrease fact, and more or increase only for an increase\n"
     "fact. If the population is synthetic, say so in the summary.\n"
     "Never claim staff time, throughput, processing time, savings or revenue, and never use the\n"
@@ -308,33 +309,40 @@ def render_brief_input(
     for item in run.result.get("applied_changes", []):
         lines.append(views.describe_change(item["change"], baseline))
     lines += ["--- END CHANGES TESTED ---", "", "--- BEGIN TYPED FACTS ---"]
+    # Each field is named as in a claim and quoted, so a value with a space,
+    # such as "baseline 71722cb51f41", is copied whole.
     for fact in facts:
         lines.append(
             " | ".join(
-                (
-                    fact.fact_id,
-                    fact.label,
-                    str(fact.value),
-                    fact.unit,
-                    fact.direction,
-                    fact.population,
-                    fact.baseline_id,
-                    fact.scenario_id,
+                f'{name}="{value}"'
+                for name, value in (
+                    ("fact_id", fact.fact_id),
+                    ("label", fact.label),
+                    ("value", str(fact.value)),
+                    ("unit", fact.unit),
+                    ("direction", fact.direction),
+                    ("population", fact.population),
+                    ("baseline_id", fact.baseline_id),
+                    ("scenario_id", fact.scenario_id),
                 )
             )
         )
     lines += ["--- END TYPED FACTS ---", "", "--- BEGIN RULE SOURCES ---"]
+    # Each field is named as in a rule_ref, so the model copies limit_value and
+    # unit exactly; the operator stays a separate field.
     for source in sources:
         lines.append(
             " | ".join(
-                (
-                    source.configuration,
-                    source.rule_id,
-                    source.version,
-                    source.citation,
-                    source.title,
-                    f"{source.operator} {source.limit_value}",
-                    source.unit,
+                f'{name}="{value}"'
+                for name, value in (
+                    ("configuration", source.configuration),
+                    ("rule_id", source.rule_id),
+                    ("version", source.version),
+                    ("citation", source.citation),
+                    ("title", source.title),
+                    ("operator", source.operator),
+                    ("limit_value", source.limit_value),
+                    ("unit", source.unit),
                 )
             )
         )
@@ -401,7 +409,7 @@ def build_payload(task: str, *, instructions: str, text: str, model: str) -> dic
             }
         },
         "reasoning": {"effort": "low"},
-        "max_output_tokens": MAX_OUTPUT_TOKENS,
+        "max_output_tokens": POLICY_MAX_OUTPUT_TOKENS,
     }
 
 

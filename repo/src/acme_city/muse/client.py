@@ -37,6 +37,14 @@ MAX_INPUT_TOKENS: Final = 4000
 #: against this budget, so it must leave room for both reasoning and the JSON.
 MAX_OUTPUT_TOKENS: Final = 4000
 
+#: The output budget of a what-if briefing, explanation or proposal.  A live
+#: briefing used 3,290 of 4,000 tokens on reasoning and was cut off before its
+#: JSON was complete, so the policy tasks reserve more.
+POLICY_MAX_OUTPUT_TOKENS: Final = 12000
+
+#: The hard ceiling on any run's output budget.
+MAX_OUTPUT_CEILING: Final = POLICY_MAX_OUTPUT_TOKENS
+
 #: The default request timeout, in seconds.
 DEFAULT_TIMEOUT_SECONDS: Final = 30.0
 
@@ -261,9 +269,9 @@ class MuseClient:
         budget = payload.get("max_output_tokens")
         if not isinstance(budget, int) or budget <= 0:
             raise MuseRequestError("the provider payload must bound the output budget")
-        if budget > MAX_OUTPUT_TOKENS:
+        if budget > MAX_OUTPUT_CEILING:
             raise MuseRequestError(
-                f"the output budget must not exceed {MAX_OUTPUT_TOKENS} tokens"
+                f"the output budget must not exceed {MAX_OUTPUT_CEILING} tokens"
             )
 
     # ---------------------------------------------------------------- dispatch
@@ -355,7 +363,9 @@ __all__ = [
     "DEFAULT_TIMEOUT_SECONDS",
     "FORBIDDEN_REQUEST_KEYS",
     "MAX_INPUT_TOKENS",
+    "MAX_OUTPUT_CEILING",
     "MAX_OUTPUT_TOKENS",
+    "POLICY_MAX_OUTPUT_TOKENS",
     "META_RESPONSES_URL",
     "MuseClient",
     "MuseRequestError",
