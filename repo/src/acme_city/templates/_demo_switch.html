@@ -8,15 +8,15 @@
     <span>Demo: switch user</span>
   </summary>
   <div class="demo-switch-panel">
-    <p class="demo-switch-note">Demonstration control. It is not part of the City website or of the permit application.</p>
+    <p class="demo-switch-note">Demonstration control. It is not part of the City website or of the permit application. It is here only to make switching users easy in this demonstration; in a real deployment people would sign in through the City's front door and their role would come from that sign-in.</p>
     {% if actor %}<p class="demo-switch-current">Now acting as <strong>{{ actor.label }}</strong></p>{% endif %}
     <ul>
       {% for persona in personas %}
       <li>
         <form method="post" action="/ui/actor">
           <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-          <input type="hidden" name="next" value="{{ '/apply' if persona.label == 'Applicant' else '/queue' }}">
-          <button type="submit" data-demo-persona="{{ persona.actor_id }}"{% if actor and actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website permits' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
+          <input type="hidden" name="next" value="{{ '/city/' if persona.label == 'Applicant' else '/queue' }}">
+          <button type="submit" data-demo-persona="{{ persona.actor_id }}"{% if actor and actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
         </form>
       </li>
       {% endfor %}

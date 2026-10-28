@@ -206,6 +206,11 @@ def verify_csrf(settings: Settings, actor: ActorContext, presented: str) -> None
         )
 
 
+#: The applicant's entry point. The staff-layout landing would duplicate it.
+APPLICANT_HOME = "/city/"
+APPLICANT_LABEL = "Applicant"
+
+
 def safe_next(value: str | None, fallback: str = "/queue") -> str:
     """Return a local path an action may return to."""
     if not value:
@@ -361,7 +366,14 @@ async def switch_persona(
         cookie = service.select_actor(actor_id)
     except AuthenticationRequiredError:
         return RedirectResponse("/select", status_code=303)
-    response = RedirectResponse(safe_next(str(form.get(NEXT_FIELD, "")), "/queue"), status_code=303)
+    destination = safe_next(str(form.get(NEXT_FIELD, "")), "/queue")
+    if actor_label(session, actor_id) == APPLICANT_LABEL and not destination.startswith(
+        ("/apply", "/city")
+    ):
+        # The applicant's front door is the City website, not a staff page. A switch
+        # made from the City website itself (next already under /apply or /city) is kept.
+        destination = APPLICANT_HOME
+    response = RedirectResponse(destination, status_code=303)
     response.set_cookie(**cookie.set_cookie_kwargs())
     return response
 
@@ -434,6 +446,8 @@ def ui_work_queue(
     resolved, refused = _guard(request, session, actor, "queue")
     if refused is not None:
         return refused
+    if actor_label(session, resolved.actor_id) == APPLICANT_LABEL:
+        return RedirectResponse(APPLICANT_HOME, status_code=303)
     queue = view_models.work_queue(
         session,
         resolved,

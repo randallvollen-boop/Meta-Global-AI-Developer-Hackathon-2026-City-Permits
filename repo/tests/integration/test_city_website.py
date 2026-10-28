@@ -136,3 +136,49 @@ def test_staff_pages_still_render_and_portal_stays_blocked(client: TestClient) -
     assert queue.status_code == 200
     assert 'class="side"' in queue.text and "city-site" not in queue.text
     assert client.get("/apply").status_code == 403
+
+
+def test_switching_to_applicant_from_a_staff_page_lands_on_the_city_site(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    page = client.get("/queue").text
+    assert 'name="next" value="/queue"' in page
+    done = client.post(
+        "/ui/actor",
+        data={"actor_id": "persona_applicant", "next": "/queue"},
+        follow_redirects=False,
+    )
+    assert done.status_code == 303 and done.headers["location"] == "/city/"
+    # a bare switch (no next) also lands there
+    bare = client.post("/ui/actor", data={"actor_id": "persona_applicant"}, follow_redirects=False)
+    assert bare.headers["location"] == "/city/"
+
+
+def test_staff_persona_switch_keeps_its_destination(client: TestClient) -> None:
+    done = client.post(
+        "/ui/actor",
+        data={"actor_id": "persona_data_steward", "next": "/queue/intake"},
+        follow_redirects=False,
+    )
+    assert done.headers["location"] == "/queue/intake"
+    bare = client.post("/ui/actor", data={"actor_id": "persona_data_steward"}, follow_redirects=False)
+    assert bare.headers["location"] == "/queue"
+
+
+def test_the_old_in_app_applicant_landing_redirects_to_the_city_site(client: TestClient) -> None:
+    choose(client, "persona_applicant")
+    queue = client.get("/queue", follow_redirects=False)
+    assert queue.status_code == 303 and queue.headers["location"] == "/city/"
+    # the portal and its deep links stay
+    assert client.get("/apply").status_code == 200
+    assert client.get("/apply/track").status_code == 200
+
+
+def test_both_layouts_say_the_switcher_is_for_demonstration_only(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    staff = client.get("/queue").text
+    city = client.get("/city/").text
+    for page in (staff, city):
+        assert "ease of" in page and "sign in" in page and "front door" in page
+        assert "role would come from that sign-in" in page
+    assert "Fictional ACME City demonstration." in staff
+    assert "Fictional City of Acme website" in city
