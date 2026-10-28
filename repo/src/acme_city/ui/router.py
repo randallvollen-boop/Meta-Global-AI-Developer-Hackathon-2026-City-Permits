@@ -955,7 +955,7 @@ def ui_planning_overview(
         title="Planning overview",
         overview=overview,
         evidence_note=(
-            "This screen is a hub of counted records rather than one record. The "
+            "This screen counts records from several places. The "
             "evidence of a record is on the record itself."
         ),
     )
@@ -1602,11 +1602,25 @@ def _permit_evaluate(ctx: ActionContext) -> Outcome:
     """Evaluate the current revision of an application."""
     application_id = ctx.text("application_id")
     view = PermitService(ctx.session).evaluate(application_id, ctx.actor)
+    open_blockers = view_models.open_blockers(ctx.session, application_id)
+    message = (
+        f"Validation finished with the outcome '{view.outcome}' on version "
+        f"{view.version}."
+    )
+    if open_blockers:
+        count = len(open_blockers)
+        message = (
+            f"Validation finished. The rule checks gave the outcome '{view.outcome}' "
+            f"on version {view.version}, and "
+            + (
+                "1 blocker still prevents a decision."
+                if count == 1
+                else f"{count} blockers still prevent a decision."
+            )
+            + " The blockers are listed under Application checks."
+        )
     return Outcome(
-        message=(
-            f"Validation finished with the outcome '{view.outcome}' on version "
-            f"{view.version}."
-        ),
+        message=message,
         destination="Permitting validation",
         state=view.outcome,
         pending=bool(view.blockers),
