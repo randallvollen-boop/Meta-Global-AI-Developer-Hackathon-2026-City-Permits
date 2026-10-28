@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
+  "bundle_content_hash": "d850c71dcab0afdd08a63583ac419b9d98eceafa08ab25f18052cc06e3164881",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -12,7 +12,7 @@
       {
         "citations": [
           {
-            "quote": "ACME Code §14-305 — Fence height, front yard\nPublished rule DF-1, version DF-1@1.\nApplies to: Residential deck or fence (deck_fence).\nApplies when: location = front; structure_kind = fence.\nChecks: Fence height (ft).\nOperator: must not be more than.\nThreshold: 4.",
+            "quote": "ACME Code §14-305: Fence height, front yard\nPublished rule DF-1, version DF-1@1.\nApplies to: Residential deck or fence (deck_fence).\nApplies when: location = front; structure_kind = fence.\nChecks: Fence height (ft).\nOperator: must not be more than.\nThreshold: 4.",
             "source_id": "rule.DF-1.DF-1@1"
           }
         ],
@@ -21,7 +21,7 @@
       {
         "citations": [
           {
-            "quote": "ACME Code §14-306 — Fence height, side and rear yard\nPublished rule DF-2, version DF-2@1.\nApplies to: Residential deck or fence (deck_fence).\nApplies when: location = side_rear; structure_kind = fence.\nChecks: Fence height (ft).\nOperator: must not be more than.\nThreshold: 6.",
+            "quote": "ACME Code §14-306: Fence height, side and rear yard\nPublished rule DF-2, version DF-2@1.\nApplies to: Residential deck or fence (deck_fence).\nApplies when: location = side_rear; structure_kind = fence.\nChecks: Fence height (ft).\nOperator: must not be more than.\nThreshold: 6.",
             "source_id": "rule.DF-2.DF-2@1"
           }
         ],
@@ -44,7 +44,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "do i need a permit for a 6 ft fence",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "5865d45bb42fd76457603bb10d6f54c7d3b21c3a67b0502b9e8d230b0c1b0a0f",
+  "replay_key": "be523834671a07001be0cbca938c437e259c4093b0d6be5a23ba93efdfb51451",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

@@ -436,7 +436,7 @@ def test_revisions_show_what_changed_and_keep_both_addresses(
     rows = re.findall(r'data-testid="revision-row" data-current="(\w+)"', page)
     assert rows == ["true", "false"], "newest first, only one current"
     flat = text_of(page)
-    assert "Earlier revision - superseded" in flat and "Current revision" in flat
+    assert "Earlier revision: superseded" in flat and "Current revision" in flat
     assert "needs re-review" in flat
     assert "Changed: valuation_cents" in flat
     both = text_of(re.search(r'data-testid="address-both">(.*?)</p>', page, re.S).group(1))
@@ -475,7 +475,7 @@ def test_internal_notes_are_labelled_internal(client: TestClient) -> None:
     page = client.get(f"/permits/{CASE}?tab=activity").text
     rows = re.findall(r'<li data-testid="comment-row" data-visibility="(\w+)">(.*?)</li>', page, re.S)
     by_visibility = {vis: text_of(body) for vis, body in rows}
-    assert "Internal note - City staff only" in by_visibility["internal"]
+    assert "Internal note (City staff only)" in by_visibility["internal"]
     assert "INTERNAL-ONLY-MARKER" in by_visibility["internal"]
     assert "Visible to the applicant" in by_visibility["applicant"]
     assert "Internal note" not in by_visibility["applicant"]

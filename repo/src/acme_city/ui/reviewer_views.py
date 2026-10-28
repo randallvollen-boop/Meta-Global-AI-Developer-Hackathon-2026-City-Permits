@@ -38,11 +38,11 @@ ISSUE_WORDS: dict[str, str] = {
     "site_missing": "Property address is missing",
     "parcel_unmatched": "Property address needs confirmation",
     "parcel_link_unapproved": "Property address needs confirmation",
-    "credential_missing": "Licence is missing",
-    "credential_expired": "Licence has expired",
-    "credential_inactive": "Licence is not active",
-    "credential_not_yet_valid": "Licence is not valid yet",
-    "credential_holder_mismatch": "Licence belongs to someone else",
+    "credential_missing": "License is missing",
+    "credential_expired": "License has expired",
+    "credential_inactive": "License is not active",
+    "credential_not_yet_valid": "License is not valid yet",
+    "credential_holder_mismatch": "License belongs to someone else",
     "no_current_evaluation": "Application checks have not been run",
     "evaluation_stale": "Application checks are out of date",
     "decision_stale": "Decision needs reconfirming",
@@ -212,7 +212,7 @@ def decorate_application_item(
     )
     routed = bucket == "data" and routed_to_steward(session, application)
     if bucket == "issued":
-        next_party, action = "None - issued", "Open application"
+        next_party, action = "None (issued)", "Open application"
     elif bucket == "applicant":
         next_party, action = "Applicant", "Open application"
     elif bucket == "data":
@@ -326,7 +326,7 @@ def scenario_clock_note(now: datetime | None = None) -> str:
 
 #: How an observation state reads to a reviewer.
 FIELD_STATE_WORDS: dict[str, str] = {
-    "proposed": "Suggested - awaiting steward",
+    "proposed": "Suggested: awaiting steward",
     "accepted": "Confirmed by steward",
     "corrected": "Corrected and confirmed by steward",
     "rejected": "Rejected by steward",
@@ -385,7 +385,7 @@ def _revision_rows(session: Session, application: permit.Application) -> list[di
                 "number": revision.revision_number,
                 "submitted_at": revision.submitted_at.isoformat() if revision.submitted_at else "",
                 "is_current": is_current,
-                "label": "Current revision" if is_current else "Earlier revision - superseded",
+                "label": "Current revision" if is_current else "Earlier revision: superseded",
                 "changed": changed,
                 "documents": received,
                 "checks_state": checks_state,

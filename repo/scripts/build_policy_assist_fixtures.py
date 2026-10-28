@@ -138,7 +138,7 @@ def fence_brief(facts: dict[str, Any], sources: dict[tuple[str, str, str], Any],
         "summary",
         [
             sentence(
-                f"This what-if was tested on synthetic data: {size} generated cases, not real applications.",
+                f"This what-if was tested on synthetic data: {size} generated cases. None of them is a real application.",
                 [f["population.size"]],
             ),
             sentence(

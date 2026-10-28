@@ -230,7 +230,7 @@ def _rule_source(
     unit = str(mapping.get("unit") or "").strip()
     threshold = str(row.limit_value or "").strip()
     lines = [
-        f"{row.citation} — {row.title}",
+        f"{row.citation}: {row.title}",
         f"Published rule {row.rule_id}, version {version}.",
     ]
     if type_row is not None:
@@ -258,7 +258,7 @@ def _rule_source(
     return Source(
         source_id=f"rule.{row.rule_id}.{version}",
         kind="rule",
-        title=f"{row.citation} — {row.title}",
+        title=f"{row.citation}: {row.title}",
         version=version,
         text=text,
         sha256=_hash(text),
@@ -294,7 +294,7 @@ def _type_source(type_row: permit.PermitType) -> Source:
     lines = [
         f"{type_row.label} ({type_row.key})",
         f"Review area: {type_row.review_area or 'not routed'}.",
-        f"Process: {pill} — {pill_text}",
+        f"Process: {pill}: {pill_text}",
     ]
     if type_row.discretionary:
         lines.append("A discretionary type is always held for a person or a board.")
@@ -342,8 +342,8 @@ def _target_source(type_row: permit.PermitType) -> Source:
     text = (
         f"Service target for {type_row.label} ({type_row.key}): {days} days.\n"
         "This is the fictional number of days the City aims to review a case of this "
-        "type in. It is a target the City works to, it is not a promise about your "
-        "application, and it is not a completion date."
+        "type in. It is a target the City works to. It makes no promise about your "
+        "application and gives no completion date."
     )
     return Source(
         source_id=f"service_target.{type_row.key}",
@@ -564,8 +564,8 @@ def _case_fee_source(
     text = (
         f"The City assessed {amount / 100:.2f} {currency} for your application.\n"
         "This amount is the assessment the City computed for this application from the "
-        "published fee schedule. It is not a payment receipt, and it changes when the "
-        "City reassesses the application."
+        "published fee schedule. It records the assessment only, with no payment, and it "
+        "changes when the City reassesses the application."
     )
     return [
         Source(

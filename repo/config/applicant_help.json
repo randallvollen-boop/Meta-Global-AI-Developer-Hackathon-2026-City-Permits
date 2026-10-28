@@ -5,7 +5,7 @@
   "note": "The applicant help assistant answers from the City's own published rules and configuration. The passages below are the fixed applicant-facing text the assistant may quote; they are never a decision, never an exemption and never a promise. The rules themselves are not here: the assistant reads the published rule versions the City stores.",
   "notice": "This assistant explains ACME City rules and your application. It does not decide permits or give legal advice.",
   "fallback_label": "Matching ACME rule text (not an AI answer)",
-  "no_match_text": "No published ACME text matches that question. You can ask the City a person instead.",
+  "no_match_text": "No published ACME text matches that question. You can ask a person at the City instead.",
   "rate_limit": {
     "questions": 10,
     "window_minutes": 10
@@ -286,7 +286,7 @@
         "draft",
         "disabled"
       ],
-      "text": "Submitting: the Submit button stays disabled until every required field and document is provided and you accept the certification. You can save your work and come back to it; a draft is not an application."
+      "text": "Submitting: press Submit when every required field and document is provided and you accept the certification. If an item is missing, the form shows a \"There is a problem\" summary and keeps what you entered. You can save your work and come back to it; a draft is not an application."
     },
     {
       "id": "steps.after_you_submit",
