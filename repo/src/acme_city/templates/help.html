@@ -1,0 +1,109 @@
+{# The help and documentation pages.  One template for every view of /help; the
+   frame (staff or City website) is chosen by the route.  All words come from
+   config/help_content.json; documents come from the repository. #}
+{% extends help_layout %}
+
+{% macro crumbs(label) -%}
+<p class="help-crumbs" data-testid="help-crumbs"><a href="/help">Help and documentation</a>{% if label %} <span aria-hidden="true">/</span> <span>{{ label }}</span>{% endif %}</p>
+{%- endmacro %}
+
+{% block content %}
+<div class="help-page{% if help_layout != 'base.html' %} city-wrap{% endif %}" data-testid="help-page" data-help-view="{{ help_view }}">
+
+{% if help_view == 'hub' %}
+  <div class="page-head"><div><h1>{{ help_hub.title }}</h1><p class="sub">{{ help_hub.intro }}</p></div></div>
+  <ul class="help-cards" data-testid="help-cards">
+    {% for card in help_hub.cards %}
+    <li class="help-card"><h2><a href="{{ card.href }}" data-testid="help-card-{{ card.key }}">{{ card.title }}</a></h2><p>{{ card.summary }}</p></li>
+    {% endfor %}
+  </ul>
+  <p class="muted">Looking for help with one screen? Press the ? button in its page header.{% if help_layout != 'base.html' %} To ask about your own permit, use <a href="/apply/help/panel">Ask about your permit</a>.{% endif %}</p>
+
+{% elif help_view == 'tutorial' %}
+  {{ crumbs('Tutorial') }}
+  <div class="page-head"><div><h1>{{ tutorial.title }}</h1><p class="sub">{{ tutorial.intro }}</p></div></div>
+  <section class="panel help-notes" aria-label="Before you start" data-testid="tutorial-notes">
+    <h2>Before you start</h2>
+    <ul>
+      <li>{{ tutorial.switch_note }}</li>
+      <li data-testid="tutorial-replay-note">{{ tutorial.replay_note }}</li>
+      <li>{{ tutorial.state_note }}</li>
+    </ul>
+    <p>Jump to:
+      {% for section in tutorial.sections %}<a href="#{{ section.persona_id }}">{{ section.persona }}</a>{% if not loop.last %} &middot; {% endif %}{% endfor %}
+    </p>
+  </section>
+  {% for section in tutorial.sections %}
+  <section class="panel help-section" id="{{ section.persona_id }}" aria-labelledby="h-{{ section.persona_id }}" data-testid="tutorial-section" data-persona-id="{{ section.persona_id }}">
+    <h2 id="h-{{ section.persona_id }}">{{ loop.index }}. {{ section.persona }}</h2>
+    <p>{{ section.intro }}</p>
+    <ol class="help-steps">
+      {% for step in section.steps %}
+      <li data-testid="tutorial-step">
+        <p class="help-do"><strong>Do this:</strong> {{ step.do }}</p>
+        <p class="help-see"><strong>You should see:</strong> {{ step.see }}</p>
+        <p class="help-go"><a class="btn sm" href="{{ step.href }}" data-testid="tutorial-go" data-persona-id="{{ section.persona_id }}">Go to this screen</a> <span class="muted">Opens as {{ section.persona }}.</span></p>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endfor %}
+
+{% elif help_view == 'howto_index' %}
+  {{ crumbs('How-to guides') }}
+  <div class="page-head"><div><h1>How-to guides</h1><p class="sub">{{ howto_intro }}</p></div></div>
+  <ul class="help-cards" data-testid="howto-list">
+    {% for g in guides %}
+    <li class="help-card" data-testid="howto-item" data-slug="{{ g.slug }}"><h2><a href="/help/how-to/{{ g.slug }}">{{ g.title }}</a></h2><p>{{ g.summary }}</p><p class="muted">For: {{ g.who }}</p></li>
+    {% endfor %}
+  </ul>
+
+{% elif help_view == 'howto' %}
+  {{ crumbs('How-to guides') }}
+  <div class="page-head"><div><h1>{{ guide.title }}</h1><p class="sub">{{ guide.summary }}</p></div></div>
+  <p class="help-who" data-testid="howto-who"><strong>Who can do this:</strong> {{ guide.who }}. Use "Demo: switch user" to act as this person.</p>
+  <p><a class="btn primary" href="{{ guide.screen_href }}" data-testid="howto-go">Go to {{ guide.screen_label }}</a></p>
+  <ol class="help-steps" data-testid="howto-steps">
+    {% for step in guide.steps %}<li data-testid="howto-step">{{ step }}</li>{% endfor %}
+  </ol>
+  <p class="help-result" data-testid="howto-result"><strong>What you get:</strong> {{ guide.result }}</p>
+  <p><a href="/help/how-to">All how-to guides</a></p>
+
+{% elif help_view == 'glossary' %}
+  {{ crumbs('Glossary') }}
+  <div class="page-head"><div><h1>Glossary</h1><p class="sub">The same definitions the information buttons show on the screens.</p></div></div>
+  <dl class="help-glossary" data-testid="glossary">
+    {% for t in terms %}<div id="term-{{ t.key }}"><dt>{{ t.label }}</dt><dd>{{ t.text }}</dd></div>{% endfor %}
+  </dl>
+
+{% elif help_view == 'technical' %}
+  {{ crumbs('Technical documentation') }}
+  <div class="page-head"><div><h1>{{ technical.title }}</h1><p class="sub">{{ technical.intro }}</p></div></div>
+  <ul class="help-cards" data-testid="technical-list">
+    {% for d in documents %}
+    <li class="help-card" data-testid="technical-item" data-slug="{{ d.slug }}"><h2><a href="/help/technical/{{ d.slug }}">{{ d.title }}</a></h2><p>{{ d.summary }}</p>{% if not d.available %}<p class="muted">Not available in this copy of the application.</p>{% endif %}</li>
+    {% endfor %}
+  </ul>
+
+{% elif help_view == 'document' %}
+  {{ crumbs(document.title) }}
+  <div class="page-head"><div><h1>{{ document.title }}</h1><p class="sub">{{ document.summary }} Read only.</p></div></div>
+  {% if not document_available %}
+  <p class="panel" role="status" data-testid="document-missing">{{ document_message }}</p>
+  {% elif document.format == 'html' %}
+  <p class="muted" data-testid="document-sandbox-note">{{ technical_note }}</p>
+  <p><a class="btn sm" href="/help/technical/{{ document.slug }}/file" target="_blank" rel="noopener" data-testid="document-open">Open in a new tab</a> <a class="btn sm" href="/help/technical/{{ document.slug }}/file?download=true" data-testid="document-download">Download</a></p>
+  <iframe class="help-frame" sandbox="" src="/help/technical/{{ document.slug }}/file" title="{{ document.title }}" loading="lazy" referrerpolicy="no-referrer" data-testid="document-frame"></iframe>
+  {% else %}
+  <article class="help-doc" data-testid="document-body">{{ document_body | safe }}</article>
+  {% endif %}
+  <p><a href="/help/technical">All technical documents</a></p>
+
+{% elif help_view == 'missing' %}
+  {{ crumbs('') }}
+  <div class="page-head"><div><h1>Not found</h1><p class="sub" data-testid="help-missing">{{ missing }}</p></div></div>
+  <p><a href="{{ back }}">Go back</a></p>
+{% endif %}
+
+</div>
+{% endblock %}
