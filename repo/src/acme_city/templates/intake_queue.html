@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Intake queue</h1>
+    <p class="sub">The cases the City has in front of it, in saved views. Search, filter and sort work through the address bar alone.</p>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="Intake queue views" data-testid="intake-tabs">
+  {% for tab in queue.tabs %}
+  <a href="{{ tab.href }}" data-testid="intake-tab" data-tab="{{ tab.key }}" aria-selected="{{ 'true' if tab.key == queue.tab else 'false' }}" title="{{ tab.description }}">
+    {{ tab.label }} <span class="n" data-testid="intake-tab-count">{{ tab.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<section class="card">
+  <form class="filters toolbar" method="get" action="/queue/intake" data-testid="intake-filters">
+    <input type="hidden" name="tab" value="{{ queue.filters.tab }}">
+    <p class="field">
+      <label for="intake-q">Search</label>
+      <input id="intake-q" name="q" value="{{ queue.filters.query }}" placeholder="reference, applicant or address">
+    </p>
+    <p class="field">
+      <label for="intake-channel">Channel</label>
+      <select id="intake-channel" name="channel">
+        <option value="">Every channel</option>
+        {% for channel in queue.channels %}
+        <option value="{{ channel }}" {% if queue.filters.channel == channel %}selected{% endif %}>{{ channel }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="intake-type">Permit type</label>
+      <select id="intake-type" name="permit_type">
+        <option value="">Every type</option>
+        {% for key, label in queue.permit_types %}
+        <option value="{{ key }}" {% if queue.filters.permit_type == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="intake-priority">Priority</label>
+      <select id="intake-priority" name="priority">
+        <option value="">Every priority</option>
+        {% for value in queue.priorities %}
+        <option value="{{ value }}" {% if queue.filters.priority == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="intake-owner">Owner</label>
+      <select id="intake-owner" name="owner">
+        <option value="">Every owner</option>
+        {% for owner_id, label in queue.owners %}
+        <option value="{{ owner_id }}" {% if queue.filters.owner == owner_id %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="field">
+      <label for="intake-sort">Sort</label>
+      <select id="intake-sort" name="sort">
+        {% for entry in queue.sorts %}
+        <option value="{{ entry.key }}" {% if queue.filters.sort == entry.key %}selected{% endif %}>{{ entry.label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p><button type="submit" class="button btn" data-testid="intake-filter-submit">Apply filters</button></p>
+  </form>
+
+  <p class="muted" data-testid="intake-count" style="padding:0 16px">{{ queue.total_after_filters }} of {{ queue.total_in_tab }} case(s) in this view.</p>
+
+  <form method="post" action="/ui/actions/permit.intake.process_selected" data-testid="intake-bulk-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="permit.intake.process_selected">
+    <input type="hidden" name="next" value="/queue/intake?tab={{ queue.filters.tab }}">
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="intake-table">
+      <caption class="visually-hidden">The cases of the selected intake view</caption>
+      <thead>
+        <tr>
+          <th scope="col"><span class="visually-hidden">Select</span></th>
+          <th scope="col">Reference</th>
+          <th scope="col">Type</th>
+          <th scope="col">State</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Owner</th>
+          <th scope="col">Signals</th>
+          <th scope="col">Age</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in queue.rows %}
+        <tr class="row" data-testid="intake-row" data-status="{{ row.status }}" data-age-tone="{{ row.age_tone }}">
+          <td>
+            {% if row.awaiting_intake %}
+            <input type="checkbox" name="selection" value="{{ row.application_id }}:{{ row.version }}"
+                   id="select-{{ row.application_id }}" data-testid="intake-select"
+                   aria-label="Select {{ row.reference }} for processing">
+            {% endif %}
+          </td>
+          <td><span class="ref">{{ row.reference }}</span><div class="t2">{{ row.channel }}</div></td>
+          <td><div class="t1"><a href="{{ row.href }}">{{ row.permit_type_label }}</a></div><div class="t2">{{ row.review_area }}</div></td>
+          <td><span class="pill {{ 'warn' if row.status == 'needs_information' else 'info' }}">{{ row.status_label }}</span></td>
+          <td>{% if row.priority == 'high' %}<span class="pill warn" data-testid="intake-priority">high</span>{% else %}<span class="pill plain" data-testid="intake-priority">normal</span>{% endif %}</td>
+          <td>{{ row.owner_label or '—' }}</td>
+          <td class="t2">
+            {% if row.signals.duplicate.state != 'none' %}<div data-testid="signal-duplicate"><span class="badge badge-blocking">duplicate</span> {{ row.signals.duplicate.detail }}</div>{% endif %}
+            {% if row.signals.document_quality.flags %}<div data-testid="signal-document-quality"><span class="badge badge-conflicting">document</span> {{ row.signals.document_quality.state }}</div>{% endif %}
+            <div data-testid="signal-parcel"><span class="badge badge-submitted">parcel</span> {{ row.signals.parcel.status }}{% if row.signals.parcel.parcel_number %} ({{ row.signals.parcel.parcel_number }}){% endif %}</div>
+            <div data-testid="signal-agent"><span class="badge badge-submitted">agent</span> {{ row.signals.agent.state }}</div>
+          </td>
+          <td>
+            {% if row.age_days is not none %}
+            <span class="age {{ 'over' if row.age_tone == 'over' else 'at' if row.age_tone == 'at' else '' }}"
+                  data-testid="intake-age" data-age-days="{{ row.age_days }}" data-target-days="{{ row.service_target_days }}"
+                  title="The service target of this permit type is {{ row.service_target_days }} day(s).">{{ row.age_days }}d</span>
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="muted" data-testid="intake-empty">No case is in this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="toolbar">
+      <p class="muted" style="margin:0">{{ queue.definitions.age }} {{ queue.definitions.target }}</p>
+      <p style="margin:0">
+        <button type="submit" class="button button-primary btn primary" data-testid="intake-bulk-submit"
+                {% if not can_process or not agent_awake or not queue.rows %}disabled{% endif %}>Process selected with agent</button>
+      </p>
+    </div>
+    {% if not agent_awake %}
+    <p class="lock" data-testid="intake-bulk-locked">The intake agent is asleep. A City Administrator wakes it on the Intake agent screen.</p>
+    {% endif %}
+  </form>
+</section>
+
+<section class="panel card">
+  <div class="card-h"><h2>What these figures mean</h2></div>
+  <div class="card-b">
+    <p class="muted" data-testid="intake-definitions">{{ queue.definitions.signals }}</p>
+    <ul class="issue-list" data-testid="intake-tab-definitions">
+      {% for tab in queue.tabs %}
+      <li><strong>{{ tab.label }}</strong>: {{ tab.description }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endblock %}

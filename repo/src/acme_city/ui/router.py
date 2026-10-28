@@ -62,6 +62,7 @@ from acme_city.governance.schemas import (
 )
 from acme_city.governance.service import GovernanceService
 from acme_city.permits import icons as permit_icons
+from acme_city.permits import queues
 from acme_city.permits.decisions import PermitDecisionCommand
 from acme_city.permits.issuance import IssuePermitCommand
 from acme_city.permits.schemas import ReviseApplicationCommand
@@ -117,11 +118,22 @@ class ActionContext:
     actor: ActorContext
     form: dict[str, str]
     settings: Settings
+    #: The fields that were posted more than once, so a selection of rows can
+    #: arrive without JavaScript.
+    multi: dict[str, list[str]] = field(default_factory=dict)
 
     def text(self, name: str, default: str = "") -> str:
         """Return one posted text field."""
         value = self.form.get(name, default)
         return value.strip() if isinstance(value, str) else default
+
+    def values(self, name: str) -> list[str]:
+        """Return every posted value of one field."""
+        values = self.multi.get(name)
+        if values:
+            return list(values)
+        value = self.form.get(name)
+        return [value] if isinstance(value, str) and value else []
 
     def integer(self, name: str) -> int | None:
         """Return one posted integer field."""
@@ -437,10 +449,104 @@ def ui_work_queue(
         screen="queue",
         title="Work queue",
         queue=queue,
+        saved_queues=view_models.queue_links(session, resolved),
         can_apply=bool(resolved.record_scope)
         and view_models.holds_grant(session, resolved, "application.submit", "permits"),
     )
     return render(request, "work_queue.html", context)
+
+
+@router.get("/queue/intake", operation_id="ui_intake_queue")
+def ui_intake_queue(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "active",
+    q: str = "",
+    channel: str = "",
+    permit_type: str = "",
+    priority: str = "",
+    owner: str = "",
+    sort: str = "age",
+) -> Any:
+    """Show the intake queue of the Data Steward."""
+    resolved, refused = _guard(request, session, actor, "intake_queue")
+    if refused is not None:
+        return refused
+    queue = queues.intake_queue(
+        session,
+        resolved,
+        tab=tab,
+        query=q,
+        channel=channel,
+        permit_type=permit_type,
+        priority=priority,
+        owner=owner,
+        sort=sort,
+    )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="intake_queue",
+        title="Intake queue",
+        queue=queue,
+        agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
+        can_process=view_models.holds_grant(
+            session, resolved, "permit.intake.process_selected", "permits"
+        ),
+    )
+    return render(request, "intake_queue.html", context)
+
+
+@router.get("/queue/early-resolution", operation_id="ui_early_resolution")
+def ui_early_resolution(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the early-resolution board of the Data Steward."""
+    resolved, refused = _guard(request, session, actor, "early_resolution")
+    if refused is not None:
+        return refused
+    board = queues.early_resolution(session, resolved)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="early_resolution",
+        title="Early resolution",
+        board=board,
+    )
+    return render(request, "early_resolution.html", context)
+
+
+@router.get("/queue/review", operation_id="ui_review_queue")
+def ui_review_queue(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    area: str = "",
+) -> Any:
+    """Show the review queue of the Permit Reviewer."""
+    resolved, refused = _guard(request, session, actor, "review_queue")
+    if refused is not None:
+        return refused
+    queue = queues.review_queue(session, resolved, area=area)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="review_queue",
+        title="Review queue",
+        queue=queue,
+        agent_awake=agent_views.agent_state(session, "adjudication")["mode"]
+        == "awake",
+        can_run=view_models.holds_grant(
+            session, resolved, "agent.run.adjudication", "permits"
+        ),
+    )
+    return render(request, "review_queue.html", context)
 
 
 @router.get("/applicants", operation_id="ui_applicants")
@@ -1195,6 +1301,51 @@ def _lifecycle(ctx: ActionContext) -> Any:
     return LifecycleService(ctx.session)
 
 
+def _permit_intake_process_selected(ctx: ActionContext) -> Outcome:
+    """Run the intake agent on the cases the person selected.
+
+    The selection is a list of ``application id`` and ``version`` pairs.  It
+    is bounded, deduplicated and checked case by case; the batch either runs
+    completely or not at all.
+    """
+    from acme_city.permits.bulk import Selection, process_selected
+
+    selections: list[Selection] = []
+    for raw in ctx.values("selection"):
+        text = str(raw).strip()
+        if not text:
+            continue
+        application_id, separator, version = text.rpartition(":")
+        if not separator or not application_id.strip():
+            raise ValidationError(
+                "a selected row must name the case and the version it was read at"
+            )
+        try:
+            expected = int(version)
+        except ValueError as error:
+            raise ValidationError(
+                "a selected row must name the version it was read at"
+            ) from error
+        selections.append(Selection(application_id.strip(), expected))
+    result = process_selected(
+        ctx.session,
+        actor=ctx.actor,
+        selections=selections,
+        settings=ctx.settings,
+    )
+    return Outcome(
+        message=(
+            f"The intake agent ran on {len(result.processed)} selected case(s)."
+        ),
+        destination="Intake agent",
+        state="completed" if result.processed else "skipped",
+        target_type="agent",
+        target_id="intake",
+        affected=result.processed,
+        extra={"detail": ", ".join(f"{item['reference']}: {item['outcome']}" for item in result.details)},
+    )
+
+
 def _permit_case_return(ctx: ActionContext) -> Outcome:
     """Return a case to the applicant."""
     application = _lifecycle(ctx).return_application(
@@ -1393,12 +1544,22 @@ def _permit_evaluate(ctx: ActionContext) -> Outcome:
     )
 
 
+def _decision_conditions(ctx: ActionContext) -> list[str]:
+    """Return the conditions of approval the form carries.
+
+    One condition per line.  The service checks the list; the form only
+    reads it.
+    """
+    return [line.strip() for line in ctx.text("conditions").splitlines() if line.strip()]
+
+
 def _permit_decide(ctx: ActionContext) -> Outcome:
     """Record an actual reviewer decision."""
     command = PermitDecisionCommand(
         application_id=ctx.text("application_id"),
         outcome=ctx.text("outcome"),
         reason=ctx.text("reason"),
+        conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
@@ -1414,6 +1575,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         target_type="decision",
         target_id=view.decision_id,
         after_version=view.version,
+        extra={"detail": "; ".join(view.conditions)},
     )
 
 
@@ -1423,6 +1585,7 @@ def _permit_reconfirm(ctx: ActionContext) -> Outcome:
         application_id=ctx.text("application_id"),
         outcome=ctx.text("outcome"),
         reason=ctx.text("reason"),
+        conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
@@ -1438,6 +1601,7 @@ def _permit_reconfirm(ctx: ActionContext) -> Outcome:
         target_type="decision",
         target_id=view.decision_id,
         after_version=view.version,
+        extra={"detail": "; ".join(view.conditions)},
     )
 
 
@@ -2353,6 +2517,7 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "permit.case.assign": _permit_case_assign,
     "permit.case.comment": _permit_case_comment,
     "permit.finding.waive": _permit_finding_waive,
+    "permit.intake.process_selected": _permit_intake_process_selected,
     "rule.draft": _rule_draft,
     "rule.submit": _rule_submit,
     "rule.approve": _rule_approve,
@@ -2418,12 +2583,18 @@ async def run_ui_action(
         return RedirectResponse("/select", status_code=303)
     form = await request.form()
     fields = {key: str(value) for key, value in form.items()}
+    multi: dict[str, list[str]] = {}
+    for key in form.keys():
+        values = [str(value) for value in form.getlist(key)]
+        if len(values) > 1:
+            multi[key] = values
     verify_csrf(request.app.state.settings, actor, fields.get(CSRF_FIELD, ""))
     context = ActionContext(
         session=session,
         actor=actor,
         form=fields,
         settings=request.app.state.settings,
+        multi=multi,
     )
     destination = safe_next(fields.get(NEXT_FIELD, ""), "/queue")
     try:

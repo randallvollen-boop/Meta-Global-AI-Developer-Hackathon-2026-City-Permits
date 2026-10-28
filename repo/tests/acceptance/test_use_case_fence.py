@@ -369,13 +369,29 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     assert confirmed_parcel["status"] == "accepted", confirmed_parcel
 
     rear_version = application_row(environment, rear_id)["version"]
+    # The reviewer leaves the applicant a comment before deciding.
+    commented = act(
+        client,
+        "permit.case.comment",
+        {
+            "application_id": rear_id,
+            "expected_version": str(rear_version),
+            "body": "The rear fence complies with DF-2. The gate must open inward.",
+            "visibility": "applicant",
+        },
+        f"/permits/{rear_id}",
+    )
+    assert commented["status"] == "accepted", commented
+
+    rear_version = application_row(environment, rear_id)["version"]
     decided = act(
         client,
         "permit.decide",
         {
             "application_id": rear_id,
             "expected_application_version": str(rear_version),
-            "outcome": "approved",
+            "outcome": "approved_with_conditions",
+            "conditions": "The gate must open inward.",
             "reason": "the rear fence complies with DF-2",
         },
         f"/permits/{rear_id}",
@@ -479,6 +495,9 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     assert issued.json()["value"]["permit_number"].startswith("ACME-")
     assert application_row(environment, rear_id)["status"] == "issued"
     assert application_row(environment, front_id)["status"] == "denied"
+    # The conditions of the approval are part of the immutable record.
+    snapshot = issued.json()["value"]["snapshot"]
+    assert snapshot["decision"]["conditions"] == ["The gate must open inward."]
 
 
 def _pending_recommendation_id(settings, application_id: str) -> str:

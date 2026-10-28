@@ -192,13 +192,20 @@ def decide_application(
     session: Session = Depends(get_session),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
-    """Record an actual reviewer decision."""
+    """Record an actual reviewer decision.
+
+    An approval that carries conditions is an ``approved`` decision with a
+    non-empty conditions list; the decision outcome vocabulary does not
+    change.
+    """
     service = permit_service(session)
     result = service.decide(
         PermitDecisionCommand(
             application_id=application_id,
             outcome=command.outcome,
             reason=command.reason,
+            conditions=list(command.conditions or []),
+            reason_code=command.reason_code,
             expected_application_version=command.expected_application_version,
             expected_evaluation_version=command.expected_evaluation_version,
         ),
@@ -216,13 +223,19 @@ def reconfirm_application(
     session: Session = Depends(get_session),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
-    """Record a reviewer reconfirmation of a stale decision."""
+    """Record a reviewer reconfirmation of a stale decision.
+
+    The reconfirmation carries the conditions of the decision it replaces, so
+    the conditions survive the round trip.
+    """
     service = permit_service(session)
     result = service.reconfirm(
         PermitDecisionCommand(
             application_id=application_id,
             outcome=command.outcome,
             reason=command.reason,
+            conditions=list(command.conditions or []),
+            reason_code=command.reason_code,
             expected_application_version=command.expected_application_version,
             expected_evaluation_version=command.expected_evaluation_version,
         ),

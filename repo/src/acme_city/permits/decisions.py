@@ -51,6 +51,39 @@ DECIDABLE_STATUSES: frozenset[str] = frozenset(
     {"submitted", "ready_for_review", "under_review", "needs_information"}
 )
 
+#: The outcomes a caller may name that are recorded as another outcome.
+#:
+#: An approval with conditions is not a recorded outcome of its own: it is an
+#: ``approved`` decision that carries a non-empty list of conditions.  The
+#: name is accepted at the edge so that a reader of the form and a reader of
+#: the API say the same thing.
+OUTCOME_ALIASES: dict[str, str] = {"approved_with_conditions": "approved"}
+
+#: The name an approval with conditions carries at the edge.
+APPROVAL_WITH_CONDITIONS = "approved_with_conditions"
+
+
+def resolve_outcome(value: str) -> str:
+    """Return the recorded outcome a caller named."""
+    text = str(value or "").strip().lower()
+    return OUTCOME_ALIASES.get(text, text)
+
+
+def clean_conditions(conditions: list[str] | None) -> list[str]:
+    """Return the conditions of a decision, each one trimmed.
+
+    A list that carried entries but no readable one is refused: an approval
+    with conditions states what the applicant must do, and a blank line is
+    not a condition.
+    """
+    raw = list(conditions or [])
+    cleaned = [str(item).strip() for item in raw]
+    if raw and not [item for item in cleaned if item]:
+        raise ValidationError(
+            "a condition of approval must say something; write one condition per line"
+        )
+    return [item for item in cleaned if item]
+
 
 class PermitDecisionCommand(PermitModel):
     """Record a reviewer decision.
@@ -112,11 +145,13 @@ class PermitDecisionService:
         self, command: PermitDecisionCommand, actor: ActorContext
     ) -> VersionedResult[DecisionView] | ConflictResult:
         """Record a reviewer decision on an application."""
-        outcome = str(command.outcome or "").strip().lower()
+        requested = str(command.outcome or "").strip().lower()
+        outcome = resolve_outcome(requested)
         if outcome not in DECISION_OUTCOMES:
             raise ValidationError(
                 f"unsupported decision outcome: {command.outcome!r}; use one of "
                 + ", ".join(DECISION_OUTCOMES)
+                + " or " + APPROVAL_WITH_CONDITIONS
             )
         application = self._load_application(command)
         self._permissions.authorize(
@@ -139,6 +174,18 @@ class PermitDecisionService:
         if application.status not in DECIDABLE_STATUSES:
             raise ValidationError(
                 f"an application in status {application.status!r} cannot take a reviewer decision"
+            )
+        # Every outcome carries the rationale of the person who decided.
+        rationale = str(command.reason or "").strip()
+        if not rationale:
+            raise ValidationError(
+                "a reviewer decision needs a rationale; say why you decided this way"
+            )
+        conditions = clean_conditions(command.conditions)
+        if requested == APPROVAL_WITH_CONDITIONS and not conditions:
+            raise ValidationError(
+                "an approval with conditions needs at least one condition; write one "
+                "condition per line"
             )
         reason_code = self._reason_code(command, outcome)
 
@@ -175,10 +222,10 @@ class PermitDecisionService:
             application=application,
             evaluation=evaluation,
             outcome=outcome,
-            reason=command.reason,
+            reason=rationale,
             actor=actor,
             decision_type="review",
-            conditions=list(command.conditions or []),
+            conditions=conditions,
             reason_code=reason_code,
         )
         event = self._audit.append(
@@ -187,7 +234,7 @@ class PermitDecisionService:
             target_type="decision",
             target_id=decision.id,
             after_version=decision.version,
-            reason=command.reason or None,
+            reason=rationale or None,
             references=[application.id, evaluation.id],
             correlation_id=application.correlation_id,
             metadata=(
@@ -214,7 +261,8 @@ class PermitDecisionService:
         reconfirmation is a new decision version that refers to the current
         evaluation.
         """
-        outcome = str(command.outcome or "approved").strip().lower()
+        requested = str(command.outcome or "approved").strip().lower()
+        outcome = resolve_outcome(requested)
         if outcome not in DECISION_OUTCOMES:
             raise ValidationError(f"unsupported decision outcome: {command.outcome!r}")
         application = self._load_application(command)
@@ -234,6 +282,18 @@ class PermitDecisionService:
             return conflict
         # An archived case is closed: it takes no reconfirmation.
         require_mutable(application, action="reconfirming the decision")
+        # Every outcome carries the rationale of the person who decided.
+        rationale = str(command.reason or "").strip()
+        if not rationale:
+            raise ValidationError(
+                "a reviewer reconfirmation needs a rationale; say why you confirmed it"
+            )
+        conditions = clean_conditions(command.conditions)
+        if requested == APPROVAL_WITH_CONDITIONS and not conditions:
+            raise ValidationError(
+                "an approval with conditions needs at least one condition; write one "
+                "condition per line"
+            )
         reason_code = self._reason_code(command, outcome)
 
         previous = self._permits.current_decision(application.id)
@@ -272,9 +332,10 @@ class PermitDecisionService:
             application=application,
             evaluation=evaluation,
             outcome=outcome,
-            reason=command.reason,
+            reason=rationale,
             actor=actor,
             decision_type="reconfirmation",
+            conditions=conditions,
             reason_code=reason_code,
         )
         previous.status = "superseded"
@@ -286,7 +347,7 @@ class PermitDecisionService:
             target_type="decision",
             target_id=decision.id,
             after_version=decision.version,
-            reason=command.reason or None,
+            reason=rationale or None,
             references=[application.id, evaluation.id, previous.id],
             correlation_id=application.correlation_id,
             metadata=(

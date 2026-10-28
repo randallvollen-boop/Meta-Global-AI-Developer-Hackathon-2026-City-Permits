@@ -68,6 +68,21 @@ SCREENS: tuple[dict[str, str], ...] = (
         "href": "/agent/adjudication",
     },
     {"key": "admin", "label": "Administration", "href": "/admin"},
+    {
+        "key": "intake_queue",
+        "label": "Intake queue",
+        "href": "/queue/intake",
+    },
+    {
+        "key": "early_resolution",
+        "label": "Early resolution",
+        "href": "/queue/early-resolution",
+    },
+    {
+        "key": "review_queue",
+        "label": "Review queue",
+        "href": "/queue/review",
+    },
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -91,6 +106,9 @@ SCREEN_DOMAIN: dict[str, str] = {
     "agent_intake": "permits",
     "agent_adjudication": "permits",
     "admin": "records",
+    "intake_queue": "permits",
+    "early_resolution": "permits",
+    "review_queue": "permits",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -166,7 +184,43 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("admin.actor.manage", None),
         ("records.configuration.view", None),
     ),
+    # The intake queue and the early-resolution board are the Data Steward's
+    # work.  The review queue is the Permit Reviewer's.  Each is opened by a
+    # grant only that persona holds, never by a persona label.
+    "intake_queue": (("permit.intake.process_selected", "permits"),),
+    "early_resolution": (("permit.case.advance", "permits"),),
+    "review_queue": (("permit.decide", "permits"),),
 }
+
+
+#: The saved queues the shared work queue links to, with the grant each one
+#: needs.  The link is shown only to a persona that holds the grant.
+QUEUE_LINKS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "intake_queue",
+        "label": "Intake queue",
+        "href": "/queue/intake",
+        "permission": "permit.intake.process_selected",
+        "domain_id": "permits",
+        "note": "the saved views of the cases that arrived and wait for the City",
+    },
+    {
+        "key": "early_resolution",
+        "label": "Early resolution",
+        "href": "/queue/early-resolution",
+        "permission": "permit.case.advance",
+        "domain_id": "permits",
+        "note": "the cases that wait for a person, grouped by their primary finding",
+    },
+    {
+        "key": "review_queue",
+        "label": "Review queue",
+        "href": "/queue/review",
+        "permission": "permit.decide",
+        "domain_id": "permits",
+        "note": "the cases that are with the Permit Reviewer",
+    },
+)
 
 
 # --------------------------------------------------------------------- helpers
@@ -413,6 +467,29 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
         if item["key"] == "queue" and total:
             item["count"] = total
     return items
+
+
+def queue_links(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
+    """Return the saved queues the acting persona may open from the work queue.
+
+    A link is shown only when the persona holds the grant of the queue, so
+    the shared work queue keeps the behaviour of every other persona.
+    """
+    links: list[dict[str, Any]] = []
+    for entry in QUEUE_LINKS:
+        if not holds_grant(
+            session, actor, entry["permission"], entry["domain_id"]
+        ):
+            continue
+        links.append(
+            {
+                "key": entry["key"],
+                "label": entry["label"],
+                "href": entry["href"],
+                "note": entry["note"],
+            }
+        )
+    return links
 
 
 # --------------------------------------------------------------- responsibility
@@ -3749,6 +3826,9 @@ def decision_outcome_label(row: permit.Decision) -> str:
     """Return the outcome a person reads: an approval with conditions says so."""
     if row.outcome == "approved" and row.conditions:
         return "Approved with conditions"
+    if row.outcome == "modified":
+        # A modified decision keeps its own meaning: it is not issuable.
+        return "Modified (not issuable)"
     return row.outcome.replace("_", " ").capitalize()
 
 

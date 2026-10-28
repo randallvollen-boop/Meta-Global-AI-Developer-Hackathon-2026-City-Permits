@@ -13,6 +13,11 @@ from __future__ import annotations
 from conftest import BrowserServer
 
 #: The screens of the demonstration and the path of their detail.
+#:
+#: Parity phase 3b added three screens.  They are not in this list: the
+#: sweep runs as the City Administrator, and the Administrator holds no
+#: grant for them.  Each one is swept as its own persona in
+#: ``PERSONA_SCREENS``.
 SCREENS = (
     ("/queue", "Work queue"),
     ("/applicants", "Applicants"),
@@ -27,8 +32,20 @@ SCREENS = (
     ("/admin", "Administration"),
 )
 
+#: The screens that are swept as the persona that owns them.
+PERSONA_SCREENS: tuple[tuple[str, str, str], ...] = (
+    ("persona_data_steward", "/queue/intake", "Intake queue"),
+    ("persona_data_steward", "/queue/early-resolution", "Early resolution"),
+    ("persona_permit_reviewer", "/queue/review", "Review queue"),
+)
+
 #: The screens each persona may open.  The order is the canonical order of
 #: the navigation.
+#:
+#: Parity phase 3b added three screens after the existing entries, so the
+#: order of the existing screens is unchanged.  The Data Steward gains the
+#: intake queue and the early-resolution board; the Permit Reviewer gains
+#: the review queue.  No other persona gains a screen.
 NAVIGATION_BY_PERSONA = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
@@ -39,12 +56,15 @@ NAVIGATION_BY_PERSONA = {
         "steward",
         "rules",
         "agent_intake",
+        "intake_queue",
+        "early_resolution",
     ],
     "persona_permit_reviewer": [
         "queue",
         "applicants",
         "permit",
         "agent_adjudication",
+        "review_queue",
     ],
     "persona_city_administrator": [
         "queue",
@@ -64,11 +84,14 @@ NAVIGATION_BY_PERSONA = {
 #: The screens a persona may not open; each one answers 403.
 HIDDEN_SCREENS = {
     "persona_applicant": ["/steward", "/rules-fees", "/reconciliation", "/governance",
-                           "/agent/intake", "/agent/adjudication", "/admin"],
-    "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin"],
+                           "/agent/intake", "/agent/adjudication", "/admin",
+                           "/queue/intake", "/queue/early-resolution", "/queue/review"],
+    "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin",
+                              "/queue/review"],
     "persona_permit_reviewer": ["/steward", "/rules-fees", "/reconciliation", "/governance",
-                                "/agent/intake", "/admin"],
-    "persona_city_administrator": [],
+                                "/agent/intake", "/admin", "/queue/intake",
+                                "/queue/early-resolution"],
+    "persona_city_administrator": ["/queue/intake", "/queue/early-resolution", "/queue/review"],
 }
 
 
@@ -94,6 +117,24 @@ def test_the_navigation_holds_the_screens_of_the_persona(
         assert items.count() == len(expected), actor_id
         keys = [items.nth(index).get_attribute("data-screen-key") for index in range(len(expected))]
         assert keys == expected, actor_id
+
+
+def test_each_new_queue_is_swept_as_its_own_persona(
+    page, server: BrowserServer, login
+) -> None:
+    """The three phase 3b screens are opened by the persona that owns them."""
+    for actor_id, path, title in PERSONA_SCREENS:
+        login(actor_id)
+        response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert response is not None
+        assert response.status == 200, (actor_id, path)
+        assert page.title().startswith(title.split(":")[0]), (actor_id, path)
+        page.set_viewport_size({"width": 390, "height": 844})
+        overflow = page.evaluate(
+            "() => document.documentElement.scrollWidth - window.innerWidth"
+        )
+        assert overflow <= 1, (actor_id, path, overflow)
+    assert page.recorded_errors == []
 
 
 def test_a_hidden_screen_answers_403(page, server: BrowserServer, login) -> None:

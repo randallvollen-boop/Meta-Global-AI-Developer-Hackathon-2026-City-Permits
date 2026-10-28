@@ -151,7 +151,12 @@ class IntakeAgent:
             started_at=self._now,
             finished_at=None,
             outcome="recorded",
-            inputs={"permit_type_id": application.permit_type_id},
+            inputs={
+                "permit_type_id": application.permit_type_id,
+                # The revision the run was made against.  A run of an earlier
+                # revision is history: the case was answered again since.
+                "revision": application.revision,
+            },
         )
         self._session.add(run)
         self._session.flush()

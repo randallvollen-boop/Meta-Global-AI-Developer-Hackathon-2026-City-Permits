@@ -313,6 +313,8 @@ tr:last-child td { border-bottom: 0; }
 .mini-steps i.b { background: var(--bad); }
 .age { font: 500 .76rem var(--f-mono); padding: 1px 7px; border-radius: 6px; background: var(--surface-2); color: var(--fg-2); }
 .age.old { background: var(--warn-soft); color: var(--warn); }
+.age.over { background: var(--bad-soft); color: var(--bad); }
+.age.at { background: var(--warn-soft); color: var(--warn); }
 .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .search {
   flex: 1 1 220px; display: flex; align-items: center; gap: 8px; background: var(--surface-2);

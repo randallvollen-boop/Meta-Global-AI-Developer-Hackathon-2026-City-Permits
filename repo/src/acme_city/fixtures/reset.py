@@ -374,6 +374,7 @@ def reset_demo(
                 discretionary=bool(permit_type.discretionary),
                 description=permit_type.description or None,
                 fee_schedule_key=permit_type.fee_schedule_key,
+                service_target_days=int(permit_type.service_target_days),
             )
         )
     counts["permit_types"] = len(bundle.rules.permit_types)

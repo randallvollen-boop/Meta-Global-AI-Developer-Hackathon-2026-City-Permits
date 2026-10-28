@@ -372,8 +372,8 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    # Head is 0006 since the parity phase 3a migration added by the parity brief.
-    assert revision == ("0006",)
+    # Head is 0007 since the parity phase 3b migration added by the parity brief.
+    assert revision == ("0007",)
     assert "demo_environment" in tables
 
 

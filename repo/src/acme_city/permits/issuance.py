@@ -550,6 +550,9 @@ class PermitIssuanceService:
                 "decided_at": decision.decided_at.isoformat(),
                 "reason": decision.reason,
                 "evaluation_id": decision.evaluation_id,
+                # The conditions of approval are part of the immutable record:
+                # the artifact is rendered from this snapshot alone.
+                "conditions": list(decision.conditions or []),
             },
             "evaluation": {
                 "evaluation_id": None if evaluation is None else evaluation.id,
@@ -631,6 +634,7 @@ def render_snapshot(snapshot: dict[str, Any]) -> bytes:
         "decided_by": decision.get("decided_by_actor_id") or "",
         "decided_at": decision.get("decided_at") or "",
         "decision_reason": decision.get("reason") or "",
+        "conditions": list(decision.get("conditions") or []),
         "date_basis": (snapshot.get("evaluation") or {}).get("date_basis") or "",
         "rules": list(snapshot.get("rules") or []),
         "fee_schedule_id": assessment.get("fee_schedule_id") or "",

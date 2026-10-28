@@ -276,6 +276,12 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 
 #: The screens each persona may open, in canonical navigation order. Derived
 #: from the seeded grants through SCREEN_PERMISSIONS; hidden screens 403.
+#:
+#: Parity phase 3b added three screens after the existing entries, so the
+#: order of the existing screens is unchanged and the new ones come last:
+#: the Data Steward opens the intake queue and the early-resolution board
+#: (both behind a grant only that persona holds) and the Permit Reviewer
+#: opens the review queue.  No other persona gains a screen.
 EXPECTED_NAVIGATION: dict[str, list[str]] = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
@@ -286,8 +292,16 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "steward",
         "rules",
         "agent_intake",
+        "intake_queue",
+        "early_resolution",
     ],
-    "persona_permit_reviewer": ["queue", "applicants", "permit", "agent_adjudication"],
+    "persona_permit_reviewer": [
+        "queue",
+        "applicants",
+        "permit",
+        "agent_adjudication",
+        "review_queue",
+    ],
     "persona_city_administrator": [
         "queue",
         "applicants",

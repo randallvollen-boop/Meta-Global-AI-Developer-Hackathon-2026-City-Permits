@@ -57,6 +57,10 @@ class PermitType(IdMixin, VersionMixin, CreatedAtMixin, Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: The fee schedule key that applies to this type.
     fee_schedule_key: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    #: The fictional service target of the type, in whole days.  The age
+    #: colouring of a queue compares the age of a case with this figure.  It
+    #: is a demonstration target, never a promise.
+    service_target_days: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class PermitTypeIcon(IdMixin, CreatedAtMixin, Base):

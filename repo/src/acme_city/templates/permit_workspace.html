@@ -649,6 +649,89 @@
           {% endif %}
         </p>
 
+        {% if detail.can_decide and detail.evaluation and not detail.current_decision %}
+        <details class="action act-card" data-testid="decision-form">
+          <summary>Record the reviewer decision</summary>
+          <p class="muted">Approve, approve with conditions or deny. Every outcome needs a rationale; a denial needs a denial reason code.</p>
+          <form method="post" action="/ui/actions/permit.decide" class="action-form" data-testid="decision-form-inner">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action_id" value="permit.decide">
+            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+            <input type="hidden" name="application_id" value="{{ app.application_id }}">
+            <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
+            <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
+            <div class="fieldset">
+              <label for="decision-outcome">Outcome</label>
+              <select id="decision-outcome" name="outcome" required>
+                <option value="approved">Approve</option>
+                <option value="approved_with_conditions">Approve with conditions</option>
+                <option value="denied">Deny</option>
+              </select>
+            </div>
+            <div class="fieldset">
+              <label for="decision-conditions">Conditions of approval (one per line)</label>
+              <textarea id="decision-conditions" name="conditions" rows="3" data-testid="decision-conditions"></textarea>
+            </div>
+            <div class="fieldset">
+              <label for="decision-reason">Rationale</label>
+              <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason"></textarea>
+            </div>
+            <div class="fieldset">
+              <label for="decision-code">Denial reason code</label>
+              <select id="decision-code" name="reason_code">
+                <option value="">None (an approval does not need one)</option>
+                {% for code in detail.lifecycle.reason_codes.denial %}
+                <option value="{{ code.code }}">{{ code.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <p><button type="submit" class="btn sm primary" data-testid="decision-submit">Record the decision</button></p>
+          </form>
+        </details>
+        {% endif %}
+
+        {% if detail.can_decide and detail.current_decision and detail.current_decision.stale %}
+        <details class="action act-card" data-testid="reconfirm-form">
+          <summary>Reconfirm the decision</summary>
+          <p class="muted">The case changed since the decision was recorded. A reconfirmation is a new decision version against the current evaluation; it keeps the conditions unless you change them.</p>
+          <form method="post" action="/ui/actions/permit.reconfirm" class="action-form" data-testid="reconfirm-form-inner">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action_id" value="permit.reconfirm">
+            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+            <input type="hidden" name="application_id" value="{{ app.application_id }}">
+            <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
+            <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
+            <div class="fieldset">
+              <label for="reconfirm-outcome">Outcome</label>
+              <select id="reconfirm-outcome" name="outcome" required>
+                <option value="approved">Approve</option>
+                <option value="approved_with_conditions">Approve with conditions</option>
+                <option value="denied">Deny</option>
+              </select>
+            </div>
+            <div class="fieldset">
+              <label for="reconfirm-conditions">Conditions of approval (one per line)</label>
+              <textarea id="reconfirm-conditions" name="conditions" rows="3" data-testid="reconfirm-conditions">{% for condition in detail.current_decision.conditions %}{{ condition }}
+{% endfor %}</textarea>
+            </div>
+            <div class="fieldset">
+              <label for="reconfirm-reason">Rationale</label>
+              <textarea id="reconfirm-reason" name="reason" rows="3" required data-testid="reconfirm-reason"></textarea>
+            </div>
+            <div class="fieldset">
+              <label for="reconfirm-code">Denial reason code</label>
+              <select id="reconfirm-code" name="reason_code">
+                <option value="">None (an approval does not need one)</option>
+                {% for code in detail.lifecycle.reason_codes.denial %}
+                <option value="{{ code.code }}">{{ code.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <p><button type="submit" class="btn sm primary" data-testid="reconfirm-submit">Reconfirm the decision</button></p>
+          </form>
+        </details>
+        {% endif %}
+
         {% if detail.lifecycle.can_comment %}
         <details class="action act-card" data-testid="comment-form">
           <summary>Write a comment</summary>

@@ -305,8 +305,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0006 since the parity phase 3a migration added by parity phase 3.
-    assert health.revision == "0006"
+    # Head is 0007 since the parity phase 3b migration added by parity phase 3.
+    assert health.revision == "0007"
     assert database.database_url not in str(health.to_dict())
 
 
