@@ -40,6 +40,12 @@ POLICY_LABELS: Final = {
     POLICY_INDEPENDENT: "independent approval",
 }
 
+#: The line shown on Rules and fees and on the overview.
+POLICY_LINES: Final = {
+    POLICY_SINGLE: "Approval policy: single administrator",
+    POLICY_INDEPENDENT: "Approval policy: independent approval",
+}
+
 
 def _configured() -> str:
     try:
@@ -67,6 +73,11 @@ def policy_label() -> str:
     return POLICY_LABELS[active_policy()]
 
 
+def policy_line() -> str:
+    """Return the line that names the active policy on screen."""
+    return POLICY_LINES[active_policy()]
+
+
 __all__ = [
     "BASIS_APPROVAL_LABEL",
     "BASIS_KEY",
@@ -77,8 +88,10 @@ __all__ = [
     "POLICIES",
     "POLICY_INDEPENDENT",
     "POLICY_LABELS",
+    "POLICY_LINES",
     "POLICY_SINGLE",
     "active_policy",
     "is_single",
     "policy_label",
+    "policy_line",
 ]

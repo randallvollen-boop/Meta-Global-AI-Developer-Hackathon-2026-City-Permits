@@ -9,6 +9,7 @@ what-if with an unsupported change must show why Run is unavailable.
 
 from __future__ import annotations
 
+import pytest
 from conftest import BrowserServer
 
 
@@ -111,8 +112,18 @@ def test_the_muse_demo_path_fits_a_phone_and_a_desktop(page, server: BrowserServ
     assert page.recorded_errors == []
 
 
+@pytest.fixture()
+def independent_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin the independent policy (approval policy setting, Randall).
+
+    The server process inherits this environment, so a test that needs the
+    pin lists this fixture before `server`.
+    """
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", "independent")
+
+
 def test_the_draft_path_ends_at_needs_independent_approval_on_a_phone_and_a_desktop(
-    page, server: BrowserServer, login
+    independent_policy, page, server: BrowserServer, login
 ) -> None:
     login("persona_city_administrator")
     for width, height in ((390, 844), (1280, 900)):

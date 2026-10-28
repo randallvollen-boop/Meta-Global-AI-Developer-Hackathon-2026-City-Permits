@@ -927,7 +927,7 @@ def approval_policy_view() -> dict[str, str]:
     return {
         "key": key,
         "label": approval_policy.policy_label(),
-        "line": f"Approval policy: {approval_policy.policy_label()}",
+        "line": approval_policy.policy_line(),
     }
 
 
