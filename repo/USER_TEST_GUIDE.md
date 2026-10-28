@@ -13,6 +13,8 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 
 Open <http://127.0.0.1:8266>. The server binds only to the local computer.
 
+The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. Its Permits button selects the Applicant persona (through the same persona selector) and opens the applicant pages inside the city layout. The floating "Demo: switch user" control, on both the website and the staff app, switches between the four personas.
+
 The selector offers exactly four personas:
 
 1. Applicant

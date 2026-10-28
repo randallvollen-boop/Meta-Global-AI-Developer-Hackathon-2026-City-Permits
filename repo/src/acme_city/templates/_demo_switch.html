@@ -1,0 +1,27 @@
+{# The demo-only user switcher.  Each button posts to the existing persona
+   selector (POST /ui/actor); nothing here grants anything.  Works without
+   JavaScript (a plain details element). #}
+{% if personas %}
+<details class="demo-switch" data-testid="demo-switch">
+  <summary aria-label="Demo: switch user">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8h5M20 5l3 3-3 3"/></svg>
+    <span>Demo: switch user</span>
+  </summary>
+  <div class="demo-switch-panel">
+    <p class="demo-switch-note">Demonstration control. It is not part of the City website or of the permit application.</p>
+    {% if actor %}<p class="demo-switch-current">Now acting as <strong>{{ actor.label }}</strong></p>{% endif %}
+    <ul>
+      {% for persona in personas %}
+      <li>
+        <form method="post" action="/ui/actor">
+          <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
+          <input type="hidden" name="next" value="{{ '/apply' if persona.label == 'Applicant' else '/queue' }}">
+          <button type="submit" data-demo-persona="{{ persona.actor_id }}"{% if actor and actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website permits' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="/city/">Open the City website home</a>
+  </div>
+</details>
+{% endif %}

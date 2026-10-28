@@ -10,6 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} - ACME City permit demonstration</title>
   <link rel="stylesheet" href="/ui/static/app.css">
+  <link rel="stylesheet" href="/ui/static/demo-switch.css">
 </head>
 <body data-screen="{{ screen }}">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -182,6 +183,7 @@
   {% endfor %}
 </nav>
 {% endif %}
+{% if screen != 'select' %}{% include "_demo_switch.html" %}{% endif %}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/ui/static/app.js" defer></script>

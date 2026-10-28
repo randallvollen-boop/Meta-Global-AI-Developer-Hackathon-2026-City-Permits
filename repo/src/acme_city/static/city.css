@@ -1,0 +1,104 @@
+/* The fictional City of Acme website.  Loaded after app.css, whose component
+   classes (panel, card, btn, notice, type-cards, field...) the applicant
+   portal pages still use; the tokens below re-skin them in the civic palette.
+   System fonts only, no external assets. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef1f5; --line: #d5dce4; --line-soft: #e6eaef;
+  --fg: #17222e; --fg-2: #44525f; --fg-3: #66737f;
+  --accent: #1a5fa0; --accent-fg: #ffffff; --accent-soft: #e4eef8;
+  --city-navy: #12304f; --city-navy-2: #0c2239; --city-gold: #f0b323;
+  --f-display: Georgia, "Times New Roman", serif;
+  --f-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); }
+.city h1 { font-family: var(--f-display); font-size: 2rem; font-weight: 700; color: var(--city-navy); margin: 0 0 .5rem; }
+.city h2 { font-family: var(--f-display); font-size: 1.3rem; color: var(--city-navy); margin: 0 0 .6rem; }
+.city h3 { font-size: 1rem; }
+.city .muted { font-size: .92rem; }
+.city a { color: var(--accent); }
+.city .skip-link { position: absolute; left: -999px; z-index: 100; background: #fff; }
+.city .skip-link:focus { left: .5rem; top: .5rem; }
+.city-wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+.city-demo { background: #fff6d6; color: #4a3b00; border-bottom: 1px solid #e8d48a; font-size: .8rem; padding: 4px 16px; text-align: center; }
+.city-header { background: var(--city-navy); color: #fff; }
+.city-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.city-brand { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; }
+.city-brand:focus-visible, .city-nav a:focus-visible { outline: 3px solid var(--city-gold); outline-offset: 2px; }
+.city-mark { width: 44px; height: 44px; color: var(--city-gold); flex: none; }
+.city-wordmark { display: flex; flex-direction: column; line-height: 1.1; }
+.city-wordmark b { font: 700 1.6rem var(--f-display); letter-spacing: .01em; }
+.city-wordmark small { font-size: .72rem; opacity: .8; letter-spacing: .06em; text-transform: uppercase; margin-top: 3px; }
+.city-hours { margin: 0; font-size: .9rem; opacity: .9; white-space: nowrap; }
+.city-nav { background: var(--city-navy-2); border-top: 1px solid rgba(255,255,255,.12); }
+.city-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 4px; }
+.city-nav a { display: block; padding: 11px 12px; color: #fff; text-decoration: none; font-weight: 600; font-size: .95rem; border-bottom: 3px solid transparent; }
+.city-nav a:hover { background: rgba(255,255,255,.08); }
+.city-nav a[aria-current="page"] { border-bottom-color: var(--city-gold); background: rgba(255,255,255,.1); }
+
+.city-crumbs { padding: 12px 0 4px; font-size: .88rem; color: var(--fg-2); }
+.city-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.city-crumbs li + li::before { content: "\203A"; margin-right: 6px; color: var(--fg-3); }
+
+/* app.css gives main a flex column, 22px padding and a 1320px cap. */
+.city .city-main { flex: 1 0 auto; max-width: 1120px; padding: 8px 16px 48px; gap: 18px; }
+.city .city-main .page-head h1 { font-size: 1.9rem; }
+.city .city-main > .city-hero, .city .city-main > .city-wrap { padding-left: 0; padding-right: 0; }
+
+.city-hero { background: linear-gradient(135deg, var(--city-navy) 0%, #1e5388 100%); color: #fff; border-radius: 12px; padding: 44px 32px; }
+.city-hero .city-wrap { max-width: 1120px; }
+.city .city-hero h1 { color: #fff; font-size: 2.4rem; margin-bottom: .6rem; }
+.city-hero p { max-width: 54ch; font-size: 1.1rem; margin: 0 0 1rem; }
+.city-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--city-gold); color: #1a1200 !important; font: 700 1rem var(--f-body); padding: 12px 20px; border-radius: 8px; border: 0; text-decoration: none; cursor: pointer; }
+.city-cta:hover { background: #f7c548; }
+.city-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px var(--city-navy); }
+.city-cta svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+
+.city-two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 32px; padding: 0; margin-top: 8px; }
+.city-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.city-tile { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: var(--fg) !important; box-shadow: 0 1px 2px rgba(18,48,79,.06); }
+.city-tile:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(18,48,79,.12); }
+.city-tile svg { width: 34px; height: 34px; color: var(--accent); }
+.city-tile strong { font: 700 1.1rem var(--f-display); color: var(--city-navy); }
+.city-tile span { color: var(--fg-2); font-size: .92rem; }
+.city-tile-main { border-color: var(--city-gold); border-width: 2px; background: #fffaf0; }
+.city-news ul { list-style: none; margin: 0; padding: 0; }
+.city-news li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.city-news time { display: block; font-size: .78rem; font-weight: 700; color: var(--fg-3); text-transform: uppercase; letter-spacing: .05em; }
+.city-news strong { display: block; color: var(--city-navy); }
+.city-news p { margin: 2px 0 0; color: var(--fg-2); font-size: .92rem; }
+
+.city-page { padding-top: 8px; }
+.city-lede { font-size: 1.1rem; color: var(--fg-2); max-width: 62ch; }
+.city-page article section { margin-top: 22px; }
+.city-page article ul { padding-left: 1.2rem; }
+.city-page article li { margin: 4px 0; }
+.city-aside { align-self: start; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--city-gold); border-radius: 8px; padding: 16px; }
+.city-aside h2 { font-size: 1.1rem; }
+.city-entry { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; max-width: 640px; }
+
+.city-footer { background: var(--city-navy); color: #dbe5ef; margin-top: 24px; padding: 28px 0 90px; font-size: .9rem; }
+.city-footer a { color: #fff; }
+.city-footer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.city-footer-name { font: 700 1.05rem var(--f-display); color: #fff; margin: 0 0 6px; }
+.city-footer ul { list-style: none; margin: 0; padding: 0; }
+.city-footer li { margin: 3px 0; }
+
+/* Portal components inside the city frame. */
+.city .panel, .city .card { border-radius: 8px; }
+.city .btn.primary, .city button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.city .type-card:hover, .city .type-card:focus-visible { border-color: var(--accent); }
+.city-main .page-head { margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .city h1 { font-size: 1.6rem; }
+  .city .city-hero h1 { font-size: 1.8rem; }
+  .city-hours { display: none; }
+  .city-wordmark b { font-size: 1.3rem; }
+  .city-nav a { padding: 9px 9px; font-size: .88rem; }
+  .city-two { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .city-footer-grid { grid-template-columns: minmax(0, 1fr); }
+  .city .city-main { padding: 4px 16px 40px; }
+  .city-hero { padding: 28px 20px; }
+}
+@media print { .city-nav, .city-demo { display: none; } }

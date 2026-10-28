@@ -65,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     from acme_city.auth.router import router as session_router
     from acme_city.changes.router import router as changes_router
+    from acme_city.city.router import router as city_router
     from acme_city.finance.router import router as finance_router
     from acme_city.gis.simulator import router as gis_simulator_router
     from acme_city.governance.router import router as governance_router
@@ -88,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(muse_router)
     app.include_router(gis_simulator_router)
     app.include_router(ui_router)
+    app.include_router(city_router)
 
     @app.exception_handler(AcmeError)
     async def handle_application_error(request: Request, exc: AcmeError) -> JSONResponse:

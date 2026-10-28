@@ -1,0 +1,21 @@
+{% extends "city/layout.html" %}
+{% block content %}
+<div class="city-wrap city-page">
+  <h1>Permits</h1>
+  <p class="city-lede">Apply for a permit, save a draft, and track an application with the Planning and Permits office.</p>
+  <section class="city-entry" aria-labelledby="entry-h" data-testid="permits-entry">
+    <h2 id="entry-h">Continue to permit services</h2>
+    {% if applicant %}
+    <p>The permit services are for applicants. In this demonstration you continue as the fictional applicant.</p>
+    {% if actor %}<p class="muted">You are currently acting as <strong>{{ actor.label }}</strong>; continuing switches to the applicant.</p>{% endif %}
+    <form method="post" action="/ui/actor" data-testid="permits-entry-form">
+      <input type="hidden" name="actor_id" value="{{ applicant.actor_id }}">
+      <input type="hidden" name="next" value="{{ permits_home }}">
+      <button type="submit" class="city-cta" data-testid="permits-continue">Continue as applicant <svg aria-hidden="true"><use href="#c-arrow"/></svg></button>
+    </form>
+    {% else %}
+    <p class="action-denied" role="alert">The applicant account is not available.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
