@@ -44,6 +44,23 @@ def _record_denial(request: Request, exc: PermissionDeniedError) -> None:
         return
 
 
+def _install_scenario_clock(settings: Settings, factory: SessionFactory) -> None:
+    """Set the demo scenario clock for this process, or clear a previous one."""
+    from acme_city.core.clock import set_scenario_clock
+    from acme_city.fixtures.scenario_clock import install_scenario_clock
+
+    set_scenario_clock(None)
+    if not settings.scenario_clock:
+        return
+    session = factory()
+    try:
+        install_scenario_clock(session, settings.scenario_clock)
+    except SQLAlchemyError:
+        set_scenario_clock(None)
+    finally:
+        session.close()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create the application instance.
 
@@ -62,6 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = resolved
     app.state.session_factory = SessionFactory(resolved.database_url)
+    _install_scenario_clock(resolved, app.state.session_factory)
 
     from acme_city.auth.router import router as session_router
     from acme_city.changes.router import router as changes_router

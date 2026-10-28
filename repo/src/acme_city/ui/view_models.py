@@ -26,7 +26,7 @@ from acme_city.auth.permissions import PermissionResolver
 from acme_city.agents.findings import WAIVABLE_TYPES
 from acme_city.changes.service import ChangeService
 from acme_city.changes.state_machine import permitted_targets
-from acme_city.core.clock import utc_now
+from acme_city.core.clock import app_now as utc_now
 from acme_city.finance.service import FinanceService
 from acme_city.governance.service import GovernanceService
 from acme_city.muse.schemas import PRIVATE_TASKS

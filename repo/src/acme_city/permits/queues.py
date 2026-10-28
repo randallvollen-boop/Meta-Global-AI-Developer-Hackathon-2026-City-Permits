@@ -42,7 +42,7 @@ from acme_city.agents.findings import (
     primary_finding,
 )
 from acme_city.auth.context import ActorContext
-from acme_city.core.clock import utc_now
+from acme_city.core.clock import app_now
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import governance, permit, registry
 
@@ -444,7 +444,7 @@ def intake_queue(
     that are in force and the rows that survive them.  Every filter is a
     query-string value, so the screen works without JavaScript.
     """
-    now = utc_now()
+    now = app_now()
     tab_key = tab if tab in INTAKE_TAB_KEYS else "active"
     applications = _visible(session, actor)
     labels = _owner_labels(session, applications)
@@ -588,7 +588,7 @@ def early_resolution(session: Session, actor: ActorContext) -> dict[str, Any]:
     top current findings of every group.  It is the same order the intake
     agent's findings are grouped by, so a case appears under one group only.
     """
-    now = utc_now()
+    now = app_now()
     type_rows = _type_rows(session)
     by_type: dict[str, list[dict[str, Any]]] = {}
     for application in _visible(session, actor):
@@ -709,7 +709,7 @@ def review_queue(
     recently.  The adjudication recommendation of a case is shown when the
     agent has made one.
     """
-    now = utc_now()
+    now = app_now()
     applications = _visible(session, actor)
     labels = _owner_labels(session, applications)
     type_rows = _type_rows(session)

@@ -126,11 +126,23 @@ def issuer_name(session: Session, issuer: str | None) -> str:
     return issuer
 
 
+def scenario_clock_context() -> dict[str, str] | None:
+    """Return the top bar label and help of the demo scenario clock, or ``None``."""
+    from acme_city.core.clock import scenario_moment
+    from acme_city.fixtures.scenario_clock import LABEL_HELP, demo_date_label
+
+    moment = scenario_moment()
+    if moment is None:
+        return None
+    return {"label": demo_date_label(moment), "help": LABEL_HELP}
+
+
 def install(templates: Any) -> None:
     """Add the filters and globals the steward templates use."""
     templates.env.filters["pretty"] = pretty
     templates.env.filters["rdate"] = readable_date
     templates.env.globals["ui_time"] = time_tag
+    templates.env.globals["scenario_clock"] = scenario_clock_context
 
 
 __all__ = [
