@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/city.css">
   <link rel="stylesheet" href="/ui/static/demo-switch.css">
+  <link rel="stylesheet" href="/ui/static/ui-patterns.css">
 </head>
 <body class="city" data-city-site="true">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -86,6 +87,8 @@
 </footer>
 
 {% include "_demo_switch.html" %}
+{% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 <script src="/ui/static/property.js" defer></script>
+<script src="/ui/static/ui-patterns.js" defer></script>
 </body>
 </html>

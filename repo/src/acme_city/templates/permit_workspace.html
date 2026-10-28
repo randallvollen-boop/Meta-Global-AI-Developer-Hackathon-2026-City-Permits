@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "components/action_form.html" as forms %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 {% set app = detail.application %}
@@ -81,7 +82,7 @@
         {% set failed_checks = issues | map(attribute='code') | list %}
         <div class="card-h" style="padding:0 0 12px">
           <h3>Extraction run</h3>
-          <span class="pill {{ run.mode }}" data-testid="muse-mode">{{ run.mode_label }}</span>
+          <span class="pill {{ run.mode }}" data-testid="muse-mode">{{ run.mode_label }}</span>{{ ui.info('muse_provenance') }}
           <span class="pill {{ 'ok' if run.status == 'succeeded' else 'bad' }}">{{ run.status }}</span>
           <span class="right"><button type="button" class="btn sm muse" data-replay-run data-testid="replay-run"><svg aria-hidden="true"><use href="#i-play"/></svg>Replay run</button></span>
         </div>
@@ -94,6 +95,7 @@
         </div>
         <div class="run-meta">
           <span>Run <b class="mono">{{ run.run_id }}</b></span>
+          <span>{{ ui.detail_link('muse-run', run.run_id, 'Run details') }}</span>
           {% if run.response_id %}<span>Response <b class="mono">{{ run.response_id }}</b></span>{% endif %}
           {% if run.usage.get('reasoning_tokens') is not none %}<span>Reasoning <b>{{ run.usage.get('reasoning_tokens') }}</b> tokens</span>{% endif %}
           <span>Prompt <b>{{ run.prompt_version or 'unknown' }}</b></span>

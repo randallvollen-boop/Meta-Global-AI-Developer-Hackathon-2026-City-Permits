@@ -1,7 +1,9 @@
 {% extends "city/layout.html" %}
 
+{% import "_ui.html" as ui with context %}
+
 {% block content %}
-<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div></div>
+<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div><div class="actions">{{ ui.help_button('apply_track') }}</div></div>
 <section class="panel">
   <form method="get" action="/apply/track" role="search" data-testid="track-form">
     <p class="field"><label for="track-ref">Reference number</label><input id="track-ref" name="ref" value="{{ ref }}" required></p>

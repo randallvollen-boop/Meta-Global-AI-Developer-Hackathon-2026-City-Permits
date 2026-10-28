@@ -78,7 +78,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views, property_views, view_models
+from acme_city.ui import agent_views, patterns, property_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
     allowed_actions_for,
@@ -259,6 +259,7 @@ def page_context(
         "agent_status": agent_views.sidebar_status(session, actor),
         "csrf_token": csrf_token(settings, actor.session_id),
         "fictional_demo": True,
+        "ui_drawer": patterns.drawer_state(request, session, actor),
         **extra,
     }
 
@@ -2669,6 +2670,11 @@ async def run_ui_action(
 from acme_city.ui import portal_routes as _portal_routes  # noqa: E402
 
 router.include_router(_portal_routes.router)
+
+from acme_city.ui import detail_routes as _detail_routes  # noqa: E402
+
+patterns.install(templates)
+router.include_router(_detail_routes.router)
 
 
 __all__ = [
