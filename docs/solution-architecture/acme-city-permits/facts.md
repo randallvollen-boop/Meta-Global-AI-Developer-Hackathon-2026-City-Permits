@@ -6,7 +6,7 @@ Date: 2026-10-26. Audience: internal AVA Library. No client. Architecture status
 
 Never on the page: credentials, tokens or private email; people's names or contact details; local usernames, machine paths, hostnames, IP addresses or exact hardware; client names/data/logos/scans; City of Westerville logos, portal copies or implied endorsement; real applicant, contractor, parcel, payment or permit records; raw source archives; private account screenshots; deal terms, grant balances, prize claims or submission credentials; unmeasured accuracy, savings, performance or compliance claims; hidden chain-of-thought; Contributor model use; production-readiness or tamper-proof claims.
 
-Use only fictional ACME City records and examples. Vollen Data Services text branding only; no VDS, Globex, Initech or municipal logo. Every interface mockup says “Example with fictional data.” Retain “Internal draft. [REVIEW REQUIRED] before external use.”
+Use only fictional ACME City records and examples. Vollen Data Services text branding only; no logo of any kind. Every interface mockup says “Example with fictional data.” Retain “Internal draft. [REVIEW REQUIRED] before external use.”
 
 ## Evidence sources
 
@@ -123,7 +123,7 @@ No implementation or verification figure is shown as complete until the correspo
 
 ## Kit provenance
 
-Build with the installed Solution Architecture Kit and Vollen Linux brand layer. No shared kit edits are planned. The kit-required `brand: Globex` value remains internal builder configuration while all visible and source output excludes wrong-brand words through the denylist. Record kit hashes, Linux wrapper use and the known unused Aptos embedding-rights limitation in `BUILD_REPORT.md`.
+Build with the installed Solution Architecture Kit and Vollen Linux brand layer. No shared kit edits are planned. The page uses the kit's `vds` brand, which renders no logo, and a private denylist file outside the repository keeps wrong-brand words off the page. Record kit hashes, Linux wrapper use and the known unused Aptos embedding-rights limitation in `BUILD_REPORT.md`.
 
 ## How it was built (2026-10-27)
 

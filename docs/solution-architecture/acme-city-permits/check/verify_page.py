@@ -146,7 +146,7 @@ ALLOWED_FIGURES = {
 }
 
 EXTRA_LEAKS = [
-    "Globex", "Initech", "RailFlow", "Rail Flow", "Westerville", "Westerville City",
+    "RailFlow", "Rail Flow", "Westerville", "Westerville City",
     Path.home().name, "/home/", "Randall", "GB10", "127.0.0.1", "192.168", "10.0.0",
     "META_API_KEY", "api_key", "apikey", "api key", "password", "secret",
     "mailto:", "gmail", "@vollen", "grant balance", "prize",
@@ -198,11 +198,16 @@ def main():
 
     # 1. denylist
     lines.append("## 1. Denylist")
-    for word in cfg.get("denylist", []):
+    deny = list(cfg.get("denylist", []))
+    # Private words (kept outside the repository) come from denylist_file when it exists.
+    deny_file = Path(cfg["denylist_file"]).expanduser() if cfg.get("denylist_file") else None
+    if deny_file and deny_file.is_file():
+        deny += [w.strip() for w in deny_file.read_text(encoding="utf-8").splitlines() if w.strip()]
+    for word in deny:
         if word.lower() in doc.lower():
             fail(lines, 'denylist term "%s" is present' % word)
             failures.append(word)
-    lines.append("Checked %d denylist terms from page.json." % len(cfg.get("denylist", [])))
+    lines.append("Checked %d denylist terms from page.json and the private denylist file." % len(deny))
 
     # 2. global client list and extra leak words
     lines.append("")

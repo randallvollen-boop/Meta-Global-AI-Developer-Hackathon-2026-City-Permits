@@ -1,14 +1,11 @@
 {
   "title": "ACME City Permits Architecture",
   "description": "Registry MDM, governed permit operations, bounded Muse proposals and delivery backed by evidence.",
-  "brand": "Globex",
+  "brand": "vds",
   "client": "ACME City",
   "output": "vollen_acme-city-permits_solution-architecture_2026-10-26.html",
   "banner": "Internal draft. [REVIEW REQUIRED] before external use. As built, local candidate.",
   "denylist": [
-    "Globex",
-    "Initech",
-    "INITECH",
     "RailFlow",
     "Westerville",
     "/home/",
@@ -26,5 +23,6 @@
     "gmail",
     "grant balance",
     "prize"
-  ]
+  ],
+  "denylist_file": "~/.config/vollen/page-denylist.txt"
 }
