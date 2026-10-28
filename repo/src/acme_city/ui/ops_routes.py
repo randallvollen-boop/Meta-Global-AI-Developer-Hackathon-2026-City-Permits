@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
@@ -162,7 +162,7 @@ patterns.register_detail(
 def ui_ops_support(
     request: Request,
     ref: str = "",
-    request_id: str = "",
+    request_id: str = Query("", alias="request"),
     request_status: str = "open",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
@@ -172,6 +172,13 @@ def ui_ops_support(
     if refused is not None:
         return refused
     service = SupportService(session)
+    if request_id and service.can(resolved, PERMISSION_ANSWER):
+        # A link from the audit log opens the request in the list it belongs to.
+        from acme_city.persistence.models import help as help_models
+
+        linked = session.get(help_models.HelpRequest, request_id)
+        if linked is not None:
+            request_status = linked.status
     try:
         lookup = service.lookup(resolved, ref) if ref and service.can(resolved, PERMISSION_LOOKUP) else None
         help_requests = (

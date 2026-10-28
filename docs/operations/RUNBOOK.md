@@ -539,6 +539,72 @@ JavaScript the answer is rendered in place instead.
 default**.  A credential alone never enables a live answer for an applicant.
 This part of the work answers without a model; the live path arrives with
 the part that adds it.
+## The operations screens (City Administrator)
+
+Four read-only screens and three governed writes, all opened by their own grants
+(`ops.dashboard.view`, `ops.audit_log.view`, `support.lookup.view`,
+`support.help_request.answer`, `support.case.record`, `ops.checks.run`).  The City
+Administrator gains no decide, issue, return, waive or comment power from them.
+
+### Operations dashboard: `/ops/dashboard`
+
+Six figures, each with its definition printed beside it: active cases (the Active saved
+view of the intake queue), average age of active cases (now minus the original submission
+time), early-incomplete share (first intake run routed to needs information, over distinct
+applications with a run), agent-processed (distinct applications with a completed intake
+run), decisions recorded (decision rows, split by outcome) and needs a person (needs
+information plus held recommendations).  Three charts (volume by status, channel
+distribution, backlog by review area) are server-rendered SVG with a table beside each.
+The seeded synthetic history is **left out** of every figure by default; **Include the
+synthetic history (labelled)** counts it and says so on the page.
+
+### Audit log: `/ops/audit`
+
+A paged, newest-first view over the existing append-only audit records; it is not a
+second trail.  Filters: actor type, action, search.  The actor type comes from the identity
+records the server holds (a service identity with an agent role is an agent; a selectable
+persona or a staff user added in Administration is a person; everything else, including a
+row with no actor, is the system), never from the text of a row.  A row links to its record
+for the target types that have a page and shows plain text for the rest; **Details** opens
+the event in the side flyout.
+
+### Support: `/ops/support`
+
+* **Look up an application** by reference: status, timeline and the comments written for
+  the applicant.  Internal notes are never shown.
+* **Help requests**: the questions applicants sent with Ask the City, each with the part of
+  the conversation up to the request (and nothing before the applicant raised it, or after).
+  **Answer** (`support.help_request.answer`) records the reply and the answered status
+  together, with a mandatory expected version.  On a case that can still change the reply is
+  also written as a comment the applicant reads; on an archived case it stays on the help
+  request only and the application is not touched.  The audit record carries identifiers,
+  never the text.
+* **Record assistance** (`support.case.record`): an optional reference, the channel and a
+  summary; listed as **Recent support cases**.  The summary is not audited.
+* A short FAQ and a fictional ACME contact and emergency notice.
+
+### Checks: `/ops/checks`
+
+**Run checks** (`ops.checks.run`) runs eight read-only invariant checks inside the
+application and records one canonical `checks.run` audit event (separate from the
+dispatcher's own feedback event).  Each check ends as pass, fail or **not applicable**.
+The historical seed is a fixed baseline: the decision and permit the fixture inserts for D07
+(SYN-APP-007) have no decision or issuance audit event, and phase 2 exempts a case with no
+parcel match from parcel confirmation.  Those are reported as **not applicable (historical
+seed)** or counted as exceptions; they are never counted as passes and no event is made up
+for them.  A record that is not in the fixture and has no audit record fails the check.
+The checks: exactly four selectable personas; no agent identity decided or issued anything;
+every post-seed decision and issuance has an accepted audit record; the City Administrator
+holds none of decide, issue, return, waive; every post-seed issuance rests on an approved,
+parcel-confirmed decision; fee totals recompute to the stored amounts; no archived case sits
+in an active queue; no internal comment is applicant-visible.
+
+### The simulator
+
+Random intake may state a high priority and may omit a field or a document, so a case needs
+a return or a revision.  The simulator never assigns `returned` or `revisions_requested`:
+only the Data Steward's return and the Permit Reviewer's request for revisions do.
+
 ## Permit type icons
 
 Each of the 17 permit types has one bundled seed icon (a 192 by 192 WebP in `repo/src/acme_city/static/permit-type-icons/`, named in `PERMIT_TYPE_SEED_ICONS`). The reset loads them with source `seed`; `ensure_seeded` only fills a type that has no icon rows, so no migration is involved and an administrator's saved icon is never overwritten. To change a bundled icon, replace the file and reset the demonstration data.

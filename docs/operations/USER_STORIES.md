@@ -177,6 +177,28 @@ other organisational identity are service identities.
     My configuration access does **not** give me `permit.decide`: trying to
     confirm a recommendation as Administrator is refused.
 
+- As a City Administrator, I want an operations dashboard, so that I can see how
+  permit work is going without trusting a number I cannot check.
+  - Acceptance: **Operations** shows active cases, average age, early-incomplete share,
+    agent-processed cases, decisions recorded and cases that need a person, each with its
+    definition, three charts with a table beside each, and the synthetic history left out
+    or labelled.
+- As a City Administrator, I want a read-only audit log, so that I can see who or what did
+  what.
+  - Acceptance: **Audit log** lists the audit records newest first, filtered by actor type
+    (person, agent, system), action and search, and links a row to its record where a page
+    exists.
+- As a City Administrator, I want a support screen, so that I can help applicants.
+  - Acceptance: **Support** looks up a case by reference (status, timeline, comments the
+    applicant can read), answers the help requests from Ask the City (a reply on a case
+    also appears to the applicant on the case) and records assistance as a support case.
+    I still cannot decide, issue, return or waive.
+- As a City Administrator, I want to run invariant checks, so that I know the rules of the
+  application still hold.
+  - Acceptance: **Checks** runs eight read-only checks and lists pass, fail or not
+    applicable with a one-line reason each; the D07 historical seed is not applicable and
+    never a pass.
+
 ## Service agents (system actors)
 
 - As the Intake agent (service identity), I want to run a six-node graph on
