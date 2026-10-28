@@ -338,7 +338,7 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
         )
 
     # Proposed changes: the versions that are not published or retired yet.
-    proposed = _proposed_versions(session, type_labels)
+    proposed = _proposed_versions(session)
 
     # Source information: the three simulated source systems.
     source_items: list[dict[str, Any]] = []
@@ -442,9 +442,7 @@ def _address_text(session: Session, address_id: str | None) -> str:
     return text or "not recorded"
 
 
-def _proposed_versions(
-    session: Session, type_labels: dict[str, str]
-) -> list[dict[str, Any]]:
+def _proposed_versions(session: Session) -> list[dict[str, Any]]:
     """Return the rule and fee versions that are not published or retired."""
     items: list[dict[str, Any]] = []
     for row in session.execute(
