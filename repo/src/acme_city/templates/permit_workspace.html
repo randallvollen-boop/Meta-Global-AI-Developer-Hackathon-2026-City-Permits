@@ -239,6 +239,12 @@
           {% else %}
           <tr><td colspan="5" class="muted">No document version is stored for this case.</td></tr>
           {% endfor %}
+          {% for doc_type in detail.documents_declared_separately %}
+          <tr data-testid="document-declared-separately">
+            <th scope="row">{{ doc_type }}</th>
+            <td colspan="4">Declared sent separately &mdash; not yet received. This is the applicant's statement; no file is on this case.</td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </section>
@@ -459,7 +465,7 @@
           <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
           <input type="hidden" name="application_id" value="{{ app.application_id }}">
           <button type="submit" class="btn sm" data-testid="rerun-intake"
-                  {% if not detail.can_run_intake or detail.agent_states.intake.mode != 'awake' %}disabled{% endif %}>
+                  {% if not detail.can_run_intake or detail.agent_states.intake.mode != 'awake' %}disabled aria-describedby="rerun-locked"{% endif %}>
             Re-run intake agent
           </button>
         </form>
@@ -469,18 +475,22 @@
           <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
           <input type="hidden" name="application_id" value="{{ app.application_id }}">
           <button type="submit" class="btn sm" data-testid="rerun-adjudication"
-                  {% if not detail.can_run_adjudication or detail.agent_states.adjudication.mode != 'awake' %}disabled{% endif %}>
+                  {% if not detail.can_run_adjudication or detail.agent_states.adjudication.mode != 'awake' %}disabled aria-describedby="rerun-locked"{% endif %}>
             Re-run adjudication
           </button>
         </form>
       </div>
       {% if not detail.can_run_intake or detail.agent_states.intake.mode != 'awake' or not detail.can_run_adjudication or detail.agent_states.adjudication.mode != 'awake' %}
-      <p class="lock" data-testid="rerun-locked">
+      <div class="lock" id="rerun-locked" data-testid="rerun-locked">
         <svg aria-hidden="true"><use href="#i-lock"/></svg>
         An agent runs only when it is awake and a person holds its run grant.
-        {% if detail.agent_states.intake.mode != 'awake' %}The intake agent is asleep.{% endif %}
-        {% if detail.agent_states.adjudication.mode != 'awake' %}The adjudication agent is asleep.{% endif %}
-      </p>
+        <ul style="margin:0.2rem 0 0 1.1rem">
+          {% if not detail.can_run_intake %}<li data-testid="rerun-intake-no-grant">Re-run intake agent: your role cannot do this.</li>{% endif %}
+          {% if detail.agent_states.intake.mode != 'awake' %}<li>Re-run intake agent: the intake agent is asleep.</li>{% endif %}
+          {% if not detail.can_run_adjudication %}<li data-testid="rerun-adjudication-no-grant">Re-run adjudication: your role cannot do this.</li>{% endif %}
+          {% if detail.agent_states.adjudication.mode != 'awake' %}<li>Re-run adjudication: the adjudication agent is asleep.</li>{% endif %}
+        </ul>
+      </div>
       {% endif %}
       {% if detail.recommendations %}
       <h3>Advisory recommendation</h3>
@@ -788,6 +798,7 @@
           <summary>Advance to review</summary>
           <p class="muted">The advance is refused while a current, unwaived blocking finding stands in the way.</p>
           {% if detail.lifecycle.blocking_findings %}
+          <p class="muted" id="advance-blockers-why" data-testid="advance-blockers-why">Advance to review is off until these are cleared or waived:</p>
           <ul class="issue-list" data-testid="advance-blockers">
             {% for finding in detail.lifecycle.blocking_findings %}
             <li>{{ finding.finding_type|replace('_', ' ') }}: {{ finding.message }}</li>
@@ -801,7 +812,7 @@
             <input type="hidden" name="application_id" value="{{ app.application_id }}">
             <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
             <p><button type="submit" class="btn sm primary" data-testid="advance-submit"
-                       {% if detail.lifecycle.blocking_findings %}disabled{% endif %}>Advance to review</button></p>
+                       {% if detail.lifecycle.blocking_findings %}disabled aria-describedby="advance-blockers-why"{% endif %}>Advance to review</button></p>
           </form>
         </details>
         {% endif %}

@@ -2987,6 +2987,13 @@ def permit_workspace(
             .order_by(permit.Document.document_type, permit.Document.version)
         ).scalars().all()
     ]
+    from acme_city.applicant_portal.service import declared_separately
+
+    stored_types = {item["document_type"] for item in documents}
+    # The applicant's statement only; none of these has a stored file.
+    documents_declared_separately = [
+        item for item in declared_separately(application) if item not in stored_types
+    ]
     parties = [
         {
             "party_id": row.party_id,
@@ -3218,6 +3225,7 @@ def permit_workspace(
         "proposed": proposed,
         "issued": issued,
         "documents": documents,
+        "documents_declared_separately": documents_declared_separately,
         "evaluations": evaluations,
         "evaluation": evaluation_view,
         "decisions": decisions,
