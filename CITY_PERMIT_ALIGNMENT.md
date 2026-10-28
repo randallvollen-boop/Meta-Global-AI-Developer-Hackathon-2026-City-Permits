@@ -19,7 +19,7 @@ It contributes a fictional permit domain, five permit-type configurations, synth
 
 The source run guide also names an external click-through prototype, `PROTO-PERMIT-01` at `Prototypes/permit-processing`, but explicitly says it is not bundled. A scoped local search found no such directory. The alignment therefore treats that prototype as unavailable input and does not reuse it as code or implementation evidence.
 
-The package preserves duplicate baseline code trees at `reference/acme-city/uc01/` and `reference/acme-city/files/uc01-code/`. If implementation is released, use `uc01/` as the single read-only reference and do not let the copies diverge. Its narrative pull request (PR) rules and executable rules also contain citation conflicts that must be reconciled into one approved catalog before publication. Four named evaluator defects (nonnumeric setback, nonfinite setback, blank fence location, and unsupported sign type) remain explicit regression gates.
+The package preserves duplicate baseline code trees at `reference/acme-city/uc01/` and `reference/acme-city/files/uc01-code/`. If implementation is released, use `uc01/` as the single read-only reference and do not let the copies diverge. Its rules as written in the narrative documents and its executable rules also contain citation conflicts that must be reconciled into one approved catalog before publication. Four named evaluator defects (nonnumeric setback, nonfinite setback, blank fence location, and unsupported sign type) remain explicit regression gates.
 
 ## 2. Product story
 
