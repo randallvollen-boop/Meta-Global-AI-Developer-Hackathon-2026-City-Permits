@@ -24,6 +24,8 @@
           <p class="secsel-g">Reference</p>
           <a href="#artifacts" role="menuitem">Artifacts</a>
           <a href="#build" role="menuitem">How it was built</a>
+          <a href="#roadmap" role="menuitem">Planned: phase 3</a>
+          <a href="#video" role="menuitem">Planned explainer video</a>
           <a href="#decisions" role="menuitem">Open decisions</a>
       </div>
     </nav>
@@ -42,9 +44,10 @@
   <p class="lede">This page describes the built local solution. The integrated evidence gate passed on October 27, 2026, so the architecture status is AS BUILT.</p>
   <div class="two">
     <div class="prose">
-      <p>One local application will hold fictional ACME City records. It persists submissions, decisions, fee versions and evidence in a single SQLite database.</p>
+      <p>One local application holds fictional ACME City records. It persists submissions, decisions, fee versions and evidence in a single SQLite database.</p>
       <p>The synthetic case SYN-APP-001 is a commercial tenant improvement. It moves from an immutable submission to a separate simulated permit issuance.</p>
       <p>Refresh, restart, and an identical issuance retry return the same trace and artifact. This result is a required build check.</p>
+      <p>Two parity phases are also merged. Phase 1 adds an intake agent and an adjudication agent, a confirm and revert flow for the reviewer, 17 permit types and an Administration area. Phase 2 adds a simulated geographic information system (GIS) service, a shared property master, a town map and an applicant portal. Phase 3 and an explainer video are planned only, in their own sections below.</p>
       <p>Every record on this page is invented for the demonstration. No permit, payment, parcel or applicant record comes from a real city or a real person.</p>
     </div>
     <div class="split">
@@ -140,6 +143,23 @@
     </tbody>
     <!-- ARCH_COMPONENT_STATUS_END -->
   </table></div>
+  <h3>Added in parity phases 1 and 2</h3>
+  <p>These parts were merged to the main branch after the original build. The figures that cover them are under verification, labelled as the phase 2 merge review.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Part</th><th>State</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Intake agent</td><td><span class="chip ga">Built</span></td><td>Seven nodes: classifier; field extractor and document quality check in parallel; address locator; duplicate finder and completeness check in parallel; router. Phase 2 added the address locator ahead of the duplicate finder, making seven.</td></tr>
+      <tr><td>Adjudication agent</td><td><span class="chip ga">Built</span></td><td>Five nodes: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition. Every run of either agent is recorded with a per-node trace.</td></tr>
+      <tr><td>Confirm and revert</td><td><span class="chip ga">Built</span></td><td>Confirm records the reviewer's decision through the decision service. Revert needs a reason and returns the case to manual review.</td></tr>
+      <tr><td>Permit catalogue</td><td><span class="chip ga">Built</span></td><td>17 permit types. Discretionary types carry no rule and are always held for a person.</td></tr>
+      <tr><td>Administration</td><td><span class="chip ga">Built</span></td><td>City Administrator only. Permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.</td></tr>
+      <tr><td>Intake channels</td><td><span class="chip ga">Built</span></td><td>Including mail and fax, with per-document scan-quality flags.</td></tr>
+      <tr><td>Simulated GIS service</td><td><span class="chip ga">Built</span></td><td>Runs inside the application with 69 parcels and 71 addresses, and makes no outside calls.</td></tr>
+      <tr><td>Property master</td><td><span class="chip ga">Built</span></td><td>One record per parcel at <code>/property/{parcel}</code>, shared with four simulated subscriber departments that read fields and write nothing back.</td></tr>
+      <tr><td>Town map</td><td><span class="chip ga">Built</span></td><td>A server-rendered scalable vector graphics (SVG) map at <code>/map</code> that loads no outside tiles.</td></tr>
+      <tr><td>Applicant portal</td><td><span class="chip ga">Built</span></td><td>At <code>/apply</code>, with a chooser for the 17 types, a form per type, uploads, drafts, certification, confirmation and tracking.</td></tr>
+    </tbody>
+  </table></div>
 </div></section>
 
 <section id="architecture" class="alt"><div class="wrap">
@@ -150,6 +170,7 @@
       <button type="button" data-view="system" aria-pressed="true">System</button>
       <button type="button" data-view="permit" aria-pressed="false">Permit flow</button>
       <button type="button" data-view="authority" aria-pressed="false">Data authority</button>
+      <button type="button" data-view="agents" aria-pressed="false">Agents and property</button>
       <button type="button" data-view="muse" aria-pressed="false">Muse</button>
       <button type="button" data-view="verify" aria-pressed="false">Verification</button>
       <button type="button" data-view="status" aria-pressed="false">Status</button>
@@ -169,10 +190,30 @@
         <button type="button" id="next" aria-label="Next step">&#8250;</button>
       </div>
     </div>
-    <svg id="arch" viewBox="0 0 1400 800" role="img" aria-label="As-built ACME City Permits architecture. Four personas act in the browser, the FastAPI service governs permit, registry, finance and model work, source systems sit outside the application, and evidence is collected separately."></svg>
+    <svg id="arch" viewBox="0 0 1400 890" role="img" aria-label="As-built ACME City Permits architecture. Four personas act in the browser, the FastAPI service governs permit, registry, finance, agent and model work, simulated source systems and subscriber departments sit outside the application, and evidence is collected separately."></svg>
   </figure>
   <p class="view-note" id="view-note"></p>
-  <p class="mock-note">Every component is built and verified locally. Runtime evidence sits in the final acceptance manifest.</p>
+  <p class="mock-note">Every component is built. The original build is verified locally, and runtime evidence sits in the final acceptance manifest. The parity components are covered by the phase 2 merge review under verification.</p>
+  <h3>Agents, property master and portal</h3>
+  <p>Agents are woken by a person and run by a person. Only the City Administrator wakes them, and a person with the matching grant runs them. An agent proposes and recommends, and the reviewer decides.</p>
+  <div class="split">
+    <div class="card"><h4>Intake agent, seven nodes</h4><ul>
+      <li>Classifier.</li>
+      <li>Field extractor and document quality check, in parallel.</li>
+      <li>Address locator, which proposes a parcel link and never approves it.</li>
+      <li>Duplicate finder and completeness check, in parallel.</li>
+      <li>Router.</li>
+    </ul></div>
+    <div class="card"><h4>Adjudication agent, five nodes</h4><ul>
+      <li>Rule loader.</li>
+      <li>Rule evaluator.</li>
+      <li>Condition builder and precedent check, in parallel.</li>
+      <li>Disposition.</li>
+      <li>A held recommendation cannot be confirmed.</li>
+    </ul></div>
+  </div>
+  <p>A permit decision is blocked until the parcel link is approved and confirmed. The simulated GIS service holds 69 parcels and 71 addresses. Four simulated subscriber departments read the property master: tax and assessor, fire and life safety, code enforcement, and utilities. Their access is set in <code>config/property_subscribers.json</code>.</p>
+  <p>The applicant portal at <code>/apply</code> and the town map at <code>/map</code> are served by the same local application. The map is drawn on the server, so the browser loads no outside tiles.</p>
 </div></section>
 
 <section id="journey"><div class="wrap">
@@ -189,6 +230,15 @@
     <li class="plan"><div><b>Issue.</b> A separate issuance action records the permit, and an identical retry returns the same artifact. <span class="chip ga">Verified</span></div></li>
   </ol>
   <p>The complete process ran end to end against the local application, with a live model extraction. The strip records the sequence and its controls.</p>
+  <h3>Where the parity phases fit</h3>
+  <ol class="path-strip">
+    <li class="plan"><div><b>Apply.</b> An applicant chooses one of 17 types at <code>/apply</code>, completes the form, uploads documents, certifies and receives a confirmation. <span class="chip ga">Built</span></div></li>
+    <li class="plan"><div><b>Intake run.</b> A person runs the intake agent. The address locator proposes a parcel link, and the run is recorded with a per-node trace. <span class="chip ga">Built</span></div></li>
+    <li class="plan"><div><b>Link.</b> A person approves and confirms the parcel link. A permit decision stays blocked until then. <span class="chip ga">Built</span></div></li>
+    <li class="plan"><div><b>Adjudication run.</b> A person runs the adjudication agent, which recommends a disposition. Discretionary types are always held for a person. <span class="chip ga">Built</span></div></li>
+    <li class="plan"><div><b>Confirm or revert.</b> The reviewer confirms and is the decider of record, or reverts with a reason and returns the case to manual review. <span class="chip ga">Built</span></div></li>
+    <li class="plan"><div><b>Share.</b> Four simulated departments read the property master and write nothing back. <span class="chip ga">Built</span></div></li>
+  </ol>
 </div></section>
 
 <section id="personas" class="alt"><div class="wrap">
@@ -203,13 +253,14 @@
       <tr><td>City Administrator</td><td>Administrator, Governance Lead, Data Owner, Finance and Auditor grants</td><td>Configure domains, approve governance and confirm allocation.</td><td>Turn configuration rights into business approval rights.</td></tr>
     </tbody>
   </table></div>
+  <p>The City Administrator also owns Administration, and only that persona wakes the agents with <code>agent.toggle</code>. A person with <code>agent.run.intake</code> or <code>agent.run.adjudication</code> runs an agent. An agent holds no decision authority.</p>
   <p>System custodians, source adapters, outbox workers and the model are service identities. They are not personas, and they are never selectable in the interface.</p>
   <p>Historical blueprint actors remain source references. They are not selectable and are not presented separately.</p>
 </div></section>
 
 <section id="screens"><div class="wrap">
   <h2>Interface map</h2>
-  <p class="lede">Eight screens carry the whole workflow. Every one of them is built and covered by browser checks.</p>
+  <p class="lede">Eight screens carry the original workflow, and every one of them is built and covered by browser checks. Parity phases 1 and 2 add the screens in the second table.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>#</th><th>Screen</th><th>Purpose</th><th>Main persona</th></tr></thead>
     <tbody>
@@ -221,6 +272,16 @@
       <tr><td>6</td><td>Rules and fees</td><td>The approved versioned catalog and the exact assessments it produces.</td><td>City Administrator</td></tr>
       <tr><td>7</td><td>Reconciliation</td><td>Payment events, allocations, exceptions and carried balances.</td><td>City Administrator</td></tr>
       <tr><td>8</td><td>Governance and sources</td><td>Domains, datasets, contracts, assignments, grants and source health.</td><td>City Administrator</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Added in parity phases 1 and 2</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Screen</th><th>Where</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Administration</td><td>City Administrator only</td><td>Permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.</td></tr>
+      <tr><td>Property master</td><td><code>/property/{parcel}</code></td><td>One shared record per parcel, read by four simulated subscriber departments.</td></tr>
+      <tr><td>Town map</td><td><code>/map</code></td><td>A server-rendered SVG map with no outside tiles.</td></tr>
+      <tr><td>Applicant portal</td><td><code>/apply</code></td><td>Type chooser, a form per type with a completeness banner, uploads, drafts, certification, confirmation and tracking.</td></tr>
     </tbody>
   </table></div>
   <p>Every governed detail view shows owner, steward, source, the change route, version, last source update, last received and open issues.</p>
@@ -239,6 +300,7 @@
       <tr><td>Canonical identities, source links, match decisions, provenance, publication history</td><td>The registry itself</td><td>All of it, as versioned records.</td></tr>
     </tbody>
   </table></div>
+  <p>Since phase 2 the GIS source is a simulated service inside the application, with 69 parcels and 71 addresses and no outside calls. The four simulated subscriber departments read property master fields and write nothing back.</p>
   <h3>Correction routes</h3>
   <div class="split">
     <div class="card"><h4>Source fact</h4><ul>
@@ -302,6 +364,8 @@
       <li>A refresh and a restart return the same trace and artifact for the case.</li>
     </ul></div>
   </div>
+  <h3>Configuration and discretionary types</h3>
+  <p>A configuration change applies only to new intake. The requirements in force when a case arrived are recorded on the case. Discretionary permit types carry no rule and are always held for a person.</p>
   <h3>Fee example</h3>
   <p class="lede">Example with fictional data. Synthetic demonstration of the built assessment.</p>
   <div class="tbl-wrap"><table>
@@ -329,6 +393,7 @@
     <div class="rule" role="listitem">{{icon:scroll}}<h4>Audit</h4><p>Accepted and denied sensitive actions are recorded in an append-only trail.</p></div>
     <div class="rule" role="listitem">{{icon:seal_check}}<h4>Storage honesty</h4><p>The trail is append-only. It is not tamper-proof storage, and the page makes no such claim.</p></div>
   </div>
+  <p>Confirm records the reviewer's decision through the decision service, and the reviewer is the decider of record. Revert needs a reason and returns the case to manual review. A held recommendation cannot be confirmed.</p>
   <p>Governance holds domains, datasets, contracts, assignments, queues, grants and the field correction routes that connect them.</p>
 </div></section>
 
@@ -375,9 +440,37 @@
         </div>
       </div>
     </div>
-    <p class="mock-note">Example with fictional data. The status layout is an example, and no check has run.</p>
+    <p class="mock-note">Example with fictional data. The layout shows the recorded outcomes of the original build.</p>
   </div>
   <p>The final local gate performs a fresh reset, complete checks and a bounded live model run. A restart, an idempotent issuance retry and a browser walkthrough on loopback follow.</p>
+  <div class="sub">
+    <h3>Parity phase 2 merge, lead review on merged main</h3>
+    <p>These figures are separate from the original build counts in the status panel. They come from the lead review of the merged main branch after phase 2.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Gates</td><td>10 of 10 pass</td></tr>
+        <tr><td>pytest</td><td>762 passed</td></tr>
+        <tr><td>Acceptance</td><td>37 passed, 0 failed, 2 blocked</td></tr>
+        <tr><td>Blocked checks</td><td>AT15 and AT19 need a live provider</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="sub">
+    <h3>Parity phase 3a and the City of Acme website, as built</h3>
+    <p>Phase 3a adds the life of a case. A steward can return a case or advance it to review, and an advance is refused while a current, unwaived blocking finding stands. A reviewer can request revisions, and the applicant resubmits a new version that goes back to intake with dependent work marked stale. The City Administrator archives and restores cases, and an archive guard at the service level protects every path that changes an application.</p>
+    <p>Reason codes are typed, and every denial records its code, label and version. The <code>wrong_type</code> and <code>fee</code> findings are added. A waiver never clears a decision blocker. Comments are either visible to the applicant or internal, and the server enforces that on every screen. Each case carries a priority and an owner, and the owner is routing information only.</p>
+    <p>The City of Acme website at <code>/city/</code> now holds the applicant pages, with a demo control for switching between the four personas.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Measure, phase 3a run in its worktree</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Gates</td><td>10 of 10 pass</td></tr>
+        <tr><td>pytest</td><td>866 passed, 0 failed, 0 skipped</td></tr>
+        <tr><td>Acceptance</td><td>37 passed, 0 failed, 2 blocked</td></tr>
+        <tr><td>Live model calls</td><td>None in this phase; Muse stays in labelled replay</td></tr>
+      </tbody>
+    </table></div>
+  </div>
 </div></section>
 
 <section id="artifacts"><div class="wrap">
@@ -421,6 +514,114 @@
   </div>
 </div></section>
 
+<section id="roadmap"><div class="wrap">
+  <h2>Planned: phase 3</h2>
+  <p class="lede"><span class="chip ex">Planned</span> Everything in this section is planned except the items marked Built. The page claims no result, metric or benefit for planned work.</p>
+  <h3>Build order</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Step</th><th>State</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td>P3a</td><td><span class="chip ga">Built</span></td><td>Lifecycle, comments, findings and archive. Merged to main; see Verification.</td></tr>
+      <tr><td>P3b</td><td><span class="chip ex">Planned</span></td><td>Queue views, early resolution, a review queue and service targets.</td></tr>
+      <tr><td>P3chat</td><td><span class="chip ex">Planned</span></td><td>Applicant help chat, delivered in three runs.</td></tr>
+      <tr><td>P3c</td><td><span class="chip ex">Planned</span></td><td>Operations dashboard, audit log, support and checks.</td></tr>
+      <tr><td>P3insight</td><td><span class="chip ex">Planned</span></td><td>Community permit insight for administrators and residents.</td></tr>
+      <tr><td>P3policy</td><td><span class="chip ex">Planned</span></td><td>What-if analysis for administrators, delivered in four runs.</td></tr>
+    </tbody>
+  </table></div>
+  <p><span class="chip ga">Built</span> The applicant side lives on a fictional City of Acme website at <code>/city/</code>. Its Permits entry opens the applicant portal inside the city layout, and a "Demo: switch user" control uses the existing persona selector with its four personas.</p>
+
+  <h3>P3chat: applicant help chat</h3>
+  <p><span class="chip ex">Planned</span> Muse Spark answers only from a set of sources that the server builds. The set holds published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case.</p>
+  <div class="split">
+    <div class="card"><h4>Code checks <span class="chip ex">Planned</span></h4><ul>
+      <li>Every citation exists.</li>
+      <li>Every quote is verbatim.</li>
+      <li>Any fee, dimension or timing comes from a fact that the server computed.</li>
+      <li>Outcome promises and legal-advice claims are blocked.</li>
+    </ul></div>
+    <div class="card"><h4>When a check fails <span class="chip ex">Planned</span></h4><ul>
+      <li>The applicant sees the matching rule text, labelled "not an AI answer".</li>
+      <li>"Ask the City" sends the question to a person.</li>
+      <li>Tests and the default demo use labelled replay.</li>
+    </ul></div>
+  </div>
+
+  <h3>P3insight: community permit insight</h3>
+  <p><span class="chip ex">Planned</span> The City Administrator gets permit activity on the town map by district. Filters cover type, outcome, period and exceptions, which are variances, waivers, denials and conditions. Business activity by category and trends are included.</p>
+  <p><span class="chip ex">Planned</span> Residents get "Permits in my community" on the City of Acme website. It shows the same map and totals, with public lookup by address, street or permit number.</p>
+  <div class="split">
+    <div class="card"><h4>The public record shows <span class="chip ex">Planned</span></h4><ul>
+      <li>Permit number, type, parcel and address.</li>
+      <li>Work description, status, dates and outcome.</li>
+      <li>Conditions and an exception marker.</li>
+      <li>The contractor business name.</li>
+    </ul></div>
+    <div class="card"><h4>It never shows <span class="chip ex">Planned</span></h4><ul>
+      <li>Homeowner names.</li>
+      <li>Documents, internal notes or comments.</li>
+      <li>Contact details or fees.</li>
+    </ul></div>
+  </div>
+  <p><span class="chip ex">Planned</span> District totals under 3 show as "fewer than 3". Business categories (restaurant, bar, retail, office) are added. Sanitation and police join the simulated subscriber departments.</p>
+  <p><span class="chip ex">Planned</span> Everything displayed comes from prepared synthetic data and carries a synthetic label.</p>
+
+  <h3>P3policy: what-if for administrators</h3>
+  <p><span class="chip ex">Planned</span> A scenario applies proposed rule, document, process-category, service-target or fee changes in memory only. A deterministic engine reruns the rule evaluator, the intake checks and the fee calculation over current cases, decided cases or a synthetic year of sample cases.</p>
+  <div class="split">
+    <div class="card"><h4>What it reports <span class="chip ex">Planned</span></h4><ul>
+      <li>Cases whose outcome changes.</li>
+      <li>Cases no longer held for a reviewer.</li>
+      <li>Needs-information changes and service-target changes.</li>
+      <li>Hypothetical assessed fees.</li>
+      <li>Every case that moves from fail to pass, listed.</li>
+    </ul></div>
+    <div class="card"><h4>What it never claims <span class="chip ex">Planned</span></h4><ul>
+      <li>No staff-time claim.</li>
+      <li>No revenue claim.</li>
+    </ul></div>
+  </div>
+  <p><span class="chip ex">Planned</span> Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure.</p>
+  <p><span class="chip ex">Planned</span> "Propose as draft" creates draft rule versions. They still need independent approval before they take effect.</p>
+  <p><span class="chip ex">Planned</span> Demo scenario: the fence height limit rises from 6 feet to 7 feet.</p>
+</div></section>
+
+<section id="video" class="alt"><div class="wrap">
+  <h2>Planned explainer video</h2>
+  <p class="lede"><span class="chip ex">Planned</span> A two minute video with seven scenes is planned. It is not recorded, and nothing is published or submitted without the project owner's go.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Item</th><th>State</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Length</td><td><span class="chip ex">Planned</span></td><td>2:00, in seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.</td></tr>
+      <tr><td>Presenter</td><td><span class="chip ex">Planned</span></td><td>An AI version of the project owner, rendered with MiniMax H3 from the owner's own face reference and voice sample.</td></tr>
+      <tr><td>Assembly</td><td><span class="chip ex">Planned</span></td><td>Slides, app recordings, captions and assembly in Kinetograph 0.2.0, a TypeScript video engine that runs on the local graphics processing unit (GPU).</td></tr>
+      <tr><td>Stills</td><td><span class="chip ex">Planned</span></td><td>Hook and close stills come from Muse Image.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Workflow</h3>
+  <ol class="path-strip">
+    <li class="plan"><div><b>Pilot clip.</b> One H3 pilot clip of scene 1, on hold until the GPU is free. <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>Presenter clips.</b> Seven presenter clips. <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>App recordings.</b> Recorded on a separate copy of the app, with live Muse Spark for the Muse moments. <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>Assembly.</b> Kinetograph assembles the clips, recordings, stills and captions. <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>Review.</b> The assembled cut is reviewed. <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>Final render.</b> <span class="chip ex">Planned</span></div></li>
+    <li class="plan"><div><b>Sign-off.</b> The project owner signs off. <span class="chip ex">Planned</span></div></li>
+  </ol>
+  <p>Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without the project owner's go.</p>
+  <h3>Narration script</h3>
+  <p><span class="chip ex">Planned</span> The text below is the approved narration, one paragraph per scene, with the second range of each scene. Captions show the written form.</p>
+  <div class="stack">
+    <div class="card"><h4>Scene 1: the problem (0 to 15 s)</h4><p>In ACME City, a small permit office serves the whole community. A homeowner waits on a fence permit, a new café waits to open, and the city council plans growth without seeing where permits slow down.</p></div>
+    <div class="card"><h4>Scene 2: three groups, one app (15 to 25 s)</h4><p>ACME City Permits helps three groups of people: the residents who apply, the city staff who review, and the leaders who set the rules.</p></div>
+    <div class="card"><h4>Scene 3: residents (25 to 45 s)</h4><p>For residents, a permit assistant answers questions in plain language. Asked about a six foot front yard fence, Muse Spark quotes section fourteen three oh five, explains the four foot limit, and shows the next step. The homeowner applies knowing the rule.</p><p class="mock-note">Caption override: "§14-305"</p></div>
+    <div class="card"><h4>Scene 4: city staff (45 to 72 s)</h4><p>For city staff, agents do the first read. The intake agent sorts each application, Muse Spark proposes the details, and a data steward links the applicant, property, and contractor to their master records. The adjudication agent checks the zoning rules and recommends a decision with its citation. The permit reviewer makes every decision, and the agent cannot record one.</p></div>
+    <div class="card"><h4>Scene 5: city leaders (72 to 96 s)</h4><p>For city leaders, the permit map shows where new restaurants and bars are opening and where exceptions like variances cluster. The what-if agent tests raising the fence limit from six feet to seven on a year of sample cases. Muse Spark writes the council briefing, and the change goes forward only as a draft for approval.</p></div>
+    <div class="card"><h4>Scene 6: one shared record (96 to 112 s)</h4><p>Master data keeps one trusted record for every resident, property, contractor, and permit. Fire, police, sanitation, and code enforcement read that same record, and on the city's website, residents can look up permits and see activity in their neighbourhood.</p><p class="mock-note">Caption: "Simulated departments" while the subscriber panel is on screen.</p></div>
+    <div class="card"><h4>Scene 7: close (112 to 120 s)</h4><p>Muse Spark, Muse Wonder, and Muse Image helped build this app. I'm (presenter's name), and the code is linked below. Names of people are withheld on this page.</p></div>
+  </div>
+</div></section>
+
 <section id="decisions"><div class="wrap">
   <h2>Open decisions and limitations</h2>
   <div class="tbl-wrap"><table>
@@ -435,6 +636,7 @@
       <tr><td>7</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
       <tr><td>8</td><td>Fonts</td><td>The kit still embeds an unused Aptos face. Embedding rights outside the kit owner stay unverified.</td></tr>
       <tr><td>9</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
+      <tr><td>10</td><td>Phase 3 and explainer video</td><td>Both are planned only. Recording the video waits until P3chat, P3insight and P3policy merge, and nothing is published or submitted without the project owner's go.</td></tr>
     </tbody>
   </table></div>
   <p class="mock-note">Sources: the fact sheet, the status record, the alignment note and the decision log, all read on 2026-10-26.</p>

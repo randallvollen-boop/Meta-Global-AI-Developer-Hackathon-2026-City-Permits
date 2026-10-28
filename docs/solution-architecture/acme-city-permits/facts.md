@@ -132,3 +132,50 @@ Build with the installed Solution Architecture Kit and Vollen Linux brand layer.
 - Claude Opus 5.5 fixed the live Muse extraction, ran the gates, designed the redesign mockup and reviewed the Muse build.
 - Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made the permit-type icons.
 - Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.
+
+## Parity build, as built (2026-10-27)
+
+Source: `BUILD_LOG.md` sections "Parity phase 1" and "Parity phase 2"; merges `07755ae` and `e2528a4` on main.
+
+- Phase 1, merged `07755ae`. Two agents that a person wakes and runs. Only the City Administrator wakes them (`agent.toggle`), and a person with `agent.run.intake` or `agent.run.adjudication` runs them.
+- The intake agent is a dependency graph: classifier; field extractor and document QC in parallel; duplicate finder and completeness in parallel; router. Phase 2 adds an address locator node ahead of the duplicate finder, making seven nodes. The adjudication agent has five nodes: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition. Every run is recorded with a per-node trace.
+- Confirm records the reviewer's decision through the decision service, and the reviewer is the decider of record. Revert needs a reason and returns the case to manual review. A held recommendation cannot be confirmed.
+- The permit catalogue has 17 types. Discretionary types carry no rule and are always held for a person. A configuration change applies only to new intake; the requirements in force when a case arrived are recorded on the case.
+- Administration (City Administrator only) holds permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.
+- Intake channels include mail and fax, with per-document scan-quality flags.
+- Phase 2, merged `e2528a4`. A simulated GIS service runs in the app: 69 parcels, 71 addresses, no outside calls. The address locator proposes a parcel link and never approves it, and a permit decision is blocked until the parcel link is approved and confirmed.
+- The property master at `/property/{parcel}` is shared with four simulated subscriber departments: tax and assessor, fire and life safety, code enforcement, and utilities. Each reads fields and writes nothing back (`config/property_subscribers.json`). `/map` is a server-rendered SVG town map with no outside tiles.
+- The applicant portal at `/apply` has a chooser for the 17 types, a form per type with a completeness banner, uploads, drafts, certification, confirmation and tracking.
+- Verification at the phase 2 merge, lead review on merged main: 10 of 10 gates pass; pytest 762 passed; acceptance 37 passed, 0 failed, 2 blocked. AT15 and AT19 need a live provider.
+
+## Phase 3, planned (not built)
+
+Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. Every item here is planned. The page labels them planned and claims no result for them.
+
+- Build order: P3a (lifecycle, comments, findings, archive; in progress), P3b (queue views, early resolution, review queue, service targets), P3chat in three runs, P3c (operations dashboard, audit log, support, checks), P3insight, P3policy in four runs. The applicant side moves onto a fictional City of Acme website at `/city/`.
+- P3chat, applicant help chat. Muse Spark answers only from a server-built set of sources: published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case. Code checks that every citation exists and every quote is verbatim, and that any fee, dimension or timing comes from a server-computed fact. It blocks outcome promises and legal-advice claims. If a check fails, the applicant sees the matching rule text labelled "not an AI answer". "Ask the City" sends the question to a person. Tests and the default demo use labelled replay.
+- P3insight, community permit insight. The City Administrator gets permit activity on the town map by district, with filters for type, outcome, period and exceptions (variances, waivers, denials, conditions), business activity by category, and trends. Residents get "Permits in my community" on the City of Acme website: the same map and totals, plus public lookup by address, street or permit number. The public record shows the permit number, type, parcel and address, work description, status, dates, outcome, conditions, an exception marker and the contractor business name. It never shows homeowner names, documents, internal notes, comments, contact details or fees, and district totals under 3 show as "fewer than 3". Business categories (restaurant, bar, retail, office) are added. Sanitation and police join the simulated subscriber departments. Everything displayed comes from seeded synthetic data with a synthetic label.
+- P3policy, what-if for administrators. A scenario applies proposed rule, document, process-category, service-target or fee changes in memory only. A deterministic engine reruns the rule evaluator, intake checks and fee calculation over current cases, decided cases or a seeded synthetic year. It reports cases whose outcome changes, cases no longer held for a reviewer, needs-information changes, service-target changes and hypothetical assessed fees. It makes no staff-time or revenue claim, and every case that moves from fail to pass is listed. Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure. "Propose as draft" creates draft rule versions that still need independent approval. Demo scenario: fence height limit raised from 6 ft to 7 ft.
+
+## Explainer video, planned (Randall approved the script 2026-10-28)
+
+Source: `../acme-permits-parity-notes/VIDEO-SCRIPT-r7.md`. Review record: `VIDEO-SCRIPT-REVIEW.md` (private; it never goes on the page).
+
+- Length 2:00, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
+- Presenter: an AI version of Randall rendered with MiniMax H3 from Randall's own face reference and voice sample. Slides, app recordings, captions and assembly are done in Kinetograph 0.2.0, a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
+- Workflow: H3 pilot clip of scene 1 (on hold until the GPU is free); seven presenter clips; app recordings on a separate copy of the app with live Muse Spark for the Muse moments; Kinetograph assembly; review; final render; Randall's sign-off. Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without Randall's go.
+- Script text for the page: the seven narration paragraphs of `VIDEO-SCRIPT-r7.md`, verbatim, under a "Planned explainer video" heading.
+- Never on the page: the private review record, voice or face reference file paths, or the identity name.
+
+## Phase 3a and the City of Acme website, as built (2026-10-28)
+
+Sources: `EVIDENCE_LOG.md` "Parity phase 3a evidence"; merges `b7ce8bd` (phase 3a) and `ead8790` (City of Acme website) on main.
+
+- Lifecycle: new statuses `revisions_requested`, `returned` (terminal) and `archived`. A steward returns a case or advances it to review, and the advance is refused while a current, unwaived blocking finding stands. A reviewer requests revisions. The applicant resubmits, which versions the case, marks dependent work stale, keeps the first submission date and returns the case to intake. The City Administrator archives and restores, and every change is version-checked.
+- An archive guard sits at the service level and is tested path by path on every application-changing path (revisions, documents, evaluation, both agents, confirm and revert, parcel operations, finance, portal upload and resubmission, restore).
+- Typed reason codes cover return, denial, waiver, revision and archive. A denial needs a denial reason code on every decision path, and the code, label and version are recorded on the decision.
+- Findings add `wrong_type` and `fee`. Findings are current, resolved or superseded. A waiver applies only to a current finding of a waivable type and never clears a deterministic decision blocker.
+- Comments are either applicant-visible or internal, enforced on the server on every surface. The audit record carries the comment identifier and its visibility, never the text.
+- Each case has a priority (normal or high) and an owner, and the owner is routing metadata only.
+- Verification for phase 3a, run in its worktree: all 10 local gates pass; 866 tests passed with 0 failed and 0 skipped; acceptance 37 passed, 0 failed, 2 blocked (AT15 and AT19 need live evidence). No live provider call was made.
+- City of Acme website, merged `ead8790`: a fictional city website at `/city/` with a Permits entry. The applicant portal pages render inside the city layout, and a "Demo: switch user" control uses the existing persona selector, which still offers exactly four personas.

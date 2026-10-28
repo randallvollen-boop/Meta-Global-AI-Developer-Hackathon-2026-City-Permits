@@ -13,7 +13,7 @@
       "x": 290,
       "y": 40,
       "w": 800,
-      "h": 600,
+      "h": 700,
       "label": "Local application on loopback"
     },
     {
@@ -31,8 +31,15 @@
       "label": "Simulated source systems"
     },
     {
+      "x": 1140,
+      "y": 580,
+      "w": 270,
+      "h": 140,
+      "label": "Simulated subscriber departments"
+    },
+    {
       "x": 290,
-      "y": 660,
+      "y": 760,
       "w": 360,
       "h": 110,
       "label": "Architecture status record"
@@ -85,7 +92,7 @@
       "w": 230,
       "h": 64,
       "t": "Browser and UI",
-      "s": "Eight screens, no credential",
+      "s": "Screens, portal, town map",
       "i": "app_window",
       "cls": "plan"
     },
@@ -204,7 +211,7 @@
       "w": 242,
       "h": 64,
       "t": "GIS source",
-      "s": "Parcels, addresses, zoning",
+      "s": "Simulated service, 69 parcels",
       "i": "path",
       "cls": "plan"
     },
@@ -220,12 +227,52 @@
     },
     "status": {
       "x": 310,
-      "y": 700,
+      "y": 800,
       "w": 230,
       "h": 64,
       "t": "Status record",
       "s": "As Built, Verified",
       "i": "scroll"
+    },
+    "agents": {
+      "x": 580,
+      "y": 640,
+      "w": 230,
+      "h": 64,
+      "t": "Intake and adjudication",
+      "s": "Seven and five node graphs",
+      "i": "arrows_split",
+      "cls": "plan"
+    },
+    "admin": {
+      "x": 850,
+      "y": 640,
+      "w": 230,
+      "h": 64,
+      "t": "Administration",
+      "s": "Types, users, reasons, icons",
+      "i": "gear_six",
+      "cls": "plan"
+    },
+    "propmaster": {
+      "x": 850,
+      "y": 510,
+      "w": 230,
+      "h": 64,
+      "t": "Property master and map",
+      "s": "Parcel records, town map",
+      "i": "folder",
+      "cls": "plan"
+    },
+    "subs": {
+      "x": 1154,
+      "y": 620,
+      "w": 242,
+      "h": 64,
+      "t": "Subscriber departments",
+      "s": "Four simulated, read only",
+      "i": "users",
+      "cls": "plan"
     }
   },
   "edges": {
@@ -884,6 +931,113 @@
           548
         ]
       }
+    },
+    "e_agents_permits": {
+      "p": [
+        [
+          810,
+          664
+        ],
+        [
+          838,
+          664
+        ],
+        [
+          838,
+          428
+        ],
+        [
+          810,
+          428
+        ]
+      ],
+      "lbl": {
+        "agents": [
+          "recommendation",
+          838,
+          560
+        ],
+        "system": [
+          "recommendation",
+          838,
+          560
+        ]
+      }
+    },
+    "e_admin_agents": {
+      "p": [
+        [
+          850,
+          680
+        ],
+        [
+          810,
+          680
+        ]
+      ],
+      "lbl": {
+        "agents": [
+          "wake and run",
+          830,
+          712
+        ]
+      }
+    },
+    "e_db_prop": {
+      "p": [
+        [
+          965,
+          434
+        ],
+        [
+          965,
+          510
+        ]
+      ],
+      "lbl": {
+        "agents": [
+          "records",
+          990,
+          472
+        ],
+        "system": [
+          "records",
+          990,
+          472
+        ]
+      }
+    },
+    "e_prop_subs": {
+      "p": [
+        [
+          1080,
+          542
+        ],
+        [
+          1120,
+          542
+        ],
+        [
+          1120,
+          660
+        ],
+        [
+          1154,
+          660
+        ]
+      ],
+      "lbl": {
+        "agents": [
+          "read only",
+          1120,
+          600
+        ],
+        "system": [
+          "read only",
+          1120,
+          600
+        ]
+      }
     }
   },
   "views": {
@@ -908,7 +1062,11 @@
         "e_db_evidence",
         "e_src_registry",
         "e_write_permit",
-        "e_write_erp"
+        "e_write_erp",
+        "e_agents_permits",
+        "e_admin_agents",
+        "e_db_prop",
+        "e_prop_subs"
       ],
       "user": [
         "e_p_app",
@@ -934,7 +1092,11 @@
         "muse",
         "src_permit",
         "src_gis",
-        "src_erp"
+        "src_erp",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "legend": [
         [
@@ -946,7 +1108,7 @@
           "Built component link"
         ]
       ],
-      "note": "Every component is built and verified locally. Signed-in personas act through the browser, the service governs authority, and the model only proposes."
+      "note": "Every component is built. Signed-in personas act through the browser, the service governs authority, and the model only proposes."
     },
     "permit": {
       "edges": [
@@ -992,7 +1154,11 @@
         "src_permit",
         "src_gis",
         "src_erp",
-        "status"
+        "status",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "steps": true,
       "legend": [
@@ -1048,7 +1214,11 @@
         "musead",
         "muse",
         "evidence",
-        "status"
+        "status",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "legend": [
         [
@@ -1061,6 +1231,61 @@
         ]
       ],
       "note": "Sources own their facts. The registry owns identity, and a write becomes authoritative only after the source adapter accepts a version."
+    },
+    "agents": {
+      "edges": [
+        "e_p_rev",
+        "e_p_adm",
+        "e_browser_api",
+        "e_api_permits",
+        "e_api_store",
+        "e_agents_permits",
+        "e_admin_agents",
+        "e_db_prop",
+        "e_prop_subs"
+      ],
+      "user": [
+        "e_p_rev",
+        "e_p_adm"
+      ],
+      "nodes": [
+        "p_reviewer",
+        "p_admin",
+        "browser",
+        "api",
+        "permits",
+        "db",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
+      ],
+      "hide": [
+        "p_applicant",
+        "p_steward",
+        "musead",
+        "gov",
+        "ingest",
+        "registry",
+        "finance",
+        "evidence",
+        "muse",
+        "src_permit",
+        "src_gis",
+        "src_erp",
+        "status"
+      ],
+      "legend": [
+        [
+          "var(--edge-on)",
+          "Signed-in user action"
+        ],
+        [
+          "var(--edge)",
+          "Built component link"
+        ]
+      ],
+      "note": "A person wakes and runs each agent. The agents recommend, the reviewer decides, and four simulated departments only read the property master."
     },
     "muse": {
       "edges": [
@@ -1093,7 +1318,11 @@
         "src_permit",
         "src_gis",
         "src_erp",
-        "status"
+        "status",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "legend": [
         [
@@ -1141,7 +1370,11 @@
         "src_permit",
         "src_gis",
         "src_erp",
-        "status"
+        "status",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "legend": [
         [
@@ -1176,7 +1409,11 @@
         "e_db_evidence",
         "e_src_registry",
         "e_write_permit",
-        "e_write_erp"
+        "e_write_erp",
+        "e_agents_permits",
+        "e_admin_agents",
+        "e_db_prop",
+        "e_prop_subs"
       ],
       "user": [
         "e_p_app",
@@ -1203,7 +1440,11 @@
         "src_permit",
         "src_gis",
         "src_erp",
-        "status"
+        "status",
+        "agents",
+        "admin",
+        "propmaster",
+        "subs"
       ],
       "legend": [
         [
@@ -1418,7 +1659,7 @@
       "k": "Built",
       "t": "Browser and UI",
       "r": "Browser and UI",
-      "b": "Eight Jinja screens with small vanilla JavaScript enhancements, served by the local service on loopback.",
+      "b": "Jinja screens with small vanilla JavaScript enhancements, served by the local service on loopback. They include Administration, the applicant portal at /apply, the property master and the town map.",
       "f": [
         "The browser holds no model credential and no write path to a source.",
         "Current master, submitted, proposed and issued values stay visually distinct."
@@ -1541,11 +1782,11 @@
       "b": "The model endpoint used for the live extraction in the primary chain.",
       "f": [
         "Standard mode only, and never a contributor model.",
-        "No primary-chain live call has completed, so no live receipt exists.",
+        "The live primary-chain run succeeded. Replay never counts as live evidence.",
         "The provider balance and the no-cash path are unverified."
       ],
       "status": "ex",
-      "sl": "Not run"
+      "sl": "Succeeded"
     },
     "src_permit": {
       "k": "Fictional source",
@@ -1563,7 +1804,7 @@
       "k": "Fictional source",
       "t": "GIS source",
       "r": "GIS source",
-      "b": "Owns parcels, official addresses and units, and zoning facts.",
+      "b": "Owns parcels, official addresses and units, and zoning facts. Since phase 2 it is a simulated service inside the application, with 69 parcels, 71 addresses and no outside calls.",
       "f": [
         "Snapshots feed the registry and its trusted views.",
         "The registry records lineage, and it never edits the parcel."
@@ -1596,6 +1837,57 @@
       ],
       "status": "ga",
       "sl": "Verified"
+    },
+    "agents": {
+      "k": "Built",
+      "t": "Intake and adjudication agents",
+      "r": "Intake and adjudication agents",
+      "b": "Two agents that a person wakes and runs. The intake agent has seven nodes and the adjudication agent has five. Every run is recorded with a per-node trace.",
+      "f": [
+        "Intake: classifier; field extractor and document quality check in parallel; address locator; duplicate finder and completeness check in parallel; router.",
+        "Adjudication: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition.",
+        "Confirm records the reviewer's decision, and a held recommendation cannot be confirmed. Revert needs a reason.",
+        "Only the City Administrator wakes an agent."
+      ],
+      "status": "ga",
+      "sl": "Built"
+    },
+    "admin": {
+      "k": "Built",
+      "t": "Administration",
+      "r": "Administration",
+      "b": "City Administrator only. It holds permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.",
+      "f": [
+        "The catalogue has 17 permit types.",
+        "A configuration change applies only to new intake."
+      ],
+      "status": "ga",
+      "sl": "Built"
+    },
+    "propmaster": {
+      "k": "Built",
+      "t": "Property master and map",
+      "r": "Property master and town map",
+      "b": "The shared parcel record at /property/{parcel} and a server-rendered SVG town map at /map.",
+      "f": [
+        "The address locator proposes a parcel link and never approves it.",
+        "A permit decision is blocked until the parcel link is approved and confirmed.",
+        "The map loads no outside tiles."
+      ],
+      "status": "ga",
+      "sl": "Built"
+    },
+    "subs": {
+      "k": "Simulated",
+      "t": "Subscriber departments",
+      "r": "Four simulated departments",
+      "b": "Tax and assessor, fire and life safety, code enforcement, and utilities read property master fields.",
+      "f": [
+        "Each department reads fields and writes nothing back.",
+        "Access is set in config/property_subscribers.json."
+      ],
+      "status": "ex",
+      "sl": "Simulated"
     }
   },
   "explorer": {

@@ -1,12 +1,12 @@
 # ACME City Permits architecture page, project note
 
-Date: 2026-10-26. Status: PLANNED, in implementation. Internal draft.
+Date: 2026-10-27 (parity phases 1 and 2 added; originally 2026-10-26). Status: PLANNED, in implementation. Internal draft.
 
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 885954 bytes. SHA-256 `e65c4cff38b148c64d365e51897f6e86948e295af55ea9f58c184983576c19c6`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 910998 bytes. SHA-256 `d732714e6d553dc7223b4ba599e8a7490d87322f32fd4ae3da04b4d54780f862`. It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
@@ -76,3 +76,7 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 - The page states no measured benefit, accuracy, savings, performance, compliance or production readiness claim, and no tamper-proof claim.
 - The shared kit is not edited. The unused Aptos face in the kit shell remains, and its embedding rights outside the kit owner stay unverified.
 - The standalone standard and its templates are absent on this host. The kit README, this fact sheet, the sibling worked example and the Vollen Linux instructions set the page shape.
+
+## Planned content
+
+The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections are planned content only. They claim no result, and nothing in them is built, published or submitted.
