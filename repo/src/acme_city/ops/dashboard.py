@@ -19,7 +19,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from acme_city.core.clock import utc_now
+from acme_city.core.clock import app_now
 from acme_city.permits.queues import INTAKE_TABS
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
@@ -122,7 +122,7 @@ def dashboard(
             every figure; ``include`` counts it, and the screen says so.
         now: The moment the figures are read at.
     """
-    moment = now or utc_now()
+    moment = now or app_now()
     mode = synthetic if synthetic in SYNTHETIC_MODES else "exclude"
     every_application = list(session.execute(select(permit.Application)).scalars().all())
     synthetic_ids = {row.id for row in every_application if row.synthetic}

@@ -18,6 +18,32 @@ def utc_now() -> datetime:
     return datetime.now(_UTC)
 
 
+#: The demo scenario moment, or ``None`` for the real clock.  Set once per
+#: application instance by :func:`set_scenario_clock`; nothing else writes it.
+_scenario_moment: datetime | None = None
+
+
+def set_scenario_clock(moment: datetime | None) -> None:
+    """Set (or clear, with ``None``) the demo scenario moment."""
+    global _scenario_moment
+    _scenario_moment = None if moment is None else moment.astimezone(_UTC)
+
+
+def scenario_moment() -> datetime | None:
+    """Return the active demo scenario moment, or ``None`` on the real clock."""
+    return _scenario_moment
+
+
+def app_now() -> datetime:
+    """Return "today" for ages, service targets, overdue flags and dashboards.
+
+    This is the scenario moment in the demo when one is active, otherwise the
+    real clock.  It never stamps a stored row: audit, creation and decision
+    times keep using :func:`utc_now`, so stored data is the same either way.
+    """
+    return _scenario_moment if _scenario_moment is not None else utc_now()
+
+
 def ensure_utc(value: datetime) -> datetime:
     """Return ``value`` converted to UTC.
 
@@ -51,4 +77,13 @@ def to_demo_time(value: datetime | None, timezone_name: str) -> datetime | None:
     return ensure_utc(value).astimezone(demo_timezone(timezone_name))
 
 
-__all__ = ["demo_timezone", "ensure_utc", "isoformat", "to_demo_time", "utc_now"]
+__all__ = [
+    "app_now",
+    "demo_timezone",
+    "ensure_utc",
+    "isoformat",
+    "scenario_moment",
+    "set_scenario_clock",
+    "to_demo_time",
+    "utc_now",
+]
