@@ -193,39 +193,51 @@ class PortalService:
         items: list[dict[str, str]] = []
         declared = set(sent_separately or ())
 
-        def need(label: str, anchor: str, key: str) -> None:
-            items.append({"key": key, "label": label, "anchor": anchor})
+        def need(label: str, anchor: str, key: str, message: str) -> None:
+            items.append({"key": key, "label": label, "anchor": anchor, "message": message})
 
         if not self._present(values.get("applicant_name")):
-            need("Applicant name", "f-applicant_name", "applicant_name")
+            need("Applicant name", "f-applicant_name", "applicant_name", "Enter the applicant name")
         if not self._present(values.get("applicant_email")):
-            need("Applicant email", "f-applicant_email", "applicant_email")
+            need("Applicant email", "f-applicant_email", "applicant_email", "Enter the email address")
         elif "@" not in values["applicant_email"]:
-            need("Applicant email (enter a valid address)", "f-applicant_email", "applicant_email")
+            need(
+                "Applicant email (enter a valid address)",
+                "f-applicant_email",
+                "applicant_email",
+                "Enter a valid email address",
+            )
         if spec.needs_business and not self._present(values.get("business_name")):
-            need("Business name", "f-business_name", "business_name")
+            need("Business name", "f-business_name", "business_name", "Enter the business name")
         if not self._present(values.get("address_text")):
-            need("Property address", "f-address_text", "address_text")
+            need("Property address", "f-address_text", "address_text", "Enter the property address")
         for field in spec.fields:
             raw = values.get(field.key)
             anchor = f"f-{field.key}"
+            name = field.label[:1].lower() + field.label[1:]
             if field.kind == "checkbox":
                 if field.required and str(raw or "").lower() not in {"on", "true", "1", "yes"}:
-                    need(field.label, anchor, field.key)
+                    need(field.label, anchor, field.key, f"Confirm: {name}")
                 continue
             if not self._present(raw):
                 if field.required:
-                    need(field.label, anchor, field.key)
+                    verb = "Choose" if field.kind == "select" else "Enter"
+                    need(field.label, anchor, field.key, f"{verb} the {name}")
                 continue
             if field.kind == "number":
                 try:
                     if float(str(raw).replace(",", "")) < 0:
                         raise ValueError
                 except ValueError:
-                    need(f"{field.label} (enter a number)", anchor, field.key)
+                    need(f"{field.label} (enter a number)", anchor, field.key, f"Enter the {name} as a number")
         for doc_type, label in spec.documents:
             if doc_type not in uploaded_types and doc_type not in declared:
-                need(label, f"file-{doc_type}", f"file__{doc_type}")
+                need(
+                    label,
+                    f"file-{doc_type}",
+                    f"file__{doc_type}",
+                    f"Add the {label[:1].lower() + label[1:]} or tick 'Sent to the City separately'",
+                )
         missing = [item["label"] for item in items]
         blocking = list(items)
         if not certification_accepted:
@@ -234,6 +246,7 @@ class PortalService:
                     "key": "certification_accepted",
                     "label": "Check the certification",
                     "anchor": "f-certification_accepted",
+                    "message": "Check the certification",
                 }
             )
         complete = not missing
@@ -243,6 +256,10 @@ class PortalService:
             banner = "Ready to submit. All required fields and documents are provided."
         else:
             banner = "All fields and documents are provided. Check the certification to submit."
+        if not blocking:
+            status = banner
+        else:
+            status = f"{len(blocking)} item{'s' if len(blocking) != 1 else ''} still needed."
         return {
             "complete": complete,
             "missing": missing,
@@ -254,6 +271,7 @@ class PortalService:
             ),
             "can_submit": complete and certification_accepted,
             "banner": banner,
+            "status": status,
         }
 
     # ----------------------------------------------------------------- locator

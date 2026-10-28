@@ -786,3 +786,9 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .needs-list { margin: 0.6rem 0; }
 .needs-list ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
 .guard-reason { margin: 0.3rem 0 0; font-size: 0.85rem; }
+.optional-tag { color: var(--fg-2); font-weight: 400; margin-left: 0.25em; }
+.error-summary { border: 3px solid var(--danger, #b3261e); padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 6px; }
+.error-summary h2 { margin: 0 0 0.3rem; font-size: 1.1rem; color: var(--danger, #b3261e); }
+.error-summary ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.field-error { color: var(--danger, #b3261e); font-weight: 600; font-size: 0.85rem; }
+.needs-status { margin: 0.4rem 0; }

@@ -76,6 +76,10 @@ def _portal_guard(
 _RESERVED = {CSRF_FIELD, "intent", "draft", "certification_accepted", "next"}
 
 
+class _Incomplete(Exception):
+    """The applicant pressed Submit with something still missing."""
+
+
 def _declared(form: Any, spec: forms.FormSpec) -> set[str]:
     """Return the document types the applicant ticked "Sent to the City separately"."""
     return {
@@ -125,6 +129,7 @@ def _form_context(
     certification_accepted: bool,
     draft: Any,
     sent_separately: set[str] | None = None,
+    attempted: bool = False,
     error: str = "",
     notice: str = "",
 ) -> dict[str, Any]:
@@ -148,6 +153,7 @@ def _form_context(
         draft_documents={key: doc.filename for key, doc in documents.items()},
         state=state,
         sent_separately=declared,
+        attempted=attempted and not state["can_submit"],
         icon_url=icon["url"] if icon else "",
         certification=forms.CERTIFICATION_TEXT,
         portal_notice=forms.PORTAL_NOTICE,
@@ -510,6 +516,7 @@ async def ui_portal_post(
     certification_accepted = str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"}
     intent = str(form.get("intent", "update"))
     declared = _declared(form, spec)
+    attempted = False
     draft = None
     error_text = ""
     notice = ""
@@ -522,6 +529,20 @@ async def ui_portal_post(
         for doc_type, filename, content in await _files(form, spec):
             service.store_upload(draft, doc_type, filename, content, resolved)
         if intent == "submit":
+            incomplete = service.completeness(
+                spec,
+                values,
+                set(service.draft_documents(draft)),
+                certification_accepted=certification_accepted,
+                sent_separately=declared,
+            )
+            if not incomplete["can_submit"]:
+                # Nothing is submitted. Keep what was entered (and any file) as a draft
+                # and show the person what is missing, beside each field.
+                session.commit()
+                attempted = True
+                notice = "Nothing has been submitted. Your entries are kept in a draft."
+                raise _Incomplete
             application = service.submit(
                 spec, values, certification_accepted, draft, resolved, sent_separately=declared
             )
@@ -533,6 +554,8 @@ async def ui_portal_post(
         if intent == "save":
             return RedirectResponse(f"/apply?saved={draft.reference}", status_code=303)
         notice = "Your changes are kept in a draft. Nothing has been submitted."
+    except _Incomplete:
+        pass
     except AcmeError as error:
         session.rollback()
         error_text = error.message
@@ -545,6 +568,6 @@ async def ui_portal_post(
     context = _form_context(
         request, session, resolved, service, spec,
         values=values, certification_accepted=certification_accepted, draft=draft,
-        sent_separately=declared, error=error_text, notice=notice,
+        sent_separately=declared, attempted=attempted, error=error_text, notice=notice,
     )
-    return render(request, "portal_form.html", context, status_code=422 if error_text else 200)
+    return render(request, "portal_form.html", context, status_code=422 if (error_text or attempted) else 200)

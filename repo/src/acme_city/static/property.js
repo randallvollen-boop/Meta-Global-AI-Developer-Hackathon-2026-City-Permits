@@ -152,8 +152,8 @@
     return function () { var a = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(null, a); }, ms); };
   }
   function init(form) {
-    var banner = form.querySelector("[data-banner]");
-    var card = form.querySelector("[data-testid='completeness-banner']");
+    var statusLine = form.querySelector("[data-status]");
+    var summary = form.querySelector("[data-error-summary]");
     var submit = form.querySelector("[data-testid='submit-application']");
     var dym = form.querySelector("[data-did-you-mean]");
     var address = form.querySelector("[name='address_text']");
@@ -169,48 +169,36 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (state) {
           if (!state) { return; }
-          banner.textContent = state.banner;
-          card.classList.toggle("ok", state.complete);
-          card.classList.toggle("warn", !state.complete);
-          card.setAttribute("data-complete", state.complete ? "true" : "false");
-          if (submit) {
-            submit.disabled = !state.can_submit;
-            if (state.can_submit) { submit.removeAttribute("aria-describedby"); }
-            else { submit.setAttribute("aria-describedby", "submit-needs-title submit-needs"); }
+          if (statusLine) {
+            statusLine.textContent = state.status || "";
+            statusLine.setAttribute("data-complete", state.can_submit ? "true" : "false");
           }
           renderNeeds(state);
         }).catch(function () { /* the server still checks on submit */ });
     }
-    // "Before you can submit": the same list the server renders, rebuilt from /check.
+    // After a refused Submit the errors stay up; each one clears as the person fixes it.
+    // Nothing turns red before that, and Submit is never disabled.
     function renderNeeds(state) {
-      var box = form.querySelector("[data-submit-needs]");
-      var blocking = state.blocking || [];
+      if (!summary) { return; }
       var anchors = {};
-      blocking.forEach(function (item) { anchors[item.anchor] = true; });
-      if (box) {
-        var list = box.querySelector("[data-needs-items]");
-        list.textContent = "";
-        blocking.forEach(function (item) {
-          var li = document.createElement("li");
-          var a = document.createElement("a");
-          a.href = "#" + item.anchor;
-          a.setAttribute("data-needs-link", "");
-          a.textContent = item.label;
-          li.appendChild(a);
-          list.appendChild(li);
-        });
-        box.hidden = !!state.can_submit;
-        box.classList.toggle("warn", !state.can_submit);
-        box.classList.toggle("ok", !!state.can_submit);
-      }
-      form.querySelectorAll("[id^='f-'], [id^='file-']").forEach(function (control) {
-        var wrap = control.closest(".field, .doc-row");
-        if (!wrap || control.type === "checkbox" && control.id === "f-certification_accepted") { return; }
-        var needed = !!anchors[control.id];
-        wrap.classList.toggle("needed", needed);
-        if (needed) { control.setAttribute("aria-invalid", "true"); } else { control.removeAttribute("aria-invalid"); }
+      (state.blocking || []).forEach(function (item) { anchors[item.anchor] = true; });
+      summary.querySelectorAll("li[data-anchor]").forEach(function (li) {
+        li.hidden = !anchors[li.getAttribute("data-anchor")];
       });
+      form.querySelectorAll("[data-error-for]").forEach(function (msg) {
+        var anchor = msg.getAttribute("data-error-for");
+        msg.hidden = !anchors[anchor];
+        var control = document.getElementById(anchor);
+        if (control) {
+          if (anchors[anchor]) { control.setAttribute("aria-invalid", "true"); } else { control.removeAttribute("aria-invalid"); }
+        }
+        var wrap = control && control.closest(".field, .doc-row, fieldset");
+        if (wrap) { wrap.classList.toggle("needed", !!anchors[anchor]); }
+      });
+      var any = Object.keys(anchors).length > 0;
+      summary.hidden = !any;
     }
+    if (summary) { summary.focus(); }
     function setPill(row, input) {
       var pill = row.querySelector("[data-testid='doc-status']");
       var sep = row.querySelector("[data-sent-separately]");
