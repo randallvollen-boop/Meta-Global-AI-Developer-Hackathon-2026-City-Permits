@@ -1,169 +1,137 @@
 {% extends "base.html" %}
-{% import "components/action_form.html" as forms %}
+{% import "_ui.html" as ui with context %}
+{% import "components/steward.html" as st with context %}
 
 {% block content %}
-
-{% if detail %}
-<div class="page-head"><div><h1>Master record: {{ detail.party.display_name }}</h1><p class="sub">Parcels, businesses and contractors, owned by GIS, ERP Finance and Permitting.</p></div></div>
-
-{% include "components/responsibility_panel.html" %}
-
-<section class="panel" aria-labelledby="master-credentials-heading">
-  <h2 id="master-credentials-heading">Authoritative credentials</h2>
-  <table class="data-table" data-testid="master-credentials">
-    <caption class="visually-hidden">Credentials of this master record</caption>
-    <thead><tr><th scope="col">Credential</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid from</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
-    <tbody>
-      {% for credential in detail.credentials %}
-      <tr>
-        <th scope="row">{{ credential.credential_type }}</th>
-        <td>{{ credential.number }}</td>
-        <td>{{ credential.issuing_authority_id }}</td>
-        <td><span class="badge badge-{{ credential.status }}">{{ credential.status }}</span></td>
-        <td>{{ credential.valid_from or 'unknown' }}</td>
-        <td>{{ credential.valid_to or 'open' }}</td>
-        <td>{{ credential.version }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="7" class="muted">No credential is recorded for this master record.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if detail.accounts %}
-  <h3>Finance accounts</h3>
-  <table class="data-table" data-testid="master-accounts">
-    <caption class="visually-hidden">Finance accounts of this master record</caption>
-    <thead><tr><th scope="col">Account</th><th scope="col">Source account</th><th scope="col">Role</th><th scope="col">Link status</th><th scope="col">Version</th></tr></thead>
-    <tbody>
-      {% for account in detail.accounts %}
-      <tr>
-        <th scope="row">{{ account.account_id }}</th>
-        <td>{{ account.source_account_id }}</td>
-        <td>{{ account.account_role }}</td>
-        <td>{{ account.link_status }}</td>
-        <td>{{ account.version }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% endif %}
-</section>
-
-<section class="panel" aria-labelledby="master-sources-heading">
-  <h2 id="master-sources-heading">Source links</h2>
-  <table class="data-table" data-testid="master-sources">
-    <caption class="visually-hidden">Source records linked to this master record</caption>
-    <thead><tr><th scope="col">Source</th><th scope="col">Dataset</th><th scope="col">Record</th><th scope="col">Status</th><th scope="col">Decided by</th><th scope="col">Version</th></tr></thead>
-    <tbody>
-      {% for link in detail.sources %}
-      <tr>
-        <td>{{ link.source_system_id }}</td>
-        <td>{{ link.source_dataset_key or '' }}</td>
-        <td>{{ link.source_record_id }}</td>
-        <td><span class="badge badge-{{ link.link_status }}">{{ link.link_status }}</span></td>
-        <td>{{ link.decision_actor_id or '-' }}</td>
-        <td>{{ link.version }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="6" class="muted">No source record is linked yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
-{% include "components/evidence_panel.html" %}
-{% include "components/history_panel.html" %}
-
-<section class="panel card" aria-labelledby="master-actions-heading">
-  <div class="card-h"><h2 id="master-actions-heading">Next actions</h2></div>
-  <div class="card-b act">
-  {% for item in actions %}
-    {{ forms.action_form(item, csrf_token) }}
-  {% endfor %}
-  {% if denied_action_explanations %}
-  <ul class="denied-list" data-testid="denied-actions">
-    {% for denied in denied_action_explanations %}
-    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Master records' if tabs|length > 1 else 'People & organizations' }}</h1>
+    <p class="sub">One searchable collection at a time. Each value comes from a source system; change it there.</p>
   </div>
+  <div class="actions">{{ ui.help_button(help_screen) }}</div>
+</div>
+
+<nav class="tabs master-tabs" aria-label="Master record collections" data-testid="master-tabs">
+  {% for item in tabs %}
+  <a href="{{ item.href }}" data-testid="master-tab" data-tab="{{ item.key }}"{% if item.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ item.label }} <span class="n">{{ item.count }}</span></a>
+  {% endfor %}
+</nav>
+
+{% if tabs|length > 1 %}{% set query = '' %}{% include "components/property_search.html" %}{% endif %}
+
+{{ st.source_summary(summary) }}
+
+{% if tab == 'people' %}
+<section class="panel" aria-labelledby="people-heading">
+  <h2 id="people-heading" class="visually-hidden">People &amp; organizations</h2>
+  <form class="filters toolbar" method="get" action="{{ collection_path }}" data-testid="applicant-search">
+    {% if collection.kind != 'all' %}<input type="hidden" name="kind" value="{{ collection.kind }}">{% endif %}
+    {% if collection_path == '/masters' %}<input type="hidden" name="tab" value="people">{% endif %}
+    <p class="field">
+      <label for="applicant-query">Search by name or alias</label>
+      <input id="applicant-query" type="search" name="q" value="{{ collection.query }}">
+    </p>
+    <p><button type="submit" class="button">Search</button></p>
+    <div class="chips" role="group" aria-label="Show">
+      {% for f in collection.filters %}<a class="chip" href="{{ f.href }}"{% if f.active %} aria-pressed="true"{% else %} aria-pressed="false"{% endif %} data-testid="people-filter" data-filter="{{ f.key }}">{{ f.label }} <span class="n">{{ f.count }}</span></a>{% endfor %}
+    </div>
+  </form>
+  <table class="data-table" data-testid="applicant-table">
+    <caption class="visually-hidden">People and organizations in scope</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">Primary contact</th>
+        <th scope="col">Applications</th>
+        <th scope="col">Attention {{ ui.info('data_issue') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in collection.rows %}
+      <tr data-testid="applicant-row" data-party-id="{{ row.party_id }}">
+        <th scope="row">{{ ui.detail_link('record', row.party_id, row.name) }}{% if row.alias %}<br><span class="muted alias-line" data-testid="alias-line">{{ row.alias }}</span>{% endif %}{% if row.synthetic %} <span class="badge-synthetic">Synthetic</span>{% endif %}</th>
+        <td class="nowrap">{{ row.type }}</td>
+        <td>{{ row.contact or '' }}</td>
+        <td class="nowrap">{% if row.applications %}{{ ui.detail_link('applications', row.party_id, row.applications ~ (' application' if row.applications == 1 else ' applications')) }}{% else %}<span class="muted">None</span>{% endif %}</td>
+        <td class="nowrap">{% if row.attention %}{{ ui.detail_link('record', row.party_id, row.attention ~ (' open issue' if row.attention == 1 else ' open issues'), 'pill warn') }}{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No person or organization matches this search.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ st.pager(collection.paging) }}
+</section>
+
+{% elif tab == 'properties' %}
+<section class="panel" aria-labelledby="properties-heading">
+  <h2 id="properties-heading" class="visually-hidden">Properties</h2>
+  <form class="filters toolbar" method="get" action="/masters">
+    <input type="hidden" name="tab" value="properties">
+    <p class="field"><label for="property-query">Search by address or parcel number</label><input id="property-query" type="search" name="q" value="{{ collection.query }}"></p>
+    <p><button type="submit" class="button">Search</button></p>
+  </form>
+  <table class="data-table" data-testid="property-table">
+    <caption class="visually-hidden">Properties: the address leads and the parcel number reads plainly</caption>
+    <thead><tr><th scope="col">Address</th><th scope="col">Parcel number</th><th scope="col">Units</th><th scope="col">Jurisdiction</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for row in collection.rows %}
+      <tr data-parcel="{{ row.parcel_number }}">
+        <th scope="row">{{ ui.detail_link('parcel', row.parcel_id, row.address) }}</th>
+        <td class="nowrap"><a class="mono" href="/property/{{ row.parcel_number }}">{{ row.parcel_number }}</a></td>
+        <td>{{ row.units_text or '' }}</td>
+        <td class="nowrap">{{ row.jurisdiction }}</td>
+        <td class="nowrap">{{ row.status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No property matches this search.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ st.pager(collection.paging) }}
 </section>
 
 {% else %}
-<div class="page-head"><div><h1>Properties, businesses and contractors</h1><p class="sub">Parcels, businesses and contractors, owned by GIS, ERP Finance and Permitting.</p></div></div>
-
-{% set query = '' %}
-{% include "components/property_search.html" %}
-
-<section class="panel" aria-labelledby="properties-heading">
-  <h2 id="properties-heading">Properties</h2>
-  <p class="muted">Each property is keyed by its parcel number. Open a property record for its addresses, owner, zoning, applications and the departments it is shared with.</p>
-  <table class="data-table" data-testid="property-table">
-    <caption class="visually-hidden">Parcels and their official addresses</caption>
-    <thead><tr><th scope="col">Parcel</th><th scope="col">Number</th><th scope="col">Jurisdiction</th><th scope="col">Official addresses</th><th scope="col">Status</th><th scope="col">Version</th></tr></thead>
-    <tbody>
-      {% for parcel in masters.properties %}
+{% set is_license = tab == 'licenses' %}
+<section class="panel" aria-labelledby="credentials-heading">
+  <h2 id="credentials-heading" class="visually-hidden">{{ 'Business licenses' if is_license else 'Contractor registrations' }}</h2>
+  <form class="filters toolbar" method="get" action="/masters">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <p class="field"><label for="credential-query">Search by {{ 'business' if is_license else 'contractor' }} or number</label><input id="credential-query" type="search" name="q" value="{{ collection.query }}"></p>
+    <p><button type="submit" class="button">Search</button></p>
+  </form>
+  <table class="data-table" data-testid="{{ 'business-table' if is_license else 'contractor-table' }}">
+    <caption class="visually-hidden">{{ 'Business licenses' if is_license else 'Contractor registrations' }}</caption>
+    <thead>
       <tr>
-        <th scope="row">{{ parcel.parcel_id }}</th>
-        <td><a class="mono" href="/property/{{ parcel.source_parcel_number }}">{{ parcel.source_parcel_number }}</a></td>
-        <td>{{ parcel.jurisdiction_id }}</td>
-        <td>{% for address in parcel.addresses %}{{ address.source_string }}{% if address.unit_number %} (unit {{ address.unit_number }}){% endif %}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
-        <td>{{ parcel.status }}</td>
-        <td>{{ parcel.version }}</td>
+        <th scope="col">{{ 'Business' if is_license else 'Contractor' }}</th>
+        <th scope="col">{{ 'License number' if is_license else 'Registration number' }}</th>
+        <th scope="col">{{ 'License status' if is_license else 'Registration status' }} {{ ui.info('license_status') }}</th>
+        <th scope="col">Valid through</th>
+        <th scope="col">Source</th>
+        {% if is_license %}<th scope="col">Category</th>{% endif %}
       </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% set responsibility = masters.responsibilities.parcels %}
-  {% include "components/responsibility_panel.html" %}
-{% include "components/evidence_panel.html" %}
-</section>
-
-<section class="panel" aria-labelledby="businesses-heading">
-  <h2 id="businesses-heading">Businesses</h2>
-  <table class="data-table" data-testid="business-table">
-    <caption class="visually-hidden">Business licences</caption>
-    <thead><tr><th scope="col">Business</th><th scope="col">Licence</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
+    </thead>
     <tbody>
-      {% for business in masters.businesses %}
-      <tr>
-        <th scope="row"><a href="{{ business.href }}">{{ business.display_name }}</a></th>
-        <td>{{ business.credential_type }}</td>
-        <td>{{ business.number }}</td>
-        <td>{{ business.issuing_authority_id }}</td>
-        <td>{{ business.status }}</td>
-        <td>{{ business.valid_to or 'open' }}</td>
-        <td>{{ business.version }}</td>
+      {% for row in collection.rows %}
+      <tr data-testid="credential-row" data-credential-status="{{ row.status_key }}">
+        <th scope="row">{{ ui.detail_link('record', row.party_id, row.name) }}
+          <br><span class="muted record-line" data-testid="record-status-line">Record status: {{ row.record_status }} {{ ui.info('party_record_status') }}</span>
+          {% if row.issue_count %}<br>{{ ui.detail_link('record', row.party_id, 'Data issue: ' ~ row.issue_count ~ (' open' ), 'pill warn') }}{% endif %}
+          {% if row.synthetic %} <span class="badge-synthetic">Synthetic</span>{% endif %}</th>
+        <td class="nowrap">{{ ui.detail_link('credential', row.credential_id, row.number, 'mono') }}</td>
+        <td class="nowrap"><span class="pill {{ 'ok' if row.status_key == 'active' else 'bad' }}" data-testid="credential-status">{{ row.status }}</span></td>
+        <td class="nowrap">{{ ui_time(row.valid_through, 'No end date') }}</td>
+        <td>{{ row.source }}</td>
+        {% if is_license %}<td class="nowrap">{{ row.category }}</td>{% endif %}
       </tr>
       {% else %}
-      <tr><td colspan="7" class="muted">No business licence is recorded.</td></tr>
+      <tr><td colspan="{{ 6 if is_license else 5 }}" class="muted">{{ 'No business license matches.' if is_license else 'No contractor registration matches.' }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
-</section>
-
-<section class="panel" aria-labelledby="contractors-heading">
-  <h2 id="contractors-heading">Contractors</h2>
-  <table class="data-table" data-testid="contractor-table">
-    <caption class="visually-hidden">Contractor registrations</caption>
-    <thead><tr><th scope="col">Contractor</th><th scope="col">Registration</th><th scope="col">Number</th><th scope="col">Issuer</th><th scope="col">Status</th><th scope="col">Valid to</th><th scope="col">Version</th></tr></thead>
-    <tbody>
-      {% for contractor in masters.contractors %}
-      <tr>
-        <th scope="row"><a href="{{ contractor.href }}">{{ contractor.display_name }}</a></th>
-        <td>{{ contractor.credential_type }}</td>
-        <td>{{ contractor.number }}</td>
-        <td>{{ contractor.issuing_authority_id }}</td>
-        <td>{{ contractor.status }}</td>
-        <td>{{ contractor.valid_to or 'open' }}</td>
-        <td>{{ contractor.version }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="7" class="muted">No contractor registration is recorded.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {{ st.pager(collection.paging) }}
 </section>
 {% endif %}
 {% endblock %}

@@ -49,8 +49,8 @@
   through the City's front door and their role would come from that sign-in.
 </div>
 
-{% set screen_icons = {"queue": "inbox", "applicants": "users", "masters": "building", "permit": "file", "steward": "link", "rules": "scale", "reconciliation": "coins", "governance": "shield", "agent_intake": "spark", "agent_adjudication": "stamp", "admin": "db", "intake_queue": "inbox", "early_resolution": "alert", "review_queue": "stamp", "policy_scenarios": "scale"} %}
-{% set screen_short = {"queue": "Queue", "applicants": "Applicants", "masters": "Properties", "permit": "Permit", "steward": "Steward", "rules": "Rules", "reconciliation": "Reconcile", "governance": "Governance", "agent_intake": "Intake", "agent_adjudication": "Adjudicate", "admin": "Admin", "intake_queue": "Intake queue", "early_resolution": "Early resolution", "review_queue": "Review queue", "policy_scenarios": "What-if"} %}
+{% set screen_icons = {"queue": "inbox", "applicants": "users", "masters": "building", "permit": "file", "steward": "link", "rules": "scale", "reconciliation": "coins", "governance": "shield", "agent_intake": "spark", "agent_adjudication": "stamp", "admin": "db", "intake_queue": "inbox", "early_resolution": "alert", "review_queue": "stamp", "policy_scenarios": "scale", "source_records": "db", "activity": "clock"} %}
+{% set screen_short = {"queue": "Queue", "applicants": "People", "masters": "Masters", "permit": "Permit", "steward": "Issues", "rules": "Rules", "reconciliation": "Reconcile", "governance": "Governance", "agent_intake": "Intake", "agent_adjudication": "Adjudicate", "admin": "Admin", "intake_queue": "Intake queue", "early_resolution": "Early resolution", "review_queue": "Review queue", "policy_scenarios": "What-if", "source_records": "Sources", "activity": "Activity"} %}
 {% set persona_dots = {"Applicant": "var(--warn)", "Data Steward": "var(--muse)", "Permit Reviewer": "var(--accent)", "City Administrator": "var(--ok)"} %}
 {% set current_label = (navigation | selectattr("key", "equalto", screen) | map(attribute="label") | first) if navigation else title %}
 
@@ -116,10 +116,12 @@
   </dl>
 </section>
 {% else %}
-<section id="ui-feedback-region" class="feedback feedback-empty" role="status" aria-live="polite"
+{# A steward screen shows no empty "Last action" banner: the live region stays for
+   announcements and a case shows its own short confirmation after an action. #}
+<section id="ui-feedback-region" class="feedback feedback-empty{% if quiet_feedback %} visually-hidden{% endif %}" role="status" aria-live="polite"
          data-testid="feedback" data-outcome="none">
-  <h2 class="feedback-title">Last action</h2>
-  <p class="feedback-message" data-testid="feedback-message">No action has been performed in this session yet.</p>
+  {% if not quiet_feedback %}<h2 class="feedback-title">Last action</h2>{% endif %}
+  <p class="feedback-message" data-testid="feedback-message">{% if not quiet_feedback %}No action has been performed in this session yet.{% endif %}</p>
 </section>
 {% endif %}
 

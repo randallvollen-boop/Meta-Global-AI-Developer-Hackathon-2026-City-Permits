@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% import "components/action_form.html" as forms %}
+
+{% macro result_cell(result) -%}
+<span class="result result-{{ result }}" data-testid="compare-result" data-result="{{ result }}">{{ {'agrees': 'Agrees', 'conflicts': 'Conflicts', 'no_comparison': 'No comparison'}[result] }}</span>
+{%- endmacro %}
+
+{% block content %}
+{% set c = case %}
+<p class="crumb"><a href="/steward">&larr; Data issues</a></p>
+<div class="page-head">
+  <div>
+    <h1 data-testid="case-title">{{ c.title }}</h1>
+    <p class="sub"><span class="pill {{ 'ok' if c.status == 'resolved' else 'warn' if c.status == 'awaiting_source' else 'bad' }} nowrap" data-testid="case-status">{{ c.status_label }}</span></p>
+  </div>
+  <div class="actions">{{ ui.help_button('steward') }}</div>
+</div>
+
+{% if confirmation %}
+<p class="case-confirmation" role="status" data-testid="case-confirmation">{{ confirmation }}</p>
+{% endif %}
+
+<ol class="case-questions" data-testid="case-questions">
+
+<li>
+<section class="panel" aria-labelledby="q1" data-question="1" data-testid="case-q1">
+  <h2 id="q1">1. What is the problem?</h2>
+  <p>{{ c.problem }}</p>
+</section>
+</li>
+
+<li>
+<section class="panel" aria-labelledby="q2" data-question="2" data-testid="case-q2">
+  <h2 id="q2">2. Why does it matter?</h2>
+  <p>{{ c.why }}</p>
+  {% if c.applications %}
+  <table class="data-table" data-testid="case-applications">
+    <caption class="visually-hidden">Affected applications and what is still outstanding on each permit</caption>
+    <thead><tr><th scope="col">Affected application</th><th scope="col">Status</th><th scope="col">Still outstanding on the permit</th></tr></thead>
+    <tbody>
+      {% for app in c.applications %}
+      <tr><th scope="row"><a href="{{ app.href }}">{{ app.number }}</a></th><td class="nowrap">{{ app.status }}</td><td>{% for note in app.outstanding %}{{ note }}{% if not loop.last %}<br>{% endif %}{% else %}<span class="muted">Nothing outstanding recorded</span>{% endfor %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No open application is affected.</p>
+  {% endif %}
+</section>
+</li>
+
+<li>
+<section class="panel" aria-labelledby="q3" data-question="3" data-testid="case-q3">
+  <h2 id="q3">3. What are we comparing?</h2>
+  {% if c.kind == 'link' %}
+  <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to. A missing value reads “No comparison”; nothing is filled in.</p>
+  {% for cand in c.candidates %}
+  <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}">
+    <h3>{{ ui.detail_link('record', cand.entity_id, cand.name) }} <span class="muted">{{ cand.type }}</span>{% if cand.credentials %} <span class="muted">· {{ cand.credentials|join(', ') }}</span>{% endif %}</h3>
+    <table class="data-table compare-table" data-testid="compare-table">
+      <caption class="visually-hidden">Source record values against {{ cand.name }}</caption>
+      <thead><tr><th scope="col">Field</th><th scope="col">Source record</th><th scope="col">Master record</th><th scope="col">Result</th></tr></thead>
+      <tbody>
+        {% for row in cand.comparison %}
+        <tr data-field="{{ row.field }}"><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ result_cell(row.result) }}{% if row.note %} <span class="muted">{{ row.note }}</span>{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">The matcher found no master record to compare with.</p>
+  {% endfor %}
+  {% elif c.kind == 'parcel' %}
+  <table class="data-table compare-table" data-testid="compare-table">
+    <caption class="visually-hidden">What the applicant typed against what the locator found</caption>
+    <thead><tr><th scope="col">Field</th><th scope="col">Submitted</th><th scope="col">Found by the locator</th><th scope="col">Result</th></tr></thead>
+    <tbody>{% for row in c.compare_rows %}<tr><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ result_cell(row.result) }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% elif c.compare_rows %}
+  <table class="data-table compare-table" data-testid="compare-table">
+    <caption class="visually-hidden">Current value against the proposed value</caption>
+    <thead><tr><th scope="col">Field</th><th scope="col">Current</th><th scope="col">Proposed</th><th scope="col">Result</th></tr></thead>
+    <tbody>{% for row in c.compare_rows %}<tr><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ 'Changes' if row.result == 'conflicts' else 'Same' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <p class="muted">There are no values to compare for this issue.</p>
+  {% endif %}
+</section>
+</li>
+
+<li>
+<section class="panel" aria-labelledby="q4" data-question="4" data-testid="case-q4">
+  <h2 id="q4">4. What supports the decision? {{ ui.info('match_evidence') }}</h2>
+  {% if c.kind == 'link' %}
+  {% for cand in c.candidates %}
+  <div class="evidence-block" data-testid="evidence-block" data-entity="{{ cand.entity_id }}">
+    <h3>{{ cand.name }}</h3>
+    <div class="ev">
+      <div class="ev-col">
+        <h4><span class="pill ok">Agreements</span></h4>
+        {% for item in cand.agreements %}<div class="ev-item sup" data-testid="agreement"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No agreement found.</p>{% endfor %}
+      </div>
+      <div class="ev-col">
+        <h4><span class="pill bad">Conflicts</span></h4>
+        {% for item in cand.conflicts %}<div class="ev-item con" data-testid="conflict"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No conflict found.</p>{% endfor %}
+      </div>
+    </div>
+    {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
+    <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
+      It is an ordering aid built from the evidence above, not a probability of a match.
+      {% if cand.score_parts %}It adds up from:
+      {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
+    </p>
+  </div>
+  {% endfor %}
+  {% if c.similar_note %}<p class="notice" data-testid="similar-note">{{ c.similar_note }}</p>{% endif %}
+  <p>
+    {{ ui.detail_link('evidence', c.evidence_detail_id, 'Evidence details') }}
+    · {{ ui.detail_link('source', c.source_record.summary.detail_id, 'View source record') }}
+    · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received {{ ui_time(c.source_record.summary.received) }}</span>
+  </p>
+  <p data-testid="provenance"><span class="pill {{ 'muse' if c.provenance.run_id else 'plain' }}">{{ c.provenance.label }}</span> <span class="muted">{{ c.provenance.detail }}</span>{% if c.provenance.run_id %} {{ ui.detail_link('muse-run', c.provenance.run_id, 'Run details') }}{% endif %}</p>
+  {% elif c.kind == 'parcel' and c.parcel %}
+  <div class="prop-grid">
+    <dl class="prop-facts">
+      <dt>Standardized address</dt><dd>{{ c.parcel.matched_address or 'none chosen' }}</dd>
+      <dt>Parcel number</dt><dd class="mono">{{ c.parcel.parcel_number or 'none' }}</dd>
+      <dt>Locator score and status</dt><dd>{% if c.parcel.score is not none %}{{ '%g' % c.parcel.score }}{% else %}no score{% endif %}, {{ c.parcel.status_word }}</dd>
+      {% if c.parcel.parcel %}<dt>Parcel</dt><dd>zoning {{ c.parcel.parcel.zoning }}, flood zone {{ c.parcel.parcel.flood_zone }}, owner {{ c.parcel.parcel.owner }} (synthetic)</dd>{% endif %}
+    </dl>
+    <div class="prop-map">{{ c.parcel.inset|safe }}</div>
+  </div>
+  {% if c.parcel.note %}<p class="muted">{{ c.parcel.note }}</p>{% endif %}
+  <table class="data-table"><caption class="visually-hidden">Locator candidates</caption>
+    <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
+    <tbody>{% for cand in c.parcel.candidates %}<tr><th scope="row">{{ cand.address }}</th><td>{{ '%g' % cand.score }}</td><td class="mono">{{ cand.parcel_number or '-' }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No candidate.</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="muted">The Address locator is a deterministic simulation; no model was used.</p>
+  {% elif c.kind == 'case' %}
+  <p>Destination: <b>{{ c.destination }}</b>. State: <b>{{ c.state_label }}</b>.</p>
+  {% if c.case_evidence %}<ul class="plain-list">{% for item in c.case_evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No evidence was attached to this request.</p>{% endif %}
+  {% else %}
+  <p class="muted">No further evidence is recorded for this issue.</p>
+  {% endif %}
+</section>
+</li>
+
+<li>
+<section class="panel" aria-labelledby="q5" data-question="5" data-testid="case-q5">
+  <h2 id="q5">5. What will this action do? {{ ui.info('action_preview') }}</h2>
+  {% if c.actions %}
+  <p class="muted req-legend">* Required</p>
+  {% for item in c.actions %}
+  <div class="action-with-preview" data-testid="action-preview-block" data-action-label="{{ item.label }}">
+    <div class="preview" data-testid="action-preview">
+      <h3>If you choose “{{ item.label }}”</h3>
+      <dl>
+        <dt>Records linked</dt><dd data-preview="records">{{ item.preview.records }}</dd>
+        <dt>Application relationship</dt><dd data-preview="application">{{ item.preview.application }}</dd>
+        <dt>Source values kept</dt><dd data-preview="source_values">{{ item.preview.source_values }}</dd>
+        <dt>Issue afterwards</dt><dd data-preview="issue_after">{{ item.preview.issue_after }}</dd>
+      </dl>
+    </div>
+    {{ forms.action_form(item, csrf_token, case_path) }}
+    {% if not item.permitted %}<p class="guard-reason" data-testid="guard-reason">{{ item.reason }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="muted" data-testid="no-actions">{% if c.status == 'resolved' %}This issue is resolved; no action is open.{% else %}No action is open for this issue.{% endif %}</p>
+  {% endif %}
+</section>
+</li>
+
+<li>
+<section class="panel" aria-labelledby="q6" data-question="6" data-testid="case-q6">
+  <h2 id="q6">6. What happened?</h2>
+  {% if c.result %}
+  <dl class="pair-list" data-testid="case-result">
+    <dt>Result</dt><dd>{{ c.result.text }}</dd>
+    <dt>Decided by</dt><dd>{{ c.result.who }}</dd>
+    <dt>When</dt><dd>{{ ui_time(c.result.when) }}</dd>
+    <dt>Decision note</dt><dd>{{ c.result.note or 'No note was given' }}</dd>
+  </dl>
+  {% else %}
+  <p class="muted" data-testid="case-pending">Nothing has been decided yet.</p>
+  {% endif %}
+  {% if c.kind == 'case' %}
+  <h3>Source commands and their acknowledgement</h3>
+  <table class="data-table" data-testid="command-table">
+    <caption class="visually-hidden">Commands sent to a source and their acknowledgement</caption>
+    <thead><tr><th scope="col">Operation</th><th scope="col">Source</th><th scope="col">Expected version</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for cmd in c.commands %}<tr data-testid="command-row"><td>{{ cmd.operation }}</td><td>{{ cmd.source }}</td><td>{{ cmd.expected or '-' }}</td><td>{{ cmd.accepted or '-' }}</td><td class="nowrap">{{ cmd.status }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No command has been sent to a source.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <h3>Publication deliveries</h3>
+  <table class="data-table" data-testid="delivery-table">
+    <caption class="visually-hidden">Publication deliveries and their acknowledgements</caption>
+    <thead><tr><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Acknowledged</th><th scope="col">Last error</th></tr></thead>
+    <tbody>
+      {% for d in c.deliveries %}<tr data-testid="delivery-row"><td>{{ d.destination }}</td><td class="nowrap">{{ d.status }}</td><td>{{ d.attempts }}</td><td>{{ ui_time(d.acknowledged, '-') }}</td><td>{{ d.error }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No publication is pending.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if c.events %}
+  <ul class="timeline-list" data-testid="case-events">
+    {% for e in c.events %}<li><span class="nowrap">{{ ui_time(e.when) }}</span> · {{ e.who }} · {{ e.what }}{% if e.note %} · {{ e.note }}{% endif %}{% if e.outcome == 'denied' %} <span class="pill bad">Refused</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <p class="notice" data-testid="separate-note">{{ c.separate_note }}</p>
+</section>
+</li>
+
+</ol>
+{% endblock %}

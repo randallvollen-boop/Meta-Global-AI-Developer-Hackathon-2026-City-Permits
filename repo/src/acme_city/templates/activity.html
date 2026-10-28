@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% import "components/steward.html" as st with context %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Activity</h1>
+    <p class="sub">Decisions and changes recorded for the records you steward. This is not the administrator's audit log.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('activity') }}</div>
+</div>
+
+<section class="panel" aria-labelledby="activity-heading">
+  <h2 id="activity-heading" class="visually-hidden">Recorded decisions and changes</h2>
+  <table class="data-table" data-testid="activity-table">
+    <caption class="visually-hidden">Recorded steward decisions and changes, newest first</caption>
+    <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">What</th><th scope="col">Record</th><th scope="col">Note</th><th scope="col">Result</th></tr></thead>
+    <tbody>
+      {% for row in activity.rows %}
+      <tr data-testid="activity-row">
+        <td class="nowrap">{{ ui_time(row.when) }}</td>
+        <td>{{ row.who }}</td>
+        <td>{% if row.href %}<a href="{{ row.href }}">{{ row.what }}</a>{% else %}{{ row.what }}{% endif %}</td>
+        <td class="mono">{{ row.target }}</td>
+        <td>{{ row.note }}</td>
+        <td class="nowrap"><span class="pill {{ 'ok' if row.outcome_key == 'accepted' else 'bad' }}">{{ row.outcome }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted" data-testid="activity-empty">No steward decision or change has been recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ st.pager(activity.paging) }}
+</section>
+{% endblock %}
