@@ -56,6 +56,8 @@ from acme_city.finance.schemas import (
     ReconciliationCommand,
     ReconciliationView,
 )
+from acme_city.kernel.inputs import INVALID_VALUATION, declared_valuation_cents
+from acme_city.kernel.selection import select_assessment_schedule
 from acme_city.permits.guard import require_mutable
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import finance, permit, registry
@@ -314,17 +316,13 @@ class FinanceService:
             except MoneyError as exc:
                 raise ValidationError(str(exc)) from exc
         revision = self._permits.current_revision(application.id)
-        snapshot = dict(revision.snapshot or {})
-        if snapshot.get("valuation_cents") is not None:
-            # The submitted revision already carries the valuation in cents.
-            return int(snapshot["valuation_cents"])
-        if snapshot.get("valuation") is not None:
-            try:
-                return to_cents(snapshot["valuation"])
-            except MoneyError as exc:
-                raise ValidationError(
-                    "the declared valuation of the submitted revision is not an amount"
-                ) from exc
+        cents, reason = declared_valuation_cents(dict(revision.snapshot or {}))
+        if cents is not None:
+            return cents
+        if reason == INVALID_VALUATION:
+            raise ValidationError(
+                "the declared valuation of the submitted revision is not an amount"
+            )
         raise ValidationError("the application declares no valuation to assess")
 
     def _fee_schedule(
@@ -340,16 +338,12 @@ class FinanceService:
             )
             .order_by(finance.FeeScheduleVersion.effective_from)
         ).scalars().all()
-        applicable = [
-            row
-            for row in schedule
-            if row.effective_to is None or row.effective_to > basis_at
-        ]
-        if not applicable:
+        selected = select_assessment_schedule(schedule, basis_at)
+        if selected is None:
             raise ValidationError(
                 "no published fee schedule is in force on the recorded basis date"
             )
-        return applicable[-1], basis_at
+        return selected, basis_at
 
     def current_assessment(self, application_id: str) -> finance.Assessment | None:
         """Return the payable assessment of an application."""

@@ -36,6 +36,13 @@ from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.core.ids import new_id
+from acme_city.kernel import adjudication as kernel
+from acme_city.kernel.adjudication import (
+    OUTCOME_APPROVE,
+    OUTCOME_CONDITIONS,
+    OUTCOME_DENY,
+    OUTCOME_HOLD,
+)
 from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
@@ -45,12 +52,6 @@ from acme_city.triage.service import build_rationale, unit_for_field
 
 #: The service identity the adjudication agent acts as.
 ADJUDICATION_AGENT_ID = "service_agent_adjudication"
-
-#: The recommendation outcomes the adjudication agent may propose.
-OUTCOME_HOLD = "hold"
-OUTCOME_DENY = "deny"
-OUTCOME_CONDITIONS = "approve_with_conditions"
-OUTCOME_APPROVE = "approve"
 
 #: The recommendation statuses.
 STATUS_PENDING = "pending"
@@ -251,28 +252,15 @@ class AdjudicationAgent:
                 f"{permit_type.label} is a discretionary type and is held for a person "
                 "or a board."
             )
-            findings.add(
-                finding_type="judgment",
-                message=(
-                    f"{permit_type.label} is a discretionary type, so it is decided by a "
-                    "person or a board and never by an agent."
-                ),
-                rule="ACME Code §13-601",
-                applicant_must="Wait for the board or the administrator to decide.",
-                severity="review",
-            )
         if not rules:
             notes.append("The type has no published rule, so the case is held.")
-            findings.add(
-                finding_type="judgment",
-                message=(
-                    f"No published rule applies to {permit_type.label}, so no agent can "
-                    "recommend an outcome."
-                ),
-                rule="ACME Code §13-602",
-                applicant_must="Wait for a person to decide this application.",
-                severity="review",
+        findings.add_specs(
+            kernel.hold_findings(
+                type_label=permit_type.label,
+                discretionary=bool(permit_type.discretionary),
+                rule_count=len(rules),
             )
+        )
         self._finish(run, row, status=status, note=" ".join(notes))
         return rules
 
@@ -324,13 +312,7 @@ class AdjudicationAgent:
         """Collect the conditions of approval from the condition results."""
         node = graphs.ADJUDICATION_GRAPH[2]
         row = self._begin(run, node)
-        conditions: list[str] = []
-        for result in results:
-            if str(result.get("status")) != "condition":
-                continue
-            note = str(result.get("condition_note") or result.get("message") or "").strip()
-            rule_id = str(result.get("rule_id") or "rule")
-            conditions.append(f"{rule_id}: {note}" if note else rule_id)
+        conditions = kernel.conditions_of(results)
         self._finish(
             run,
             row,
@@ -432,49 +414,16 @@ class AdjudicationAgent:
             )
         rationale = build_rationale(results, "", units=units)
 
-        statuses = [str(result.get("status", "")) for result in results]
-        needs_judgment = [
-            str(result.get("rule_id"))
-            for result in results
-            if str(result.get("status")) == "review"
-        ]
-        failing = [
-            str(result.get("rule_id"))
-            for result in results
-            if str(result.get("status")) == "fail"
-        ]
-        if permit_type.discretionary:
-            outcome = OUTCOME_HOLD
-            reason = (
-                f"{permit_type.label} is discretionary, so the agent holds it for a person "
-                "or a board."
-            )
-        elif not rules:
-            outcome = OUTCOME_HOLD
-            reason = "No published rule applies, so the agent holds it for a person."
-        elif needs_judgment:
-            outcome = OUTCOME_HOLD
-            reason = (
-                f"Rule(s) {', '.join(needs_judgment)} need a person's judgement or a "
-                "missing input, so the agent holds the case."
-            )
-        elif failing:
-            outcome = OUTCOME_DENY
-            reason = f"Rule(s) {', '.join(failing)} fail, so the agent recommends denial."
-        elif conditions:
-            outcome = OUTCOME_CONDITIONS
-            reason = (
-                f"{len(conditions)} condition(s) of approval apply, so the agent "
-                "recommends approval with conditions."
-            )
-        else:
-            outcome = OUTCOME_APPROVE
-            reason = "Every applicable rule passes, so the agent recommends approval."
-        if precedent is not None:
-            reason += (
-                f" An earlier decided case on the same parcel was "
-                f"{precedent['outcome']}."
-            )
+        chosen = kernel.disposition(
+            type_label=permit_type.label,
+            discretionary=bool(permit_type.discretionary),
+            rule_count=len(rules),
+            results=results,
+            conditions=conditions,
+            precedent_outcome=None if precedent is None else str(precedent["outcome"]),
+        )
+        outcome = chosen.outcome
+        reason = chosen.reason
 
         # A pending recommendation of an earlier run is superseded, so the
         # case never carries two live recommendations.
