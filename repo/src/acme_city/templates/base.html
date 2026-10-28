@@ -11,6 +11,7 @@
   <title>{{ title }} - ACME City permit demonstration</title>
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/demo-switch.css">
+  <link rel="stylesheet" href="/ui/static/ui-patterns.css">
 </head>
 <body data-screen="{{ screen }}">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -185,8 +186,10 @@
 {% endif %}
 {% if screen != 'select' %}{% include "_demo_switch.html" %}{% endif %}
 <div class="toast" id="toast" role="status"></div>
+{% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 
 <script src="/ui/static/app.js" defer></script>
 <script src="/ui/static/property.js" defer></script>
+<script src="/ui/static/ui-patterns.js" defer></script>
 </body>
 </html>
