@@ -469,3 +469,16 @@ def test_the_policy_payload_leaves_room_for_reasoning_and_the_briefing() -> None
     assert payload["max_output_tokens"] == POLICY_MAX_OUTPUT_TOKENS
     assert POLICY_MAX_OUTPUT_TOKENS >= 12000
     assert POLICY_MAX_OUTPUT_TOKENS <= MAX_OUTPUT_CEILING
+
+
+def test_the_rule_sources_name_limit_value_and_unit_separately() -> None:
+    # A live briefing copied "max 6" into limit_value because the input joined
+    # the operator and the limit in one column.
+    import inspect
+
+    from acme_city.policy import muse
+
+    source = inspect.getsource(muse.render_brief_input)
+    for field in ("configuration", "rule_id", "version", "citation", "operator", "limit_value", "unit"):
+        assert f'f"{field}=' in source, field
+    assert '{source.operator} {source.limit_value}' not in source
