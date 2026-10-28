@@ -17,7 +17,7 @@ demonstration:
 | Administrator, auditor, support (wake/sleep agents, configuration, users) | City Administrator |
 
 The four personas are the only selectable actors. The two agents and every
-other organisational identity are service identities.
+other organizational identity are service identities.
 
 ## Applicant
 
@@ -36,9 +36,9 @@ other organisational identity are service identities.
 
 - As an Applicant, I want to choose what I am trying to do and fill in the
   form for that project, so that I only give what that kind of project needs.
-  - Acceptance: **Start a new application** (Work queue) opens "What are you
-    trying to do?"; the form shows the type's fields (required ones starred, optional ones
-    marked), the locator's "Did you mean", a document checklist with "Sent to
+  - Acceptance: **Start a new application** (Work queue) opens the
+    chooser that asks what the applicant is trying to do; the form shows the type's fields (required ones starred, optional ones
+    marked), the locator's address suggestions, a document checklist with "Sent to
     the City separately", and the certification; **Submit application** is
     never disabled: an incomplete submit is refused by the server and the form
     returns "There is a problem" with a linked list and a message beside each
@@ -53,8 +53,8 @@ other organisational identity are service identities.
   so that I understand the permit before I file it.
   - Acceptance: the help panel on the chooser, on the application form and on
     the tracker answers from the City's published rules and from my own case
-    only; the answer quotes the rule it used, shows its citation and says it
-    is rule text and not an answer; a question that matches nothing says so
+    only; the answer quotes the rule it used, shows its citation and labels itself
+    "Matching ACME rule text (not an AI answer)"; a question that matches nothing says so
     instead of guessing; the panel shows the configured service target and
     the current review-area backlog as two separate figures and never a
     completion date.
@@ -79,7 +79,7 @@ other organisational identity are service identities.
 - As a Data Steward, I want the intake agent's findings to name what the
   applicant must do, so that a needs-information case asks for exactly what
   is missing.
-  - Acceptance: each finding carries a type, a message, the rule, an
+  - Acceptance: each finding has a type, a message, the rule, an
     "Applicant must" line and a severity of block or review; a blocking
     finding routes the case to early resolution.
 - As a Data Steward, I want agent-proposed identity links with their evidence,
@@ -98,7 +98,7 @@ other organisational identity are service identities.
   - Acceptance: in the Permit workspace, **Accept or correct extracted …**
     records the decision; correcting requires a value and a reason.
 - As a Data Steward, I want the navigation to hide screens outside my grants,
-  so that the menu never promises access the server would refuse.
+  so that the menu lists only screens the server allows.
   - Acceptance: Steward navigation lists Work queue, Applicants, Properties,
     Permit workspace, Steward review, Rules and fees plus Intake agent;
     Reconciliation, Governance, Adjudication agent and Administration return
@@ -107,7 +107,7 @@ other organisational identity are service identities.
 ## Permit Reviewer
 
 - As a Permit Reviewer, I want to run the adjudication agent when it is
-  awake, so that the cases in review carry a deterministic recommendation
+  awake, so that the cases in review have a deterministic recommendation
   before I look at them.
   - Acceptance: **Adjudication agent** shows whether the agent is awake; a
     person with `agent.run.adjudication` runs **Run** or **Run all** and the
@@ -136,7 +136,7 @@ other organisational identity are service identities.
     address the applicant typed, the standardized address, the parcel number
     (the key the city uses), the locator score and the other candidates, with
     **Confirm parcel**, **Choose another candidate**, **Find parcel by number**
-    and **Flag address correction to GIS**; approval stays blocked until the
+    and **Flag address correction to GIS** (geographic information system); approval stays blocked until the
     parcel link is approved and confirmed.
 
 ## City Administrator
@@ -150,7 +150,7 @@ other organisational identity are service identities.
 - As a City Administrator, I want to simulate incoming permits from the
   outside portal, so that I can watch data arrive and wait for the agent.
   - Acceptance: **Governance and sources** → **Simulate incoming permits**
-    (e.g. `fence-front-too-tall`); each record becomes an application in
+    (for example `fence-front-too-tall`); each record becomes an application in
     status `submitted`, shown as **Awaiting intake agent**.
 - As a City Administrator, I want the permit-type configuration in one place,
   so that required fields, required documents, review areas, process
@@ -172,9 +172,9 @@ other organisational identity are service identities.
     newest first with when, change, target, before → after and actor.
 - As a City Administrator, I want to assess and reconcile fees, so that a
   permit is only issued against an exactly reconciled position.
-  - Acceptance: **Reconciliation** → Assess application, Import ERP payment,
+  - Acceptance: **Reconciliation** → Assess application, Import ERP payment (ERP is enterprise resource planning),
     Confirm allocation, Reconcile assessment; balance 0.00, status exact.
-    My configuration access does **not** give me `permit.decide`: trying to
+    My configuration access leaves me without `permit.decide`: trying to
     confirm a recommendation as Administrator is refused.
 
 ## Service agents (system actors)
@@ -184,16 +184,16 @@ other organisational identity are service identities.
   checked for completeness and routed the same way every time.
 - As the Field extractor, I want to propose values from the received document
   text (replay by default), so that a steward can accept or correct each one.
-- As the Document QC node, I want to flag the scan-quality problems the record
+- As the Document QC (quality control) node, I want to flag the scan-quality problems the record
   carried, so that an unreadable page blocks the case.
 - As the Duplicate finder, I want to find the case that asks for the same
-  project, so that a person — never an agent — decides whether it is a
-  resubmission.
+  project, so that a person decides whether it is a resubmission and an
+  agent never does.
 - As the Adjudication agent (service identity), I want to run a five-node
   graph, so that the same facts and rule versions always give the same
   recommendation.
 - As the Adjudication agent, I want a discretionary type always held, so
   that a person or the board decides it.
 - As either agent, I want to state an advisory outcome with a rationale
-  citing each rule once, so that the human reviewer's decision is informed
-  but never replaced.
+  citing each rule once, so that the human reviewer decides with the advice in hand and
+  keeps the decision.
