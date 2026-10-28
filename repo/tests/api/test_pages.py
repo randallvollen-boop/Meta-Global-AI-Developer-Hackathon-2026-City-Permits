@@ -166,6 +166,15 @@ def test_every_governed_detail_view_shows_the_eight_responsibility_fields(
     client: TestClient,
 ) -> None:
     select_persona(client, "persona_city_administrator")
+    # Changed deliberately (steward restyle): the three Data Steward screens
+    # keep a short source summary on the page and show the eight responsibility
+    # fields in the Source details drawer.  The drawer opens server-rendered
+    # with ?detail=source:..., so this test reads the page with it open.
+    steward_screens = {
+        "/applicants/party_cedarline": "permitting:applicant_profiles",
+        "/masters/party_cedarline": "erp_finance:business_licensing_register",
+        "/steward": "permitting:applicant_profiles",
+    }
     for path in (
         "/applicants/party_cedarline",
         "/masters/party_cedarline",
@@ -175,7 +184,10 @@ def test_every_governed_detail_view_shows_the_eight_responsibility_fields(
         "/reconciliation",
         "/governance",
     ):
-        response = client.get(path)
+        address = path
+        if path in steward_screens:
+            address = f"{path}?detail=source:{steward_screens[path]}"
+        response = client.get(address)
         assert response.status_code == 200, path
         for field in RESPONSIBILITY_FIELDS:
             assert field in response.text, (path, field)
