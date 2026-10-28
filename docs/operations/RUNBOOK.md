@@ -153,11 +153,13 @@ the audit trail.
 | City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
 | City Administrator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
 | Data Steward | Intake agent | Process one / Process all waiting | The six-node intake graph runs; the case is routed |
+| Data Steward | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved (or not); proposals stay evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
 | Permit Reviewer | Adjudication agent | Run / Run all | The five-node adjudication graph runs and leaves a pending recommendation |
 | Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
 | Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
+| Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision that carries a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
 | City Administrator | Administration | Permit types, users, reason codes | Every change is a governed, audited action and appears in the configuration log |
 | City Administrator | Reconciliation | Assess application, Import ERP payment, Confirm allocation, Reconcile assessment | Fee assessed from the published schedule; reconciliation must be exact (balance 0.00) before issuance |
 | Permit Reviewer | Permit workspace | Issue permit | Separate human action; idempotent on the command key; blocked until decision, links, assessment and exact reconciliation all hold |
@@ -171,8 +173,8 @@ screen is also a 403). Order and labels are canonical for everyone.
 | Persona | Screens |
 |---|---|
 | Applicant | Work queue, Applicants, Permit workspace |
-| Data Steward | the six above plus **Intake agent** |
-| Permit Reviewer | Work queue, Applicants, Permit workspace plus **Adjudication agent** |
+| Data Steward | the six above plus **Intake agent**, **Intake queue** and **Early resolution** |
+| Permit Reviewer | Work queue, Applicants, Permit workspace plus **Adjudication agent** and **Review queue** |
 | City Administrator | the eight original screens plus **Intake agent**, **Adjudication agent** and **Administration** |
 
 ## The life of a case
@@ -240,6 +242,7 @@ the guard first and refuses it:
 | Portal upload and resubmission | `applicant_portal/service.py` → `revise_documents`, `resubmit` |
 | Decision and reconfirmation | `permits/decisions.py` → `decide`, `reconfirm` |
 | Issuance | `permits/issuance.py` → `issue` |
+| Bulk intake processing | `permits/bulk.py` → `process_selected` |
 
 ## Reason codes
 
@@ -333,6 +336,120 @@ workspace, the history panel, the support lookup and the API.
 Writing a comment needs the `permit.case.comment` grant and the expected
 version of the case.  A comment does not change the state of the case, so
 it does not advance the case version.
+
+## The three queues
+
+Phase 3b adds three screens.  Each one is opened by a grant only its
+persona holds, never by a persona label: the intake queue and the
+early-resolution board belong to the **Data Steward**, the review queue to
+the **Permit Reviewer**.  The shared `/queue` keeps the behaviour it had and
+links the queues the acting persona may open.
+
+| Persona | Screen | What it answers |
+|---|---|---|
+| Data Steward | `/queue/intake` | which cases has the City in front of it, and in which saved view |
+| Data Steward | `/queue/early-resolution` | which cases wait for a person, and what is in the way |
+| Permit Reviewer | `/queue/review` | which cases are in front of the reviewer, and what was decided recently |
+
+### The intake queue
+
+The saved views are exact; the count of a tab is the number of cases that
+tab holds.
+
+| View | The cases it holds |
+|---|---|
+| **Active** | `submitted`, `needs_information`, `ready_for_review`, `under_review`, `revisions_requested` |
+| **Awaiting agent** | `submitted` cases that arrived from outside the City and have no intake run for their current revision |
+| **Needs information** | `needs_information` |
+| **In review** | `ready_for_review`, `under_review` |
+| **Archived** | `archived` |
+| **Closed** | `issued`, `denied`, `returned` |
+
+The seeded demonstration cases (D01–D11) carry a scenario id: they are the
+fixed corpus of the demonstration, not arrivals, so they never wait for the
+intake agent.  The rule is the same one the **Waiting** figure of the
+intake agent screen uses, so the two numbers always agree.
+
+Search (reference, applicant name, address), the filters (channel, permit
+type, priority, owner) and the sort (age, priority, type, reference) are
+query-string values.  The screen works without JavaScript.
+
+**Signals.**  A signal is shown only where the server holds the fact:
+
+* **duplicate** — the recorded duplicate finding of the intake run, with the
+  reference of the other case when the finding names one;
+* **document** — the scan-quality flags the received pages carry
+  (`rotated`, `low_res`, `handwritten`, `unreadable`, `duplicate_page`);
+* **parcel** — the recorded parcel link: `no match`, `proposed`, `approved`
+  or `confirmed`;
+* **agent** — what the intake run of the current revision left: `not run`,
+  `needs a person`, `failed` or `agent was satisfied`.
+
+There is no invented confidence number: the agent signal is the recorded
+outcome of the run, not a score the City never computed.
+
+**Age and the service target.**  The age chip shows the real age of the
+case in whole days since its first submission.  It is coloured against the
+service target of the case's permit type — the fictional number of days the
+City aims to review that type in, held in `config/rules_and_fees.json` as
+`service_target_days` and seeded into `permit_types.service_target_days`.
+It is a demonstration figure and never a promise.
+
+### Process selected with agent
+
+The bulk action is a **distinct** action (`permit.intake.process_selected`),
+not the "process every waiting case" button of the agent screen.
+
+* The selection is a list of application id and version pairs, at most
+  **50** cases.
+* An **empty selection is refused**.  The action never falls through to
+  "process all".
+* A repeated case is processed once; a case named at two different
+  versions is refused as ambiguous.
+* Every case is checked before any case runs: the grant, the record scope
+  of the person, the version, the state of the case and the awake state of
+  the agent.  A sleeping agent refuses the whole batch.
+* The batch is **all-or-nothing**.  It runs inside one savepoint: a
+  failure anywhere in it leaves every case exactly as it was, with no run
+  and no audit record of a run.
+
+### The early-resolution board
+
+The cases in `needs_information`, grouped by their **primary finding**: the
+blocking finding first, otherwise the first in the stable order
+`missing_field`, `missing_document`, `unreadable`, `wrong_type`,
+`duplicate`, `conflict`, `fee`, `low_confidence_extraction`, `judgment`,
+and then the finding identifier.  Each group shows its count and the top
+current findings.  A case appears under one group only.
+
+Resolve means taking one of the record actions on the case itself: **ask
+the applicant for information** (an applicant-visible comment), **return**
+the case (a return reason code), **advance to review** (refused while a
+current, unwaived blocking finding stands in the way) or **waive** a
+finding of a waivable type.
+
+### The review queue
+
+The cases in `ready_for_review` and `under_review`, with the counts per
+review area and the adjudication recommendation of each case when the agent
+has made one.  Below it are the **recent decisions**: the last decisions of
+record, newest first, with their outcome and the conditions that were
+recorded with them.
+
+### Approve with conditions
+
+**An approval with conditions is an `approved` decision that carries a
+non-empty list of conditions.**  The decision outcome vocabulary does not
+change, and `modified` keeps its existing meaning and stays non-issuable.
+
+* The form offers **Approve**, **Approve with conditions** and **Deny**.
+* A **rationale is required on every outcome**.  A denial also needs an
+  active denial reason code.
+* The conditions are carried through the decision, the **reconfirmation**,
+  the **applicant tracker** (as "Conditions of your approval") and the
+  **immutable permit snapshot and artifact**.
+* An approval with conditions that names no condition is refused by the
+  service, not only by the form.
 
 ## Failure handling
 
