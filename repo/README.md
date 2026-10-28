@@ -1,6 +1,6 @@
 # Prospective Application Repository
 
-This directory is reserved for the new ACME City registry-MDM permit application.
+This directory is reserved for the new ACME City permit application, built on registry master data management (MDM).
 
 ## Current state
 
@@ -8,11 +8,11 @@ Documentation scaffold only. No application behavior has been implemented or tes
 
 ## Source of truth
 
-The authoritative requirements remain outside this prospective repository under ignored intake evidence:
+The authoritative requirements remain outside this prospective repository in the ignored intake evidence:
 
 `../intake/extracted/ACME_MDM_Build_Package/requirements/ACME_MDM_Demo_Requirements.txt`
 
-Use `../CITY_PERMIT_ALIGNMENT.md` for the reviewed application mapping. Do not copy the intake tree into Git or modify the preserved reference application in place.
+`../CITY_PERMIT_ALIGNMENT.md` holds the reviewed application mapping. Do not copy the intake tree into Git, and do not modify the preserved reference application in place.
 
 ## Planned implementation areas
 
@@ -24,6 +24,6 @@ Use `../CITY_PERMIT_ALIGNMENT.md` for the reviewed application mapping. Do not c
 - governed rules, fees, payment events, allocations, and reconciliation;
 - Meta Muse Standard adapter with validated proposals and labeled replay;
 - server-held fictional actors, scoped permissions, and audit history;
-- automated AT01–AT20 and VC01–VC08 checks with D01–D11 evidence.
+- automated AT01 to AT20 and VC01 to VC08 checks with D01 to D11 evidence.
 
-The concrete stack is intentionally undecided until implementation is released.
+The stack stays undecided until implementation is released.
