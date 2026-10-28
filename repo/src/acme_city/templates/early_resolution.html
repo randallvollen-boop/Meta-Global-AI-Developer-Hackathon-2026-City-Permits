@@ -22,7 +22,7 @@
   <div class="card-b">
     <ul class="issue-list" data-testid="group-findings">
       {% for finding in group.top_findings %}
-      <li><a href="{{ finding.href }}">{{ finding.reference }}</a> — {{ finding.message }}</li>
+      <li><a href="{{ finding.href }}">{{ finding.reference }}</a>: {{ finding.message }}</li>
       {% endfor %}
     </ul>
     <div class="tbl-wrap">

@@ -97,12 +97,12 @@
       {% for item in v.map.top_exception_parcels %}
       <tr><th scope="row">{{ item.parcel }}</th><td>{{ item.address }}</td><td>{{ item.district }}</td><td>{{ item.count }}</td></tr>
       {% else %}
-      <tr><td colspan="4" class="muted">No permit in this view carries an exception.</td></tr>
+      <tr><td colspan="4" class="muted">No permit in this view has an exception.</td></tr>
       {% endfor %}
     </tbody>
   </table>
   <table class="data-table" data-testid="exception-kinds">
-    <caption>Exceptions by kind ({{ v.exception_permits }} permits carry at least one)</caption>
+    <caption>Exceptions by kind ({{ v.exception_permits }} permits have at least one)</caption>
     <thead><tr><th scope="col">Kind</th><th scope="col">Permits</th></tr></thead>
     <tbody>{% for e in v.exception_counts %}<tr><th scope="row">{{ e.label }}</th><td>{{ e.permits }}</td></tr>{% endfor %}</tbody>
   </table>

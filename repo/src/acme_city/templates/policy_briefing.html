@@ -50,7 +50,7 @@
 </section>
 
 <article class="card briefing" data-testid="policy-briefing">
-  {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples, not real applications.</p>{% endif %}
+  {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples. None of them is a real application.</p>{% endif %}
   <p data-testid="policy-briefing-population">Population: <strong>{{ briefing.population_label }}</strong></p>
   <p class="muted" data-testid="policy-briefing-source">Source: {{ briefing.source_label }}</p>
   {% for section in briefing.sections %}
