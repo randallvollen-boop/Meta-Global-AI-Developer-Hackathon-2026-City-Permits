@@ -93,7 +93,9 @@ def test_the_navigation_lists_the_city_view_for_the_administrator_only(client) -
         keys = re.findall(r'data-screen-key="([^"]+)"', client.get("/queue").text)
         assert ("insight_city" in keys) is listed, actor
         if listed:
-            assert keys[-1] == "insight_city"  # after every earlier entry
+            # Changed deliberately (policy 2): the What-if entry now follows the
+            # City view, so the City view is the last entry but one.
+            assert keys[-2:] == ["insight_city", "policy_scenarios"]
 
 
 def test_the_unfiltered_total_is_a_count_over_the_stored_applications(client, settings, rows) -> None:

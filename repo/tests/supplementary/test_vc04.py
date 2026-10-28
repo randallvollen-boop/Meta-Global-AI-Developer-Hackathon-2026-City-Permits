@@ -195,6 +195,8 @@ SCREEN_PATHS = {
     "review_queue": "/queue/review",
     # P3insight adds the City view after those entries.
     "insight_city": "/insight/city",
+    # Parity phase 3 policy 2 adds the What-if screen after the City view.
+    "policy_scenarios": "/policy/scenarios",
 }
 
 #: The screens each persona may open (same table as the view-model tests).
@@ -235,6 +237,10 @@ EXPECTED_NAVIGATION = {
         "agent_adjudication",
         "admin",
         "insight_city",
+        # Changed deliberately (policy 2): the City Administrator gains the
+        # What-if screen, behind the grant policy.scenario.manage that only the
+        # Administrator holds.  No other persona's list changes.
+        "policy_scenarios",
     ],
 }
 
