@@ -140,17 +140,26 @@
       <td>{% if x.you_are_author %}You (City Administrator){% else %}{{ x.author_actor_id }}{% endif %}</td>
       <td data-testid="policy-draft-approvers">{% for a in x.approvers %}{{ a.label }}{% if not a.selectable %} (not a selectable persona in this demo){% endif %}{% if not loop.last %}; {% endif %}{% else %}No other account holds approval for this kind of change.{% endfor %}</td>
       <td>
+        {% if d.single %}
+        <a class="btn sm primary" href="{{ x.open_href }}" data-testid="policy-draft-open">Open the draft</a>
+        <span class="muted" data-testid="policy-draft-reason">Submit it for review on Rules and fees, approve it with a reason, then publish it.</span>
+        {% else %}
         <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-approve">Approve</button>
         <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-publish">Publish</button>
         <span class="muted" data-testid="policy-draft-reason">{{ x.reason_you_cannot or 'Approval and publication are done on Rules and fees by someone other than the author.' }}</span>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
     </tbody>
   </table></div>
+  {% if d.single %}
+  <p class="muted" data-testid="policy-draft-note">Ready for your approval: the City Administrator who saved these drafts is recorded as their author and may approve and publish them under the single-administrator policy. The approval asks for a confirmation and a reason, and the record says the author approved it. Submit them for review, approve and publish them on <a href="/rules?tab=rules&view=drafts">Rules and fees</a>.</p>
+  {% else %}
   <p class="muted">Needs independent approval: the City Administrator who saved these drafts is recorded as their author and cannot approve or publish them. Another administrator reviews them on <a href="/rules?tab=rules&view=drafts">Rules and fees</a>.</p>
+  {% endif %}
   {% elif d.convertible %}
-  <p>Every change in this what-if can become a draft rule or fee change. It is saved as a draft that needs independent approval; nothing published changes.</p>
+  <p>Every change in this what-if can become a draft rule or fee change. {% if d.single %}It is saved as a draft that is ready for your approval; nothing published changes.{% else %}It is saved as a draft that needs independent approval; nothing published changes.{% endif %}</p>
   <ul data-testid="policy-draft-plan">{% for i in d.steps %}<li>{{ i.summary }}</li>{% endfor %}</ul>
   {% if d.can %}
   <form method="post" action="/policy/runs/{{ r.id }}/draft" data-testid="policy-draft-form">

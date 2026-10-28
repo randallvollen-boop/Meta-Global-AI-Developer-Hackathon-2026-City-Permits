@@ -21,6 +21,8 @@
   <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
 
+<p class="muted" data-testid="approval-policy" data-policy="{{ catalogue.approval_policy.key }}">{{ catalogue.approval_policy.line }} {{ ui.info('approval_policy') }}</p>
+
 <nav class="tabs" role="tablist" aria-label="Rules and fees lists">
   {% for item in catalogue.tabs %}
   <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == catalogue.tab else 'false' }}" data-testid="rules-tab" data-tab="{{ item.key }}">{{ item.label }}</a>
@@ -71,7 +73,7 @@
         <th scope="row">{{ event.action }}</th>
         <td class="mono"><a href="/rules?tab={{ catalogue.tab }}&view=published&version={{ event.version_id }}">{{ event.version_label }}</a></td>
         <td>{{ event.actor }}</td>
-        <td>{{ event.reason or 'no reason recorded' }}</td>
+        <td>{{ event.reason or 'no reason recorded' }}{% if event.basis %}<br><span class="muted" data-testid="approval-basis">{{ event.basis }}</span>{% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="5" class="muted">No lifecycle event has been recorded for this list yet.</td></tr>
@@ -256,7 +258,7 @@
           <td>{{ event.occurred_date }}</td>
           <th scope="row">{{ event.action }}</th>
           <td>{{ event.actor }}</td>
-          <td>{{ event.reason or 'no reason recorded' }}</td>
+          <td>{{ event.reason or 'no reason recorded' }}{% if event.basis %}<br><span class="muted" data-testid="approval-basis">{{ event.basis }}</span>{% endif %}</td>
         </tr>
         {% else %}
         <tr><td colspan="4" class="muted">No event is recorded for this version yet.</td></tr>

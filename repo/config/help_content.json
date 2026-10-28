@@ -196,7 +196,7 @@
           },
           {
             "do": "Go back to the results page and click \"Save as a draft rule change\".",
-            "see": "The change is saved as a draft that needs independent approval. \"Approve\" and \"Publish\" are disabled, and the reason beside them says you authored this version so another administrator must approve it.",
+            "see": "The change is saved as a draft with the status \"Draft: ready for your approval\". Click \"Open the draft\" to approve and publish it on Rules and fees. If your city uses independent approval, the status reads \"Draft: needs independent approval\" and the reason beside the disabled buttons says you authored this version so another administrator must approve it.",
             "href": "/policy/scenarios"
           },
           {
@@ -346,7 +346,7 @@
       {
         "slug": "propose-and-approve-a-rule-change",
         "title": "Propose and approve a rule change",
-        "summary": "Turn a what-if into a draft and move it through approval. The author cannot approve their own draft.",
+        "summary": "Turn a what-if into a draft and take it through approval and publication. Under the single-administrator policy you can do every step yourself.",
         "who": "City Administrator",
         "persona_ids": [
           "persona_city_administrator"
@@ -357,13 +357,13 @@
           "Run a what-if as described in the guide on what-ifs.",
           "On the results page, under \"Path to a real change\", click \"Save as a draft rule change\".",
           "Read the table. The draft is in force nowhere. It lists its author and who can approve it.",
-          "Open \"Rules and fees\" in the left menu and choose the view Drafts.",
+          "Click \"Open the draft\", or open \"Rules and fees\" in the left menu and choose the view Drafts.",
           "Select the draft version and click \"Submit for review\".",
-          "A different administrator opens the same draft and clicks \"Approve version\".",
-          "That administrator then clicks \"Publish version\". The draft becomes the version in force.",
-          "If you wrote the draft, the buttons \"Approve version\" and \"Publish version\" are guarded and the reason reads \"You authored this version; another administrator must approve it.\""
+          "Click \"Approve version\". Tick the box that confirms you wrote the version, give a reason and submit. The record says \"Approved by the author (single-administrator policy)\".",
+          "Click \"Publish version\". The draft becomes the version in force.",
+          "The line \"Approval policy: single administrator\" at the top of Rules and fees shows which policy applies. A city can switch to independent approval. Then the author of a version cannot approve or publish it, the buttons \"Approve version\" and \"Publish version\" are guarded for the author, and the reason reads \"You authored this version; another administrator must approve it.\" A second administrator then does both steps."
         ],
-        "result": "Nothing changes in the live rules until a second person approves and publishes. The demo offers one administrator persona, so the approval step needs a second administrator account that the persona switch does not offer."
+        "result": "Nothing changes in the live rules until the version is approved and published. Under the single-administrator policy, which is the default, one City Administrator can do all of it with the demo persona, and the history and the audit log record that the author approved it. The city sets the policy in config/approval_policy.json, and the environment variable ACME_APPROVAL_POLICY overrides it."
       },
       {
         "slug": "reconcile-a-payment",

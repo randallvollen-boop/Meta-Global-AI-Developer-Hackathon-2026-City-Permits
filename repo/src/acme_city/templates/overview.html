@@ -153,6 +153,7 @@
     <thead>
       <tr>
         <th scope="col">Version</th><th scope="col">Kind</th><th scope="col">Status</th>
+        <th scope="col">Next step</th>
         <th scope="col">{{ 'Proposed effective date' }}</th><th scope="col">Open</th>
       </tr>
     </thead>
@@ -162,15 +163,17 @@
         <th scope="row">{{ item.version_label }}</th>
         <td>{{ item.kind }}</td>
         <td><span class="badge">{{ item.status_label }}</span></td>
+        <td data-testid="overview-changes-next-step">{{ item.next_step }}</td>
         <td>{{ item.date }}</td>
         <td><a class="btn sm" href="{{ item.href }}">Open the version</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="5" class="muted">No rule or fee version is waiting to be published.</td></tr>
+      <tr><td colspan="6" class="muted">No rule or fee version is waiting to be published.</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
+  <p class="muted" data-testid="overview-approval-policy">{{ overview.changes.approval_policy.line }} {{ ui.info('approval_policy') }}</p>
   {% if overview.changes.more %}
   <p class="muted">{{ overview.changes.more }} further version(s) are counted; open rules and fees to see them all.</p>
   {% endif %}

@@ -198,6 +198,7 @@ def audit_log(
                 f" to {event.after_version if event.after_version is not None else '-'}"
             ),
             "reason": event.reason or event.denial_reason or "",
+            "basis": str((event.metadata_json or {}).get("approval_basis_label", "")),
         }
         for event in events
     ]

@@ -73,6 +73,7 @@ from acme_city.permits.schemas import ReviseApplicationCommand
 from acme_city.permits.service import PermitService
 from acme_city.registry.schemas import MatchDecisionCommand, MatchProposalCommand
 from acme_city.registry.service import RegistryService
+from acme_city.rules import approval_policy
 from acme_city.rules.schemas import (
     DraftFeeScheduleCommand,
     DraftRuleCommand,
@@ -1785,11 +1786,19 @@ def _rule_submit(ctx: ActionContext) -> Outcome:
     )
 
 
+def _confirmed(ctx: ActionContext) -> bool:
+    """Return whether the author ticked the confirmation of their own approval."""
+    return ctx.text("confirm_author_approval").lower() in ("on", "1", "true", "yes")
+
+
 def _refuse_own_version(ctx: ActionContext, model: Any) -> None:
     """Say plainly why an author cannot approve or publish their own version.
 
-    The service refuses it too; this only gives the refusal its plain words.
+    Only the independent approval policy refuses it.  The service refuses it
+    too; this only gives the refusal its plain words.
     """
+    if approval_policy.is_single():
+        return
     row = ctx.session.get(model, ctx.text("rule_version_id") or ctx.text("fee_schedule_version_id"))
     if row is not None and row.author_actor_id is not None and row.author_actor_id == ctx.actor.actor_id:
         raise PermissionDeniedError(
@@ -1808,6 +1817,7 @@ def _rule_approve(ctx: ActionContext) -> Outcome:
         rule_version_id=ctx.text("rule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
         reason=ctx.text("reason"),
+        confirm_author_approval=_confirmed(ctx),
     )
     result = RuleCatalogService(ctx.session).approve(command, ctx.actor)
     if isinstance(result, ConflictResult):
@@ -1897,6 +1907,7 @@ def _fee_transition(
         fee_schedule_version_id=ctx.text("fee_schedule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
         reason=ctx.text("reason"),
+        confirm_author_approval=_confirmed(ctx),
         precedence=ctx.text("precedence") or None,
     )
     service = RuleCatalogService(ctx.session)

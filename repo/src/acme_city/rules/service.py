@@ -3,9 +3,10 @@
 The service owns the catalogue lifecycle: it selects the published versions
 that are in force at a recorded basis date, it evaluates inputs against them
 and it moves a version through Draft, In review, Approved, Published and
-Retired.  An author may never approve their own version, and an overlapping
-published version is refused unless an explicit precedence policy says which
-version wins.
+Retired.  Under the ``independent`` approval policy an author may never
+approve or publish their own version; under ``single`` the author may, with a
+confirmation and a reason that are recorded.  An overlapping published version
+is refused unless an explicit precedence policy says which version wins.
 """
 # REQUIRES: REF-01, REF-02, PER-02, PER-06, CHG-01
 # The catalogue selects one published version per basis date, evaluates against
@@ -32,7 +33,7 @@ from acme_city.core.errors import (
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult, VersionedResult
 from acme_city.persistence.models import finance
-from acme_city.rules import catalog
+from acme_city.rules import approval_policy, catalog
 from acme_city.rules.evaluator import evaluate as evaluate_inputs
 from acme_city.rules.schemas import (
     DraftFeeScheduleCommand,
@@ -231,18 +232,18 @@ class RuleCatalogService:
     ) -> VersionedResult[RuleSetView] | ConflictResult:
         """Approve a version that is in review.
 
-        The author of a version may never approve it.
+        Under the ``independent`` policy the author of a version may never
+        approve it.  Under ``single`` the author may, with a confirmation and
+        a reason, and the event records that basis.
         """
         row = self._load(command.rule_version_id)
-        if row.author_actor_id is not None and row.author_actor_id == actor.actor_id:
-            raise PermissionDeniedError(
-                "an author may not approve their own rule version",
-                actor_id=actor.actor_id,
-                action="rule.version.approve",
-                target_type="rule_version",
-                target_id=row.id,
-            )
-        return self._transition(command, actor, "in_review", "approved", "rule.version.approve")
+        metadata = self._approval_metadata(
+            command, actor, row.author_actor_id, "rule.version.approve", "rule_version", row.id,
+            "rule version",
+        )
+        return self._transition(
+            command, actor, "in_review", "approved", "rule.version.approve", metadata=metadata
+        )
 
     def publish(
         self, command: PublishRuleCommand, actor: ActorContext
@@ -254,14 +255,9 @@ class RuleCatalogService:
         not reuse a citation that another rule already publishes.
         """
         row = self._load(command.rule_version_id)
-        if row.author_actor_id is not None and row.author_actor_id == actor.actor_id:
-            raise PermissionDeniedError(
-                "an author may not publish their own rule version",
-                actor_id=actor.actor_id,
-                action="rule.version.publish",
-                target_type="rule_version",
-                target_id=row.id,
-            )
+        publish_metadata = self._publication_metadata(
+            actor, row.author_actor_id, "rule_version", row.id, "rule version"
+        )
         if command.precedence is None:
             conflict = catalog.conflicting_published_version(self._session, row)
             if conflict is not None:
@@ -314,7 +310,12 @@ class RuleCatalogService:
                     ),
                 )
         result = self._transition(
-            command, actor, "approved", "published", "rule.version.publish"
+            command,
+            actor,
+            "approved",
+            "published",
+            "rule.version.publish",
+            metadata=publish_metadata,
         )
         if isinstance(result, ConflictResult):
             return result
@@ -388,18 +389,14 @@ class RuleCatalogService:
     def approve_fee_schedule(
         self, command: FeeScheduleLifecycleCommand, actor: ActorContext
     ) -> VersionedResult[FeeScheduleView] | ConflictResult:
-        """Approve a fee schedule version that somebody else authored."""
+        """Approve a fee schedule version, under the active approval policy."""
         row = self._load_fee_schedule(command.fee_schedule_version_id)
-        if row.author_actor_id is not None and row.author_actor_id == actor.actor_id:
-            raise PermissionDeniedError(
-                "an author may not approve their own fee schedule version",
-                actor_id=actor.actor_id,
-                action="rule.version.approve",
-                target_type="fee_schedule_version",
-                target_id=row.id,
-            )
+        metadata = self._approval_metadata(
+            command, actor, row.author_actor_id, "rule.version.approve",
+            "fee_schedule_version", row.id, "fee schedule version",
+        )
         return self._fee_schedule_transition(
-            command, actor, "in_review", "approved", "rule.version.approve"
+            command, actor, "in_review", "approved", "rule.version.approve", metadata=metadata
         )
 
     def publish_fee_schedule(
@@ -411,14 +408,9 @@ class RuleCatalogService:
         same time unless an explicit precedence says which one wins.
         """
         row = self._load_fee_schedule(command.fee_schedule_version_id)
-        if row.author_actor_id is not None and row.author_actor_id == actor.actor_id:
-            raise PermissionDeniedError(
-                "an author may not publish their own fee schedule version",
-                actor_id=actor.actor_id,
-                action="rule.version.publish",
-                target_type="fee_schedule_version",
-                target_id=row.id,
-            )
+        publish_metadata = self._publication_metadata(
+            actor, row.author_actor_id, "fee_schedule_version", row.id, "fee schedule version"
+        )
         if command.precedence is None:
             others = self._session.execute(
                 select(finance.FeeScheduleVersion).where(
@@ -453,7 +445,12 @@ class RuleCatalogService:
                         ),
                     )
         return self._fee_schedule_transition(
-            command, actor, "approved", "published", "rule.version.publish"
+            command,
+            actor,
+            "approved",
+            "published",
+            "rule.version.publish",
+            metadata=publish_metadata,
         )
 
     def retire_fee_schedule(
@@ -490,6 +487,8 @@ class RuleCatalogService:
         expected_status: str,
         new_status: str,
         action: str,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> VersionedResult[FeeScheduleView] | ConflictResult:
         """Apply one guarded fee schedule lifecycle transition."""
         row = self._load_fee_schedule(command.fee_schedule_version_id)
@@ -524,11 +523,79 @@ class RuleCatalogService:
             after_version=row.version,
             reason=command.reason or None,
             references=[row.fee_schedule_id, row.version_label],
+            metadata=metadata,
         )
         self._session.flush()
         return VersionedResult(
             value=catalog.fee_schedule_view(row), version=row.version, audit_event_id=event.id
         )
+
+    # ------------------------------------------------------------- approval policy
+
+    def _approval_metadata(
+        self,
+        command: Any,
+        actor: ActorContext,
+        author_actor_id: str | None,
+        action: str,
+        target_type: str,
+        target_id: str,
+        noun: str,
+    ) -> dict[str, Any]:
+        """Apply the approval policy to an approval and return the event metadata."""
+        policy = approval_policy.active_policy()
+        is_author = author_actor_id is not None and author_actor_id == actor.actor_id
+        if not is_author:
+            return {"approval_policy": policy, "approval_basis": "independent"}
+        if policy != approval_policy.POLICY_SINGLE:
+            raise PermissionDeniedError(
+                f"an author may not approve their own {noun}",
+                actor_id=actor.actor_id,
+                action=action,
+                target_type=target_type,
+                target_id=target_id,
+            )
+        if not (command.reason or "").strip():
+            raise ValidationError(
+                f"a reason is required when the author approves their own {noun}"
+            )
+        if not getattr(command, "confirm_author_approval", False):
+            raise ValidationError(
+                f"confirm that you authored this {noun} and are approving it "
+                "under the single-administrator policy"
+            )
+        return {
+            "approval_policy": policy,
+            "approval_basis": approval_policy.BASIS_VALUE,
+            approval_policy.BASIS_KEY: approval_policy.BASIS_APPROVAL_LABEL,
+        }
+
+    def _publication_metadata(
+        self,
+        actor: ActorContext,
+        author_actor_id: str | None,
+        target_type: str,
+        target_id: str,
+        noun: str,
+    ) -> dict[str, Any]:
+        """Apply the approval policy to a publication and return the event metadata."""
+        policy = approval_policy.active_policy()
+        is_author = author_actor_id is not None and author_actor_id == actor.actor_id
+        if not is_author:
+            return {"approval_policy": policy}
+        if policy != approval_policy.POLICY_SINGLE:
+            raise PermissionDeniedError(
+                f"an author may not publish their own {noun}",
+                actor_id=actor.actor_id,
+                action="rule.version.publish",
+                target_type=target_type,
+                target_id=target_id,
+            )
+        return {
+            "approval_policy": policy,
+            "approval_basis": approval_policy.BASIS_VALUE,
+            approval_policy.BASIS_KEY: approval_policy.BASIS_PUBLICATION_LABEL,
+        }
 
     # ------------------------------------------------------------- transitions
 
@@ -548,6 +615,8 @@ class RuleCatalogService:
         expected_status: str,
         new_status: str,
         action: str,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> VersionedResult[RuleSetView] | ConflictResult:
         """Apply one guarded lifecycle transition."""
         row = self._load(command.rule_version_id)
@@ -582,6 +651,7 @@ class RuleCatalogService:
             after_version=row.version,
             reason=command.reason or None,
             references=[row.rule_id],
+            metadata=metadata,
         )
         self._session.flush()
         return VersionedResult(

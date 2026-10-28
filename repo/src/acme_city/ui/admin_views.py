@@ -35,7 +35,7 @@ from acme_city.persistence.models import (
     registry,
     source,
 )
-from acme_city.rules import catalog
+from acme_city.rules import approval_policy, catalog
 from acme_city.ui import property_views, view_models
 from acme_city.ui.view_models import action as build_action
 from acme_city.ui.view_models import _field
@@ -184,6 +184,23 @@ def _approval_record(
     return rows[0] if rows else None
 
 
+def _basis_label(event: audit.AuditEvent | None) -> str:
+    """Return the recorded approval basis of an event, such as the single-administrator policy."""
+    if event is None:
+        return ""
+    return str((event.metadata_json or {}).get(approval_policy.BASIS_KEY, ""))
+
+
+def _approval_text(session: Session, event: audit.AuditEvent) -> str:
+    """Return the plain sentence that says who approved a version, and on what basis."""
+    who = _actor_label(session, event.actor_id)
+    when = _readable_date(event.occurred_at)
+    basis = _basis_label(event)
+    if basis:
+        return f"{basis}. {who} approved it on {when}."
+    return f"Approved by {who} on {when}."
+
+
 def _version_history(
     session: Session, target_type: str, target_id: str
 ) -> list[dict[str, Any]]:
@@ -207,6 +224,7 @@ def _version_history(
             "references": list(row.references or []),
             "before_version": row.before_version,
             "after_version": row.after_version,
+            "basis": _basis_label(row),
         }
         for row in rows
     ]
@@ -340,6 +358,7 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
 
     # Proposed changes: the versions that are not published or retired yet.
     proposed = _proposed_versions(session)
+    policy = approval_policy_view()
 
     # Source information: the three simulated source systems.
     source_items: list[dict[str, Any]] = []
@@ -414,6 +433,7 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
             "href": "/rules?tab=rules&view=drafts",
             "entries": proposed[:8],
             "more": max(0, len(proposed) - 8),
+            "approval_policy": policy,
         },
         "sources": {
             "label": "Source information",
@@ -451,6 +471,19 @@ def _address_text(session: Session, address_id: str | None) -> str:
     return text or "not recorded"
 
 
+def _next_step_text(status: str) -> str:
+    """Return the next step of a proposed version under the active approval policy."""
+    if status == "draft":
+        return "Submit for review"
+    if status == "in_review":
+        if approval_policy.is_single():
+            return "Ready for approval by a City Administrator, who may be the author"
+        return "Needs approval by an administrator other than the author"
+    if status == "approved":
+        return "Ready to publish"
+    return ""
+
+
 def _proposed_versions(session: Session) -> list[dict[str, Any]]:
     """Return the rule and fee versions that are not published or retired."""
     items: list[dict[str, Any]] = []
@@ -470,6 +503,7 @@ def _proposed_versions(session: Session) -> list[dict[str, Any]]:
                 "status_label": VERSION_STATUS_LABELS.get(row.status, row.status),
                 "date_label": "Proposed effective date",
                 "date": _readable_date(row.effective_from),
+                "next_step": _next_step_text(row.status),
                 "href": f"/rules?tab=rules&view=drafts&version={row.id}",
             }
         )
@@ -490,6 +524,7 @@ def _proposed_versions(session: Session) -> list[dict[str, Any]]:
                 "status_label": VERSION_STATUS_LABELS.get(row.status, row.status),
                 "date_label": "Proposed effective date",
                 "date": _readable_date(row.effective_from),
+                "next_step": _next_step_text(row.status),
                 "href": f"/rules?tab=fees&view=drafts&version={row.id}",
             }
         )
@@ -541,6 +576,8 @@ def _rule_row_view(
         approved_on = (
             _readable_date(event.occurred_at) if event is not None else "not recorded"
         )
+        if event is not None and _basis_label(event):
+            approved_by += " (the author, single-administrator policy)"
     return {
         "row_id": row.id,
         "kind": "Rule version",
@@ -579,6 +616,8 @@ def _fee_row_view(
         approved_on = (
             _readable_date(event.occurred_at) if event is not None else "not recorded"
         )
+        if event is not None and _basis_label(event):
+            approved_by += " (the author, single-administrator policy)"
     return {
         "row_id": row.id,
         "kind": "Fee schedule version",
@@ -616,6 +655,7 @@ def _lifecycle_next(
     domain_id = "building_rules" if is_rule else "finance"
     author_id = row.author_actor_id
     is_author = bool(author_id) and author_id == actor.actor_id
+    independent = not approval_policy.is_single()
     if is_rule:
         pairs = (
             ("draft", "Submit for review", "rule.submit", "rule.version.draft"),
@@ -642,9 +682,9 @@ def _lifecycle_next(
                 f"your persona does not hold the {permission!r} grant for this version; "
                 "the responsible steward or the named queue may perform it"
             )
-        elif is_author and action_id in ("rule.approve", "fee.approve"):
+        elif is_author and independent and action_id in ("rule.approve", "fee.approve"):
             reason = "You authored this version; another administrator must approve it."
-        elif is_author and action_id in ("rule.publish", "fee.publish"):
+        elif is_author and independent and action_id in ("rule.publish", "fee.publish"):
             reason = "You authored this version; another administrator must publish it."
         return {
             "label": label,
@@ -875,9 +915,20 @@ def _lifecycle_history(
                 "actor": _actor_label(session, row.actor_id),
                 "outcome": row.outcome,
                 "reason": row.reason or "",
+                "basis": _basis_label(row),
             }
         )
     return entries
+
+
+def approval_policy_view() -> dict[str, str]:
+    """Return the active approval policy for display."""
+    key = approval_policy.active_policy()
+    return {
+        "key": key,
+        "label": approval_policy.policy_label(),
+        "line": f"Approval policy: {approval_policy.policy_label()}",
+    }
 
 
 def rules_register(
@@ -1020,6 +1071,7 @@ def rules_register(
             "Proposed effective date" if view == "drafts" else "Effective period"
         ),
         "policy_drafts": policy_drafts,
+        "approval_policy": approval_policy_view(),
         "selected": selected,
         "actions": actions,
         "denied_action_explanations": view_models.denied_action_explanations(actions),
@@ -1111,6 +1163,11 @@ def _selected_rule(
         "assigned_approver": _assigned_approver(session, "building_rules"),
         "approved_by": (
             _actor_label(session, row.approver_actor_id)
+            + (
+                " (the author, single-administrator policy)"
+                if _basis_label(approval_event)
+                else ""
+            )
             if row.status in ("approved", "published", "retired")
             else "not approved yet"
         ),
@@ -1129,10 +1186,7 @@ def _selected_rule(
             "approval": (
                 "No approval is recorded for this version."
                 if approval_event is None
-                else (
-                    f"Approved by {_actor_label(session, approval_event.actor_id)} on "
-                    f"{_readable_date(approval_event.occurred_at)}."
-                )
+                else _approval_text(session, approval_event)
             ),
             "publication": (
                 "The version is not published."
@@ -1251,6 +1305,11 @@ def _selected_fee(
         "assigned_approver": _assigned_approver(session, "finance"),
         "approved_by": (
             _actor_label(session, row.approver_actor_id)
+            + (
+                " (the author, single-administrator policy)"
+                if _basis_label(approval_event)
+                else ""
+            )
             if row.status in ("approved", "published", "retired")
             else "not approved yet"
         ),
@@ -1269,10 +1328,7 @@ def _selected_fee(
             "approval": (
                 "No approval is recorded for this version."
                 if approval_event is None
-                else (
-                    f"Approved by {_actor_label(session, approval_event.actor_id)} on "
-                    f"{_readable_date(approval_event.occurred_at)}."
-                )
+                else _approval_text(session, approval_event)
             ),
             "publication": (
                 "The version is not published."
@@ -1510,6 +1566,7 @@ def _version_actions(
     row = _version_row(session, tab, row_id)
     author_id = getattr(row, "author_actor_id", None) if row is not None else None
     is_author = bool(author_id) and author_id == actor.actor_id
+    independent = not approval_policy.is_single()
     prepared: list[dict[str, Any]] = []
     for action_id, label, permission, state in lifecycle:
         state_allowed = row is not None and row.status == state
@@ -1521,12 +1578,12 @@ def _version_actions(
                 if row is not None
                 else "The version is not stored."
             )
-        elif is_author and action_id in ("rule.approve", "fee.approve"):
+        elif is_author and independent and action_id in ("rule.approve", "fee.approve"):
             state_reason = (
                 "You authored this version; another administrator must approve it."
             )
             state_allowed = False
-        elif is_author and action_id in ("rule.publish", "fee.publish"):
+        elif is_author and independent and action_id in ("rule.publish", "fee.publish"):
             state_reason = (
                 "You authored this version; another administrator must publish it."
             )
@@ -1545,6 +1602,14 @@ def _version_actions(
             ),
             description=(
                 f"{label}. An author may never approve or publish their own version."
+                if independent
+                else (
+                    f"{label}. Under the single-administrator policy the author may approve "
+                    "and publish their own version. Approving it needs a confirmation "
+                    "and a reason, which are recorded."
+                    if is_author and action_id in ("rule.approve", "fee.approve")
+                    else f"{label}."
+                )
             ),
             expected_version=row.version if row is not None else None,
             state_allowed=state_allowed,
@@ -1559,6 +1624,19 @@ def _version_actions(
                     required=True,
                 ),
                 _field("reason", "Reason", field_type="textarea", required=True),
+                *(
+                    (
+                        _field(
+                            "confirm_author_approval",
+                            "I wrote this version and I am approving it under the "
+                            "single-administrator policy",
+                            field_type="checkbox",
+                            required=True,
+                        ),
+                    )
+                    if is_author and not independent and action_id in ("rule.approve", "fee.approve")
+                    else ()
+                ),
                 _field("precedence", "Precedence"),
             ),
         )

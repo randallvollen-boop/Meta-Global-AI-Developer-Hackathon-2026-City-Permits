@@ -177,6 +177,9 @@ class RuleLifecycleCommand(RuleModel):
     rule_version_id: str
     expected_version: int
     reason: str = ""
+    #: Under the single-administrator policy the author must confirm an
+    #: approval of their own version; the independent policy ignores it.
+    confirm_author_approval: bool = False
 
 
 class PublishRuleCommand(RuleLifecycleCommand):
@@ -213,6 +216,7 @@ class FeeScheduleLifecycleCommand(RuleModel):
     fee_schedule_version_id: str
     expected_version: int
     reason: str = ""
+    confirm_author_approval: bool = False
     precedence: str | None = None
     effective_to: datetime | None = None
 
