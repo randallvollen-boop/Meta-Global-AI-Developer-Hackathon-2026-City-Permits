@@ -177,3 +177,13 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The permit workspace gained the **Record the reviewer decision** form (Approve, Approve with conditions, Deny) and the **Reconfirm the decision** form. The intake run now records the revision it ran against, so a run of an earlier revision is history rather than the live signal of a case.
 - Migration 0007 carries the one new column; the migration head tests moved from `0006` to `0007`.
 - Execution: the four steps b1–b4 were built as one interlocking unit and committed together, because `permits/queues.py`, `ui/view_models.py`, `ui/router.py` and the three templates carry the work of several steps — the same reason the phase 3a wiring landed with its schema commit. The tests and the documents follow in their own commits.
+
+## 2026-10-28 — Parity phase 3 insight: community permit insight
+
+- One shared generator (`generate_synthetic_year(seed, count)` in `portal_intake/scenarios.py`, versioned distributions in `config/synthetic_distributions.json`) builds a deterministic year of dated permit history: 17 types across R-1, R-2 and C-2, variances clustered in R-2, fence heights and shed areas on both sides of every threshold. `fixtures/synthetic.py` loads it as flagged historical records (migration 0008 adds the `synthetic` flag); it runs no agent and writes no audit event. The default reset loads none of it; `prepare_user_test.py --mode demo-synthetic` does.
+- Business categories on business licences (migration 0008, reported backfill of the existing licences, repeated by the reset).
+- **City view** (`/insight/city`, City Administrator, grant `insight.city.view`): district-shaded map with exception dots, filters by type, outcome, period, category, exceptions and synthetic, restaurants-and-bars view, category table, monthly trend, definitions beside every figure.
+- **Permits in my community** (`/city/community`, `?q=`, `/permit/<number>`, public): a dedicated allowlist read model (17 fields), contractor business name and parcel, no names, notes, documents, contact details, fees, findings, drafts or non-public cases, "fewer than 3" suppression, read-only, rate limited, non-public equals not found.
+- Sanitation and Police added as simulated subscribers under a "Simulated departments" heading; the model-run source label ("Muse Spark (live)") with usage and latency is on the evidence panel and workspace.
+- Worktree note: the worktree's `.venv` was a symlink to the main checkout's environment, whose editable install imports the main checkout's source. It was replaced by a copy pointing at this worktree's `src`, so the gates test this branch.
+
