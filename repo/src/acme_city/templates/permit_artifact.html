@@ -68,6 +68,14 @@
         <dt>Reason</dt>
         <dd>{{ decision_reason }}</dd>
       </dl>
+      {% if conditions %}
+      <h3>Conditions of approval</h3>
+      <ol class="conditions">
+        {% for condition in conditions %}
+        <li>{{ condition }}</li>
+        {% endfor %}
+      </ol>
+      {% endif %}
     </section>
 
     <section class="block">

@@ -25,6 +25,14 @@
     {% endfor %}
     {% if tracked.decision_reason %}<li>Decision note: {{ tracked.decision_reason }}</li>{% endif %}
   </ul>
+  {% if tracked.decision_conditions %}
+  <h3>Conditions of your approval</h3>
+  <ol data-testid="city-conditions">
+    {% for condition in tracked.decision_conditions %}
+    <li>{{ condition }}</li>
+    {% endfor %}
+  </ol>
+  {% endif %}
   {% if tracked.revisions_requested %}
   <h3>Submit revised documents</h3>
   <form method="post" action="/apply/track/{{ tracked.application_id }}/revise" enctype="multipart/form-data" data-testid="revise-form">

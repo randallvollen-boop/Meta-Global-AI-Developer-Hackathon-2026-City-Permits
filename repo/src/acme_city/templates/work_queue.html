@@ -19,6 +19,19 @@
   <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-spark"/></svg>Change cases</div><div class="v num">{{ queue.counts.get('Change case', 0) }}</div><div class="s"><span class="pill muse">steward work</span></div></div>
 </div>
 
+{% if saved_queues %}
+<section class="card">
+  <div class="card-h"><h2>Saved queues</h2></div>
+  <div class="card-b">
+    <ul class="issue-list" data-testid="saved-queues">
+      {% for link in saved_queues %}
+      <li><a href="{{ link.href }}" data-testid="saved-queue-link" data-queue="{{ link.key }}">{{ link.label }}</a> — {{ link.note }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
 <section class="card">
   <form class="filters toolbar" method="get" action="/queue" data-testid="queue-filters">
     <p class="field">

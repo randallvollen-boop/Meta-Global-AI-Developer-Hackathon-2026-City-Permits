@@ -227,6 +227,10 @@ class PermitTypeFixture(StrictModel):
     description: str = ""
     #: The fee schedule key that applies to this type.
     fee_schedule_key: str | None = None
+    #: The fictional service target of the type, in whole days.  It is the
+    #: number of days the City aims to review a case of this type in; it is
+    #: a demonstration figure and never a promise to an applicant.
+    service_target_days: int = Field(default=0, ge=0)
 
 
 class RuleFixture(StrictModel):

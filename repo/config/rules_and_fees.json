@@ -29,6 +29,7 @@
       "review_area": "Building",
       "process_category": "with_plans",
       "discretionary": false,
+      "service_target_days": 10,
       "description": "A new or extended residential building, reviewed against the building rules and the energy compliance form.",
       "fee_schedule_key": "fee_commercial_demo"
     },
@@ -54,6 +55,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A residential deck, fence or other yard structure, reviewed at the counter.",
       "fee_schedule_key": "fee_commercial_demo"
     },
@@ -83,6 +85,7 @@
       "review_area": "Building",
       "process_category": "with_plans",
       "discretionary": false,
+      "service_target_days": 10,
       "description": "A commercial tenant improvement, reviewed with the building rules and the fire suppression plan.",
       "fee_schedule_key": "fee_commercial_demo"
     },
@@ -108,6 +111,7 @@
       "review_area": "Planning & Zoning",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A sign, reviewed by planning and zoning.",
       "fee_schedule_key": "fee_commercial_demo"
     },
@@ -133,6 +137,7 @@
       "review_area": "Engineering",
       "process_category": "with_plans",
       "discretionary": false,
+      "service_target_days": 10,
       "description": "A right-of-way or encroachment, reviewed by public works with a traffic control plan.",
       "fee_schedule_key": "fee_commercial_demo"
     },
@@ -144,6 +149,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A residential patio, reviewed at the counter.",
       "required_fields": [
         "parcel_number",
@@ -167,6 +173,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A detached shed or other accessory building.",
       "required_fields": [
         "parcel_number",
@@ -191,6 +198,7 @@
       "review_area": "Engineering",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A temporary container placed on a site for a stated number of days.",
       "required_fields": [
         "parcel_number",
@@ -214,6 +222,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "The replacement of a heating or cooling system.",
       "required_fields": [
         "parcel_number",
@@ -236,6 +245,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "The replacement of a residential water heater.",
       "required_fields": [
         "parcel_number",
@@ -258,6 +268,7 @@
       "review_area": "Building",
       "process_category": "simple",
       "discretionary": false,
+      "service_target_days": 5,
       "description": "A new or upgraded residential electric service.",
       "required_fields": [
         "parcel_number",
@@ -280,6 +291,7 @@
       "review_area": "Fire",
       "process_category": "with_plans",
       "discretionary": false,
+      "service_target_days": 10,
       "description": "A commercial fire alarm system, reviewed with construction plans.",
       "required_fields": [
         "parcel_number",
@@ -303,6 +315,7 @@
       "review_area": "Building",
       "process_category": "formal_review",
       "discretionary": false,
+      "service_target_days": 15,
       "description": "A change from one use of a building to another.",
       "required_fields": [
         "parcel_number",
@@ -329,6 +342,7 @@
       "review_area": "Planning & Zoning",
       "process_category": "formal_review",
       "discretionary": true,
+      "service_target_days": 20,
       "description": "A site plan reviewed by the planning board. Discretionary: only a person or the board decides.",
       "required_fields": [
         "parcel_number",
@@ -351,6 +365,7 @@
       "review_area": "Planning & Zoning",
       "process_category": "formal_review",
       "discretionary": true,
+      "service_target_days": 20,
       "description": "A request to change the zoning of a parcel. Discretionary: only a person or the board decides.",
       "required_fields": [
         "parcel_number",
@@ -375,6 +390,7 @@
       "review_area": "Board / Administrative",
       "process_category": "formal_review",
       "discretionary": true,
+      "service_target_days": 20,
       "description": "A request to vary the zoning rules of a parcel. Discretionary: only a person or the board decides.",
       "required_fields": [
         "parcel_number",
@@ -398,6 +414,7 @@
       "review_area": "Board / Administrative",
       "process_category": "formal_review",
       "discretionary": true,
+      "service_target_days": 20,
       "description": "A certificate that a change is appropriate to a historic property. Discretionary: only a person or the board decides.",
       "required_fields": [
         "parcel_number",

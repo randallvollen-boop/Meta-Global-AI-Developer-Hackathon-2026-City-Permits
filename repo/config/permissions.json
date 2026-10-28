@@ -360,6 +360,13 @@
       "category": "permit",
       "description": "Waive a current intake finding of a waivable type with an active reason code of the waiver type. A waiver never clears a deterministic rule failure or an identity, credential, finance or parcel-clearance check.",
       "sensitive": false
+    },
+    {
+      "permission_id": "permit.intake.process_selected",
+      "action": "permit.intake.process_selected",
+      "category": "permit",
+      "description": "Run the intake agent on a bounded selection of cases that wait for it. The selection names an application and the version it was read at; an empty selection, a stale version or an ineligible case refuses the whole batch.",
+      "sensitive": false
     }
   ],
   "role_grants": {
@@ -384,6 +391,7 @@
       "permit.case.priority",
       "permit.case.return",
       "permit.finding.waive",
+      "permit.intake.process_selected",
       "records.document.view",
       "source.snapshot.stage"
     ],

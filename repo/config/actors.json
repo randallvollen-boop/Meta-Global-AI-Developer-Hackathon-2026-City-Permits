@@ -578,6 +578,14 @@
           ],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "permit.intake.process_selected",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,

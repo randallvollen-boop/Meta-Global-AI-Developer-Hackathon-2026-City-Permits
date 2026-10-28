@@ -107,7 +107,28 @@ Both cases now wait. Nothing has been triaged.
    with **Record reviewer decision**.
 4. Either way, the decision of record is yours: the agent never records it.
 
-## 9. Fees, reconciliation and issuance (approved rear case only)
+## 9. A reviewer comment and an approval with conditions
+
+1. Still as **Permit Reviewer**, open the rear-fence case (the one whose
+   recommendation you reverted).
+2. In the **Case record** panel, open **Write a comment**, write "The rear
+   fence complies with DF-2. The gate must open inward." and leave **Who
+   may read it** on *Visible to the applicant*. The comment is written and
+   audited; the case version does not move, because a comment changes no
+   state.
+3. Open **Record the reviewer decision**, choose **Approve with
+   conditions**, write "The gate must open inward." in **Conditions of
+   approval** (one per line) and the rationale "the rear fence complies
+   with DF-2" in **Rationale**, and submit.
+4. The decision panel now reads **Approved with conditions** and lists the
+   condition. The condition travelled with the decision: the applicant
+   reads it on the tracking page as "Conditions of your approval", and it
+   is printed on the permit artifact.
+5. A **Deny** needs a denial reason code and every outcome needs a
+   rationale: an approval with conditions that names no condition is
+   refused by the server, not only by the form.
+
+## 10. Fees, reconciliation and issuance (approved rear case only)
 
 1. Switch to **City Administrator**, open **Reconciliation**.
 2. Use **Assess application** for the approved rear-fence application (the
@@ -119,6 +140,29 @@ Both cases now wait. Nothing has been triaged.
 4. Switch to **Permit Reviewer**, open the rear-fence case, and use
    **Issue permit** with a command key (e.g. `issue-<application id>`). You
    should see "Issued the simulated permit ACME-…" and the **Issued permit**
-   panel shows the permit number.
+   panel shows the permit number. The printed artifact carries the
+   conditions of approval.
 5. The denied front-yard case has no assessment path to issuance: its
    decision is final for this walkthrough.
+
+## 11. The queues of the City
+
+1. Switch to **Data Steward** and open **Intake queue** (the left
+   navigation, below **Intake agent**). The saved views are **Active**,
+   **Awaiting agent**, **Needs information**, **In review**, **Archived** and
+   **Closed**, each with its count. The two fence cases are in **Active**
+   and **In review**; the closed view holds the issued case of the fixed
+   demonstration corpus.
+2. Use **Search** to find `PORTAL` and the filters (**Channel**, **Permit
+   type**, **Priority**, **Owner**) and the **Sort**; everything works
+   through the address bar, so it works without JavaScript.
+3. The age chip of a case shows its real age and is coloured against the
+   service target of its permit type. The **Signals** column shows only what
+   the server holds: the duplicate finding, the scan-quality flags of the
+   received pages, the recorded parcel link and what the intake agent left
+   on the case.
+4. Open **Early resolution**: the cases that wait for a person are grouped
+   by their primary finding, each group with its count and its top findings.
+5. Switch to **Permit Reviewer** and open **Review queue**: the cases in
+   review, the counts per review area, the adjudication recommendation of
+   each case and the decisions that were recorded recently.

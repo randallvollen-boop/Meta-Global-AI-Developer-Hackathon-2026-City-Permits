@@ -565,6 +565,11 @@ class PortalService:
             "status_word": STATUS_WORDS.get(application.status, application.status),
             "messages": messages,
             "decision_reason": decision.reason if decision is not None and decision.reason else "",
+            # The conditions of approval are the applicant's instructions, so
+            # they are shown on the tracker next to the decision note.
+            "decision_conditions": list(decision.conditions or [])
+            if decision is not None
+            else [],
             "revisions_requested": application.status in RESPONDABLE_STATUSES,
             "application_version": application.version,
             "documents": [

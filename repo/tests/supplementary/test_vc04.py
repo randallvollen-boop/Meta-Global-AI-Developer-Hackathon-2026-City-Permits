@@ -29,7 +29,8 @@ from acme_city.persistence.session import (
 )
 from acme_city.ui.router import router as ui_router
 
-#: The screens that have to use the same controls.
+#: The screens that have to use the same controls, swept as the City
+#: Administrator.
 CONTROL_SCREENS = (
     "/queue",
     "/applicants",
@@ -42,6 +43,18 @@ CONTROL_SCREENS = (
     "/agent/intake",
     "/agent/adjudication",
     "/admin",
+)
+
+#: The screens parity phase 3b added, with the persona that may open them.
+#:
+#: Each of the three belongs to one persona, so they are checked with their
+#: own persona rather than swept as the City Administrator, who holds no
+#: grant for them.  They have to use the same controls and carry the same
+#: labelled navigation as every other screen.
+PERSONA_CONTROL_SCREENS = (
+    ("persona_data_steward", "/queue/intake"),
+    ("persona_data_steward", "/queue/early-resolution"),
+    ("persona_permit_reviewer", "/queue/review"),
 )
 
 
@@ -110,10 +123,23 @@ def test_every_control_of_every_screen_carries_a_label(client: TestClient) -> No
         assert identifiers == labels, path
 
 
+def test_every_control_of_every_new_screen_carries_a_label(
+    client: TestClient,
+) -> None:
+    """The three phase 3b screens are checked with their own persona."""
+    for actor_id, path in PERSONA_CONTROL_SCREENS:
+        select_persona(client, actor_id)
+        body = client.get(path).text
+        identifiers = control_ids(body)
+        labels = label_ids(body)
+        assert identifiers, (actor_id, path)
+        assert identifiers == labels, (actor_id, path)
+
+
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
-    # City Administrator holds grants for all eleven screens, so for that
-    # persona the navigation is the full canonical list on every screen.
-    # Persona-scoped filtering is covered per persona below.
+    # City Administrator holds grants for all eleven of the original screens,
+    # so for that persona the navigation is the full canonical list on every
+    # screen.  Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
     reference = None
     for path in CONTROL_SCREENS:
@@ -123,6 +149,20 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
         if reference is None:
             reference = items
         assert items == reference
+
+
+def test_the_navigation_of_a_new_screen_matches_its_persona(
+    client: TestClient,
+) -> None:
+    """A phase 3b screen shows the same navigation as the work queue."""
+    for actor_id, path in PERSONA_CONTROL_SCREENS:
+        select_persona(client, actor_id)
+        expected = re.findall(
+            r'data-screen-key="([^"]+)"', client.get("/queue").text
+        )
+        assert expected
+        items = re.findall(r'data-screen-key="([^"]+)"', client.get(path).text)
+        assert items == expected, (actor_id, path)
 
 
 #: Screen key -> path, in canonical navigation order.
@@ -138,9 +178,18 @@ SCREEN_PATHS = {
     "agent_intake": "/agent/intake",
     "agent_adjudication": "/agent/adjudication",
     "admin": "/admin",
+    # Parity phase 3b adds three screens after the existing entries, so the
+    # order of the existing screens is unchanged.
+    "intake_queue": "/queue/intake",
+    "early_resolution": "/queue/early-resolution",
+    "review_queue": "/queue/review",
 }
 
 #: The screens each persona may open (same table as the view-model tests).
+#:
+#: The Data Steward gains the intake queue and the early-resolution board
+#: and the Permit Reviewer gains the review queue; no other persona gains a
+#: screen.
 EXPECTED_NAVIGATION = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
@@ -151,9 +200,29 @@ EXPECTED_NAVIGATION = {
         "steward",
         "rules",
         "agent_intake",
+        "intake_queue",
+        "early_resolution",
     ],
-    "persona_permit_reviewer": ["queue", "applicants", "permit", "agent_adjudication"],
-    "persona_city_administrator": list(SCREEN_PATHS),
+    "persona_permit_reviewer": [
+        "queue",
+        "applicants",
+        "permit",
+        "agent_adjudication",
+        "review_queue",
+    ],
+    "persona_city_administrator": [
+        "queue",
+        "applicants",
+        "masters",
+        "permit",
+        "steward",
+        "rules",
+        "reconciliation",
+        "governance",
+        "agent_intake",
+        "agent_adjudication",
+        "admin",
+    ],
 }
 
 

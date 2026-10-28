@@ -410,3 +410,28 @@ def test_an_archived_case_is_not_in_the_active_queue(seeded: Settings) -> None:
             assert "SYN-APP-011" not in references
     finally:
         factory.dispose()
+
+
+def test_an_archived_case_refuses_the_bulk_intake_processing(
+    seeded: Settings,
+) -> None:
+    """Path 12: the bulk processing action of phase 3b asks the guard."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            application = archived_case(session)
+            AgentControlService(session).set_mode(
+                "intake", "awake", context_for(session, "persona_city_administrator")
+            )
+            from acme_city.permits.bulk import Selection, process_selected
+
+            steward = context_for(session, "persona_data_steward")
+            with pytest.raises(ValidationError) as error:
+                process_selected(
+                    session,
+                    actor=steward,
+                    selections=[Selection(application.id, application.version)],
+                )
+            assert "archived" in str(error.value)
+    finally:
+        factory.dispose()
