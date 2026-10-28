@@ -332,3 +332,27 @@ def test_the_bulk_action_is_refused_for_a_persona_without_the_grant(
     )
     assert response.status_code == 403, response.text
     assert intake_run_count(environment) == 0
+
+
+# ------------------------------------------------------ guarded-button reasons
+
+def test_the_disabled_bulk_button_says_why_while_the_agent_sleeps(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    page = client.get("/queue/intake").text
+    flat = page.replace("\n", " ")
+    assert re.search(r'data-testid="intake-bulk-submit"\s+disabled aria-describedby="intake-bulk-reason"', flat)
+    assert 'id="intake-bulk-reason"' in page
+    assert "The intake agent is asleep" in page
+    assert "No case is in this view to process." not in page  # rows exist, so that is not the reason
+    assert "Your role cannot run the intake agent." not in page
+
+
+def test_the_workspace_rerun_buttons_say_why_they_are_off(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    arrival = submit_arrival(client)
+    page = client.get(f"/permits/{arrival['application_id']}").text
+    assert 'id="rerun-locked"' in page
+    flat = page.replace("\n", " ")
+    assert re.search(r'data-testid="rerun-intake"\s+disabled aria-describedby="rerun-locked"', flat)
+    assert "Re-run intake agent: the intake agent is asleep." in page
+    assert "Re-run adjudication: your role cannot do this." in page

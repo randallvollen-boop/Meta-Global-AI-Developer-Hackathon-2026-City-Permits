@@ -44,7 +44,9 @@
   <strong>Fictional ACME City demonstration.</strong>
   Every person, address, rule, fee, payment and permit shown here is synthetic.
   This service is not a municipal system and it is not connected to any real
-  city or to any real source system.
+  city or to any real source system. The persona buttons are only for ease of
+  switching in this demonstration; in a real deployment people would sign in
+  through the City's front door and their role would come from that sign-in.
 </div>
 
 {% set screen_icons = {"queue": "inbox", "applicants": "users", "masters": "building", "permit": "file", "steward": "link", "rules": "scale", "reconciliation": "coins", "governance": "shield", "agent_intake": "spark", "agent_adjudication": "stamp", "admin": "db", "intake_queue": "inbox", "early_resolution": "alert", "review_queue": "stamp"} %}
@@ -80,27 +82,18 @@
       <p class="app-title visually-hidden"><a href="/queue">ACME City permit workspace</a></p>
       <div class="top-right persona">
         {% if actor %}
-        <div class="seg" role="group" aria-label="Acting as">
-          {% for persona in personas %}
-          <form method="post" action="/ui/actor">
-            <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-            <input type="hidden" name="next" value="{{ request.url.path }}">
-            <button type="submit" class="seg-btn" aria-pressed="{{ 'true' if persona.actor_id == actor.actor_id else 'false' }}" aria-label="{{ persona.label }}" title="{{ persona.label }}"><span class="dot" style="background:{{ persona_dots.get(persona.label, 'var(--accent)') }}"></span><span class="lbl-long">{{ persona.label }}</span></button>
-          </form>
-          {% endfor %}
-        </div>
-        <form method="post" action="/ui/end" class="persona-end">
-          <button type="submit" class="button button-quiet btn sm ghost">End session</button>
-        </form>
-        <p class="persona-current visually-hidden" data-testid="acting-persona">
-          Acting as <strong>{{ actor.label }}</strong>
-        </p>
-        <label class="visually-hidden" for="persona-select">Acting persona</label>
-        <select id="persona-select" name="actor_id" data-testid="persona-select" class="visually-hidden" aria-hidden="true" tabindex="-1">
-          {% for persona in personas %}
-          <option value="{{ persona.actor_id }}" {% if persona.actor_id == actor.actor_id %}selected{% endif %}>{{ persona.label }}</option>
-          {% endfor %}
-        </select>
+        <details class="account-menu" data-testid="persona-select">
+          <summary class="account-trigger" aria-label="Account: {{ actor.label }}">
+            <span class="dot" style="background:{{ persona_dots.get(actor.label, 'var(--accent)') }}"></span>
+            <span class="account-name" data-testid="acting-persona">{{ actor.label }}{% if actor.department %} <span class="account-dept">&middot; {{ actor.department }}</span>{% endif %}</span>
+          </summary>
+          <div class="account-panel">
+            <p class="account-line">Signed in as <strong>{{ actor.label }}</strong>{% if actor.department %}<br><span class="muted">{{ actor.department }}</span>{% endif %}</p>
+            <form method="post" action="/ui/end" class="persona-end">
+              <button type="submit" class="button button-quiet btn sm" data-testid="sign-out">Sign out</button>
+            </form>
+          </div>
+        </details>
         {% else %}
         <p class="persona-current"><a class="button btn" href="/select">Choose a persona</a></p>
         {% endif %}
@@ -131,12 +124,14 @@
 {% endif %}
 
 <main id="main">
+  {% if moved_notice %}<p class="notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
   {% if error %}
   <section class="panel panel-error" role="alert" data-testid="error-panel">
     <h2>{{ error.title }}</h2>
     <p>{{ error.message }}</p>
     {% if error.code %}<p class="muted">Error code: {{ error.code }}</p>{% endif %}
-    {% if error.back %}<p><a href="{{ error.back }}">Return to the previous screen</a></p>{% endif %}
+    {% if home %}<p><a href="{{ home.href }}" data-testid="go-home">Go to {{ home.label }}</a></p>{% endif %}
+    {% if error.back and (not home or error.back != home.href) %}<p><a href="{{ error.back }}">Return to the previous screen</a></p>{% endif %}
   </section>
   {% endif %}
 
@@ -185,7 +180,7 @@
 </nav>
 {% endif %}
 {% if screen != 'select' %}{% include "_demo_switch.html" %}{% endif %}
-<div class="toast" id="toast" role="status"></div>
+<div class="toast toast-top-right" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 {% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 
 <script src="/ui/static/app.js" defer></script>

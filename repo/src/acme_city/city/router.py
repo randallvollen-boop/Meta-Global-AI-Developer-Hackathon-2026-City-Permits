@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.ui.router import render, templates, ui_actor
-from acme_city.ui.view_models import actor_label, persona_options
+from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
 router = APIRouter(prefix="/city", tags=["city-website"])
 
@@ -129,7 +129,16 @@ def city_context(
     request: Request, session: Session, actor: ActorContext | None, **extra: Any
 ) -> dict[str, Any]:
     """Return the context every website page shares."""
+    moved = request.query_params.get("moved_from", "")
+    known = {screen["key"]: screen["label"] for screen in SCREENS}
+    notice = (
+        f"{actor_label(session, actor.actor_id)} can't open {known[moved]}, "
+        "so you're on the City website instead."
+        if actor is not None and moved in known
+        else ""
+    )
     return {
+        "moved_notice": notice,
         "actor": (
             {"actor_id": actor.actor_id, "label": actor_label(session, actor.actor_id)}
             if actor is not None

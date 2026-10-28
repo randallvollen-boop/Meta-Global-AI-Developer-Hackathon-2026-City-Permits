@@ -14,6 +14,7 @@ the browser.
 from __future__ import annotations
 
 import hashlib
+from types import SimpleNamespace
 import hmac
 import json
 from dataclasses import dataclass, field
@@ -206,6 +207,25 @@ def verify_csrf(settings: Settings, actor: ActorContext, presented: str) -> None
         )
 
 
+#: The applicant's entry point. The staff-layout landing would duplicate it.
+APPLICANT_HOME = "/city/"
+APPLICANT_LABEL = "Applicant"
+
+
+def moved_notice(
+    request: Request, session: Session, actor: ActorContext | None, home_label: str
+) -> str:
+    """Return the one-line notice shown after a persona switch was redirected."""
+    key = request.query_params.get("moved_from", "")
+    known = {screen["key"] for screen in view_models.SCREENS}
+    if actor is None or key not in known:
+        return ""
+    return (
+        f"{actor_label(session, actor.actor_id)} can't open {view_models.screen_label(key)}, "
+        f"so you're on {home_label} instead."
+    )
+
+
 def safe_next(value: str | None, fallback: str = "/queue") -> str:
     """Return a local path an action may return to."""
     if not value:
@@ -252,9 +272,16 @@ def page_context(
         "actor": {
             "actor_id": actor.actor_id,
             "label": actor_label(session, actor.actor_id),
+            "department": view_models.actor_department(session, actor.actor_id),
         },
         "personas": persona_options(session),
         "navigation": navigation(session, actor),
+        "moved_notice": moved_notice(
+            request,
+            session,
+            actor,
+            view_models.screen_label(screen) if view_models.screen_label(screen) != screen else title,
+        ),
         "feedback": feedback(session, actor),
         "agent_status": agent_views.sidebar_status(session, actor),
         "csrf_token": csrf_token(settings, actor.session_id),
@@ -291,7 +318,10 @@ def error_response(
         "screen": "error",
         "title": title,
         "personas": persona_options(session),
-        "navigation": [],
+        # A refused screen keeps the persona's own navigation, so a persona who landed
+        # on a screen it cannot open can still reach one it can.
+        "navigation": navigation(session, actor) if actor is not None else [],
+        "home": view_models.home_for(session, actor) if actor is not None else None,
         "feedback": None,
         "csrf_token": "",
         "fictional_demo": True,
@@ -299,6 +329,7 @@ def error_response(
             {
                 "actor_id": actor.actor_id,
                 "label": actor_label(session, actor.actor_id),
+                "department": view_models.actor_department(session, actor.actor_id),
             }
             if actor is not None
             else None
@@ -362,7 +393,22 @@ async def switch_persona(
         cookie = service.select_actor(actor_id)
     except AuthenticationRequiredError:
         return RedirectResponse("/select", status_code=303)
-    response = RedirectResponse(safe_next(str(form.get(NEXT_FIELD, "")), "/queue"), status_code=303)
+    destination = safe_next(str(form.get(NEXT_FIELD, "")), "/queue")
+    new_actor = service.resolve_actor(SimpleNamespace(cookies={cookie.cookie_name: cookie.value}))
+    wanted = view_models.screen_for_path(destination)
+    if actor_label(session, actor_id) == APPLICANT_LABEL and not destination.startswith(
+        ("/apply", "/city")
+    ):
+        # The applicant's front door is the City website, not a staff page. A switch
+        # made from the City website itself (next already under /apply or /city) is kept.
+        destination = APPLICANT_HOME
+        if wanted and not view_models.may_open_screen(session, new_actor, wanted):
+            destination += f"?moved_from={wanted}"
+    elif wanted and not view_models.may_open_screen(session, new_actor, wanted):
+        # Demo smoothing: the new persona cannot open that screen, so land on its own home.
+        home = view_models.home_for(session, new_actor)
+        destination = f"{home['href']}?moved_from={wanted}"
+    response = RedirectResponse(destination, status_code=303)
     response.set_cookie(**cookie.set_cookie_kwargs())
     return response
 
@@ -435,6 +481,8 @@ def ui_work_queue(
     resolved, refused = _guard(request, session, actor, "queue")
     if refused is not None:
         return refused
+    if actor_label(session, resolved.actor_id) == APPLICANT_LABEL:
+        return RedirectResponse(APPLICANT_HOME, status_code=303)
     queue = view_models.work_queue(
         session,
         resolved,

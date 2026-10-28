@@ -152,8 +152,8 @@
     return function () { var a = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(null, a); }, ms); };
   }
   function init(form) {
-    var banner = form.querySelector("[data-banner]");
-    var card = form.querySelector("[data-testid='completeness-banner']");
+    var statusLine = form.querySelector("[data-status]");
+    var summary = form.querySelector("[data-error-summary]");
     var submit = form.querySelector("[data-testid='submit-application']");
     var dym = form.querySelector("[data-did-you-mean]");
     var address = form.querySelector("[name='address_text']");
@@ -169,12 +169,44 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (state) {
           if (!state) { return; }
-          banner.textContent = state.banner;
-          card.classList.toggle("ok", state.complete);
-          card.classList.toggle("warn", !state.complete);
-          card.setAttribute("data-complete", state.complete ? "true" : "false");
-          if (submit) { submit.disabled = !state.can_submit; }
+          if (statusLine) {
+            statusLine.textContent = state.status || "";
+            statusLine.setAttribute("data-complete", state.can_submit ? "true" : "false");
+          }
+          renderNeeds(state);
         }).catch(function () { /* the server still checks on submit */ });
+    }
+    // After a refused Submit the errors stay up; each one clears as the person fixes it.
+    // Nothing turns red before that, and Submit is never disabled.
+    function renderNeeds(state) {
+      if (!summary) { return; }
+      var anchors = {};
+      (state.blocking || []).forEach(function (item) { anchors[item.anchor] = true; });
+      summary.querySelectorAll("li[data-anchor]").forEach(function (li) {
+        li.hidden = !anchors[li.getAttribute("data-anchor")];
+      });
+      form.querySelectorAll("[data-error-for]").forEach(function (msg) {
+        var anchor = msg.getAttribute("data-error-for");
+        msg.hidden = !anchors[anchor];
+        var control = document.getElementById(anchor);
+        if (control) {
+          if (anchors[anchor]) { control.setAttribute("aria-invalid", "true"); } else { control.removeAttribute("aria-invalid"); }
+        }
+        var wrap = control && control.closest(".field, .doc-row, fieldset");
+        if (wrap) { wrap.classList.toggle("needed", !!anchors[anchor]); }
+      });
+      var any = Object.keys(anchors).length > 0;
+      summary.hidden = !any;
+    }
+    if (summary) { summary.focus(); }
+    function setPill(row, input) {
+      var pill = row.querySelector("[data-testid='doc-status']");
+      var sep = row.querySelector("[data-sent-separately]");
+      var hasFile = input && input.files && input.files.length > 0;
+      var added = row.getAttribute("data-added") === "true";
+      var text = (hasFile || added) ? "Added" : (sep && sep.checked ? "Sent separately" : "Add file");
+      pill.textContent = text;
+      pill.className = "pill " + (text === "Add file" ? "warn" : "ok");
     }
     var slow = debounce(refresh, 250);
     form.addEventListener("input", slow);
@@ -184,11 +216,11 @@
       if (input && input.type === "file") {
         var row = input.closest(".doc-row");
         if (row) {
-          var pill = row.querySelector("[data-testid='doc-status']");
-          var has = input.files && input.files.length > 0;
-          pill.textContent = has ? "Added" : "Add file";
-          pill.className = "pill " + (has ? "ok" : "warn");
+          setPill(row, input);
         }
+      } else if (input && input.hasAttribute && input.hasAttribute("data-sent-separately")) {
+        var drow = input.closest(".doc-row");
+        if (drow) { setPill(drow, drow.querySelector("input[type=file]")); }
       }
     });
     function locate() {
