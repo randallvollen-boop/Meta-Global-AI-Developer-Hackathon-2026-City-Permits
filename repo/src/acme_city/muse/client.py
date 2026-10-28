@@ -48,6 +48,12 @@ MAX_OUTPUT_CEILING: Final = POLICY_MAX_OUTPUT_TOKENS
 #: The default request timeout, in seconds.
 DEFAULT_TIMEOUT_SECONDS: Final = 30.0
 
+#: Why a call is refused when the global provider switch is off.
+PROVIDER_DISABLED_ERROR: Final = (
+    "external AI provider calls are disabled in this deployment "
+    "(ACME_MUSE_PROVIDER_ENABLED)"
+)
+
 #: The placeholder that replaces a credential in any recorded text.
 REDACTED: Final = "[redacted]"
 
@@ -286,6 +292,12 @@ class MuseClient:
         self.check_payload(payload)
         self.request_summary = summarize_request(payload)
 
+        # The global switch is enforced here, at the one place that talks to the
+        # provider, so every caller (the general command, the applicant assistant,
+        # the policy tasks and the triage summary) honours it.
+        if not self._settings.provider_enabled:
+            return ProviderResponse(status="failed", error=PROVIDER_DISABLED_ERROR)
+
         key = self._settings.meta_api_key
         secret = key.get_secret_value() if key is not None else ""
         if not secret:
@@ -367,6 +379,7 @@ __all__ = [
     "MAX_OUTPUT_TOKENS",
     "POLICY_MAX_OUTPUT_TOKENS",
     "META_RESPONSES_URL",
+    "PROVIDER_DISABLED_ERROR",
     "MuseClient",
     "MuseRequestError",
     "ProviderResponse",

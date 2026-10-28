@@ -12,9 +12,9 @@ import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, SecretStr, field_validator, model_validator
 
 DEFAULT_DATABASE_URL: Final = "sqlite:///var/acme_city.db"
 DEFAULT_KEY_FILE: Final = Path("~/.config/ai-keys.env")
@@ -44,6 +44,32 @@ ENV_GIS_BASE_URL: Final = "ACME_GIS_BASE_URL"
 ENV_GIS_AUTO_PROPOSE_SCORE: Final = "ACME_GIS_AUTO_PROPOSE_SCORE"
 ENV_APPLICANT_ASSIST_LIVE: Final = "ACME_APPLICANT_ASSIST_LIVE_ENABLED"
 ENV_POLICY_ASSIST_LIVE: Final = "ACME_POLICY_ASSIST_LIVE_ENABLED"
+#: ``demo`` (the default; the fictional demonstration, unchanged) or ``production``.
+ENV_DEPLOYMENT_MODE: Final = "ACME_DEPLOYMENT_MODE"
+#: Whether the session cookie carries the ``Secure`` attribute.  Unset means on
+#: in production and off in demo.
+ENV_COOKIE_SECURE: Final = "ACME_COOKIE_SECURE"
+#: Whether ``X-Forwarded-Proto`` from a reverse proxy is trusted.  Off by default.
+ENV_TRUST_PROXY_HEADERS: Final = "ACME_TRUST_PROXY_HEADERS"
+#: The global switch for every call to the external AI provider.  Unset means
+#: allowed in demo and denied in production.
+ENV_MUSE_PROVIDER_ENABLED: Final = "ACME_MUSE_PROVIDER_ENABLED"
+
+DEPLOYMENT_MODES: Final = ("demo", "production")
+_TRUE_VALUES: Final = frozenset({"1", "true", "yes", "on"})
+_FALSE_VALUES: Final = frozenset({"0", "false", "no", "off"})
+
+
+def _optional_bool(raw: str | None, name: str) -> bool | None:
+    """Parse an optional boolean setting; unset stays ``None``."""
+    if raw is None or not raw.strip():
+        return None
+    value = raw.strip().lower()
+    if value in _TRUE_VALUES:
+        return True
+    if value in _FALSE_VALUES:
+        return False
+    raise ValueError(f"{name} must be one of 1, true, yes, on, 0, false, no, off")
 
 #: The locator score at or above which the intake agent auto-proposes a parcel
 #: link (it never auto-approves one).
@@ -135,6 +161,44 @@ class Settings(BaseModel):
     meta_api_key: SecretStr | None = None
     key_file: Path | None = None
     secret_is_ephemeral: bool = False
+    #: ``demo`` keeps the fictional demonstration exactly as it is.  ``production``
+    #: removes the persona selector, the simulators and replay, refuses a demo
+    #: database, switches the scenario clock off and requires a stable secret.
+    deployment_mode: Literal["demo", "production"] = "demo"
+    #: Explicit cookie ``Secure`` setting; ``None`` follows the deployment mode.
+    cookie_secure: bool | None = None
+    #: Trust ``X-Forwarded-Proto`` from the reverse proxy in front of the service.
+    trust_proxy_headers: bool = False
+    #: Explicit global AI provider switch; ``None`` follows the deployment mode.
+    muse_provider_enabled: bool | None = None
+
+    @model_validator(mode="after")
+    def _production_requires_stable_secret(self) -> Settings:
+        if self.deployment_mode == "production" and self.secret_is_ephemeral:
+            raise ValueError(
+                "ACME_SECRET_KEY is required in production mode: a generated "
+                "per-process secret would end every session at each restart"
+            )
+        return self
+
+    @property
+    def is_production(self) -> bool:
+        """Return whether the service runs in production mode."""
+        return self.deployment_mode == "production"
+
+    @property
+    def effective_cookie_secure(self) -> bool:
+        """Return whether session cookies are marked ``Secure``."""
+        if self.cookie_secure is not None:
+            return self.cookie_secure
+        return self.is_production
+
+    @property
+    def provider_enabled(self) -> bool:
+        """Return whether any call to the external AI provider is allowed."""
+        if self.muse_provider_enabled is not None:
+            return self.muse_provider_enabled
+        return not self.is_production
 
     @field_validator("secret_key")
     @classmethod
@@ -218,6 +282,10 @@ class Settings(BaseModel):
             "meta_api_key_present": self.meta_api_key is not None,
             "applicant_assist_live_enabled": self.applicant_assist_live_enabled,
             "policy_assist_live_enabled": self.policy_assist_live_enabled,
+            "deployment_mode": self.deployment_mode,
+            "cookie_secure": self.effective_cookie_secure,
+            "trust_proxy_headers": self.trust_proxy_headers,
+            "muse_provider_enabled": self.provider_enabled,
         }
 
     @classmethod
@@ -293,6 +361,17 @@ class Settings(BaseModel):
 
         scenario_clock = (pick(ENV_SCENARIO_CLOCK, "") or "").strip()
 
+        mode = (pick(ENV_DEPLOYMENT_MODE, "demo") or "demo").strip().lower()
+        if mode not in DEPLOYMENT_MODES:
+            raise ValueError(f"{ENV_DEPLOYMENT_MODE} must be 'demo' or 'production', not {mode!r}")
+        cookie_secure = _optional_bool(pick(ENV_COOKIE_SECURE), ENV_COOKIE_SECURE)
+        trust_proxy_headers = bool(
+            _optional_bool(pick(ENV_TRUST_PROXY_HEADERS), ENV_TRUST_PROXY_HEADERS)
+        )
+        muse_provider_enabled = _optional_bool(
+            pick(ENV_MUSE_PROVIDER_ENABLED), ENV_MUSE_PROVIDER_ENABLED
+        )
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -320,6 +399,10 @@ class Settings(BaseModel):
             meta_api_key=meta_api_key,
             key_file=resolved_key_file,
             secret_is_ephemeral=ephemeral,
+            deployment_mode=mode,
+            cookie_secure=cookie_secure,
+            trust_proxy_headers=trust_proxy_headers,
+            muse_provider_enabled=muse_provider_enabled,
         )
 
 
@@ -331,7 +414,12 @@ __all__ = [
     "DEFAULT_MUSE_LIVE_CALL_CAP",
     "DEFAULT_MUSE_IMAGE_DAILY_CAP",
     "DEFAULT_MUSE_MODEL_ALLOWLIST",
+    "DEPLOYMENT_MODES",
     "ENV_APPLICANT_ASSIST_LIVE",
+    "ENV_COOKIE_SECURE",
+    "ENV_DEPLOYMENT_MODE",
+    "ENV_MUSE_PROVIDER_ENABLED",
+    "ENV_TRUST_PROXY_HEADERS",
     "ENV_POLICY_ASSIST_LIVE",
     "KEY_FILE_ALLOWED_NAMES",
     "Settings",

@@ -317,7 +317,8 @@ def dispatch_assist(
             client=client,
             now=moment,
         )
-    fixtures = load_replay_fixtures(fixture_root_path)
+    # Production mode never substitutes a recorded demonstration answer.
+    fixtures = {} if settings.is_production else load_replay_fixtures(fixture_root_path)
     key = replay_key(
         question=question,
         context=context,

@@ -73,7 +73,9 @@ class SessionService:
         self._settings = settings
         self.cookie_name = cookie_name or DEFAULT_COOKIE_NAME
         self.ttl_minutes = ttl_minutes or DEFAULT_SESSION_TTL_MINUTES
-        self.secure_cookies = bool(secure_cookies)
+        self.secure_cookies = (
+            settings.effective_cookie_secure if secure_cookies is None else bool(secure_cookies)
+        )
         self.same_site = "Lax"
         self.http_only = True
 
@@ -117,6 +119,9 @@ class SessionService:
             # selectable personas may act.
             raise AuthenticationRequiredError("that actor is not available for a session")
 
+        return self._issue(actor_id)
+
+    def _issue(self, actor_id: str) -> SessionCookie:
         now = utc_now()
         expires_at = now + timedelta(minutes=self.ttl_minutes)
         session_id = secrets.token_urlsafe(32)
@@ -139,6 +144,20 @@ class SessionService:
             same_site=self.same_site,
             secure=self.secure_cookies,
         )
+
+    def establish_session(self, actor_id: str) -> SessionCookie:
+        """Establish a session for an actor that a verified identity was mapped to.
+
+        This is the seam for a real identity provider (see ``auth/identity.py``).
+        Unlike :meth:`select_actor`, it does not need the actor to be one of the
+        selectable demonstration personas; the actor must still exist and be active.
+        """
+        actor = self._session.execute(
+            select(governance.Actor).where(governance.Actor.actor_id == actor_id)
+        ).scalar_one_or_none()
+        if actor is None or not actor.active:
+            raise AuthenticationRequiredError("that actor is not available for a session")
+        return self._issue(actor_id)
 
     def resolve_actor(self, request: Request) -> ActorContext:
         """Resolve the acting actor from the request cookie.

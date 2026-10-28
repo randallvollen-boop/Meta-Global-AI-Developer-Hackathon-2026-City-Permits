@@ -131,6 +131,12 @@ class MuseImageClient:
         Exactly one request is sent.  A failure is returned rather than
         raised, so that the attempt can be recorded with its real status.
         """
+        if not self._settings.provider_enabled:
+            return ImageResult(
+                ok=False,
+                error="external AI provider calls are disabled in this deployment "
+                "(ACME_MUSE_PROVIDER_ENABLED)",
+            )
         key = self._settings.meta_api_key
         secret = key.get_secret_value() if key is not None else ""
         if not secret:

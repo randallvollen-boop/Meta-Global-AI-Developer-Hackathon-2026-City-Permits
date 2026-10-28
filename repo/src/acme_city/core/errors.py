@@ -29,6 +29,34 @@ class AcmeError(Exception):
         return payload
 
 
+    def to_public_dict(self) -> dict[str, Any]:
+        """Return the sanitized production envelope.
+
+        Production keeps the stable ``code`` and a fixed message per status; the
+        supplied detail text and extra fields are dropped, except the numeric
+        ``current_version`` of a conflict and the message of a validation failure
+        (which the contract keeps free of private record values).
+        """
+        message = _PUBLIC_MESSAGES.get(self.status_code, "the request could not be completed")
+        if self.status_code == 422:
+            message = self.message
+        payload: dict[str, Any] = {"code": self.code, "message": message}
+        if isinstance(self.details.get("current_version"), int):
+            payload["current_version"] = self.details["current_version"]
+        return payload
+
+
+_PUBLIC_MESSAGES: dict[int, str] = {
+    400: "the request could not be completed",
+    401: "authentication is required",
+    403: "this action is outside your granted scope",
+    404: "the record was not found",
+    409: "the request conflicts with the current state of the record",
+    422: "the request failed validation",
+    503: "the service is not available",
+}
+
+
 class AuthenticationRequiredError(AcmeError):
     """No valid server-held session was presented."""
 

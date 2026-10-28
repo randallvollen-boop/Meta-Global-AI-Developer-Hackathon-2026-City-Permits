@@ -176,7 +176,9 @@ class MuseRunCommand(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     task: Literal["extraction", "match_proposal"]
-    mode: Literal["live", "replay", "cached"] = "live"
+    #: The default is ``replay`` (which must name its fixture and source run), so
+    #: a command that omits the mode can never spend a live call.  Live is opt-in.
+    mode: Literal["live", "replay", "cached"] = "replay"
     application_id: str = Field(min_length=1, max_length=64)
     document_ids: list[str] = Field(default_factory=list)
     candidate_ids: list[str] = Field(default_factory=list)
@@ -306,6 +308,14 @@ class MuseService:
         if command.schema_version and command.schema_version != config["schema_version"]:
             raise ValidationError(
                 "the requested schema version is not the current schema version"
+            )
+        if command.mode == "live" and not self._settings.provider_enabled:
+            raise ValidationError(
+                "live model runs are disabled in this deployment (ACME_MUSE_PROVIDER_ENABLED)"
+            )
+        if command.mode == "replay" and self._settings.is_production:
+            raise ValidationError(
+                "fixture replay is not available in production mode"
             )
         if command.mode == "replay" and not command.replay_fixture:
             raise ValidationError("a replay must name the fixture it replays")
