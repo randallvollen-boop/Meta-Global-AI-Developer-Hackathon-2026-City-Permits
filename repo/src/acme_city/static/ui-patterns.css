@@ -8,7 +8,7 @@
        bottom-left), so it never covers either. */
 
 :root {
-  --ui-clear-top: 68px;
+  --ui-clear-top: 112px; /* clears a shown toast: top 64px + its height */
   --ui-clear-bottom: 68px;
   --ui-drawer-w: 460px;
 }

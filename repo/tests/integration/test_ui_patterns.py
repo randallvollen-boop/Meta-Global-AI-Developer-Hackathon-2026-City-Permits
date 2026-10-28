@@ -254,7 +254,9 @@ def test_applicant_is_refused_muse_run_details_with_no_data(client: TestClient) 
     assert response.status_code == 403
     for leak in ("Prompt version", "Latency", "Provider", rid):
         assert leak not in response.text
-    page = client.get(f"/queue?detail=muse-run:{rid}")
+    # The applicant's /queue now redirects to the City website, so the in-page
+    # refusal is checked on the applicant's own tracker, which mounts the drawer.
+    page = client.get(f"/apply/track?detail=muse-run:{rid}")
     assert 'data-detail-status="403"' in page.text
     assert "Prompt version" not in page.text.split('id="ui-drawer"', 1)[1]
 
