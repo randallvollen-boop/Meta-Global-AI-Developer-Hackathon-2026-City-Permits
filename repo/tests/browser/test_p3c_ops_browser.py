@@ -111,7 +111,8 @@ def test_the_administrator_answers_and_the_applicant_reads_the_reply(browser, se
         page.wait_for_url(f"{server.base_url}{landing}")
         return context, page
 
-    admin_context, admin = sign_in("persona_city_administrator", "/queue")
+    # Changed deliberately (the City Administrator restyle): the Administrator lands on /overview.
+    admin_context, admin = sign_in("persona_city_administrator", "/overview")
     try:
         admin.goto(f"{server.base_url}/ops/support?request={made['request_id']}", wait_until="domcontentloaded")
         assert "BROWSER-QUESTION-7781" in admin.locator('[data-testid="support-requests"]').inner_text()
