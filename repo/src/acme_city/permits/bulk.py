@@ -30,7 +30,7 @@ from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import NotFoundError, ValidationError
+from acme_city.core.errors import ValidationError
 from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.queues import awaits_intake
 from acme_city.permits.service import PERMIT_DOMAIN, PermitService
