@@ -1317,7 +1317,6 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 source=display.source_name(session, system_id, snap.source_dataset_id),
                 status="resolved" if decided is not None else "needs_review",
                 created_at=decided.decided_at if decided is not None else proposal.created_at,
-                priority="Conflicting evidence" if proposal.conflicting_evidence and decided is None else "",
                 legacy_testid=("crosswalk-row" if decided is not None else "match-proposal"),
                 link_status=decided.link_status if decided is not None else "proposed",
                 sort_key=(proposal.created_at,),
