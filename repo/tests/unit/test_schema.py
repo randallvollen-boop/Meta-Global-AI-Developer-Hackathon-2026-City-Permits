@@ -130,6 +130,9 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
         "policy_scenarios",
         "policy_scenario_revisions",
         "policy_runs",
+        # Policy 4 (migration 0012): draft conversions.  Added deliberately after
+        # the merge of main, whose schema group list did not name the table.
+        "policy_draft_conversions",
     ),
     # Parity phase 3c: the support cases the City Administrator records.  Added
     # to the required groups deliberately: the table is new schema.
