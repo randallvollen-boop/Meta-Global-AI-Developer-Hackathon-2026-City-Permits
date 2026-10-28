@@ -577,7 +577,27 @@ def ui_insight_city(
         synthetic=synthetic,
     )
     context = page_context(
-        request, session, resolved, screen="insight_city", title="City view", view=view
+        request,
+        session,
+        resolved,
+        screen="insight_city",
+        title="City view",
+        view=view,
+        model_runs=[],
+        evidence=[
+            {
+                "label": "Stored applications, decisions and permits",
+                "kind": "database query",
+                "detail": f"{view['total_before_filters']} permits in the view; every figure is a count over these rows",
+                "received_at": None,
+            },
+            {
+                "label": "Synthetic data",
+                "kind": "label",
+                "detail": view["synthetic"]["note"],
+                "received_at": None,
+            },
+        ],
     )
     return render(request, "insight_city.html", context)
 
