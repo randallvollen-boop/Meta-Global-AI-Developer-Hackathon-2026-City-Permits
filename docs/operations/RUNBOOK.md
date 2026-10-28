@@ -539,6 +539,11 @@ JavaScript the answer is rendered in place instead.
 default**.  A credential alone never enables a live answer for an applicant.
 This part of the work answers without a model; the live path arrives with
 the part that adds it.
+## Permit type icons
+
+Each of the 17 permit types has one bundled seed icon (a 192 by 192 WebP in `repo/src/acme_city/static/permit-type-icons/`, named in `PERMIT_TYPE_SEED_ICONS`). The reset loads them with source `seed`; `ensure_seeded` only fills a type that has no icon rows, so no migration is involved and an administrator's saved icon is never overwritten. To change a bundled icon, replace the file and reset the demonstration data.
+
+The original three (commercial alteration, new building, sign) predate this note. The other 14 were generated with Muse Image (`muse-image-1.0`) on 2026-10-28 outside the in-app generate-and-save flow, 14 calls at $0.01, $0.14 in total, then downscaled from 1600 by 1600 to 192 by 192. Their file names, sha256 prefixes and prompts are in `docs/operations/permit-type-icons-manifest.json`; the 1600 by 1600 originals are not kept in the repository. Because they bypassed the in-app flow they have no generation audit record and do not count toward the daily generation caps.
 
 ## Failure handling
 

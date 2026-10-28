@@ -102,7 +102,7 @@
         <input type="hidden" name="action_id" value="agent.run.{{ agent.agent_key }}">
         <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
         <button type="submit" class="btn sm primary" data-testid="agent-run-all"
-                {% if not agent.is_awake %}disabled{% endif %}>
+                {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
           {{ 'Process all waiting' if agent.agent_key == 'intake' else 'Run all' }}
         </button>
       </form>
@@ -111,9 +111,10 @@
   </div>
   <div class="card-b">
     {% if not agent.is_awake %}
-    <p class="lock" data-testid="agent-sleep-notice">
+    <p class="lock" id="agent-sleep-notice" data-testid="agent-sleep-notice">
       <svg aria-hidden="true"><use href="#i-lock"/></svg>
-      The agent is asleep. Wake the agent first.
+      The agent is asleep, so the Run buttons are off.
+      {% if agent.can_toggle %}Use Wake agent above to turn them on.{% else %}Your role cannot wake it; ask a City Administrator.{% endif %}
     </p>
     {% endif %}
     <table class="data-table" data-testid="agent-waiting-table">
@@ -136,13 +137,13 @@
               <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
               <input type="hidden" name="application_id" value="{{ row.application_id }}">
               <button type="submit" class="btn sm" data-testid="agent-run-one"
-                      {% if not agent.is_awake %}disabled{% endif %}>
+                      {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
                 {{ 'Process one' if agent.agent_key == 'intake' else 'Run' }}
               </button>
             </form>
             {% else %}
             <span class="lock" title="Your persona does not hold the run grant">
-              <svg aria-hidden="true"><use href="#i-lock"/></svg>
+              <svg aria-hidden="true"><use href="#i-lock"/></svg> <span data-testid="agent-run-no-grant">Your role cannot do this.</span>
             </span>
             {% endif %}
           </td>

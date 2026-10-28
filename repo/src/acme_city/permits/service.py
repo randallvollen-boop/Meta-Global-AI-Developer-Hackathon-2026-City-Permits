@@ -42,6 +42,7 @@ from acme_city.permits.schemas import (
     SubmitApplicationCommand,
 )
 from acme_city.persistence.models import finance, permit, registry
+from acme_city.kernel.inputs import build_inputs, missing_required_fields
 from acme_city.rules.evaluator import evaluate as evaluate_inputs
 from acme_city.rules.evaluator import overall_status, worst_status
 from acme_city.rules.service import RuleCatalogService
@@ -601,17 +602,15 @@ class PermitService:
         evaluation results, not here.
         """
         blockers: list[Blocker] = []
-        for field in permit_type.required_fields or []:
-            value = inputs.get(field)
-            if value is None or (isinstance(value, str) and not value.strip()):
-                blockers.append(
-                    Blocker(
-                        code="missing_required_field",
-                        detail=f"the required input {field!r} was not supplied",
-                        subject_type="permit_type",
-                        subject_id=permit_type.permit_type_id,
-                    )
+        for field in missing_required_fields(permit_type.required_fields or [], inputs):
+            blockers.append(
+                Blocker(
+                    code="missing_required_field",
+                    detail=f"the required input {field!r} was not supplied",
+                    subject_type="permit_type",
+                    subject_id=permit_type.permit_type_id,
                 )
+            )
         blockers.extend(self.site_blockers(application))
         blockers.extend(self.credential_blockers(application, inputs, self._now))
         return blockers
@@ -1096,25 +1095,6 @@ def _split_unit(part: str) -> tuple[str, str | None]:
             if index > 0:
                 return part[:index].strip(), part[index:].strip()
     return part, None
-
-
-def build_inputs(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Return the evaluated inputs of a submitted revision.
-
-    The submitted facts are the inputs.  The parcel reference is presented
-    under the name the catalogue uses, and the declared valuation is kept in
-    cents beside its decimal form.
-    """
-    inputs = dict(snapshot)
-    if "parcel_number" not in inputs:
-        parcel = inputs.get("submitted_parcel")
-        if parcel:
-            inputs["parcel_number"] = parcel
-    if "valuation_cents" not in inputs and inputs.get("valuation") is not None:
-        from acme_city.finance.calculator import to_cents
-
-        inputs["valuation_cents"] = to_cents(inputs["valuation"])
-    return inputs
 
 
 def rule_result_statuses(evaluation: permit.Evaluation) -> list[str]:

@@ -1,0 +1,73 @@
+{# Shared interface patterns.  Import with context:
+
+     {% import "_ui.html" as ui with context %}
+
+   ui.info('glossary_key')                    P1  ⓘ popover beside a label
+   ui.help_button('screen_key')               P2  ? button for a page header
+   ui.detail_link('kind', id, 'label')        P3  link that opens the drawer
+   ui.drawer()                                P3  the one mount point, in a layout
+
+   Text comes from config/ui_glossary.json; detail content comes from the
+   registered resolver (acme_city/ui/patterns.py).  Nothing here holds data. #}
+
+{% macro info(key) -%}
+{%- set entry = ui_term(key) -%}
+{%- if entry -%}
+{%- set uid = 'ui-info-' ~ ui_uid() -%}
+<span class="ui-info" data-ui-info>
+  <button type="button" class="ui-info-btn" data-testid="ui-info-btn" data-info-key="{{ key }}" aria-expanded="false" aria-controls="{{ uid }}" aria-label="About: {{ entry.label }}"><span aria-hidden="true">i</span></button>
+  <span class="ui-info-pop" id="{{ uid }}" role="note" data-testid="ui-info-pop" hidden>{{ entry.text }}</span>
+  <details class="ui-info-fallback"><summary aria-label="About: {{ entry.label }}"><span aria-hidden="true">i</span></summary><span class="ui-info-text">{{ entry.text }}</span></details>
+</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro detail_link(kind, item_id, label, cls='') -%}
+<a class="ui-detail-link {{ cls }}" href="{{ ui_detail_href(request, kind, item_id) }}" data-ui-detail data-detail-kind="{{ kind }}" data-detail-id="{{ item_id }}" aria-haspopup="dialog" data-testid="ui-detail-link">{{ label }}</a>
+{%- endmacro %}
+
+{% macro help_button(screen) -%}
+{%- if ui_screen_help(screen) -%}
+<a class="ui-help" href="{{ ui_detail_href(request, 'help', screen) }}" data-ui-detail data-detail-kind="help" data-detail-id="{{ screen }}" aria-haspopup="dialog" aria-label="Help for this screen" title="Help for this screen" data-testid="ui-help"><span aria-hidden="true">?</span></a>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro drawer_inner(st) -%}
+{%- set ok = st.status == 200 and st.view -%}
+<div class="ui-drawer-head">
+  <div>
+    <h2 id="ui-drawer-title" tabindex="-1" data-testid="ui-drawer-title">{{ st.view.title if ok else 'Detail not available' }}</h2>
+    {% if ok and st.view.subtitle %}<p class="ui-drawer-sub">{{ st.view.subtitle }}</p>{% endif %}
+  </div>
+  <a class="ui-drawer-close" href="{{ st.close_href }}" data-ui-drawer-close data-testid="ui-drawer-close" aria-label="Close">&times;</a>
+</div>
+<div class="ui-drawer-body" data-testid="ui-drawer-body" data-detail-status="{{ st.status }}">
+{% if ok %}
+  {% for section in st.view.sections %}
+  <section class="ui-drawer-section">
+    <h3>{{ section.heading }}</h3>
+    {% for line in section.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if section.rows %}
+    <dl>
+      {% for row in section.rows %}
+      <div><dt>{{ row.label }}{% if row.info %} {{ info(row.info) }}{% endif %}</dt><dd{% if row.mono %} class="mono"{% endif %}>{{ row.value }}</dd></div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+  </section>
+  {% endfor %}
+  {% if st.view.links %}
+  <ul class="ui-drawer-links">{% for text, href in st.view.links %}<li><a href="{{ href }}">{{ text }}</a></li>{% endfor %}</ul>
+  {% endif %}
+{% else %}
+  <p class="ui-drawer-refused" role="alert" data-testid="ui-drawer-refused">{{ st.message }}</p>
+{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro drawer() -%}
+{%- set st = ui_drawer if ui_drawer is defined else none -%}
+<aside id="ui-drawer" class="ui-drawer{% if st %} is-open{% endif %}" role="dialog" aria-modal="true" aria-labelledby="ui-drawer-title" data-testid="ui-drawer"{% if not st %} hidden{% endif %}>
+  <div class="ui-drawer-panel" id="ui-drawer-content">{% if st %}{{ drawer_inner(st) }}{% endif %}</div>
+</aside>
+{%- endmacro %}

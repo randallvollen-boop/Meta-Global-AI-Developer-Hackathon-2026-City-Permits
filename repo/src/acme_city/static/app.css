@@ -579,10 +579,10 @@ details.action:not([open]) > .action-version { }
 }
 .notice svg { width: 14px; height: 14px; flex: none; }
 .toast {
-  position: fixed; right: 18px; bottom: 18px; background: var(--fg); color: var(--bg);
+  position: fixed; right: 18px; top: 64px; max-width: calc(100vw - 36px); background: var(--fg); color: var(--bg);
   padding: 10px 14px; border-radius: 12px; font-size: .82rem; font-weight: 500;
   box-shadow: var(--shadow); display: flex; gap: 8px; align-items: center; z-index: 40;
-  transform: translateY(12px); opacity: 0; transition: .2s ease; pointer-events: none;
+  transform: translateY(-12px); opacity: 0; transition: .2s ease; pointer-events: none;
 }
 .toast.on { transform: none; opacity: 1; }
 
@@ -777,3 +777,35 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .did-you-mean { min-height: 1.4em; }
 .form-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill-legend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+/* Required markers and guarded-button explanations. */
+.req-star { color: var(--danger, #b3261e); font-weight: 700; margin-left: 0.15em; }
+.required-legend { margin: 0.25rem 0; }
+.portal-form .field.needed > input, .portal-form .field.needed > select, .portal-form .field.needed > textarea { border-left: 3px solid var(--warn, #b26a00); }
+.doc-row.needed .doc-label { border-left: 3px solid var(--warn, #b26a00); padding-left: 0.4rem; }
+.needs-list { margin: 0.6rem 0; }
+.needs-list ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.guard-reason { margin: 0.3rem 0 0; font-size: 0.85rem; }
+.optional-tag { color: var(--fg-2); font-weight: 400; margin-left: 0.25em; }
+.error-summary { border: 3px solid var(--danger, #b3261e); padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 6px; }
+.error-summary h2 { margin: 0 0 0.3rem; font-size: 1.1rem; color: var(--danger, #b3261e); }
+.error-summary ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.field-error { color: var(--danger, #b3261e); font-weight: 600; font-size: 0.85rem; }
+.needs-status { margin: 0.4rem 0; }
+
+/* Account in the top bar (the persona switcher lives only in the Demo controls). */
+.account-menu { position: relative; }
+.account-trigger {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-2);
+  font-size: .82rem; font-weight: 600; color: var(--fg);
+}
+.account-trigger::-webkit-details-marker { display: none; }
+.account-trigger .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.account-dept { font-weight: 400; color: var(--fg-2); }
+.account-panel {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 14rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: var(--shadow);
+}
+.account-line { margin: 0 0 8px; font-size: .82rem; }
+@media (max-width: 760px) { .account-dept { display: none; } .toast { top: 56px; } }

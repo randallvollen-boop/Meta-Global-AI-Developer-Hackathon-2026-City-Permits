@@ -39,7 +39,12 @@
     button.innerHTML =
       '<svg aria-hidden="true"><use href="#i-' + (dark ? "sun" : "moon") + '"/></svg>';
   }
+  var themeBound = false;
   function initTheme() {
+    // The script is deferred, so it can run initTheme twice (once at load, once on
+    // DOMContentLoaded). A second click listener would undo every toggle.
+    if (themeBound) return;
+    themeBound = true;
     try {
       var stored = window.localStorage.getItem("acme-theme");
       if (stored === "dark" || stored === "light") {

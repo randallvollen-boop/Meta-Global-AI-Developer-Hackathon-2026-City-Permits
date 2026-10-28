@@ -74,6 +74,8 @@ class FamilyResult:
     duration_seconds: float
     outcomes: dict[str, str] = field(default_factory=dict)
     junit_path: Path | None = None
+    collect_exit_code: int = 0
+    nodes: list[str] = field(default_factory=list)
 
 
 def load_inventory(path: Path) -> dict[str, Any]:
@@ -101,8 +103,8 @@ def selected_families(inventory: dict[str, Any], *, mode: str) -> list[dict[str,
     return chosen
 
 
-def collect_nodes(paths: list[str]) -> list[str]:
-    """Return the node identifiers pytest collects for the given paths."""
+def collect_nodes(paths: list[str]) -> tuple[list[str], int]:
+    """Return the node identifiers pytest collects for the given paths and its exit code."""
     command = [sys.executable, "-m", "pytest", "--collect-only", "-q", *paths]
     completed = subprocess.run(
         command,
@@ -116,7 +118,7 @@ def collect_nodes(paths: list[str]) -> list[str]:
         for line in completed.stdout.splitlines()
         if "::" in line and not line.startswith(" ")
     ]
-    return nodes
+    return nodes, completed.returncode
 
 
 def junit_key(nodeid: str) -> tuple[str, str]:
@@ -158,7 +160,7 @@ def run_family(
 ) -> FamilyResult:
     """Run one family of tests and keep the exit code of the child."""
     started = time.monotonic()
-    nodes = collect_nodes(paths)
+    nodes, collect_exit_code = collect_nodes(paths)
     junit_path = artifacts / f"{name}.junit.xml"
     command = [
         sys.executable,
@@ -178,6 +180,9 @@ def run_family(
         check=False,
     )
     duration = time.monotonic() - started
+    (artifacts / f"{name}.log").write_text(
+        completed.stdout + completed.stderr, encoding="utf-8"
+    )
     outcomes, reasons = read_junit(junit_path, nodes)
     passed = sum(1 for value in outcomes.values() if value == "passed")
     failed = sum(1 for value in outcomes.values() if value == "failed")
@@ -195,6 +200,8 @@ def run_family(
         duration_seconds=duration,
         outcomes={node: value.split(":")[0] for node, value in outcomes.items()},
         junit_path=junit_path,
+        collect_exit_code=collect_exit_code,
+        nodes=list(nodes),
     )
 
 
@@ -214,11 +221,8 @@ def status_for(
                 "the check has no collected node yet",
             )
         return CHECK_STATUS_FAILED, "the check has no executable node"
-    if check.get("live_required") and not live_executed:
-        return (
-            CHECK_STATUS_BLOCKED,
-            "the check needs a live provider run, which this run did not make",
-        )
+    # A deterministic failure is reported as a failure even on a check that
+    # also needs live evidence; "blocked" never hides a failing node.
     missing = [nodeid for nodeid in node_ids if nodeid not in outcomes]
     if missing:
         return (
@@ -228,6 +232,11 @@ def status_for(
     failed = [nodeid for nodeid in node_ids if outcomes[nodeid] == "failed"]
     if failed:
         return CHECK_STATUS_FAILED, f"the node {failed[0]} failed"
+    if check.get("live_required") and not live_executed:
+        return (
+            CHECK_STATUS_BLOCKED,
+            "the check needs a live provider run, which this run did not make",
+        )
     skipped = [nodeid for nodeid in node_ids if outcomes[nodeid] == "skipped"]
     if skipped:
         reason = reasons.get(skipped[0], "the test was skipped")
@@ -652,12 +661,32 @@ def main(argv: list[str] | None = None) -> int:
                 result.junit_path, name=f"{name}.junit.xml", kind="report"
             )
             artifact_hashes[name] = reference.sha256
+        log_path = artifacts / f"{name}.log"
+        if log_path.is_file():
+            recorder.record_artifact(log_path, name=f"{name}.log", kind="log")
         if result.collected == 0:
             failures.append(f"the family {name} collected no test")
             recorder.record_failure(f"the family {name} collected no test")
         elif result.failed:
             failures.append(
                 f"the family {name} failed: {result.failed} failing test(s)"
+            )
+        if result.collect_exit_code != 0:
+            failures.append(
+                f"the family {name} could not be collected cleanly: "
+                f"exit {result.collect_exit_code}"
+            )
+        if result.exit_code != 0 and not result.failed:
+            # pytest failed without a failing test case in the report, e.g. an
+            # internal or session-finalization error; that still fails the run.
+            failures.append(
+                f"the family {name} exited {result.exit_code} without a failing test"
+            )
+        not_run = [node for node in result.nodes if node not in result.outcomes]
+        if not_run:
+            failures.append(
+                f"the family {name} collected {len(not_run)} test(s) that reported no outcome, "
+                f"first {not_run[0]}"
             )
         if not args.quiet:
             print(

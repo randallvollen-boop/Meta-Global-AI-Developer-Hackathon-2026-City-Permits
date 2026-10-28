@@ -27,7 +27,9 @@ def sign_in(context, server: BrowserServer, actor_id: str):
     page = context.new_page()
     page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
     page.locator(f'button[data-persona="{actor_id}"]').click()
-    page.wait_for_url(f"{server.base_url}/queue")
+    # The Applicant now lands on the City of Acme website; staff land on /queue.
+    landing = "/city/" if actor_id == "persona_applicant" else "/queue"
+    page.wait_for_url(f"{server.base_url}{landing}")
     return page
 
 

@@ -130,11 +130,18 @@
       <p class="muted" style="margin:0">{{ queue.definitions.age }} {{ queue.definitions.target }}</p>
       <p style="margin:0">
         <button type="submit" class="button button-primary btn primary" data-testid="intake-bulk-submit"
-                {% if not can_process or not agent_awake or not queue.rows %}disabled{% endif %}>Process selected with agent</button>
+                {% if not can_process or not agent_awake or not queue.rows %}disabled aria-describedby="intake-bulk-reason"{% endif %}>Process selected with agent</button>
       </p>
     </div>
-    {% if not agent_awake %}
-    <p class="lock" data-testid="intake-bulk-locked">The intake agent is asleep. A City Administrator wakes it on the Intake agent screen.</p>
+    {% if not can_process or not agent_awake or not queue.rows %}
+    <div class="lock" id="intake-bulk-reason" data-testid="intake-bulk-reason">
+      <p style="margin:0">Process selected is unavailable:</p>
+      <ul style="margin:0.2rem 0 0 1.1rem">
+        {% if not can_process %}<li data-testid="intake-bulk-no-grant">Your role cannot run the intake agent.</li>{% endif %}
+        {% if not agent_awake %}<li data-testid="intake-bulk-locked">The intake agent is asleep. A City Administrator wakes it on the Intake agent screen.</li>{% endif %}
+        {% if not queue.rows %}<li data-testid="intake-bulk-empty">No case is in this view to process.</li>{% endif %}
+      </ul>
+    </div>
     {% endif %}
   </form>
 </section>

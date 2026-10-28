@@ -276,6 +276,16 @@ def holds_grant(
     return False
 
 
+def actor_department(session: Session, actor_id: str | None) -> str:
+    """Return the department on an actor record (display information only)."""
+    if not actor_id:
+        return ""
+    row = session.execute(
+        select(governance.Actor).where(governance.Actor.actor_id == actor_id)
+    ).scalar_one_or_none()
+    return (row.department or "") if row is not None else ""
+
+
 def actor_label(session: Session, actor_id: str | None) -> str:
     """Return the display label of one actor."""
     if not actor_id:
@@ -467,6 +477,47 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
         if item["key"] == "queue" and total:
             item["count"] = total
     return items
+
+
+def screen_for_path(path: str) -> str | None:
+    """Return the staff screen key a path belongs to, or ``None`` for any other path.
+
+    The longest matching ``SCREENS`` href wins, so ``/queue/intake`` is the intake
+    queue and not the work queue. A case page is the permit workspace.
+    """
+    path = path.split("?", 1)[0].split("#", 1)[0].rstrip("/") or "/"
+    if path.startswith("/permits/"):
+        return "permit"
+    best: tuple[int, str] | None = None
+    for screen in SCREENS:
+        href = screen["href"]
+        if href and (path == href or path.startswith(href + "/")):
+            if best is None or len(href) > best[0]:
+                best = (len(href), screen["key"])
+    return best[1] if best else None
+
+
+def screen_label(key: str) -> str:
+    return next((screen["label"] for screen in SCREENS if screen["key"] == key), key)
+
+
+def may_open_screen(session: Session, actor: ActorContext, key: str) -> bool:
+    """Return whether the persona holds a grant for a screen (the guard's own predicate)."""
+    return any(
+        holds_grant(session, actor, permission, domain_id)
+        for permission, domain_id in SCREEN_PERMISSIONS.get(key, ())
+    )
+
+
+def home_for(session: Session, actor: ActorContext) -> dict[str, str]:
+    """Return the first screen of the persona's own navigation.
+
+    A persona with no staff screen (the Applicant) lands on the City website.
+    """
+    for item in navigation(session, actor):
+        if item.get("href"):
+            return {"label": item["label"], "href": item["href"], "key": item["key"]}
+    return {"label": "the City website", "href": "/city/", "key": "city"}
 
 
 def queue_links(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
@@ -1980,7 +2031,7 @@ def _applicant_source_record(
 
 
 def permit_type_icons(session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the five permit types with their current and candidate icons.
+    """Return every permit type with their current and candidate icons.
 
     Seed icons are loaded by the fixture reset, so rendering writes nothing.
     Generation is never
@@ -2987,6 +3038,13 @@ def permit_workspace(
             .order_by(permit.Document.document_type, permit.Document.version)
         ).scalars().all()
     ]
+    from acme_city.applicant_portal.service import declared_separately
+
+    stored_types = {item["document_type"] for item in documents}
+    # The applicant's statement only; none of these has a stored file.
+    documents_declared_separately = [
+        item for item in declared_separately(application) if item not in stored_types
+    ]
     parties = [
         {
             "party_id": row.party_id,
@@ -3218,6 +3276,7 @@ def permit_workspace(
         "proposed": proposed,
         "issued": issued,
         "documents": documents,
+        "documents_declared_separately": documents_declared_separately,
         "evaluations": evaluations,
         "evaluation": evaluation_view,
         "decisions": decisions,
@@ -3889,6 +3948,11 @@ __all__ = [
     "SCREEN_DOMAIN",
     "SCREEN_PERMISSIONS",
     "SCREENS",
+    "actor_department",
+    "home_for",
+    "may_open_screen",
+    "screen_for_path",
+    "screen_label",
     "action",
     "allowed_actions_for",
     "allows",

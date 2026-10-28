@@ -490,3 +490,15 @@ def test_the_fax_scenario_carries_an_unreadable_page() -> None:
     assert record.channel == "fax"
     flags = [flag for document in record.documents for flag in document.quality]
     assert "unreadable" in flags
+
+
+def test_the_run_buttons_of_a_sleeping_agent_say_why(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    body = client.get("/agent/intake").text
+    flat = body.replace("\n", " ")
+    assert re.search(r'data-testid="agent-run-all"\s+disabled aria-describedby="agent-sleep-notice"', flat)
+    assert 'id="agent-sleep-notice"' in body
+    assert "Your role cannot wake it; ask a City Administrator." in body
+    choose(client, "persona_city_administrator")
+    body = client.get("/agent/intake").text
+    assert "Use Wake agent above to turn them on." in body

@@ -15,6 +15,36 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+INVENTORY_PATH = REPO_ROOT / "config" / "check_inventory.json"
+
+
+def pytest_only_paths() -> list[str]:
+    """Return the test directories the deterministic acceptance run does not execute.
+
+    The deterministic-acceptance step runs every non-browser family of the
+    check inventory with its own evidence, so the plain pytest step runs only
+    what that step leaves out: the browser families and any test directory no
+    family declares.  Every collected test still runs exactly once.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    try:
+        from run_acceptance import load_inventory, selected_families
+    finally:
+        sys.path.pop(0)
+    covered = {
+        Path(path).as_posix().rstrip("/")
+        for family in selected_families(load_inventory(INVENTORY_PATH), mode="deterministic")
+        for path in family.get("paths") or []
+    }
+    return sorted(
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in (REPO_ROOT / "tests").iterdir()
+        if (
+            (path.is_dir() and path.name != "__pycache__")
+            or (path.is_file() and path.name.startswith("test_") and path.suffix == ".py")
+        )
+        and path.relative_to(REPO_ROOT).as_posix() not in covered
+    )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -114,13 +144,18 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, "scripts/check_test_collection.py", str(collection)],
             None,
         ),
-        ("pytest", [sys.executable, "-m", "pytest", "-q"], None),
         (
             "alembic-upgrade",
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             None,
         ),
         ("alembic", [sys.executable, "-m", "alembic", "check"], None),
+        (
+            "publishable-tree",
+            [sys.executable, "scripts/scan_publishable_tree.py"],
+            None,
+        ),
+        ("pytest", [sys.executable, "-m", "pytest", "-q", *pytest_only_paths()], None),
         (
             "deterministic-acceptance",
             [
@@ -135,11 +170,6 @@ def main(argv: list[str] | None = None) -> int:
         (
             "evidence-verification",
             [sys.executable, "scripts/verify_evidence.py", str(deterministic)],
-            None,
-        ),
-        (
-            "publishable-tree",
-            [sys.executable, "scripts/scan_publishable_tree.py"],
             None,
         ),
     ]

@@ -37,14 +37,16 @@ other organisational identity are service identities.
 - As an Applicant, I want to choose what I am trying to do and fill in the
   form for that project, so that I only give what that kind of project needs.
   - Acceptance: **Start a new application** (Work queue) opens "What are you
-    trying to do?"; the form shows the type's fields, a completeness banner
-    ("Ready to submit..." or "Still needed: ..."), the locator's "Did you
-    mean", a document checklist and the certification; **Submit application**
-    stays disabled until complete and certified, and the server refuses an
-    incomplete submit too; the confirmation shows the reference number.
+    trying to do?"; the form shows the type's fields (required ones starred, optional ones
+    marked), the locator's "Did you mean", a document checklist with "Sent to
+    the City separately", and the certification; **Submit application** is
+    never disabled: an incomplete submit is refused by the server and the form
+    returns "There is a problem" with a linked list and a message beside each
+    missing item, keeping everything entered; the confirmation shows the
+    reference number.
 - As an Applicant, I want to save a draft and track an application, so that I
   can finish later and see what the City says.
-  - Acceptance: **Save and exit** keeps a draft; **Track an application**
+  - Acceptance: **Save draft** keeps a draft and says so; **Track an application**
     shows the status, "Messages from the City" and, when the City asked,
     **Submit revised documents**.
 - As an Applicant, I want to ask what the rules say and what the process is,

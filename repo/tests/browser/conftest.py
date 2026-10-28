@@ -245,7 +245,9 @@ def login(page, server: BrowserServer):
     def sign_in(actor_id: str) -> None:
         page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
         page.locator(f'button[data-persona="{actor_id}"]').click()
-        page.wait_for_url(f"{server.base_url}/queue")
+        # The Applicant lands on the City website; every staff persona lands on its queue.
+        landing = "/city/" if actor_id == "persona_applicant" else "/queue"
+        page.wait_for_url(f"{server.base_url}{landing}")
 
     return sign_in
 

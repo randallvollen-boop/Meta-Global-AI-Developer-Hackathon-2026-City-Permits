@@ -1,9 +1,9 @@
 """Permit type icons: seeded assets, Muse Image generations and saves.
 
 The map below is configuration data, not template logic: it names the
-bundled WebP asset that seeds each of three permit types.  The other two
-types start with no icon and fall back to a line-icon tile until an
-administrator generates and saves one.
+bundled WebP asset that seeds each of the 17 permit types.  A type with no
+map entry or no asset starts with no icon and falls back to a line-icon tile
+until an administrator generates and saves one.
 
 Every generation attempt — capped, refused, failed or succeeded — is
 recorded as an audit event carrying the prompt, the status, the cost
@@ -46,6 +46,20 @@ PERMIT_TYPE_SEED_ICONS: Final[dict[str, str]] = {
     "permit_type_com_ti": "commercial-alteration",
     "permit_type_res_building": "new-building",
     "permit_type_sign": "sign",
+    "permit_type_deck_fence": "deck-fence",
+    "permit_type_row_encroachment": "row-encroachment",
+    "permit_type_patio": "patio",
+    "permit_type_shed": "shed",
+    "permit_type_pod": "pod",
+    "permit_type_hvac": "hvac",
+    "permit_type_water_heater": "water-heater",
+    "permit_type_residential_electric": "residential-electric",
+    "permit_type_fire_alarm": "fire-alarm",
+    "permit_type_change_occupancy": "change-occupancy",
+    "permit_type_site_plan_review": "site-plan-review",
+    "permit_type_rezoning": "rezoning",
+    "permit_type_zoning_variance": "zoning-variance",
+    "permit_type_certificate_appropriateness": "certificate-appropriateness",
 }
 
 #: The permission an icon generation or save requires, and its action ids.
