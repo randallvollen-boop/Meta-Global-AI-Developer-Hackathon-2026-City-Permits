@@ -13,7 +13,7 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 
 Open <http://127.0.0.1:8266>. The server binds only to the local computer.
 
-The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. Its Permits button selects the Applicant persona (through the same persona selector) and opens the applicant pages inside the city layout. The floating "Demo: switch user" control, on both the website and the staff app, switches between the four personas.
+The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. The Permits button selects the Applicant persona through the same persona selector and opens the applicant pages inside the city layout. The floating "Demo: switch user" control, on both the website and the staff app, switches between the four personas.
 
 The selector offers exactly four personas:
 
@@ -51,7 +51,7 @@ Each governed detail screen shows Owner, Steward, Source, Change this in, Last s
 
 ## Full stewardship path from fresh fixtures
 
-Choose **Data Steward**, open **Data issues** and, under "Work from a source record", propose then confirm these four synthetic D01 links:
+Choose **Data Steward**, open **Data issues** and, under "Work from a source record", propose then confirm these four synthetic D01 links (ERP means enterprise resource planning):
 
 | Source | Dataset | Record |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ Choose **Data Steward**, open **Data issues** and, under "Work from a source rec
 
 The Finance account decision creates the governed payer link used by assessment and allocation. Continue with the reviewer and City Administrator steps above.
 
-The model extraction can also be exercised through the bounded walkthrough script. Replay is the safe default evidence path:
+The model extraction can also be exercised through the bounded walkthrough script. Replay is the default evidence path:
 
 ```bash
 uv run python scripts/demo_walkthrough.py \
@@ -91,13 +91,13 @@ Open **Reconciliation** as City Administrator. Review the synthetic partial, ove
 
 Choose Applicant and try to open another applicant's direct permit URL. The server returns a permission denial. Switch to City Administrator and try to approve a permit. Configuration access does not provide reviewer authority.
 
-## Steward demonstration: Cedarline
+## Cedarline steward demonstration
 
 ```bash
 uv run python scripts/prepare_user_test.py --mode steward-demo
 ```
 
-This adds three *proposed* links to **Data issues** (Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413`) so the queue holds the Cedarline story: Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline Coffee Works LLC, a different license number and a different unit. Nothing is decided. Choose **Data Steward**, open **Data issues**, open the `ERP-BL-00413` issue and read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. The mode is a prepare mode; the default reset and every acceptance fixture hold no steward issue.
+This adds three *proposed* links to **Data issues** (Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413`) so the queue holds the Cedarline comparison: Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline Coffee Works LLC, a different license number and a different unit. Nothing is decided. Choose **Data Steward**, open **Data issues**, open the `ERP-BL-00413` issue and read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. The mode is a prepare mode; the default reset and every acceptance fixture hold no steward issue.
 
 ## Prepared states
 
@@ -141,10 +141,10 @@ Deterministic acceptance leaves live-only AT15 and AT19 blocked. On October 27, 
 | Symptom | Action |
 | --- | --- |
 | Port 8266 is occupied | Stop the recorded server with `uv run python scripts/stop_demo.py`. If no record exists, choose another loopback port. |
-| Process record is stale | Run the stop command. It removes a stale record after confirming the PID is gone. |
+| Process record is stale | Run the stop command. It removes a stale record after confirming the process identifier (PID) is gone. |
 | Database is not marked as the fictional demo | Use `prepare_user_test.py`; do not delete or repoint an unknown database. |
 | Database schema is out of date | Run `uv run alembic upgrade head`, then prepare the fictional demo again. |
-| Meta key is missing | Replay mode remains available. Live mode needs the server-side `META_API_KEY` in `~/.config/ai-keys.env`. Never place the key in a browser form or repository file. |
+| Meta key is missing | Replay mode stays available. Live mode needs the server-side `META_API_KEY` in `~/.config/ai-keys.env`. Never place the key in a browser form or repository file. |
 | Muse response is refused, incomplete or invalid | Keep the failed run as evidence. Replay does not replace live evidence. Do not retry automatically. |
 | A form reports a token error | Reload the page after switching personas, then submit the action again. |
 

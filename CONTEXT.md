@@ -4,19 +4,19 @@ Date: October 26, 2026
 
 ## User direction
 
-Randall downloaded `ACME_MDM_Build_Package_2026-10-26.zip`, described it as the new hackathon requirements, and asked for a sibling folder to the existing hackathon workspace aligned with the city-permit application.
+Randall downloaded `ACME_MDM_Build_Package_2026-10-26.zip`, described it as the new hackathon requirements, and asked for a sibling folder to the existing hackathon workspace, aligned with the city-permit application.
 
-This workspace records that option without changing or deleting the existing RailFlow option. On October 26, 2026, Randall released this City Permits candidate for a full local end-to-end implementation and testable loopback handoff. That release does not itself decide which candidate will be submitted or authorize any external action.
+This workspace records that option and leaves the existing RailFlow option unchanged. On October 26, 2026, Randall released this City Permits candidate for a full local end-to-end implementation and a testable loopback handoff. The release does not decide which candidate will be submitted and does not authorize any external action.
 
-On October 26, 2026, Randall directed that the application be modeled on the City of Westerville, Ohio's public permitting process. Use Westerville as a documented workflow reference while keeping the application, data, actors, rules, fees, permit artifacts, branding, and integrations explicitly fictional ACME City material. Do not imply City endorsement or an official system.
+On October 26, 2026, Randall directed that the application be modeled on the City of Westerville, Ohio's public permitting process. Westerville serves as a documented workflow reference. The application, data, actors, rules, fees, permit artifacts, branding, and integrations stay fictional ACME City material. Nothing may imply City endorsement or an official system.
 
-The application dropdown is limited to four human demo personas: Applicant, Data Steward, Permit Reviewer and City Administrator. The permission model may retain granular roles and non-human service identities, but no additional human persona appears in the selector. Combined persona grants remain explicit and action-specific.
+The application dropdown is limited to four human demo personas: Applicant, Data Steward, Permit Reviewer and City Administrator. The permission model keeps granular roles and non-human service identities, and no other human persona appears in the selector. Combined persona grants stay explicit and action-specific.
 
-GitHub publication for this hackathon is restricted to the personal account `RandallVollen-boop`. Do not create or use a remote under `elawclerkdemo` or another owner.
+GitHub publication for this hackathon is restricted to the personal account `RandallVollen-boop`. The team must not create or use a remote under `elawclerkdemo` or another owner.
 
 ## Received package
 
-The package describes a fictional ACME City municipal-permitting demonstration using registry MDM. The primary chain is a commercial tenant-improvement application connecting applicants, organizations, properties, contractors, permits, fees, and simulated payments.
+The package describes a fictional ACME City municipal-permitting demonstration that uses registry master data management (MDM). The primary chain is a commercial tenant-improvement application connecting applicants, organizations, properties, contractors, permits, fees, and simulated payments.
 
 The package contains:
 
@@ -27,11 +27,11 @@ The package contains:
 - 11 controlled scenarios;
 - 84 unchanged files from the earlier ACME city-permit reference package.
 
-The package explicitly states that the live MDM application is not built. Its existing city-permit code is a deterministic synthetic pipeline and static reporting baseline.
+The package states that the live MDM application is not built. Its existing city-permit code is a deterministic synthetic pipeline and a static reporting baseline.
 
 ## Intended application outcome
 
-SYN-APP-001 must move through:
+SYN-APP-001 (the first synthetic application) must move through:
 
 1. fictional application submission and actual synthetic evidence;
 2. substantive live Muse extraction or identity matching;
