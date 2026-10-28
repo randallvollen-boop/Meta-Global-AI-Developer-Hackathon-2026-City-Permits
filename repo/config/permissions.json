@@ -327,6 +327,34 @@
       "sensitive": false
     },
     {
+      "permission_id": "policy.scenario.manage",
+      "action": "policy.scenario.manage",
+      "category": "policy",
+      "description": "Create, edit, soft-delete and read what-if policy scenarios and their revisions. A scenario is held in memory against copies of the published configuration and never changes a rule, a fee, a permit type or an application.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.run.execute",
+      "action": "policy.run.execute",
+      "category": "policy",
+      "description": "Run a what-if scenario over a population and keep the immutable run snapshot. A run re-scores frozen case inputs and writes no application, finding, decision or fee row.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.run.view",
+      "action": "policy.run.view",
+      "category": "policy",
+      "description": "Read an immutable what-if run: the counts, the cases that changed, the safety signals and the hypothetical assessed fees.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "policy.brief.view",
+      "action": "policy.brief.view",
+      "category": "policy",
+      "description": "Read and download the deterministic legislator briefing built from a what-if run.",
+      "sensitive": false
+    },
+    {
       "permission_id": "permit.case.archive",
       "action": "permit.case.archive",
       "category": "permit",
@@ -501,6 +529,10 @@
       "permit.case.archive",
       "permit.case.restore",
       "permit.icon.generate",
+      "policy.brief.view",
+      "policy.run.execute",
+      "policy.run.view",
+      "policy.scenario.manage",
       "property.view",
       "records.configuration.view",
       "records.document.view"

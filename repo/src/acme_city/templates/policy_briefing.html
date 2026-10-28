@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<div class="policy-screen">
+<div class="page-head">
+  <div>
+    <h1>{{ briefing.title }}</h1>
+    <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a> · <a href="/policy/scenarios">All what-ifs</a></p>
+  </div>
+  <div class="actions">
+    {{ ui.help_button('policy_briefing') }}
+    <a class="button btn primary button-primary" href="/policy/runs/{{ run_id }}/briefing/download?format=html" data-testid="policy-download-html" download>Download (HTML)</a>
+    <a class="button btn" href="/policy/runs/{{ run_id }}/briefing/download?format=md" data-testid="policy-download-md" download>Download (Markdown)</a>
+  </div>
+</div>
+
+<article class="card briefing" data-testid="policy-briefing">
+  {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples, not real applications.</p>{% endif %}
+  <p data-testid="policy-briefing-population">Population: <strong>{{ briefing.population_label }}</strong></p>
+  <p class="muted" data-testid="policy-briefing-source">Source: {{ briefing.source_label }}</p>
+  {% for section in briefing.sections %}
+  <section data-testid="policy-briefing-section">
+    <h2>{{ section.heading }}</h2>
+    {% for p in section.paragraphs %}<p>{{ p }}</p>{% endfor %}
+    {% if section.bullets %}<ul>{% for b in section.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
+    {% if section.table %}
+    <div class="tbl-wrap"><table class="data-table">
+      <caption>{{ section.table.caption }}</caption>
+      <thead><tr>{% for h in section.table.headers %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for row in section.table.rows %}<tr>{% for cell in row %}{% if loop.first %}<th scope="row">{{ cell }}</th>{% else %}<td>{{ cell }}</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+  </section>
+  {% endfor %}
+  <p class="muted" data-testid="policy-briefing-footer">{{ briefing.footer }}</p>
+</article>
+
+<section class="card" aria-labelledby="facts-heading" data-testid="policy-facts">
+  <h2 id="facts-heading">The facts behind this briefing</h2>
+  <p class="muted">Every figure above comes from one of these typed facts of the run. Each has a value, a unit, a direction, the population and the baseline and scenario it compares.</p>
+  <details>
+    <summary>Show the {{ briefing.facts|length }} facts</summary>
+    <div class="tbl-wrap"><table class="data-table">
+      <caption class="visually-hidden">Typed facts</caption>
+      <thead><tr><th scope="col">Fact</th><th scope="col">Value</th><th scope="col">Unit</th><th scope="col">Direction</th><th scope="col">Compares</th></tr></thead>
+      <tbody>{% for f in briefing.facts %}<tr><th scope="row">{{ f.label }}</th><td>{{ f.value }}</td><td>{{ f.unit }}</td><td>{{ f.direction }}</td><td class="mono">{{ f.baseline_id }} / {{ f.scenario_id }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </details>
+</section>
+{% include "components/evidence_panel.html" %}
+</div>
+{% endblock %}

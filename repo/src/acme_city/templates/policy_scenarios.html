@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<div class="policy-screen">
+<div class="page-head">
+  <div>
+    <h1>What-if</h1>
+    <p class="sub">Test a proposed change to the permit rules on a set of cases before anything is changed. A what-if is kept beside the live rules; saving or running one never changes a rule, a fee, a permit type or an application.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('policy_scenarios') }}</div>
+</div>
+
+{% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
+
+<section class="card" aria-labelledby="new-whatif-heading" data-testid="policy-new">
+  <h2 id="new-whatif-heading">New what-if</h2>
+  {% if starting %}
+  <p data-testid="policy-starting" class="muted">Starting population from the City view: {{ starting_text }}. It is carried into the what-if and offered again when you run it.</p>
+  {% endif %}
+  <p class="muted">* Required</p>
+  <h3>Start from a suggestion</h3>
+  <ul class="policy-suggestions" data-testid="policy-suggestions">
+    {% for item in suggestions %}
+    <li>
+      <form method="post" action="/policy/scenarios" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="expected_version" value="0">
+        <input type="hidden" name="suggestion" value="{{ item.key }}">
+        <input type="hidden" name="name" value="{{ item.title }}">
+        {% if starting.permit_type %}<input type="hidden" name="start_permit_type" value="{{ starting.permit_type }}">{% endif %}
+        {% if starting.district %}<input type="hidden" name="start_district" value="{{ starting.district }}">{% endif %}
+        {% if starting.category %}<input type="hidden" name="start_category" value="{{ starting.category }}">{% endif %}
+        <button type="submit" class="button btn{% if loop.first %} primary button-primary{% endif %}" data-testid="policy-suggestion" data-suggestion="{{ item.key }}">{{ item.title }}</button>
+        <span class="muted"> {{ item.summary }}</span>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <h3>Or start empty</h3>
+  <form method="post" action="/policy/scenarios" data-testid="policy-create-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="0">
+    {% if starting.permit_type %}<input type="hidden" name="start_permit_type" value="{{ starting.permit_type }}">{% endif %}
+    {% if starting.district %}<input type="hidden" name="start_district" value="{{ starting.district }}">{% endif %}
+    {% if starting.category %}<input type="hidden" name="start_category" value="{{ starting.category }}">{% endif %}
+    <p class="field">
+      <label for="policy-name">Name of the what-if <span aria-hidden="true">*</span></label>
+      <input id="policy-name" name="name" maxlength="200" required aria-required="true" data-testid="policy-name">
+    </p>
+    <p><button type="submit" class="button btn" data-testid="policy-create">Save what-if</button></p>
+  </form>
+</section>
+
+<section class="card" aria-labelledby="saved-heading" data-testid="policy-list">
+  <h2 id="saved-heading">Saved what-ifs</h2>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Saved what-ifs</caption>
+    <thead><tr><th scope="col">What-if</th><th scope="col">Revision</th><th scope="col">Runs</th><th scope="col">Saved</th></tr></thead>
+    <tbody>
+      {% for s in scenarios %}
+      <tr data-testid="policy-row">
+        <th scope="row"><a href="/policy/scenarios/{{ s.id }}">{{ s.name }}</a></th>
+        <td>{{ s.revision }}</td><td>{{ s.runs }}</td><td class="mono">{{ s.created_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted" data-testid="policy-empty">No what-if is saved yet. Start from a suggestion above.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card" aria-labelledby="runs-heading" data-testid="policy-recent-runs">
+  <h2 id="runs-heading">Recent runs</h2>
+  <p class="muted">A run is a kept snapshot. It stays here even after its what-if is deleted.</p>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Recent runs</caption>
+    <thead><tr><th scope="col">Run of</th><th scope="col">Population {{ ui.info('policy_population') }}</th><th scope="col">Cases</th><th scope="col">Made</th></tr></thead>
+    <tbody>
+      {% for r in recent_runs %}
+      <tr data-testid="policy-run-row">
+        <th scope="row"><a href="/policy/runs/{{ r.id }}">{{ r.name }}</a> <span class="muted">revision {{ r.revision }}</span>{% if r.deleted %} <span class="muted">(what-if deleted)</span>{% endif %}</th>
+        <td>{{ r.population }}{% if r.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</td>
+        <td>{{ r.size }}</td><td class="mono">{{ r.created_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No run has been made yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% include "components/evidence_panel.html" %}
+</div>
+{% endblock %}

@@ -1090,6 +1090,30 @@
           "source": "explicit"
         },
         {
+          "permission_id": "policy.scenario.manage",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.run.execute",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.run.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.brief.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "permit.case.archive",
           "domains": [
             "permits"

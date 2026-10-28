@@ -41,6 +41,50 @@
     "prompt_version": {
       "label": "Prompt version",
       "text": "The version of the instructions given to the model for this task. Two runs with the same prompt version were given the same instructions."
+    },
+    "policy_population": {
+      "label": "Population",
+      "text": "The set of cases a what-if is scored on. A synthetic year is a generated sample of a year of cases and is always labelled so. A retrospective re-scoring takes stored cases and scores them again under the rules in force now; it does not rebuild the decisions made at the time."
+    },
+    "policy_outcome_counts": {
+      "label": "Counts by outcome",
+      "text": "How many cases the adjudication agent would recommend approving, approving with conditions, holding for a person or denying, under today's published rules (baseline) and under the what-if (scenario). The same cases are counted both times. A person decides every case."
+    },
+    "policy_flipped": {
+      "label": "Cases that change",
+      "text": "A case changes when its rule result, its recommendation or its intake route differs between the baseline and the scenario. Cases are counted once, however many measures moved."
+    },
+    "policy_direction": {
+      "label": "Direction",
+      "text": "Relaxed means the case got a more permissive result under the scenario, for example a denial that becomes an approval. Tightened means the opposite, for example an approval that becomes a hold. The direction is worked out from the recommendation, then the rule result, then the intake route."
+    },
+    "policy_safety_signals": {
+      "label": "Safety signals",
+      "text": "Every case that stops failing a rule is listed with the rule, the value it had and the limit before and after, so a person can judge the risk. A case that stops failing a rule is not a case that is safe; it is a case to look at."
+    },
+    "policy_holds": {
+      "label": "Recommendation holds",
+      "text": "Cases the agent would hold for a person instead of recommending an outcome. A hold cleared is a case the agent would no longer hold. Identity, parcel, credential, finance and missing-input safeguards and the decision itself stay with the people and checks that own them. This counts cases, not time."
+    },
+    "policy_needs_information": {
+      "label": "Needs information",
+      "text": "Cases the intake router sends back to early resolution because something required is missing. It is a count of cases at intake, not a measure of time."
+    },
+    "policy_service_targets": {
+      "label": "Service targets",
+      "text": "The number of days a permit type is configured to be handled in. The what-if shows the configured figures before and after. No processing time is worked out from them."
+    },
+    "policy_hypothetical_fees": {
+      "label": "Hypothetical assessed fees",
+      "text": "What the published fee schedule arithmetic would assess for the cases in the population, rounded the way real assessments are. They are not money collected and not a forecast of it. Cases without a usable valuation cannot be priced and are listed apart."
+    },
+    "policy_unpriceable": {
+      "label": "Cases that cannot be priced",
+      "text": "A case with no usable valuation, or with no fee schedule in force on its date, cannot be given a fee. It is left out of both totals and listed here with the reason."
+    },
+    "policy_content_hash": {
+      "label": "Content hash",
+      "text": "A fingerprint of everything the run holds: the scenario revision, the full baseline and proposed configuration, the cases, the population definition, the analysis moment and the engine and generator versions. It does not include ids or times, so the same inputs always give the same hash."
     }
   },
   "screens": {
@@ -139,6 +183,24 @@
       "purpose": "Look up an application by its reference number and see where it stands.",
       "can_do": ["Enter a reference number.", "Open the case to read what the City has asked of you."],
       "next": "If the City asks for more, the request appears with the case; answer it there."
+    },
+    "policy_scenarios": {
+      "title": "What-if",
+      "purpose": "Test a proposed change to the permit rules on a set of cases before anything is changed. Saving or running a what-if never changes a rule, a fee, a permit type or an application.",
+      "can_do": ["Start from a suggestion or save a new what-if.", "Add the supported kinds of change and run them on a synthetic year or on stored cases."],
+      "next": "A run is kept as a snapshot; open its results, then its briefing for legislators."
+    },
+    "policy_run": {
+      "title": "What-if results",
+      "purpose": "What the what-if would change, counted from the same cases scored twice, with each figure's definition beside it.",
+      "can_do": ["Read the counts by outcome, the cases that change and the safety signals.", "Open the legislator briefing."],
+      "next": "The briefing is built from these figures only; a change to the real rules is a separate, approved step."
+    },
+    "policy_briefing": {
+      "title": "Legislator briefing",
+      "purpose": "A plain-language briefing built only from the typed facts of one run. No model wrote it.",
+      "can_do": ["Read it on screen.", "Download it as HTML or Markdown."],
+      "next": "A briefing written with Muse is planned for a later release; this one is always available."
     }
   }
 }

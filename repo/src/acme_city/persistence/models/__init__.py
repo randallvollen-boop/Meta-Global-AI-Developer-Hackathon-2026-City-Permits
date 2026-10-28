@@ -14,6 +14,7 @@ from acme_city.persistence.models import (
     help,
     model_run,
     permit,
+    policy,
     registry,
     source,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "help",
     "model_run",
     "permit",
+    "policy",
     "registry",
     "source",
 ]

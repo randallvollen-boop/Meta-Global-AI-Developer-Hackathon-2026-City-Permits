@@ -285,6 +285,9 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 #:
 #: P3insight adds the City view after those entries, behind its own grant
 #: (``insight.city.view``), which only the City Administrator holds.
+#:
+#: Policy 2 adds the What-if screen after the City view, behind its own grant
+#: (``policy.scenario.manage``), which only the City Administrator holds.
 EXPECTED_NAVIGATION: dict[str, list[str]] = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
@@ -318,6 +321,7 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "agent_adjudication",
         "admin",
         "insight_city",
+        "policy_scenarios",
     ],
 }
 

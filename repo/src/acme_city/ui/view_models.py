@@ -88,6 +88,11 @@ SCREENS: tuple[dict[str, str], ...] = (
         "label": "City view",
         "href": "/insight/city",
     },
+    {
+        "key": "policy_scenarios",
+        "label": "What-if",
+        "href": "/policy/scenarios",
+    },
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -115,6 +120,7 @@ SCREEN_DOMAIN: dict[str, str] = {
     "early_resolution": "permits",
     "review_queue": "permits",
     "insight_city": "permits",
+    "policy_scenarios": "permits",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -199,6 +205,12 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     # The City view is the City Administrator's read-only picture of permit
     # activity, opened by its own grant.
     "insight_city": (("insight.city.view", None),),
+    # The what-if screens are the City Administrator's, opened by their own
+    # policy grants.  The run and briefing keys exist for their help entries;
+    # the service checks the run and briefing grants again on every read.
+    "policy_scenarios": (("policy.scenario.manage", None),),
+    "policy_run": (("policy.run.view", None),),
+    "policy_briefing": (("policy.brief.view", None),),
 }
 
 
