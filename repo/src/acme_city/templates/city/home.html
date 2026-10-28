@@ -13,6 +13,7 @@
     <h2 id="svc-h">City services</h2>
     <ul class="city-tiles">
       <li><a class="city-tile city-tile-main" href="/city/permits" data-testid="tile-permits"><svg aria-hidden="true"><use href="#c-permit"/></svg><strong>Permits</strong><span>Apply for, save and track building, fence, sign and other permits.</span></a></li>
+      <li><a class="city-tile" href="/city/community" data-testid="tile-community"><svg aria-hidden="true"><use href="#c-permit"/></svg><strong>Permits in my community</strong><span>Look up permits by address, street or permit number and see activity by district.</span></a></li>
       {% for slug, svc in city_services.items() %}
       <li><a class="city-tile" href="/city/{{ slug }}"><svg aria-hidden="true"><use href="#c-{{ svc.icon }}"/></svg><strong>{{ svc.title }}</strong><span>{{ svc.summary }}</span></a></li>
       {% endfor %}

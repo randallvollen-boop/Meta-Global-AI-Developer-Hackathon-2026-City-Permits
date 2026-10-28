@@ -83,6 +83,11 @@ SCREENS: tuple[dict[str, str], ...] = (
         "label": "Review queue",
         "href": "/queue/review",
     },
+    {
+        "key": "insight_city",
+        "label": "City view",
+        "href": "/insight/city",
+    },
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -109,6 +114,7 @@ SCREEN_DOMAIN: dict[str, str] = {
     "intake_queue": "permits",
     "early_resolution": "permits",
     "review_queue": "permits",
+    "insight_city": "permits",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -190,6 +196,9 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "intake_queue": (("permit.intake.process_selected", "permits"),),
     "early_resolution": (("permit.case.advance", "permits"),),
     "review_queue": (("permit.decide", "permits"),),
+    # The City view is the City Administrator's read-only picture of permit
+    # activity, opened by its own grant.
+    "insight_city": (("insight.city.view", None),),
 }
 
 
@@ -400,8 +409,12 @@ def _persona_rank(label: str) -> int:
 
 def visible_applications(session: Session, actor: ActorContext) -> list[permit.Application]:
     """Return the applications the actor may see."""
+    # A synthetic row is a generated historical record, not work: it never
+    # appears in a queue.  The City view and the community view read it.
     rows = session.execute(
-        select(permit.Application).order_by(permit.Application.source_application_number)
+        select(permit.Application)
+        .where(permit.Application.synthetic.is_(False))
+        .order_by(permit.Application.source_application_number)
     ).scalars().all()
     return [row for row in rows if _application_in_scope(actor, row)]
 
@@ -3290,6 +3303,8 @@ def permit_workspace(
         "crosswalks": crosswalks,
         "model_runs": runs,
         "history": history(session, actor, application.id),
+        "synthetic": bool(application.synthetic),
+        "synthetic_history": _synthetic_history(session, application),
         "evidence": [
             {
                 "evidence_id": document["document_id"],
@@ -3749,6 +3764,7 @@ def model_runs(
                 "task": "extraction" if "document" in str(refs) else "model task",
                 "mode": row.mode,
                 "mode_label": row.mode.capitalize(),
+                "source_label": muse_source_label(row.model, row.mode),
                 "status": row.status,
                 "provider": row.provider,
                 "model": row.model,
@@ -3769,6 +3785,47 @@ def model_runs(
             }
         )
     return runs
+
+
+def _synthetic_history(session: Session, application: permit.Application) -> list[dict[str, str]]:
+    """Return the dated history of a synthetic case, or an empty list.
+
+    A synthetic case has no audit events: nobody acted.  Its dates are stored
+    facts of a generated historical record, and the screen says so.
+    """
+    if not application.synthetic:
+        return []
+    entries: list[dict[str, str]] = []
+    if application.initial_submitted_at is not None:
+        entries.append({"when": application.initial_submitted_at.isoformat(), "what": "Submitted"})
+    for decision in session.execute(
+        select(permit.Decision).where(permit.Decision.application_id == application.id)
+    ).scalars():
+        entries.append({"when": decision.decided_at.isoformat(), "what": f"Decision recorded: {decision.outcome}"})
+    for issued in session.execute(
+        select(permit.Permit).where(permit.Permit.application_id == application.id)
+    ).scalars():
+        entries.append({"when": issued.issued_at.isoformat(), "what": f"Permit {issued.permit_number} issued"})
+    return sorted(entries, key=lambda item: item["when"])
+
+
+def muse_source_label(model: str | None, mode: str) -> str:
+    """Return the source label of a model run, for example ``Muse Spark (live)``.
+
+    A Muse model is named by its family and the run mode in brackets, so a
+    live run reads ``Muse Spark (live)`` and a replay reads ``Muse Spark
+    (replay)``.  A run of another model keeps its own model name.
+    """
+    name = (model or "").strip()
+    if name.lower().startswith("muse-spark"):
+        family = "Muse Spark"
+    elif name.lower().startswith("muse-wonder"):
+        family = "Muse Wonder"
+    elif name.lower().startswith("muse-image"):
+        family = "Muse Image"
+    else:
+        family = name or "no model recorded"
+    return f"{family} ({mode})"
 
 
 def history(session: Session, actor: ActorContext, target_id: str) -> list[dict[str, Any]]:
