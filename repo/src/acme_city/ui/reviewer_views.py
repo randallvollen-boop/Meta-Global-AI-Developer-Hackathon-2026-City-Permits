@@ -316,10 +316,7 @@ def queue_views(entries: list[dict[str, Any]], active: str) -> list[dict[str, An
 
 def scenario_clock_note(now: datetime | None = None) -> str:
     """Return the note that explains the ages of seeded cases."""
-    return (
-        "Ages count whole days from the submission date to today (" + _day(now or utc_now()) + "). "
-        "Seeded demonstration cases were submitted weeks or months ago, so they read as old."
-    )
+    return "Ages count whole days from the submission date to " + _day(now or utc_now()) + "."
 
 
 # ------------------------------------------------------------------ workspace

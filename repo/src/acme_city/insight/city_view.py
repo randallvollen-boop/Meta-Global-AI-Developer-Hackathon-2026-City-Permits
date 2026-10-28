@@ -13,7 +13,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from acme_city.core.clock import app_now
+from acme_city.core.clock import utc_now
 from acme_city.gis import svg
 from acme_city.gis.catalog import PropertyCatalog
 from acme_city.insight.queries import ACTIVITY_EXCLUDED_STATUSES, PermitRow, load_rows
@@ -137,7 +137,7 @@ def city_view(
         type=type, outcome=outcome, period=period, category=category,
         exceptions=exceptions, synthetic=synthetic,
     )
-    moment = now or app_now()
+    moment = now or utc_now()
     all_rows = [
         row for row in load_rows(session)
         if row.status not in ACTIVITY_EXCLUDED_STATUSES and row.submitted_at is not None

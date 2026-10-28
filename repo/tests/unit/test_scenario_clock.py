@@ -199,10 +199,11 @@ def test_ages_overdue_flags_and_the_dashboard_use_the_scenario_clock(demo: Setti
             steward = context_for(session, "persona_data_steward")
             moment = resolve_scenario_moment(session, "2026-10-08")
             real_rows = {r["reference"]: r for r in intake_queue(session, steward)["rows"]}
-            average_real = next(m for m in dashboard(session, synthetic="include")["figures"] if m["key"] == "average_age")
+            average_real = next(m for m in dashboard(session, synthetic="exclude")["figures"] if m["key"] == "average_age")
             clock.set_scenario_clock(moment)
             rows = {r["reference"]: r for r in intake_queue(session, steward)["rows"]}
-            average_demo = next(m for m in dashboard(session, synthetic="include")["figures"] if m["key"] == "average_age")
+            average_demo = next(m for m in dashboard(session, synthetic="exclude")["figures"] if m["key"] == "average_age")
+            included = dashboard(session, synthetic="include")
             applications = {
                 a.source_application_number: a
                 for a in session.execute(select(permit.Application)).scalars().all()
@@ -219,6 +220,14 @@ def test_ages_overdue_flags_and_the_dashboard_use_the_scenario_clock(demo: Setti
         assert any(rows[r]["age_days"] < real_rows[r]["age_days"] for r in rows)
         assert average_demo["value"] != average_real["value"]
         assert "2026-10-08" in average_demo["definition"]
+        # The synthetic year is read on the real clock, never the demo date.
+        assert included["as_of"][:10] == clock.utc_now().date().isoformat()
+        # The workspace helpers read the same clock.
+        from acme_city.ui import reviewer_views, view_models
+        submitted = datetime(2026, 10, 1, 9, tzinfo=UTC)
+        assert view_models._age_days(submitted) == 7
+        assert "8 Oct 2026" in reviewer_views.scenario_clock_note(moment) or "2026-10-08" in reviewer_views.scenario_clock_note(moment)
+        assert not re.search(r"[\u2013\u2014]| - ", reviewer_views.scenario_clock_note(moment))
     finally:
         factory.dispose()
 
@@ -263,5 +272,47 @@ def test_the_scenario_clock_changes_no_stored_row_and_no_version(demo: Settings)
             )
             assert stored_before == stored_after
             print(f"scenario clock version check: {len(before)} cases, 0 flipped")
+    finally:
+        factory.dispose()
+
+
+def test_the_seeded_queue_reads_naturally_on_the_auto_demo_date(demo: Settings) -> None:
+    """Most seeded cases sit inside their target, a few are near it, a few are over."""
+    factory = SessionFactory(demo.database_url)
+    try:
+        with factory() as session:
+            steward = context_for(session, "persona_data_steward")
+            clock.set_scenario_clock(resolve_scenario_moment(session, "auto"))
+            rows = intake_queue(session, steward)["rows"]
+    finally:
+        factory.dispose()
+    assert len(rows) == 12
+    youngest = min(r["age_days"] for r in rows)
+    assert youngest == AUTO_LEAD_DAYS
+    over = [r for r in rows if r["age_tone"] == "over"]
+    near = [r for r in rows if r["age_tone"] == "at" or 0 <= r["service_target_days"] - r["age_days"] <= 1]
+    within = [r for r in rows if r["age_tone"] == "" and r not in near]
+    assert 2 <= len(over) <= 3
+    assert 2 <= len(near) <= 3
+    assert len(within) > len(over) + len(near)
+
+
+def test_respaced_seed_dates_keep_every_rule_and_fee_window(demo: Settings) -> None:
+    """Every seeded submission stays inside the one window where the first versions apply.
+
+    All published rule and fee versions start on 2026-01-01 except the second
+    versions, which start on 2026-11-01.  A seeded case dated between the two
+    resolves the same versions as on its original date.
+    """
+    factory = SessionFactory(demo.database_url)
+    try:
+        with factory() as session:
+            rows = session.execute(
+                select(permit.Application).where(permit.Application.synthetic.is_(False))
+            ).scalars().all()
+            assert len(rows) == 13
+            for row in rows:
+                when = row.initial_submitted_at.replace(tzinfo=UTC)
+                assert datetime(2026, 1, 1, tzinfo=UTC) <= when < datetime(2026, 11, 1, tzinfo=UTC)
     finally:
         factory.dispose()
