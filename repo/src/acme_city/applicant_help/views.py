@@ -271,6 +271,7 @@ def panel_context(
             for row in requests
         ],
         "help_last_question": turns[-1].question if turns else "",
+        "help_escalation": service.escalation_state(conversation),
         "help_demo_mode": service.demo_mode,
         "help_suggestions": [
             {"id": identifier, "text": text}

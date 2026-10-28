@@ -298,3 +298,10 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Changed tests (deliberately): head 0011 to 0012 in test_migrations, test_schema, test_reset, test_sessions; navigation lists gain the four screens in test_view_models, test_vc04 (the navigation count 13 to 17), test_navigation, test_insight_city_view. New: test_ops_checks (35), test_ops_dashboard, test_ops_audit_log, test_p3c_screens, test_p3c_walkthrough, test_p3c_ops_browser.
 - Pre-existing failure on main 2b3272b, not touched: `tests/integration/test_intake_triage.py::test_a_new_record_waits_for_the_intake_agent` expects the words "Awaiting intake agent" on `/queue?view=all`, which the reviewer restyle removed.
 
+## 2026-10-28 — P3chat chat3: escalation, the Administrator's answers, privacy tests (`feature/parity-p3`)
+
+- Escalation counting: `ApplicantHelpService.escalation_state` (threshold and phrases in `config/applicant_help.json`), a prompt on the panel and in the JSON answer, rendered in place by `help.js`; the last question is carried into the Ask the City form. "Ask the City" stays available regardless of the prompt.
+- Fix: a request made before any question now starts a conversation tied to the page's case (placement, type and application are passed through, and a case of another applicant is refused), so the City's answer can reach the case.
+- The Administrator answer service and the P3c handoff (`/ops/support`, the audit-log link to a help request) were built in P3c; the applicant panel now shows the reply as "Answer from the City".
+- Tests: `test_p3chat3_escalation` (19: counting, restarts, cross-applicant, staff leakage, audit without text, retry), `test_p3chat3_escalation_browser` (5: three placements, with and without JavaScript, the reply reaching the applicant). Changed tests: none. Replay fixtures rebuilt: not needed (`--check` unchanged); published text unchanged.
+

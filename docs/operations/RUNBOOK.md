@@ -517,7 +517,22 @@ the applicant's question is the **help request** the applicant raises with
   refused as firmly as a stale one.
 * Asking the City needs the `applicant.help.escalate` grant and the same
   mandatory version.  It creates the help request, which the support screen
-  of phase 3c answers.
+  (`/ops/support`) answers.  A request made on the tracker is tied to the
+  applicant's own case (a case of another applicant is refused); the version
+  the applicant read is spent by the request, so a repeated post is refused
+  and creates no second request.
+* **Escalation counting.** Each submitted turn that matched nothing, was
+  rejected by the validation, was declined by the assistant or failed counts
+  once as unsuccessful.  After the third unsuccessful turn of a conversation,
+  or when the last question asks for a person (phrases in
+  `config/applicant_help.json`), the panel prompts "Ask the City".  The
+  button is always available and never depends on the prompt; a conversation
+  with a help request is not prompted again.
+* **The City's answer.** The City Administrator answers on the support screen.
+  The reply reaches the applicant as a comment on the case when the request is
+  tied to a case that can still change, and always as the "Answer from the
+  City" line of the help panel.  The Administrator reads only the escalated
+  part of the conversation: the turns up to the request.
 * The rate limit is 10 questions per session per 10 minutes
   (`config/applicant_help.json`).  The session is stored as a hash.
 * A question is at most 1,000 characters and is untrusted input: it is

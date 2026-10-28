@@ -1,0 +1,153 @@
+"""Chat 3 in the browser, as the Applicant: the prompt, Ask the City, the reply.
+
+The help panel is offered on the chooser, on the application form and on the
+tracker.  After three questions the assistant could not answer it prompts the
+applicant to ask a person at the City; the button itself is always there.  The
+Administrator's reply reaches the applicant, with and without JavaScript.
+"""
+# REQUIRES: PORTAL-02, UX-02, UX-03, PER-04, SEC-03
+
+from __future__ import annotations
+
+from conftest import BrowserServer
+
+PLACEMENTS = (
+    ("/apply", "chooser"),
+    ("/apply/deck_fence", "form"),
+    ("/apply/track?ref=SYN-APP-005", "track"),
+)
+NONSENSE = ("purple monkey dishwasher", "quantum banana trombone", "velvet lighthouse spaghetti")
+REPLY = "A person at the City read your question and will call you."
+
+
+def sign_in(context, server: BrowserServer, actor_id: str):
+    page = context.new_page()
+    page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
+    page.locator(f'button[data-persona="{actor_id}"]').click()
+    landing = "/city/" if actor_id == "persona_applicant" else "/queue"
+    page.wait_for_url(f"{server.base_url}{landing}")
+    return page
+
+
+def test_the_prompt_appears_after_the_third_unsuccessful_question_with_javascript(
+    browser, server: BrowserServer
+) -> None:
+    for path, placement in PLACEMENTS:
+        context = browser.new_context(viewport={"width": 1280, "height": 900})
+        errors: list[str] = []
+        try:
+            page = sign_in(context, server, "persona_applicant")
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+            assert page.locator('[data-testid="help-ask-the-city"]').is_visible(), placement
+            for number, question in enumerate(NONSENSE, start=1):
+                page.locator('[data-testid="help-question"]').fill(question)
+                page.locator('[data-testid="help-submit"]').click()
+                page.wait_for_function(
+                    "(n) => document.querySelectorAll('[data-testid=help-turn]').length === n", arg=number
+                )
+                prompts = page.locator('[data-testid="help-escalation-prompt"]').count()
+                assert prompts == (1 if number == 3 else 0), (placement, number)
+            assert page.locator('[data-testid="help-ask-the-city"]').is_visible()
+            # The textarea of Ask the City is carried over from the last question.
+            assert page.locator('[data-testid="help-escalate-question"]').first is not None
+            assert errors == [], placement
+        finally:
+            context.close()
+
+
+def test_ask_the_city_after_the_prompt_with_javascript(browser, server: BrowserServer) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900})
+    try:
+        page = sign_in(context, server, "persona_applicant")
+        page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+        for question in NONSENSE:
+            page.locator('[data-testid="help-question"]').fill(question)
+            page.locator('[data-testid="help-submit"]').click()
+            page.wait_for_function(
+                "(q) => document.body.innerText.includes(q)", arg=question
+            )
+        assert page.locator('[data-testid="help-escalation-prompt"]').count() == 1
+        assert page.locator('[data-testid="help-escalate-question"]').input_value() == NONSENSE[-1]
+        page.locator('[data-testid="help-ask-the-city"]').click()
+        page.wait_for_url(lambda url: "/apply?help=" in url)
+        assert page.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
+        assert page.locator('[data-testid="help-escalation-prompt"]').count() == 0  # a request is open
+    finally:
+        context.close()
+
+
+def test_the_prompt_and_ask_the_city_work_without_javascript(browser, server: BrowserServer) -> None:
+    context = browser.new_context(java_script_enabled=False)
+    try:
+        page = sign_in(context, server, "persona_applicant")
+        for path, pattern in (("/apply", "/apply?help="), ("/apply/track?ref=SYN-APP-005", "/apply/track?")):
+            page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+            for number, question in enumerate(NONSENSE, start=1):
+                page.locator('[data-testid="help-question"]').fill(question)
+                page.locator('[data-testid="help-submit"]').click()
+                page.wait_for_url(lambda url, p=pattern: p in url)
+                assert page.locator('[data-testid="help-turn"]').count() == number
+                assert page.locator('[data-testid="help-escalation-prompt"]').count() == (1 if number == 3 else 0)
+            page.locator('[data-testid="help-ask-the-city"]').click()
+            page.wait_for_selector('[data-testid="help-request"]')
+            assert page.locator('[data-testid="help-escalation-prompt"]').count() == 0
+            # a fresh visit starts a fresh conversation for the next placement
+    finally:
+        context.close()
+
+
+def test_the_form_placement_prompts_in_its_own_context_and_keeps_the_form(browser, server: BrowserServer) -> None:
+    context = browser.new_context(java_script_enabled=False)
+    try:
+        page = sign_in(context, server, "persona_applicant")
+        page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
+        page.locator("#f-applicant_name").fill("Tamsin Aldous")
+        current = page
+        for number, question in enumerate(NONSENSE, start=1):
+            current.locator('[data-testid="help-question"]').fill(question)
+            with context.expect_page() as opened:
+                current.locator('[data-testid="help-submit"]').click()
+            current = opened.value
+            current.wait_for_load_state("domcontentloaded")
+            assert "/apply/help/panel" in current.url
+            assert current.locator('[data-testid="help-turn"]').count() == number
+        assert current.locator('[data-testid="help-escalation-prompt"]').count() == 1
+        with context.expect_page() as asked:
+            current.locator('[data-testid="help-ask-the-city"]').click()
+        result = asked.value
+        result.wait_for_load_state("domcontentloaded")
+        assert result.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
+        assert page.locator("#f-applicant_name").input_value() == "Tamsin Aldous"  # the form is untouched
+    finally:
+        context.close()
+
+
+def test_the_administrators_reply_reaches_the_applicant(browser, server: BrowserServer) -> None:
+    applicant_context = browser.new_context(viewport={"width": 1280, "height": 900})
+    admin_context = browser.new_context(viewport={"width": 1280, "height": 900})
+    try:
+        applicant = sign_in(applicant_context, server, "persona_applicant")
+        applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
+        applicant.locator('[data-testid="help-escalate-question"]').fill("Who is reviewing my fence application?")
+        applicant.locator('[data-testid="help-ask-the-city"]').click()
+        applicant.wait_for_selector('[data-testid="help-request"]')
+        tracker_url = applicant.url
+
+        admin = sign_in(admin_context, server, "persona_city_administrator")
+        admin.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
+        card = admin.locator('[data-testid="help-request-card"]').first
+        assert "Who is reviewing my fence application?" in card.inner_text()
+        assert "SYN-APP-005" in card.inner_text()
+        card.locator('[data-testid="help-reply"]').fill(REPLY)
+        card.locator('[data-testid="help-answer"]').click()
+        admin.wait_for_selector('[data-testid="feedback-message"]')
+
+        applicant.goto(tracker_url, wait_until="domcontentloaded")
+        body = applicant.inner_text("body")
+        assert REPLY in body  # as the comment on the case and as the answer in the panel
+        assert applicant.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "answered"
+        assert "Answer from the City" in body
+    finally:
+        applicant_context.close()
+        admin_context.close()

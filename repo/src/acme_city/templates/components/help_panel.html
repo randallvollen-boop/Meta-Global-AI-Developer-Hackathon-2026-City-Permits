@@ -81,7 +81,12 @@
     {% endif %}
   </div>
 
-  <h3>Ask a person at the City</h3>
+  <div data-help-escalation-slot>
+  {% if help_escalation and help_escalation.offered %}
+  <p class="callout" role="status" data-testid="help-escalation-prompt" data-reason="{{ help_escalation.reason }}">{{ help_escalation.text }} <a href="#help-ask-city">Go to Ask the City</a></p>
+  {% endif %}
+  </div>
+  <h3 id="help-ask-city">Ask a person at the City</h3>
   <p class="muted">Your question goes to the City's support desk. A person answers it.</p>
   <form method="post" action="/apply/help/escalate" class="help-form" data-help-form{% if help_placement == 'form' %} target="_blank"{% endif %} data-testid="help-escalate-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -107,7 +112,7 @@
   <h3>Your requests to the City</h3>
   <ul data-testid="help-requests">
     {% for item in help_requests %}
-    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} — {{ item.status }}{% if item.reply %}: {{ item.reply }}{% endif %}</li>
+    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} — {{ item.status }}{% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
     {% endfor %}
   </ul>
   {% endif %}

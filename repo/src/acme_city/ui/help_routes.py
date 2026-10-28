@@ -107,6 +107,7 @@ def _answer_payload(service: ApplicantHelpService, result: Any) -> dict[str, Any
         "status": "accepted",
         "conversation_id": conversation.id,
         "conversation_version": conversation.version,
+        "escalation": service.escalation_state(conversation),
         "answer": result.answer.to_dict(),
         "turns": [
             help_views.turn_view(turn) for turn in service.turns(conversation)
@@ -264,6 +265,9 @@ async def ui_portal_help_escalate(
             conversation_id=conversation_id,
             expected_version=_expected_version(form),
             question=str(form.get("question", "")),
+            placement=placement,
+            permit_type_key=type_key,
+            application_id=application_id,
         )
         session.commit()
     except AcmeError as error:

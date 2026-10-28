@@ -62,6 +62,9 @@ other organisational identity are service identities.
   cannot help, so that my question is answered by the City.
   - Acceptance: **Ask the City** creates a help request that the City's
     support desk answers; my conversation stays private to me until then.
+    After three questions the assistant could not answer, or when I ask for a
+    person, the panel prompts me to use it; the City's answer appears on my
+    case and in the panel.
 - As an Applicant, I want the help panel never to lose what I have typed,
   so that asking a question does not cost me my application.
   - Acceptance: the help question is a form of its own; on the application
