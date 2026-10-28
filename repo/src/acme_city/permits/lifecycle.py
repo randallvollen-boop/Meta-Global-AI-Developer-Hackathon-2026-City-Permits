@@ -72,16 +72,13 @@ ARCHIVABLE_STATUSES: frozenset[str] = frozenset(
     }
 )
 
-#: The statuses a case may hold when it is routed to an intake owner.
-INTAKE_STAGE_STATUSES: frozenset[str] = frozenset(
-    {"submitted", "needs_information", "revisions_requested"}
-)
-
-#: The statuses a case may hold when it is routed to a review owner.
-REVIEW_STAGE_STATUSES: frozenset[str] = frozenset({"ready_for_review", "under_review"})
-
-
 class LifecycleService:
+    """The transitions a person makes on an application.
+
+    The priority and the owner of a case are routing metadata and live in
+    :mod:`acme_city.permits.routing`; the waiver of a finding lives in
+    :mod:`acme_city.permits.finding_actions`.
+    """
     """The transitions a person makes on an application."""
 
     def __init__(self, session: Session, *, now: datetime | None = None) -> None:
