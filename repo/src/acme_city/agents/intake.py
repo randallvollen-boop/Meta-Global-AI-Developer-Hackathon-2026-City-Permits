@@ -49,16 +49,16 @@ from acme_city.persistence.models import permit, registry
 from acme_city.registry.candidates import generate_candidates
 from acme_city.registry.schemas import MatchProposalCommand
 from acme_city.registry.service import RegistryService
+from acme_city.kernel import intake as kernel
+from acme_city.kernel.intake import (
+    BLOCKING_QUALITY_FLAGS,
+    DUPLICATE_QUALITY_FLAGS,
+    JUDGMENT_QUALITY_FLAGS,
+)
 from acme_city.rules.catalog import select_fee_schedule
 
 #: The service identity the intake agent acts as.
 INTAKE_AGENT_ID = "service_agent_intake"
-
-#: The document-quality flags the document QC node reads.  Only an unreadable
-#: page blocks the case; the others ask a person to look.
-BLOCKING_QUALITY_FLAGS: frozenset[str] = frozenset({"unreadable"})
-DUPLICATE_QUALITY_FLAGS: frozenset[str] = frozenset({"duplicate_page"})
-JUDGMENT_QUALITY_FLAGS: frozenset[str] = frozenset({"rotated", "low_res", "handwritten"})
 
 #: The statuses a case may hold and still be a duplicate candidate.
 LIVE_STATUSES: frozenset[str] = frozenset(
@@ -71,6 +71,62 @@ LIVE_STATUSES: frozenset[str] = frozenset(
         "issued",
     }
 )
+
+
+def type_facts_of(permit_type: permit.PermitType) -> kernel.TypeFacts:
+    """Return the frozen facts of a stored permit type that the producers read."""
+    return kernel.TypeFacts(
+        key=permit_type.key,
+        label=permit_type.label,
+        active=bool(permit_type.active),
+        fee_schedule_key=permit_type.fee_schedule_key,
+        review_area=permit_type.review_area,
+        review_route=permit_type.review_route,
+        required_fields=tuple(permit_type.required_fields or ()),
+        required_documents=tuple(permit_type.required_documents or ()),
+    )
+
+
+def find_duplicate(
+    session: Session, application: permit.Application
+) -> permit.Application | None:
+    """Return another live case that asks for the same project.
+
+    A duplicate is the same applicant asking for the same project at the same
+    address for the same permit type.  Two different projects of the same
+    applicant (a front fence and a rear fence, say) are not duplicates of each
+    other.  The stored cases are read here; the decision is the pure
+    :func:`acme_city.kernel.intake.first_duplicate`.
+    """
+    facts = dict(application.submitted_facts or {})
+    applicant, address, _description = kernel.duplicate_key(facts)
+    if not applicant or not address:
+        return None
+    rows = session.execute(
+        select(permit.Application).where(
+            permit.Application.id != application.id,
+            permit.Application.status.in_(sorted(LIVE_STATUSES)),
+        )
+    ).scalars().all()
+    peers = []
+    by_id: dict[str, permit.Application] = {}
+    for row in rows:
+        other_applicant, other_address, other_description = kernel.duplicate_key(
+            dict(row.submitted_facts or {})
+        )
+        by_id[row.id] = row
+        peers.append(
+            kernel.PeerFacts(
+                reference=row.id,
+                number=row.source_application_number,
+                permit_type_id=row.permit_type_id,
+                applicant=other_applicant,
+                address=other_address,
+                description=other_description,
+            )
+        )
+    match = kernel.first_duplicate(facts, application.permit_type_id, peers)
+    return None if match is None else by_id[match.reference]
 
 
 def service_actor(session: Session, actor_id: str) -> ActorContext:
@@ -269,44 +325,19 @@ class IntakeAgent:
         permits = PermitService(self._session, now=self._now)
         permit_type = permits.permit_type(application)
         facts = dict(application.submitted_facts or {})
-        channel = str(facts.get("channel") or "unknown")
-        declared = str(facts.get("permit_type_key") or "")
-        status = "ok"
-        notes = [
-            f"Permit type {permit_type.key} confirmed; received by the {channel} channel."
-        ]
-        if declared and declared != permit_type.key:
-            status = "warn"
-            findings.add(
-                finding_type="wrong_type",
-                message=(
-                    f"The intake record asked for {declared!r} but the case was created as "
-                    f"{permit_type.key!r}. A person must confirm which permit type applies."
-                ),
-                rule="ACME Code §13-101",
-                applicant_must="Confirm the permit type of this application.",
-                severity="review",
-            )
-            notes.append("The declared type differs from the recorded type.")
-        if not permit_type.active:
-            status = "block"
-            findings.add(
-                finding_type="conflict",
-                message=(
-                    f"The permit type {permit_type.key!r} is no longer active, so the "
-                    "case cannot be routed to a review area."
-                ),
-                rule="ACME Code §13-102",
-                applicant_must="Ask the City which permit type applies now.",
-                severity="block",
-            )
-            notes.append("The permit type is not active.")
-        self._check_fee_schedule(run, application, permit_type, findings, notes)
-        review_area = (
-            str((application.requirements_snapshot or {}).get("review_area") or "")
-            or permit_type.review_area
-            or permit_type.review_route
+        classified = kernel.classify_type(
+            type_facts_of(permit_type),
+            channel=str(facts.get("channel") or "unknown"),
+            declared_type_key=str(facts.get("permit_type_key") or ""),
+            fee_schedule_id=self._fee_schedule_in_force(application, permit_type),
+            requirements_review_area=str(
+                (application.requirements_snapshot or {}).get("review_area") or ""
+            ),
         )
+        findings.add_specs(classified.findings)
+        status = classified.status
+        notes = list(classified.notes)
+        review_area = classified.review_area
         application.review_area = review_area
         application.priority = self._priority_of(facts, application.priority)
         self._session.flush()
@@ -325,57 +356,20 @@ class IntakeAgent:
             return stated
         return current if current in {"normal", "high"} else "normal"
 
-    def _check_fee_schedule(
-        self,
-        run: agent_models.AgentRun,
-        application: permit.Application,
-        permit_type: permit.PermitType,
-        findings: FindingWriter,
-        notes: list[str],
-    ) -> None:
-        """Record a fee finding when the City cannot price the case.
+    def _fee_schedule_in_force(
+        self, application: permit.Application, permit_type: permit.PermitType
+    ) -> str | None:
+        """Return the id of the published fee schedule in force for the case.
 
         The fee facts are the fee schedule the permit type names and the
-        published schedule in force on the recorded basis date.  A case the
-        City cannot price cannot be carried through review, so the finding
-        blocks.
+        published schedule in force on the recorded basis date.  ``None`` means
+        the City cannot price the case.
         """
-        basis_at = application.initial_submitted_at or self._now
         if not permit_type.fee_schedule_key:
-            findings.add(
-                finding_type="fee",
-                message=(
-                    f"The permit type {permit_type.key!r} names no fee schedule, so the "
-                    "City cannot price this case."
-                ),
-                rule="ACME Code §13-105",
-                applicant_must=(
-                    "Ask the City which fee applies to this permit type; the fee "
-                    "schedule is being updated."
-                ),
-                severity="block",
-            )
-            notes.append("The permit type names no fee schedule.")
-            return
+            return None
+        basis_at = application.initial_submitted_at or self._now
         schedule = select_fee_schedule(self._session, basis_at, permit_type.key)
-        if schedule is not None:
-            notes.append(f"Fee schedule {schedule.fee_schedule_id} is in force.")
-            return
-        findings.add(
-            finding_type="fee",
-            message=(
-                f"No published fee schedule is in force for the permit type "
-                f"{permit_type.key!r} on the recorded basis date, so the City cannot "
-                "price this case."
-            ),
-            rule="ACME Code §13-105",
-            applicant_must=(
-                "Ask the City which fee applies to this permit type; the fee schedule "
-                "is being updated."
-            ),
-            severity="block",
-        )
-        notes.append("No fee schedule is in force for the permit type.")
+        return None if schedule is None else schedule.fee_schedule_id
 
     def _node_field_extractor(
         self,
@@ -556,58 +550,12 @@ class IntakeAgent:
         documents = self._session.execute(
             select(permit.Document).where(permit.Document.application_id == application.id)
         ).scalars().all()
-        status = "ok"
-        notes: list[str] = []
-        for document in documents:
-            flags = [str(flag) for flag in (document.quality or [])]
-            for flag in flags:
-                if flag in BLOCKING_QUALITY_FLAGS:
-                    status = "block"
-                    findings.add(
-                        finding_type="unreadable",
-                        message=(
-                            f"The {document.document_type} page cannot be read, so the "
-                            "case cannot be assessed until a readable copy arrives."
-                        ),
-                        rule="ACME Code §13-302",
-                        applicant_must=(
-                            f"Provide a readable copy of the {document.document_type}."
-                        ),
-                        severity="block",
-                    )
-                    notes.append(f"{document.document_type}: {flag}.")
-                elif flag in DUPLICATE_QUALITY_FLAGS:
-                    status = "warn" if status == "ok" else status
-                    findings.add(
-                        finding_type="duplicate",
-                        message=(
-                            f"The {document.document_type} page repeats an earlier page "
-                            "of the same document."
-                        ),
-                        rule="ACME Code §13-303",
-                        applicant_must=(
-                            f"Confirm that the {document.document_type} has no repeated page."
-                        ),
-                        severity="review",
-                    )
-                    notes.append(f"{document.document_type}: {flag}.")
-                elif flag in JUDGMENT_QUALITY_FLAGS:
-                    status = "warn" if status == "ok" else status
-                    findings.add(
-                        finding_type="judgment",
-                        message=(
-                            f"The {document.document_type} page was received {flag.replace('_', ' ')}, "
-                            "so a person should read it before the case is assessed."
-                        ),
-                        rule="ACME Code §13-304",
-                        applicant_must=(
-                            f"Provide a clearer copy of the {document.document_type}."
-                        ),
-                        severity="review",
-                    )
-                    notes.append(f"{document.document_type}: {flag}.")
-        if not notes:
-            notes.append("No scan-quality problem was reported on the received documents.")
+        quality = kernel.document_quality(
+            (document.document_type, list(document.quality or [])) for document in documents
+        )
+        findings.add_specs(quality.findings)
+        status = quality.status
+        notes = list(quality.notes)
         self._finish(run, row, status=status, note=" ".join(notes))
 
     def _node_duplicate_finder(
@@ -625,20 +573,8 @@ class IntakeAgent:
         duplicate = self._find_duplicate(application)
         if duplicate is not None:
             status = "warn"
-            findings.add(
-                finding_type="duplicate",
-                message=(
-                    "The same applicant asked for the same project at the same address "
-                    f"for the same permit type in {duplicate.source_application_number}. "
-                    "A person must confirm whether this is a resubmission."
-                ),
-                rule="ACME Code §13-401",
-                applicant_must=(
-                    "Tell the City whether this is a new application or a resubmission of "
-                    f"{duplicate.source_application_number}."
-                ),
-                severity="review",
-                related_application_id=duplicate.id,
+            findings.add_spec(
+                kernel.duplicate_finding(duplicate.source_application_number, duplicate.id)
             )
             notes.append(f"Duplicate of {duplicate.source_application_number}.")
         proposals, matched, failures = self._propose_links(application, actor)
@@ -654,43 +590,8 @@ class IntakeAgent:
     def _find_duplicate(
         self, application: permit.Application
     ) -> permit.Application | None:
-        """Return another live case that asks for the same project.
-
-        A duplicate is the same applicant asking for the same project at the
-        same address for the same permit type.  Two different projects of the
-        same applicant (a front fence and a rear fence, say) are not
-        duplicates of each other.
-        """
-        facts = dict(application.submitted_facts or {})
-        applicant = str(facts.get("applicant_name") or "").strip().lower()
-        address = str(
-            facts.get("submitted_site_text") or facts.get("site_address") or ""
-        ).strip().lower()
-        description = str(facts.get("project_description") or "").strip().lower()
-        if not applicant or not address:
-            return None
-        rows = self._session.execute(
-            select(permit.Application).where(
-                permit.Application.id != application.id,
-                permit.Application.status.in_(sorted(LIVE_STATUSES)),
-            )
-        ).scalars().all()
-        for row in rows:
-            other = dict(row.submitted_facts or {})
-            if str(other.get("applicant_name") or "").strip().lower() != applicant:
-                continue
-            other_address = str(
-                other.get("submitted_site_text") or other.get("site_address") or ""
-            ).strip().lower()
-            if other_address != address:
-                continue
-            if row.permit_type_id != application.permit_type_id:
-                continue
-            other_description = str(other.get("project_description") or "").strip().lower()
-            if description and other_description and other_description != description:
-                continue
-            return row
-        return None
+        """Return another live case that asks for the same project."""
+        return find_duplicate(self._session, application)
 
     def _propose_links(
         self, application: permit.Application, actor: ActorContext
@@ -787,34 +688,16 @@ class IntakeAgent:
         documents = DocumentService(self._session, root=self._document_root).list_versions(
             application.id
         )
-        present_types = {document.document_type for document in documents}
-        missing_fields = [
-            field
-            for field in requirements["required_fields"]
-            if facts.get(field) is None
-            or (isinstance(facts.get(field), str) and not str(facts.get(field)).strip())
-        ]
-        missing_documents = [
-            document
-            for document in requirements["required_documents"]
-            if document not in present_types
-        ]
-        for field in missing_fields:
-            findings.add(
-                finding_type="missing_field",
-                message=f"The application does not state {field.replace('_', ' ')}.",
-                rule=f"ACME Code §13-501 ({permit_type.key} required fields)",
-                applicant_must=f"State {field.replace('_', ' ')} on the application.",
-                severity="block",
-            )
-        for document in missing_documents:
-            findings.add(
-                finding_type="missing_document",
-                message=f"The application does not include the {document.replace('_', ' ')}.",
-                rule=f"ACME Code §13-502 ({permit_type.key} required documents)",
-                applicant_must=f"Provide the {document.replace('_', ' ')}.",
-                severity="block",
-            )
+        result = kernel.completeness(
+            type_key=permit_type.key,
+            required_fields=requirements["required_fields"],
+            required_documents=requirements["required_documents"],
+            facts=facts,
+            present_document_types={document.document_type for document in documents},
+        )
+        findings.add_specs(result.findings)
+        missing_fields = list(result.missing_fields)
+        missing_documents = list(result.missing_documents)
         if missing_fields or missing_documents:
             self._finish(
                 run,
@@ -846,19 +729,11 @@ class IntakeAgent:
         force at that moment.  A case that was seeded directly carries none,
         so the current configuration of its type applies.
         """
-        snapshot = dict(application.requirements_snapshot or {})
-        return {
-            "required_fields": list(
-                snapshot.get("required_fields")
-                if snapshot.get("required_fields") is not None
-                else (permit_type.required_fields or [])
-            ),
-            "required_documents": list(
-                snapshot.get("required_documents")
-                if snapshot.get("required_documents") is not None
-                else (permit_type.required_documents or [])
-            ),
-        }
+        return kernel.requirements_of(
+            application.requirements_snapshot,
+            permit_type.required_fields,
+            permit_type.required_documents,
+        )
 
     def _node_router(
         self,
@@ -869,29 +744,10 @@ class IntakeAgent:
         """Route the case to early resolution or to review."""
         node = graphs.node_for('intake', graphs.INTAKE_ROUTER)
         row = self._begin(run, node)
-        blocking = findings.blocking
-        judging = findings.judging
-        if blocking:
-            application.status = "needs_information"
-            outcome = "needs_information"
-            note = (
-                f"Route to early resolution: {len(blocking)} blocking finding(s) must be "
-                "cleared first."
-            )
-        elif judging:
-            application.status = "needs_information"
-            outcome = "needs_information"
-            note = (
-                "Verify before review: "
-                f"{len(judging)} finding(s) need a person's judgement."
-            )
-        else:
-            application.status = "ready_for_review"
-            outcome = "completed"
-            note = (
-                "Ready for review in the "
-                f"{application.review_area or 'assigned'} area."
-            )
+        routed = kernel.route(findings.findings, application.review_area)
+        application.status = routed.status
+        outcome = routed.outcome
+        note = routed.reason
         self._session.flush()
         run.outcome = outcome
         self._finish(run, row, status="ok", note=note)
@@ -904,6 +760,8 @@ __all__ = [
     "JUDGMENT_QUALITY_FLAGS",
     "LIVE_STATUSES",
     "IntakeAgent",
+    "find_duplicate",
     "service_actor",
+    "type_facts_of",
     "waiting_applications",
 ]

@@ -33,29 +33,15 @@ from sqlalchemy.orm import Session
 
 from acme_city.core.clock import utc_now
 from acme_city.core.ids import new_id
+from acme_city.kernel.findings import (
+    FINDING_TYPES,
+    HUMAN_JUDGMENT_TYPES,
+    SEVERITIES,
+    FindingSpec,
+    is_blocking,
+    is_judging,
+)
 from acme_city.persistence.models import permit
-
-#: The finding types an agent may record.
-FINDING_TYPES: tuple[str, ...] = (
-    "missing_field",
-    "missing_document",
-    "unreadable",
-    "wrong_type",
-    "duplicate",
-    "conflict",
-    "fee",
-    "low_confidence_extraction",
-    "judgment",
-)
-
-#: The severities a finding may carry.
-SEVERITIES: tuple[str, ...] = ("block", "review")
-
-#: The finding types that ask a person to judge the case rather than block
-#: it.  They route the case to early resolution for verification.
-HUMAN_JUDGMENT_TYPES: frozenset[str] = frozenset(
-    {"duplicate", "conflict", "low_confidence_extraction", "judgment"}
-)
 
 #: The finding types a Data Steward may waive.  A missing field, a missing
 #: document, an unreadable page and a fee question are not waivable: the
@@ -103,6 +89,23 @@ class FindingWriter:
         self._run_id = run_id
         self.findings: list[permit.ApplicationFinding] = []
 
+    def add_spec(self, spec: FindingSpec) -> permit.ApplicationFinding:
+        """Record a finding that a pure producer stated."""
+        return self.add(
+            finding_type=spec.finding_type,
+            message=spec.message,
+            rule=spec.rule,
+            applicant_must=spec.applicant_must,
+            severity=spec.severity,
+            related_application_id=spec.related_application_id,
+            source_node=spec.source_node,
+        )
+
+    def add_specs(self, specs: "tuple[FindingSpec, ...] | list[FindingSpec]") -> None:
+        """Record every finding a pure producer stated, in order."""
+        for spec in specs:
+            self.add_spec(spec)
+
     def add(
         self,
         *,
@@ -143,7 +146,7 @@ class FindingWriter:
     @property
     def blocking(self) -> list[permit.ApplicationFinding]:
         """Return the findings that block the case."""
-        return [row for row in self.findings if row.severity == "block"]
+        return [row for row in self.findings if is_blocking(row.severity)]
 
     @property
     def judging(self) -> list[permit.ApplicationFinding]:
@@ -151,7 +154,7 @@ class FindingWriter:
         return [
             row
             for row in self.findings
-            if row.severity == "review" and row.finding_type in HUMAN_JUDGMENT_TYPES
+            if is_judging(row.severity, row.finding_type)
         ]
 
 
