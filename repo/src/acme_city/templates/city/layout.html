@@ -62,6 +62,7 @@
 </div>
 
 <main id="main" class="city-main">
+  {% if moved_notice %}<p class="city-wrap notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
   {% block content %}{% endblock %}
 </main>
 

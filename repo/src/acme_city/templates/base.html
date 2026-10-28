@@ -132,12 +132,14 @@
 {% endif %}
 
 <main id="main">
+  {% if moved_notice %}<p class="notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
   {% if error %}
   <section class="panel panel-error" role="alert" data-testid="error-panel">
     <h2>{{ error.title }}</h2>
     <p>{{ error.message }}</p>
     {% if error.code %}<p class="muted">Error code: {{ error.code }}</p>{% endif %}
-    {% if error.back %}<p><a href="{{ error.back }}">Return to the previous screen</a></p>{% endif %}
+    {% if home %}<p><a href="{{ home.href }}" data-testid="go-home">Go to {{ home.label }}</a></p>{% endif %}
+    {% if error.back and (not home or error.back != home.href) %}<p><a href="{{ error.back }}">Return to the previous screen</a></p>{% endif %}
   </section>
   {% endif %}
 

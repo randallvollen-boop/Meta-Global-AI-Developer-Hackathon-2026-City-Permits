@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from pathlib import Path
 
@@ -182,3 +183,60 @@ def test_both_layouts_say_the_switcher_is_for_demonstration_only(client: TestCli
         assert "role would come from that sign-in" in page
     assert "Fictional ACME City demonstration." in staff
     assert "Fictional City of Acme website" in city
+
+
+# ------------------------------------------------- persona switch smoothing
+
+def _switch(client: TestClient, actor_id: str, next_path: str):
+    return client.post(
+        "/ui/actor", data={"actor_id": actor_id, "next": next_path}, follow_redirects=False
+    )
+
+
+def test_switching_from_a_screen_the_new_persona_cannot_open_lands_on_its_home(client: TestClient) -> None:
+    choose(client, "persona_city_administrator")
+    done = _switch(client, "persona_data_steward", "/admin")
+    assert done.status_code == 303
+    home, _, query = done.headers["location"].partition("?")
+    assert query == "moved_from=admin"
+    page = client.get(done.headers["location"])
+    assert page.status_code == 200
+    assert "Data Steward can't open Administration, so you're on" in html.unescape(page.text)
+    assert 'data-testid="moved-notice"' in page.text
+    # the home is the first screen of the new persona's own navigation, not a label rule
+    nav = re.findall(r'data-screen-key="([a-z_]+)"', page.text)
+    assert nav and home == {"queue": "/queue", "applicants": "/applicants"}.get(nav[0], home)
+
+    choose(client, "persona_data_steward")
+    done = _switch(client, "persona_permit_reviewer", "/queue/intake")
+    assert "moved_from=intake_queue" in done.headers["location"]
+    page = client.get(done.headers["location"])
+    assert "Permit Reviewer can't open Intake queue" in html.unescape(page.text)
+
+    done = _switch(client, "persona_applicant", "/admin")
+    assert done.headers["location"] == "/city/?moved_from=admin"
+    assert "Applicant can't open Administration, so you're on the City website instead." in html.unescape(
+        client.get(done.headers["location"]).text
+    )
+
+
+def test_a_switch_onto_a_permitted_screen_stays_there(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    assert _switch(client, "persona_permit_reviewer", "/queue").headers["location"] == "/queue"
+    assert _switch(client, "persona_city_administrator", "/admin").headers["location"] == "/admin"
+    assert _switch(client, "persona_data_steward", "/queue/intake").headers["location"] == "/queue/intake"
+    assert "moved-notice" not in client.get("/queue/intake").text
+
+
+def test_a_refused_screen_keeps_the_navigation_and_offers_home(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    response = client.get("/admin")
+    assert response.status_code == 403
+    page = response.text
+    assert 'data-testid="error-panel"' in page and 'data-testid="go-home"' in page
+    assert re.search(r'data-testid="go-home">Go to [^<]+</a>', page)
+    keys = re.findall(r'data-screen-key="([a-z_]+)"', page)
+    assert keys and "admin" not in keys
+    assert 'href="/queue"' in page or 'href="/applicants"' in page
+    # the refusal itself leaks nothing from the screen
+    assert "Administration</h1>" not in page

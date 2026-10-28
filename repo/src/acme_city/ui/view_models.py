@@ -469,6 +469,47 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     return items
 
 
+def screen_for_path(path: str) -> str | None:
+    """Return the staff screen key a path belongs to, or ``None`` for any other path.
+
+    The longest matching ``SCREENS`` href wins, so ``/queue/intake`` is the intake
+    queue and not the work queue. A case page is the permit workspace.
+    """
+    path = path.split("?", 1)[0].split("#", 1)[0].rstrip("/") or "/"
+    if path.startswith("/permits/"):
+        return "permit"
+    best: tuple[int, str] | None = None
+    for screen in SCREENS:
+        href = screen["href"]
+        if href and (path == href or path.startswith(href + "/")):
+            if best is None or len(href) > best[0]:
+                best = (len(href), screen["key"])
+    return best[1] if best else None
+
+
+def screen_label(key: str) -> str:
+    return next((screen["label"] for screen in SCREENS if screen["key"] == key), key)
+
+
+def may_open_screen(session: Session, actor: ActorContext, key: str) -> bool:
+    """Return whether the persona holds a grant for a screen (the guard's own predicate)."""
+    return any(
+        holds_grant(session, actor, permission, domain_id)
+        for permission, domain_id in SCREEN_PERMISSIONS.get(key, ())
+    )
+
+
+def home_for(session: Session, actor: ActorContext) -> dict[str, str]:
+    """Return the first screen of the persona's own navigation.
+
+    A persona with no staff screen (the Applicant) lands on the City website.
+    """
+    for item in navigation(session, actor):
+        if item.get("href"):
+            return {"label": item["label"], "href": item["href"], "key": item["key"]}
+    return {"label": "the City website", "href": "/city/", "key": "city"}
+
+
 def queue_links(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     """Return the saved queues the acting persona may open from the work queue.
 
@@ -3897,6 +3938,10 @@ __all__ = [
     "SCREEN_DOMAIN",
     "SCREEN_PERMISSIONS",
     "SCREENS",
+    "home_for",
+    "may_open_screen",
+    "screen_for_path",
+    "screen_label",
     "action",
     "allowed_actions_for",
     "allows",
