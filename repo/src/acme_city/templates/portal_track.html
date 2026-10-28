@@ -1,7 +1,9 @@
 {% extends "city/layout.html" %}
 
+{% import "_ui.html" as ui with context %}
+
 {% block content %}
-<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div></div>
+<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div><div class="actions">{{ ui.help_button('apply_track') }}</div></div>
 <section class="panel">
   <form method="get" action="/apply/track" role="search" data-testid="track-form">
     <p class="field"><label for="track-ref">Reference number</label><input id="track-ref" name="ref" value="{{ ref }}" required></p>
@@ -33,13 +35,24 @@
     {% endfor %}
   </ol>
   {% endif %}
+  {% if tracked.documents %}
+  <h3>Your documents</h3>
+  <ul data-testid="tracked-documents">
+    {% for doc in tracked.documents %}
+    <li data-doc-type="{{ doc.type }}">{{ doc.label }}:
+      {% if doc.have %}received
+      {% elif doc.declared_separately %}<span data-testid="declared-separately">Declared sent separately &mdash; not yet received</span>
+      {% else %}not received{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   {% if tracked.revisions_requested %}
   <h3>Submit revised documents</h3>
   <form method="post" action="/apply/track/{{ tracked.application_id }}/revise" enctype="multipart/form-data" data-testid="revise-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="reference" value="{{ tracked.reference }}">
     {% for doc in tracked.documents %}
-    <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+    <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
     {% endfor %}
     <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
   </form>
@@ -50,11 +63,13 @@
     <input type="hidden" name="reference" value="{{ tracked.reference }}">
     <input type="hidden" name="expected_version" value="{{ tracked.application_version }}">
     {% for doc in tracked.documents %}
-    <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+    <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
     {% endfor %}
     <p><button type="submit" class="btn primary" data-testid="resubmit-submit">Send the answer to the City</button></p>
   </form>
   {% endif %}
 </section>
 {% endif %}
+
+{% include "components/help_panel.html" %}
 {% endblock %}

@@ -33,7 +33,7 @@ from acme_city.portal_intake.scenarios import (
 BUSINESS_CATEGORIES: tuple[str, ...] = ("restaurant", "bar", "retail", "office", "other")
 
 #: The words that place a business in a category, tried in this order.  The
-#: same table ran in migration 0008 for the businesses that already existed.
+#: same table ran in migration 0009 for the businesses that already existed.
 CATEGORY_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("bar", ("tavern", "pub", "brewery", "taproom", "lounge", " bar")),
     (

@@ -455,3 +455,75 @@ def test_live_evidence_requires_a_successful_live_provider_response(tmp_path: Pa
     succeeded, _payload, reason = runner.read_live_evidence(replay)
     assert succeeded is False
     assert "cannot satisfy" in reason
+
+
+def test_a_live_check_whose_deterministic_node_failed_is_failed_not_blocked() -> None:
+    runner = load_runner()
+    check = {
+        "check_id": "AT15",
+        "node_ids": ["tests/acceptance/test_at15.py::test_a"],
+        "live_required": True,
+    }
+    status, failure = runner.status_for(
+        check,
+        {"tests/acceptance/test_at15.py::test_a": "failed"},
+        live_executed=False,
+        reasons={},
+    )
+    assert status == "failed"
+    assert "test_a" in failure
+
+    status, failure = runner.status_for(
+        check, {}, live_executed=False, reasons={}
+    )
+    assert status == "failed"
+    assert "did not run" in failure
+
+
+def test_the_runner_fails_when_pytest_exits_nonzero_without_a_failing_test(
+    tmp_path: Path, sample_family: Path
+) -> None:
+    # Every test case passes, but the session ends with an error, so pytest
+    # exits nonzero.  The run must still fail.
+    (sample_family / "conftest.py").write_text(
+        "def pytest_sessionfinish(session, exitstatus):\n"
+        "    raise RuntimeError(\"a fictional session-finalization error\")\n",
+        encoding="utf-8",
+    )
+    checks = [
+        {
+            "check_id": "AT01",
+            "kind": "acceptance",
+            "title": "the sample passes",
+            "expected": "the sample passes",
+            "node_ids": ["var/runner_acceptance/test_sample_pass.py::test_the_sample_passes"],
+            "evidence_refs": ["sample"],
+            "live_required": False,
+            "pending": False,
+        },
+    ]
+    families = {"sample": {"paths": ["var/runner_acceptance"], "mode": "deterministic"}}
+    inventory = write_inventory(tmp_path / "inventory.json", checks, families)
+    evidence = tmp_path / "evidence"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER_PATH),
+            "--deterministic",
+            "--inventory",
+            str(inventory),
+            "--evidence-dir",
+            str(evidence),
+            "--quiet",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 1, completed.stdout + completed.stderr
+    assert "exited" in completed.stderr or "could not be collected" in completed.stderr
+    log = evidence / "artifacts" / "sample.log"
+    assert log.is_file()
+    assert "session-finalization" in log.read_text(encoding="utf-8")

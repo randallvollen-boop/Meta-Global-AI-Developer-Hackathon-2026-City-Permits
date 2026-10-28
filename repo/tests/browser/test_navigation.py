@@ -118,6 +118,12 @@ def test_the_navigation_holds_the_screens_of_the_persona(
     for actor_id, expected in NAVIGATION_BY_PERSONA.items():
         login(actor_id)
         page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
+        if actor_id == "persona_applicant":
+            # Changed deliberately: the Applicant has no staff-layout landing any more; /queue
+            # redirects to the City website, which carries no staff navigation.
+            assert page.url.rstrip("/").endswith("/city"), page.url
+            assert page.locator(".side .app-nav a").count() == 0
+            continue
         items = page.locator(".side .app-nav a")
         assert items.count() == len(expected), actor_id
         keys = [items.nth(index).get_attribute("data-screen-key") for index in range(len(expected))]

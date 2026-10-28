@@ -451,6 +451,100 @@ change, and `modified` keeps its existing meaning and stays non-issuable.
 * An approval with conditions that names no condition is refused by the
   service, not only by the form.
 
+## The applicant help assistant
+
+The help panel is offered to the **Applicant** on the chooser (`/apply`), on
+the application form (`/apply/<type>`) and on the tracker
+(`/apply/track?ref=…`).  No other persona may open it: the portal itself
+answers 403 to a staff persona.
+
+The assistant **explains**; it never decides.  It answers only from a source
+bundle the server builds, and it quotes that bundle.
+
+### What it answers from
+
+| Source | What it holds |
+|---|---|
+| Published rule versions | the rules in force at the basis date, each rendered with its **applicability**, its **operator**, its **threshold** and its **conditions**; a draft rule never reaches an applicant |
+| Permit-type configuration | the review area, the process category, the discretionary flag, the required fields and the required documents |
+| Service target | the configured target of the type, with its definition, as a target and never as a promise |
+| Lifecycle and process passages | the fixed applicant-facing passages of `config/applicant_help.json`, each with an identifier |
+| The applicant's own case | its status, the current findings with their "you must" line, the comments written for the applicant and the next step open to them |
+
+The **basis date** is the application's first submission time for the rules of
+that case, and the server's own time for general guidance.
+
+The bundle is checked against the same truth guard the model payloads use: it
+may not carry an expected outcome or a decision.  It never carries another
+applicant's record and never carries an internal note.
+
+### How it answers
+
+The answer of this part is **deterministic**: a stable ranking over the
+bundle.  A word of the question that is a keyword of a passage counts double,
+a word that appears in the text of the passage counts once, a passage whose
+threshold is the number the question names counts again, and the passages
+are ordered by the score and then by their identifier.  The answer quotes the
+matching passages and shows them as citations.
+
+* A question that matches nothing gets an explicit **no-match**, never a
+  guess.
+* The answer is labelled **"Matching ACME rule text (not an AI answer)"**.
+* A limit is never an exemption: the answer quotes the rule with its
+  applicability, so a 6 ft limit is shown as a limit that applies in the
+  side and rear yard, and the front-yard limit is shown beside it.
+* The **next steps** are derived by the server from the grants the applicant
+  holds, never from the text of an answer.
+
+### The two timing figures
+
+The panel shows the configured **service target** and the current
+**backlog of the review area** as two separate figures, each with its own
+definition and the time it was read.  They are never added together, no
+completion date is computed and no queue position is claimed.
+
+### The conversation
+
+A conversation belongs to the applicant who opened it.  It stores the turns,
+the mode, the citations and the source snapshot of each turn — the source
+identifier, its version, its text and its hash.  A member of the City does
+not read an un-escalated conversation; the only route by which the City sees
+the applicant's question is the **help request** the applicant raises with
+**Ask the City**.
+
+* Asking needs the `applicant.help.ask` grant, the CSRF token and a
+  **mandatory expected version** of the conversation.  A missing version is
+  refused as firmly as a stale one.
+* Asking the City needs the `applicant.help.escalate` grant and the same
+  mandatory version.  It creates the help request, which the support screen
+  of phase 3c answers.
+* The rate limit is 10 questions per session per 10 minutes
+  (`config/applicant_help.json`).  The session is stored as a hash.
+* A question is at most 1,000 characters and is untrusted input: it is
+  never rendered as markup and never becomes an instruction.
+* The audit record of a question carries the identifiers and the outcome of
+  the turn.  It **never carries the text of the question**.
+
+### Without JavaScript
+
+The help question is a **form of its own**, never part of the application
+form, so the fields and the files the applicant typed stay intact.  On the
+application form the answer opens in a **separate browsing context**
+(`/apply/help/panel`), which is what keeps that form untouched.  With
+JavaScript the answer is rendered in place instead.
+
+### The live switch
+
+`applicant_assist_live_enabled` is a server-only setting and it is **off by
+default**.  A credential alone never enables a live answer for an applicant.
+This part of the work answers without a model; the live path arrives with
+the part that adds it.
+## Permit type icons
+
+Each of the 17 permit types has one bundled seed icon (a 192 by 192 WebP in `repo/src/acme_city/static/permit-type-icons/`, named in `PERMIT_TYPE_SEED_ICONS`). The reset loads them with source `seed`; `ensure_seeded` only fills a type that has no icon rows, so no migration is involved and an administrator's saved icon is never overwritten. To change a bundled icon, replace the file and reset the demonstration data.
+
+The original three (commercial alteration, new building, sign) predate this note. The other 14 were generated with Muse Image (`muse-image-1.0`) on 2026-10-28 outside the in-app generate-and-save flow, 14 calls at $0.01, $0.14 in total, then downscaled from 1600 by 1600 to 192 by 192. Their file names, sha256 prefixes and prompts are in `docs/operations/permit-type-icons-manifest.json`; the 1600 by 1600 originals are not kept in the repository. Because they bypassed the in-app flow they have no generation audit record and do not count toward the daily generation caps.
+
 ## Failure handling
 
 - **Missing documents/fields** — the completeness node records a blocking

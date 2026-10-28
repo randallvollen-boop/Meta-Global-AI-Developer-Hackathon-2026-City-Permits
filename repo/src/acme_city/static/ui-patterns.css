@@ -1,0 +1,102 @@
+/* Shared interface patterns: information popover, help button, detail drawer.
+   Colours come from the tokens of app.css (which carries the dark theme), so
+   the same rules serve the staff application and the City website, light and
+   dark.  Layout contract:
+     - the drawer sits at the right edge;
+     - it keeps --ui-clear-top free at the top (toasts live top-right) and
+       --ui-clear-bottom free at the bottom (the Demo controls button lives
+       bottom-left), so it never covers either. */
+
+:root {
+  --ui-clear-top: 112px; /* clears a shown toast: top 64px + its height */
+  --ui-clear-bottom: 68px;
+  --ui-drawer-w: 460px;
+}
+
+/* ------------------------------------------------------------ P1 popover */
+.ui-info { position: relative; display: inline-block; vertical-align: middle; margin-left: 4px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.ui-info-btn, .ui-info-fallback > summary, .ui-help {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--accent, #1f5f8b); background: var(--surface, #fff);
+  color: var(--accent, #1f5f8b); font: 700 12px/1 var(--f-body, system-ui, sans-serif);
+  cursor: pointer; text-decoration: none; list-style: none;
+}
+.ui-info-fallback > summary::-webkit-details-marker { display: none; }
+.ui-info-btn:hover, .ui-info-fallback > summary:hover, .ui-help:hover { background: var(--accent-soft, #e3eef6); }
+.ui-info-btn:focus-visible, .ui-info-fallback > summary:focus-visible, .ui-help:focus-visible,
+.ui-detail-link:focus-visible, .ui-drawer-close:focus-visible {
+  outline: 3px solid var(--accent, #1f5f8b); outline-offset: 2px;
+}
+.ui-info-btn { display: none; }
+html.ui-js .ui-info-btn { display: inline-flex; }
+html.ui-js .ui-info-fallback { display: none; }
+.ui-info-fallback { display: inline-block; }
+.ui-info-fallback[open] > .ui-info-text,
+.ui-info-pop {
+  display: block; position: absolute; z-index: 70; top: calc(100% + 6px); left: 0;
+  width: max-content; max-width: min(300px, calc(100vw - 32px));
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line, #dde3e9);
+  background: var(--surface, #fff); color: var(--fg, #142230);
+  box-shadow: var(--shadow, 0 4px 14px rgba(0,0,0,.2)); font-size: .82rem; line-height: 1.45; text-align: left;
+}
+.ui-info-pop[hidden] { display: none; }
+.ui-info-pop.ui-flip { left: auto; right: 0; }
+
+/* -------------------------------------------------------------- P2 help */
+.ui-help { width: 28px; height: 28px; font-size: 15px; vertical-align: middle; }
+
+/* ------------------------------------------------------- P3 detail link */
+.ui-detail-link { color: var(--accent, #1f5f8b); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* -------------------------------------------------------------- P3 drawer */
+.ui-drawer {
+  position: fixed; z-index: 60; right: 0; width: var(--ui-drawer-w); max-width: 100vw;
+  top: var(--ui-clear-top); bottom: var(--ui-clear-bottom);
+  background: var(--surface, #fff); color: var(--fg, #142230);
+  border: 1px solid var(--line, #dde3e9); border-right: 0; border-radius: 12px 0 0 12px;
+  box-shadow: -8px 0 28px rgba(0,0,0,.18); display: flex; flex-direction: column;
+}
+.ui-drawer[hidden] { display: none; }
+.ui-drawer-panel { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.ui-drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 16px 18px 12px; border-bottom: 1px solid var(--line, #dde3e9);
+}
+.ui-drawer-head h2 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+.ui-drawer-head h2:focus { outline: none; }
+.ui-drawer-sub { margin: 4px 0 0; font-size: .82rem; color: var(--fg-2, #4a5b6b); }
+.ui-drawer-close {
+  flex: none; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--line, #dde3e9); background: var(--surface-2, #eef2f5);
+  color: var(--fg, #142230); font-size: 22px; line-height: 1; text-decoration: none; cursor: pointer;
+}
+.ui-drawer-close:hover { background: var(--accent-soft, #e3eef6); }
+.ui-drawer-body { padding: 14px 18px 20px; overflow-y: auto; min-height: 0; flex: 1; }
+.ui-drawer-section + .ui-drawer-section { margin-top: 18px; }
+.ui-drawer-section h3 { margin: 0 0 8px; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2, #4a5b6b); }
+.ui-drawer-section p { margin: 0 0 8px; font-size: .92rem; line-height: 1.5; }
+.ui-drawer-section dl { margin: 0; }
+.ui-drawer-section dl > div { display: grid; grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line-soft, #e9edf1); font-size: .86rem; }
+.ui-drawer-section dt { color: var(--fg-2, #4a5b6b); }
+.ui-drawer-section dd { margin: 0; overflow-wrap: anywhere; }
+.ui-drawer-section dd.mono { font-family: var(--f-mono, ui-monospace, monospace); font-size: .8rem; }
+.ui-drawer-links { margin: 16px 0 0; padding-left: 18px; font-size: .9rem; }
+.ui-drawer-refused { margin: 0; padding: 12px; border-radius: 8px; background: var(--bad-soft, #fbe6e3); color: var(--fg, #142230); }
+
+@media (max-width: 760px) {
+  /* The staff app's bottom bar and the Demo controls button sit lower here. */
+  :root { --ui-clear-bottom: 120px; }
+}
+
+/* Narrow screens: a full-width sheet.  The top and bottom bands stay free for
+   toasts and for the Demo controls button. */
+@media (max-width: 640px) {
+  .ui-drawer { width: 100vw; border-radius: 12px 12px 0 0; border: 1px solid var(--line, #dde3e9); border-left: 0; }
+  .ui-drawer-section dl > div { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ui-drawer.is-open { animation: ui-drawer-in .18s ease-out; }
+  @keyframes ui-drawer-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+}
+@media print { .ui-drawer, .ui-help, .ui-info { display: none !important; } }

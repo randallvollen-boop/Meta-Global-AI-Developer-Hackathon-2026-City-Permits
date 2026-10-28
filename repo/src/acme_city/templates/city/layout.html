@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/city.css">
   <link rel="stylesheet" href="/ui/static/demo-switch.css">
+  <link rel="stylesheet" href="/ui/static/ui-patterns.css">
 </head>
 <body class="city" data-city-site="true">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -24,7 +25,7 @@
 </defs></svg>
 <a class="skip-link" href="#main">Skip to the main content</a>
 
-<div class="city-demo" role="note" data-testid="city-demo-banner">Fictional City of Acme website for a software demonstration. No real city, service, fee or person is represented.</div>
+<div class="city-demo" role="note" data-testid="city-demo-banner">Fictional City of Acme website for a software demonstration. No real city, service, fee or person is represented. The Demo controls button is only for ease of switching in this demonstration; in a real deployment people would sign in through the City's front door and their role would come from that sign-in.</div>
 
 <header class="city-header">
   <div class="city-wrap city-header-row">
@@ -62,6 +63,7 @@
 </div>
 
 <main id="main" class="city-main">
+  {% if moved_notice %}<p class="city-wrap notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
   {% block content %}{% endblock %}
 </main>
 
@@ -86,6 +88,9 @@
 </footer>
 
 {% include "_demo_switch.html" %}
+{% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 <script src="/ui/static/property.js" defer></script>
+<script src="/ui/static/help.js" defer></script>
+<script src="/ui/static/ui-patterns.js" defer></script>
 </body>
 </html>

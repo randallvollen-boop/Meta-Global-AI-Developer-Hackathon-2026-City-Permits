@@ -19,6 +19,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.kernel.selection import effective_at, schedule_applies, select_schedule_for_type
 from acme_city.persistence.models import finance, permit
 from acme_city.rules.schemas import FeeScheduleView, RuleVersionView
 
@@ -116,15 +117,6 @@ def permit_type_id_for_key(session: Session, key: str) -> str | None:
     return None if row is None else row.id
 
 
-def effective_at(
-    effective_from: datetime, effective_to: datetime | None, basis_at: datetime
-) -> bool:
-    """Return whether a version is in force at ``basis_at``."""
-    if effective_from > basis_at:
-        return False
-    return effective_to is None or effective_to > basis_at
-
-
 def select_rule_versions(
     session: Session, permit_type_id: str | None, basis_at: datetime
 ) -> list[finance.RuleVersion]:
@@ -162,26 +154,12 @@ def select_fee_schedule(
         )
         .order_by(finance.FeeScheduleVersion.effective_from)
     ).scalars().all()
-    applicable = [
-        row
-        for row in rows
-        if effective_at(row.effective_from, row.effective_to, basis_at)
-        and _schedule_applies(row, permit_type_key)
-    ]
-    if not applicable:
-        return None
-    return applicable[-1]
+    return select_schedule_for_type(rows, basis_at, permit_type_key)
 
 
 def _schedule_applies(row: finance.FeeScheduleVersion, permit_type_key: str | None) -> bool:
     """Return whether a fee schedule applies to a permit type."""
-    definition = row.definition or {}
-    declared = definition.get("permit_types")
-    if not declared:
-        return True
-    if permit_type_key is None:
-        return False
-    return permit_type_key in declared
+    return schedule_applies(row.definition, permit_type_key)
 
 
 def windows_overlap(

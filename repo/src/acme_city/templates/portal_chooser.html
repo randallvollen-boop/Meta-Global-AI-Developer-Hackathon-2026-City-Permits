@@ -35,4 +35,6 @@
 <ul class="muted pill-legend">
   {% for key, pair in process_pills.items() %}<li><strong>{{ pair[0] }}</strong>: {{ pair[1] }}</li>{% endfor %}
 </ul>
+
+{% include "components/help_panel.html" %}
 {% endblock %}

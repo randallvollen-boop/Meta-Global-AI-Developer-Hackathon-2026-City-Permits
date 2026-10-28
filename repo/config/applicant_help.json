@@ -1,0 +1,296 @@
+{
+  "config_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "The applicant help assistant answers from the City's own published rules and configuration. The passages below are the fixed applicant-facing text the assistant may quote; they are never a decision, never an exemption and never a promise. The rules themselves are not here: the assistant reads the published rule versions the City stores.",
+  "notice": "This assistant explains ACME City rules and your application. It does not decide permits or give legal advice.",
+  "fallback_label": "Matching ACME rule text (not an AI answer)",
+  "no_match_text": "No published ACME text matches that question. You can ask the City a person instead.",
+  "rate_limit": {
+    "questions": 10,
+    "window_minutes": 10
+  },
+  "max_message_length": 1000,
+  "history_turns": 6,
+  "max_matches": 3,
+  "suggested_questions": [
+    {
+      "id": "fence_permit",
+      "text": "Do I need a permit for a 6 ft fence?"
+    },
+    {
+      "id": "shed_documents",
+      "text": "What documents do I need for a shed?"
+    },
+    {
+      "id": "fence_timing",
+      "text": "How long will my fence permit take?"
+    },
+    {
+      "id": "needs_information",
+      "text": "What does 'needs information' mean?"
+    },
+    {
+      "id": "what_next",
+      "text": "What do I do next?"
+    }
+  ],
+  "lifecycle_passages": [
+    {
+      "id": "lifecycle.received",
+      "title": "The City has your application",
+      "status": "submitted",
+      "keywords": [
+        "received",
+        "submitted",
+        "intake",
+        "awaiting",
+        "wait",
+        "waiting",
+        "city",
+        "application",
+        "agent"
+      ],
+      "text": "The City has your application. The intake agent checks it for missing items, unreadable documents and duplicates, and then the case goes to a reviewer. Nothing is needed from you while it waits."
+    },
+    {
+      "id": "lifecycle.needs_information",
+      "title": "The City needs more information",
+      "status": "needs_information",
+      "keywords": [
+        "needs",
+        "information",
+        "missing",
+        "answer",
+        "respond",
+        "asks",
+        "asked",
+        "upload",
+        "city"
+      ],
+      "text": "'The City needs more information' means the City could not assess your application yet. Open your application to see what is missing, then send the answer and the documents the City asked for."
+    },
+    {
+      "id": "lifecycle.revisions_requested",
+      "title": "The City has asked for revisions",
+      "status": "revisions_requested",
+      "keywords": [
+        "revisions",
+        "revision",
+        "revised",
+        "asked",
+        "upload",
+        "answer",
+        "resubmit",
+        "reviewer"
+      ],
+      "text": "'The City has asked for revisions' means a reviewer looked at your application and needs changed documents or a corrected fact before it can continue. Send the revision from your application page; the City assesses the new revision from the start."
+    },
+    {
+      "id": "lifecycle.ready_for_review",
+      "title": "Ready for review",
+      "status": "ready_for_review",
+      "keywords": [
+        "ready",
+        "review",
+        "reviewer",
+        "queue",
+        "waiting"
+      ],
+      "text": "Your application is ready for review. It is with the review area for its permit type. The City does not need anything from you at this step."
+    },
+    {
+      "id": "lifecycle.under_review",
+      "title": "Under review",
+      "status": "under_review",
+      "keywords": [
+        "under",
+        "review",
+        "reviewer",
+        "assessing",
+        "decision",
+        "codes"
+      ],
+      "text": "Your application is under review. A reviewer is assessing it against the published ACME Code rules. The City does not need anything from you at this step."
+    },
+    {
+      "id": "lifecycle.approved",
+      "title": "Approved",
+      "status": "approved",
+      "keywords": [
+        "approved",
+        "approval",
+        "conditions",
+        "decision",
+        "fee"
+      ],
+      "text": "The City approved your application. The decision note and the conditions of your approval are shown on your application page. The permit itself is issued separately, once the fee is settled."
+    },
+    {
+      "id": "lifecycle.denied",
+      "title": "Denied",
+      "status": "denied",
+      "keywords": [
+        "denied",
+        "denial",
+        "decision",
+        "reason",
+        "refused"
+      ],
+      "text": "The City denied your application. The decision note explains why, in the reason code the reviewer recorded. A denied application is finished; you can start a new application."
+    },
+    {
+      "id": "lifecycle.returned",
+      "title": "Returned to the applicant",
+      "status": "returned",
+      "keywords": [
+        "returned",
+        "return",
+        "closed",
+        "finished",
+        "new",
+        "application"
+      ],
+      "text": "The City returned your application. A returned application is closed: the City reviews no further. Read the return reason, then start a new application."
+    },
+    {
+      "id": "lifecycle.issued",
+      "title": "Permit issued",
+      "status": "issued",
+      "keywords": [
+        "issued",
+        "issue",
+        "permit",
+        "artifact",
+        "conditions"
+      ],
+      "text": "Your permit has been issued. The permit record shows the conditions of approval and the scope of the work it covers."
+    },
+    {
+      "id": "lifecycle.archived",
+      "title": "Archived by the City",
+      "status": "archived",
+      "keywords": [
+        "archived",
+        "archive",
+        "closed",
+        "restore"
+      ],
+      "text": "The City archived this application. An archived application is closed and takes no further documents. Ask the City if you want it restored."
+    }
+  ],
+  "steps_passages": [
+    {
+      "id": "steps.before_you_apply",
+      "title": "Before you apply",
+      "keywords": [
+        "before",
+        "apply",
+        "start",
+        "first",
+        "next",
+        "choose",
+        "project",
+        "type",
+        "parcel",
+        "address",
+        "ready"
+      ],
+      "text": "Before you apply: choose the project that matches your work in the list of permit types. Have the parcel number and the address of the work ready, and check whether the type you chose asks for plans."
+    },
+    {
+      "id": "steps.documents",
+      "title": "The documents you need",
+      "keywords": [
+        "documents",
+        "document",
+        "upload",
+        "site",
+        "plan",
+        "specification",
+        "checklist",
+        "files",
+        "pdf"
+      ],
+      "text": "Documents: each permit type has its own checklist. Upload a site sketch or site plan and the other documents the type asks for. A PDF, PNG, JPG or plain text file of at most 5 MB is accepted for each one."
+    },
+    {
+      "id": "steps.submit",
+      "title": "Submitting and saving your work",
+      "keywords": [
+        "submit",
+        "certification",
+        "certify",
+        "complete",
+        "checklist",
+        "button",
+        "save",
+        "exit",
+        "draft",
+        "disabled"
+      ],
+      "text": "Submitting: the Submit button stays disabled until every required field and document is provided and you accept the certification. You can save your work and come back to it; a draft is not an application."
+    },
+    {
+      "id": "steps.after_you_submit",
+      "title": "After you submit",
+      "keywords": [
+        "submitted",
+        "submit",
+        "reference",
+        "number",
+        "track",
+        "tracking",
+        "confirmation"
+      ],
+      "text": "After you submit: keep the reference number the confirmation page gives you. Use it to track your application at any time."
+    },
+    {
+      "id": "steps.answering_the_city",
+      "title": "Answering the City",
+      "keywords": [
+        "answer",
+        "answering",
+        "city",
+        "asks",
+        "respond",
+        "resubmit",
+        "revised",
+        "documents",
+        "upload"
+      ],
+      "text": "Answering the City: when the City needs information or asks for revisions, open your application, upload what was asked for and send the answer. Sending the answer creates a new revision, and the City assesses it again from the start."
+    },
+    {
+      "id": "steps.fees",
+      "title": "Fees",
+      "keywords": [
+        "fee",
+        "fees",
+        "pay",
+        "payment",
+        "cost",
+        "assessed",
+        "money",
+        "gift",
+        "card",
+        "wire"
+      ],
+      "text": "Fees: the City assesses the fee of your application and tells you the amount before you pay. The portal never asks for a permit fee by gift card or wire transfer."
+    },
+    {
+      "id": "steps.the_permit",
+      "title": "The permit",
+      "keywords": [
+        "permit",
+        "issued",
+        "issue",
+        "approval",
+        "approved",
+        "conditions",
+        "scope"
+      ],
+      "text": "The permit: once your application is approved and the fee is settled, the City issues the permit. The permit record shows the conditions of approval and the scope of the work it covers."
+    }
+  ]
+}

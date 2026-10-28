@@ -374,11 +374,27 @@
       "category": "permit",
       "description": "Run the intake agent on a bounded selection of cases that wait for it. The selection names an application and the version it was read at; an empty selection, a stale version or an ineligible case refuses the whole batch.",
       "sensitive": false
+    },
+    {
+      "permission_id": "applicant.help.ask",
+      "action": "applicant.help.ask",
+      "category": "applicant",
+      "description": "Ask the applicant help assistant a question and record the turn. The answer is drawn from the City's published rules and from the applicant's own case; the assistant never decides anything.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "applicant.help.escalate",
+      "action": "applicant.help.escalate",
+      "category": "applicant",
+      "description": "Ask a person at the City to answer a question. The request is the only route by which a member of the City reads the applicant's question.",
+      "sensitive": false
     }
   ],
   "role_grants": {
     "applicant": [
       "applicant.case.respond",
+      "applicant.help.ask",
+      "applicant.help.escalate",
       "applicant.profile.edit",
       "application.revision.submit",
       "application.submit",

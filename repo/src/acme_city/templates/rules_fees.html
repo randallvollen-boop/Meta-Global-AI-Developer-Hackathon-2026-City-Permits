@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "components/action_form.html" as forms %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -7,6 +8,7 @@
     <h1>Rules and fees</h1>
     <p class="sub">Versioned rule sets and fee schedules. Synthetic ACME values.</p>
   </div>
+  <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
 
 {% include "components/responsibility_panel.html" %}

@@ -37,16 +37,36 @@ other organisational identity are service identities.
 - As an Applicant, I want to choose what I am trying to do and fill in the
   form for that project, so that I only give what that kind of project needs.
   - Acceptance: **Start a new application** (Work queue) opens "What are you
-    trying to do?"; the form shows the type's fields, a completeness banner
-    ("Ready to submit..." or "Still needed: ..."), the locator's "Did you
-    mean", a document checklist and the certification; **Submit application**
-    stays disabled until complete and certified, and the server refuses an
-    incomplete submit too; the confirmation shows the reference number.
+    trying to do?"; the form shows the type's fields (required ones starred, optional ones
+    marked), the locator's "Did you mean", a document checklist with "Sent to
+    the City separately", and the certification; **Submit application** is
+    never disabled: an incomplete submit is refused by the server and the form
+    returns "There is a problem" with a linked list and a message beside each
+    missing item, keeping everything entered; the confirmation shows the
+    reference number.
 - As an Applicant, I want to save a draft and track an application, so that I
   can finish later and see what the City says.
-  - Acceptance: **Save and exit** keeps a draft; **Track an application**
+  - Acceptance: **Save draft** keeps a draft and says so; **Track an application**
     shows the status, "Messages from the City" and, when the City asked,
     **Submit revised documents**.
+- As an Applicant, I want to ask what the rules say and what the process is,
+  so that I understand the permit before I file it.
+  - Acceptance: the help panel on the chooser, on the application form and on
+    the tracker answers from the City's published rules and from my own case
+    only; the answer quotes the rule it used, shows its citation and says it
+    is rule text and not an answer; a question that matches nothing says so
+    instead of guessing; the panel shows the configured service target and
+    the current review-area backlog as two separate figures and never a
+    completion date.
+- As an Applicant, I want to ask a person at the City when the assistant
+  cannot help, so that my question is answered by the City.
+  - Acceptance: **Ask the City** creates a help request that the City's
+    support desk answers; my conversation stays private to me until then.
+- As an Applicant, I want the help panel never to lose what I have typed,
+  so that asking a question does not cost me my application.
+  - Acceptance: the help question is a form of its own; on the application
+    form the answer opens in a separate window and the fields and files I
+    typed stay exactly as they were, with JavaScript switched off as well.
 
 ## Data Steward
 
