@@ -6,7 +6,7 @@ Date: 2026-10-27 (parity phases 1 and 2 added; originally 2026-10-26). Status: P
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 910998 bytes. SHA-256 `d732714e6d553dc7223b4ba599e8a7490d87322f32fd4ae3da04b4d54780f862`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 911003 bytes. SHA-256 `51e3c8266389385bc0e1faa9b4bbb1d8a19b48b3b90fb9de2c26f736e44bdbc6`. It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 

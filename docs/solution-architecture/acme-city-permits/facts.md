@@ -179,3 +179,11 @@ Sources: `EVIDENCE_LOG.md` "Parity phase 3a evidence"; merges `b7ce8bd` (phase 3
 - Each case has a priority (normal or high) and an owner, and the owner is routing metadata only.
 - Verification for phase 3a, run in its worktree: all 10 local gates pass; 866 tests passed with 0 failed and 0 skipped; acceptance 37 passed, 0 failed, 2 blocked (AT15 and AT19 need live evidence). No live provider call was made.
 - City of Acme website, merged `ead8790`: a fictional city website at `/city/` with a Permits entry. The applicant portal pages render inside the city layout, and a "Demo: switch user" control uses the existing persona selector, which still offers exactly four personas.
+
+## Merged-main verification (2026-10-28)
+
+Source: `repo/var/check-run-main-p3a/` and `repo/var/check-run-main-city/` (`run-all-summary.json` status passed, no failed steps).
+
+- Main at `b7ce8bd` (phase 3a merged): all 10 gates pass; 866 passed in 848.51 s; acceptance 37 passed, 0 failed, 2 blocked.
+- Main at `ead8790` (phase 3a and the City of Acme website merged): all 10 gates pass; 879 passed in 882.39 s; acceptance 37 passed, 0 failed, 2 blocked (AT15 and AT19 need live evidence). The page reports this run.
+- The demo restarted at schema revision 0006 with the city website at `/city/`.

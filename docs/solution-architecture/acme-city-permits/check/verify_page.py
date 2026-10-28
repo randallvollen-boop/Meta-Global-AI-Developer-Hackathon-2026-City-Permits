@@ -53,7 +53,7 @@ ALLOWED_FIGURES = {
     "71": "parity: simulated GIS addresses",
     "37": "parity phase 2 merge: acceptance passed",
     "762": "parity phase 2 merge: pytest passed",
-    "866": "parity phase 3a, worktree run: pytest passed (EVIDENCE_LOG.md)",
+    "879": "merged main at ead8790 (phase 3a and city website): pytest passed (repo/var/check-run-main-city/)",
     "5.6": "model name GPT-5.6",
     "5.5": "model name Claude Opus 5.5",
     "1.3": "model name Muse Spark 1.3",
