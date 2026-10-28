@@ -45,7 +45,7 @@ from acme_city.permits.service import PermitService
 from acme_city.registry.provenance import crosswalk_view
 from acme_city.registry.service import RegistryService
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views, property_views
+from acme_city.ui import agent_views, property_views, reviewer_views
 
 #: The required screens, in the order the navigation shows them.
 SCREENS: tuple[dict[str, str], ...] = (
@@ -789,13 +789,14 @@ def action(
     version it expects.  When it is not permitted, the reason says whether the
     restriction is the grant, the state of the record or an open issue.
     """
-    permitted = state_allowed and allows(
-        session, actor, permission, domain_id, record_ids
-    )
+    holds_grant_here = allows(session, actor, permission, domain_id, record_ids)
+    permitted = state_allowed and holds_grant_here
     reasons: list[str] = []
     if not state_allowed:
         reasons.append(state_reason)
-    if not permitted:
+    # The grant is blamed only when the persona really lacks it.  A persona
+    # that holds the grant but meets a state guard sees the state reason alone.
+    if not holds_grant_here:
         reasons.append(
             f"your persona does not hold the {permission!r} grant for this record; "
             "the responsible steward or the named queue may perform it"
@@ -1235,7 +1236,7 @@ def allowed_actions_for(
                 session,
                 actor,
                 action_id="permit.evaluate",
-                label="Run validation",
+                label="Run application checks",
                 path="/ui/actions/permit.evaluate",
                 permission="application.evaluate",
                 domain_id="permits",
@@ -1253,7 +1254,7 @@ def allowed_actions_for(
                 session,
                 actor,
                 action_id="permit.decide",
-                label="Record reviewer decision",
+                label="Record review decision",
                 path="/ui/actions/permit.decide",
                 permission="permit.decide",
                 domain_id="permits",
@@ -1397,7 +1398,7 @@ def allowed_actions_for(
                 session,
                 actor,
                 action_id="permit.revise",
-                label="Submit application correction",
+                label="Correct the application record",
                 path="/ui/actions/permit.revise",
                 permission="application.revision.submit",
                 domain_id="permits",
@@ -2230,11 +2231,11 @@ def _next_action(
         if application.status == "submitted" and application.scenario_id is None:
             return "Waiting for the intake agent"
         if allows(session, actor, "application.evaluate", "permits"):
-            return "Run validation"
+            return "Run application checks"
         return "Waiting for validation"
     if decision is None:
         if allows(session, actor, "permit.decide", "permits"):
-            return "Record the reviewer decision"
+            return "Record the review decision"
         return "Waiting for the reviewer decision"
     if decision.outcome == "approved":
         if allows(session, actor, "permit.issue", "permits"):
@@ -2251,6 +2252,7 @@ def work_queue(
     department: str | None = None,
     object_type: str | None = None,
     state: str | None = None,
+    focus: str = "all",
 ) -> dict[str, Any]:
     """Return the work queue of the acting persona.
 
@@ -2261,8 +2263,19 @@ def work_queue(
     service = PermitService(session)
     now = utc_now()
     items: list[dict[str, Any]] = []
+    visible = visible_applications(session, actor)
+    owner_labels = {
+        row.actor_id: row.label
+        for row in session.execute(
+            select(governance.Actor).where(
+                governance.Actor.actor_id.in_(
+                    sorted({a.owner_actor_id for a in visible if a.owner_actor_id})
+                )
+            )
+        ).scalars().all()
+    }
 
-    for application in visible_applications(session, actor):
+    for application in visible:
         # An archived case is closed: it is not an active queue entry.
         if application.status == "archived":
             continue
@@ -2315,6 +2328,14 @@ def work_queue(
                     else "not assessed"
                 ),
             }
+        )
+        reviewer_views.decorate_application_item(
+            session,
+            items[-1],
+            application,
+            owner_labels.get(application.owner_actor_id or "", ""),
+            int(type_row.service_target_days or 0),
+            now,
         )
 
     change_service = ChangeService(session)
@@ -2420,7 +2441,13 @@ def work_queue(
             }
         )
 
-    if view == "my":
+    for item in items:
+        if "bucket" not in item:
+            reviewer_views.decorate_other_item(item)
+
+    if view == "mine":
+        items = [item for item in items if item.get("owner_actor_id") == actor.actor_id]
+    elif view == "my":
         items = [
             item
             for item in items
@@ -2446,13 +2473,21 @@ def work_queue(
     if state:
         items = [item for item in items if item["state"] == state]
 
+    focus = focus if focus in reviewer_views.QUEUE_VIEW_KEYS else "all"
+    views = reviewer_views.queue_views(items, focus)
+    if focus != "all":
+        items = [item for item in items if item["bucket"] == focus]
     counts: dict[str, int] = {}
     for item in items:
         counts[item["object_type"]] = counts.get(item["object_type"], 0) + 1
     return {
         "entries": items,
         "counts": counts,
+        "views": views,
+        "has_owner": any(item.get("owner_label") for item in items),
+        "age_note": reviewer_views.scenario_clock_note(now),
         "filters": {
+            "focus": focus,
             "view": view,
             "department": department or "",
             "object_type": object_type or "",
@@ -3257,7 +3292,7 @@ def permit_workspace(
     else:
         tracker_index = 0
     type_row = service.permit_type(application)
-    return {
+    workspace: dict[str, Any] = {
         "application": application_view,
         "permit_type": {
             "permit_type_id": type_row.id,
@@ -3396,6 +3431,10 @@ def permit_workspace(
             subject_ids=(application.id,),
         ),
     }
+    workspace["reviewer"] = reviewer_views.workspace_extras(
+        session, actor, application, workspace
+    )
+    return workspace
 
 
 # ------------------------------------------------------------- steward review

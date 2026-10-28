@@ -89,15 +89,43 @@
     "application_status": {
       "label": "Application status",
       "text": "The status says where the application stands with the City. \"Action needed\" means the City is waiting for something from you; the request is shown on the application."
+    },
+    "queue_issue": {
+      "label": "Issue",
+      "text": "The issue is the main thing holding the case, in plain words. The exact code that the system recorded is one click away under Exact code. A data issue says Waiting on steward only when it has really been sent to a steward."
+    },
+    "queue_dates": {
+      "label": "Dates",
+      "text": "Submitted is when the first application arrived. Waiting since is when the current revision arrived. Updated is the newest recorded event. The review target appears only for a permit type that has one and never on an issued case."
+    },
+    "suggested_fields": {
+      "label": "Suggested fields",
+      "text": "Suggested fields are values Muse read from the documents. They are proposals only. A value becomes a confirmed value once a steward accepts it; until then it is not a record and nothing was reviewed."
+    },
+    "confirmed_values": {
+      "label": "Confirmed values",
+      "text": "A confirmed value is a suggested field that the Data Steward accepted or corrected. Only confirmed values are treated as part of the application record."
+    },
+    "issuance_follow_up": {
+      "label": "Follow-up after issuance",
+      "text": "A permit that is issued stays issued. An item listed as follow-up was not cleared when the permit was recorded as issued and needs attention now. The record does not state when it arose."
+    },
+    "three_operations": {
+      "label": "Three different requests",
+      "text": "Asking the applicant for information sends the case back with a message. Correcting the application record changes the submitted facts as a new revision. Requesting a source correction refers a master-data problem, such as an address or identity link, to the steward who owns it."
+    },
+    "review_decision": {
+      "label": "Review decision",
+      "text": "The Permit Reviewer records the decision of record. An agent recommendation only proposes an outcome and is never the decision. Fee assessment, payment and permit issuance are separate steps after the decision."
     }
   },
   "screens": {
     "queue": {
       "title": "Work queue",
-      "purpose": "The cases waiting on someone, with the next step named for each.",
+      "purpose": "The cases waiting on someone, with the issue and the next responsible party named for each.",
       "can_do": [
-        "Open a case from its row.",
-        "Switch between the saved views and filter by department, type or state."
+        "Choose a view: needs checks, needs data resolution, waiting for the applicant, issued or all.",
+        "Open a case from its action button, or open the exact issue code and ids from Details."
       ],
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
     },
@@ -120,12 +148,12 @@
     },
     "permit": {
       "title": "Permit workspace",
-      "purpose": "Everything about one application in one place: the submission, documents, Muse run, findings, decision and history.",
+      "purpose": "One application in one place. Review is the working tab; Documents, People and property, and Activity hold the supporting record.",
       "can_do": [
-        "Read the Muse proposal and the findings.",
+        "Read the application checks, the suggested fields and the next action on the Review tab.",
         "Take the actions your persona is granted; a button that is unavailable says what is missing."
       ],
-      "next": "A steward resolves findings, the reviewer records the decision, and the permit is issued only when the balance is paid."
+      "next": "A steward confirms identity and property links, the reviewer records the decision, a fee is assessed and paid, and the permit is issued."
     },
     "steward": {
       "title": "Steward review",
