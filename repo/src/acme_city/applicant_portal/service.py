@@ -73,6 +73,18 @@ def applicant_party(actor: ActorContext) -> str | None:
     return next((item for item in actor.record_scope if item.startswith("party_")), None)
 
 
+#: Fact recording the document types the applicant declared "sent to the City
+#: separately". It is the applicant's statement, not a received document.
+DECLARED_SEPARATELY_FACT = "documents_sent_separately"
+
+
+def declared_separately(application: permit.Application) -> list[str]:
+    """Return the document types the applicant declared sent separately."""
+    facts = application.submitted_facts or {}
+    value = facts.get(DECLARED_SEPARATELY_FACT) or []
+    return [str(item) for item in value] if isinstance(value, list) else []
+
+
 class PortalService:
     """Reads the forms and writes drafts, uploads and submissions."""
 
@@ -165,49 +177,83 @@ class PortalService:
         uploaded_types: set[str],
         *,
         certification_accepted: bool = False,
+        sent_separately: set[str] | frozenset[str] | None = None,
     ) -> dict[str, Any]:
-        """Return what is still needed, by plain label."""
-        missing: list[str] = []
+        """Return what is still needed, by plain label.
+
+        A document the applicant declared "sent to the City separately" counts
+        as provided here, so the form can be submitted without a file; it is
+        never treated as received (see ``DECLARED_SEPARATELY_FACT``).
+
+        ``missing`` lists the fields and documents still needed (labels only,
+        unchanged). ``items`` carries the same entries with the anchor id of the
+        control to jump to. ``blocking`` is ``items`` plus the certification when
+        it is unchecked: everything that keeps Submit disabled.
+        """
+        items: list[dict[str, str]] = []
+        declared = set(sent_separately or ())
+
+        def need(label: str, anchor: str, key: str) -> None:
+            items.append({"key": key, "label": label, "anchor": anchor})
+
         if not self._present(values.get("applicant_name")):
-            missing.append("Applicant name")
+            need("Applicant name", "f-applicant_name", "applicant_name")
         if not self._present(values.get("applicant_email")):
-            missing.append("Applicant email")
+            need("Applicant email", "f-applicant_email", "applicant_email")
         elif "@" not in values["applicant_email"]:
-            missing.append("Applicant email (enter a valid address)")
+            need("Applicant email (enter a valid address)", "f-applicant_email", "applicant_email")
         if spec.needs_business and not self._present(values.get("business_name")):
-            missing.append("Business name")
+            need("Business name", "f-business_name", "business_name")
         if not self._present(values.get("address_text")):
-            missing.append("Property address")
+            need("Property address", "f-address_text", "address_text")
         for field in spec.fields:
             raw = values.get(field.key)
+            anchor = f"f-{field.key}"
             if field.kind == "checkbox":
                 if field.required and str(raw or "").lower() not in {"on", "true", "1", "yes"}:
-                    missing.append(field.label)
+                    need(field.label, anchor, field.key)
                 continue
             if not self._present(raw):
                 if field.required:
-                    missing.append(field.label)
+                    need(field.label, anchor, field.key)
                 continue
             if field.kind == "number":
                 try:
                     if float(str(raw).replace(",", "")) < 0:
                         raise ValueError
                 except ValueError:
-                    missing.append(f"{field.label} (enter a number)")
+                    need(f"{field.label} (enter a number)", anchor, field.key)
         for doc_type, label in spec.documents:
-            if doc_type not in uploaded_types:
-                missing.append(label)
+            if doc_type not in uploaded_types and doc_type not in declared:
+                need(label, f"file-{doc_type}", f"file__{doc_type}")
+        missing = [item["label"] for item in items]
+        blocking = list(items)
+        if not certification_accepted:
+            blocking.append(
+                {
+                    "key": "certification_accepted",
+                    "label": "Check the certification",
+                    "anchor": "f-certification_accepted",
+                }
+            )
         complete = not missing
+        if not complete:
+            banner = "Still needed: " + ", ".join(missing) + "."
+        elif certification_accepted:
+            banner = "Ready to submit. All required fields and documents are provided."
+        else:
+            banner = "All fields and documents are provided. Check the certification to submit."
         return {
             "complete": complete,
             "missing": missing,
+            "items": items,
+            "blocking": blocking,
             "certification_accepted": certification_accepted,
-            "can_submit": complete and certification_accepted,
-            "banner": (
-                "Ready to submit. All required fields and documents are provided."
-                if complete
-                else "Still needed: " + ", ".join(missing) + "."
+            "sent_separately": sorted(
+                doc for doc, _label in spec.documents if doc in declared and doc not in uploaded_types
             ),
+            "can_submit": complete and certification_accepted,
+            "banner": banner,
         }
 
     # ----------------------------------------------------------------- locator
@@ -304,10 +350,15 @@ class PortalService:
         actor: ActorContext,
         *,
         reference: str = "",
+        sent_separately: set[str] | frozenset[str] | None = None,
     ) -> gis.ApplicationDraft:
         """Keep the applicant's work as a draft (a draft is not an application)."""
         self._authorize(actor)
-        data = {"values": dict(values), "certification_accepted": bool(certification_accepted)}
+        data = {
+            "values": dict(values),
+            "certification_accepted": bool(certification_accepted),
+            "sent_separately": sorted(sent_separately or ()),
+        }
         draft = self.draft(reference, actor) if reference else None
         if draft is not None and draft.status != "open":
             raise ValidationError("that draft was already submitted")
@@ -416,6 +467,8 @@ class PortalService:
         certification_accepted: bool,
         draft: gis.ApplicationDraft,
         actor: ActorContext,
+        *,
+        sent_separately: set[str] | frozenset[str] | None = None,
     ) -> permit.Application:
         """Submit a complete application with its certification accepted through the existing path."""
         from acme_city.portal_intake.schemas import IntakeRecordCommand
@@ -423,7 +476,13 @@ class PortalService:
 
         self._authorize(actor)
         documents = self.draft_documents(draft)
-        state = self.completeness(spec, values, set(documents), certification_accepted=certification_accepted)
+        state = self.completeness(
+            spec,
+            values,
+            set(documents),
+            certification_accepted=certification_accepted,
+            sent_separately=sent_separately,
+        )
         if not state["complete"]:
             raise ValidationError(state["banner"])
         if not certification_accepted:
@@ -455,6 +514,9 @@ class PortalService:
         if values.get("business_name", "").strip():
             facts["business_name"] = values["business_name"].strip()
         facts["certification_accepted"] = True
+        if state["sent_separately"]:
+            # A declaration only: no document row, file or audit event says it arrived.
+            facts[DECLARED_SEPARATELY_FACT] = list(state["sent_separately"])
         facts["applicant_phone"] = values.get("applicant_phone", "").strip()
 
         record = IntakeRecordCommand(
@@ -557,6 +619,7 @@ class PortalService:
                 application.id
             )
         }
+        declared = declared_separately(application)
         return {
             "application_id": application.id,
             "reference": application.source_application_number,
@@ -573,7 +636,12 @@ class PortalService:
             "revisions_requested": application.status in RESPONDABLE_STATUSES,
             "application_version": application.version,
             "documents": [
-                {"type": key, "label": label, "have": key in have}
+                {
+                    "type": key,
+                    "label": label,
+                    "have": key in have,
+                    "declared_separately": key not in have and key in declared,
+                }
                 for key, label in (spec.documents if spec else [])
             ],
             "workspace_href": f"/permits/{application.id}",

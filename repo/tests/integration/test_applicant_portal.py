@@ -412,3 +412,179 @@ def test_a_resubmission_needs_the_expected_version(client, environment) -> None:
         follow_redirects=False,
     )
     assert refused.status_code == 422, refused.text
+
+
+# ---------------------------------------------------------------- guarded Submit
+
+def _star_labels(page: str) -> list[str]:
+    """Return the text of every label that carries the required star."""
+    labels = re.findall(r"<label[^>]*>(.*?)</label>", page, flags=re.S)
+    return [re.sub(r"<[^>]+>", "", label).replace("*", "").strip() for label in labels if 'data-testid="required-star"' in label]
+
+
+def _label_html(page: str, text: str) -> str:
+    for label in re.findall(r"<label[^>]*>.*?</label>", page, flags=re.S):
+        if text in re.sub(r"<[^>]+>", "", label):
+            return label
+    raise AssertionError(f"no label {text!r}")
+
+
+def test_required_fields_carry_a_star_and_optional_ones_do_not(client) -> None:
+    choose(client, "persona_applicant")
+    page = client.get("/apply/deck_fence").text
+    assert 'data-testid="required-legend"' in page and "Required" in page
+    for field in forms.form_for("deck_fence", label="x", description="", process_category="simple",
+                                required_fields=[], required_documents=[], discretionary=False).fields:
+        label = _label_html(page, field.label)
+        assert ('data-testid="required-star"' in label) is field.required, field.key
+    for text in ("Applicant name", "Email", "Property address"):
+        assert 'data-testid="required-star"' in _label_html(page, text)
+    assert 'data-testid="required-star"' not in _label_html(page, "Phone")
+    assert 'aria-required="true"' in page and 'aria-hidden="true">*' in page
+    # documents and the certification are marked too
+    doc_labels = re.findall(r'<span class="doc-label">(.*?)</span>\s*</span>|<span class="doc-label">(.*?)</span>', page, flags=re.S)
+    assert doc_labels and all("required-star" in "".join(pair) for pair in doc_labels)
+    assert 'data-testid="certify" aria-required="true"' in page
+    cert = re.search(r'<label><input type="checkbox" name="certification_accepted".*?</label>', page, flags=re.S).group(0)
+    assert "required-star" in cert
+
+
+def test_a_second_type_stars_only_what_its_spec_requires(client) -> None:
+    choose(client, "persona_applicant")
+    key = "hvac"
+    spec = forms.form_for(key, label="x", description="", process_category="simple",
+                          required_fields=[], required_documents=[], discretionary=False)
+    page = client.get(f"/apply/{key}")
+    assert page.status_code == 200
+    assert 'data-testid="required-star"' not in _label_html(page.text, "Phone")
+    for field in spec.fields:
+        label = _label_html(page.text, field.label)
+        assert ('data-testid="required-star"' in label) is field.required, field.key
+
+
+def test_the_missing_list_sits_next_to_submit_with_jump_links(client) -> None:
+    choose(client, "persona_applicant")
+    page = client.get("/apply/deck_fence").text
+    flat = page.replace("\n", " ")
+    box = flat.index('data-testid="submit-needs"')
+    button = flat.index('data-testid="submit-application"')
+    assert box < button < box + 2500
+    assert "Before you can submit" in page
+    assert 'href="#f-height_ft"' in page and 'href="#f-applicant_email"' in page
+    assert 'href="#file-site_plan"' in page and 'href="#f-certification_accepted"' in page
+    assert "Check the certification" in page
+    assert 'aria-describedby="submit-needs-title submit-needs"' in page
+    # every link target exists on the page
+    for anchor in re.findall(r'href="#((?:f|file)-[a-z_]+)"', page):
+        assert f'id="{anchor}"' in page, anchor
+
+
+def test_only_the_certification_missing_blocks_and_the_banner_is_honest(client) -> None:
+    choose(client, "persona_applicant")
+    page = post_form(
+        client, "deck_fence", FENCE_FIELDS, files=fence_files(), certification_accepted=False
+    ).text
+    assert "Ready to submit" not in page
+    assert "Check the certification to submit." in page
+    flat = page.replace("\n", " ")
+    needs = flat[flat.index('data-testid="submit-needs"'):flat.index('data-testid="submit-application"')]
+    assert needs.count("<li>") == 1 and "Check the certification" in needs
+    assert re.search(r'data-testid="submit-application"[^>]*disabled', flat)
+    # the JS needs the same facts from /check
+    check = client.post(
+        "/apply/deck_fence/check",
+        data={**FENCE_FIELDS, "have__site_plan": "1", "have__material_spec": "1"},
+    ).json()
+    assert check["complete"] is True and check["can_submit"] is False
+    assert "Ready to submit" not in check["banner"]
+    assert [item["anchor"] for item in check["blocking"]] == ["f-certification_accepted"]
+    assert check["missing"] == [] and check["items"] == []
+    # once certified the banner may claim ready and the list is gone
+    ok = client.post(
+        "/apply/deck_fence/check",
+        data={**FENCE_FIELDS, "have__site_plan": "1", "have__material_spec": "1", "certification_accepted": "on"},
+    ).json()
+    assert ok["can_submit"] is True and ok["blocking"] == [] and ok["banner"].startswith("Ready to submit")
+
+
+def test_check_json_carries_anchors_for_the_missing_items(client) -> None:
+    choose(client, "persona_applicant")
+    body = client.post("/apply/deck_fence/check", data={"applicant_name": "T"}).json()
+    anchors = {item["anchor"] for item in body["items"]}
+    assert {"f-applicant_email", "f-height_ft", "file-site_plan"} <= anchors
+    assert [i["label"] for i in body["items"]] == body["missing"]
+    assert body["blocking"][-1]["anchor"] == "f-certification_accepted"
+
+
+# ------------------------------------------------------------- sent separately
+
+def _declare(*types: str) -> dict:
+    return {f"sent_separately__{t}": "on" for t in types}
+
+
+def test_a_declared_document_satisfies_completeness_without_a_file(client) -> None:
+    choose(client, "persona_applicant")
+    page = post_form(
+        client, "deck_fence", {**FENCE_FIELDS, **_declare("site_plan", "material_spec")}
+    ).text
+    assert "Ready to submit" in page
+    assert page.count("Sent separately") >= 2
+    assert "Sent to the City separately" in page
+    check = client.post(
+        "/apply/deck_fence/check",
+        data={**FENCE_FIELDS, **_declare("site_plan", "material_spec"), "certification_accepted": "on"},
+    ).json()
+    assert check["can_submit"] is True and check["sent_separately"] == ["material_spec", "site_plan"]
+
+
+def test_an_undeclared_missing_document_still_blocks(client) -> None:
+    choose(client, "persona_applicant")
+    response = post_form(
+        client, "deck_fence", {**FENCE_FIELDS, **_declare("site_plan")}, intent="submit"
+    )
+    assert response.status_code == 422
+    assert "Material specification" in response.text and "Site sketch or site plan" not in response.text.split("Still needed:")[1].split("</strong>")[0]
+
+
+def test_the_declaration_survives_a_draft_save_and_is_recorded_on_submit(client, environment) -> None:
+    choose(client, "persona_applicant")
+    saved = post_form(client, "deck_fence", {**FENCE_FIELDS, **_declare("site_plan", "material_spec")}, intent="save")
+    assert saved.status_code == 303
+    reference = saved.headers["location"].split("saved=")[1]
+    reopened = client.get(f"/apply/deck_fence?draft={reference}").text
+    assert reopened.count("data-sent-separately") >= 2 and reopened.count("data-sent-separately checked") == 2
+    done = post_form(
+        client, "deck_fence", {**FENCE_FIELDS, **_declare("site_plan", "material_spec")},
+        intent="submit", draft=reference,
+    )
+    assert done.status_code == 303, done.text
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = session.execute(select(permit.Application)).scalars().all()[-1]
+            assert sorted(application.submitted_facts["documents_sent_separately"]) == ["material_spec", "site_plan"]
+            # nothing claims a file arrived
+            docs = session.execute(
+                select(permit.Document).where(permit.Document.application_id == application.id)
+            ).scalars().all()
+            assert docs == []
+            rows = session.execute(select(audit.AuditEvent)).scalars().all()
+            assert not [r for r in rows if "site_plan" in (r.reason or "") and "upload" in r.action]
+    finally:
+        factory.dispose()
+    tracked = client.get(done.headers["location"].replace("/apply/submitted/", "/apply/track?ref=")).text
+    assert tracked.count('data-testid="declared-separately"') == 2
+    assert "Declared sent separately" in tracked and "not yet received" in tracked
+    assert "site_plan</th>" not in tracked
+
+
+def test_a_real_file_wins_over_a_declaration(client) -> None:
+    choose(client, "persona_applicant")
+    done = post_form(
+        client, "deck_fence", {**FENCE_FIELDS, **_declare("site_plan", "material_spec")},
+        files=fence_files(), intent="submit",
+    )
+    assert done.status_code == 303
+    tracked = client.get(done.headers["location"].replace("/apply/submitted/", "/apply/track?ref=")).text
+    assert 'data-testid="declared-separately"' not in tracked
+    assert len(re.findall(r":\s*received", tracked)) == 2

@@ -173,8 +173,52 @@
           card.classList.toggle("ok", state.complete);
           card.classList.toggle("warn", !state.complete);
           card.setAttribute("data-complete", state.complete ? "true" : "false");
-          if (submit) { submit.disabled = !state.can_submit; }
+          if (submit) {
+            submit.disabled = !state.can_submit;
+            if (state.can_submit) { submit.removeAttribute("aria-describedby"); }
+            else { submit.setAttribute("aria-describedby", "submit-needs-title submit-needs"); }
+          }
+          renderNeeds(state);
         }).catch(function () { /* the server still checks on submit */ });
+    }
+    // "Before you can submit": the same list the server renders, rebuilt from /check.
+    function renderNeeds(state) {
+      var box = form.querySelector("[data-submit-needs]");
+      var blocking = state.blocking || [];
+      var anchors = {};
+      blocking.forEach(function (item) { anchors[item.anchor] = true; });
+      if (box) {
+        var list = box.querySelector("[data-needs-items]");
+        list.textContent = "";
+        blocking.forEach(function (item) {
+          var li = document.createElement("li");
+          var a = document.createElement("a");
+          a.href = "#" + item.anchor;
+          a.setAttribute("data-needs-link", "");
+          a.textContent = item.label;
+          li.appendChild(a);
+          list.appendChild(li);
+        });
+        box.hidden = !!state.can_submit;
+        box.classList.toggle("warn", !state.can_submit);
+        box.classList.toggle("ok", !!state.can_submit);
+      }
+      form.querySelectorAll("[id^='f-'], [id^='file-']").forEach(function (control) {
+        var wrap = control.closest(".field, .doc-row");
+        if (!wrap || control.type === "checkbox" && control.id === "f-certification_accepted") { return; }
+        var needed = !!anchors[control.id];
+        wrap.classList.toggle("needed", needed);
+        if (needed) { control.setAttribute("aria-invalid", "true"); } else { control.removeAttribute("aria-invalid"); }
+      });
+    }
+    function setPill(row, input) {
+      var pill = row.querySelector("[data-testid='doc-status']");
+      var sep = row.querySelector("[data-sent-separately]");
+      var hasFile = input && input.files && input.files.length > 0;
+      var added = row.getAttribute("data-added") === "true";
+      var text = (hasFile || added) ? "Added" : (sep && sep.checked ? "Sent separately" : "Add file");
+      pill.textContent = text;
+      pill.className = "pill " + (text === "Add file" ? "warn" : "ok");
     }
     var slow = debounce(refresh, 250);
     form.addEventListener("input", slow);
@@ -184,11 +228,11 @@
       if (input && input.type === "file") {
         var row = input.closest(".doc-row");
         if (row) {
-          var pill = row.querySelector("[data-testid='doc-status']");
-          var has = input.files && input.files.length > 0;
-          pill.textContent = has ? "Added" : "Add file";
-          pill.className = "pill " + (has ? "ok" : "warn");
+          setPill(row, input);
         }
+      } else if (input && input.hasAttribute && input.hasAttribute("data-sent-separately")) {
+        var drow = input.closest(".doc-row");
+        if (drow) { setPill(drow, drow.querySelector("input[type=file]")); }
       }
     });
     function locate() {

@@ -777,3 +777,12 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .did-you-mean { min-height: 1.4em; }
 .form-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill-legend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+/* Required markers and guarded-button explanations. */
+.req-star { color: var(--danger, #b3261e); font-weight: 700; margin-left: 0.15em; }
+.required-legend { margin: 0.25rem 0; }
+.portal-form .field.needed > input, .portal-form .field.needed > select, .portal-form .field.needed > textarea { border-left: 3px solid var(--warn, #b26a00); }
+.doc-row.needed .doc-label { border-left: 3px solid var(--warn, #b26a00); padding-left: 0.4rem; }
+.needs-list { margin: 0.6rem 0; }
+.needs-list ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.guard-reason { margin: 0.3rem 0 0; font-size: 0.85rem; }

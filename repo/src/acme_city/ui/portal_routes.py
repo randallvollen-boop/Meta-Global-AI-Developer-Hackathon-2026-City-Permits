@@ -76,6 +76,15 @@ def _portal_guard(
 _RESERVED = {CSRF_FIELD, "intent", "draft", "certification_accepted", "next"}
 
 
+def _declared(form: Any, spec: forms.FormSpec) -> set[str]:
+    """Return the document types the applicant ticked "Sent to the City separately"."""
+    return {
+        doc_type
+        for doc_type, _label in spec.documents
+        if str(form.get(f"sent_separately__{doc_type}", "")).lower() in {"on", "true", "1"}
+    }
+
+
 def _values(form: Any, spec: forms.FormSpec) -> dict[str, str]:
     """Return the typed values of a posted form (text only)."""
     names = {field.key for field in spec.fields} | {
@@ -115,11 +124,15 @@ def _form_context(
     values: dict[str, str],
     certification_accepted: bool,
     draft: Any,
+    sent_separately: set[str] | None = None,
     error: str = "",
     notice: str = "",
 ) -> dict[str, Any]:
     documents = service.draft_documents(draft)
-    state = service.completeness(spec, values, set(documents), certification_accepted=certification_accepted)
+    declared = set(sent_separately or ())
+    state = service.completeness(
+        spec, values, set(documents), certification_accepted=certification_accepted, sent_separately=declared
+    )
     icon = None
     row = service._type_row(spec.type_key)  # noqa: SLF001 - same package
     icon = view_models.icon_for_permit_type(session, row)
@@ -134,6 +147,7 @@ def _form_context(
         draft=draft,
         draft_documents={key: doc.filename for key, doc in documents.items()},
         state=state,
+        sent_separately=declared,
         icon_url=icon["url"] if icon else "",
         certification=forms.CERTIFICATION_TEXT,
         portal_notice=forms.PORTAL_NOTICE,
@@ -431,11 +445,14 @@ def ui_portal_form(
     row = service.draft(draft, resolved) if draft else None
     values = _default_values(session, resolved)
     certification_accepted = False
+    declared: set[str] = set()
     if row is not None:
         values.update(dict(row.data.get("values") or {}))
         certification_accepted = bool(row.data.get("certification_accepted"))
+        declared = {str(item) for item in row.data.get("sent_separately") or []}
     context = _form_context(
-        request, session, resolved, service, spec, values=values, certification_accepted=certification_accepted, draft=row
+        request, session, resolved, service, spec, values=values,
+        certification_accepted=certification_accepted, draft=row, sent_separately=declared,
     )
     return render(request, "portal_form.html", context)
 
@@ -464,6 +481,7 @@ async def ui_portal_check(
         _values(form, spec),
         have,
         certification_accepted=str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"},
+        sent_separately=_declared(form, spec),
     )
     return JSONResponse(state)
 
@@ -491,18 +509,22 @@ async def ui_portal_post(
     values = _values(form, spec)
     certification_accepted = str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"}
     intent = str(form.get("intent", "update"))
+    declared = _declared(form, spec)
     draft = None
     error_text = ""
     notice = ""
     try:
         verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
         draft = service.save_draft(
-            spec, values, certification_accepted, resolved, reference=str(form.get("draft", ""))
+            spec, values, certification_accepted, resolved,
+            reference=str(form.get("draft", "")), sent_separately=declared,
         )
         for doc_type, filename, content in await _files(form, spec):
             service.store_upload(draft, doc_type, filename, content, resolved)
         if intent == "submit":
-            application = service.submit(spec, values, certification_accepted, draft, resolved)
+            application = service.submit(
+                spec, values, certification_accepted, draft, resolved, sent_separately=declared
+            )
             session.commit()
             return RedirectResponse(
                 f"/apply/submitted/{application.source_application_number}", status_code=303
@@ -522,6 +544,7 @@ async def ui_portal_post(
             )
     context = _form_context(
         request, session, resolved, service, spec,
-        values=values, certification_accepted=certification_accepted, draft=draft, error=error_text, notice=notice,
+        values=values, certification_accepted=certification_accepted, draft=draft,
+        sent_separately=declared, error=error_text, notice=notice,
     )
     return render(request, "portal_form.html", context, status_code=422 if error_text else 200)

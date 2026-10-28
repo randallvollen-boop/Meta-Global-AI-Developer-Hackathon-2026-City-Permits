@@ -807,12 +807,29 @@ class IntakeAgent:
                 applicant_must=f"State {field.replace('_', ' ')} on the application.",
                 severity="block",
             )
+        declared_value = facts.get("documents_sent_separately")
+        declared = {str(item) for item in declared_value} if isinstance(declared_value, list) else set()
         for document in missing_documents:
+            label = document.replace("_", " ")
+            if document in declared:
+                # The applicant said it was sent separately; no file is on this case,
+                # so it is still not received.
+                findings.add(
+                    finding_type="missing_document",
+                    message=(
+                        f"The applicant declared the {label} sent separately; it has not "
+                        "been received with this application."
+                    ),
+                    rule=f"ACME Code §13-502 ({permit_type.key} required documents)",
+                    applicant_must=f"Send the {label} to the City, or upload it with your answer.",
+                    severity="block",
+                )
+                continue
             findings.add(
                 finding_type="missing_document",
-                message=f"The application does not include the {document.replace('_', ' ')}.",
+                message=f"The application does not include the {label}.",
                 rule=f"ACME Code §13-502 ({permit_type.key} required documents)",
-                applicant_must=f"Provide the {document.replace('_', ' ')}.",
+                applicant_must=f"Provide the {label}.",
                 severity="block",
             )
         if missing_fields or missing_documents:
