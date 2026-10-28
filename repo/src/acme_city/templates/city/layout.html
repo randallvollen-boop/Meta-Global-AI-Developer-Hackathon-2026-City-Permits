@@ -1,0 +1,91 @@
+{# The City of Acme website frame.  Also the frame of the applicant permit
+   pages, which render inside it.  No staff application chrome appears here. #}
+{% set active = active_nav if active_nav is defined else 'permits' %}
+{% set on_chooser = request.url.path.rstrip('/') == '/apply' %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | City of Acme</title>
+  <link rel="stylesheet" href="/ui/static/app.css">
+  <link rel="stylesheet" href="/ui/static/city.css">
+  <link rel="stylesheet" href="/ui/static/demo-switch.css">
+</head>
+<body class="city" data-city-site="true">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m10.29 3.86-8.47 14.14A2 2 0 0 0 3.53 21h16.94a2 2 0 0 0 1.71-3l-8.47-14.14a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+<symbol id="c-permit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></symbol>
+<symbol id="c-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></symbol>
+<symbol id="c-tree" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-6M12 16c-4 0-6-2.5-6-5 0-2 1.4-3.2 2.6-3.6C8.4 5 10 3 12 3s3.6 2 3.4 4.4C16.6 7.8 18 9 18 11c0 2.5-2 5-6 5z"/></symbol>
+<symbol id="c-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+<symbol id="c-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+<symbol id="c-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</defs></svg>
+<a class="skip-link" href="#main">Skip to the main content</a>
+
+<div class="city-demo" role="note" data-testid="city-demo-banner">Fictional City of Acme website for a software demonstration. No real city, service, fee or person is represented.</div>
+
+<header class="city-header">
+  <div class="city-wrap city-header-row">
+    <a class="city-brand" href="/city/" aria-label="City of Acme home">
+      <svg class="city-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor" opacity=".18"/><path d="M6 25h20M8 25V13l8-6 8 6v12M13 25v-7h6v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="city-wordmark"><b>City of Acme</b><small>Fictional demonstration</small></span>
+    </a>
+    <p class="city-hours">City Hall (555) 010-0100</p>
+  </div>
+  <nav class="city-nav" aria-label="City website">
+    <div class="city-wrap">
+      <ul>
+        <li><a href="/city/"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a></li>
+        <li><a href="/city/permits" data-testid="nav-permits"{% if active == 'permits' %} aria-current="page"{% endif %}>Permits</a></li>
+        {% for slug, svc in city_services.items() %}
+        <li><a href="/city/{{ slug }}"{% if active == slug %} aria-current="page"{% endif %}>{{ svc.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<div class="city-wrap">
+  <nav class="city-crumbs" aria-label="Breadcrumb" data-testid="city-breadcrumb">
+    <ol>
+      <li><a href="/city/">Home</a></li>
+      {% if active == 'permits' %}
+      <li>{% if on_chooser or title == 'Permits' %}<span aria-current="page">Permits</span>{% else %}<a href="/apply">Permits</a>{% endif %}</li>
+      {% if not on_chooser and title != 'Permits' %}<li><span aria-current="page">{{ title }}</span></li>{% endif %}
+      {% elif active != 'home' %}
+      <li><span aria-current="page">{{ title }}</span></li>
+      {% endif %}
+    </ol>
+  </nav>
+</div>
+
+<main id="main" class="city-main">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="city-footer">
+  <div class="city-wrap city-footer-grid">
+    <div>
+      <p class="city-footer-name">City of Acme</p>
+      <p>1 Example Plaza, Acme (fictional address)<br>(555) 010-0100<br>Weekdays, 8:30 a.m. to 4:30 p.m.</p>
+    </div>
+    <div>
+      <p class="city-footer-name">Services</p>
+      <ul>
+        <li><a href="/city/permits">Permits</a></li>
+        {% for slug, svc in city_services.items() %}<li><a href="/city/{{ slug }}">{{ svc.title }}</a></li>{% endfor %}
+      </ul>
+    </div>
+    <div>
+      <p class="city-footer-name">About this site</p>
+      <p>Every name, address, phone number, fee and permit on this site is synthetic. The City of Acme does not exist.</p>
+    </div>
+  </div>
+</footer>
+
+{% include "_demo_switch.html" %}
+<script src="/ui/static/property.js" defer></script>
+</body>
+</html>
