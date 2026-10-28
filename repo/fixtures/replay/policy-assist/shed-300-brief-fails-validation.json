@@ -107,10 +107,10 @@
     ],
     "title": "What-if briefing: shed size that carries a condition"
   },
-  "prompt_version": "acme-policy-brief-prompt-v3",
+  "prompt_version": "acme-policy-brief-prompt-v4",
   "purpose": "brief",
   "recorded_at": "2026-10-28T12:00:00Z",
-  "replay_key": "871abed8f5fed44d472d75414a210e484ff93b7ae61b41800440bfa4ac182491",
+  "replay_key": "d97403f9cb3facbc8d985bf72d3990a206d9f58ced9e4c364101d4c4ccf8577c",
   "run_content_hash_at_build": "301a44928bd2d219fc2f88ac57803cdb69934d7aa19d58f26937699b0479c7a0",
   "schema_version": "acme-policy-brief-schema-v1",
   "task": "policy_brief"

@@ -479,6 +479,7 @@ def test_the_rule_sources_name_limit_value_and_unit_separately() -> None:
     from acme_city.policy import muse
 
     source = inspect.getsource(muse.render_brief_input)
-    for field in ("configuration", "rule_id", "version", "citation", "operator", "limit_value", "unit"):
-        assert f'f"{field}=' in source, field
+    for field in ("configuration", "rule_id", "version", "citation", "operator", "limit_value", "unit",
+                  "fact_id", "population", "baseline_id", "scenario_id"):
+        assert f'("{field}", ' in source, field
     assert '{source.operator} {source.limit_value}' not in source
