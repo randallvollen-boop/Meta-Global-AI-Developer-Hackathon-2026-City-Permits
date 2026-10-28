@@ -30,6 +30,7 @@ SCREENS = (
     ("/agent/intake", "Intake agent"),
     ("/agent/adjudication", "Adjudication agent"),
     ("/admin", "Administration"),
+    ("/insight/city", "City view"),
 )
 
 #: The screens that are swept as the persona that owns them.
@@ -78,6 +79,7 @@ NAVIGATION_BY_PERSONA = {
         "agent_intake",
         "agent_adjudication",
         "admin",
+        "insight_city",
     ],
 }
 
@@ -93,6 +95,9 @@ HIDDEN_SCREENS = {
                                 "/queue/early-resolution"],
     "persona_city_administrator": ["/queue/intake", "/queue/early-resolution", "/queue/review"],
 }
+#: P3insight: the City view is held by the City Administrator only.
+for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
+    HIDDEN_SCREENS[_persona].append("/insight/city")
 
 
 def test_the_screens_render_without_a_page_error(

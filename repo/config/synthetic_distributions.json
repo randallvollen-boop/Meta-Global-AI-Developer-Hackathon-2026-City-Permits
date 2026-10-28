@@ -7,9 +7,9 @@
   "window": {"end": "2026-10-27T17:00:00Z", "days": 365},
   "district_weights": {"R-1": 40, "R-2": 25, "C-2": 35},
   "type_weights": {
-    "R-1": {"deck_fence": 32, "shed": 14, "res_building": 8, "hvac": 10, "water_heater": 8, "residential_electric": 8, "pod": 6, "row_encroachment": 3, "zoning_variance": 2, "certificate_appropriateness": 3, "rezoning": 1, "site_plan_review": 1},
-    "R-2": {"deck_fence": 22, "shed": 10, "res_building": 8, "hvac": 8, "water_heater": 6, "residential_electric": 6, "pod": 5, "row_encroachment": 3, "zoning_variance": 16, "certificate_appropriateness": 3, "rezoning": 2, "site_plan_review": 3},
-    "C-2": {"com_ti": 16, "sign": 14, "patio": 12, "change_occupancy": 14, "fire_alarm": 10, "hvac": 4, "row_encroachment": 5, "site_plan_review": 4, "pod": 3, "zoning_variance": 2, "rezoning": 2, "certificate_appropriateness": 1}
+    "R-1": {"deck_fence": 32, "shed": 14, "res_building": 8, "hvac": 10, "water_heater": 8, "residential_electric": 8, "pod": 6, "row_encroachment": 3, "zoning_variance": 1, "certificate_appropriateness": 3, "rezoning": 1, "site_plan_review": 1},
+    "R-2": {"deck_fence": 22, "shed": 10, "res_building": 8, "hvac": 8, "water_heater": 6, "residential_electric": 6, "pod": 5, "row_encroachment": 3, "zoning_variance": 20, "certificate_appropriateness": 3, "rezoning": 2, "site_plan_review": 3},
+    "C-2": {"com_ti": 16, "sign": 14, "patio": 12, "change_occupancy": 14, "fire_alarm": 10, "hvac": 4, "row_encroachment": 5, "site_plan_review": 4, "pod": 3, "zoning_variance": 1, "rezoning": 2, "certificate_appropriateness": 1}
   },
   "variance_cluster": {"district": "R-2", "parcel_count": 5, "share": 0.75},
   "month_weights": [6, 7, 9, 10, 11, 10, 9, 9, 8, 8, 7, 6],

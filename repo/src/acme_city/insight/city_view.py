@@ -314,6 +314,7 @@ def city_view(
                 for level, label in enumerate(["none", "fewest", "fewer", "more", "most"])
             ],
             "district_table": district_table,
+            "unmapped": len(rows) - sum(district_counts.values()),
             "top_exception_parcels": top_exception_parcels,
         },
         "trend": {"svg": trend_svg, "rows": trend},

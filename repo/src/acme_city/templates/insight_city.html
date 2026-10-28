@@ -81,6 +81,7 @@
       {% endfor %}
     </tbody>
   </table>
+  <p class="insight-def" data-testid="unmapped-note">Permits with no matched parcel (not drawn on the map): <strong data-testid="unmapped-count">{{ v.map.unmapped }}</strong>.</p>
   <h3>Where exceptions cluster</h3>
   <p class="insight-def">{{ v.definitions.exceptions }}</p>
   <table class="data-table" data-testid="exception-clusters">

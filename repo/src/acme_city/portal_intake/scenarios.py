@@ -1076,8 +1076,8 @@ def generate_synthetic_year(
                         issued_at = candidate
                         permit_number = f"ACME-SYN-{position:06d}"
                         status = "issued"
-            if type_key == "zoning_variance":
-                exception_kinds.insert(0, "variance")
+        if type_key == "zoning_variance":
+            exception_kinds.insert(0, "variance")
         cases.append(
             SyntheticCase(
                 number=number,
