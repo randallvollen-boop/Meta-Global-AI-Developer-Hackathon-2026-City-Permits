@@ -412,7 +412,7 @@ def test_a_fee_change_reports_hypothetical_assessed_fees_and_unpriceable_cases_a
     run = run_it(client, editor, count="300")
     body = client.get(run).text
     assert 'data-testid="policy-fee-totals"' in body and "Hypothetical assessed fees" in body
-    assert "not money collected" in body
+    assert "No money is collected" in body
     assert "Cases that cannot be priced" in body
     lowered = body.lower()
     for word in FORBIDDEN_CLAIMS:

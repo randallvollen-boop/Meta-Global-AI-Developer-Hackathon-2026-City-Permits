@@ -73,7 +73,7 @@ MEASURE_NOTES: dict[str, str] = {
     "service_targets": (
         "Service targets as configured, before and after. No processing time is derived from them."
     ),
-    "fees": "Hypothetical assessed fees; not money collected and not a forecast of it.",
+    "fees": "Hypothetical assessed fees. No money is collected and none is forecast.",
     "safety_signals": "Every case that stops failing a rule, with the rule, so a person can judge the risk.",
 }
 

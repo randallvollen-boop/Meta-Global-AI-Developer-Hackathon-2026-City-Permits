@@ -4,7 +4,7 @@
   "terms": {
     "muse_provenance": {
       "label": "Muse label",
-      "text": "Every Muse result carries a label that says where it came from. \"Replay\" means the stored answer of an earlier run was shown again and no model was called now. \"Live\" means the model was called for this result. \"Cached\" means an identical earlier request was answered from the stored result. The label is never hidden."
+      "text": "Every Muse result has a label that says where it came from. \"Replay\" means the stored answer of an earlier run was shown again and no model was called now. \"Live\" means the model was called for this result. \"Cached\" means an identical earlier request was answered from the stored result. The label is never hidden."
     },
     "muse_run": {
       "label": "Muse run",
@@ -20,11 +20,11 @@
     },
     "record_status": {
       "label": "Record status",
-      "text": "Record status says where a case stands in its own workflow, such as submitted, under review or approved. It is not the same as the status of a credential."
+      "text": "Record status says where a case stands in its own workflow, such as submitted, under review or approved. The status of a credential is a separate fact."
     },
     "credential_status": {
       "label": "Credential status",
-      "text": "Credential status says whether a licence or registration shown for a contractor or business is valid on the date that matters. It is checked separately from the record status of a case."
+      "text": "Credential status says whether a license or registration shown for a contractor or business is valid on the date that matters. It is checked separately from the record status of a case."
     },
     "reason_code": {
       "label": "Reason code",
@@ -36,7 +36,7 @@
     },
     "content_hash": {
       "label": "Content hash",
-      "text": "A fingerprint of a stored document. If even one character of the file changes, the fingerprint changes, so it shows that the document the model read is the document on file."
+      "text": "A short code calculated from the contents of a stored document. If even one character of the file changes, the code changes, so it shows that the document the model read is the document on file."
     },
     "prompt_version": {
       "label": "Prompt version",
@@ -60,15 +60,15 @@
     },
     "policy_safety_signals": {
       "label": "Safety signals",
-      "text": "Every case that stops failing a rule is listed with the rule, the value it had and the limit before and after, so a person can judge the risk. A case that stops failing a rule is not a case that is safe; it is a case to look at."
+      "text": "Every case that stops failing a rule is listed with the rule, the value it had and the limit before and after, so a person can judge the risk. A case that stops failing a rule still needs a person to look at it."
     },
     "policy_holds": {
       "label": "Recommendation holds",
-      "text": "Cases the agent would hold for a person instead of recommending an outcome. A hold cleared is a case the agent would no longer hold. Identity, parcel, credential, finance and missing-input safeguards and the decision itself stay with the people and checks that own them. This counts cases, not time."
+      "text": "Cases the agent would hold for a person instead of recommending an outcome. A hold cleared is a case the agent would no longer hold. Identity, parcel, credential, finance and missing-input safeguards and the decision itself stay with the people and checks that own them. The count is of cases and says nothing about time."
     },
     "policy_needs_information": {
       "label": "Needs information",
-      "text": "Cases the intake router sends back to early resolution because something required is missing. It is a count of cases at intake, not a measure of time."
+      "text": "Cases the intake router sends back to early resolution because something required is missing. The count is of cases at intake and says nothing about time."
     },
     "policy_service_targets": {
       "label": "Service targets",
@@ -76,7 +76,7 @@
     },
     "policy_hypothetical_fees": {
       "label": "Hypothetical assessed fees",
-      "text": "What the published fee schedule arithmetic would assess for the cases in the population, rounded the way real assessments are. They are not money collected and not a forecast of it. Cases without a usable valuation cannot be priced and are listed apart."
+      "text": "What the published fee schedule arithmetic would assess for the cases in the population, rounded the way real assessments are. No money is collected and none is forecast. Cases without a usable valuation cannot be priced and are listed apart."
     },
     "policy_unpriceable": {
       "label": "Cases that cannot be priced",
@@ -84,7 +84,7 @@
     },
     "policy_content_hash": {
       "label": "Content hash",
-      "text": "A fingerprint of everything the run holds: the scenario revision, the full baseline and proposed configuration, the cases, the population definition, the analysis moment and the engine and generator versions. It does not include ids or times, so the same inputs always give the same hash."
+      "text": "A short code calculated from everything the run used: the scenario revision, the full baseline and proposed configuration, the cases, the population definition, the analysis moment and the engine and generator versions. It does not include ids or times, so the same inputs always give the same hash."
     },
     "application_status": {
       "label": "Application status",
@@ -120,11 +120,11 @@
     },
     "property_context": {
       "label": "Property context",
-      "text": "The parcel, the official address with its unit, the project description, the site documents, the related applications and the rule versions in force for one application. It is read from the stored records and never from the text the applicant typed alone."
+      "text": "The parcel, the official address with its unit, the project description, the site documents, the related applications and the rule versions in force for one application. It is read from the stored records. The text the applicant typed is never the only source."
     },
     "source_freshness": {
       "label": "Source freshness",
-      "text": "Freshness is the last time the source reported a change and the last time the demonstration received or checked a record. It is not the number of open issues. When no time is recorded the screen says that the freshness information is unavailable rather than showing a number of zero."
+      "text": "Freshness is the last time the source reported a change and the last time the demonstration received or checked a record. The number of open issues is a separate fact. When no time is recorded the screen says that the freshness information is unavailable instead of showing zero."
     },
     "version_date_basis": {
       "label": "Date basis",
@@ -132,7 +132,7 @@
     },
     "assigned_approver": {
       "label": "Assigned approver",
-      "text": "The accountable owner of the domain the version belongs to. It says who is responsible for approving; it does not say that the version was approved. The approval itself is a recorded event with an approver and a date."
+      "text": "The accountable owner of the domain the version belongs to. It names who is responsible for approving. Whether the version was approved is a separate fact, recorded as an event with an approver and a date."
     },
     "awaiting_approval": {
       "label": "Awaiting approval",
@@ -140,15 +140,15 @@
     },
     "identifier_integrity": {
       "label": "Readable reference",
-      "text": "The readable reference of an application is the number the City gave it. The internal identifier is a second name of the same record, not a second case. Two records are only ever shown as one when the stored relationship says they are one."
+      "text": "The readable reference of an application is the number the City gave it. The internal identifier is another name for the same case. Two records appear as one only when the stored relationship says they are one."
     },
     "finance_statuses": {
       "label": "Receipt settlement, allocation and account link",
-      "text": "Receipt settlement says whether the money has settled in the ledger. Payment allocation says whether it was allocated to an assessment. The account identity link says whether the payer account is linked to a canonical party. The outstanding balance says what is still owed. They are four separate facts, and the permit status is a fifth."
+      "text": "Receipt settlement says whether the money has settled in the finance records. Payment allocation says whether it was allocated to an assessment. The account identity link says whether the payer account is linked to a canonical party. The outstanding balance says what is still owed. They are four separate facts, and the permit status is a fifth."
     },
     "ops_actor_type": {
       "label": "Actor type",
-      "text": "A person is a persona the interface can select, or a staff user added in Administration. An agent is a service identity that holds an agent role, such as the intake agent. Everything else, including a record with no actor, is the system. The type comes from the identity records the server holds, not from the text of an audit row."
+      "text": "A person is a persona the interface can select, or a staff user added in Administration. An agent is a service identity that holds an agent role, such as the intake agent. Everything else, including a record with no actor, is the system. The server takes the type from its identity records and ignores the text of an audit row."
     },
     "ops_not_applicable": {
       "label": "Not applicable",
@@ -172,7 +172,7 @@
     },
     "match_evidence": {
       "label": "Evidence before score",
-      "text": "The agreements and conflicts the matcher found are the evidence. A score only orders the candidates; it is an uncalibrated heuristic and not the chance that two records are the same."
+      "text": "The agreements and conflicts the matcher found are the evidence. A score only orders the candidates; it is an uncalibrated heuristic that does not state the chance that two records are the same."
     },
     "action_preview": {
       "label": "What this action will do",
@@ -188,7 +188,7 @@
         "Open the property context of an application in the side flyout.",
         "Open a rule or fee version that is waiting to be published."
       ],
-      "next": "Open the record behind a count. The City view and the What-if are linked from here; the Operations dashboard is not part of this build."
+      "next": "Open the record behind a count. The City view and the What-if are linked from here; the Operations dashboard has its own navigation entry."
     },
     "queue": {
       "title": "Work queue",
@@ -207,7 +207,7 @@
         "Open a record for its overview, sources and history.",
         "Request a correction where your persona may."
       ],
-      "next": "A correction goes to the system that owns the value; it is not edited here."
+      "next": "A correction goes to the system that owns the value. Values are not edited on this screen."
     },
     "masters": {
       "title": "Master records",
@@ -266,7 +266,7 @@
     },
     "agent_intake": {
       "title": "Intake agent",
-      "purpose": "The intake agent reads the received documents and proposes values; it does not decide anything.",
+      "purpose": "The intake agent reads the received documents and proposes values. A steward decides.",
       "can_do": [
         "Review its recorded steps.",
         "Run it on a case where your persona may."
@@ -440,7 +440,7 @@
     },
     "activity": {
       "title": "Activity",
-      "purpose": "Decisions and changes recorded for the records you steward. It is not the administrator's audit log.",
+      "purpose": "Decisions and changes recorded for the records you steward. The administrator's audit log is a separate screen.",
       "can_do": [
         "Read who decided what, when, and the note they gave."
       ],

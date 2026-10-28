@@ -348,7 +348,7 @@ class RegistryService:
                 raise ValidationError("only an approved link can be removed")
             if crosswalk.source_dataset_key == "finance_accounts":
                 raise ValidationError(
-                    "a finance account link is not removed; correct it to the right party instead"
+                    "a finance account link cannot be removed; correct it by linking the right party"
                 )
 
         decision_proposal = self._record_decision_proposal(

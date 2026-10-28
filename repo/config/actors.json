@@ -2,7 +2,7 @@
   "catalog_version": "2",
   "scope": "acme_city",
   "fictional_demo": true,
-  "note": "Exactly four selectable human personas are offered by the persona selector. The service identities below are organizational bindings - accountable owners, custodians, the shared delegate, the cross-domain governance routing identity and a second applicant identity used for record-scope checks. A service identity is never selectable. Every grant is explicit: a role label never authorizes an action and a client-supplied role field is never trusted. Administrator configuration access carries no permit approval.",
+  "note": "Exactly four selectable human personas are offered by the persona selector. The service identities below are organizational bindings: accountable owners, custodians, the shared delegate, the cross-domain governance routing identity and a second applicant identity used for record-scope checks. A service identity is never selectable. Every grant is explicit: a role label never authorizes an action and a client-supplied role field is never trusted. Administrator configuration access carries no permit approval.",
   "roles": [
     {
       "role_id": "applicant",
@@ -772,7 +772,7 @@
         "records"
       ],
       "record_scope": [],
-      "responsibility": "Maintains configuration, assignments, authority policy, finance and audit evidence. Configuration access carries no permit approval.",
+      "responsibility": "Maintains configuration, assignments, authority policy, finance and audit evidence. Configuration access has no permit approval.",
       "grants": [
         {
           "permission_id": "admin.actor.manage",
