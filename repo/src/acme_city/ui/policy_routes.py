@@ -157,7 +157,20 @@ def ui_policy_scenarios(
         starting_text=_starting_text(starting),
         notice=NOTICES.get(notice, ""),
         model_runs=[],
-        evidence=[],
+        evidence=[
+            {
+                "label": "Stored what-ifs and runs",
+                "kind": "database query",
+                "detail": f"{len(scenarios)} saved what-ifs and {len(recent)} recent runs; each run is an immutable snapshot",
+                "received_at": None,
+            },
+            {
+                "label": "No model used",
+                "kind": "label",
+                "detail": "Every figure on these screens is counted by the permit engine; no model writes or computes any of it in this release",
+                "received_at": None,
+            },
+        ],
     )
     return render(request, "policy_scenarios.html", context)
 
@@ -265,7 +278,20 @@ def ui_policy_scenario(
         can_run=can_run,
         notice=NOTICES.get(notice, ""),
         model_runs=[],
-        evidence=[],
+        evidence=[
+            {
+                "label": "Scenario revision",
+                "kind": "database record",
+                "detail": f"revision {revision.revision_number}, content hash {revision.content_hash[:12]}",
+                "received_at": revision.created_at.isoformat(),
+            },
+            {
+                "label": "Published rules and fee schedules",
+                "kind": "database query",
+                "detail": "read now, in memory, to check each change; nothing is changed",
+                "received_at": baseline.analysis_at.isoformat(),
+            },
+        ],
     )
     return render(request, "policy_scenario.html", context)
 
@@ -381,7 +407,20 @@ def ui_policy_run(
         run=views.run_view(run, scenario_deleted=bool(state and state[0])),
         can_brief=can_brief,
         model_runs=[],
-        evidence=[],
+        evidence=[
+            {
+                "label": "Run snapshot",
+                "kind": "database record",
+                "detail": f"{run.population_size} cases, engine {run.engine_version}, content hash {run.content_hash[:12]}",
+                "received_at": run.created_at.isoformat(),
+            },
+            {
+                "label": "Population",
+                "kind": "label",
+                "detail": run.population_label,
+                "received_at": None,
+            },
+        ],
     )
     return render(request, "policy_run.html", context)
 
@@ -418,7 +457,20 @@ def ui_policy_briefing(
         briefing=briefing,
         run_id=run.id,
         model_runs=[],
-        evidence=[],
+        evidence=[
+            {
+                "label": "Run snapshot",
+                "kind": "database record",
+                "detail": f"{run.population_size} cases, content hash {run.content_hash[:12]}",
+                "received_at": run.created_at.isoformat(),
+            },
+            {
+                "label": briefing_module.DETERMINISTIC_SOURCE,
+                "kind": "label",
+                "detail": "Built from the typed facts of the run; the Muse-written briefing is a later release",
+                "received_at": None,
+            },
+        ],
     )
     return render(request, "policy_briefing.html", context)
 

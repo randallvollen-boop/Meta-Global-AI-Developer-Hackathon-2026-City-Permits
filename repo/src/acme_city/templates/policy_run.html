@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 
 {% block content %}
+<div class="policy-screen">
 {% set r = run %}
 <div class="page-head">
   <div>
@@ -26,11 +27,11 @@
 
 <section class="card" aria-labelledby="outcomes-heading" data-testid="policy-outcomes">
   <h2 id="outcomes-heading">Recommendation by outcome, baseline and scenario {{ ui.info('policy_outcome_counts') }}</h2>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Cases by recommended outcome</caption>
     <thead><tr><th scope="col">Outcome</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Difference</th></tr></thead>
     <tbody>{% for row in r.outcomes %}<tr data-outcome="{{ row.key }}"><th scope="row">{{ row.label }}</th><td>{{ row.baseline }}</td><td>{{ row.scenario }}</td><td>{{ row.delta }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   <p class="muted">A person decides every case; these are what the agent would recommend.</p>
 </section>
 
@@ -42,11 +43,11 @@
     {% else %}<li class="muted">No case changes direction.</li>{% endfor %}
   </ul>
   {% if r.flipped.cases %}
-  <table class="data-table" data-testid="policy-flipped-table">
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-flipped-table">
     <caption>Cases that change</caption>
     <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Direction</th><th scope="col">Recommendation</th><th scope="col">Rule result</th><th scope="col">Intake route</th></tr></thead>
     <tbody>{% for c in r.flipped.cases %}<tr><th scope="row" class="mono">{{ c.case_ref }}</th><td>{{ c.type }}</td><td>{{ c.direction_label }}</td><td>{{ c.recommendation }}</td><td>{{ c.rule }}</td><td>{{ c.route }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   {% if r.flipped.truncated %}<p class="muted">The first {{ r.flipped.listed }} of {{ r.flipped.total }} cases are listed; the counts above are complete.</p>{% endif %}
   {% endif %}
 </section>
@@ -55,21 +56,21 @@
   <h2 id="safety-heading">Safety signals {{ ui.info('policy_safety_signals') }}</h2>
   <p><strong>{{ r.safety.count }}</strong> cases stop failing a rule. Each is listed with the rule so a person can judge the risk.</p>
   {% if r.safety.signals %}
-  <table class="data-table" data-testid="policy-safety-table">
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-safety-table">
     <caption class="visually-hidden">Cases that stop failing a rule</caption>
     <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Rule</th><th scope="col">Observed</th><th scope="col">What changed</th></tr></thead>
     <tbody>{% for s in r.safety.signals %}<tr><th scope="row" class="mono">{{ s.case_ref }}</th><td>{{ s.type }}</td><td>{{ s.citation }} ({{ s.rule_id }})</td><td>{{ s.observed_value }}</td><td>{{ s.what }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   {% endif %}
 </section>
 
 <section class="card" aria-labelledby="holds-heading" data-testid="policy-holds">
   <h2 id="holds-heading">Recommendation holds {{ ui.info('policy_holds') }}</h2>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Recommendation holds</caption>
     <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
     <tbody><tr><td>{{ r.holds.baseline }}</td><td>{{ r.holds.scenario }}</td><td>{{ r.holds.cleared }}</td><td>{{ r.holds.added }}</td></tr></tbody>
-  </table>
+  </table></div>
   {% if r.holds.cleared_but_still_blocked_by_safeguards %}<p class="muted">{{ r.holds.cleared_but_still_blocked_by_safeguards }} cleared holds still carry a safeguard or a missing input, so a person still has to act.</p>{% endif %}
   {% if r.holds.added %}
   <p data-testid="policy-added-holds">{{ r.holds.added }} cases are newly held for a person:
@@ -80,21 +81,21 @@
 
 <section class="card" aria-labelledby="needs-heading" data-testid="policy-needs">
   <h2 id="needs-heading">Cases that need information {{ ui.info('policy_needs_information') }}</h2>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Needs information at intake</caption>
     <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
     <tbody><tr><td>{{ r.needs.baseline }}</td><td>{{ r.needs.scenario }}</td><td>{{ r.needs.cleared }}</td><td>{{ r.needs.added }}</td></tr></tbody>
-  </table>
+  </table></div>
 </section>
 
 <section class="card" aria-labelledby="targets-heading" data-testid="policy-targets">
   <h2 id="targets-heading">Service targets {{ ui.info('policy_service_targets') }}</h2>
   {% if r.targets %}
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Service targets before and after</caption>
     <thead><tr><th scope="col">Permit type</th><th scope="col">Baseline, days</th><th scope="col">Scenario, days</th><th scope="col">Cases in the population</th></tr></thead>
     <tbody>{% for t in r.targets %}<tr><th scope="row">{{ t.type }}</th><td>{{ t.before }}</td><td>{{ t.after }}</td><td>{{ t.cases }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   <p class="muted">The targets are the configured figures. No processing time is worked out from them.</p>
   {% else %}<p class="muted">This what-if changes no service target.</p>{% endif %}
 </section>
@@ -103,20 +104,22 @@
   <h2 id="fees-heading">Hypothetical assessed fees {{ ui.info('policy_hypothetical_fees') }}</h2>
   {% if r.fees %}
   <p>{{ r.fees.note }}</p>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Hypothetical assessed fees</caption>
     <thead><tr><th scope="col">Baseline, USD</th><th scope="col">Scenario, USD</th><th scope="col">Difference, USD</th><th scope="col">Cases priced</th></tr></thead>
     <tbody><tr data-testid="policy-fee-totals"><td>{{ r.fees.baseline }}</td><td>{{ r.fees.scenario }}</td><td>{{ r.fees.delta }}</td><td>{{ r.fees.priced }}</td></tr></tbody>
-  </table>
+  </table></div>
   <p class="muted">Types that share the changed schedule: {{ r.fees.sharing_types|join(', ') or 'none' }}.</p>
   <h3>Cases that cannot be priced {{ ui.info('policy_unpriceable') }}</h3>
   {% if r.fees.unpriceable %}
-  <table class="data-table" data-testid="policy-unpriceable">
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-unpriceable">
     <caption class="visually-hidden">Cases that cannot be priced</caption>
     <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Why</th></tr></thead>
     <tbody>{% for u in r.fees.unpriceable %}<tr><th scope="row" class="mono">{{ u.case_ref }}</th><td>{{ u.type }}</td><td>{{ u.reason }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   {% else %}<p class="muted">Every case in the population has a usable valuation.</p>{% endif %}
   {% else %}<p class="muted" data-testid="policy-fees-none">This what-if changes no fee, so there is no fee comparison.</p>{% endif %}
 </section>
+{% include "components/evidence_panel.html" %}
+</div>
 {% endblock %}

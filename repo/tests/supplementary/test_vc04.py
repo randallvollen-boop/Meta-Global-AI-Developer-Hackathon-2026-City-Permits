@@ -147,7 +147,8 @@ def test_every_control_of_every_new_screen_carries_a_label(
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # City Administrator holds grants for all eleven of the original screens and the
-    # P3insight City view (twelve),
+    # P3insight City view (twelve) and the policy 2 What-if screen (thirteen, a
+    # deliberate change of this count),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
@@ -155,7 +156,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 12, path
+        assert len(items) == 13, path
         if reference is None:
             reference = items
         assert items == reference

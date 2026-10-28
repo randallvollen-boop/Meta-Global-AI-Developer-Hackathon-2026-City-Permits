@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 
 {% block content %}
+<div class="policy-screen">
 <div class="page-head">
   <div>
     <h1>What-if</h1>
@@ -53,7 +54,7 @@
 
 <section class="card" aria-labelledby="saved-heading" data-testid="policy-list">
   <h2 id="saved-heading">Saved what-ifs</h2>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Saved what-ifs</caption>
     <thead><tr><th scope="col">What-if</th><th scope="col">Revision</th><th scope="col">Runs</th><th scope="col">Saved</th></tr></thead>
     <tbody>
@@ -66,13 +67,13 @@
       <tr><td colspan="4" class="muted" data-testid="policy-empty">No what-if is saved yet. Start from a suggestion above.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </section>
 
 <section class="card" aria-labelledby="runs-heading" data-testid="policy-recent-runs">
   <h2 id="runs-heading">Recent runs</h2>
   <p class="muted">A run is a kept snapshot. It stays here even after its what-if is deleted.</p>
-  <table class="data-table">
+  <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Recent runs</caption>
     <thead><tr><th scope="col">Run of</th><th scope="col">Population {{ ui.info('policy_population') }}</th><th scope="col">Cases</th><th scope="col">Made</th></tr></thead>
     <tbody>
@@ -86,6 +87,8 @@
       <tr><td colspan="4" class="muted">No run has been made yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </section>
+{% include "components/evidence_panel.html" %}
+</div>
 {% endblock %}

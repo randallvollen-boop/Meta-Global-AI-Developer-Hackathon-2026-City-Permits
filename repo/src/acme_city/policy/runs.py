@@ -284,6 +284,37 @@ def result_document(impact: ImpactResult, scenario_result: ScenarioConfigResult)
     )
 
 
+def content_hash_from_snapshot(
+    *,
+    changes: Sequence[Mapping[str, Any]],
+    scenario_name: str,
+    baseline_config: Mapping[str, Any],
+    proposed_config: Mapping[str, Any],
+    case_inputs: Sequence[Mapping[str, Any]],
+    population_definition: Mapping[str, Any],
+    analysis_at: str,
+    engine_version: str,
+    generator_version: str | None,
+) -> str:
+    """Hash the canonical content of a run from its stored snapshot.
+
+    No id and no creation time takes part, so the same inputs always give the
+    same hash.  A stored run is checked by recomputing this from its columns.
+    """
+    return digest(
+        {
+            "scenario": {"name": scenario_name, "changes": [dict(c) for c in changes]},
+            "baseline": dict(baseline_config),
+            "proposed": dict(proposed_config),
+            "case_inputs": [dict(c) for c in case_inputs],
+            "population": dict(population_definition),
+            "analysis_at": analysis_at,
+            "engine_version": engine_version,
+            "generator_version": generator_version,
+        }
+    )
+
+
 def content_hash_of(
     *,
     changes: Sequence[Mapping[str, Any]],
@@ -294,17 +325,16 @@ def content_hash_of(
     generator_version: str | None,
 ) -> str:
     """Hash the canonical content of a run (no id, no creation time)."""
-    return digest(
-        {
-            "scenario": {"name": scenario_name, "changes": [dict(c) for c in changes]},
-            "baseline": baseline.canonical(),
-            "proposed": proposed.canonical(),
-            "case_inputs": [case.canonical() for case in population.cases],
-            "population": population.definition.canonical(),
-            "analysis_at": baseline.analysis_at.isoformat(),
-            "engine_version": ENGINE_VERSION,
-            "generator_version": generator_version,
-        }
+    return content_hash_from_snapshot(
+        changes=changes,
+        scenario_name=scenario_name,
+        baseline_config=baseline.canonical(),
+        proposed_config=proposed.canonical(),
+        case_inputs=[case.canonical() for case in population.cases],
+        population_definition=population.definition.canonical(),
+        analysis_at=baseline.analysis_at.isoformat(),
+        engine_version=ENGINE_VERSION,
+        generator_version=generator_version,
     )
 
 
@@ -371,6 +401,7 @@ __all__ = [
     "SpecError",
     "UnsupportedScenario",
     "build_synthetic",
+    "content_hash_from_snapshot",
     "content_hash_of",
     "execute",
     "label_for",

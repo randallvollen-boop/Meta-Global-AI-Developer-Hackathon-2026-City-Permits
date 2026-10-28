@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 
 {% block content %}
+<div class="policy-screen">
 <div class="page-head">
   <div>
     <h1>{{ scenario.name }}</h1>
@@ -178,7 +179,7 @@
       </select></p>
     <fieldset><legend>Synthetic year settings</legend>
       <p class="field"><label for="run-seed">Seed</label><input id="run-seed" name="seed" inputmode="numeric" value="{{ run_defaults.seed }}"></p>
-      <p class="field"><label for="run-count">Number of cases, 1 to 2000</label><input id="run-count" name="count" inputmode="numeric" value="{{ run_defaults.count }}"></p>
+      <p class="field"><label for="run-count">Number of cases, 1 to 2000</label><input id="run-count" data-testid="policy-run-count" name="count" inputmode="numeric" value="{{ run_defaults.count }}"></p>
     </fieldset>
     <fieldset><legend>Date range (decided applications only)</legend>
       <p class="field"><label for="run-start">Decided from, for example 2026-01-01 (optional)</label><input id="run-start" name="range_start"></p>
@@ -214,11 +215,11 @@
     <p class="field"><label for="rn-name">Name <span aria-hidden="true">*</span></label><input id="rn-name" name="name" maxlength="200" required aria-required="true" value="{{ scenario.name }}"></p>
     <p><button type="submit" class="button btn" data-testid="policy-rename">Save the name as a new revision</button></p>
   </form>
-  <table class="data-table" data-testid="policy-revisions">
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-revisions">
     <caption>Saved revisions</caption>
     <thead><tr><th scope="col">Revision</th><th scope="col">Made by</th><th scope="col">Changes</th><th scope="col">Saved</th><th scope="col">Content hash {{ ui.info('policy_content_hash') }}</th></tr></thead>
     <tbody>{% for r in revisions %}<tr><th scope="row">{{ r.number }}</th><td>{{ r.operation }}</td><td>{{ r.changes }}</td><td class="mono">{{ r.created_at }}</td><td class="mono">{{ r.hash }}</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   <form method="post" action="/policy/scenarios/{{ scenario.id }}/delete" data-testid="policy-delete-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
     <p class="muted">Deleting hides the what-if from the list. Its revisions and the runs made from it are kept.</p>
@@ -233,4 +234,6 @@
     {% else %}<li class="muted">No run yet.</li>{% endfor %}
   </ul>
 </section>
+{% include "components/evidence_panel.html" %}
+</div>
 {% endblock %}

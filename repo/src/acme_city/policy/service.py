@@ -500,6 +500,25 @@ class PolicyService:
         self._session.flush()
         return run
 
+    def verify_run(self, actor: ActorContext, run: models.PolicyRun) -> bool:
+        """Return whether a stored run still hashes to its content hash."""
+        self._authorize(actor, PERMISSION_RUN_VIEW)
+        revision = self._session.get(models.PolicyScenarioRevision, run.scenario_revision_id)
+        if revision is None:
+            return False
+        recomputed = runs.content_hash_from_snapshot(
+            changes=revision.changes,
+            scenario_name=run.scenario_name,
+            baseline_config=run.baseline_config,
+            proposed_config=run.proposed_config,
+            case_inputs=run.case_inputs,
+            population_definition=run.population_definition,
+            analysis_at=run.analysis_at.isoformat(),
+            engine_version=run.engine_version,
+            generator_version=run.generator_version,
+        )
+        return recomputed == run.content_hash
+
     def record_download(self, actor: ActorContext, run: models.PolicyRun, fmt: str) -> None:
         """Audit a briefing download (the file itself is built by the caller)."""
         self._audit.append(
