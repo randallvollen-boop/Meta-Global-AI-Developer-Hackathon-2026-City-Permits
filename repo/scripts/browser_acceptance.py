@@ -34,9 +34,10 @@ SCREENS: tuple[tuple[str, str], ...] = (
     ("/masters", "Properties, businesses and contractors"),
     ("/permits/app_synth_001", "Permit workspace"),
     ("/steward", "Steward review"),
-    ("/rules-fees", "Rules and fees"),
+    ("/rules", "Rules and fees"),
     ("/reconciliation", "Reconciliation"),
     ("/governance", "Governance and sources"),
+    ("/overview", "Planning overview"),
 )
 
 #: The viewports the walkthrough checks.
@@ -56,7 +57,13 @@ def sign_in(page: Page, base_url: str, actor_id: str) -> None:
     """Establish a server-held session for one persona."""
     page.goto(f"{base_url}/select", wait_until="domcontentloaded")
     page.locator(f'button[data-persona="{actor_id}"]').click()
-    page.wait_for_url(f"{base_url}/queue")
+    # The Applicant lands on the City website, the City Administrator on the
+    # planning overview, every other staff persona on its work queue.
+    landing = {
+        APPLICANT: "/city/",
+        ADMINISTRATOR: "/overview",
+    }.get(actor_id, "/queue")
+    page.wait_for_url(f"{base_url}{landing}")
 
 
 def overflow_of(page: Page) -> int:

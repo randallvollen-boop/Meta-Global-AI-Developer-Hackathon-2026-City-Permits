@@ -9,9 +9,9 @@ Every generation attempt — capped, refused, failed or succeeded — is
 recorded as an audit event carrying the prompt, the status, the cost
 estimate and the delivered response size.  A generated image stays
 pending until an administrator saves it; saving is what makes it the
-type's current icon.  Seeding happens only when the rules-fees screen's
-view model first needs the icons, and only inside the caller's
-transaction: this module never commits.
+type's current icon.  The bundled seed assets are written by the
+fixture reset, and only inside the caller's transaction: this module
+never commits.
 """
 # REQUIRES: AI-01, AI-03, SEC-01, SEC-04, UX-01
 # An icon generation is a governed, capped, audited administrator action;

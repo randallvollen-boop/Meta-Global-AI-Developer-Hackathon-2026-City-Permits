@@ -43,15 +43,20 @@ SCREENS = (
 )
 
 #: The fields every governed detail view has to show.
+#:
+#: Changed deliberately (the City Administrator restyle): the freshness fields
+#: are now named "Source last changed" and "Last received or checked", and the
+#: issue count is named "Open recorded issues".  Freshness and open issues are
+#: two different facts, and the panel says so.
 RESPONSIBILITY_FIELDS = (
     "Owner",
     "Steward",
     "Source",
     "Change this in",
-    "Last source update",
-    "Last received",
+    "Source last changed",
+    "Last received or checked",
     "Version",
-    "Open issues",
+    "Open recorded issues",
 )
 
 

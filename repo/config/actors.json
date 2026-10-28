@@ -781,6 +781,12 @@
           "source": "explicit"
         },
         {
+          "permission_id": "admin.overview.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "permit.icon.generate",
           "domains": [],
           "record_scope": [],

@@ -250,6 +250,13 @@
       "sensitive": false
     },
     {
+      "permission_id": "admin.overview.view",
+      "action": "admin.overview.view",
+      "category": "admin",
+      "description": "Open the planning overview: the cases needing attention, the property context, the proposed changes and the source information.",
+      "sensitive": false
+    },
+    {
       "permission_id": "agent.toggle",
       "action": "agent.toggle",
       "category": "agent",

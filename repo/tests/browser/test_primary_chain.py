@@ -134,8 +134,15 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
         },
     )
     assert "Confirmed an allocation" in message
-    page.reload(wait_until="domcontentloaded")
+    # Changed deliberately (the reconciliation restyle): the allocations of the
+    # register live with the receipt register, which has its own tab, so that
+    # the register never reads as part of the selected assessment.  The
+    # allocations of one assessment are shown with that assessment.
+    page.goto(
+        f"{server.base_url}/reconciliation?tab=receipts", wait_until="domcontentloaded"
+    )
     assert page.locator('[data-testid="allocation-row"]').count() >= 1
+    page.goto(f"{server.base_url}/reconciliation", wait_until="domcontentloaded")
 
     message = submit_action(
         "finance.reconcile",

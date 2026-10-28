@@ -46,6 +46,6 @@
     </tbody>
   </table>
   {% else %}
-  <p class="muted" data-testid="evidence-empty">No evidence is recorded for this record.</p>
+  <p class="muted" data-testid="evidence-empty">{{ evidence_note or 'No evidence is recorded for this record.' }}</p>
   {% endif %}
 </section>

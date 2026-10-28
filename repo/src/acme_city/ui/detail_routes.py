@@ -20,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.router import get_session
-from acme_city.persistence.models import model_run, permit
+from acme_city.persistence.models import model_run, permit, registry, source
 from acme_city.ui import patterns, view_models
 from acme_city.ui.patterns import (
     DetailContext,
@@ -218,6 +218,265 @@ patterns.register_detail(
     _resolve_my_permit,
     label="Application record",
     any_grant=(("application.submit", "permits"),),
+)
+
+
+# ----------------------------------------------------------- property context
+
+
+def _resolve_property_context(ctx: DetailContext, application_id: str) -> DetailView | None:
+    """The property context of one application: parcel, address, documents,
+    related applications and the rule versions that apply.
+
+    The detail is the same one the planning overview lists.  It is read under
+    the same scope as the overview, so an application outside the persona's
+    scope answers "not available".
+    """
+    from acme_city.permits.service import PermitService
+    from acme_city.rules.service import RuleCatalogService
+
+    application = ctx.session.execute(
+        select(permit.Application).where(permit.Application.id == application_id)
+    ).scalar_one_or_none()
+    if application is None or not view_models._application_in_scope(
+        ctx.actor, application
+    ):
+        return None
+    service = PermitService(ctx.session)
+    type_row = service.permit_type(application)
+    facts = dict(application.submitted_facts or {})
+    site = ctx.session.execute(
+        select(permit.ApplicationSite).where(
+            permit.ApplicationSite.application_id == application.id,
+            permit.ApplicationSite.is_primary.is_(True),
+        )
+    ).scalar_one_or_none()
+
+    parcel_row = (
+        ctx.session.get(registry.Parcel, site.parcel_id)
+        if site is not None and site.parcel_id
+        else None
+    )
+    address_row = (
+        ctx.session.get(registry.Address, site.address_id)
+        if site is not None and site.address_id
+        else None
+    )
+
+    record_rows = [
+        Row("Application", application.source_application_number, mono=True),
+        Row("Project type", type_row.label if type_row else "not recorded"),
+        Row(
+            "Project description",
+            str(facts.get("project_description") or application.description or "not recorded"),
+        ),
+        Row(
+            "Submitted site text",
+            (site.submitted_address_text if site is not None else "") or "not recorded",
+        ),
+        Row(
+            "Site resolution",
+            (site.resolution_status if site is not None else "no site record") or "not recorded",
+        ),
+        Row(
+            "Official address",
+            (address_row.source_string if address_row is not None else "") or "not resolved",
+        ),
+        Row(
+            "Parcel",
+            (parcel_row.source_parcel_number if parcel_row is not None else "") or "not resolved",
+            mono=True,
+        ),
+        Row(
+            "First submitted",
+            view_models._iso(application.initial_submitted_at) or "not recorded",
+        ),
+    ]
+    sections = [Section("Application and property", tuple(record_rows))]
+
+    if parcel_row is not None:
+        sections.append(
+            Section(
+                "Parcel record",
+                (
+                    Row("Parcel", parcel_row.source_parcel_number, mono=True),
+                    Row("Use", parcel_row.use_description or "not recorded"),
+                    Row("Zoning", parcel_row.zoning_code or "not recorded"),
+                    Row(
+                        "Area",
+                        f"{parcel_row.area_acres} acres"
+                        if parcel_row.area_acres is not None
+                        else "not recorded",
+                    ),
+                    Row("Owner", parcel_row.owner_name or "not recorded"),
+                ),
+            )
+        )
+
+    documents = ctx.session.execute(
+        select(permit.Document).where(permit.Document.application_id == application.id)
+    ).scalars().all()
+    sections.append(
+        Section(
+            "Site documents",
+            tuple(
+                Row(
+                    f"{row.document_type} v{row.version}",
+                    row.content_hash,
+                    mono=True,
+                    info="content_hash",
+                )
+                for row in documents
+            )
+            or (Row("Documents", "no document is stored for this application"),),
+        )
+    )
+
+    related: list[Row] = []
+    if site is not None and (site.parcel_id or site.address_id):
+        for other in ctx.session.execute(
+            select(permit.ApplicationSite).where(
+                permit.ApplicationSite.application_id != application.id,
+                permit.ApplicationSite.is_primary.is_(True),
+            )
+        ).scalars().all():
+            if (site.parcel_id and other.parcel_id == site.parcel_id) or (
+                site.address_id and other.address_id == site.address_id
+            ):
+                sibling = ctx.session.get(permit.Application, other.application_id)
+                if sibling is None:
+                    continue
+                related.append(
+                    Row(
+                        sibling.source_application_number,
+                        other.submitted_address_text or "same parcel or address",
+                        mono=False,
+                    )
+                )
+    sections.append(
+        Section(
+            "Related applications",
+            tuple(related) or (Row("Related applications", "none recorded"),),
+        )
+    )
+
+    basis = application.initial_submitted_at
+    rule_rows: list[Row] = []
+    rule_set = None
+    if basis is not None and type_row is not None:
+        rule_set = RuleCatalogService(ctx.session).resolve(
+            "executable", type_row.key, basis, basis_label="initial_submitted_at"
+        )
+        for rule in rule_set.rules:
+            rule_rows.append(
+                Row(
+                    f"{rule.title} ({rule.citation})",
+                    f"limit {rule.limit_value or 'not set'}"
+                    + (f" on {rule.field_path}" if rule.field_path else ""),
+                )
+            )
+    sections.append(
+        Section(
+            "Rule versions that apply",
+            tuple(rule_rows)
+            or (
+                Row(
+                    "Rule versions",
+                    "no published rule version is in force for this application",
+                ),
+            ),
+        )
+    )
+    if rule_set is not None:
+        sections.append(
+            Section(
+                "How the version was chosen",
+                (
+                    Row(
+                        "Date basis",
+                        "the initial submission time of the application; a later "
+                        "revision does not switch the schedule",
+                    ),
+                    Row("Basis date", view_models._iso(basis) or "not recorded"),
+                ),
+            )
+        )
+    return DetailView(
+        title="Property context",
+        subtitle=application.source_application_number,
+        sections=tuple(sections),
+    )
+
+
+patterns.register_detail(
+    "property-context",
+    _resolve_property_context,
+    label="Property context",
+    any_grant=view_models.SCREEN_PERMISSIONS["overview"],
+)
+
+
+# ------------------------------------------------------------------- a source
+
+
+def _resolve_source(ctx: DetailContext, source_system_id: str) -> DetailView | None:
+    """One source system: its records, its freshness, its team and its route."""
+    from acme_city.ui import admin_views
+
+    row = ctx.session.execute(
+        select(source.SourceSystem).where(
+            source.SourceSystem.source_system_id == source_system_id
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    overview = next(
+        (
+            item
+            for item in admin_views._source_overview(ctx.session)
+            if item["source_system_id"] == source_system_id
+        ),
+        None,
+    )
+    if overview is None:
+        return None
+    snapshots = ctx.session.execute(
+        select(source.SourceSnapshot)
+        .where(source.SourceSnapshot.source_system_id == source_system_id)
+        .order_by(source.SourceSnapshot.ingested_at.desc())
+    ).scalars().all()
+    datasets = sorted({snapshot.source_dataset_id for snapshot in snapshots})
+    rows = [
+        Row("Source", row.label),
+        Row("Description", row.description or "not recorded"),
+        Row("Simulated", "yes" if row.simulated else "no"),
+        Row("Incoming", "yes" if row.incoming else "no"),
+        Row("Stored records", str(len(snapshots))),
+        Row("Datasets", ", ".join(datasets) or "none recorded"),
+        Row(
+            "Source last changed",
+            overview["last_changed"] or "Freshness information unavailable",
+        ),
+        Row(
+            "Last received or checked",
+            overview["last_received"] or "Freshness information unavailable",
+        ),
+        Row("Open recorded issues", str(overview["open_issues"])),
+        Row("Responsible team", overview["responsible_team"]),
+        Row("Change this in", overview["correction_path"] or "not declared"),
+    ]
+    return DetailView(
+        title=f"{row.label} — source",
+        subtitle=overview["records"],
+        sections=(Section("Source", tuple(rows)),),
+    )
+
+
+patterns.register_detail(
+    "source",
+    _resolve_source,
+    label="Source",
+    any_grant=view_models.SCREEN_PERMISSIONS["governance"],
 )
 
 __all__ = ["router"]

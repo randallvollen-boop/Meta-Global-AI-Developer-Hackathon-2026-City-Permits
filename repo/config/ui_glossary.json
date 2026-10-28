@@ -117,9 +117,47 @@
     "review_decision": {
       "label": "Review decision",
       "text": "The Permit Reviewer records the decision of record. An agent recommendation only proposes an outcome and is never the decision. Fee assessment, payment and permit issuance are separate steps after the decision."
+    },
+    "property_context": {
+      "label": "Property context",
+      "text": "The parcel, the official address with its unit, the project description, the site documents, the related applications and the rule versions in force for one application. It is read from the stored records and never from the text the applicant typed alone."
+    },
+    "source_freshness": {
+      "label": "Source freshness",
+      "text": "Freshness is the last time the source reported a change and the last time the demonstration received or checked a record. It is not the number of open issues. When no time is recorded the screen says that the freshness information is unavailable rather than showing a number of zero."
+    },
+    "version_date_basis": {
+      "label": "Date basis",
+      "text": "The rule or fee version that applies to an application is chosen on its initial submission time. A later revision of the application does not switch the schedule, and publishing a new version never changes a decision or an assessment that was already made."
+    },
+    "assigned_approver": {
+      "label": "Assigned approver",
+      "text": "The accountable owner of the domain the version belongs to. It says who is responsible for approving; it does not say that the version was approved. The approval itself is a recorded event with an approver and a date."
+    },
+    "awaiting_approval": {
+      "label": "Awaiting approval",
+      "text": "A version is awaiting approval only after it has been submitted for review. A draft has not entered the approval workflow, so it is never described as awaiting approval."
+    },
+    "identifier_integrity": {
+      "label": "Readable reference",
+      "text": "The readable reference of an application is the number the City gave it. The internal identifier is a second name of the same record, not a second case. Two records are only ever shown as one when the stored relationship says they are one."
+    },
+    "finance_statuses": {
+      "label": "Receipt settlement, allocation and account link",
+      "text": "Receipt settlement says whether the money has settled in the ledger. Payment allocation says whether it was allocated to an assessment. The account identity link says whether the payer account is linked to a canonical party. The outstanding balance says what is still owed. They are four separate facts, and the permit status is a fifth."
     }
   },
   "screens": {
+    "overview": {
+      "title": "Planning overview",
+      "purpose": "The City Administrator's home: what needs attention, what the property is, what has been proposed, and where the data comes from. Every figure is counted from the stored records and labelled with what it counts.",
+      "can_do": [
+        "Open a case that needs attention.",
+        "Open the property context of an application in the side flyout.",
+        "Open a rule or fee version that is waiting to be published."
+      ],
+      "next": "Open the record behind a count. The City view and the What-if are linked from here; the Operations dashboard is not part of this build."
+    },
     "queue": {
       "title": "Work queue",
       "purpose": "The cases waiting on someone, with the issue and the next responsible party named for each.",

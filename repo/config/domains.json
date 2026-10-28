@@ -369,9 +369,9 @@
     "Source",
     "Change this in",
     "Version",
-    "Last source update",
-    "Last received",
-    "Open issues"
+    "Source last changed",
+    "Last received or checked",
+    "Open recorded issues"
   ],
   "registration_publication_gate": {
     "raw_staging_allowed_when_incomplete": true,

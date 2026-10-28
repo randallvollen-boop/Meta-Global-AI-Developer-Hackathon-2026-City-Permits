@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{# The planning overview of the City Administrator.
+
+   Four cards, each with a count that opens the records behind it.  The
+   overview never repeats a screen: it links to the City view and the
+   What-if, and opens the property context in the shared side flyout. #}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Planning overview</h1>
+    <p class="sub">
+      What needs attention, what the property is, what has been proposed and where
+      the data comes from. Every figure is counted from the stored records.
+    </p>
+  </div>
+  <div class="actions">{{ ui.help_button('overview') }}</div>
+</div>
+
+<p class="muted" data-testid="overview-scope">
+  {{ overview.scope_label }}
+</p>
+
+<div class="kpis" data-testid="overview-cards">
+  <section class="card kpi" aria-labelledby="overview-attention-heading">
+    <div class="k" id="overview-attention-heading">
+      <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>
+      {{ overview.attention.label }}
+    </div>
+    <div class="v num" data-testid="overview-attention-count">{{ overview.attention.count }}</div>
+    <div class="s">
+      <span class="pill plain">synthetic sample</span>
+    </div>
+    <p class="t2" style="margin:6px 0 0">{{ overview.attention.definition }}</p>
+    <p style="margin:8px 0 0"><a href="{{ overview.attention.href }}">Open the work queue</a></p>
+  </section>
+
+  <section class="card kpi" aria-labelledby="overview-property-heading">
+    <div class="k" id="overview-property-heading">
+      <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-building"/></svg>
+      {{ overview.property.label }}
+    </div>
+    <div class="v num" data-testid="overview-property-count">{{ overview.property.count }}</div>
+    <div class="s">
+      <span class="pill plain">synthetic sample</span>
+    </div>
+    <p class="t2" style="margin:6px 0 0">{{ overview.property.definition }}</p>
+    <p style="margin:8px 0 0"><a href="{{ overview.property.href }}">Open the property master</a></p>
+  </section>
+
+  <section class="card kpi" aria-labelledby="overview-changes-heading">
+    <div class="k" id="overview-changes-heading">
+      <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-scale"/></svg>
+      {{ overview.changes.label }}
+    </div>
+    <div class="v num" data-testid="overview-changes-count">{{ overview.changes.count }}</div>
+    <div class="s">
+      <span class="pill plain">synthetic sample</span>
+    </div>
+    <p class="t2" style="margin:6px 0 0">{{ overview.changes.definition }}</p>
+    <p style="margin:8px 0 0"><a href="{{ overview.changes.href }}">Open rules and fees</a></p>
+  </section>
+
+  <section class="card kpi" aria-labelledby="overview-sources-heading">
+    <div class="k" id="overview-sources-heading">
+      <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-db"/></svg>
+      {{ overview.sources.label }}
+    </div>
+    <div class="v num" data-testid="overview-sources-count">{{ overview.sources.count }}</div>
+    <div class="s">
+      <span class="pill plain">simulated sources</span>
+    </div>
+    <p class="t2" style="margin:6px 0 0">{{ overview.sources.definition }}</p>
+    <p style="margin:8px 0 0"><a href="{{ overview.sources.href }}">Open governance and sources</a></p>
+  </section>
+</div>
+
+<section class="panel" aria-labelledby="overview-attention-list-heading">
+  <h2 id="overview-attention-list-heading">{{ overview.attention.label }}</h2>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="overview-attention-table">
+    <caption class="visually-hidden">Sample applications that need attention</caption>
+    <thead>
+      <tr>
+        <th scope="col">Application</th><th scope="col">Project type</th>
+        <th scope="col">Why it needs attention</th><th scope="col">Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in overview.attention.entries %}
+      <tr data-testid="overview-attention-row" data-application-id="{{ item.application_id }}">
+        <th scope="row">{{ item.reference }}</th>
+        <td>{{ item.project_type }}</td>
+        <td>{{ item.reason }}</td>
+        <td><a class="btn sm" href="{{ item.href }}">Open the case</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No sample application needs attention.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if overview.attention.more %}
+  <p class="muted">{{ overview.attention.more }} further application(s) are counted; open the work queue to see them all.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="overview-property-list-heading">
+  <h2 id="overview-property-list-heading">{{ overview.property.label }}</h2>
+  <p class="muted">
+    Choose an application to see its parcel, the official address with its unit,
+    the project description, the site documents, the related applications and the
+    rule versions that apply. {{ ui.info('property_context') }}
+  </p>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="overview-property-table">
+    <caption class="visually-hidden">Sample applications with a stored property context</caption>
+    <thead>
+      <tr>
+        <th scope="col">Application</th><th scope="col">Project type</th>
+        <th scope="col">Parcel</th><th scope="col">Official address</th>
+        <th scope="col">Site</th><th scope="col">Property context</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in overview.property.entries %}
+      <tr data-testid="overview-property-row" data-application-id="{{ item.application_id }}">
+        <th scope="row">{{ item.reference }}</th>
+        <td>{{ item.project_type }}</td>
+        <td class="mono">{{ item.parcel }}</td>
+        <td>{{ item.address }}</td>
+        <td>{{ item.resolution }}</td>
+        <td><a class="btn sm" href="{{ item.detail_href }}" data-ui-detail data-detail-kind="property-context" data-detail-id="{{ item.application_id }}" aria-haspopup="dialog">Open the property context</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No sample application has a stored property context.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if overview.property.more %}
+  <p class="muted">{{ overview.property.more }} further application(s) are counted; open the property master to see them all.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="overview-changes-list-heading">
+  <h2 id="overview-changes-list-heading">{{ overview.changes.label }}</h2>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="overview-changes-table">
+    <caption class="visually-hidden">Rule and fee versions that are not published</caption>
+    <thead>
+      <tr>
+        <th scope="col">Version</th><th scope="col">Kind</th><th scope="col">Status</th>
+        <th scope="col">{{ 'Proposed effective date' }}</th><th scope="col">Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in overview.changes.entries %}
+      <tr data-testid="overview-changes-row" data-status="{{ item.status }}">
+        <th scope="row">{{ item.version_label }}</th>
+        <td>{{ item.kind }}</td>
+        <td><span class="badge">{{ item.status_label }}</span></td>
+        <td>{{ item.date }}</td>
+        <td><a class="btn sm" href="{{ item.href }}">Open the version</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No rule or fee version is waiting to be published.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if overview.changes.more %}
+  <p class="muted">{{ overview.changes.more }} further version(s) are counted; open rules and fees to see them all.</p>
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="overview-sources-list-heading">
+  <h2 id="overview-sources-list-heading">{{ overview.sources.label }}</h2>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="overview-sources-table">
+    <caption class="visually-hidden">The simulated source systems</caption>
+    <thead>
+      <tr>
+        <th scope="col">Source</th><th scope="col">Records</th>
+        <th scope="col">Source last changed</th><th scope="col">Last received or checked</th>
+        <th scope="col">Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in overview.sources.entries %}
+      <tr data-testid="overview-source-row" data-source-system-id="{{ item.source_system_id }}">
+        <th scope="row">{{ item.label }}</th>
+        <td>{{ item.records }}</td>
+        <td>{{ item.last_changed or 'Freshness information unavailable' }}</td>
+        <td>{{ item.last_received or 'Freshness information unavailable' }}</td>
+        <td><a class="btn sm" href="{{ item.href }}">Open the source</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">{{ ui.info('source_freshness') }}</p>
+</section>
+
+<section class="panel" aria-labelledby="overview-related-heading">
+  <h2 id="overview-related-heading">Other screens of the City</h2>
+  <ul class="alias-list" data-testid="overview-related">
+    {% for item in overview.related %}
+    <li>
+      <a class="btn sm" href="{{ item.href }}">{{ item.label }}</a>
+      <span class="muted"> — {{ item.note }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="muted">
+    The Operations dashboard is not part of this build, so no link to it is shown.
+  </p>
+</section>
+
+{% include "components/evidence_panel.html" %}
+{% endblock %}

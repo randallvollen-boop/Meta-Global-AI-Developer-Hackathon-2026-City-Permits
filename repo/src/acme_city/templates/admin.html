@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -56,7 +57,7 @@
           <td>{{ type.required_fields|join(', ') or '-' }}</td>
           <td>{{ type.required_documents|join(', ') or '-' }}</td>
           <td>{{ type.fee_schedule_key or '-' }}</td>
-          <td><a href="#icon-{{ type.permit_type_key }}">Create an icon for this type</a></td>
+          <td><a href="/admin?tab=appearance#icon-{{ type.permit_type_key }}">Create an icon for this type</a></td>
         </tr>
         {% endfor %}
       </tbody>
@@ -174,10 +175,36 @@
   </div>
 </details>
 
-<details class="panel card" data-testid="admin-section" data-section="permit-type-icons" {% if tab == 'permit-types' %}open{% endif %}>
+<details class="panel card" data-testid="admin-section" data-section="permit-type-icons" {% if tab == 'appearance' %}open{% endif %}>
   <summary><strong>Permit type icons</strong></summary>
   <div class="card-b" style="display:grid;gap:16px">
-    <p class="muted" style="margin:0">One icon per permit type, shown on work-queue rows and the permit workspace. Describe a new icon in a sentence and Muse Image creates a candidate; it stays pending until you save it. About $0.01 per generation. City Administrator only — at most {{ admin.permit_type_icons.per_type_cap }} generations per type per day.</p>
+    <p class="muted" style="margin:0">One icon per permit type, shown on work-queue rows and the permit workspace. Describe a new icon in a sentence and Muse Image creates a candidate; it stays pending until you save it.</p>
+    <dl class="responsibility-grid" data-testid="icon-limits">
+      <div class="responsibility-item">
+        <dt>Model</dt>
+        <dd><span class="pill muse">Muse Image</span></dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Cost per generation</dt>
+        <dd data-testid="icon-cost">${{ '%.2f'|format(admin.permit_type_icons.cost_estimate_usd) }} (estimate)</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Limit per permit type</dt>
+        <dd data-testid="icon-per-type-cap">{{ admin.permit_type_icons.per_type_cap }} generations per type per day</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Limit for the day</dt>
+        <dd data-testid="icon-global-cap">{{ admin.permit_type_icons.global_cap }} generations for all types per day</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Generations today</dt>
+        <dd data-testid="icon-attempts-today">{{ admin.permit_type_icons.attempts_today }}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Provenance</dt>
+        <dd data-testid="icon-provenance">Every icon records its source: a bundled seed asset or a Muse Image generation, with the prompt, the date and who made it. The label is never hidden. {{ ui.info('muse_provenance') }}</dd>
+      </div>
+    </dl>
     {% for type in admin.permit_type_icons.types %}
     <div class="icon-type" data-testid="permit-type-icon-row" data-permit-type="{{ type.permit_type_key }}" style="border-top:1px solid var(--line-soft);padding-top:14px">
       <div class="item" style="align-items:flex-start">
@@ -188,7 +215,10 @@
         {% endif %}
         <div style="min-width:0;flex:1">
           <div class="t1">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></div>
-          <div class="t2">Current icon: {{ type.current_icon.source if type.current_icon else 'none — line-icon fallback' }} · {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
+          <div class="t2" data-testid="permit-type-icon-provenance">Current icon: {{ type.current_icon.source if type.current_icon else 'none — line-icon fallback' }} · {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
+          {% if type.current_icon %}
+          <div class="t2">Recorded {{ type.current_icon.created_at }} by {{ type.current_icon.created_by or 'the fixture' }} — “{{ type.current_icon.prompt }}”</div>
+          {% endif %}
         </div>
       </div>
 
@@ -203,7 +233,7 @@
             <form method="post" action="/ui/actions/permit.icon.generate" class="action-form" data-testid="icon-generate-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="action_id" value="permit.icon.generate">
-              <input type="hidden" name="next" value="/admin?tab=permit-types">
+              <input type="hidden" name="next" value="/admin?tab=appearance">
               <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
               <input type="hidden" name="expected_version" value="{{ type.version }}">
               <div class="fieldset">
@@ -220,7 +250,7 @@
             <form method="post" action="/ui/actions/permit.icon.save" class="action-form" data-testid="icon-save-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="action_id" value="permit.icon.save">
-              <input type="hidden" name="next" value="/admin?tab=permit-types">
+              <input type="hidden" name="next" value="/admin?tab=appearance">
               <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
               <input type="hidden" name="expected_version" value="{{ type.version }}">
               <div class="fieldset">

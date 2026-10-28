@@ -49,6 +49,10 @@ from acme_city.ui import agent_views, property_views, reviewer_views
 
 #: The required screens, in the order the navigation shows them.
 SCREENS: tuple[dict[str, str], ...] = (
+    # The planning overview is the City Administrator's home.  It carries its
+    # own grant, so it appears for that persona only and the home of every
+    # other persona is unchanged.
+    {"key": "overview", "label": "Planning overview", "href": "/overview"},
     {"key": "queue", "label": "Work queue", "href": "/queue"},
     {"key": "applicants", "label": "Applicants", "href": "/applicants"},
     {
@@ -58,7 +62,7 @@ SCREENS: tuple[dict[str, str], ...] = (
     },
     {"key": "permit", "label": "Permit workspace", "href": ""},
     {"key": "steward", "label": "Steward review", "href": "/steward"},
-    {"key": "rules", "label": "Rules and fees", "href": "/rules-fees"},
+    {"key": "rules", "label": "Rules and fees", "href": "/rules"},
     {"key": "reconciliation", "label": "Reconciliation", "href": "/reconciliation"},
     {"key": "governance", "label": "Governance and sources", "href": "/governance"},
     {"key": "agent_intake", "label": "Intake agent", "href": "/agent/intake"},
@@ -105,6 +109,7 @@ PERSONA_ORDER: tuple[str, ...] = (
 
 #: The domain that owns each screen.
 SCREEN_DOMAIN: dict[str, str] = {
+    "overview": "records",
     "queue": "permits",
     "applicants": "applicants",
     "masters": "parcels",
@@ -129,6 +134,9 @@ SCREEN_DOMAIN: dict[str, str] = {
 #: the domain of the screen.  A grant that is not bound to a domain covers
 #: every domain.
 SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    # The planning overview is the City Administrator's own hub.  It is
+    # opened by its own grant, never by a persona label.
+    "overview": (("admin.overview.view", None),),
     "queue": (
         ("application.submit", "permits"),
         ("application.revision.submit", "permits"),
