@@ -277,6 +277,11 @@ def _rule_source(
                 "permit_type_key": type_row.key if type_row is not None else "",
             }
         ),
+        # The passage is rendered by the server from the structured fields of
+        # a published, effective rule version: its applicability, operator and
+        # threshold. That makes it the fact a dimension claim may cite.  It is
+        # a limit and never an exemption.
+        server_fact=True,
     )
 
 

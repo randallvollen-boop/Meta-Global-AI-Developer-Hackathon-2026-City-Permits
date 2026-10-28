@@ -1,0 +1,22 @@
+{
+  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "context": {
+    "application_reference": "",
+    "permit_type_key": ""
+  },
+  "fixture_kind": "applicant_assist_replay",
+  "fixture_version": "2026.10.28-1",
+  "note": "A deterministic, labelled demonstration fixture of the applicant help assistant. It was written for this demonstration against the published text it quotes; it is not a recording of a Muse answer and it is never presented as one.",
+  "output": {
+    "answer": [],
+    "cannot_answer": true,
+    "next_steps": [],
+    "reason": "needs_a_person"
+  },
+  "prompt_version": "acme-assist-prompt-v1",
+  "question_key": "will my fence permit be approved",
+  "recorded_at": "2026-10-28T00:00:00Z",
+  "replay_key": "b250187b79495e26428d9e0bd8b2bde9ac24f68e85e1921c41917ce49bd68add",
+  "schema_version": "acme-assist-schema-v1",
+  "task": "applicant_assist"
+}

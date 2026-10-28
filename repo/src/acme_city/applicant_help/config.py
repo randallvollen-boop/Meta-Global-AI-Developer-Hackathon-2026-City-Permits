@@ -72,6 +72,12 @@ class HelpConfig:
     refusal_reasons: tuple[str, ...] = ()
     #: The suggested questions that are offered in demonstration mode only.
     demo_questions: tuple[tuple[str, str], ...] = ()
+    #: The plain sentence shown for each refusal reason.
+    refusal_texts: tuple[tuple[str, str], ...] = ()
+
+    def refusal_text(self, reason: str) -> str:
+        """Return the sentence of a refusal reason, or an empty string."""
+        return dict(self.refusal_texts).get(reason, "")
 
     def passage(self, source_id: str) -> Passage | None:
         """Return one passage by its identifier."""
@@ -216,6 +222,17 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
         if not identifier or not text:
             raise ValidationError("a demonstration question needs an id and a text")
         demo_questions.append((identifier, text))
+    texts = assist.get("refusal_texts") or {}
+    if not isinstance(texts, dict):
+        raise ValidationError("the applicant help refusal texts must be an object")
+    refusal_texts = tuple(
+        (str(key).strip(), str(value).strip()) for key, value in sorted(texts.items())
+    )
+    for reason in refusal_reasons:
+        if not dict(refusal_texts).get(reason):
+            raise ValidationError(
+                f"the refusal reason {reason!r} has no sentence in the configuration"
+            )
     return HelpConfig(
         notice=notice,
         fallback_label=fallback_label,
@@ -232,6 +249,7 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
         replay_label=replay_label,
         refusal_reasons=refusal_reasons,
         demo_questions=tuple(demo_questions),
+        refusal_texts=refusal_texts,
     )
 
 

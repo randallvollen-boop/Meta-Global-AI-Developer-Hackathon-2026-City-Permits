@@ -16,7 +16,7 @@
   "assist": {
     "note": "The assistant path. The replay fixture of this demonstration is a deterministic, labelled fixture written for this demonstration; it is not a recording of a Muse answer and it is never presented as one. The live path runs only when the server-only setting applicant_assist_live_enabled is on.",
     "live_label": "Muse Spark (live)",
-    "replay_label": "Replay answer (deterministic demonstration fixture, not a Muse recording)",
+    "replay_label": "Recorded replay (a labelled demonstration fixture, not a live Muse answer)",
     "refusal_reasons": [
       "no_published_text",
       "outside_acme_rules",
@@ -26,9 +26,19 @@
     "demo_questions": [
       {
         "id": "fallback_demo",
-        "text": "Show me the rule text fallback"
+        "text": "Show me the ACME rule text for a fence"
+      },
+      {
+        "id": "decline_demo",
+        "text": "Will my fence permit be approved?"
       }
-    ]
+    ],
+    "refusal_texts": {
+      "no_published_text": "The assistant found no published City text that answers this.",
+      "outside_acme_rules": "This question is outside the ACME City rules the assistant can quote.",
+      "not_about_a_permit": "This question is not about a permit, so the assistant did not answer it.",
+      "needs_a_person": "This needs a person at the City, because the assistant does not decide permits or predict how a review will go."
+    }
   },
   "suggested_questions": [
     {

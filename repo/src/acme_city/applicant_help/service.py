@@ -49,6 +49,7 @@ from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.muse.payloads import assert_no_truth_in_payload
 from acme_city.persistence.models import help as help_models
+from acme_city.persistence.models import model_run
 
 #: The grant that lets an applicant ask a question.
 PERMISSION_ASK = "applicant.help.ask"
@@ -164,7 +165,9 @@ class ApplicantHelpService:
         settings: Any = None,
         now: datetime | None = None,
         config: HelpConfig | None = None,
+        muse_client: Any = None,
     ) -> None:
+        self._muse_client = muse_client
         self._session = session
         self._settings = settings
         self._now = now or utc_now()
@@ -384,7 +387,7 @@ class ApplicantHelpService:
             conversation_id=conversation.id,
             question=clean,
             outcome=answered.outcome,
-            answer=answered.answer.to_dict(),
+            answer={**answered.answer.to_dict(), "model_run_id": answered.run_id},
             sources=self._source_snapshot(bundle, answered.answer),
             bundle_hash=bundle.bundle_hash,
             mode=answered.answer.mode,
@@ -394,6 +397,17 @@ class ApplicantHelpService:
         conversation.turn_count += 1
         conversation.version += 1
         self._session.flush()
+        if answered.run_id:
+            # Tie the recorded run to the conversation and the turn it served.
+            # The run stays private to the applicant: staff screens never list
+            # a run of the assistant.
+            run = self._session.get(model_run.ModelRun, answered.run_id)
+            if run is not None:
+                refs = dict(run.input_refs or {})
+                refs["conversation_id"] = conversation.id
+                refs["turn_id"] = turn.id
+                run.input_refs = refs
+                self._session.flush()
 
         # The audit record carries the identifiers and the outcome of the
         # turn.  It never carries the text of the question.
@@ -575,6 +589,7 @@ class ApplicantHelpService:
             bundle=bundle,
             question=question,
             context=context,
+            client=self._muse_client,
             now=self._now,
         )
         if not dispatch.dispatched:
@@ -646,7 +661,18 @@ class ApplicantHelpService:
                 validation_state="failed",
             )
         if bool(dispatch.output.get("cannot_answer")):
+            # The assistant declined, with one of the fixed reasons.  The
+            # applicant sees the reason and the matching rule text.
             answer = self._fallback(bundle, question)
+            reason = str(dispatch.output.get("reason") or "")
+            answer = Answer(
+                mode=answer.mode,
+                label=answer.label,
+                matched=answer.matched,
+                paragraphs=answer.paragraphs,
+                cannot_answer=True,
+                reason=reason,
+            )
             return _Answered(
                 outcome="unanswerable",
                 answer=answer,

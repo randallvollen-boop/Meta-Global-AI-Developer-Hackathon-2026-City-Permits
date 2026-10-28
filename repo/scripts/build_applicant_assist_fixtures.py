@@ -312,6 +312,23 @@ FIXTURES: tuple[dict[str, Any], ...] = (
         "answer": _what_next_paragraphs(),
     },
     {
+        # The demonstration case of a refusal.  The recorded output is a valid
+        # refusal with one reason of the fixed list; the applicant sees the
+        # reason, the matching rule text and the button to ask the City.
+        "name": "decline-approval-general",
+        "question": "Will my fence permit be approved?",
+        "context": {"permit_type_key": "", "application_reference": ""},
+        "decline": "needs_a_person",
+        "answer": [],
+    },
+    {
+        "name": "decline-approval-form",
+        "question": "Will my fence permit be approved?",
+        "context": {"permit_type_key": "deck_fence", "application_reference": ""},
+        "decline": "needs_a_person",
+        "answer": [],
+    },
+    {
         # The demonstration case of the fallback.  The recorded output
         # deliberately fails the validation: its quote is not the text of the
         # passage it names.  The applicant therefore receives the deterministic
@@ -472,8 +489,8 @@ def build_fixtures(output: Path, *, check: bool) -> int:
                         "output": {
                             "answer": answer,
                             "next_steps": [],
-                            "cannot_answer": False,
-                            "reason": "",
+                            "cannot_answer": bool(template.get("decline")),
+                            "reason": str(template.get("decline") or ""),
                         },
                     }
                     path = output / f"{template['name']}.json"

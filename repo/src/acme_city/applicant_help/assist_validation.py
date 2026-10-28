@@ -14,10 +14,11 @@ The rules are:
 * every figure of a paragraph — a day count, a fee, a height, a count — must
   be supported by a quote, by the citation of a cited passage or by the
   server's own estimate.  A figure the City never computed is refused;
-* a figure about a fee or a duration may only be stated when the paragraph
-  cites a **server-computed fact**: an evaluated rule result, the configured
-  service target or a fee calculation.  The published rule text alone never
-  carries a figure about the applicant's own case;
+* a figure about a fee, a duration or a dimension may only be stated when the
+  paragraph cites a **server-computed fact**: a published rule version
+  rendered by the server (applicability, operator, threshold), an evaluated
+  rule result, the configured service target or a fee calculation.  Prose
+  from the fixed passages never carries such a figure;
 * an answer may not state that a permit is or is not needed, may not promise
   an outcome and may not give legal advice.  A limit is never an exemption;
 * the refusal of the assistant must carry one of the reasons of the fixed
@@ -101,6 +102,7 @@ FIGURE_TOPIC_PATTERNS: Final = tuple(
         r"\b(?:fee|fees|cost|costs|price|charge|charges|payment|pay|paid)\b",
         r"\b(?:usd|dollars?)\b",
         r"\b(?:day|days|week|weeks|month|months)\b",
+        r"\b(?:ft|feet|foot|inch|inches|metres?|meters?|height|tall|wide|width)\b",
     )
 )
 
