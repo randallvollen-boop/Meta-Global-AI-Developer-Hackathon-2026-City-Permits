@@ -498,6 +498,7 @@ def _reason_codes(session: Session) -> list[dict[str, Any]]:
             "code": row.code,
             "label": row.label,
             "description": row.description or "",
+            "code_type": row.code_type,
             "active": bool(row.active),
             "version": row.version,
         }

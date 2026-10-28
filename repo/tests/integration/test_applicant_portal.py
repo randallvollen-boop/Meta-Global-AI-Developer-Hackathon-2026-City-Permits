@@ -333,3 +333,82 @@ def test_portal_case_flows_through_intake_and_applicant_sees_only_own_parcel(cli
     assert "ACME-P-1001" in workspace
     assert 'data-testid="property-map-link"' not in workspace
     assert client.get("/map").status_code == 403
+
+
+def test_the_applicant_answers_a_revision_request_and_the_case_returns_to_intake(
+    client, environment
+) -> None:
+    """A resubmission versions the case and sends it back to the intake agent."""
+    choose(client, "persona_applicant")
+    response = post_form(client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit")
+    reference = response.headers["location"].rsplit("/", 1)[1]
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application_id = application.id
+            application.status = "revisions_requested"
+            version = application.version
+    finally:
+        factory.dispose()
+    page = client.get("/apply/track", params={"ref": reference}).text
+    assert "Submit revised documents" in page
+    assert 'data-testid="resubmit-form"' in page
+    ok = client.post(
+        f"/apply/track/{application_id}/resubmit",
+        data={
+            "csrf_token": token(client, "/apply/deck_fence"),
+            "reference": reference,
+            "expected_version": str(version),
+        },
+        files={"file__site_plan": ("rev.txt", b"revised sketch", "text/plain")},
+        follow_redirects=False,
+    )
+    assert ok.status_code == 303, ok.text
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = session.get(permit.Application, application_id)
+            # The case returns to intake, the first submission date is kept
+            # and the revision is advanced.
+            assert application.status == "submitted"
+            assert application.revision == 2
+            assert application.version == version + 1
+            versions = session.execute(
+                select(permit.Document).where(
+                    permit.Document.application_id == application_id,
+                    permit.Document.document_type == "site_plan",
+                )
+            ).scalars().all()
+            assert sorted(row.version for row in versions) == [1, 2]
+    finally:
+        factory.dispose()
+
+
+def test_a_resubmission_needs_the_expected_version(client, environment) -> None:
+    choose(client, "persona_applicant")
+    response = post_form(client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit")
+    reference = response.headers["location"].rsplit("/", 1)[1]
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application_id = application.id
+            application.status = "revisions_requested"
+    finally:
+        factory.dispose()
+    refused = client.post(
+        f"/apply/track/{application_id}/resubmit",
+        data={"csrf_token": token(client, "/apply/deck_fence"), "reference": reference},
+        files={"file__site_plan": ("rev.txt", b"revised sketch", "text/plain")},
+        follow_redirects=False,
+    )
+    assert refused.status_code == 422, refused.text

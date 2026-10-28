@@ -29,6 +29,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult
+from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.schemas import (
     DEFAULT_DATE_BASIS,
     ApplicationPartyInput,
@@ -238,6 +239,10 @@ class PermitService:
                 ),
             ),
         )
+        # An archived case is closed: a revision would reopen it.
+        require_mutable(application, action="revising the application")
+        # A returned case is terminal: the applicant starts a new one.
+        require_not_returned(application, action="revising the application")
         if (
             command.expected_version is not None
             and application.version != command.expected_version
@@ -315,6 +320,11 @@ class PermitService:
         )
         revision = self.current_revision(application.id)
         permit_type = self.permit_type(application)
+        # An evaluation reopens a non-issued case, so an archived case is
+        # refused here as well.
+        require_mutable(application, action="evaluating the application")
+        # A returned case is terminal: it is not evaluated again.
+        require_not_returned(application, action="evaluating the application")
         basis_at = application.initial_submitted_at or revision.submitted_at
         rule_set = self._catalog.resolve(
             "executable", permit_type.key, basis_at, basis_label=DEFAULT_DATE_BASIS
@@ -1006,7 +1016,14 @@ class PermitService:
         *,
         reason: str,
     ) -> None:
-        """Mark the evaluation and the decision of an application stale."""
+        """Mark the evaluation, the recommendation and the decision stale.
+
+        A new revision of the case makes every piece of work that was done
+        against the earlier revision advisory only.  The rows are kept, and
+        they keep their stale mark: nothing here revives an approval.
+        """
+        from acme_city.agents.findings import supersede_findings_before
+
         evaluation = self.current_evaluation(application.id)
         if evaluation is not None:
             evaluation.stale = True
@@ -1014,7 +1031,29 @@ class PermitService:
         decision = self.current_decision(application.id)
         if decision is not None:
             decision.stale = True
+        recommendation = self.current_recommendation(application.id)
+        if recommendation is not None:
+            recommendation.stale = True
+            recommendation.status = "superseded"
+        supersede_findings_before(
+            self._session,
+            application.id,
+            revision_number=application.revision,
+            at=self._now,
+        )
         self._session.flush()
+
+    def current_recommendation(self, application_id: str) -> permit.Recommendation | None:
+        """Return the live recommendation of an application, if it has one."""
+        return self._session.execute(
+            select(permit.Recommendation)
+            .where(
+                permit.Recommendation.application_id == application_id,
+                permit.Recommendation.status.in_(("proposed", "pending")),
+            )
+            .order_by(permit.Recommendation.version.desc())
+            .limit(1)
+        ).scalar_one_or_none()
 
 
 #: The words an applicant may use for a unit.

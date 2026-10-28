@@ -23,11 +23,13 @@ from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
+from acme_city.agents.findings import WAIVABLE_TYPES
 from acme_city.changes.service import ChangeService
 from acme_city.changes.state_machine import permitted_targets
 from acme_city.core.clock import utc_now
 from acme_city.finance.service import FinanceService
 from acme_city.governance.service import GovernanceService
+from acme_city.permits.comments import comment_view, comments_for
 from acme_city.persistence.models import (
     agent,
     audit,
@@ -228,6 +230,94 @@ def actor_label(session: Session, actor_id: str | None) -> str:
         select(governance.Actor).where(governance.Actor.actor_id == actor_id)
     ).scalar_one_or_none()
     return row.label if row is not None else actor_id
+
+
+def _lifecycle_panel(
+    session: Session, actor: ActorContext, application: permit.Application
+) -> dict[str, Any]:
+    """Return the lifecycle panel of one case.
+
+    The panel names the actions the acting persona may take, the reason codes
+    each action may use and the people a case may be routed to.  It decides
+    nothing: the server checks the grant, the version and the state again
+    when the action arrives.
+    """
+    from acme_city.agents.findings import blocking_findings
+    from acme_city.configuration.reasons import active_reason_codes
+    from acme_city.permits.comments import is_staff
+    from acme_city.permits.routing import RoutingService, stage_of
+
+    routing = RoutingService(session)
+    stage = stage_of(application)
+    archived = application.status == "archived"
+    owner = (
+        actor_label(session, application.owner_actor_id)
+        if application.owner_actor_id
+        else ""
+    )
+    return {
+        "archived": archived,
+        "status_before_archive": application.status_before_archive or "",
+        "priority": application.priority,
+        "owner_actor_id": application.owner_actor_id or "",
+        "owner_label": owner,
+        "stage": stage or "",
+        "can_return": allows(session, actor, "permit.case.return", "permits")
+        and application.status in ("needs_information",),
+        "can_advance": allows(session, actor, "permit.case.advance", "permits")
+        and application.status in ("needs_information",),
+        "can_request_revisions": allows(
+            session, actor, "permit.case.request_revisions", "permits"
+        )
+        and application.status in ("ready_for_review", "under_review"),
+        "can_archive": allows(session, actor, "permit.case.archive", "permits")
+        and not archived
+        and application.status != "issued",
+        "can_restore": allows(session, actor, "permit.case.restore", "permits")
+        and archived,
+        "can_set_priority": allows(session, actor, "permit.case.priority", "permits")
+        and not archived,
+        "can_assign": allows(session, actor, "permit.case.assign", "permits")
+        and stage is not None,
+        "can_waive": allows(session, actor, "permit.finding.waive", "permits")
+        and not archived,
+        "can_comment": allows(session, actor, "permit.case.comment", "permits")
+        and not archived,
+        "is_staff": is_staff(session, actor),
+        "reason_codes": {
+            "return": [
+                snapshot.as_dict()
+                for snapshot in active_reason_codes(session, code_type="return")
+            ],
+            "denial": [
+                snapshot.as_dict()
+                for snapshot in active_reason_codes(session, code_type="denial")
+            ],
+            "revision": [
+                snapshot.as_dict()
+                for snapshot in active_reason_codes(session, code_type="revision")
+            ],
+            "archive": [
+                snapshot.as_dict()
+                for snapshot in active_reason_codes(session, code_type="archive")
+            ],
+            "waiver": [
+                snapshot.as_dict()
+                for snapshot in active_reason_codes(session, code_type="waiver")
+            ],
+        },
+        "eligible_owners": (
+            routing.eligible_owners(stage) if stage is not None else []
+        ),
+        "blocking_findings": [
+            {
+                "finding_id": row.id,
+                "finding_type": row.finding_type,
+                "message": row.message,
+            }
+            for row in blocking_findings(session, application.id)
+        ],
+    }
 
 
 def persona_options(session: Session) -> list[dict[str, str]]:
@@ -625,6 +715,13 @@ def allowed_actions_for(
     """
     actions: list[dict[str, Any]] = []
     payload = detail or {}
+    from acme_city.configuration.reasons import active_reason_codes
+
+    # A denial names an active denial reason code.  The service refuses a
+    # denial that names none, so the form only offers the codes.
+    denial_codes = tuple(
+        snapshot.code for snapshot in active_reason_codes(session, code_type="denial")
+    )
 
     if screen == "queue":
         actions.append(
@@ -1035,6 +1132,12 @@ def allowed_actions_for(
                         options=("approved", "denied", "modified", "information_requested"),
                         required=True,
                     ),
+                    _field(
+                        "reason_code",
+                        "Denial reason code (required for a denial)",
+                        field_type="select",
+                        options=("",) + denial_codes,
+                    ),
                     _field("reason", "Reason", field_type="textarea", required=True),
                 ),
             )
@@ -1077,6 +1180,12 @@ def allowed_actions_for(
                         field_type="select",
                         options=("approved", "denied", "modified", "information_requested"),
                         required=True,
+                    ),
+                    _field(
+                        "reason_code",
+                        "Denial reason code (required for a denial)",
+                        field_type="select",
+                        options=("",) + denial_codes,
                     ),
                     _field("reason", "Reason", field_type="textarea", required=True),
                 ),
@@ -1952,6 +2061,16 @@ def _next_action(
     ).scalars().first()
     if permit_row is not None:
         return "Issued - read the permit artifact"
+    if application.status == "returned":
+        return "Returned to the applicant - the applicant starts a new application"
+    if application.status == "revisions_requested":
+        return "Waiting for the applicant's answer"
+    if application.status == "needs_information":
+        if blockers:
+            return f"Resolve {blockers[0]['code'].replace('_', ' ')}"
+        if allows(session, actor, "permit.case.advance", "permits"):
+            return "Advance the case to review"
+        return "Waiting for the Data Steward"
     if blockers:
         return f"Resolve {blockers[0]['code'].replace('_', ' ')}"
     if evaluation is None:
@@ -1991,6 +2110,9 @@ def work_queue(
     items: list[dict[str, Any]] = []
 
     for application in visible_applications(session, actor):
+        # An archived case is closed: it is not an active queue entry.
+        if application.status == "archived":
+            continue
         blockers = _application_blockers(service, application)
         assessment = session.execute(
             select(finance.Assessment)
@@ -3003,6 +3125,8 @@ def permit_workspace(
         "current": {
             "status": application.status,
             "version": application.version,
+            "priority": application.priority,
+            "owner_actor_id": application.owner_actor_id or "",
             "site": application_view.get("site"),
             "parties": parties,
         },
@@ -3049,6 +3173,15 @@ def permit_workspace(
                 "severity": row.severity,
                 "source_node": row.source_node or "",
                 "related_application_id": row.related_application_id or "",
+                "state": row.state,
+                "revision_number": row.revision_number,
+                "waived": row.waived_at is not None,
+                "waived_at": _iso(row.waived_at),
+                "waived_by_actor_id": row.waived_by_actor_id or "",
+                "waiver_reason_code": row.waiver_reason_code or "",
+                "waiver_reason_code_label": row.waiver_reason_code_label or "",
+                "waiver_reason": row.waiver_reason or "",
+                "waivable": row.finding_type in WAIVABLE_TYPES and row.state == "current",
             }
             for row in session.execute(
                 select(permit.ApplicationFinding)
@@ -3059,6 +3192,11 @@ def permit_workspace(
                 )
             ).scalars().all()
         ],
+        "comments": [
+            comment_view(row)
+            for row in comments_for(session, application.id, actor)
+        ],
+        "lifecycle": _lifecycle_panel(session, actor, application),
         "agent_states": {
             key: agent_views.agent_state(session, key)
             for key in ("intake", "adjudication")
@@ -3560,14 +3698,35 @@ def history(session: Session, actor: ActorContext, target_id: str) -> list[dict[
     """Return the recorded history of one record.
 
     The history is the append-only audit trail.  It is read, never written,
-    by the interface.
+    by the interface.  An event that records an internal comment is not
+    shown to an applicant at all: the applicant never learns that an
+    internal note exists.
     """
+    from acme_city.permits.comments import is_staff
+
     rows = session.execute(
         select(audit.AuditEvent)
         .where(audit.AuditEvent.target_id == target_id)
         .order_by(audit.AuditEvent.occurred_at.desc())
     ).scalars().all()
-    return [_history_entry(session, row) for row in rows]
+    staff = is_staff(session, actor)
+    entries: list[dict[str, Any]] = []
+    for row in rows:
+        entry = _history_entry(session, row)
+        comment_id = str((row.metadata_json or {}).get("comment_id") or "")
+        if not comment_id:
+            entries.append(entry)
+            continue
+        comment = session.get(permit.ApplicationComment, comment_id)
+        if comment is None:
+            continue
+        if comment.visibility == "internal" and not staff:
+            continue
+        entry["comment_id"] = comment.id
+        entry["comment_visibility"] = comment.visibility
+        entry["comment_body"] = comment.body
+        entries.append(entry)
+    return entries
 
 
 def stewardship_history(session: Session, limit: int = 25) -> list[dict[str, Any]]:

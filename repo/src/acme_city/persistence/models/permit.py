@@ -116,11 +116,31 @@ class Application(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base)
     #: only; it never rewrites what an already-submitted case was measured
     #: against.
     requirements_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    #: The priority a person set on the case: ``normal`` or ``high``.  The
+    #: intake agent records the priority the intake record carried; a Data
+    #: Steward may change it.
+    priority: Mapped[str] = mapped_column(String(16), nullable=False, default="normal")
+    #: The staff member the case is routed to.  This is routing metadata only:
+    #: an owner gains no authority and never becomes a selectable persona.
+    owner_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    #: The status the case held when it was archived, so a restore returns it
+    #: to exactly that status.
+    status_before_archive: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    #: When the case was archived, by whom, and why.
+    archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    archived_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    archive_reason_code_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    archive_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'submitted', 'needs_information', 'ready_for_review', "
-            "'under_review', 'approved', 'denied', 'withdrawn', 'issued')",
+            "status IN ('draft', 'submitted', 'needs_information', 'revisions_requested', "
+            "'ready_for_review', 'under_review', 'approved', 'denied', 'withdrawn', "
+            "'issued', 'returned', 'archived')",
             name="status_allowed",
+        ),
+        CheckConstraint(
+            "priority IN ('normal', 'high')",
+            name="priority_allowed",
         ),
     )
 
@@ -202,6 +222,12 @@ class ApplicationFinding(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin
     A finding is evidence for a person, never a decision: it names what is
     wrong, the rule that applies, what the applicant must do and whether it
     blocks the case or only asks a person to look.
+
+    A finding belongs to the application revision and the agent run that
+    produced it.  It is ``current`` while it is the live statement about the
+    case, ``resolved`` when a later run showed the condition is gone, and
+    ``superseded`` when a later run or a resubmission replaced it.  The
+    history is kept: a finding is never deleted.
     """
 
     __tablename__ = "application_findings"
@@ -216,17 +242,94 @@ class ApplicationFinding(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin
     severity: Mapped[str] = mapped_column(String(16), nullable=False, default="review")
     source_node: Mapped[str | None] = mapped_column(String(64), nullable=True)
     related_application_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: ``current``, ``resolved`` or ``superseded``.
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="current")
+    #: The application revision the finding was recorded against.
+    revision_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: The agent run that recorded the finding.
+    agent_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    #: When the finding stopped being the live statement about the case.
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    superseded_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    #: The waiver a Data Steward recorded against the finding.  A waiver
+    #: never clears a deterministic rule failure or an identity, credential,
+    #: finance or parcel-clearance check.
+    waived_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    waived_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    waiver_reason_code_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    waiver_reason_code: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    waiver_reason_code_label: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    waiver_reason_code_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    waiver_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "finding_type IN ('missing_field', 'missing_document', 'unreadable', "
-            "'duplicate', 'conflict', 'low_confidence_extraction', 'judgment')",
+            "'wrong_type', 'duplicate', 'conflict', 'fee', 'low_confidence_extraction', "
+            "'judgment')",
             name="finding_type_allowed",
         ),
         CheckConstraint(
             "severity IN ('block', 'review')",
             name="severity_allowed",
         ),
+        CheckConstraint(
+            "state IN ('current', 'resolved', 'superseded')",
+            name="state_allowed",
+        ),
     )
+
+
+class ApplicationComment(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
+    """One comment a member of the City wrote on a case.
+
+    A comment is either ``applicant`` visible or ``internal``.  The visibility
+    is enforced by the server on every surface that shows a comment; it is
+    never a client-supplied display choice.
+    """
+
+    __tablename__ = "application_comments"
+
+    application_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    #: ``applicant`` or ``internal``.
+    visibility: Mapped[str] = mapped_column(String(16), nullable=False)
+    author_actor_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    __table_args__ = (
+        CheckConstraint(
+            "visibility IN ('applicant', 'internal')",
+            name="visibility_allowed",
+        ),
+    )
+
+
+class ApplicationAction(IdMixin, CorrelationMixin, CreatedAtMixin, Base):
+    """One recorded lifecycle action on an application.
+
+    The action record is the snapshot of the case action: it names the actor,
+    the time, the reason code as it was at that moment (code, label and
+    version) and, when a comment was written, the comment it wrote.
+    """
+
+    __tablename__ = "application_actions"
+
+    application_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: The action name, for example ``return`` or ``request_revisions``.
+    action: Mapped[str] = mapped_column(String(48), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    #: The reason code as it was when the action was recorded.
+    reason_code_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reason_code: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    reason_code_label: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    reason_code_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The comment the action wrote, when it wrote one.
+    comment_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 class ExtractionObservation(IdMixin, CreatedAtMixin, Base):
@@ -305,6 +408,9 @@ class Recommendation(IdMixin, VersionMixin, CreatedAtMixin, Base):
     revert_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: The decision that confirmed this recommendation, when it was confirmed.
     decision_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: A recommendation goes stale when a later revision of the case makes it
+    #: advisory no longer.  A stale recommendation is never confirmed.
+    stale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -332,6 +438,15 @@ class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
     #: decision outcome vocabulary is unchanged; a confirmed recommendation
     #: with conditions is still an ``approved`` decision.
     conditions: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    #: The denial reason code as it was when the decision was recorded: the
+    #: code, its label and its version.  The snapshot is kept so the history
+    #: of a decision stays readable after a code is retired.
+    reason_code_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reason_code: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    reason_code_label: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    reason_code_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: The waivers that applied to the case when the decision was recorded.
+    waivers: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "outcome IN ('approved', 'denied', 'modified', 'information_requested')",
@@ -343,9 +458,12 @@ class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
 class ReasonCode(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
     """One ACME reason code.
 
-    A reason code names why a case was returned, denied or waived.  The codes
-    are configuration: an administrator adds and retires them, and every
-    change is audited.
+    A reason code names why a case was returned, denied, waived, sent back
+    for revisions or archived.  Its ``code_type`` says which of those uses it
+    may serve, so a denial code can never be used to return a case.  The
+    codes are configuration: an administrator adds and retires them, and
+    every change is audited.  A retired code keeps its label and its history;
+    it is never overwritten.
     """
 
     __tablename__ = "reason_codes"
@@ -353,9 +471,20 @@ class ReasonCode(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
     code: Mapped[str] = mapped_column(String(48), nullable=False, unique=True)
     label: Mapped[str] = mapped_column(String(160), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The use the code serves: ``return``, ``denial``, ``waiver``,
+    #: ``revision`` or ``archive``.
+    code_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="return", server_default="return"
+    )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     changed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     changed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    __table_args__ = (
+        CheckConstraint(
+            "code_type IN ('return', 'denial', 'waiver', 'revision', 'archive')",
+            name="code_type_allowed",
+        ),
+    )
 
 
 class Permit(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -395,6 +524,8 @@ class ImpactReview(IdMixin, VersionMixin, CreatedAtMixin, Base):
 
 __all__ = [
     "Application",
+    "ApplicationAction",
+    "ApplicationComment",
     "ApplicationFinding",
     "ApplicationParty",
     "ApplicationRevision",

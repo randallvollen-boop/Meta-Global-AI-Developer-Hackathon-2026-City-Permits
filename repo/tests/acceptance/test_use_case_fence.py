@@ -317,6 +317,8 @@ def test_use_case_fence(client: TestClient, environment) -> None:
             "application_id": front_id,
             "expected_application_version": str(front_version),
             "reason": "the front fence fails DF-1",
+            # A denial names an active denial reason code.
+            "reason_code": "DOES_NOT_MEET_CODE",
         },
         f"/permits/{front_id}",
     )

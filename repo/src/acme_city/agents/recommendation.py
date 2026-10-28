@@ -34,6 +34,7 @@ from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.permits.decisions import PermitDecisionCommand, PermitDecisionService
+from acme_city.permits.guard import require_mutable
 from acme_city.permits.service import PERMIT_DOMAIN, PermitService
 from acme_city.persistence.models import permit
 
@@ -64,6 +65,7 @@ def confirm(
     application_id: str,
     actor: ActorContext,
     reason: str = "",
+    reason_code: str = "",
     expected_application_version: int | None = None,
     now: datetime | None = None,
 ) -> permit.Recommendation:
@@ -71,7 +73,8 @@ def confirm(
 
     The decision is recorded through the existing decision service, so the
     decider of record, the versions it was made against and the audit trail
-    are the ones the rest of the application already uses.
+    are the ones the rest of the application already uses.  A denial needs a
+    denial reason code, exactly as a manual denial does.
     """
     moment = now or utc_now()
     PermissionResolver(session, now=moment).authorize(
@@ -80,6 +83,10 @@ def confirm(
         ResourceContext(domain_id=PERMIT_DOMAIN, record_ids=()),
     )
     recommendation = load_recommendation(session, recommendation_id, application_id)
+    if recommendation.stale:
+        raise ValidationError(
+            "this recommendation is stale; the case has changed since it was made"
+        )
     if recommendation.status != STATUS_PENDING:
         raise ValidationError(
             f"this recommendation is {recommendation.status}; only a pending "
@@ -98,11 +105,14 @@ def confirm(
     conditions = [str(item) for item in (recommendation.conditions or [])]
     permits = PermitService(session, now=moment)
     application = permits.load_application(application_id)
+    # An archived case is closed: its recommendation is not confirmed.
+    require_mutable(application, action="confirming the recommendation")
     result = PermitDecisionService(session, now=moment).decide(
         PermitDecisionCommand(
             application_id=application_id,
             outcome=decision_outcome,
             reason=reason or f"Confirmed the agent recommendation ({outcome}).",
+            reason_code=reason_code,
             expected_application_version=expected_application_version,
             conditions=conditions,
         ),
@@ -156,6 +166,10 @@ def revert(
     if not reason.strip():
         raise ValidationError("reverting a recommendation requires a reason")
     recommendation = load_recommendation(session, recommendation_id, application_id)
+    if recommendation.stale:
+        raise ValidationError(
+            "this recommendation is stale; the case has changed since it was made"
+        )
     if recommendation.status != STATUS_PENDING:
         raise ValidationError(
             f"this recommendation is {recommendation.status}; only a pending "
@@ -163,6 +177,8 @@ def revert(
         )
     permits = PermitService(session, now=moment)
     application = permits.load_application(application_id)
+    # An archived case is closed: its recommendation is not changed.
+    require_mutable(application, action="reverting the recommendation")
     recommendation.status = STATUS_REVERTED
     recommendation.reverted_by = actor.actor_id
     recommendation.reverted_at = moment

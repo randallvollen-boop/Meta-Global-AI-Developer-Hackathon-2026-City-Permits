@@ -28,27 +28,74 @@
     {
       "code": "INCOMPLETE_APPLICATION",
       "label": "Incomplete application",
-      "description": "The application does not state everything the permit type requires."
+      "description": "The application does not state everything the permit type requires.",
+      "code_type": "return"
     },
     {
       "code": "WITHDRAWN_BY_APPLICANT",
       "label": "Withdrawn by applicant",
-      "description": "The applicant asked for the application to be withdrawn."
+      "description": "The applicant asked for the application to be withdrawn.",
+      "code_type": "return"
     },
     {
       "code": "DUPLICATE_SUBMISSION",
       "label": "Duplicate submission",
-      "description": "The application repeats an application the City already holds."
+      "description": "The application repeats an application the City already holds.",
+      "code_type": "return"
     },
     {
       "code": "DOES_NOT_MEET_CODE",
       "label": "Does not meet code",
-      "description": "The proposed work does not meet the published ACME Code rules."
+      "description": "The proposed work does not meet the published ACME Code rules.",
+      "code_type": "denial"
     },
     {
       "code": "OUTSIDE_JURISDICTION",
       "label": "Outside jurisdiction",
-      "description": "The property lies outside the jurisdiction of ACME City."
+      "description": "The property lies outside the jurisdiction of ACME City.",
+      "code_type": "denial"
+    },
+    {
+      "code": "RETURN_SITE_UNRESOLVED",
+      "label": "Site not resolved",
+      "description": "The City could not resolve the property of the work against the official records.",
+      "code_type": "return"
+    },
+    {
+      "code": "DENIAL_RULE_FAILURE",
+      "label": "A published rule is not met",
+      "description": "The proposed work does not meet a published ACME Code rule.",
+      "code_type": "denial"
+    },
+    {
+      "code": "WAIVE_MINOR_DOCUMENT_DEFECT",
+      "label": "Minor document defect",
+      "description": "The document defect does not change how the work is assessed.",
+      "code_type": "waiver"
+    },
+    {
+      "code": "WAIVE_VERIFIED_DUPLICATE",
+      "label": "Verified duplicate",
+      "description": "A person confirmed the duplicate and the case may continue.",
+      "code_type": "waiver"
+    },
+    {
+      "code": "REVISION_NEEDS_PLANS",
+      "label": "Plans need revision",
+      "description": "The plans must be revised before the case can be assessed.",
+      "code_type": "revision"
+    },
+    {
+      "code": "REVISION_NEEDS_CORRECTION",
+      "label": "A stated fact needs correcting",
+      "description": "A stated fact must be corrected before the case can be assessed.",
+      "code_type": "revision"
+    },
+    {
+      "code": "ARCHIVE_DUPLICATE_RECORD",
+      "label": "Duplicate record",
+      "description": "The case repeats a record the City already holds.",
+      "code_type": "archive"
     }
   ],
   "scenarios": [

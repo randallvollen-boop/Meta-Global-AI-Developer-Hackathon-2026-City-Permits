@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
+from acme_city.configuration.reasons import REASON_CODE_TYPES, reason_code_view
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
@@ -197,9 +198,15 @@ class ConfigurationService:
         code: str,
         label: str,
         description: str,
+        code_type: str,
         actor: ActorContext,
     ) -> permit.ReasonCode:
-        """Add one reason code."""
+        """Add one reason code.
+
+        The code carries the type of use it may serve.  A code that was
+        retired is never overwritten: its row, its label and its history stay,
+        and its code cannot be taken again.
+        """
         self._permissions.authorize(
             actor,
             PERMISSION_MANAGE,
@@ -210,10 +217,20 @@ class ConfigurationService:
             raise ValidationError("a reason code needs a code")
         if not str(label or "").strip():
             raise ValidationError("a reason code needs a label")
+        clean_type = str(code_type or "").strip().lower()
+        if clean_type not in REASON_CODE_TYPES:
+            raise ValidationError(
+                "a reason code needs a type: " + ", ".join(REASON_CODE_TYPES)
+            )
         existing = self._session.execute(
             select(permit.ReasonCode).where(permit.ReasonCode.code == clean_code)
         ).scalar_one_or_none()
         if existing is not None:
+            if not existing.active:
+                raise ValidationError(
+                    f"the reason code {clean_code!r} was retired; its history is kept and "
+                    "the code cannot be taken again"
+                )
             raise ValidationError(f"the reason code {clean_code!r} already exists")
         row = permit.ReasonCode(
             id=new_id("reasoncode"),
@@ -221,6 +238,7 @@ class ConfigurationService:
             code=clean_code,
             label=str(label).strip(),
             description=str(description or "").strip() or None,
+            code_type=clean_type,
             active=True,
             version=1,
             changed_by=actor.actor_id,
@@ -235,9 +253,22 @@ class ConfigurationService:
             target_id=row.id,
             after_version=row.version,
             reason=f"Added the reason code {row.code}",
-            metadata={"before": "none", "after": f"{row.code} · {row.label}"},
+            metadata={
+                "before": "none",
+                "after": f"{row.code} · {row.label}",
+                "code_type": clean_type,
+            },
         )
         return row
+
+    def reason_codes(self, *, code_type: str | None = None) -> list[permit.ReasonCode]:
+        """Return the reason codes, optionally of one type only."""
+        statement = select(permit.ReasonCode)
+        if code_type is not None:
+            statement = statement.where(permit.ReasonCode.code_type == code_type)
+        return list(
+            self._session.execute(statement.order_by(permit.ReasonCode.code)).scalars().all()
+        )
 
     def retire_reason_code(
         self, *, code: str, actor: ActorContext
@@ -389,6 +420,8 @@ __all__ = [
     "PERMISSION_MANAGE_USERS",
     "PERSONA_ROLES",
     "PROCESS_CATEGORIES",
+    "REASON_CODE_TYPES",
     "ConfigurationService",
     "permit_type_view",
+    "reason_code_view",
 ]

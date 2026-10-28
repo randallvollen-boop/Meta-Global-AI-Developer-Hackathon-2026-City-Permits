@@ -87,6 +87,8 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
         "documents",
         "extraction_observations",
         "evaluations",
+        "application_actions",
+        "application_comments",
         "recommendations",
         "decisions",
         "permits",
@@ -303,8 +305,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0005 since the property-master migration added by parity phase 2.
-    assert health.revision == "0005"
+    # Head is 0006 since the parity phase 3a migration added by parity phase 3.
+    assert health.revision == "0006"
     assert database.database_url not in str(health.to_dict())
 
 

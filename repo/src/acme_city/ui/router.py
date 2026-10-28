@@ -1188,6 +1188,192 @@ def _source_write(ctx: ActionContext) -> Outcome:
     )
 
 
+def _lifecycle(ctx: ActionContext) -> Any:
+    """Return the lifecycle service bound to the request session."""
+    from acme_city.permits.lifecycle import LifecycleService
+
+    return LifecycleService(ctx.session)
+
+
+def _permit_case_return(ctx: ActionContext) -> Outcome:
+    """Return a case to the applicant."""
+    application = _lifecycle(ctx).return_application(
+        application_id=ctx.text("application_id"),
+        reason_code=ctx.text("reason_code"),
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Returned the application to the applicant.",
+        destination="Permitting application",
+        state=application.status,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_advance(ctx: ActionContext) -> Outcome:
+    """Advance a case to the review area of its permit type."""
+    application = _lifecycle(ctx).advance_to_review(
+        application_id=ctx.text("application_id"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Advanced the application to review.",
+        destination="Permitting application",
+        state=application.status,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_request_revisions(ctx: ActionContext) -> Outcome:
+    """Ask the applicant for revisions."""
+    application = _lifecycle(ctx).request_revisions(
+        application_id=ctx.text("application_id"),
+        reason_code=ctx.text("reason_code"),
+        message=ctx.text("message"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Asked the applicant for revisions.",
+        destination="Permitting application",
+        state=application.status,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_archive(ctx: ActionContext) -> Outcome:
+    """Archive a case."""
+    application = _lifecycle(ctx).archive(
+        application_id=ctx.text("application_id"),
+        reason_code=ctx.text("reason_code"),
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Archived the application.",
+        destination="Permitting application",
+        state=application.status,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_restore(ctx: ActionContext) -> Outcome:
+    """Restore an archived case."""
+    application = _lifecycle(ctx).restore(
+        application_id=ctx.text("application_id"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Restored the application to the status it held.",
+        destination="Permitting application",
+        state=application.status,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_priority(ctx: ActionContext) -> Outcome:
+    """Change the priority of a case."""
+    from acme_city.permits.routing import RoutingService
+
+    application = RoutingService(ctx.session).set_priority(
+        application_id=ctx.text("application_id"),
+        priority=ctx.text("priority"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message=f"Set the priority to {application.priority}.",
+        destination="Permitting application",
+        state=application.priority,
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_assign(ctx: ActionContext) -> Outcome:
+    """Route a case to a staff member."""
+    from acme_city.permits.routing import RoutingService
+
+    application = RoutingService(ctx.session).assign(
+        application_id=ctx.text("application_id"),
+        owner_actor_id=ctx.text("owner_actor_id"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Routed the application to its owner.",
+        destination="Permitting application",
+        state=application.owner_actor_id or "",
+        target_type="application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _permit_case_comment(ctx: ActionContext) -> Outcome:
+    """Write a comment on a case."""
+    from acme_city.permits.comments import CommentService
+
+    comment = CommentService(ctx.session).add_comment(
+        application_id=ctx.text("application_id"),
+        body=ctx.text("body"),
+        visibility=ctx.text("visibility"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message=(
+            "Added an applicant-visible comment."
+            if comment.visibility == "applicant"
+            else "Added an internal note."
+        ),
+        destination="Permitting comments",
+        state=comment.visibility,
+        target_type="application",
+        target_id=comment.application_id,
+        extra={"comment_id": comment.id, "visibility": comment.visibility},
+    )
+
+
+def _permit_finding_waive(ctx: ActionContext) -> Outcome:
+    """Waive one current intake finding."""
+    from acme_city.permits.finding_actions import waive_finding
+
+    finding = waive_finding(
+        ctx.session,
+        finding_id=ctx.text("finding_id"),
+        reason_code=ctx.text("reason_code"),
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="Waived the finding.",
+        destination="Permitting findings",
+        state="waived",
+        target_type="finding",
+        target_id=finding.id,
+        after_version=finding.version,
+        extra={"finding_id": finding.id},
+    )
+
+
 def _permit_evaluate(ctx: ActionContext) -> Outcome:
     """Evaluate the current revision of an application."""
     application_id = ctx.text("application_id")
@@ -1213,6 +1399,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         application_id=ctx.text("application_id"),
         outcome=ctx.text("outcome"),
         reason=ctx.text("reason"),
+        reason_code=ctx.text("reason_code"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )
@@ -1236,6 +1423,7 @@ def _permit_reconfirm(ctx: ActionContext) -> Outcome:
         application_id=ctx.text("application_id"),
         outcome=ctx.text("outcome"),
         reason=ctx.text("reason"),
+        reason_code=ctx.text("reason_code"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )
@@ -1828,6 +2016,7 @@ def _config_reason_code_add(ctx: ActionContext) -> Outcome:
         code=ctx.text("code"),
         label=ctx.text("label"),
         description=ctx.text("description"),
+        code_type=ctx.text("code_type"),
         actor=ctx.actor,
     )
     return Outcome(
@@ -1970,6 +2159,7 @@ def _recommendation_confirm(ctx: ActionContext) -> Outcome:
         recommendation_id=ctx.text("recommendation_id"),
         application_id=ctx.text("application_id"),
         reason=ctx.text("reason"),
+        reason_code=ctx.text("reason_code"),
         expected_application_version=ctx.integer("expected_application_version"),
         actor=ctx.actor,
     )
@@ -2154,6 +2344,15 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "permit.reconfirm": _permit_reconfirm,
     "permit.issue": _permit_issue,
     "permit.revise": _permit_revise,
+    "permit.case.return": _permit_case_return,
+    "permit.case.advance": _permit_case_advance,
+    "permit.case.request_revisions": _permit_case_request_revisions,
+    "permit.case.archive": _permit_case_archive,
+    "permit.case.restore": _permit_case_restore,
+    "permit.case.priority": _permit_case_priority,
+    "permit.case.assign": _permit_case_assign,
+    "permit.case.comment": _permit_case_comment,
+    "permit.finding.waive": _permit_finding_waive,
     "rule.draft": _rule_draft,
     "rule.submit": _rule_submit,
     "rule.approve": _rule_approve,

@@ -102,7 +102,7 @@ def test_reset_seeds_the_declared_fixture_version(database: Settings, bundle: Fi
         assert result.counts["authority_policies"] == 19
         assert result.counts["permit_types"] == 17
         assert result.counts["agent_controls"] == 2
-        assert result.counts["reason_codes"] == 5
+        assert result.counts["reason_codes"] == 12
     finally:
         factory.dispose()
 
@@ -372,8 +372,8 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    # Head is 0004 since the agent-controls migration added by the parity brief.
-    assert revision == ("0005",)
+    # Head is 0006 since the parity phase 3a migration added by the parity brief.
+    assert revision == ("0006",)
     assert "demo_environment" in tables
 
 
