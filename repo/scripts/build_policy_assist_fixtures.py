@@ -470,6 +470,16 @@ def build_fixtures(output: Path, *, check: bool) -> int:
             if not path.is_file():
                 raise SystemExit(f"the fixture {file_name} is missing")
             if path.read_text(encoding="utf-8") != text:
+                try:
+                    held = json.loads(path.read_text(encoding="utf-8"))
+                except ValueError:
+                    held = {}
+                if held.get("replay_key") != data["replay_key"]:
+                    raise SystemExit(
+                        f"STALE FIXTURE KEY: {file_name} is keyed {str(held.get('replay_key'))[:12]} but the "
+                        f"current rules, configuration or run give {data['replay_key'][:12]}; "
+                        "the replay would silently fall back. Rerun this builder."
+                    )
                 raise SystemExit(f"the fixture {file_name} does not match the current rules and run")
             print(f"unchanged  {file_name}")
         else:
