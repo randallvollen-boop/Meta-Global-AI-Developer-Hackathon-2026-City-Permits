@@ -47,6 +47,24 @@ other organisational identity are service identities.
   - Acceptance: **Save and exit** keeps a draft; **Track an application**
     shows the status, "Messages from the City" and, when the City asked,
     **Submit revised documents**.
+- As an Applicant, I want to ask what the rules say and what the process is,
+  so that I understand the permit before I file it.
+  - Acceptance: the help panel on the chooser, on the application form and on
+    the tracker answers from the City's published rules and from my own case
+    only; the answer quotes the rule it used, shows its citation and says it
+    is rule text and not an answer; a question that matches nothing says so
+    instead of guessing; the panel shows the configured service target and
+    the current review-area backlog as two separate figures and never a
+    completion date.
+- As an Applicant, I want to ask a person at the City when the assistant
+  cannot help, so that my question is answered by the City.
+  - Acceptance: **Ask the City** creates a help request that the City's
+    support desk answers; my conversation stays private to me until then.
+- As an Applicant, I want the help panel never to lose what I have typed,
+  so that asking a question does not cost me my application.
+  - Acceptance: the help question is a form of its own; on the application
+    form the answer opens in a separate window and the fields and files I
+    typed stay exactly as they were, with JavaScript switched off as well.
 
 ## Data Steward
 
