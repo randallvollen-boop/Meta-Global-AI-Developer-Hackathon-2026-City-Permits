@@ -89,7 +89,7 @@
             <input type="hidden" name="expected_version" value="{{ type.version }}">
             <input type="hidden" name="required" value="{{ 'no' if document in type.required_documents else 'yes' }}">
             <p class="field">
-              <span class="muted">{{ document|replace('_', ' ') }} — {{ 'required' if document in type.required_documents else 'not required' }}</span>
+              <span class="muted">{{ document|replace('_', ' ') }}: {{ 'required' if document in type.required_documents else 'not required' }}</span>
             </p>
             <p>
               <button type="submit" class="btn sm" data-testid="admin-document-toggle-button"
@@ -215,9 +215,9 @@
         {% endif %}
         <div style="min-width:0;flex:1">
           <div class="t1">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></div>
-          <div class="t2" data-testid="permit-type-icon-provenance">Current icon: {{ type.current_icon.source if type.current_icon else 'none — line-icon fallback' }} · {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
+          <div class="t2" data-testid="permit-type-icon-provenance">Current icon: {{ type.current_icon.source if type.current_icon else 'none (line icon fallback)' }} · {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
           {% if type.current_icon %}
-          <div class="t2">Recorded {{ type.current_icon.created_at }} by {{ type.current_icon.created_by or 'the fixture' }} — “{{ type.current_icon.prompt }}”</div>
+          <div class="t2">Recorded {{ type.current_icon.created_at }} by {{ type.current_icon.created_by or 'the fixture' }}: “{{ type.current_icon.prompt }}”</div>
           {% endif %}
         </div>
       </div>
@@ -254,7 +254,7 @@
               <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
               <input type="hidden" name="expected_version" value="{{ type.version }}">
               <div class="fieldset">
-                <label for="icon-choice-{{ type.permit_type_key }}">Icon history — pick one to save</label>
+                <label for="icon-choice-{{ type.permit_type_key }}">Icon history: pick one to save</label>
                 <input type="hidden" id="icon-choice-{{ type.permit_type_key }}" name="icon_id" value="{{ type.current_icon.icon_id if type.current_icon else '' }}">
                 <div class="history history-thumbs" data-icon-history="icon-choice-{{ type.permit_type_key }}" data-testid="icon-history">
                   {% for icon in type.icons %}

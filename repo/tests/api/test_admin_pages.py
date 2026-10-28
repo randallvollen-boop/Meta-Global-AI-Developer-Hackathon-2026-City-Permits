@@ -325,7 +325,7 @@ def test_the_receipt_register_is_a_tab_of_its_own(
     assert 'data-testid="assessment-table"' not in response.text
     # The euro receipt is visibly apart from the dollar receipts.
     assert "EUR" in response.text
-    assert "not USD" in response.text
+    assert "different currency" in response.text  # editorial pass (vollencoms): no "not X"
 
 
 def test_the_exception_measure_is_not_styled_when_there_is_nothing_to_review(

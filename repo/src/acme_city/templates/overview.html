@@ -210,7 +210,7 @@
     {% for item in overview.related %}
     <li>
       <a class="btn sm" href="{{ item.href }}">{{ item.label }}</a>
-      <span class="muted"> — {{ item.note }}</span>
+      <span class="muted">: {{ item.note }}</span>
     </li>
     {% endfor %}
   </ul>

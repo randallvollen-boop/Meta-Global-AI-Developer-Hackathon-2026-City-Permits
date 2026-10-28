@@ -60,7 +60,7 @@ _MONTHS = (
 #: state in which a version is actually waiting for an approval.
 VERSION_STATUS_LABELS: dict[str, str] = {
     "draft": "Draft",
-    "in_review": "In review — awaiting approval",
+    "in_review": "In review, awaiting approval",
     "approved": "Approved",
     "published": "Published",
     "retired": "Retired",
@@ -136,8 +136,9 @@ def _readable_window(
 ) -> str:
     """Return the readable effective period of a version."""
     start = _readable_date(effective_from) or "not recorded"
-    end = _readable_date(effective_to) or "open"
-    return f"{start} – {end}"
+    if effective_to is None:
+        return f"From {start}, open ended"
+    return f"{start} to {_readable_date(effective_to)}"
 
 
 def _permit_type_labels(session: Session) -> dict[str, str]:
@@ -1164,6 +1165,10 @@ def _selected_rule(
                 else "No reason is recorded with the seeded version record."
             )
         ),
+        "supporting": [
+            {"label": "Citation", "value": row.citation or "not recorded"},
+            {"label": "Rule text on record", "value": row.title or "not recorded"},
+        ],
         "history": history,
         "applicability": {
             "basis_label": DEFAULT_DATE_BASIS,
@@ -1179,7 +1184,8 @@ def _selected_rule(
                 "period of this version."
                 if applicable
                 else "No sample application has an initial submission time inside "
-                "this effective period."
+                "this effective period. An application first submitted from the "
+                "start of the period would use this version."
             ),
         },
         "overlap_warning": _overlap_warning(session, "rule", row),
@@ -1302,6 +1308,13 @@ def _selected_fee(
                 else "No reason is recorded with the seeded version record."
             )
         ),
+        "supporting": [
+            {"label": "Currency", "value": row.currency or "not recorded"},
+            {
+                "label": "Classification on record",
+                "value": str((row.definition or {}).get("classification", "not recorded")),
+            },
+        ],
         "history": history,
         "applicability": {
             "basis_label": DEFAULT_DATE_BASIS,
@@ -1317,7 +1330,8 @@ def _selected_fee(
                 "period of this version."
                 if applicable
                 else "No sample application has an initial submission time inside "
-                "this effective period."
+                "this effective period. An application first submitted from the "
+                "start of the period would use this version."
             ),
         },
         "overlap_warning": _overlap_warning(session, "fee", row),

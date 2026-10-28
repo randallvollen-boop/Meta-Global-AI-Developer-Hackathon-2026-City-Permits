@@ -76,7 +76,7 @@
         <td>{{ row.balance }}</td>
         <td>
           <span class="badge badge-{{ row.finance_status }}">{{ row.finance_status }}</span>
-          <span class="t2"> — {{ row.status_detail }}</span>
+          <span class="t2">: {{ row.status_detail }}</span>
         </td>
         <td><a class="btn sm" href="{{ row.href }}" data-testid="assessment-view-details">View details</a></td>
       </tr>
@@ -96,7 +96,7 @@
 {% set selected = position.selected %}
 <section class="panel card" aria-labelledby="selected-assessment-heading" data-testid="selected-assessment" data-assessment-id="{{ selected.assessment_id }}">
   <div class="card-h">
-    <h2 id="selected-assessment-heading">Selected assessment — {{ selected.reference }}</h2>
+    <h2 id="selected-assessment-heading">Selected assessment: {{ selected.reference }}</h2>
     <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status }}</span></span>
   </div>
   <div class="card-b" style="display:grid;gap:14px">
@@ -109,7 +109,7 @@
         <tr><th scope="row">Fee assessed</th><td>{{ selected.assessed_total }} {{ selected.currency }}</td></tr>
         <tr><th scope="row">Payment applied</th><td>{{ selected.settled_allocated }} {{ selected.currency }}</td></tr>
         <tr><th scope="row">Outstanding balance</th><td>{{ selected.balance }} {{ selected.currency }}</td></tr>
-        <tr><th scope="row">Finance status</th><td>{{ selected.status }} — {{ selected.status_detail }}</td></tr>
+        <tr><th scope="row">Finance status</th><td>{{ selected.status }}: {{ selected.status_detail }}</td></tr>
         {% if selected.exception %}<tr><th scope="row">Recorded exception</th><td>{{ selected.exception }}</td></tr>{% endif %}
       </tbody>
     </table>
@@ -188,7 +188,7 @@
     <ul class="alias-list" data-testid="selected-assessment-permit-status">
       {% for item in position.permit_status %}
       {% if item.application_id == selected.application_id %}
-      <li>{{ item.reference }} — application {{ item.application_status }}, permit {{ item.permit }}</li>
+      <li>{{ item.reference }}: application {{ item.application_status }}, permit {{ item.permit }}</li>
       {% endif %}
       {% endfor %}
     </ul>
@@ -272,7 +272,7 @@
         <th scope="row" class="mono">{{ receipt.transaction }}</th>
         <td class="mono">{{ receipt.payment_id }}</td>
         <td>{{ receipt.amount }}</td>
-        <td>{{ receipt.currency }}{% if receipt.distinct_currency %} <span class="pill warn">not USD</span>{% endif %}</td>
+        <td>{{ receipt.currency }}{% if receipt.distinct_currency %} <span class="pill warn">different currency</span>{% endif %}</td>
         <td><span class="badge badge-{{ receipt.settlement_status }}">{{ receipt.settlement_status }}</span></td>
         <td>{{ receipt.allocation_status }}</td>
         <td>{{ receipt.account_link_status }}</td>

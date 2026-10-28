@@ -4,7 +4,7 @@
 
 {# Rules and fee schedules.
 
-   Two registers — rules and fee schedules — and three views of each:
+   Two registers (rules and fee schedules) and three views of each:
    published, drafts and history.  The selected version shows the diffed
    records, the applicability, the recorded history and the next authorized
    action, in the order of the lifecycle. #}
@@ -112,7 +112,7 @@
           <a class="btn sm" href="{{ row.href }}" data-testid="rule-next-action">{{ row.next_action.label }}</a>
           {% else %}
           <span class="muted" data-testid="rule-next-action">{{ row.next_action.label }}</span>
-          {% if row.next_action.reason %}<span class="t2"> — {{ row.next_action.reason }}</span>{% endif %}
+          {% if row.next_action.reason %}<span class="t2">: {{ row.next_action.reason }}</span>{% endif %}
           {% endif %}
         </td>
         <td>{{ row.assigned_approver }}</td>
@@ -136,7 +136,7 @@
 {% set selected = catalogue.selected %}
 <section class="panel card" aria-labelledby="selected-version-heading" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
   <div class="card-h">
-    <h2 id="selected-version-heading">{{ selected.version_label }} — {{ selected.title }}</h2>
+    <h2 id="selected-version-heading">{{ selected.version_label }}: {{ selected.title }}</h2>
     <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
   </div>
   <div class="card-b" style="display:grid;gap:14px">
@@ -215,6 +215,11 @@
     <h3>Recorded reason</h3>
     <p data-testid="selected-version-reason">{{ selected.reason }}</p>
 
+    <h3>Supporting material</h3>
+    <dl class="kv" data-testid="selected-version-supporting">
+      {% for item in selected.supporting %}<div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>{% endfor %}
+    </dl>
+
     {% if selected.overlap_warning %}
     <p class="notice" role="status" data-testid="selected-version-overlap">{{ selected.overlap_warning }}</p>
     {% endif %}
@@ -266,7 +271,7 @@
       <span class="pill ok">{{ selected.next_action.label }}</span>
       {% else %}
       <span class="pill plain">{{ selected.next_action.label }}</span>
-      <span class="muted"> — {{ selected.next_action.reason }}</span>
+      <span class="muted">: {{ selected.next_action.reason }}</span>
       {% endif %}
     </p>
 

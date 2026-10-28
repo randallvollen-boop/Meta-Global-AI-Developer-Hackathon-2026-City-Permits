@@ -174,7 +174,7 @@ def test_awaiting_approval_is_only_used_after_the_review_step(
     session: Session,
 ) -> None:
     assert admin_views.VERSION_STATUS_LABELS["draft"] == "Draft"
-    assert admin_views.VERSION_STATUS_LABELS["in_review"] == "In review — awaiting approval"
+    assert admin_views.VERSION_STATUS_LABELS["in_review"] == "In review, awaiting approval"  # editorial pass (vollencoms): no dash
     for label in admin_views.VERSION_STATUS_LABELS.values():
         assert "awaiting approval" not in label or label.startswith("In review")
 
@@ -218,7 +218,7 @@ def test_the_selected_version_keeps_the_states_apart(
     }
     assert "has not entered the approval workflow" in states["draft"]
     assert "No approval is recorded" in states["approval"]
-    assert states["effective_period"] == "1 Nov 2026 – open"
+    assert states["effective_period"] == "From 1 Nov 2026, open ended"  # editorial pass (vollencoms): no dash
     assert "initial submission time (initial_submitted_at)" in states["applicability"]
 
 
