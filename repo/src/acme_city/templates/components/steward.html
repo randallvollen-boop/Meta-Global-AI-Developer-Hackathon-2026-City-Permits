@@ -1,0 +1,32 @@
+{# Small pieces shared by the Data Steward screens.  Import with context:
+
+     {% import "components/steward.html" as st with context %}
+
+   st.source_summary(summary)   Source · Source last changed · Last received · View source details
+   st.pager(paging)             Previous / next page links that keep the other query values
+   st.pill(label, tone)         A status that never wraps #}
+{% import "_ui.html" as ui with context %}
+
+{% macro source_summary(summary) -%}
+<p class="source-summary" data-testid="source-summary">
+  <span><b>Source</b> {{ summary.name }}</span>
+  <span><b>Source last changed</b> {{ ui.info('source_last_changed') }} {{ ui_time(summary.changed) }}</span>
+  <span><b>Last received</b> {{ ui_time(summary.received) }}</span>
+  {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source', summary.detail_id, 'View source details') }}</span>{% endif %}
+</p>
+{% if summary.warning %}<p class="notice" role="status" data-testid="freshness-warning">{{ summary.warning }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro pager(paging) -%}
+{% if paging.pages > 1 %}
+<nav class="pager" aria-label="Pages" data-testid="pager">
+  <span class="muted">{{ paging.first }} to {{ paging.last }} of {{ paging.total }}</span>
+  {% if paging.page > 1 %}{% set prev = request.url.include_query_params(page=paging.page - 1) %}<a href="{{ prev.path }}?{{ prev.query }}" rel="prev">Previous</a>{% endif %}
+  {% if paging.page < paging.pages %}{% set nxt = request.url.include_query_params(page=paging.page + 1) %}<a href="{{ nxt.path }}?{{ nxt.query }}" rel="next">Next</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro pill(label, tone='plain') -%}
+<span class="pill {{ tone }} nowrap">{{ label }}</span>
+{%- endmacro %}

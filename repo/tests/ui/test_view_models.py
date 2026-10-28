@@ -288,14 +288,21 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 #:
 #: Policy 2 adds the What-if screen after the City view, behind its own grant
 #: (``policy.scenario.manage``), which only the City Administrator holds.
+#:
+#: Steward restyle (changed deliberately): the Data Steward and the City
+#: Administrator hold Master records, where People & organizations is a tab, so
+#: "applicants" is no longer listed for them (the Applicant and the Permit
+#: Reviewer keep it).  Source records and Activity follow Data issues; both are
+#: read-only screens behind the steward's own read grants.
 EXPECTED_NAVIGATION: dict[str, list[str]] = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "agent_intake",
         "intake_queue",
@@ -310,10 +317,11 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
     ],
     "persona_city_administrator": [
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "reconciliation",
         "governance",

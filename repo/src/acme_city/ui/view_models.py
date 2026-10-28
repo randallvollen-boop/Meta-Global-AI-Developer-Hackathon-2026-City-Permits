@@ -50,14 +50,18 @@ from acme_city.ui import agent_views, property_views, reviewer_views
 #: The required screens, in the order the navigation shows them.
 SCREENS: tuple[dict[str, str], ...] = (
     {"key": "queue", "label": "Work queue", "href": "/queue"},
-    {"key": "applicants", "label": "Applicants", "href": "/applicants"},
+    {"key": "applicants", "label": "People & organizations", "href": "/applicants"},
     {
         "key": "masters",
-        "label": "Properties, businesses and contractors",
+        "label": "Master records",
         "href": "/masters",
     },
     {"key": "permit", "label": "Permit workspace", "href": ""},
-    {"key": "steward", "label": "Steward review", "href": "/steward"},
+    # The steward's four work areas are Data issues, Master records, Source
+    # records and Activity.  "Review queue" is the Permit Reviewer's name.
+    {"key": "steward", "label": "Data issues", "href": "/steward"},
+    {"key": "source_records", "label": "Source records", "href": "/source-records"},
+    {"key": "activity", "label": "Activity", "href": "/activity"},
     {"key": "rules", "label": "Rules and fees", "href": "/rules-fees"},
     {"key": "reconciliation", "label": "Reconciliation", "href": "/reconciliation"},
     {"key": "governance", "label": "Governance and sources", "href": "/governance"},
@@ -110,6 +114,8 @@ SCREEN_DOMAIN: dict[str, str] = {
     "masters": "parcels",
     "permit": "permits",
     "steward": "applicants",
+    "source_records": "applicants",
+    "activity": "applicants",
     "rules": "building_rules",
     "reconciliation": "finance",
     "governance": "records",
@@ -162,6 +168,18 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("registry.crosswalk.decide", "applicants"),
         ("change.case.transition", None),
         ("source.record.update", "applicants"),
+    ),
+    # The source-record catalogue and the activity of a steward's decisions are
+    # read by the stewards (and by the City Administrator, who holds the same
+    # read grants); the Permit Reviewer and the Applicant hold none of them.
+    "source_records": (
+        ("registry.provenance.view", "applicants"),
+        ("registry.crosswalk.decide", "applicants"),
+        ("source.record.update", "applicants"),
+    ),
+    "activity": (
+        ("registry.crosswalk.decide", "applicants"),
+        ("change.case.transition", None),
     ),
     "rules": (
         ("rule.version.draft", "building_rules"),
@@ -477,8 +495,13 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     if applications:
         permit_href = f"/permits/{applications[0].id}"
     items: list[dict[str, Any]] = []
+    # People & organizations is a tab of Master records for a persona that may
+    # open Master records, so it is not listed twice.
+    masters_open = may_open_screen(session, actor, "masters")
     for screen in SCREENS:
         key = screen["key"]
+        if key == "applicants" and masters_open:
+            continue
         permissions = SCREEN_PERMISSIONS.get(key, ())
         if not any(
             holds_grant(session, actor, permission, domain_id)
@@ -1558,6 +1581,7 @@ def allowed_actions_for(
                 label="Move change case",
                 path="/ui/actions/change.transition",
                 permission="change.case.transition",
+                domain_id="applicants",
                 destination="Configured steward queue",
                 description=(
                     "Move a change case to the next permitted state. The server decides "

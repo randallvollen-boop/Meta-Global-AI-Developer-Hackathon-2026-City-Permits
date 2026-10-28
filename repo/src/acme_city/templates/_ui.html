@@ -43,6 +43,11 @@
 </div>
 <div class="ui-drawer-body" data-testid="ui-drawer-body" data-detail-status="{{ st.status }}">
 {% if ok %}
+  {% if st.tabs %}
+  <nav class="ui-drawer-tabs" aria-label="Views of this record" data-testid="ui-drawer-tabs">
+    {% for tab in st.tabs %}<a href="{{ tab.href }}" data-ui-detail data-detail-kind="{{ tab.kind }}" data-detail-id="{{ tab.id }}"{% if tab.active %} aria-current="page"{% endif %} data-testid="ui-drawer-tab">{{ tab.label }}</a>{% endfor %}
+  </nav>
+  {% endif %}
   {% for section in st.view.sections %}
   <section class="ui-drawer-section">
     <h3>{{ section.heading }}</h3>
@@ -57,7 +62,7 @@
   </section>
   {% endfor %}
   {% if st.view.links %}
-  <ul class="ui-drawer-links">{% for text, href in st.view.links %}<li><a href="{{ href }}">{{ text }}</a></li>{% endfor %}</ul>
+  <ul class="ui-drawer-links">{% for text, href in st.view.links %}<li>{% if href.startswith('?detail=') %}{% set parts = href[8:].split(':', 1) %}<a href="{{ href }}" data-ui-detail data-detail-kind="{{ parts[0] }}" data-detail-id="{{ parts[1] }}">{{ text }}</a>{% else %}<a href="{{ href }}">{{ text }}</a>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
 {% else %}
   <p class="ui-drawer-refused" role="alert" data-testid="ui-drawer-refused">{{ st.message }}</p>

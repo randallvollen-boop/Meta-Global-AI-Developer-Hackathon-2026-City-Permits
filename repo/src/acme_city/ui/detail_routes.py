@@ -59,6 +59,7 @@ def ui_detail(
         "message": outcome.message,
         "close_href": safe_next(request.query_params.get("from"), "/"),
     }
+    state["tabs"] = patterns.tab_links(outcome.view, str(state["close_href"]))
     return HTMLResponse(
         render_drawer_inner(templates, state),
         status_code=outcome.status,

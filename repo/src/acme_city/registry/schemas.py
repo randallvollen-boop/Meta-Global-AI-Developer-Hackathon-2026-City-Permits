@@ -13,7 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 #: The decisions a steward may record on a source-to-canonical link.
-DECISION_OUTCOMES: tuple[str, ...] = ("approve", "reject", "no_match", "correct")
+DECISION_OUTCOMES: tuple[str, ...] = ("approve", "reject", "no_match", "correct", "remove")
 
 #: The label every proposal score carries until calibration is proven.
 UNCALIBRATED_SCORE_LABEL = "uncalibrated_heuristic"
