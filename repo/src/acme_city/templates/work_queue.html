@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "components/action_form.html" as forms %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 {% set state_tones = {"issued": "ok", "approved": "ok", "submitted": "info", "under_review": "info", "ready_for_review": "info", "needs_information": "warn", "open": "warn", "denied": "bad"} %}
@@ -7,17 +8,18 @@
 <div class="page-head">
   <div>
     <h1>Work queue</h1>
-    <p class="sub">Everything waiting on someone, with the next step spelled out. Open a row to see where it stands.</p>
+    <p class="sub">Everything waiting on someone, with the issue and the next step in plain words. Open a row to see where it stands.</p>
   </div>
-  {% if can_apply %}<a class="btn primary" href="/apply" data-testid="start-application">Start a new application</a>{% endif %}
+  <div class="actions">{{ ui.help_button('queue') }}{% if can_apply %} <a class="btn primary" href="/apply" data-testid="start-application">Start a new application</a>{% endif %}</div>
 </div>
 
-<div class="kpis" data-testid="queue-kpis">
-  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-inbox"/></svg>In view</div><div class="v num">{{ queue.entries|length }}</div><div class="s">{{ queue.counts.get('Application', 0) }} application(s) · {{ queue.entries|length - queue.counts.get('Application', 0) }} data item(s)</div></div>
-  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-alert"/></svg>Blocked</div><div class="v num">{{ queue.entries|selectattr('blocker')|list|length }}</div><div class="s"><span class="pill bad">needs action</span></div></div>
-  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-stamp"/></svg>Applications</div><div class="v num">{{ queue.counts.get('Application', 0) }}</div><div class="s">in this view</div></div>
-  <div class="card kpi"><div class="k"><svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-spark"/></svg>Change cases</div><div class="v num">{{ queue.counts.get('Change case', 0) }}</div><div class="s"><span class="pill muse">steward work</span></div></div>
-</div>
+<nav class="tabs queue-views" aria-label="Queue views" data-testid="queue-views">
+  {% for v in queue.views %}
+  <a href="/queue?{{ {'focus': v.key, 'view': queue.filters.view, 'department': queue.filters.department, 'object_type': queue.filters.object_type, 'state': queue.filters.state}|urlencode }}" data-testid="queue-view" data-view="{{ v.key }}" aria-selected="{{ 'true' if v.active else 'false' }}" title="{{ v.note }}">
+    {{ v.label }} <span class="n" data-testid="queue-view-count">{{ v.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
 
 {% if saved_queues %}
 <section class="card">
@@ -34,10 +36,12 @@
 
 <section class="card">
   <form class="filters toolbar" method="get" action="/queue" data-testid="queue-filters">
+    <input type="hidden" name="focus" value="{{ queue.filters.focus }}">
     <p class="field">
-      <label for="filter-view">Show</label>
+      <label for="filter-view">Work shown</label>
       <select id="filter-view" name="view">
-        <option value="my" {% if queue.filters.view == 'my' %}selected{% endif %}>My work</option>
+        <option value="my" {% if queue.filters.view == 'my' %}selected{% endif %}>Permit review team</option>
+        {% if queue.has_owner or queue.filters.view == 'mine' %}<option value="mine" {% if queue.filters.view == 'mine' %}selected{% endif %}>Assigned to me</option>{% endif %}
         <option value="all" {% if queue.filters.view == 'all' %}selected{% endif %}>Everything in scope</option>
       </select>
     </p>
@@ -74,22 +78,21 @@
   <p class="muted" data-testid="queue-count" style="padding:0 16px">{{ queue.entries|length }} item(s) in view.</p>
 
   <div class="tbl-wrap">
-  <table class="data-table" data-testid="queue-table">
+  <table class="data-table queue-table" data-testid="queue-table">
     <caption class="visually-hidden">Work queue items</caption>
     <thead>
       <tr>
-        <th scope="col">Reference</th>
-        <th scope="col">Item</th>
-        <th scope="col">State</th>
-        <th scope="col">Progress</th>
-        <th scope="col">Next step</th>
-        <th scope="col">Age</th>
+        <th scope="col">Case</th>
+        <th scope="col">Stage</th>
+        <th scope="col">Issue {{ ui.info('queue_issue') }}</th>
+        <th scope="col">Next</th>
+        <th scope="col">Dates {{ ui.info('queue_dates') }}</th>
+        <th scope="col">Action</th>
       </tr>
     </thead>
     <tbody>
       {% for item in queue.entries %}
-      <tr class="row" data-testid="queue-item" data-object-type="{{ item.object_type }}" data-state="{{ item.state }}"{% if item.href %} data-href="{{ item.href }}"{% endif %}>
-        <td><span class="ref">{{ item.title }}</span><div class="t2">{{ item.object_type }}</div></td>
+      <tr class="row" data-testid="queue-item" data-object-type="{{ item.object_type }}" data-state="{{ item.state }}" data-bucket="{{ item.bucket }}"{% if item.href %} data-href="{{ item.href }}"{% endif %}>
         <td>
           <div class="item">
             {% if item.kind == 'application' %}
@@ -102,20 +105,31 @@
               <span class="type-ic line"><svg aria-hidden="true"><use href="#i-link"/></svg></span>
             {% endif %}
             <div style="min-width:0">
-              <div class="t1"><a href="{{ item.href }}">{{ item.subtitle or item.title }}</a></div>
-              <div class="t2">{{ item.object_type }}{% if item.assignee %} · {{ item.assignee }}{% endif %}</div>
-              {% if item.blocker %}<div class="t2"><span class="badge badge-blocking">{{ item.blocker_code or 'blocked' }}</span> {{ item.blocker }}</div>{% endif %}
+              <div class="t1" data-testid="queue-row-title"><span class="ref">{{ item.title }}</span> &middot; {{ item.project_type }}{% if item.applicant_name %} &middot; {{ item.applicant_name }}{% endif %}{% if item.address %} &middot; {{ item.address }}{% endif %}</div>
+              <div class="t2">{{ item.object_type }}{% if item.owner_label %} &middot; Assigned to {{ item.owner_label }}{% endif %}
+                {% if item.kind == 'application' %} &middot; {{ ui.detail_link('case-tech', item.id, 'Details') }}{% endif %}</div>
             </div>
           </div>
         </td>
-        <td><span class="pill {{ state_tones.get(item.state, 'info') }}" data-testid="queue-item-state">{{ item.state_label or item.state }}</span></td>
         <td>
+          <span class="pill {{ state_tones.get(item.state, 'info') }}" data-testid="queue-item-state">{{ item.stage_label }}</span>
           {% if item.kind == 'application' %}
-          <span class="mini-steps" role="img" aria-label="Step {{ item.step + 1 }} of 5">{% for i in range(5) %}<i class="{{ 'd' if i < item.step else 'c' if i == item.step else 'b' if item.step_state == 'blocked' and i == item.step else '' }}"></i>{% endfor %}</span>
-          {% else %}<span class="faint" style="font-size:.74rem">—</span>{% endif %}
+          <div><span class="mini-steps" role="img" aria-label="Step {{ item.step + 1 }} of 5">{% for i in range(5) %}<i class="{{ 'd' if i < item.step else 'c' if i == item.step else 'b' if item.step_state == 'blocked' and i == item.step else '' }}"></i>{% endfor %}</span></div>
+          {% endif %}
         </td>
-        <td><div style="font-size:.82rem">{{ item.next_action }}</div><div class="t2">{{ item.target }}</div></td>
-        <td>{% if item.age_days is not none %}<span class="age {{ 'old' if item.age_days >= 7 else '' }}">{{ item.age_days }}d</span>{% else %}-{% endif %}</td>
+        <td data-testid="queue-issue">
+          <div>{{ item.issue_label }}</div>
+          {% if item.issue_code %}<div class="t2">{{ ui.detail_link('case-tech', item.id, 'Exact code') if item.kind == 'application' else item.issue_code }}</div>{% endif %}
+        </td>
+        <td data-testid="queue-next-party">{{ item.next_party }}</td>
+        <td class="dates" data-testid="queue-dates">
+          {% if item.submitted_on %}<div>Submitted {{ item.submitted_on }}</div>
+          <div class="t2">Waiting since {{ item.waiting_since }} &middot; Updated {{ item.last_updated }}</div>
+          {% if item.age_days is not none %}<div class="t2"><span class="age {{ 'old' if item.age_days >= 7 else '' }}">{{ item.age_days }} days old</span></div>{% endif %}
+          {% if item.target_days %}<div class="t2" data-testid="queue-target" data-target-state="{{ item.target_state }}">Review target {{ item.target_days }} days{{ ' - over target' if item.target_state == 'over' else '' }}</div>{% endif %}
+          {% elif item.age_days is not none %}<span class="age">{{ item.age_days }} days old</span>{% else %}-{% endif %}
+        </td>
+        <td><a class="btn sm" href="{{ item.href }}" data-testid="queue-action">{{ item.action_label }}</a></td>
       </tr>
       {% else %}
       <tr><td colspan="6" class="muted">Nothing is waiting in this view.</td></tr>
@@ -123,6 +137,7 @@
     </tbody>
   </table>
   </div>
+  <p class="muted" style="padding:0 16px 12px" data-testid="queue-age-note">{{ queue.age_note }}</p>
 </section>
 
 {% include "components/evidence_panel.html" %}

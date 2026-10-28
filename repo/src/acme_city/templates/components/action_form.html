@@ -12,7 +12,7 @@
       <span class="action-destination act-sub">Writes to: {{ item.destination or 'no external destination' }}</span>
     </span>
     {% if item.permitted %}
-    <span class="btn sm primary act-open">Open form</span>
+    <span class="btn sm primary act-open" aria-label="Start: {{ item.label }}">Start</span>
     {% else %}
     <span class="lock act-denied"><svg aria-hidden="true"><use href="#i-lock"/></svg><span data-testid="action-denied-reason">{{ item.reason }}</span></span>
     {% endif %}

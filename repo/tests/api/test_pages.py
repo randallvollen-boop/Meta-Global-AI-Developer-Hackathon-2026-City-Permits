@@ -223,7 +223,7 @@ def test_a_write_without_the_csrf_token_is_refused_and_changes_nothing(
     finally:
         factory.dispose()
     assert evaluations == []
-    assert "Run validation" in before
+    assert "Run application checks" in before
 
 
 def test_a_write_with_a_stale_csrf_token_is_refused(client: TestClient) -> None:

@@ -1,0 +1,28 @@
+/* Permit Reviewer screens: queue views, case header, Review tab.
+   Uses the tokens of app.css only, so light and dark both follow. */
+.eyebrow { margin: 0 0 4px; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); }
+.queue-views { margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
+.queue-table td { vertical-align: top; }
+.queue-table .dates { white-space: nowrap; font-size: .8rem; }
+.queue-table .t1 { font-weight: 500; overflow-wrap: anywhere; }
+.next-action { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r-md); padding: 10px 14px; margin: 0 0 16px; background: var(--accent-soft); }
+.next-action h2 { margin: 0 0 4px; font-size: .95rem; }
+.next-action p { margin: 2px 0; }
+.issue-plain { margin: 6px 0 12px; padding-left: 1.1rem; }
+.issue-plain li { margin: 4px 0; overflow-wrap: anywhere; }
+.follow-up { border: 1px solid var(--warn); background: var(--warn-soft); border-radius: var(--r-md); padding: 8px 14px; margin: 10px 0; }
+.follow-up h3 { margin: 0 0 4px; }
+.ai-summary { padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--muse-soft); overflow-wrap: anywhere; }
+.stage-line { margin: 14px 0; padding: 8px 12px; border: 1px dashed var(--line); border-radius: var(--r-md); color: var(--fg-2); }
+.revisions { list-style: none; padding: 0; margin: 8px 0 14px; display: grid; gap: 10px; }
+.revisions li { border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 12px; overflow-wrap: anywhere; }
+.case-head h1 { margin: 2px 0; }
+.case-head .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+[data-testid="review-panel"] > section, [data-testid="documents-panel"] > h2 { margin-top: 18px; }
+[data-testid="review-panel"] > section:first-child { margin-top: 0; }
+[data-testid="review-panel"] h2, [data-testid="documents-panel"] h2, [data-testid="people-panel"] h2, [data-testid="timeline-panel"] h2 { font-size: 1.02rem; }
+.workspace-ai-label .pill { margin-left: 4px; }
+@media (max-width: 560px) {
+  .queue-table .dates { white-space: normal; }
+  .case-head .actions { width: 100%; }
+}

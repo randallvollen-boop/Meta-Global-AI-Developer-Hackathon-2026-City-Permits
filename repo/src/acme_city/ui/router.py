@@ -485,6 +485,7 @@ def ui_work_queue(
     department: str | None = None,
     object_type: str | None = None,
     state: str | None = None,
+    focus: str = "all",
 ) -> Any:
     """Show the work queue of the acting persona."""
     resolved, refused = _guard(request, session, actor, "queue")
@@ -499,6 +500,7 @@ def ui_work_queue(
         department=department,
         object_type=object_type,
         state=state,
+        focus=focus,
     )
     context = page_context(
         request,
@@ -840,6 +842,7 @@ def ui_permit_workspace(
         screen="permit",
         title=f"Permit workspace: {detail['application']['source_application_number']}",
         detail=detail,
+        active_tab=request.query_params.get("tab", "review"),
         responsibility=detail["responsibility"],
         actions=actions,
         denied_action_explanations=view_models.denied_action_explanations(actions),
@@ -2799,6 +2802,7 @@ router.include_router(_help_routes.router)
 router.include_router(_portal_routes.router)
 
 from acme_city.ui import detail_routes as _detail_routes  # noqa: E402
+from acme_city.ui import reviewer_details as _reviewer_details  # noqa: E402,F401
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 
 patterns.install(templates)
