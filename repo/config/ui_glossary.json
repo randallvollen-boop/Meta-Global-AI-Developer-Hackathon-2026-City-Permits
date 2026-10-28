@@ -38,6 +38,10 @@
       "label": "Content hash",
       "text": "A fingerprint of a stored document. If even one character of the file changes, the fingerprint changes, so it shows that the document the model read is the document on file."
     },
+    "application_status": {
+      "label": "Application status",
+      "text": "The status says where the application stands with the City. \"Action needed\" means the City is waiting for something from you; the request is shown on the application."
+    },
     "prompt_version": {
       "label": "Prompt version",
       "text": "The version of the instructions given to the model for this task. Two runs with the same prompt version were given the same instructions."
@@ -135,10 +139,28 @@
       "next": "You fill in the form, check what is missing, and submit."
     },
     "apply_track": {
-      "title": "Track an application",
-      "purpose": "Look up an application by its reference number and see where it stands.",
-      "can_do": ["Enter a reference number.", "Open the case to read what the City has asked of you."],
-      "next": "If the City asks for more, the request appears with the case; answer it there."
+      "title": "My permits",
+      "purpose": "Your applications in one place: what each one needs from you and where it stands.",
+      "can_do": ["Switch between Active, Drafts and Closed.", "Respond to a request from the City, view an application or download a copy of what you submitted.", "Find an application by its reference number."],
+      "next": "If the City asks for something, a request appears on the application. Answer it there and the City checks again."
+    },
+    "apply_form": {
+      "title": "Application form",
+      "purpose": "Tell the City about your project, yourself and your documents. The form asks only for what this kind of project needs.",
+      "can_do": ["Answer the questions and add the documents, or say a document was sent to the City separately.", "Save a draft and come back to it in My permits.", "Submit; if something is missing you see exactly what, and nothing you typed is lost."],
+      "next": "After you submit you get a reference number. The City checks the application, and any request from the City appears in My permits."
+    },
+    "apply_receipt": {
+      "title": "Application received",
+      "purpose": "The record that the City received your application, with its reference number.",
+      "can_do": ["Track the application in My permits.", "Download a copy of what you submitted."],
+      "next": "The City's intake agent checks the application next, and then a person at the City decides. Nothing is approved automatically."
+    },
+    "city_permits": {
+      "title": "Permits and applications",
+      "purpose": "Where you start a permit application or come back to one you already started.",
+      "can_do": ["Start an application.", "Track or resume an application.", "Read what you will need before you begin."],
+      "next": "You choose a project type and fill in its form."
     }
   }
 }

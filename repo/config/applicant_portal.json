@@ -1,0 +1,84 @@
+{
+  "config_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Wording of the applicant screens (City permits entry, chooser, form, receipt, My permits). Fictional ACME demonstration text. It states no fee, limit or timing of its own: limits come from the published rules, timings from the permit type, and every sentence describes only what the application really does.",
+  "disclosure_strip": "Fictional demonstration · All people, addresses and permit records are synthetic.",
+  "footer_note": "Fictional City of Acme website for a software demonstration. Every person, address, rule, fee, phone number and permit record shown here is synthetic. The City of Acme does not exist and nothing here is connected to a real city or to a real source system. The Demo controls button is only for ease of switching users in this demonstration; in a real deployment people would sign in through the City's front door and their role would come from that sign-in.",
+  "what_you_need": [
+    {"key": "contact", "title": "Contact details", "text": "Your name and an email address. A phone number is optional."},
+    {"key": "property", "title": "The property", "text": "The address of the property where the work will happen."},
+    {"key": "project", "title": "A project description", "text": "What you plan to build or change, with the sizes the form asks for."},
+    {"key": "documents", "title": "The documents asked for", "text": "Each project type lists its own documents. You can add a file now or say you sent it to the City separately."}
+  ],
+  "chooser_groups": {
+    "home_property": "Home and property",
+    "business_construction": "Business and construction",
+    "planning_land_use": "Planning and land use"
+  },
+  "document_purposes": {
+    "site_plan": "Shows where the work sits on the property and its distance from the property lines.",
+    "material_spec": "Names the materials the structure will be built from.",
+    "construction_plans": "The drawings the reviewer checks the building work against.",
+    "energy_compliance_form": "Records how the building meets the energy rules.",
+    "floor_plan": "Shows the layout of the space the work affects.",
+    "fire_suppression_plan": "Shows the fire sprinkler or suppression design.",
+    "business_license_copy": "Confirms the business that applies is registered.",
+    "sign_drawing": "Shows the size, wording and look of the sign.",
+    "owner_authorization": "Confirms the property owner agrees to the work.",
+    "traffic_control_plan": "Shows how traffic and walkers are kept safe during the work.",
+    "insurance_certificate": "Shows the insurance that covers the work.",
+    "contractor_license_copy": "Confirms the contractor who does the work is licensed.",
+    "change_of_use_notice": "Describes how the use of the space will change.",
+    "property_survey": "Shows the boundaries and features of the lot.",
+    "legal_description": "Gives the legal description of the land.",
+    "hardship_statement": "Explains why the rule causes a hardship for this property.",
+    "photographs": "Shows the property as it is today.",
+    "design_drawings": "Shows the proposed changes.",
+    "supporting_document": "Anything else that supports the application."
+  },
+  "rule_hints": {
+    "DF-1": "Front-yard fences: {limit} ft at most ({citation}).",
+    "DF-2": "Side and rear yard fences: {limit} ft at most ({citation}).",
+    "DF-3": "Deck distance from the rear property line: at least {limit} ft ({citation}).",
+    "DF-4": "A deck higher than {limit} ft above the ground needs a footing inspection and guard rail ({citation})."
+  },
+  "next_step": {
+    "draft": "Finish the form and submit it when it is ready. Nothing has been sent to the City yet.",
+    "submitted": "The City's intake agent checks your application for missing items and unreadable documents, then it goes to a reviewer. Nothing is needed from you while it waits.",
+    "needs_information": "Respond to the City's request. Your answer sends the application back to the City to check again.",
+    "revisions_requested": "Respond to the City's request. Your answer sends the application back to the City to check again.",
+    "ready_for_review": "The application is waiting for a reviewer. Nothing is needed from you.",
+    "under_review": "A reviewer is looking at the application. If the City needs something from you it appears here as a request.",
+    "approved": "The application is approved. The permit is issued once the City has recorded the fees as paid.",
+    "issued": "Your permit is issued. Download it and keep a copy.",
+    "denied": "The City decided not to approve this application. Read the decision note, or start a new application.",
+    "withdrawn": "This application was withdrawn. Start a new application if you still want the permit.",
+    "returned": "The City returned this application. Start a new application with the corrections.",
+    "archived": "The City archived this application. Ask permit services if you have a question about it."
+  },
+  "discretionary_note": "Only a person or the board decides this kind of application.",
+  "next_step_empty": "Start an application to begin. Your applications will be listed here.",
+  "target_sentence": "The City's service target for this permit type is {days} days. It is a target, not a promise.",
+  "request_titles": {
+    "missing_field": "An item is missing",
+    "missing_document": "A document is missing",
+    "unreadable": "A document could not be read",
+    "wrong_type": "Confirm the permit type",
+    "duplicate": "Possible duplicate application",
+    "conflict": "A conflict needs your answer",
+    "fee": "A fee needs your attention",
+    "low_confidence_extraction": "Please confirm a value",
+    "judgment": "A point needs your answer",
+    "comment": "A message from the City"
+  },
+  "receipt": {
+    "title": "Application received",
+    "next_step": "The City's intake agent checks it next, then a person at the City decides. Nothing is approved automatically.",
+    "copy_note": "The copy is a printable web page of what you submitted. It is not a permit."
+  },
+  "share": {
+    "contact_label": "Planning and Permits",
+    "contact_href": "/city/contact"
+  }
+}

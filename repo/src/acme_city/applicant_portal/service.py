@@ -20,7 +20,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from acme_city.applicant_portal import forms
+from acme_city.applicant_portal import content, forms, permits_view
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
@@ -71,6 +71,20 @@ _SAFE = re.compile(r"[^A-Za-z0-9]+")
 def applicant_party(actor: ActorContext) -> str | None:
     """Return the canonical party of an applicant persona, if its scope names one."""
     return next((item for item in actor.record_scope if item.startswith("party_")), None)
+
+
+def applicant_display_name(session: Session, actor: ActorContext | None) -> str:
+    """Return the name of the acting applicant, from the applicant's own party record.
+
+    It is the name of the seeded applicant party the persona is scoped to, used
+    the same way in the page header and as the prefilled applicant name.  An
+    actor with no party in scope has no name here, and none is invented.
+    """
+    from acme_city.persistence.models import registry
+
+    party = applicant_party(actor) if actor is not None else None
+    row = session.get(registry.Party, party) if party else None
+    return row.display_name if row is not None else ""
 
 
 #: Fact recording the document types the applicant declared "sent to the City
@@ -128,9 +142,15 @@ class PortalService:
         )
 
     def chooser(self) -> list[dict[str, Any]]:
-        """Return the guided chooser: groups of type cards."""
+        """Return the guided chooser: groups of type cards.
+
+        Each group carries its common projects (``cards``) and the rest of its
+        types (``more``), which the page puts in an expandable part.  A card
+        names the project and says what it is; process wording lives on the form.
+        """
         from acme_city.ui.view_models import icon_for_permit_type
 
+        titles = content.content().get("chooser_groups", {})
         rows = {
             row.key: row
             for row in self._session.execute(
@@ -142,14 +162,11 @@ class PortalService:
 
         def card(row: permit.PermitType) -> dict[str, Any]:
             category = row.process_category or "simple"
-            pill, pill_text = forms.PROCESS_PILLS.get(category, forms.PROCESS_PILLS["simple"])
             icon = icon_for_permit_type(self._session, row)
             return {
                 "type_key": row.key,
                 "label": row.label,
                 "description": row.description or "",
-                "pill": pill,
-                "pill_text": pill_text,
                 "category": category,
                 "icon_url": icon["url"] if icon else "",
                 "href": f"/apply/{row.key}",
@@ -158,11 +175,61 @@ class PortalService:
         for group_key, label, keys in forms.GROUPS:
             cards = [card(rows[key]) for key in keys if key in rows]
             used.update(keys)
-            groups.append({"key": group_key, "label": label, "cards": cards})
+            common = [item for item in cards if item["type_key"] in forms.COMMON_TYPES]
+            more = [item for item in cards if item["type_key"] not in forms.COMMON_TYPES]
+            groups.append(
+                {
+                    "key": group_key,
+                    "label": titles.get(group_key, label),
+                    "cards": common,
+                    "more": more,
+                    "all": cards,
+                }
+            )
         other = [card(row) for key, row in sorted(rows.items()) if key not in used]
         if other:
-            groups.append({"key": "other", "label": "Other permits", "cards": other})
+            groups.append({"key": "other", "label": "Other permits", "cards": [], "more": other, "all": other})
         return groups
+
+    def rule_hints(self, spec: forms.FormSpec) -> dict[str, list[str]]:
+        """Return the limits quoted beside the fields, by field key.
+
+        The numbers are read from the published rule versions in force now; the
+        sentence around them is configuration.  A rule that is not published
+        has no hint, so a limit is never stated that the City does not hold.
+        """
+        wanted = {
+            rule_id.strip()
+            for field in spec.fields
+            for rule_id in field.rule.split(",")
+            if rule_id.strip()
+        }
+        if not wanted:
+            return {}
+        from acme_city.rules import catalog
+
+        type_row = self._type_row(spec.type_key)
+        views = {
+            view.rule_id: view
+            for view in (
+                catalog.rule_view(row, spec.type_key)
+                for row in catalog.select_rule_versions(self._session, type_row.id, self._now)
+            )
+            if view.rule_id in wanted
+        }
+        sentences = content.content().get("rule_hints", {})
+        hints: dict[str, list[str]] = {}
+        for field in spec.fields:
+            for rule_id in (item.strip() for item in field.rule.split(",")):
+                view = views.get(rule_id)
+                sentence = sentences.get(rule_id)
+                if view is None or not sentence or view.limit_value is None:
+                    continue
+                limit = f"{float(view.limit_value):g}"
+                hints.setdefault(field.key, []).append(
+                    sentence.format(limit=limit, citation=view.citation)
+                )
+        return hints
 
     # ------------------------------------------------------------ completeness
 
@@ -192,6 +259,7 @@ class PortalService:
         """
         items: list[dict[str, str]] = []
         declared = set(sent_separately or ())
+        values = spec.with_defaults(values)
 
         def need(label: str, anchor: str, key: str, message: str) -> None:
             items.append({"key": key, "label": label, "anchor": anchor, "message": message})
@@ -212,9 +280,15 @@ class PortalService:
         if not self._present(values.get("address_text")):
             need("Property address", "f-address_text", "address_text", "Enter the property address")
         for field in spec.fields:
+            if not spec.applies(field, values):
+                continue
             raw = values.get(field.key)
             anchor = f"f-{field.key}"
             name = field.label[:1].lower() + field.label[1:]
+            if field.kind == "choice":
+                if str(raw or "") not in {value for value, _label in field.options}:
+                    need(field.label, anchor, field.key, f"Choose {name}")
+                continue
             if field.kind == "checkbox":
                 if field.required and str(raw or "").lower() not in {"on", "true", "1", "yes"}:
                     need(field.label, anchor, field.key, f"Confirm: {name}")
@@ -476,6 +550,34 @@ class PortalService:
         )
         return row
 
+    def remove_upload(
+        self,
+        draft: gis.ApplicationDraft,
+        document_type: str,
+        actor: ActorContext,
+    ) -> bool:
+        """Remove the file an applicant added to a draft; return whether one was there."""
+        self._authorize(actor)
+        removed = False
+        for old in self._session.execute(
+            select(gis.DraftDocument).where(
+                gis.DraftDocument.draft_id == draft.id,
+                gis.DraftDocument.document_type == document_type,
+            )
+        ).scalars():
+            self._session.delete(old)
+            removed = True
+        if removed:
+            self._session.flush()
+            self._audit.append(
+                action="portal.draft.document_remove",
+                actor=actor,
+                target_type="application_draft",
+                target_id=draft.id,
+                reason=f"removed {document_type} from the draft",
+            )
+        return removed
+
     # ------------------------------------------------------------------ submit
 
     def submit(
@@ -493,6 +595,7 @@ class PortalService:
         from acme_city.portal_intake.service import IntakeService
 
         self._authorize(actor)
+        values = spec.with_defaults(values)
         documents = self.draft_documents(draft)
         state = self.completeness(
             spec,
@@ -512,14 +615,17 @@ class PortalService:
         parcel_number = located.get("parcel_number", "") if located.get("found") else ""
         facts: dict[str, Any] = {}
         for field in spec.fields:
+            if not spec.applies(field, values):
+                # A question that does not apply to this project is never stored.
+                continue
             raw = values.get(field.key, "")
             if field.kind == "number" and str(raw).strip():
                 number = float(str(raw).replace(",", ""))
-                facts[field.key] = int(number) if number.is_integer() else number
+                facts[field.fact] = int(number) if number.is_integer() else number
             elif field.kind == "checkbox":
-                facts[field.key] = str(raw or "").lower() in {"on", "true", "1", "yes"}
+                facts[field.fact] = str(raw or "").lower() in {"on", "true", "1", "yes"}
             else:
-                facts[field.key] = str(raw).strip()
+                facts[field.fact] = str(raw).strip()
         facts.update(spec.constant_facts)
         facts["submitted_site_text"] = values["address_text"].strip()
         if parcel_number:
@@ -624,6 +730,7 @@ class PortalService:
                 "severity": "review",
             }
             for row in comments_for(self._session, application.id, actor)
+            if row.visibility == "applicant"
         ]
         decision = self._session.execute(
             select(permit.Decision)
@@ -638,7 +745,18 @@ class PortalService:
             )
         }
         declared = declared_separately(application)
+        card = permits_view.application_card(self._session, application, permit_type, actor)
+        requests = (
+            permits_view.requests_for(self._session, application, actor)
+            if application.status in permits_view.ACTION_STATUSES
+            else []
+        )
         return {
+            "card": card,
+            "requests": requests,
+            "activity": permits_view.activity_for(
+                self._session, application, actor, application.source_application_number
+            ),
             "application_id": application.id,
             "reference": application.source_application_number,
             "type_label": permit_type.label if permit_type else "",
@@ -664,6 +782,81 @@ class PortalService:
             ],
             "workspace_href": f"/permits/{application.id}",
         }
+
+    def copy_record(self, reference: str, actor: ActorContext) -> dict[str, Any] | None:
+        """Return the applicant's own record of a submitted application, for a printable copy.
+
+        It holds what the applicant submitted and nothing the City wrote
+        internally: no finding, no comment, no staff name.
+        """
+        from acme_city.persistence.models import registry
+
+        tracked = self.track(reference, actor)
+        if tracked is None:
+            return None
+        application = self._session.get(permit.Application, tracked["application_id"])
+        assert application is not None
+        permit_type = self._session.get(permit.PermitType, application.permit_type_id)
+        spec = self.form(permit_type.key) if permit_type else None
+        facts = dict(application.submitted_facts or {})
+        answers: list[tuple[str, str]] = []
+        for field in spec.fields if spec else []:
+            if field.fact not in facts:
+                continue
+            raw = facts[field.fact]
+            if field.kind == "checkbox":
+                value = "Yes" if raw else "No"
+            elif field.kind in {"select", "choice"}:
+                value = dict(field.options).get(str(raw), str(raw))
+            else:
+                value = str(raw)
+            if value.strip():
+                answers.append((field.label, value))
+        if str(facts.get("business_name", "")).strip():
+            answers.append(("Business name", str(facts["business_name"])))
+        if str(facts.get("applicant_phone", "")).strip():
+            answers.append(("Phone", str(facts["applicant_phone"])))
+        party = application.applicant_party_id
+        row = self._session.get(registry.Party, party) if party else None
+        received = {
+            item["type"]: item for item in tracked["documents"]
+        }
+        versions = DocumentService(self._session, root=self._root).list_versions(application.id)
+        latest: dict[str, str] = {}
+        for version in versions:
+            latest[version.document_type] = Path(version.file_ref).name
+        documents = []
+        for key, label in spec.documents if spec else []:
+            info = received.get(key, {})
+            if info.get("have"):
+                status = f"Received: {latest.get(key, '')}".strip()
+            elif info.get("declared_separately"):
+                status = "You said you sent this to the City separately; the City has not received it yet"
+            else:
+                status = "Not received"
+            documents.append((label, status))
+        card = tracked["card"]
+        return {
+            "reference": tracked["reference"],
+            "type_label": tracked["type_label"],
+            "address": card["address"],
+            "submitted_stamp": card["submitted_stamp"],
+            "status_word": tracked["status_word"],
+            "applicant_name": row.display_name if row is not None else "",
+            "answers": answers,
+            "documents": documents,
+        }
+
+    def issued_permit(self, reference: str, actor: ActorContext) -> permit.Permit | None:
+        """Return the issued permit of an application the actor may see."""
+        tracked = self.track(reference, actor)
+        if tracked is None or tracked["status"] != "issued":
+            return None
+        return self._session.execute(
+            select(permit.Permit)
+            .where(permit.Permit.application_id == tracked["application_id"])
+            .order_by(permit.Permit.issued_at.desc())
+        ).scalars().first()
 
     def revise_documents(
         self,
@@ -777,5 +970,6 @@ __all__ = [
     "STATUS_WORDS",
     "UPLOAD_EXTENSIONS",
     "PortalService",
+    "applicant_display_name",
     "applicant_party",
 ]

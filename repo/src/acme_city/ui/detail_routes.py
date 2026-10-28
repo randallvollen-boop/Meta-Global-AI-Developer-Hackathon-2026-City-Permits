@@ -174,4 +174,46 @@ patterns.register_detail(
     any_grant=view_models.SCREEN_PERMISSIONS["permit"],
 )
 
+# ------------------------------------------------------------ My permits record
+
+
+def _resolve_my_permit(ctx: DetailContext, reference: str) -> DetailView | None:
+    """The applicant's own record details: reference, id, full times and revision.
+
+    Only an application inside the persona's record scope is readable; any
+    other reference answers "not available".  Nothing the City wrote internally
+    is read.
+    """
+    from acme_city.applicant_portal.permits_view import long_stamp
+    from acme_city.applicant_portal.service import STATUS_WORDS
+
+    application = ctx.session.execute(
+        select(permit.Application).where(permit.Application.source_application_number == reference)
+    ).scalar_one_or_none()
+    if application is None or not view_models._application_in_scope(ctx.actor, application):
+        return None
+    permit_type = ctx.session.get(permit.PermitType, application.permit_type_id)
+    rows = [
+        Row("Reference", application.source_application_number, mono=True),
+        Row("Project type", permit_type.label if permit_type else "not recorded"),
+        Row("Status", STATUS_WORDS.get(application.status, application.status), info="application_status"),
+        Row("First submitted", long_stamp(application.initial_submitted_at) or "not recorded"),
+        Row("Latest response sent", long_stamp(application.revision_submitted_at) or "none yet"),
+        Row("Revision", str(application.revision)),
+        Row("Application id", application.id, mono=True),
+    ]
+    return DetailView(
+        title="Application record",
+        subtitle=application.source_application_number,
+        sections=(Section("Record", tuple(rows)),),
+    )
+
+
+patterns.register_detail(
+    "my-permit",
+    _resolve_my_permit,
+    label="Application record",
+    any_grant=(("application.submit", "permits"),),
+)
+
 __all__ = ["router"]
