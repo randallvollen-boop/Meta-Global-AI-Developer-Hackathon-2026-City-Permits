@@ -1,0 +1,72 @@
+{% extends "city/layout.html" %}
+{% block content %}
+<div class="city-wrap city-page">
+  <h1>Permits in my community</h1>
+  <p class="city-lede">Look up a permit by address, street or permit number, and see where permits are being applied for across the city. This page shows public facts only: it never shows the names or contact details of residents, documents, notes, fees or findings.</p>
+  {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some of the permits below are generated demonstration data, not real permits.</p>{% endif %}
+
+  <form method="get" action="/city/community" class="insight-filters" role="search" data-testid="community-lookup">
+    <label for="community-q">Address, street or permit number
+      <input id="community-q" type="search" name="q" value="{{ lookup.query if lookup else '' }}" maxlength="80" data-testid="community-q">
+    </label>
+    <button type="submit" class="city-cta" data-testid="community-search">Look up</button>
+  </form>
+
+  {% if lookup %}
+  <section aria-labelledby="results-h" data-testid="community-results">
+    <h2 id="results-h">Results</h2>
+    {% if lookup.too_short %}
+    <p class="muted" data-testid="community-too-short">Type at least three characters.</p>
+    {% else %}
+    <p data-testid="community-result-total">{{ lookup.total.display }} permits found for “{{ lookup.query }}”.</p>
+    {% if lookup.records %}
+    <table class="data-table" data-testid="community-result-table">
+      <caption class="visually-hidden">Public permits that match your search</caption>
+      <thead><tr><th scope="col">Permit</th><th scope="col">Type</th><th scope="col">Address</th><th scope="col">Status</th><th scope="col">Submitted</th></tr></thead>
+      <tbody>
+        {% for r in lookup.records %}
+        <tr data-reference="{{ r.reference }}">
+          <th scope="row"><a href="/city/community/permit/{{ r.reference }}">{{ r.reference }}</a>{% if r.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</th>
+          <td>{{ r.permit_type }}</td><td>{{ r.address }}</td><td>{{ r.status }}</td><td>{{ r.submitted_on }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted" data-testid="community-no-results">No public permit matches that search.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section aria-labelledby="map-h" data-testid="community-map-section">
+    <h2 id="map-h">Permits by district</h2>
+    <form method="get" action="/city/community" class="insight-filters">
+      <label for="community-type">Permit type
+        <select id="community-type" name="type" data-testid="community-type">
+          <option value="">All types</option>
+          {% for o in summary.type_options %}<option value="{{ o.key }}"{% if summary.type == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="city-cta">Show</button>
+    </form>
+    <p data-testid="community-total">Public permits shown: <strong>{{ summary.total.display }}</strong>. A total under 3 is shown as “fewer than 3” to protect privacy.</p>
+    {{ summary.map_svg|safe }}
+    <table class="data-table" data-testid="community-district-table">
+      <caption>Public permits by district</caption>
+      <thead><tr><th scope="col">District</th><th scope="col">Public permits</th></tr></thead>
+      <tbody>{% for d in summary.districts %}<tr data-district="{{ d.code }}"><th scope="row">{{ d.code }}</th><td>{{ d.total.display }}</td></tr>{% endfor %}</tbody>
+    </table>
+    <p class="muted">A district is the zoning district of the parcel the permit is for. Received, in review, approved, denied and issued permits are counted. Drafts, withdrawn and returned applications are not shown.</p>
+  </section>
+
+  {% if summary.recent %}
+  <section aria-labelledby="recent-h" data-testid="community-recent">
+    <h2 id="recent-h">Recently submitted</h2>
+    <ul>
+      {% for r in summary.recent %}<li><a href="/city/community/permit/{{ r.reference }}">{{ r.reference }}</a>: {{ r.permit_type }}, {{ r.address }}, {{ r.status }}{% if r.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

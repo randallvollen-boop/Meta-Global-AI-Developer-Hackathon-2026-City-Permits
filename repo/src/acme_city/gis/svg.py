@@ -226,6 +226,90 @@ def town_map_svg(
     )
 
 
+def district_map_svg(
+    parcels: list[MapParcel],
+    streets: list[dict[str, Any]],
+    shade: dict[str, int | None],
+    labels: dict[str, str],
+    dots: list[dict[str, Any]],
+    *,
+    caption: str,
+) -> str:
+    """Return the district-shaded map of permit activity.
+
+    Every parcel takes the shade of its zoning district (``None`` means the
+    figure is suppressed and the district is hatched, not shaded).  A district
+    label prints the district code and its figure on the map, so colour is
+    never the only signal.  ``dots`` mark parcels with exceptions: each has a
+    ``parcel`` number, a ``count`` and a ``title``; the dot grows with the
+    count, which makes a cluster visible.
+    """
+    xmin, ymin, xmax, ymax = EXTENT
+    flip = ymax
+    width, height = xmax - xmin, ymax - ymin
+    street_svg = []
+    for street in streets:
+        d = "M" + " L".join(f"{x:.1f},{flip - y:.1f}" for x, y in street["path"])
+        street_svg.append(
+            f'<g class="gis-street"><title>{escape(street["name"])}</title><path d="{d}"/></g>'
+        )
+    parcel_svg = []
+    boxes: dict[str, list[float]] = {}
+    centres: dict[str, tuple[float, float]] = {}
+    for parcel in parcels:
+        level = shade.get(parcel.zoning)
+        css = "insight-hatch" if level is None else f"insight-shade-{level}"
+        x0, y0, x1, y1 = _bounds(parcel.rings)
+        centres[parcel.number] = ((x0 + x1) / 2, flip - (y0 + y1) / 2)
+        box = boxes.setdefault(parcel.zoning, [x0, y0, x1, y1])
+        box[0], box[1] = min(box[0], x0), min(box[1], y0)
+        box[2], box[3] = max(box[2], x1), max(box[3], y1)
+        title = f"Parcel {parcel.number}, {parcel.site_address or 'no site address'}, district {parcel.zoning or 'unknown'}"
+        parcel_svg.append(
+            f'<g class="insight-parcel {css}" data-parcel="{escape(parcel.number)}" '
+            f'data-district="{escape(parcel.zoning)}"><title>{escape(title)}</title>'
+            f'<path d="{_path(parcel.rings, flip)}"/></g>'
+        )
+    label_svg = []
+    for code, box in sorted(boxes.items()):
+        cx, cy = (box[0] + box[2]) / 2, flip - (box[1] + box[3]) / 2
+        text = labels.get(code, "")
+        label_svg.append(
+            f'<g class="insight-district-label" data-district="{escape(code)}">'
+            f'<text x="{cx:.1f}" y="{cy - 6:.1f}" text-anchor="middle" class="insight-district-code">{escape(code)}</text>'
+            f'<text x="{cx:.1f}" y="{cy + 18:.1f}" text-anchor="middle" class="insight-district-figure">{escape(text)}</text>'
+            "</g>"
+        )
+    dot_svg = []
+    for dot in dots:
+        centre = centres.get(str(dot["parcel"]))
+        if centre is None:
+            continue
+        radius = min(5.0 + 2.2 * (float(dot["count"]) ** 0.5), 18.0)
+        dot_svg.append(
+            f'<g class="insight-dot" data-parcel="{escape(str(dot["parcel"]))}" data-count="{int(dot["count"])}">'
+            f'<title>{escape(str(dot["title"]))}</title>'
+            f'<circle cx="{centre[0]:.1f}" cy="{centre[1]:.1f}" r="{radius:.1f}"/>'
+            f'<text x="{centre[0]:.1f}" y="{centre[1] + 3.2:.1f}" text-anchor="middle">{int(dot["count"])}</text></g>'
+        )
+    defs = (
+        '<defs><pattern id="insight-hatch" width="8" height="8" patternUnits="userSpaceOnUse" '
+        'patternTransform="rotate(45)"><rect width="8" height="8" class="insight-hatch-bg"/>'
+        '<path d="M0 0 L0 8" class="insight-hatch-line"/></pattern></defs>'
+    )
+    body = (
+        f'<g class="gis-layer-streets">{"".join(street_svg)}</g>'
+        f'<g class="insight-layer-parcels">{"".join(parcel_svg)}</g>'
+        f'<g class="insight-layer-labels">{"".join(label_svg)}</g>'
+        f'<g class="insight-layer-dots">{"".join(dot_svg)}</g>'
+    )
+    return (
+        f'<svg class="gis-svg gis-town insight-map" xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'viewBox="{xmin:.0f} 0 {width:.0f} {height:.0f}" aria-label="{escape(caption)}" '
+        f'data-testid="insight-map"><title>{escape(caption)}</title>{defs}{body}</svg>'
+    )
+
+
 def legend_html() -> str:
     """Return the text legend: colour is never the only signal."""
     items = "".join(
@@ -246,6 +330,7 @@ def legend_html() -> str:
 
 __all__ = [
     "STATUS_MARKS",
+    "district_map_svg",
     "MapParcel",
     "MapPoint",
     "legend_html",

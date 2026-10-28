@@ -1,0 +1,25 @@
+{% extends "city/layout.html" %}
+{% block content %}
+<div class="city-wrap city-page">
+  <h1>Permit {{ record.reference }}{% if record.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</h1>
+  <p class="city-lede">{{ record.permit_type }} at {{ record.address }}.</p>
+  <dl class="city-facts" data-testid="community-record">
+    <dt>{% if record.permit_number %}Permit number{% else %}Application number{% endif %}</dt><dd data-field="reference">{{ record.reference }}</dd>
+    <dt>Type</dt><dd data-field="permit_type">{{ record.permit_type }}</dd>
+    <dt>Parcel</dt><dd data-field="parcel">{{ record.parcel }}</dd>
+    <dt>Address</dt><dd data-field="address">{{ record.address }}</dd>
+    <dt>District</dt><dd data-field="district">{{ record.district }}</dd>
+    <dt>Work</dt><dd data-field="work_description">{{ record.work_description }}</dd>
+    <dt>Status</dt><dd data-field="status">{{ record.status }}</dd>
+    <dt>Submitted</dt><dd data-field="submitted_on">{{ record.submitted_on }}</dd>
+    <dt>Decided</dt><dd data-field="decided_on">{{ record.decided_on or 'not yet' }}</dd>
+    <dt>Issued</dt><dd data-field="issued_on">{{ record.issued_on or 'not yet' }}</dd>
+    <dt>Outcome</dt><dd data-field="outcome">{{ record.outcome or 'not decided' }}</dd>
+    <dt>Conditions</dt><dd data-field="conditions">{% if record.conditions %}<ul>{% for c in record.conditions %}<li>{{ c }}</li>{% endfor %}</ul>{% else %}none{% endif %}</dd>
+    <dt>Exception</dt><dd data-field="exception">{% if record.exception %}{{ record.exception_kinds|join(', ') }}{% else %}none{% endif %}</dd>
+    <dt>Contractor business</dt><dd data-field="contractor_business">{{ record.contractor_business }}</dd>
+  </dl>
+  {% if record.synthetic %}<p data-testid="record-synthetic-note">This record is generated demonstration data. It is not a real permit.</p>{% endif %}
+  <p><a href="/city/community">Back to Permits in my community</a></p>
+</div>
+{% endblock %}

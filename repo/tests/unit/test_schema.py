@@ -310,8 +310,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0008 since the parity phase 3 chat 1 migration added by parity phase 3.
-    assert health.revision == "0008"
+    # Head is 0009 since the P3insight migration (synthetic flags, business categories).
+    assert health.revision == "0009"
     assert database.database_url not in str(health.to_dict())
 
 

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% macro synth_badge() %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endmacro %}
+
+{% block content %}
+{% set v = view %}
+<div class="page-head">
+  <div>
+    <h1>City view</h1>
+    <p class="sub">Permit activity across ACME City by district, type, outcome and business category. Every figure is a count over the stored applications; its definition is printed beside it.</p>
+  </div>
+</div>
+
+<section class="card" aria-labelledby="synthetic-heading" data-testid="synthetic-panel">
+  <h2 id="synthetic-heading">Synthetic data</h2>
+  <p data-testid="synthetic-note">{{ v.synthetic.note }}{% if v.synthetic.available %} {{ synth_badge() }}{% endif %}</p>
+  {% if v.synthetic.available %}
+  <p>{{ v.synthetic.included }} of the {{ v.total }} permits in this view are synthetic.
+    {% set base = v.query|replace('&synthetic=exclude','')|replace('synthetic=exclude','') %}
+    {% if v.synthetic.mode == 'exclude' %}
+    <a href="/insight/city{% if base %}?{{ base }}{% endif %}" data-testid="synthetic-toggle">Include synthetic data</a>
+    {% else %}
+    <a href="/insight/city?{{ base }}{% if base %}&amp;{% endif %}synthetic=exclude" data-testid="synthetic-toggle">Exclude synthetic data</a>
+    {% endif %}
+  </p>
+  {% endif %}
+</section>
+
+<form class="insight-filters" method="get" action="/insight/city" data-testid="insight-filters">
+  <label>Permit type
+    <select name="type" data-testid="filter-type">
+      <option value="">All types</option>
+      {% for o in v.type_options %}<option value="{{ o.key }}"{% if v.filters.type == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Outcome
+    <select name="outcome" data-testid="filter-outcome">
+      <option value="">Any outcome</option>
+      {% for o in v.outcome_options %}<option value="{{ o.key }}"{% if v.filters.outcome == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Period
+    <select name="period" data-testid="filter-period">
+      {% for o in v.period_options %}<option value="{{ o.key }}"{% if v.filters.period == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Business category
+    <select name="category" data-testid="filter-category">
+      <option value="">Any category</option>
+      <option value="{{ v.restaurants_and_bars }}"{% if v.filters.category|join(',') == v.restaurants_and_bars %} selected{% endif %}>Restaurants and bars</option>
+      {% for o in v.category_options %}<option value="{{ o.key }}"{% if v.filters.category|join(',') == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label><span><input type="checkbox" name="exceptions" value="1"{% if v.filters.exceptions %} checked{% endif %} data-testid="filter-exceptions"> Exceptions only</span></label>
+  {% if v.synthetic.mode == 'exclude' %}<input type="hidden" name="synthetic" value="exclude">{% endif %}
+  <button type="submit" class="btn" data-testid="filter-apply">Apply filters</button>
+  <a href="/insight/city" data-testid="filter-clear">Clear filters</a>
+</form>
+<p class="insight-def" data-testid="insight-quick-links">
+  Quick views:
+  <a href="/insight/city?category={{ v.restaurants_and_bars }}" data-testid="quick-restaurants-bars">Restaurants and bars</a> ·
+  <a href="/insight/city?type=zoning_variance&amp;exceptions=1" data-testid="quick-variances">Variances</a> ·
+  <a href="/insight/city?exceptions=1" data-testid="quick-exceptions">All exceptions</a>
+</p>
+
+<section class="card" aria-labelledby="map-heading" data-testid="insight-map-section">
+  <h2 id="map-heading">Permit activity by district</h2>
+  <p data-testid="insight-total"><strong>{{ v.total }}</strong> permits match these filters (of {{ v.total_before_filters }} in the view). {% if v.synthetic.included %}{{ synth_badge() }}{% endif %}</p>
+  <p class="insight-def">{{ v.definitions.permits }} {{ v.definitions.district }}</p>
+  {{ v.map.svg|safe }}
+  <ul class="insight-legend" data-testid="insight-legend">
+    {% for item in v.map.legend %}<li><span class="key {{ item.cls }}" aria-hidden="true"></span>{{ item.label }}</li>{% endfor %}
+    <li><span class="key dot" aria-hidden="true"></span>Parcel with exceptions (larger dot, more exceptions)</li>
+  </ul>
+  <table class="data-table" data-testid="district-table">
+    <caption>Permits and exceptions by district</caption>
+    <thead><tr><th scope="col">District</th><th scope="col">Permits</th><th scope="col">With exceptions</th><th scope="col">Variance requests</th></tr></thead>
+    <tbody>
+      {% for d in v.map.district_table %}
+      <tr data-district="{{ d.code }}"><th scope="row">{{ d.code }}</th><td>{{ d.permits }}</td><td>{{ d.exceptions }}</td><td>{{ d.variances }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="insight-def" data-testid="unmapped-note">Permits with no matched parcel (not drawn on the map): <strong data-testid="unmapped-count">{{ v.map.unmapped }}</strong>.</p>
+  <h3>Where exceptions cluster</h3>
+  <p class="insight-def">{{ v.definitions.exceptions }}</p>
+  <table class="data-table" data-testid="exception-clusters">
+    <caption>Parcels with the most exceptions</caption>
+    <thead><tr><th scope="col">Parcel</th><th scope="col">Address</th><th scope="col">District</th><th scope="col">Permits with exceptions</th></tr></thead>
+    <tbody>
+      {% for item in v.map.top_exception_parcels %}
+      <tr><th scope="row">{{ item.parcel }}</th><td>{{ item.address }}</td><td>{{ item.district }}</td><td>{{ item.count }}</td></tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No permit in this view carries an exception.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <table class="data-table" data-testid="exception-kinds">
+    <caption>Exceptions by kind ({{ v.exception_permits }} permits carry at least one)</caption>
+    <thead><tr><th scope="col">Kind</th><th scope="col">Permits</th></tr></thead>
+    <tbody>{% for e in v.exception_counts %}<tr><th scope="row">{{ e.label }}</th><td>{{ e.permits }}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+
+<section class="card" aria-labelledby="category-heading" data-testid="insight-categories">
+  <h2 id="category-heading">Business activity by category</h2>
+  <p class="insight-def">{{ v.definitions.category }}</p>
+  <p data-testid="dining-total"><strong>{{ v.categories.dining_total }}</strong> permits in this view are for restaurants and bars. {{ v.categories.linked_to_business }} permits are linked to a business.</p>
+  <table class="data-table" data-testid="category-table">
+    <caption>Permits linked to a business, by category</caption>
+    <thead><tr><th scope="col">Category</th><th scope="col">Permits</th><th scope="col">Approved</th><th scope="col">By district</th></tr></thead>
+    <tbody>
+      {% for c in v.categories.rows %}
+      <tr data-category="{{ c.key }}"><th scope="row">{{ c.label }}</th><td>{{ c.permits }}</td><td>{{ c.approved_or_issued }}</td><td>{% for code, n in c.by_district.items() %}{{ code }} {{ n }}{% if not loop.last %}, {% endif %}{% else %}none{% endfor %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>Where restaurants and bars are opening</h3>
+  <table class="data-table" data-testid="dining-sites">
+    <caption>Addresses with the most restaurant and bar permits in this view</caption>
+    <thead><tr><th scope="col">Address</th><th scope="col">District</th><th scope="col">Permits</th></tr></thead>
+    <tbody>
+      {% for s in v.categories.where_opening %}<tr><th scope="row">{{ s.address }}</th><td>{{ s.district }}</td><td>{{ s.permits }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">No restaurant or bar permit matches these filters.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card" aria-labelledby="trend-heading" data-testid="insight-trend">
+  <h2 id="trend-heading">Trend over time</h2>
+  <p class="insight-def">{{ v.definitions.trend }}</p>
+  {{ v.trend.svg|safe }}
+  <table class="data-table" data-testid="trend-table">
+    <caption>Permits submitted per month</caption>
+    <thead><tr><th scope="col">Month</th><th scope="col">Permits</th></tr></thead>
+    <tbody>{% for m in v.trend.rows %}<tr><th scope="row">{{ m.month }}</th><td>{{ m.permits }}</td></tr>{% else %}<tr><td colspan="2" class="muted">No permit matches these filters.</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+
+<section class="card" aria-labelledby="mix-heading">
+  <h2 id="mix-heading">Types and outcomes</h2>
+  <p class="insight-def">{{ v.definitions.outcome }}</p>
+  <div>
+    <table class="data-table" data-testid="type-table">
+      <caption>Permits by type</caption>
+      <thead><tr><th scope="col">Type</th><th scope="col">Permits</th></tr></thead>
+      <tbody>{% for t in v.by_type %}<tr><th scope="row">{{ t.label }}</th><td>{{ t.permits }}</td></tr>{% else %}<tr><td colspan="2" class="muted">No permit matches these filters.</td></tr>{% endfor %}</tbody>
+    </table>
+    <table class="data-table" data-testid="outcome-table">
+      <caption>Permits by outcome</caption>
+      <thead><tr><th scope="col">Outcome</th><th scope="col">Permits</th></tr></thead>
+      <tbody>{% for o in v.outcomes %}<tr><th scope="row">{{ o.label }}</th><td>{{ o.permits }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="rows-heading">
+  <h2 id="rows-heading">Permits in this view</h2>
+  <p class="insight-def">The newest {{ v.rows_shown }} of {{ v.total }}. Each links to its public record.</p>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="insight-rows">
+    <caption class="visually-hidden">Permits in this view</caption>
+    <thead><tr><th scope="col">Reference</th><th scope="col">Type</th><th scope="col">Address</th><th scope="col">District</th><th scope="col">Submitted</th><th scope="col">Outcome</th><th scope="col">Category</th><th scope="col">Exceptions</th></tr></thead>
+    <tbody>
+      {% for r in v.rows %}
+      <tr data-reference="{{ r.reference }}">
+        <th scope="row"><a href="/city/community/permit/{{ r.reference }}">{{ r.reference }}</a> {% if r.synthetic %}{{ synth_badge() }}{% endif %}</th>
+        <td>{{ r.type }}</td><td>{{ r.address }}</td><td>{{ r.district }}</td><td>{{ r.submitted }}</td><td>{{ r.outcome }}</td><td>{{ r.category }}</td><td>{{ r.exceptions|join(', ') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">No permit matches these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% include "components/evidence_panel.html" %}
+{% endblock %}

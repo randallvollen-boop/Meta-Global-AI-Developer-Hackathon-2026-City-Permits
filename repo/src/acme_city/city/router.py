@@ -11,11 +11,12 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
+from acme_city.insight import public as community
 from acme_city.ui.router import render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
@@ -190,6 +191,108 @@ def city_permits(
         permits_home=PERMITS_HOME,
     )
     return render(request, "city/permits_entry.html", context)
+
+
+def _wants_json(request: Request, format: str) -> bool:
+    return format == "json" or "application/json" in request.headers.get("accept", "")
+
+
+def _community_gate(
+    request: Request, session: Session, actor: ActorContext | None, as_json: bool
+):
+    """Return a 429 response when the caller is over the rate limit, else ``None``."""
+    client = request.client.host if request.client else "unknown"
+    if community.COMMUNITY_LIMITER.allow(client):
+        return None
+    headers = {"Retry-After": "60"}
+    if as_json:
+        return JSONResponse({"detail": "Too many requests. Try again in a minute."}, 429, headers)
+    context = city_context(
+        request, session, actor, title="Too many requests", active_nav="permits",
+        permits_crumb="/city/permits",
+    )
+    response = render(request, "city/rate_limited.html", context, status_code=429)
+    response.headers["Retry-After"] = "60"
+    return response
+
+
+@router.get("/community", operation_id="city_community", include_in_schema=False)
+def city_community(
+    request: Request,
+    q: str = "",
+    type: str = "",
+    format: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+):
+    """Permits in my community: public lookup and district totals (read-only)."""
+    as_json = _wants_json(request, format)
+    limited = _community_gate(request, session, actor, as_json)
+    if limited is not None:
+        return limited
+    summary = community.community_summary(session, type=type)
+    result = community.lookup(session, q) if q.strip() else None
+    if as_json:
+        body: dict[str, Any] = {
+            "fields": list(community.PUBLIC_FIELDS),
+            "total": summary["total"],
+            "districts": summary["districts"],
+            "synthetic_present": summary["synthetic_present"],
+        }
+        if result is not None:
+            body["query"] = result["query"]
+            body["result_total"] = result["total"]
+            body["permits"] = [r.as_dict() for r in result["records"]]
+        return JSONResponse(body)
+    context = city_context(
+        request,
+        session,
+        actor,
+        title="Permits in my community",
+        active_nav="permits",
+        permits_crumb="/city/permits",
+        summary=summary,
+        lookup=result,
+    )
+    return render(request, "city/community.html", context)
+
+
+@router.get(
+    "/community/permit/{reference}", operation_id="city_community_permit", include_in_schema=False
+)
+def city_community_permit(
+    reference: str,
+    request: Request,
+    format: str = "",
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+):
+    """One public permit record.  A non-public case answers exactly like a missing one."""
+    as_json = _wants_json(request, format)
+    limited = _community_gate(request, session, actor, as_json)
+    if limited is not None:
+        return limited
+    record = community.public_record(session, reference)
+    if record is None:
+        if as_json:
+            return JSONResponse({"detail": "No public permit has that number."}, 404)
+        context = city_context(
+            request, session, actor, title="Page not found", active_nav="permits",
+            permits_crumb="/city/permits",
+        )
+        return render(request, "city/not_found.html", context, status_code=404)
+    if as_json:
+        return JSONResponse(record.as_dict())
+    context = city_context(
+        request,
+        session,
+        actor,
+        title=f"Permit {record.reference}",
+        active_nav="permits",
+        permits_crumb="/city/permits",
+        record=record,
+    )
+    return render(request, "city/community_permit.html", context)
 
 
 @router.get("/{slug}", operation_id="city_service_page", include_in_schema=False)

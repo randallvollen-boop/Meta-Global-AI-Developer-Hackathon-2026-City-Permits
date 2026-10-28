@@ -282,6 +282,9 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 #: the Data Steward opens the intake queue and the early-resolution board
 #: (both behind a grant only that persona holds) and the Permit Reviewer
 #: opens the review queue.  No other persona gains a screen.
+#:
+#: P3insight adds the City view after those entries, behind its own grant
+#: (``insight.city.view``), which only the City Administrator holds.
 EXPECTED_NAVIGATION: dict[str, list[str]] = {
     "persona_applicant": ["queue", "applicants", "permit"],
     "persona_data_steward": [
@@ -314,6 +317,7 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "agent_intake",
         "agent_adjudication",
         "admin",
+        "insight_city",
     ],
 }
 

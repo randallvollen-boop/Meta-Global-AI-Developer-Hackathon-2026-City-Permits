@@ -641,6 +641,64 @@ application** (refused server-side unless complete and certified), **Save and
 exit** (a draft) and **Track an application**. Arrivals land as "Awaiting
 intake agent".
 
+## Community permit insight (synthetic year, City view, community view)
+
+Everything newly displayed here is **seeded synthetic data**, flagged `synthetic` on every row it writes and labelled "synthetic data" on screen. The default reset loads none of it, and no acceptance or D-fixture test reads it.
+
+### The demo-synthetic prepare mode
+
+```bash
+uv run python scripts/prepare_user_test.py --mode demo-synthetic
+# optional: --synthetic-seed 20261028 --synthetic-count 600
+```
+
+The mode resets the database to the fixtures and then loads the synthetic year with `scripts/load_synthetic_year.py` (it refuses a database that is not the marked fictional demo). Defaults: seed `20261028`, count `600`; both are bounded (seed 0 to 2147483647, count 1 to 2000) by `config/synthetic_distributions.json`, whose `distribution_version` is part of the seed. The same seed, count and version always give the same year.
+
+- One generator, `portal_intake/scenarios.py: generate_synthetic_year(seed=, count=)`, builds the cases; `fixtures/synthetic.py: load_synthetic_year` writes them. P3policy reuses the generator.
+- Twelve months of dated arrivals (window ends 2026-10-27), all 17 types across the three districts. Fences cluster in residential districts; restaurants, bars, patios, signs, fit-outs and changes of occupancy sit in the commercial corridor; variance requests concentrate in R-2 on a few parcels so the map shows a pattern.
+- Fence heights (front yard around 4 ft and 6 ft, side and rear yard around 6 ft and 7 ft) and shed areas (around 200 and 600 sq ft) fall on both sides of each threshold.
+- A case is a **historical record**: application, revision, site, parties, and a decision and permit where its lifecycle has one. No agent runs, no decision service runs, and **no audit event is written**. A decision names the actor `synthetic_history`, which is neither a persona nor an agent. The workspace of a synthetic case shows a "Synthetic history" panel instead of an audit history.
+- Synthetic cases carry scenario id `SYNTH`, so they never wait for the intake agent, and they are left out of every staff queue and work list. They appear in the City view, the community view and the property record.
+- **Reset to fixtures only:** run the default reset (`scripts/reset_demo.py --confirm-fictional-demo`, or `prepare_user_test.py --mode fresh`). It deletes every synthetic row with the rest of the data.
+
+### Business categories
+
+`credentials.business_category` (restaurant, bar, retail, office, other) is set on every business licence. Migration 0008 backfills the businesses that already exist from the words in their name, and the reset runs the same reported backfill (`business_categories_backfilled` in its output). Contractor registrations keep a blank category. Commercial permits link to the business, so they carry its category.
+
+### City view (City Administrator): `/insight/city`
+
+Opened by the grant `insight.city.view`, which only the City Administrator holds; it is the last entry of the navigation. Filters are query-string values and the screen works without JavaScript:
+
+| Parameter | Values |
+|---|---|
+| `type` | a permit type key, for example `deck_fence` |
+| `outcome` | `approved`, `conditions`, `denied`, `undecided` |
+| `period` | `all` (default), `30d`, `90d`, `6m`, `12m` |
+| `category` | one or more of `restaurant,bar,retail,office,other` (comma separated) |
+| `exceptions` | `1` for variances, waivers, denials and approvals with conditions only |
+| `synthetic` | `include` (default) or `exclude` |
+
+Quick views: `/insight/city?category=restaurant,bar` (restaurants and bars) and `/insight/city?type=zoning_variance&exceptions=1` (variances). The page has the district-shaded map (darker is more permits; orange dots mark parcels with exceptions, larger is more) with the district table, exceptions by kind and parcel, business activity by category, the monthly trend (SVG and table), and the permits in the view. Every figure is a count over the stored applications and its definition is printed beside it. A permit with no matched parcel is counted in the total and reported as "no matched parcel" instead of being drawn. The "Start a what-if from this view" control is absent until P3policy exists.
+
+### Permits in my community (public): `/city/community`
+
+On the City of Acme website, linked from `/city/permits` and the home page services. No persona or sign-in; read-only (other methods answer 405); rate limited per client address (60 requests a minute, `429` with `Retry-After`).
+
+- `/city/community` shows the district-shaded map and district totals, with an optional type filter.
+- `/city/community?q=<address, street or permit number>` looks permits up.
+- `/city/community/permit/<number>` is one public record. Add `?format=json` (or send `Accept: application/json`) for the JSON of any of these.
+- The public read model (`insight/public.py`) is an allowlist of 17 fields: reference, permit number, type, parcel, address, district, work description, public status, submitted / decided / issued dates, outcome, conditions, exception marker, **contractor business name** and the synthetic flag. It never holds an applicant or homeowner name, a document, a note or comment, a contact detail, a fee, a finding, a draft, or an internal id.
+- Drafts, withdrawn, returned and archived cases and anything before submission are not public. A case that is not public answers exactly like a number that does not exist.
+- Any district or filter total under 3 shows as "fewer than 3" (the district is hatched on the map).
+
+### Simulated departments
+
+`config/property_subscribers.json` now holds six simulated subscribers of the property master. Sanitation (next collection day) and Police (licensed late-night premises, from the bar-category businesses sited on the parcel) join the four from phase 2, under a visible "Simulated departments" heading in the property record's Shared with panel and in Governance and sources. All signals are synthetic.
+
+### Model source label
+
+Every model run shown on the evidence panel and the workspace carries a source label such as "Muse Spark (live)" or "Muse Spark (replay)" with tokens and latency. The macro `templates/components/muse_source.html` is the one to reuse on the chat, briefing and what-if screens when they are built.
+
 ## Fence flow
 
 ```mermaid

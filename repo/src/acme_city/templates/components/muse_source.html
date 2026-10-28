@@ -1,0 +1,7 @@
+{# The source line of one model run: "Muse Spark (live)" with usage and latency.
+   Shared by every screen that shows model output (extraction evidence, the
+   applicant chat, the council briefing, the what-if). Pass a run dict from
+   ``view_models.model_runs``. #}
+{% macro muse_source(run) %}
+<span class="muse-source" data-testid="muse-source" data-mode="{{ run.mode }}">{{ run.source_label }}<span class="muse-usage"> · {{ run.usage.get('input_tokens', 0) }} in · {{ run.usage.get('output_tokens', 0) }} out{% if run.latency_ms is not none %} · {{ run.latency_ms }} ms{% endif %}</span></span>
+{% endmacro %}

@@ -598,6 +598,59 @@ def ui_review_queue(
     return render(request, "review_queue.html", context)
 
 
+@router.get("/insight/city", operation_id="ui_insight_city")
+def ui_insight_city(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    type: str = "",
+    outcome: str = "",
+    period: str = "",
+    category: str = "",
+    exceptions: str = "",
+    synthetic: str = "",
+) -> Any:
+    """Show the City view: permit activity across the city (read-only)."""
+    resolved, refused = _guard(request, session, actor, "insight_city")
+    if refused is not None:
+        return refused
+    from acme_city.insight.city_view import city_view
+
+    view = city_view(
+        session,
+        type=type,
+        outcome=outcome,
+        period=period,
+        category=category,
+        exceptions=exceptions,
+        synthetic=synthetic,
+    )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="insight_city",
+        title="City view",
+        view=view,
+        model_runs=[],
+        evidence=[
+            {
+                "label": "Stored applications, decisions and permits",
+                "kind": "database query",
+                "detail": f"{view['total_before_filters']} permits in the view; every figure is a count over these rows",
+                "received_at": None,
+            },
+            {
+                "label": "Synthetic data",
+                "kind": "label",
+                "detail": view["synthetic"]["note"],
+                "received_at": None,
+            },
+        ],
+    )
+    return render(request, "insight_city.html", context)
+
+
 @router.get("/applicants", operation_id="ui_applicants")
 def ui_applicants(
     request: Request,

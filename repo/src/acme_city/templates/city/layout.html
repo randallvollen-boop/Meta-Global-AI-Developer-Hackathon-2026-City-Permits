@@ -53,7 +53,7 @@
     <ol>
       <li><a href="/city/">Home</a></li>
       {% if active == 'permits' %}
-      <li>{% if on_chooser or title == 'Permits' %}<span aria-current="page">Permits</span>{% else %}<a href="/apply">Permits</a>{% endif %}</li>
+      <li>{% if on_chooser or title == 'Permits' %}<span aria-current="page">Permits</span>{% else %}<a href="{{ permits_crumb|default('/apply') }}">Permits</a>{% endif %}</li>
       {% if not on_chooser and title != 'Permits' %}<li><span aria-current="page">{{ title }}</span></li>{% endif %}
       {% elif active != 'home' %}
       <li><span aria-current="page">{{ title }}</span></li>

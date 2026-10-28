@@ -43,6 +43,8 @@ CONTROL_SCREENS = (
     "/agent/intake",
     "/agent/adjudication",
     "/admin",
+    # P3insight: the City view, behind its own grant of the City Administrator.
+    "/insight/city",
 )
 
 #: The screens parity phase 3b added, with the persona that may open them.
@@ -144,7 +146,8 @@ def test_every_control_of_every_new_screen_carries_a_label(
 
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
-    # City Administrator holds grants for all eleven of the original screens,
+    # City Administrator holds grants for all eleven of the original screens and the
+    # P3insight City view (twelve),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
@@ -152,7 +155,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 11, path
+        assert len(items) == 12, path
         if reference is None:
             reference = items
         assert items == reference
@@ -190,6 +193,8 @@ SCREEN_PATHS = {
     "intake_queue": "/queue/intake",
     "early_resolution": "/queue/early-resolution",
     "review_queue": "/queue/review",
+    # P3insight adds the City view after those entries.
+    "insight_city": "/insight/city",
 }
 
 #: The screens each persona may open (same table as the view-model tests).
@@ -229,6 +234,7 @@ EXPECTED_NAVIGATION = {
         "agent_intake",
         "agent_adjudication",
         "admin",
+        "insight_city",
     ],
 }
 

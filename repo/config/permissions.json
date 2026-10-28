@@ -320,6 +320,13 @@
       "sensitive": false
     },
     {
+      "permission_id": "insight.city.view",
+      "action": "insight.city.view",
+      "category": "insight",
+      "description": "Open the City view: permit activity, business categories and exceptions across the city, with synthetic data labelled.",
+      "sensitive": false
+    },
+    {
       "permission_id": "permit.case.archive",
       "action": "permit.case.archive",
       "category": "permit",
@@ -482,6 +489,7 @@
       "agent.run.intake",
       "agent.toggle",
       "config.manage",
+      "insight.city.view",
       "permit.case.archive",
       "permit.case.restore",
       "permit.icon.generate",

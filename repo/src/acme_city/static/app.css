@@ -778,6 +778,31 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .form-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill-legend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
 
+/* ---- Community permit insight: district-shaded map, bars, badges ---- */
+.insight-parcel path { stroke: var(--ink-2, #55616d); stroke-width: 1; }
+.insight-shade-0 path { fill: #f4f6f8; }
+.insight-shade-1 path { fill: #d6e6f5; }
+.insight-shade-2 path { fill: #a9cbea; }
+.insight-shade-3 path { fill: #6ea6d8; }
+.insight-shade-4 path { fill: #2f7cc0; }
+.insight-hatch path { fill: url(#insight-hatch); }
+.insight-hatch-bg { fill: #f4f6f8; }
+.insight-hatch-line { stroke: #8a96a3; stroke-width: 2; }
+.insight-district-code { font: 700 22px sans-serif; fill: #14202b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+.insight-district-figure { font: 600 17px sans-serif; fill: #14202b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+.insight-dot circle { fill: #d9480f; fill-opacity: .82; stroke: #fff; stroke-width: 1.5; }
+.insight-dot text { font: 700 10px sans-serif; fill: #fff; }
+.insight-legend { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; list-style: none; padding: 0; margin: .5rem 0; }
+.insight-legend .key { display: inline-block; width: 1.1rem; height: 1.1rem; vertical-align: -.2rem; border: 1px solid #55616d; margin-right: .3rem; }
+.insight-legend .key.s0 { background: #f4f6f8; } .insight-legend .key.s1 { background: #d6e6f5; }
+.insight-legend .key.s2 { background: #a9cbea; } .insight-legend .key.s3 { background: #6ea6d8; } .insight-legend .key.s4 { background: #2f7cc0; }
+.insight-legend .key.dot { background: #d9480f; border-radius: 50%; }
+.insight-filters { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: end; margin: 1rem 0; }
+.insight-filters label { display: flex; flex-direction: column; font-weight: 600; gap: .2rem; }
+.insight-bars rect { fill: #2f7cc0; }
+.insight-bars text { font: 12px sans-serif; fill: #14202b; }
+.badge-synthetic { background: #fff3bf; color: #5c4400; border: 1px solid #c9a227; border-radius: .25rem; padding: 0 .4rem; font-size: .8em; font-weight: 600; white-space: nowrap; }
+.insight-def { color: #55616d; font-size: .9em; }
 /* Required markers and guarded-button explanations. */
 .req-star { color: var(--danger, #b3261e); font-weight: 700; margin-left: 0.15em; }
 .required-legend { margin: 0.25rem 0; }

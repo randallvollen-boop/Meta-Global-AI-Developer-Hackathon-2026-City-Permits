@@ -102,3 +102,9 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
   .city-hero { padding: 28px 20px; }
 }
 @media print { .city-nav, .city-demo { display: none; } }
+
+/* Permits in my community */
+.city-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 20px; margin: 16px 0; }
+.city-facts dt { font-weight: 700; }
+.city-facts dd { margin: 0; }
+@media (max-width: 640px) { .city-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; } .city-facts dd { margin-bottom: 10px; } }
