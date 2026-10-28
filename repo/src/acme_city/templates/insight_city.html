@@ -56,6 +56,12 @@
   <button type="submit" class="btn" data-testid="filter-apply">Apply filters</button>
   <a href="/insight/city" data-testid="filter-clear">Clear filters</a>
 </form>
+{% if can_start_whatif %}
+<p class="insight-def" data-testid="insight-start-whatif">
+  <a class="button btn" href="/policy/scenarios{% if whatif_query %}?{{ whatif_query }}{% endif %}" data-testid="start-whatif">Start a what-if from this view</a>
+  {% if whatif_query %}<span class="muted">The current type and business category become the starting population.</span>{% else %}<span class="muted">No filter is set, so the starting population is every type.</span>{% endif %}
+</p>
+{% endif %}
 <p class="insight-def" data-testid="insight-quick-links">
   Quick views:
   <a href="/insight/city?category={{ v.restaurants_and_bars }}" data-testid="quick-restaurants-bars">Restaurants and bars</a> ·

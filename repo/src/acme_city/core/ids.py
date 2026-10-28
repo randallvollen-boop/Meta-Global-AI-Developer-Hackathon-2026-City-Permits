@@ -79,6 +79,9 @@ ID_PREFIXES: frozenset[str] = frozenset(
         "modelin",
         "modelout",
         "impact",
+        "polscen",
+        "polrev",
+        "polrun",
     }
 )
 

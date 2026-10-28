@@ -123,6 +123,14 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
         "help_turns",
         "help_requests",
     ),
+    # Parity phase 3 policy 2: what-if scenarios, their revisions and the
+    # immutable runs.  Added to the required groups deliberately: the three
+    # tables are new schema, not an accident.
+    "policy_whatif": (
+        "policy_scenarios",
+        "policy_scenario_revisions",
+        "policy_runs",
+    ),
 }
 
 
@@ -310,8 +318,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0009 since the P3insight migration (synthetic flags, business categories).
-    assert health.revision == "0009"
+    # Head is 0010 since the policy 2 migration (after 0009, the P3insight migration) (synthetic flags, business categories).
+    assert health.revision == "0010"
     assert database.database_url not in str(health.to_dict())
 
 

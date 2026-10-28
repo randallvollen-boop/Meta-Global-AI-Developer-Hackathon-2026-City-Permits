@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<div class="policy-screen">
+<div class="page-head">
+  <div>
+    <h1>{{ scenario.name }}</h1>
+    <p class="sub">Revision {{ scenario.revision }} · <a href="/policy/scenarios">All what-ifs</a></p>
+  </div>
+  <div class="actions">{{ ui.help_button('policy_scenarios') }}</div>
+</div>
+
+{% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
+<p class="muted">* Required &nbsp;·&nbsp; Fields marked (optional) can be left empty.</p>
+
+<section class="card" aria-labelledby="changes-heading" data-testid="policy-changes">
+  <h2 id="changes-heading">Changes in this what-if</h2>
+  <ol data-testid="policy-change-list">
+    {% for c in changes %}
+    <li data-testid="policy-change">{{ c.text }}
+      <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="expected_version" value="{{ scenario.version }}">
+        <input type="hidden" name="operation" value="remove_change">
+        <input type="hidden" name="change_index" value="{{ c.index }}">
+        <button type="submit" class="button btn sm" data-testid="policy-remove-change">Remove</button>
+      </form>
+    </li>
+    {% else %}
+    <li class="muted" data-testid="policy-no-changes">No change yet. Add one below.</li>
+    {% endfor %}
+  </ol>
+  {% if has_retirement %}<p class="callout" data-testid="policy-retire-note">{{ retire_note }}</p>{% endif %}
+  {% if check.unsupported %}
+  <div class="callout" role="alert" data-testid="policy-unsupported">
+    <p><strong>Not supported in this release.</strong></p>
+    <ul>{% for u in check.unsupported %}<li data-testid="policy-unsupported-item">Change {{ u.index + 1 }}: {{ u.message }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+  {% if check.issues %}
+  <div class="callout" role="alert" data-testid="policy-issues"><ul>{% for i in check.issues %}<li>{{ i }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if check.affected %}
+  <p class="muted" data-testid="policy-affected">Permit types touched: {% for a in check.affected %}{{ a.types|join(', ') }}{% if not loop.last %}; {% endif %}{% endfor %}.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="add-heading" data-testid="policy-add">
+  <h2 id="add-heading">Add a change</h2>
+  <p class="muted">Each change is checked against today's published rules. These kinds are supported.</p>
+
+  <details open>
+    <summary>Change a rule's limit or operator</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-threshold">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="rule_threshold">
+      <p class="field"><label for="t-rule">Rule <span aria-hidden="true">*</span></label>
+        <select id="t-rule" name="rule_id" required aria-required="true">
+          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.citation }} · {{ r.rule_id }} · {{ r.type }} ({{ r.operator }} {{ r.limit }}{% if r.unit %} {{ r.unit }}{% endif %})</option>{% endfor %}
+        </select></p>
+      <p class="field"><label for="t-limit">New limit (optional)</label><input id="t-limit" name="limit_value" inputmode="decimal"></p>
+      <p class="field"><label for="t-op">New operator (optional)</label>
+        <select id="t-op" name="operator"><option value="">Keep the current operator</option>{% for o in options.operators %}<option value="{{ o }}">{{ o }}</option>{% endfor %}</select></p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-threshold-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Retire a rule for every case</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-retirement">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="rule_retirement">
+      <p class="field"><label for="r-rule">Rule <span aria-hidden="true">*</span></label>
+        <select id="r-rule" name="rule_id" required aria-required="true">
+          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.citation }} · {{ r.rule_id }} · {{ r.type }}</option>{% endfor %}
+        </select></p>
+      <p class="muted">{{ retire_note }}</p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-retirement-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Add or remove a required field or document</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-requirement">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="requirement">
+      <p class="field"><label for="q-type">Permit type <span aria-hidden="true">*</span></label>
+        <select id="q-type" name="permit_type_key" required aria-required="true">{% for t in options.types %}<option value="{{ t.key }}">{{ t.label }}</option>{% endfor %}</select></p>
+      <p class="field"><label for="q-kind">Field or document <span aria-hidden="true">*</span></label>
+        <select id="q-kind" name="item_kind"><option value="document">document</option><option value="field">field</option></select></p>
+      <p class="field"><label for="q-action">Action <span aria-hidden="true">*</span></label>
+        <select id="q-action" name="action"><option value="add">Require it</option><option value="remove">Stop requiring it</option></select></p>
+      <p class="field"><label for="q-item">Name, for example site_plan <span aria-hidden="true">*</span></label><input id="q-item" name="item" required aria-required="true"></p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-requirement-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Move a permit type to another process category</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-category">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="process_category">
+      <p class="field"><label for="c-type">Permit type <span aria-hidden="true">*</span></label>
+        <select id="c-type" name="permit_type_key" required aria-required="true">{% for t in options.types %}<option value="{{ t.key }}">{{ t.label }} (now {{ t.process_category or 'none' }})</option>{% endfor %}</select></p>
+      <p class="field"><label for="c-cat">Process category <span aria-hidden="true">*</span></label>
+        <select id="c-cat" name="process_category">{% for c in options.process_categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-category-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Make a permit type by right, or discretionary</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-discretionary">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="discretionary">
+      <p class="field"><label for="d-type">Permit type <span aria-hidden="true">*</span></label>
+        <select id="d-type" name="permit_type_key" required aria-required="true">{% for t in options.types %}<option value="{{ t.key }}">{{ t.label }} ({{ 'discretionary' if t.discretionary else 'by right' }} now)</option>{% endfor %}</select></p>
+      <p class="field"><label for="d-val">Discretionary <span aria-hidden="true">*</span></label>
+        <select id="d-val" name="discretionary"><option value="no">No, by right</option><option value="yes">Yes, discretionary</option></select></p>
+      <p class="muted">By right removes only the discretionary recommendation hold. A person still decides, and the identity, parcel, credential, finance and missing-input safeguards stay.</p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-discretionary-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Change a service target</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-target">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="service_target">
+      <p class="field"><label for="s-type">Permit type <span aria-hidden="true">*</span></label>
+        <select id="s-type" name="permit_type_key" required aria-required="true">{% for t in options.types %}<option value="{{ t.key }}">{{ t.label }} (now {{ t.service_target_days }} days)</option>{% endfor %}</select></p>
+      <p class="field"><label for="s-days">Service target in whole days, 1 to 365 <span aria-hidden="true">*</span></label><input id="s-days" name="service_target_days" inputmode="numeric" required aria-required="true"></p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-target-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details>
+    <summary>Change a fee: a fixed charge or a valuation multiplier</summary>
+    <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-fee">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+      <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="fee">
+      <p class="field"><label for="f-sched">Fee schedule <span aria-hidden="true">*</span></label>
+        <select id="f-sched" name="fee_schedule_id">{% for f in options.fee_schedules %}<option value="{{ f }}">{{ f }}</option>{% endfor %}</select></p>
+      <p class="field"><label for="f-fixed">New fixed charge in cents (optional)</label><input id="f-fixed" name="fixed_review_charge_cents" inputmode="numeric"></p>
+      <p class="field"><label for="f-mult">New valuation multiplier (optional)</label><input id="f-mult" name="valuation_multiplier" inputmode="decimal"></p>
+      <p class="muted">Every permit type that shares the schedule is affected. Totals are shown as hypothetical assessed fees.</p>
+      <p><button type="submit" class="button btn" data-testid="policy-add-fee-submit">Add this change</button></p>
+    </form>
+  </details>
+
+  <details data-testid="policy-unsupported-kinds">
+    <summary>Not supported in this release</summary>
+    <ul>
+      {% for u in options.unsupported_kinds %}
+      <li>{{ u.label }}.
+        <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" class="inline-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+          <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="{{ u.key }}">
+          <button type="submit" class="button btn sm" data-testid="policy-add-unsupported" data-kind="{{ u.key }}">Try it and see the response</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="muted">“No permit required” and conditional exemptions are not supported in this release. A what-if that holds one is refused with an explicit response and is not run.</p>
+  </details>
+</section>
+
+<section class="card" aria-labelledby="run-heading" data-testid="policy-run-panel">
+  <h2 id="run-heading">Run this what-if</h2>
+  <p class="muted">The run scores the same frozen cases twice: under today's published rules and under this what-if. {% if starting_text %}Starting population from the City view: {{ starting_text }}.{% endif %}</p>
+  <form method="post" action="/policy/scenarios/{{ scenario.id }}/run" data-testid="policy-run-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+    <p class="field"><label for="run-kind">Population {{ ui.info('policy_population') }}</label>
+      <select id="run-kind" name="kind" data-testid="policy-run-kind">
+        <option value="synthetic_year" selected>Synthetic year (sample data)</option>
+        <option value="current_applications">Retrospective re-scoring: current applications</option>
+        <option value="decided_range">Retrospective re-scoring: applications decided in a date range</option>
+      </select></p>
+    <fieldset><legend>Synthetic year settings</legend>
+      <p class="field"><label for="run-seed">Seed</label><input id="run-seed" name="seed" inputmode="numeric" value="{{ run_defaults.seed }}"></p>
+      <p class="field"><label for="run-count">Number of cases, 1 to 2000</label><input id="run-count" data-testid="policy-run-count" name="count" inputmode="numeric" value="{{ run_defaults.count }}"></p>
+    </fieldset>
+    <fieldset><legend>Date range (decided applications only)</legend>
+      <p class="field"><label for="run-start">Decided from, for example 2026-01-01 (optional)</label><input id="run-start" name="range_start"></p>
+      <p class="field"><label for="run-end">Decided before, for example 2026-12-31 (optional)</label><input id="run-end" name="range_end"></p>
+    </fieldset>
+    <fieldset><legend>Narrow the population (optional)</legend>
+      <p class="field"><label for="run-type">Permit type</label>
+        <select id="run-type" name="permit_type"><option value="">Every type</option>{% for t in options.types %}<option value="{{ t.key }}"{% if run_defaults.permit_type == t.key %} selected{% endif %}>{{ t.label }}</option>{% endfor %}</select></p>
+      <p class="field"><label for="run-district">District, for example R-1 (optional)</label><input id="run-district" name="district" value="{{ run_defaults.district }}"></p>
+      <p class="field"><label for="run-category">Business category, synthetic year only (optional)</label><input id="run-category" name="category" value="{{ run_defaults.category }}"></p>
+    </fieldset>
+    {% set blocked = (not can_run) or (not changes) or (check.unsupported) or (check.issues) %}
+    <p><button type="submit" class="button btn primary button-primary" data-testid="policy-run-submit"{% if blocked %} disabled aria-describedby="policy-run-reason"{% endif %}>Run what-if</button></p>
+    {% if blocked %}
+    <div class="lock" id="policy-run-reason" data-testid="policy-run-reason">
+      <p style="margin:0">Run is unavailable:</p>
+      <ul style="margin:.2rem 0 0 1.1rem">
+        {% if not can_run %}<li>Your role cannot do this.</li>{% endif %}
+        {% if not changes %}<li data-testid="policy-run-no-changes">Add at least one change first (see Add a change).</li>{% endif %}
+        {% if check.unsupported %}<li data-testid="policy-run-unsupported">A change in this what-if is not supported in this release. Remove it first (see Changes).</li>{% endif %}
+        {% if check.issues %}<li>A change cannot be applied to today's rules. Remove or correct it (see Changes).</li>{% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </form>
+</section>
+
+<section class="card" aria-labelledby="rename-heading">
+  <h2 id="rename-heading">Name, revisions and delete</h2>
+  <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-rename-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+    <input type="hidden" name="operation" value="rename">
+    <p class="field"><label for="rn-name">Name <span aria-hidden="true">*</span></label><input id="rn-name" name="name" maxlength="200" required aria-required="true" value="{{ scenario.name }}"></p>
+    <p><button type="submit" class="button btn" data-testid="policy-rename">Save the name as a new revision</button></p>
+  </form>
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-revisions">
+    <caption>Saved revisions</caption>
+    <thead><tr><th scope="col">Revision</th><th scope="col">Made by</th><th scope="col">Changes</th><th scope="col">Saved</th><th scope="col">Content hash {{ ui.info('policy_content_hash') }}</th></tr></thead>
+    <tbody>{% for r in revisions %}<tr><th scope="row">{{ r.number }}</th><td>{{ r.operation }}</td><td>{{ r.changes }}</td><td class="mono">{{ r.created_at }}</td><td class="mono">{{ r.hash }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <form method="post" action="/policy/scenarios/{{ scenario.id }}/delete" data-testid="policy-delete-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
+    <p class="muted">Deleting hides the what-if from the list. Its revisions and the runs made from it are kept.</p>
+    <p><button type="submit" class="button btn" data-testid="policy-delete">Delete this what-if</button></p>
+  </form>
+</section>
+
+<section class="card" aria-labelledby="runs-heading" data-testid="policy-scenario-runs">
+  <h2 id="runs-heading">Runs of this what-if</h2>
+  <ul>
+    {% for r in runs %}<li><a href="/policy/runs/{{ r.id }}">Run of revision {{ r.revision }}</a>: {{ r.population }}{% if r.synthetic %} <span class="badge-synthetic">synthetic data</span>{% endif %}, {{ r.size }} cases, <span class="mono">{{ r.created_at }}</span></li>
+    {% else %}<li class="muted">No run yet.</li>{% endfor %}
+  </ul>
+</section>
+{% include "components/evidence_panel.html" %}
+</div>
+{% endblock %}

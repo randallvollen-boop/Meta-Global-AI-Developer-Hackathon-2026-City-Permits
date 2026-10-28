@@ -834,3 +834,21 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 }
 .account-line { margin: 0 0 8px; font-size: .82rem; }
 @media (max-width: 760px) { .account-dept { display: none; } .toast { top: 56px; } }
+
+/* ---- What-if (policy 2): padding, callouts and narrow-screen fit ---- */
+.policy-screen section.card, .policy-screen article.card { padding: 14px 16px; margin: 14px 0; }
+.policy-screen select, .policy-screen input:not([type="hidden"]):not([type="checkbox"]) { max-width: 100%; box-sizing: border-box; }
+.policy-screen .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 8px 12px; border-radius: 6px; }
+.policy-screen .inline-form { display: inline; }
+.policy-screen details { margin: 8px 0; }
+.policy-screen fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 8px 0; min-width: 0; }
+.policy-screen .lock { flex-direction: column; align-items: flex-start; font-size: .82rem; color: var(--fg-2); margin-top: 6px; }
+.policy-screen .field { margin: 6px 0; }
+.policy-screen .field label { display: block; font-weight: 600; }
+.policy-screen .page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.policy-screen ul.policy-suggestions { list-style: none; padding: 0; }
+.policy-screen ul.policy-suggestions li { margin: 8px 0; }
+.policy-screen .mono { overflow-wrap: anywhere; }
+.policy-screen .btn, .policy-screen .button { white-space: normal; text-align: left; max-width: 100%; }
+.policy-screen .inline-form { display: inline-block; max-width: 100%; }
+.policy-screen h1, .policy-screen h2, .policy-screen li, .policy-screen p { overflow-wrap: anywhere; }

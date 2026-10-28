@@ -17,6 +17,7 @@ import hashlib
 from types import SimpleNamespace
 import hmac
 import json
+from urllib.parse import urlencode
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -632,6 +633,19 @@ def ui_insight_city(
         screen="insight_city",
         title="City view",
         view=view,
+        can_start_whatif=view_models.holds_grant(
+            session, resolved, "policy.scenario.manage", None
+        ),
+        whatif_query=urlencode(
+            {
+                name: value
+                for name, value in (
+                    ("type", view["filters"]["type"]),
+                    ("category", ",".join(view["filters"]["category"])),
+                )
+                if value
+            }
+        ),
         model_runs=[],
         evidence=[
             {
@@ -2777,9 +2791,11 @@ router.include_router(_help_routes.router)
 router.include_router(_portal_routes.router)
 
 from acme_city.ui import detail_routes as _detail_routes  # noqa: E402
+from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 
 patterns.install(templates)
 router.include_router(_detail_routes.router)
+router.include_router(_policy_routes.router)
 
 
 __all__ = [
