@@ -610,6 +610,11 @@ def reset_demo(
             )
         )
     counts["credentials"] = len(population.credentials)
+    session.flush()
+    # The business categories of the licences, filled by the reported backfill.
+    from acme_city.fixtures.synthetic import backfill_business_categories
+
+    counts["business_categories_backfilled"] = backfill_business_categories(session)["total"]
 
     for account in population.finance_accounts:
         session.add(

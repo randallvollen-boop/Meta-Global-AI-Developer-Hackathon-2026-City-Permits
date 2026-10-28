@@ -64,6 +64,34 @@
       "contract_text": "Reads the official address and unit list to match service accounts to a parcel. Writes nothing back.",
       "signal_key": "utility_account_active",
       "signal_label": "Service account active (synthetic)"
+    },
+    {
+      "department_key": "sanitation",
+      "department_label": "Sanitation",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "ADDRESSID",
+        "UNITID",
+        "USECD"
+      ],
+      "contract_text": "Reads the official address, unit list and use code to plan collection routes and commercial pickups. Writes nothing back.",
+      "signal_key": "next_collection_day",
+      "signal_label": "Next collection day (synthetic)"
+    },
+    {
+      "department_key": "police",
+      "department_label": "Police",
+      "consumed_fields": [
+        "PARCELID",
+        "SITEADDRESS",
+        "USECD",
+        "USEDSCRP",
+        "BUSLICCAT"
+      ],
+      "contract_text": "Reads the address, parcel use and business licence category (for example bars) to plan premises checks and patrols. Writes nothing back.",
+      "signal_key": "late_night_premises",
+      "signal_label": "Licensed late-night premises (synthetic)"
     }
   ]
 }

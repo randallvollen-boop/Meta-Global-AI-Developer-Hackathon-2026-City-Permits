@@ -1,0 +1,84 @@
+{
+  "distribution_version": "1",
+  "population_id": "synthetic-year-v1",
+  "fictional_demo": true,
+  "note": "Versioned distributions for the seeded synthetic permit history. Everything here is fictional ACME data. A generated row is flagged synthetic, is never loaded by the default reset, and is never counted by an acceptance or fixture test. Weights are relative, not percentages.",
+  "limits": {"min_count": 1, "max_count": 2000, "default_count": 600, "max_seed": 2147483647, "default_seed": 20261028},
+  "window": {"end": "2026-10-27T17:00:00Z", "days": 365},
+  "district_weights": {"R-1": 40, "R-2": 25, "C-2": 35},
+  "type_weights": {
+    "R-1": {"deck_fence": 32, "shed": 14, "res_building": 8, "hvac": 10, "water_heater": 8, "residential_electric": 8, "pod": 6, "row_encroachment": 3, "zoning_variance": 2, "certificate_appropriateness": 3, "rezoning": 1, "site_plan_review": 1},
+    "R-2": {"deck_fence": 22, "shed": 10, "res_building": 8, "hvac": 8, "water_heater": 6, "residential_electric": 6, "pod": 5, "row_encroachment": 3, "zoning_variance": 16, "certificate_appropriateness": 3, "rezoning": 2, "site_plan_review": 3},
+    "C-2": {"com_ti": 16, "sign": 14, "patio": 12, "change_occupancy": 14, "fire_alarm": 10, "hvac": 4, "row_encroachment": 5, "site_plan_review": 4, "pod": 3, "zoning_variance": 2, "rezoning": 2, "certificate_appropriateness": 1}
+  },
+  "variance_cluster": {"district": "R-2", "parcel_count": 5, "share": 0.75},
+  "month_weights": [6, 7, 9, 10, 11, 10, 9, 9, 8, 8, 7, 6],
+  "channel_weights": {"portal": 55, "counter_scan": 18, "email": 14, "mail": 9, "fax": 4},
+  "priority_high_share": 0.08,
+  "lifecycle": {
+    "decision_days": {"simple": [1, 6], "with_plans": [4, 14], "formal_review": [10, 35]},
+    "issue_days": [1, 8],
+    "share_issued_after_approval": 0.92
+  },
+  "side_outcomes": {"withdrawn": 0.04, "returned": 0.03, "archived": 0.015},
+  "discretionary_outcomes": {"approved": 0.4, "approved_with_conditions": 0.2, "denied": 0.4},
+  "judgment_approval_with_conditions_share": 0.7,
+  "waiver_share_of_approvals": 0.06,
+  "fence": {
+    "share_of_deck_fence": 0.78,
+    "front_share": 0.35,
+    "front_heights_ft": {"3": 6, "4": 22, "5": 12, "6": 18, "6.5": 6, "7": 14, "8": 4},
+    "side_rear_heights_ft": {"4": 6, "5": 8, "5.5": 6, "6": 28, "6.5": 10, "7": 24, "7.5": 6, "8": 6}
+  },
+  "shed_area_sqft": {"80": 4, "120": 10, "160": 8, "192": 8, "200": 12, "201": 6, "240": 10, "300": 8, "400": 6, "500": 4, "600": 4, "601": 3, "640": 3, "720": 2},
+  "contractor_share": {"deck_fence": 0.25, "shed": 0.2, "pod": 0.0, "default": 1.0, "none": ["pod", "certificate_appropriateness", "rezoning", "site_plan_review", "zoning_variance"]},
+  "contractor_trade": {
+    "deck_fence": "fencing", "shed": "general", "res_building": "general", "com_ti": "general", "patio": "general",
+    "change_occupancy": "general", "sign": "signage", "hvac": "mechanical", "water_heater": "mechanical",
+    "residential_electric": "electrical", "fire_alarm": "fire", "row_encroachment": "general"
+  },
+  "contractors": {
+    "general": ["Ridgeback Builders LLC", "Copperfield Construction LLC", "Larkspur Build Group LLC", "Northgate Contracting LLC"],
+    "fencing": ["Harrow Fence and Deck LLC", "Plumb Line Fencing LLC", "Cedar Post Fence Works LLC"],
+    "mechanical": ["Tidewater Heating and Air LLC", "Brightflow Plumbing and Heating LLC", "Summit Comfort Systems LLC"],
+    "electrical": ["Voltline Electric LLC", "Kilowatt Brothers Electric LLC"],
+    "signage": ["Beacon Sign Works LLC", "Brightmark Signs LLC"],
+    "fire": ["Emberwatch Fire Systems LLC", "Safeguard Alarm Services LLC"]
+  },
+  "business_category_weights": {"restaurant": 32, "bar": 14, "retail": 22, "office": 16, "other": 16},
+  "business_category_weights_by_type": {
+    "patio": {"restaurant": 55, "bar": 30, "retail": 5, "office": 2, "other": 8},
+    "change_occupancy": {"restaurant": 40, "bar": 22, "retail": 20, "office": 8, "other": 10},
+    "sign": {"restaurant": 25, "bar": 12, "retail": 35, "office": 12, "other": 16},
+    "fire_alarm": {"restaurant": 30, "bar": 20, "retail": 18, "office": 18, "other": 14}
+  },
+  "commercial_types": ["com_ti", "change_occupancy", "patio", "sign", "fire_alarm"],
+  "businesses": {
+    "restaurant": ["Marrow Creek Grill", "Lantern Row Kitchen", "Copper Kettle Cafe", "Saffron Table Restaurant", "Harbor Lane Bistro", "Kestrel Corner Bakery", "Juniper Noodle House", "Old Mill Diner"],
+    "bar": ["The Gilded Heron Tavern", "Lanternlight Taproom", "Brass Anchor Pub", "Foxglove Lounge"],
+    "retail": ["Pennywhistle Goods", "Corner Quill Books", "Thistle and Thread Boutique", "Kestrel Hardware Store", "Mosaic Market"],
+    "office": ["Ashgrove Consulting", "Larchmont Realty Partners", "Bellwether Law Office", "Quillon Accounting Partners"],
+    "other": ["Brightpath Fitness Studio", "Willow Pet Grooming", "Sundial Dry Cleaning", "Greenleaf Car Wash"]
+  },
+  "bar_cluster": {"parcel_count": 3},
+  "applicants": {
+    "first_names": ["Avery", "Blair", "Cass", "Dale", "Ellis", "Faye", "Gray", "Haven", "Indra", "Jules", "Kit", "Lark"],
+    "last_names": ["Ashby", "Brandt", "Corliss", "Dunmore", "Eastwick", "Fairleigh", "Grimsby", "Holloway", "Ironside", "Jessup"],
+    "pool_size": 40
+  },
+  "conditions_by_type": {
+    "deck_fence": ["Footing inspection and guard rail required."],
+    "shed": ["An engineered footing detail is required for this floor area."],
+    "res_building": ["Provide a lot coverage survey at final inspection."],
+    "com_ti": ["Fire Department sign-off before occupancy."],
+    "sign": ["Separate electrical permit required before installation."],
+    "row_encroachment": ["Restore the pavement within 14 days of completion.", "Renewal inspection at day 30."],
+    "patio": ["Record the setback acknowledgement before the permit is issued."],
+    "pod": ["A renewal is required for the additional time."],
+    "change_occupancy": ["A final inspection is required before the permit is issued."],
+    "site_plan_review": ["Landscape buffer along the street frontage."],
+    "rezoning": ["Traffic study to be filed before the next phase."],
+    "zoning_variance": ["The variance lapses if work does not start within 12 months."],
+    "certificate_appropriateness": ["Materials must match the historic facade."]
+  }
+}

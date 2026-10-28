@@ -19,6 +19,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -135,6 +136,14 @@ class Application(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base)
     archived_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     archive_reason_code_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     archive_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
+    #: The synthetic population the row belongs to, for example ``synthetic-year-v1``.
+    synthetic_population: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     __table_args__ = (
         CheckConstraint(
             "status IN ('draft', 'submitted', 'needs_information', 'revisions_requested', "
@@ -162,6 +171,12 @@ class ApplicationRevision(IdMixin, CreatedAtMixin, Base):
     submitted_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     date_basis: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
 
 
 class ApplicationParty(IdMixin, CreatedAtMixin, Base):
@@ -178,6 +193,12 @@ class ApplicationParty(IdMixin, CreatedAtMixin, Base):
     party_role: Mapped[str] = mapped_column(String(48), nullable=False)
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     authority_evidence_ref: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
 
 
 class ApplicationSite(IdMixin, CreatedAtMixin, Base):
@@ -197,6 +218,12 @@ class ApplicationSite(IdMixin, CreatedAtMixin, Base):
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     resolution_status: Mapped[str] = mapped_column(String(32), nullable=False, default="unresolved")
     submitted_address_text: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
 
 
 class Document(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -451,6 +478,12 @@ class Decision(IdMixin, VersionMixin, CreatedAtMixin, Base):
     reason_code_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     #: The waivers that applied to the case when the decision was recorded.
     waivers: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
     __table_args__ = (
         CheckConstraint(
             "outcome IN ('approved', 'denied', 'modified', 'information_requested')",
@@ -511,6 +544,12 @@ class Permit(IdMixin, VersionMixin, CreatedAtMixin, Base):
     issuance_command_key: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
     issued_by_actor_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     fictional_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    #: True on a row of the seeded synthetic permit history.  The default
+    #: reset never writes one; ``prepare_user_test.py --mode demo-synthetic``
+    #: does.  A synthetic row is a historical record, never an audited act.
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
 
 
 class ImpactReview(IdMixin, VersionMixin, CreatedAtMixin, Base):

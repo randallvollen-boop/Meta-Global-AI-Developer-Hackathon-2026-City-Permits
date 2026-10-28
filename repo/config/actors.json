@@ -1045,6 +1045,12 @@
           "source": "explicit"
         },
         {
+          "permission_id": "insight.city.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "permit.case.archive",
           "domains": [
             "permits"

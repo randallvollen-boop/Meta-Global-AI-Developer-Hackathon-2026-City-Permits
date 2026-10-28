@@ -19,6 +19,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,6 +41,10 @@ class CanonicalEntity(IdMixin, CreatedAtMixin, Base):
     entity_type: Mapped[str] = mapped_column(String(48), nullable=False)
     label: Mapped[str | None] = mapped_column(String(240), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    #: True on a row of the seeded synthetic permit history (never in the default reset).
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
 
 
 class Party(IdMixin, VersionMixin, CreatedAtMixin, Base):
@@ -56,6 +61,10 @@ class Party(IdMixin, VersionMixin, CreatedAtMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     source_system_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     source_record_id: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    #: True on a row of the seeded synthetic permit history (never in the default reset).
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
     __table_args__ = (
         CheckConstraint("party_type IN ('person', 'organization')", name="party_type_allowed"),
     )
@@ -188,6 +197,13 @@ class Credential(IdMixin, VersionMixin, CreatedAtMixin, Base):
     source_record_id: Mapped[str | None] = mapped_column(String(96), nullable=True)
     source_snapshot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     scenario_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
+    #: True on a row of the seeded synthetic permit history (never in the default reset).
+    synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
+    #: The business category of a business licence: restaurant, bar, retail,
+    #: office, other, and so on.  Blank on a contractor registration.
+    business_category: Mapped[str | None] = mapped_column(String(24), nullable=True)
 
 
 class FinanceAccount(IdMixin, VersionMixin, CreatedAtMixin, Base):

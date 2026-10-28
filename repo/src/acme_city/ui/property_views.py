@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
@@ -359,6 +359,45 @@ def steward_parcel_proposals(session: Session, actor: ActorContext) -> list[dict
     return rows
 
 
+def _collection_day(parcel: registry.Parcel) -> str:
+    """Return the synthetic next collection day Sanitation plans for a parcel.
+
+    The day follows the City's published trash days (Monday north, Tuesday
+    south, here chosen by the parcel number) and a commercial parcel is
+    collected three times a week.  It is a synthetic signal, not a schedule.
+    """
+    if (parcel.use_code or "").startswith("4"):
+        return "Monday, Wednesday and Friday (commercial pickup)"
+    digits = "".join(ch for ch in parcel.source_parcel_number if ch.isdigit())
+    return "Monday" if int(digits or "0") % 2 == 0 else "Tuesday"
+
+
+def _late_night_premises(session: Session, parcel: registry.Parcel) -> str:
+    """Return the synthetic count of licensed late-night premises on a parcel.
+
+    A premises counts when a business whose licence category is ``bar`` has a
+    permit application sited on the parcel.
+    """
+    count = session.execute(
+        select(func.count(func.distinct(registry.Credential.holder_party_id)))
+        .select_from(permit.ApplicationSite)
+        .join(
+            permit.ApplicationParty,
+            permit.ApplicationParty.application_id == permit.ApplicationSite.application_id,
+        )
+        .join(
+            registry.Credential,
+            registry.Credential.holder_party_id == permit.ApplicationParty.party_id,
+        )
+        .where(
+            permit.ApplicationSite.parcel_id == parcel.id,
+            registry.Credential.credential_type == "business_license",
+            registry.Credential.business_category == "bar",
+        )
+    ).scalar_one()
+    return str(count) if count else "none on file"
+
+
 def subscribers_for(session: Session, parcel: registry.Parcel | None) -> list[dict[str, Any]]:
     """Return the simulated subscriber departments, with one signal each."""
     rows = session.execute(
@@ -380,6 +419,16 @@ def subscribers_for(session: Session, parcel: registry.Parcel | None) -> list[di
                 value = str(signals.get("code_open_cases", 0))
             elif row.signal_key == "utility_account_active":
                 value = "yes" if signals.get("utility_account_active", True) else "no"
+            elif row.signal_key == "next_collection_day":
+                value = str(
+                    signals.get("next_collection_day") or _collection_day(parcel)
+                )
+            elif row.signal_key == "late_night_premises":
+                value = str(
+                    signals.get("late_night_premises")
+                    if signals.get("late_night_premises") is not None
+                    else _late_night_premises(session, parcel)
+                )
             else:
                 value = str(signals.get(row.signal_key, "not recorded"))
         out.append(

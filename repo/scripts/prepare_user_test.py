@@ -24,7 +24,12 @@ MODE_LABELS = {
     "fresh": "Fresh fictional fixtures; D01 awaits stewardship and review.",
     "ready-for-review": "D01 has replay-labelled Muse evidence and approved identity links.",
     "completed-reference": "D01 has a replay-labelled reference chain and an issued simulated permit.",
+    "demo-synthetic": (
+        "Fresh fixtures plus a flagged synthetic year of permit history for the City view "
+        "and the public community view."
+    ),
 }
+LOAD_SYNTHETIC = REPO_ROOT / "scripts" / "load_synthetic_year.py"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -40,6 +45,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=REPO_ROOT / "evidence" / "runs" / "user-test-prep",
     )
+    parser.add_argument("--synthetic-seed", type=int, default=None)
+    parser.add_argument("--synthetic-count", type=int, default=None)
     parser.add_argument(
         "--live-muse",
         action="store_true",
@@ -78,7 +85,7 @@ def assert_server_stopped(record_path: Path) -> None:
 
 
 def prepare(args: argparse.Namespace) -> dict[str, Any]:
-    if args.live_muse and args.mode == "fresh":
+    if args.live_muse and args.mode in {"fresh", "demo-synthetic"}:
         raise RuntimeError("--live-muse requires ready-for-review or completed-reference mode")
     assert_server_stopped(args.record)
     environment = os.environ.copy()
@@ -95,10 +102,24 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         environment=environment,
     )
 
+    if args.mode == "demo-synthetic":
+        command = [
+            sys.executable,
+            str(LOAD_SYNTHETIC),
+            "--database",
+            args.database,
+            "--confirm-fictional-demo",
+        ]
+        if args.synthetic_seed is not None:
+            command += ["--seed", str(args.synthetic_seed)]
+        if args.synthetic_count is not None:
+            command += ["--count", str(args.synthetic_count)]
+        run_command(command, environment=environment)
+
     walkthrough_path = None
     started = False
     try:
-        if args.mode != "fresh":
+        if args.mode not in {"fresh", "demo-synthetic"}:
             run_command(
                 [
                     sys.executable,
@@ -145,7 +166,7 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         "mode": args.mode,
         "label": MODE_LABELS[args.mode],
         "database": args.database,
-        "model_mode": "live" if args.live_muse else ("replay" if args.mode != "fresh" else "none"),
+        "model_mode": "live" if args.live_muse else ("replay" if args.mode not in {"fresh", "demo-synthetic"} else "none"),
         "walkthrough_evidence": walkthrough_path,
         "prepared_at": datetime.now(UTC).isoformat(),
         "server_running": False,
