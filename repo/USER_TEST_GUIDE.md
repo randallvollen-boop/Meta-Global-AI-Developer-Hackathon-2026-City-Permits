@@ -51,7 +51,7 @@ Each governed detail screen shows Owner, Steward, Source, Change this in, Last s
 
 ## Full stewardship path from fresh fixtures
 
-Choose **Data Steward**, open **Steward review** and propose then approve these four synthetic D01 links:
+Choose **Data Steward**, open **Data issues** and, under "Work from a source record", propose then confirm these four synthetic D01 links:
 
 | Source | Dataset | Record |
 | --- | --- | --- |
@@ -77,11 +77,11 @@ Replay evidence is always labelled `replay` and does not satisfy a live-provider
 
 ### D02 false friend
 
-Open **Steward review** as Data Steward. Compare `ERP-BL-00413` and `PER-AP-0004` with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
+Open **Data issues** as Data Steward (the steward-demo prepare mode below puts the Cedarline comparisons in the queue). Open the issue for `ERP-BL-00413` or `PER-AP-0004` and compare it with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
 
 ### D06 source correction
 
-Use **Applicants** or **Steward review** to request a correction. Inspect the destination, proposed value, evidence, affected applications and required rechecks before any transition. A correction request does not overwrite the submitted application snapshot.
+Use **Master records** (People & organizations) or a Data issues case to request a correction. Inspect the destination, proposed value, evidence, affected applications and required rechecks before any transition. A correction request does not overwrite the submitted application snapshot.
 
 ### D11 financial exceptions
 
@@ -90,6 +90,14 @@ Open **Reconciliation** as City Administrator. Review the synthetic partial, ove
 ### Access control
 
 Choose Applicant and try to open another applicant's direct permit URL. The server returns a permission denial. Switch to City Administrator and try to approve a permit. Configuration access does not provide reviewer authority.
+
+## Steward demonstration: Cedarline
+
+```bash
+uv run python scripts/prepare_user_test.py --mode steward-demo
+```
+
+This adds three *proposed* links to **Data issues** (Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413`) so the queue holds the Cedarline story: Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline Coffee Works LLC, a different license number and a different unit. Nothing is decided. Choose **Data Steward**, open **Data issues**, open the `ERP-BL-00413` issue and read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. The mode is a prepare mode; the default reset and every acceptance fixture hold no steward issue.
 
 ## Prepared states
 
