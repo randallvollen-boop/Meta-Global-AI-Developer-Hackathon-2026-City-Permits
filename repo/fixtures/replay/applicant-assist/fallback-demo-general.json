@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -26,7 +26,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "show me the acme rule text for a fence",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "a76efeec715eb111a3360e4992e42387813fafd8c6f11d19fb4c57f0d7dacf85",
+  "replay_key": "771b8ce1eea2ab8cae975f6ad1f9e8bb1b4251053d3c69c006c7ceeaf1674b8c",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

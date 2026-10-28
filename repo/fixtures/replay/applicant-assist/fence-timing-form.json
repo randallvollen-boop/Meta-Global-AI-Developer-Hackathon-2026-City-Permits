@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
   "context": {
     "application_reference": "",
     "permit_type_key": "deck_fence"
@@ -35,7 +35,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "how long will my fence permit take",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "6de154449d330e3f685f2a46ea4da792a6acf5c30622d40926176e92dedcbfc4",
+  "replay_key": "60f35e46cceaaa1542dab282067e2d7dbe4c75fbc7177396728a62ad19756509",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

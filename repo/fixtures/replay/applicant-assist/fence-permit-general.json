@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -44,7 +44,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "do i need a permit for a 6 ft fence",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "9e83ebc870c7d76c2622212240ff9b99211c4e55040c159a9cbde7d8c8ebd78e",
+  "replay_key": "5865d45bb42fd76457603bb10d6f54c7d3b21c3a67b0502b9e8d230b0c1b0a0f",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }
