@@ -64,4 +64,5 @@
   <span>Page {{ v.page }} of {{ v.pages }}</span>
   {% if v.page < v.pages %}<a href="/ops/audit?{{ q }}page={{ v.page + 1 }}" data-testid="audit-next" rel="next">Older</a>{% else %}<span class="muted">Older</span>{% endif %}
 </nav>
+{% include "components/evidence_panel.html" %}
 {% endblock %}

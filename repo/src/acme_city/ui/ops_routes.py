@@ -59,6 +59,11 @@ from acme_city.ui.router import (
 router = APIRouter(tags=["operations"])
 
 
+def _evidence(label: str, detail: str) -> list[dict[str, Any]]:
+    """Return the evidence list of an operations screen: what its figures read."""
+    return [{"label": label, "kind": "database query", "detail": detail, "received_at": None}]
+
+
 # ------------------------------------------------------------------ dashboard
 
 
@@ -80,6 +85,11 @@ def ui_ops_dashboard(
         screen="ops_dashboard",
         title="Operations dashboard",
         view=dashboard_module.dashboard(session, synthetic=synthetic),
+        model_runs=[],
+        evidence=_evidence(
+            "Stored applications, decisions and agent runs",
+            "every figure is a count or a mean over these rows; no model is used",
+        ),
     )
     return render(request, "ops_dashboard.html", context)
 
@@ -110,6 +120,8 @@ def ui_ops_audit(
         view=audit_log_module.audit_log(
             session, actor_type=actor_type, action=action, search=search, page=page
         ),
+        model_runs=[],
+        evidence=_evidence("The append-only audit records", "read only; this screen adds no second trail"),
     )
     return render(request, "ops_audit.html", context)
 
@@ -210,6 +222,11 @@ def ui_ops_support(
         contact=CONTACT_NOTICE,
         can_answer=service.can(resolved, PERMISSION_ANSWER),
         can_record=service.can(resolved, PERMISSION_RECORD),
+        model_runs=[],
+        evidence=_evidence(
+            "Help requests, applicant-visible comments and support cases",
+            "internal notes and un-escalated conversations are never read here",
+        ),
     )
     return render(request, "ops_support.html", context)
 
@@ -245,6 +262,11 @@ def ui_ops_checks(
         title="Checks",
         recorded=recorded,
         runs_version=version,
+        model_runs=[],
+        evidence=_evidence(
+            "Stored rows read by the checks",
+            "each run is read only and is recorded as one checks.run audit event",
+        ),
     )
     return render(request, "ops_checks.html", context)
 
