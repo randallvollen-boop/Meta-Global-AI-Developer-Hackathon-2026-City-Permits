@@ -254,7 +254,7 @@ def test_other_drawer_kinds_resolve(client: TestClient, environment: Settings) -
     proposals = seed(environment)
     source = client.get("/detail/source/erp_finance:business_licensing_register:ERP-BL-00413")
     assert source.status_code == 200
-    for needle in ("Change this in", "Owner", "Steward", "Open issues", "Last source update", "Last received", "Version"):
+    for needle in ("Change this in", "Owner", "Steward", "Open recorded issues", "Last source update", "Last received", "Version"):
         assert needle in source.text, needle
     credential = client.get("/detail/credential/cred_license_cedarline")
     assert credential.status_code == 200

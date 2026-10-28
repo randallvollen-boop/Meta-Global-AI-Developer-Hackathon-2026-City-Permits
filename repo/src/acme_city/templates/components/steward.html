@@ -2,7 +2,7 @@
 
      {% import "components/steward.html" as st with context %}
 
-   st.source_summary(summary)   Source · Source last changed · Last received · View source details
+   st.source_summary(summary)   Source · Source last changed · Last received or checked · View source details
    st.pager(paging)             Previous / next page links that keep the other query values
    st.pill(label, tone)         A status that never wraps #}
 {% import "_ui.html" as ui with context %}
@@ -11,7 +11,7 @@
 <p class="source-summary" data-testid="source-summary">
   <span><b>Source</b> {{ summary.name }}</span>
   <span><b>Source last changed</b> {{ ui.info('source_last_changed') }} {{ ui_time(summary.changed) }}</span>
-  <span><b>Last received</b> {{ ui_time(summary.received) }}</span>
+  <span><b>Last received or checked</b> {{ ui_time(summary.received) }}</span>
   {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source', summary.detail_id, 'View source details') }}</span>{% endif %}
 </p>
 {% if summary.warning %}<p class="notice" role="status" data-testid="freshness-warning">{{ summary.warning }}</p>{% endif %}

@@ -118,7 +118,7 @@
   <p>
     {{ ui.detail_link('evidence', c.evidence_detail_id, 'Evidence details') }}
     · {{ ui.detail_link('source', c.source_record.summary.detail_id, 'View source record') }}
-    · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received {{ ui_time(c.source_record.summary.received) }}</span>
+    · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received or checked {{ ui_time(c.source_record.summary.received) }}</span>
   </p>
   <p data-testid="provenance"><span class="pill {{ 'muse' if c.provenance.run_id else 'plain' }}">{{ c.provenance.label }}</span> <span class="muted">{{ c.provenance.detail }}</span>{% if c.provenance.run_id %} {{ ui.detail_link('muse-run', c.provenance.run_id, 'Run details') }}{% endif %}</p>
   {% elif c.kind == 'parcel' and c.parcel %}
