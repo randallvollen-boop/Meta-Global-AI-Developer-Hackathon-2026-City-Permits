@@ -1,4 +1,4 @@
-# Runbook: outside intake, two people-driven agents, and human decisions
+# Runbook for outside intake, two people-driven agents, and human decisions
 
 ACME City Permits is a fictional demonstration. Every person, address, rule,
 fee and permit is synthetic, the server binds to loopback only
@@ -15,7 +15,7 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 uv run python scripts/stop_demo.py
 ```
 
-Simulate incoming permits (server running; signs in as Data Steward, which
+Simulate incoming permits (server running; the script signs in as Data Steward, who
 holds the staging grant; override with `--actor`):
 
 ```bash
@@ -27,10 +27,7 @@ uv run python scripts/simulate_intake.py --scenario random --count 12
 Or, in the browser, sign in as **City Administrator**, open **Governance and
 sources**, and use **Simulate incoming permits**. Scenarios:
 `fence-conforming-rear`, `fence-front-too-tall`, `fence-missing-site-plan`,
-`deck-high`, `mixed` (about six records), `shed-large` (a 400 sq ft shed,
-which carries a condition), `variance-request` (a discretionary type, which
-is held), `hvac-no-contractor` (which fails), `fax-unreadable` (an unreadable
-page, so the case goes to early resolution), `duplicate-fence` (the same
+`deck-high`, `mixed` (about six records), `shed-large` (a 400 sq ft shed with a condition), `variance-request` (a discretionary type that is held), `hvac-no-contractor` (a case that fails), `fax-unreadable` (an unreadable page that sends the case to early resolution), `duplicate-fence` (the same
 applicant, address and type as a fence already submitted) and `random`
 (deterministic from a seed, across all seventeen permit types and all five
 channels, with realistic omissions and quality problems).
@@ -43,40 +40,38 @@ ePermit Portal (simulated)**, with five channels: `portal` (web form),
 `email`, `mail` (post) and `fax`. The portal is registered as the source
 system `intake_portal` with the dataset `submitted_applications` (contract
 `contract_intake_portal_submitted_applications`, domain `permits`, owner
-Building Safety director, queue `queue_permits`, custodian Permitting) — see
-it on **Governance and sources**.
+Building Safety director, queue `queue_permits`, custodian Permitting). See it on **Governance and sources**.
 
-Each intake record carries: channel, received_at, portal reference, applicant
+Each intake record has a channel, received_at, portal reference, applicant
 (name, email, phone), site address and parcel text, permit type key,
 submitted facts, and documents (typed documents such as `site_plan` and
-`material_spec`), each with the scan-quality flags the record carried
+`material_spec`), each with the scan-quality flags recorded for it
 (`rotated`, `low_res`, `handwritten`, `unreadable`, `duplicate_page`).
 
 Ingestion (`src/acme_city/portal_intake/service.py`) never writes tables
 directly:
 
-1. **Stage raw** — `IngestionService.ingest` validates the record against its
+1. **Stage raw**: `IngestionService.ingest` validates the record against its
    registered contract and preserves the raw snapshot (idempotent on the
    portal reference: a repeat returns `duplicate` and creates nothing).
-2. **Create the case** — `PermitService.submit`, as the seeded intake service
+2. **Create the case**: `PermitService.submit`, as the seeded intake service
    identity, creates the Permitting application, its first immutable revision
    and its site (parcel/address resolved from the submitted text). The
    permit-type requirements in force at that moment are recorded on the case,
    so a later configuration change never rewrites what this case was measured
    against.
-3. **Store documents** — `DocumentService.store_version` stores each
+3. **Store documents**: `DocumentService.store_version` stores each
    document's bytes, records its hash and records its scan-quality flags.
-4. **Wait** — nothing else happens. The case sits in status `submitted` and
+4. **Wait**: nothing else happens. The case stays in status `submitted` and
    is shown as **Awaiting intake agent**.
 
 APIs: `POST /api/intake/records`, `POST /api/intake/simulate`,
 `GET /api/intake/scenarios`, plus the source endpoints
 `GET /api/sources/systems`, `POST /api/sources/{system}/{dataset}/intake`.
 
-## The two agents (agents propose; people decide)
+## The two agents and who may run them
 
-There are two agents and both are **service identities**, never selectable
-personas:
+There are two agents. Both are **service identities** and neither is a selectable persona:
 
 | Agent | Identity | Who may run it | Who may wake it |
 |---|---|---|---|
@@ -96,14 +91,14 @@ finish, the acting service identity, the triggering person, the outcome) with
 one `agent_run_nodes` row per node (node id, label, dependency level, status
 `ok`/`warn`/`block` and a note).
 
-### Intake agent — seven nodes
+### Intake agent, seven nodes
 
 | Level | Node | What it does |
 |---|---|---|
 | 1 | Classifier | Confirms the permit type and the channel and sets the review area from the type. |
-| 2 | Field extractor | Muse Spark extraction (replay by default) proposes values from the received documents. Where the validator scored the run, its real validation result is shown; no percentage is ever invented. |
-| 2 | Document QC | Flags the scan-quality problems carried by the intake record. An unreadable page blocks. |
-| 3 | Address locator | Asks the city locator (`findAddressCandidates`) for candidates for the typed address, then asks the parcel layer which parcel the best point falls in. It records the typed text, matched address, score, status (M/T/U), coordinates, candidate list, parcel id and method. One candidate scoring at least 90 (setting `ACME_GIS_AUTO_PROPOSE_SCORE`) is **proposed**, never auto-approved. A tie or a low score raises "Address needs a person to choose the property"; no candidate raises "Address not found in the city locator". Both go to early resolution. |
+| 2 | Field extractor | Muse Spark extraction (replay by default) proposes values from the received documents. Where the validator scored the run, its real validation result is shown, and no percentage is invented. |
+| 2 | Document QC (quality control) | Flags the scan-quality problems recorded on the intake record. An unreadable page blocks. |
+| 3 | Address locator | Asks the city locator (`findAddressCandidates`) for candidates for the typed address, then asks the parcel layer which parcel the best point falls in. It records the typed text, matched address, score, status (M/T/U), coordinates, candidate list, parcel id and method. One candidate scoring at least 90 (setting `ACME_GIS_AUTO_PROPOSE_SCORE`) is **proposed** only. A tie or a low score raises "Address needs a person to choose the property"; no candidate raises "Address not found in the city locator". Both go to early resolution. |
 | 3 | Completeness | Checks the required fields and documents of the type. |
 | 4 | Duplicate finder | Finds another live case that asks for the same project by the same applicant at the same address for the same permit type, and runs the identity matcher to propose applicant, parcel and contractor links for the steward. |
 | 5 | Router | Any blocking finding → `needs_information` (**Route to early resolution**). A human-judgment finding (duplicate, conflict, low extraction quality) → `needs_information` (**Verify before review**). Otherwise → `ready_for_review` with its review area. |
@@ -113,7 +108,7 @@ missing document, unreadable, duplicate, conflict, low-confidence
 extraction, judgment), a message, the rule, an **Applicant must** line and a
 severity of `block` or `review`.
 
-### Adjudication agent — five nodes
+### Adjudication agent, five nodes
 
 | Level | Node | What it does |
 |---|---|---|
@@ -123,8 +118,8 @@ severity of `block` or `review`.
 | 3 | Precedent check | Finds an earlier decided case of the same type on the same parcel. |
 | 4 | Disposition | `hold` when the type is discretionary, has no rules, or a rule needs judgment or a missing input; `deny` when a rule fails; `approve_with_conditions` when conditions apply; otherwise `approve`. |
 
-The rationale cites each rule id, the observed value with its unit, the limit
-and the citation — once.
+The rationale cites each rule once, with its id, the observed value and unit, the limit
+and the citation.
 
 ### Confirm and revert
 
@@ -143,7 +138,7 @@ confirms or reverts. Nothing is final until confirmed."** The status is
 - **Revert** needs `permit.decide` and a reason. The case returns to manual
   review and the agent may run again.
 
-The old agree/disagree stance is gone; the recommendation's history stays in
+The old agree or disagree stance is removed. The recommendation's history stays in
 the audit trail.
 
 ## Where humans act
@@ -154,12 +149,12 @@ the audit trail.
 | City Administrator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
 | Data Steward | Intake agent | Process one / Process all waiting | The six-node intake graph runs; the case is routed |
 | Data Steward | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
-| Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved (or not); proposals stay evidence |
+| Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved or stay unapproved; proposals remain evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
 | Permit Reviewer | Adjudication agent | Run / Run all | The five-node adjudication graph runs and leaves a pending recommendation |
 | Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
 | Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
-| Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision that carries a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
+| Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision with a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
 | City Administrator | Administration | Permit types, users, reason codes | Every change is a governed, audited action and appears in the configuration log |
 | City Administrator | Reconciliation | Assess application, Import ERP payment, Confirm allocation, Reconcile assessment | Fee assessed from the published schedule; reconciliation must be exact (balance 0.00) before issuance |
 | Permit Reviewer | Permit workspace | Issue permit | Separate human action; idempotent on the command key; blocked until decision, links, assessment and exact reconciliation all hold |
@@ -195,22 +190,22 @@ moves it; the browser never decides.
 | `archived` | The case is closed; its history stays | **City Administrator**: archive, then restore |
 
 **Return** (Data Steward) needs an active reason code of the `return` type.
-It is terminal: the applicant starts a new application rather than
-answering on the returned one.
+It is terminal. The applicant starts a new application and cannot
+answer on the returned one.
 
 **Advance to review** (Data Steward) is refused while a **current, unwaived
 blocking finding** stands in the way.  Waive the finding first, or clear it.
 
 **Request revisions** (Permit Reviewer) needs an active reason code of the
-`revision` type and a message.  The message is written as a comment the
-applicant reads, so the applicant sees why the case came back.
+`revision` type and a message.  The message becomes a comment the
+applicant reads, and it states why the case came back.
 
 **Answer and resubmit** (Applicant) is available from `needs_information`
 and from `revisions_requested`.  The resubmission is atomic: the revised
 documents, the new submitted revision and the state of the case move
 together.  The case returns to `submitted` (awaiting the intake agent), the
 first submission date is kept, and the work done against the earlier
-revision — the evaluation, the recommendation and the decision — becomes
+revision (the evaluation, the recommendation and the decision) becomes
 stale.  A stale decision is never revived by a resubmission; a reviewer
 reconfirms it.
 
@@ -248,7 +243,7 @@ the guard first and refuses it:
 
 A reason code names why a case was returned, denied, waived, sent back for
 revisions or archived.  Its **type** says which of those uses it may
-serve, so a denial code can never return a case.
+serve. A denial code cannot return a case.
 
 | Type | Used by |
 |---|---|
@@ -267,10 +262,10 @@ was applied: `INCOMPLETE_APPLICATION`, `WITHDRAWN_BY_APPLICANT` and
 `DUPLICATE_SUBMISSION` are `return` codes; `DOES_NOT_MEET_CODE` and
 `OUTSIDE_JURISDICTION` are `denial` codes.
 
-The code is checked **in the service that acts on the case**, not only in
-the form: an unknown code, a retired code and a code of the wrong type are
+The **service that acts on the case** checks the code, as well as the
+form. An unknown code, a retired code and a code of the wrong type are
 all refused.  Each action record snapshots the code, its label and its
-version as they were at that moment, so the history of a case still reads
+version as they were at that moment. The history of a case reads
 correctly after a code is retired.  A denial needs a denial code on every
 path: a manual decision, a confirmation of a denial recommendation and a
 reconfirmation.
@@ -286,18 +281,18 @@ asks a person to look.  Nine types are recorded: `missing_field`,
 `fee` when the City cannot price the case (the permit type names no fee
 schedule, or no published schedule is in force on the recorded basis date).
 
-Findings accumulate, so each one carries a state:
+Findings accumulate. Each one has a state:
 
-* **current** — the live statement about the case;
-* **resolved** — a later run showed that the condition is gone;
-* **superseded** — a later run or a resubmission replaced it.
+* **current**: the live statement about the case;
+* **resolved**: a later run showed that the condition is gone;
+* **superseded**: a later run or a resubmission replaced it.
 
-The history is kept: a finding is never deleted.  A rerun supersedes the
+The history is kept, and a finding is never deleted.  A rerun supersedes the
 findings it recorded again and resolves the ones it did not; a resubmission
 supersedes the findings of the earlier revisions.
 
 **Waive** (Data Steward) applies to a **current finding of a waivable
-type** — `wrong_type`, `duplicate`, `conflict`, `low_confidence_extraction`
+type**: `wrong_type`, `duplicate`, `conflict`, `low_confidence_extraction`
 and `judgment`.  A missing field, a missing document, an unreadable page
 and a fee question are not waivable: the applicant must supply them, and
 money is never waived.  A waiver records the reason code, the free-text
@@ -310,7 +305,7 @@ blocking a decision exactly as they did before.  Only the intake findings
 stop blocking the **advance to review** step.  Every decision snapshots the
 waivers that applied to the case when it was recorded.
 
-The primary finding of a case — the one it is grouped by — is the blocking
+The primary finding of a case (the one it is grouped by) is the blocking
 one, or else the first in this stable order: `missing_field`,
 `missing_document`, `unreadable`, `wrong_type`, `duplicate`, `conflict`,
 `fee`, `low_confidence_extraction`, `judgment`, and then the finding
@@ -319,30 +314,29 @@ identifier.
 ## Comments
 
 A comment is either **visible to the applicant** or an **internal note**.
-The visibility is enforced by the server on every surface that shows a
+The server enforces the visibility on every surface that shows a
 comment: the applicant portal ("Messages from the City"), the permit
 workspace, the history panel, the support lookup and the API.
 
 * A member of the City reads every comment.  An applicant reads only the
   comments the City wrote for the applicant.
-* The identifier of an internal note is not a way to read it: an applicant
-  who asks for one by its identifier is told the comment does not exist.
-* A comment of another applicant's case is out of reach of the record
-  scope.
-* The audit record of a comment carries the comment identifier and its
-  visibility.  It never carries the text, so an internal note cannot
-  travel to an applicant through the audit trail.
+* An applicant who asks for an internal note by its identifier is told the
+  comment does not exist.
+* The record scope excludes a comment on another applicant's case.
+* The audit record of a comment holds the comment identifier and its
+  visibility, without the text. An internal note therefore cannot
+  reach an applicant through the audit trail.
 
 Writing a comment needs the `permit.case.comment` grant and the expected
-version of the case.  A comment does not change the state of the case, so
-it does not advance the case version.
+version of the case.  A comment does not change the state of the case or advance the case
+version.
 
 ## The three queues
 
 Phase 3b adds three screens.  Each one is opened by a grant only its
 persona holds, never by a persona label: the intake queue and the
 early-resolution board belong to the **Data Steward**, the review queue to
-the **Permit Reviewer**.  The shared `/queue` keeps the behaviour it had and
+the **Permit Reviewer**.  The shared `/queue` keeps the behavior it had and
 links the queues the acting persona may open.
 
 | Persona | Screen | What it answers |
@@ -365,10 +359,10 @@ tab holds.
 | **Archived** | `archived` |
 | **Closed** | `issued`, `denied`, `returned` |
 
-The seeded demonstration cases (D01–D11) carry a scenario id: they are the
-fixed corpus of the demonstration, not arrivals, so they never wait for the
-intake agent.  The rule is the same one the **Waiting** figure of the
-intake agent screen uses, so the two numbers always agree.
+The seeded demonstration cases (D01 to D11) carry a scenario id. They are the
+fixed demonstration corpus and never wait for the
+intake agent.  The **Waiting** figure of the
+intake agent screen uses the same rule, and the two numbers always agree.
 
 Search (reference, applicant name, address), the filters (channel, permit
 type, priority, owner) and the sort (age, priority, type, reference) are
@@ -376,34 +370,34 @@ query-string values.  The screen works without JavaScript.
 
 **Signals.**  A signal is shown only where the server holds the fact:
 
-* **duplicate** — the recorded duplicate finding of the intake run, with the
+* **duplicate**: the recorded duplicate finding of the intake run, with the
   reference of the other case when the finding names one;
-* **document** — the scan-quality flags the received pages carry
+* **document**: the scan-quality flags the received pages carry
   (`rotated`, `low_res`, `handwritten`, `unreadable`, `duplicate_page`);
-* **parcel** — the recorded parcel link: `no match`, `proposed`, `approved`
+* **parcel**: the recorded parcel link: `no match`, `proposed`, `approved`
   or `confirmed`;
-* **agent** — what the intake run of the current revision left: `not run`,
+* **agent**: what the intake run of the current revision left: `not run`,
   `needs a person`, `failed` or `agent was satisfied`.
 
-There is no invented confidence number: the agent signal is the recorded
-outcome of the run, not a score the City never computed.
+The agent signal shows the recorded
+outcome of the run. No confidence number is invented.
 
-**Age and the service target.**  The age chip shows the real age of the
-case in whole days since its first submission.  It is coloured against the
-service target of the case's permit type — the fictional number of days the
+**Age and the service target.**  The age chip shows the age of the
+case in whole days since its first submission.  It is colored against the
+service target of the case's permit type. The target is the fictional number of days the
 City aims to review that type in, held in `config/rules_and_fees.json` as
 `service_target_days` and seeded into `permit_types.service_target_days`.
 It is a demonstration figure and never a promise.
 
 ### Process selected with agent
 
-The bulk action is a **distinct** action (`permit.intake.process_selected`),
-not the "process every waiting case" button of the agent screen.
+The bulk action (`permit.intake.process_selected`) is **separate** from
+the "process every waiting case" button of the agent screen.
 
 * The selection is a list of application id and version pairs, at most
   **50** cases.
-* An **empty selection is refused**.  The action never falls through to
-  "process all".
+* An **empty selection is refused**.  The action does not process all
+  waiting cases instead.
 * A repeated case is processed once; a case named at two different
   versions is refused as ambiguous.
 * Every case is checked before any case runs: the grant, the record scope
@@ -438,18 +432,18 @@ recorded with them.
 
 ### Approve with conditions
 
-**An approval with conditions is an `approved` decision that carries a
+**An approval with conditions is an `approved` decision with a
 non-empty list of conditions.**  The decision outcome vocabulary does not
 change, and `modified` keeps its existing meaning and stays non-issuable.
 
 * The form offers **Approve**, **Approve with conditions** and **Deny**.
 * A **rationale is required on every outcome**.  A denial also needs an
   active denial reason code.
-* The conditions are carried through the decision, the **reconfirmation**,
-  the **applicant tracker** (as "Conditions of your approval") and the
+* The conditions appear in the decision, the **reconfirmation**,
+  the **applicant tracker** (in its conditions of approval section) and the
   **immutable permit snapshot and artifact**.
-* An approval with conditions that names no condition is refused by the
-  service, not only by the form.
+* The service refuses an approval with conditions that names no condition,
+  in addition to the form.
 
 ## The applicant help assistant
 
@@ -458,7 +452,7 @@ the application form (`/apply/<type>`) and on the tracker
 (`/apply/track?ref=…`).  No other persona may open it: the portal itself
 answers 403 to a staff persona.
 
-The assistant **explains**; it never decides.  It answers only from a source
+The assistant **explains** and does not decide.  It answers only from a source
 bundle the server builds, and it quotes that bundle.
 
 ### What it answers from
@@ -469,14 +463,14 @@ bundle the server builds, and it quotes that bundle.
 | Permit-type configuration | the review area, the process category, the discretionary flag, the required fields and the required documents |
 | Service target | the configured target of the type, with its definition, as a target and never as a promise |
 | Lifecycle and process passages | the fixed applicant-facing passages of `config/applicant_help.json`, each with an identifier |
-| The applicant's own case | its status, the current findings with their "you must" line, the comments written for the applicant and the next step open to them |
+| The applicant's own case | its status, the current findings with their "Applicant must" line, the comments written for the applicant and the next step open to them |
 
 The **basis date** is the application's first submission time for the rules of
 that case, and the server's own time for general guidance.
 
 The bundle is checked against the same truth guard the model payloads use: it
-may not carry an expected outcome or a decision.  It never carries another
-applicant's record and never carries an internal note.
+may not contain an expected outcome or a decision.  It never contains another
+applicant's record or an internal note.
 
 ### How it answers
 
@@ -487,12 +481,11 @@ threshold is the number the question names counts again, and the passages
 are ordered by the score and then by their identifier.  The answer quotes the
 matching passages and shows them as citations.
 
-* A question that matches nothing gets an explicit **no-match**, never a
-  guess.
+* A question that matches nothing gets an explicit **no-match** and no guess.
 * The answer is labelled **"Matching ACME rule text (not an AI answer)"**.
-* A limit is never an exemption: the answer quotes the rule with its
-  applicability, so a 6 ft limit is shown as a limit that applies in the
-  side and rear yard, and the front-yard limit is shown beside it.
+* The answer quotes the rule with its
+  applicability. A 6 ft limit is shown as a limit that applies in the
+  side and rear yard, with the front-yard limit beside it.
 * The **next steps** are derived by the server from the grants the applicant
   holds, never from the text of an answer.
 
@@ -506,95 +499,95 @@ completion date is computed and no queue position is claimed.
 ### The conversation
 
 A conversation belongs to the applicant who opened it.  It stores the turns,
-the mode, the citations and the source snapshot of each turn — the source
-identifier, its version, its text and its hash.  A member of the City does
-not read an un-escalated conversation; the only route by which the City sees
-the applicant's question is the **help request** the applicant raises with
+the mode, the citations and the source snapshot of each turn (the source
+identifier, its version, its text and its hash).  A member of the City does
+not read an un-escalated conversation. The City sees
+the applicant's question only through the **help request** the applicant raises with
 **Ask the City**.
 
-* Asking needs the `applicant.help.ask` grant, the CSRF token and a
+* Asking needs the `applicant.help.ask` grant, the cross-site request forgery (CSRF) token and a
   **mandatory expected version** of the conversation.  A missing version is
   refused as firmly as a stale one.
 * Asking the City needs the `applicant.help.escalate` grant and the same
-  mandatory version.  It creates the help request, which the support screen
-  of phase 3c answers.
+  mandatory version.  The help request it creates is answered on the support screen
+  of phase 3c.
 * The rate limit is 10 questions per session per 10 minutes
   (`config/applicant_help.json`).  The session is stored as a hash.
 * A question is at most 1,000 characters and is untrusted input: it is
   never rendered as markup and never becomes an instruction.
-* The audit record of a question carries the identifiers and the outcome of
-  the turn.  It **never carries the text of the question**.
+* The audit record of a question holds the identifiers and the outcome of
+  the turn, without the text of the question.
 
 ### Without JavaScript
 
-The help question is a **form of its own**, never part of the application
-form, so the fields and the files the applicant typed stay intact.  On the
+The help question is a **separate form**, outside the application
+form.  The fields and the files the applicant typed stay intact.  On the
 application form the answer opens in a **separate browsing context**
-(`/apply/help/panel`), which is what keeps that form untouched.  With
+(`/apply/help/panel`), so that form is untouched.  With
 JavaScript the answer is rendered in place instead.
 
 ### The live switch
 
 `applicant_assist_live_enabled` is a server-only setting and it is **off by
 default**.  A credential alone never enables a live answer for an applicant.
-This part of the work answers without a model; the live path arrives with
-the part that adds it.
+This part answers without a model, and a later part adds the live path.
+
 ## Permit type icons
 
-Each of the 17 permit types has one bundled seed icon (a 192 by 192 WebP in `repo/src/acme_city/static/permit-type-icons/`, named in `PERMIT_TYPE_SEED_ICONS`). The reset loads them with source `seed`; `ensure_seeded` only fills a type that has no icon rows, so no migration is involved and an administrator's saved icon is never overwritten. To change a bundled icon, replace the file and reset the demonstration data.
+Each of the 17 permit types has one bundled seed icon (a 192 by 192 WebP in `repo/src/acme_city/static/permit-type-icons/`, named in `PERMIT_TYPE_SEED_ICONS`). The reset loads them with source `seed`; `ensure_seeded` only fills a type that has no icon rows. No migration is involved, and an administrator's saved icon is never overwritten. To change a bundled icon, replace the file and reset the demonstration data.
 
 The original three (commercial alteration, new building, sign) predate this note. The other 14 were generated with Muse Image (`muse-image-1.0`) on 2026-10-28 outside the in-app generate-and-save flow, 14 calls at $0.01, $0.14 in total, then downscaled from 1600 by 1600 to 192 by 192. Their file names, sha256 prefixes and prompts are in `docs/operations/permit-type-icons-manifest.json`; the 1600 by 1600 originals are not kept in the repository. Because they bypassed the in-app flow they have no generation audit record and do not count toward the daily generation caps.
 
 ## Failure handling
 
-- **Missing documents/fields** — the completeness node records a blocking
+- **Missing documents/fields**: the completeness node records a blocking
   finding and the router sends the case to `needs_information`, naming
   exactly what is missing. The applicant supplies it (a new revision), then
   the intake agent runs again.
-- **Unreadable page** — the document QC node records a blocking finding, so
+- **Unreadable page**: the document QC node records a blocking finding, so
   the case goes to early resolution even though the rest is complete.
-- **Duplicate submission** — the duplicate finder records a review finding
+- **Duplicate submission**: the duplicate finder records a review finding
   linked to the other case, and the router asks a person to verify before
   review.
-- **Rule failures** — e.g. DF-1 (front fence 6 ft > 4 ft maximum) produces a
+- **Rule failures**: for example DF-1 (front fence 6 ft > 4 ft maximum) produces a
   `deny` recommendation. The reviewer may still decide (denials are not
   blocked); approvals are blocked by unresolved fail/review blockers.
-- **Held cases** — a discretionary type, a type with no published rule and a
+- **Held cases**: a discretionary type, a type with no published rule and a
   rule that needs judgment all produce `hold`. The card says the reviewer
   decides with the normal decision form.
-- **Muse failure** — a live error, refusal, incomplete response or a summary
+- **Muse failure**: a live error, refusal, incomplete response or a summary
   that names another outcome is recorded on the run and the deterministic
   rationale is shown. Replay is labelled `replay` and never substitutes for
   live evidence. Fallback is manual: the steward types the value (correction)
   or the reviewer proceeds from the submitted facts.
-- **Duplicate delivery** — the same portal reference returns `duplicate`; no
+- **Duplicate delivery**: the same portal reference returns `duplicate`; no
   second application, revision or document is created.
-- **Permission failures** — every write goes through a governed action/API
+- **Permission failures**: every write goes through a governed action/API
   with permission checks, CSRF, expected version and an audit record; denials
   are audited and shown as "The action was refused".
 
 ## Property master
 
-The city identifies property by **parcel number**, not by address. A permit
+The city identifies property by **parcel number**. A permit
 comes in with address text; the locator corrects it to the closest official
 address and the parcel layer says which parcel that point falls in. The
 steward approves that identity link, and the reviewer confirms the parcel
 before deciding.
 
-**Simulated enterprise GIS.** The app serves ArcGIS REST shaped services
+**Simulated enterprise geographic information system (GIS).** The app serves ArcGIS REST-style services
 in-app under `/sim/arcgis/rest/services/ACME/` (labelled simulated on every
 page and response): `AddressLocator/GeocodeServer` (`findAddressCandidates`,
 `suggest`, `reverseGeocode`), `Parcels/FeatureServer/0/query` (LGIM-style
 `PARCELID`, `SITEADDRESS`, `OWNERNME1`, `USECD`, `ZONING`, `CNVYNAME`,
 `STATEAREA`, `LNDVALUE`, `IMPVALUE`, `CNTASSDVAL`, `TAXDIST`, `SCHLDSCRP`,
-`FLOODZONE`) and `AddressPoints/FeatureServer/0/query`. They read the one
-parcel and address truth of the registry tables, so nothing disagrees. The
+`FLOODZONE`) and `AddressPoints/FeatureServer/0/query`. They all read the same
+parcel and address records in the registry tables and cannot disagree. The
 town (69 parcels, 71 address points, 6 streets) is synthetic and
 deterministic (`fixtures/gis_town.json`, rebuilt by `scripts/build_gis_town.py`).
 
 The app's own code reaches them only through the `GisLocator` adapter over
 HTTP. `ACME_GIS_BASE_URL` (default: the in-app simulator) plus
-`config/gis_field_map.json` is all it takes to point at a real ArcGIS server.
+`config/gis_field_map.json` point the app at a real ArcGIS server.
 
 **Who does what.**
 
@@ -613,7 +606,7 @@ only. A seeded case without a locator match is unchanged.
 
 **Screens.** The permit workspace has a **Property** card (typed address,
 standardized address, parcel number, score and status, other candidates, and
-a small SVG inset). Steward review lists the open parcel-link proposals with
+a small scalable vector graphics (SVG) inset). Steward review lists the open parcel-link proposals with
 the submitted point against the candidate parcels. `/property/{parcel}` is the
 property record (parcel attributes, addresses and units, applications and
 permits, a "Shared with" panel, a map, source and history). `/property?q=`
@@ -635,7 +628,7 @@ fence scenarios use "400 Lantren Row".
 
 **Applicant portal.** `/apply` (Applicant persona only): the guided chooser
 of 17 types, the per-type form with a live completeness banner (computed by
-the server on every preview, save and submit), the locator's "Did you mean",
+the server on every preview, save and submit), the locator's address suggestions,
 a document checklist with drag and drop, the certification, **Submit
 application** (refused server-side unless complete and certified), **Save and
 exit** (a draft) and **Track an application**. Arrivals land as "Awaiting
@@ -655,19 +648,19 @@ uv run python scripts/prepare_user_test.py --mode demo-synthetic
 The mode resets the database to the fixtures and then loads the synthetic year with `scripts/load_synthetic_year.py` (it refuses a database that is not the marked fictional demo). Defaults: seed `20261028`, count `600`; both are bounded (seed 0 to 2147483647, count 1 to 2000) by `config/synthetic_distributions.json`, whose `distribution_version` is part of the seed. The same seed, count and version always give the same year.
 
 - One generator, `portal_intake/scenarios.py: generate_synthetic_year(seed=, count=)`, builds the cases; `fixtures/synthetic.py: load_synthetic_year` writes them. P3policy reuses the generator.
-- Twelve months of dated arrivals (window ends 2026-10-27), all 17 types across the three districts. Fences cluster in residential districts; restaurants, bars, patios, signs, fit-outs and changes of occupancy sit in the commercial corridor; variance requests concentrate in R-2 on a few parcels so the map shows a pattern.
+- Twelve months of dated arrivals (window ends 2026-10-27), all 17 types across the three districts. Fences cluster in residential districts; restaurants, bars, patios, signs, fit-outs and changes of occupancy sit in the commercial corridor; variance requests concentrate in R-2 on a few parcels, and the map shows the pattern.
 - Fence heights (front yard around 4 ft and 6 ft, side and rear yard around 6 ft and 7 ft) and shed areas (around 200 and 600 sq ft) fall on both sides of each threshold.
-- A case is a **historical record**: application, revision, site, parties, and a decision and permit where its lifecycle has one. No agent runs, no decision service runs, and **no audit event is written**. A decision names the actor `synthetic_history`, which is neither a persona nor an agent. The workspace of a synthetic case shows a "Synthetic history" panel instead of an audit history.
-- Synthetic cases carry scenario id `SYNTH`, so they never wait for the intake agent, and they are left out of every staff queue and work list. They appear in the City view, the community view and the property record.
+- A case is a **historical record**: application, revision, site, parties, and a decision and permit where its lifecycle has one. No agent runs, no decision service runs, and **no audit event is written**. A decision names the actor `synthetic_history`, and that actor is neither a persona nor an agent. The workspace of a synthetic case shows a "Synthetic history" panel instead of an audit history.
+- Synthetic cases have scenario id `SYNTH`. They never wait for the intake agent and are left out of every staff queue and work list. They appear in the City view, the community view and the property record.
 - **Reset to fixtures only:** run the default reset (`scripts/reset_demo.py --confirm-fictional-demo`, or `prepare_user_test.py --mode fresh`). It deletes every synthetic row with the rest of the data.
 
 ### Business categories
 
-`credentials.business_category` (restaurant, bar, retail, office, other) is set on every business licence. Migration 0008 backfills the businesses that already exist from the words in their name, and the reset runs the same reported backfill (`business_categories_backfilled` in its output). Contractor registrations keep a blank category. Commercial permits link to the business, so they carry its category.
+`credentials.business_category` (restaurant, bar, retail, office, other) is set on every business licence. Migration 0008 backfills the businesses that already exist from the words in their name, and the reset runs the same reported backfill (`business_categories_backfilled` in its output). Contractor registrations keep a blank category. Commercial permits link to the business and take its category.
 
-### City view (City Administrator): `/insight/city`
+### City view for the City Administrator at `/insight/city`
 
-Opened by the grant `insight.city.view`, which only the City Administrator holds; it is the last entry of the navigation. Filters are query-string values and the screen works without JavaScript:
+The grant `insight.city.view` opens it. Only the City Administrator holds that grant, and the screen is the last entry of the navigation. Filters are query-string values and the screen works without JavaScript:
 
 | Parameter | Values |
 |---|---|
@@ -680,13 +673,13 @@ Opened by the grant `insight.city.view`, which only the City Administrator holds
 
 Quick views: `/insight/city?category=restaurant,bar` (restaurants and bars) and `/insight/city?type=zoning_variance&exceptions=1` (variances). The page has the district-shaded map (darker is more permits; orange dots mark parcels with exceptions, larger is more) with the district table, exceptions by kind and parcel, business activity by category, the monthly trend (SVG and table), and the permits in the view. Every figure is a count over the stored applications and its definition is printed beside it. A permit with no matched parcel is counted in the total and reported as "no matched parcel" instead of being drawn. The "Start a what-if from this view" control is absent until P3policy exists.
 
-### Permits in my community (public): `/city/community`
+### Permits in my community (public) at `/city/community`
 
 On the City of Acme website, linked from `/city/permits` and the home page services. No persona or sign-in; read-only (other methods answer 405); rate limited per client address (60 requests a minute, `429` with `Retry-After`).
 
 - `/city/community` shows the district-shaded map and district totals, with an optional type filter.
 - `/city/community?q=<address, street or permit number>` looks permits up.
-- `/city/community/permit/<number>` is one public record. Add `?format=json` (or send `Accept: application/json`) for the JSON of any of these.
+- `/city/community/permit/<number>` is one public record. Add `?format=json` (or send `Accept: application/json`) for the JSON (JavaScript Object Notation) version of any of these.
 - The public read model (`insight/public.py`) is an allowlist of 17 fields: reference, permit number, type, parcel, address, district, work description, public status, submitted / decided / issued dates, outcome, conditions, exception marker, **contractor business name** and the synthetic flag. It never holds an applicant or homeowner name, a document, a note or comment, a contact detail, a fee, a finding, a draft, or an internal id.
 - Drafts, withdrawn, returned and archived cases and anything before submission are not public. A case that is not public answers exactly like a number that does not exist.
 - Any district or filter total under 3 shows as "fewer than 3" (the district is hatched on the map).
@@ -697,7 +690,7 @@ On the City of Acme website, linked from `/city/permits` and the home page servi
 
 ### Model source label
 
-Every model run shown on the evidence panel and the workspace carries a source label such as "Muse Spark (live)" or "Muse Spark (replay)" with tokens and latency. The macro `templates/components/muse_source.html` is the one to reuse on the chat, briefing and what-if screens when they are built.
+Every model run shown on the evidence panel and the workspace has a source label such as "Muse Spark (live)" or "Muse Spark (replay)" with tokens and latency. The macro `templates/components/muse_source.html` is the one to reuse on the chat, briefing and what-if screens when they are built.
 
 ## Fence flow
 
@@ -719,7 +712,7 @@ sequenceDiagram
     A->>J: wake the adjudication agent
     R->>R: confirm the parcel (Is this the right property?)
     R->>J: Run all (five-node graph)
-    J->>J: recommendation pending (e.g. deny, DF-1) — advisory
+    J->>J: recommendation pending (for example deny, DF-1), advisory
     R->>J: Confirm (decision of record) or Revert (reason required)
     A->>I: assess fee, import payment, allocate, reconcile (exact)
     R->>I: issue permit (separate human action)
