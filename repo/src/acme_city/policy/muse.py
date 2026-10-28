@@ -62,7 +62,7 @@ from acme_city.core.config import Settings
 from acme_city.core.errors import ConflictError, NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.muse.client import (
-    MAX_OUTPUT_TOKENS,
+    POLICY_MAX_OUTPUT_TOKENS,
     MuseClient,
     MuseRequestError,
     ProviderResponse,
@@ -401,7 +401,7 @@ def build_payload(task: str, *, instructions: str, text: str, model: str) -> dic
             }
         },
         "reasoning": {"effort": "low"},
-        "max_output_tokens": MAX_OUTPUT_TOKENS,
+        "max_output_tokens": POLICY_MAX_OUTPUT_TOKENS,
     }
 
 

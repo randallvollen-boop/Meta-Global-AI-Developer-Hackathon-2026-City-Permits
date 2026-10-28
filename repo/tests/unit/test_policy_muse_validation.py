@@ -457,3 +457,15 @@ def test_the_proposal_schema_is_strict() -> None:
     out = proposal(FENCE)
     out["proposals"][0]["surprise"] = 1
     assert "schema_invalid" in proposal_codes(out)
+
+
+def test_the_policy_payload_leaves_room_for_reasoning_and_the_briefing() -> None:
+    # A live briefing spent 3,290 of a 4,000-token budget on reasoning and was
+    # cut off; the policy tasks now reserve more, within the client's ceiling.
+    from acme_city.muse.client import MAX_OUTPUT_CEILING, POLICY_MAX_OUTPUT_TOKENS
+    from acme_city.policy.muse import build_payload
+
+    payload = build_payload("policy_brief", instructions="i", text="t", model="m")
+    assert payload["max_output_tokens"] == POLICY_MAX_OUTPUT_TOKENS
+    assert POLICY_MAX_OUTPUT_TOKENS >= 12000
+    assert POLICY_MAX_OUTPUT_TOKENS <= MAX_OUTPUT_CEILING
