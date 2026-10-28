@@ -85,122 +85,209 @@
     "policy_content_hash": {
       "label": "Content hash",
       "text": "A fingerprint of everything the run holds: the scenario revision, the full baseline and proposed configuration, the cases, the population definition, the analysis moment and the engine and generator versions. It does not include ids or times, so the same inputs always give the same hash."
+    },
+    "application_status": {
+      "label": "Application status",
+      "text": "The status says where the application stands with the City. \"Action needed\" means the City is waiting for something from you; the request is shown on the application."
     }
   },
   "screens": {
     "queue": {
       "title": "Work queue",
       "purpose": "The cases waiting on someone, with the next step named for each.",
-      "can_do": ["Open a case from its row.", "Switch between the saved views and filter by department, type or state."],
+      "can_do": [
+        "Open a case from its row.",
+        "Switch between the saved views and filter by department, type or state."
+      ],
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
     },
     "applicants": {
       "title": "Applicants",
       "purpose": "One record per person or business, with where each value comes from.",
-      "can_do": ["Open an applicant to see the current value and its source.", "Request a correction where your persona may."],
+      "can_do": [
+        "Open an applicant to see the current value and its source.",
+        "Request a correction where your persona may."
+      ],
       "next": "A correction goes to the system that owns the value; it is not edited here."
     },
     "masters": {
       "title": "Properties, businesses and contractors",
       "purpose": "The master records for parcels, businesses and contractors, each owned by GIS, ERP Finance or Permitting.",
-      "can_do": ["Open a record to see its sources and history."],
+      "can_do": [
+        "Open a record to see its sources and history."
+      ],
       "next": "To change a value, change it in the system that owns it."
     },
     "permit": {
       "title": "Permit workspace",
       "purpose": "Everything about one application in one place: the submission, documents, Muse run, findings, decision and history.",
-      "can_do": ["Read the Muse proposal and the findings.", "Take the actions your persona is granted; a button that is unavailable says what is missing."],
+      "can_do": [
+        "Read the Muse proposal and the findings.",
+        "Take the actions your persona is granted; a button that is unavailable says what is missing."
+      ],
       "next": "A steward resolves findings, the reviewer records the decision, and the permit is issued only when the balance is paid."
     },
     "steward": {
       "title": "Steward review",
       "purpose": "Muse and the matcher propose which records are the same business or person; the steward decides.",
-      "can_do": ["Approve or reject a proposed link.", "Check the evidence behind a proposal before deciding."],
+      "can_do": [
+        "Approve or reject a proposed link.",
+        "Check the evidence behind a proposal before deciding."
+      ],
       "next": "The decision is recorded with its evidence and appears in the history of the record."
     },
     "rules": {
       "title": "Rules and fees",
       "purpose": "The versioned rule sets and fee schedules that checks and assessments use. Synthetic ACME values.",
-      "can_do": ["Read the published rules and fees.", "Draft and publish a version where your persona may."],
+      "can_do": [
+        "Read the published rules and fees.",
+        "Draft and publish a version where your persona may."
+      ],
       "next": "A published version applies to new evaluations; earlier decisions keep the version they used."
     },
     "reconciliation": {
       "title": "Reconciliation",
       "purpose": "Assessments, receipts and allocations for each case.",
-      "can_do": ["Compare what was assessed with what was received.", "Record an allocation where your persona may."],
+      "can_do": [
+        "Compare what was assessed with what was received.",
+        "Record an allocation where your persona may."
+      ],
       "next": "When the balance is zero, the permit can be issued."
     },
     "governance": {
       "title": "Governance and sources",
       "purpose": "Who owns each dataset, and what arrived without an owner.",
-      "can_do": ["See the owner and steward of a dataset.", "Escalate an issue or reassign a steward where your persona may."],
+      "can_do": [
+        "See the owner and steward of a dataset.",
+        "Escalate an issue or reassign a steward where your persona may."
+      ],
       "next": "An escalated issue waits for the owner named here."
     },
     "agent_intake": {
       "title": "Intake agent",
       "purpose": "The intake agent reads the received documents and proposes values; it does not decide anything.",
-      "can_do": ["Review its recorded steps.", "Run it on a case where your persona may."],
+      "can_do": [
+        "Review its recorded steps.",
+        "Run it on a case where your persona may."
+      ],
       "next": "Its proposal goes to a steward for review."
     },
     "agent_adjudication": {
       "title": "Adjudication agent",
       "purpose": "The adjudication agent recommends an outcome from the rules and the evidence; the reviewer decides.",
-      "can_do": ["Read its recommendation and the evidence it cites.", "Confirm or revert a recommendation where your persona may."],
+      "can_do": [
+        "Read its recommendation and the evidence it cites.",
+        "Confirm or revert a recommendation where your persona may."
+      ],
       "next": "Only a confirmed recommendation can lead to a recorded decision."
     },
     "admin": {
       "title": "Administration",
       "purpose": "Configuration and persona administration for the demonstration. Configuration never implies a business approval.",
-      "can_do": ["Review the configured actors and settings."],
+      "can_do": [
+        "Review the configured actors and settings."
+      ],
       "next": "Business decisions stay with the personas that hold those grants."
     },
     "intake_queue": {
       "title": "Intake queue",
       "purpose": "The cases the City has in front of it, in saved views. Search, filter and sort work through the address bar alone.",
-      "can_do": ["Pick a saved view.", "Select cases and process them with the agent."],
+      "can_do": [
+        "Pick a saved view.",
+        "Select cases and process them with the agent."
+      ],
       "next": "Open a case to resolve what the intake left."
     },
     "early_resolution": {
       "title": "Early resolution",
       "purpose": "The cases that wait for a person, grouped by the finding that puts them here.",
-      "can_do": ["Open a case from its group and resolve the finding."],
+      "can_do": [
+        "Open a case from its group and resolve the finding."
+      ],
       "next": "A resolved case moves on to review."
     },
     "review_queue": {
       "title": "Review queue",
       "purpose": "The cases with the Permit Reviewer, by review area, and the decisions recorded recently.",
-      "can_do": ["Open a case to read the recommendation and record a decision."],
+      "can_do": [
+        "Open a case to read the recommendation and record a decision."
+      ],
       "next": "A recorded decision is reconfirmed or issued from the case."
     },
     "apply": {
       "title": "Start an application",
       "purpose": "Choose the kind of project. The portal then asks only for what that kind of project needs.",
-      "can_do": ["Pick a project type to open its application form.", "Track an application you already sent."],
+      "can_do": [
+        "Pick a project type to open its application form.",
+        "Track an application you already sent."
+      ],
       "next": "You fill in the form, check what is missing, and submit."
     },
     "apply_track": {
-      "title": "Track an application",
-      "purpose": "Look up an application by its reference number and see where it stands.",
-      "can_do": ["Enter a reference number.", "Open the case to read what the City has asked of you."],
-      "next": "If the City asks for more, the request appears with the case; answer it there."
+      "title": "My permits",
+      "purpose": "Your applications in one place: what each one needs from you and where it stands.",
+      "can_do": [
+        "Switch between Active, Drafts and Closed.",
+        "Respond to a request from the City, view an application or download a copy of what you submitted.",
+        "Find an application by its reference number."
+      ],
+      "next": "If the City asks for something, a request appears on the application. Answer it there and the City checks again."
     },
     "policy_scenarios": {
       "title": "What-if",
       "purpose": "Test a proposed change to the permit rules on a set of cases before anything is changed. Saving or running a what-if never changes a rule, a fee, a permit type or an application.",
-      "can_do": ["Start from a suggestion or save a new what-if.", "Add the supported kinds of change and run them on a synthetic year or on stored cases."],
+      "can_do": [
+        "Start from a suggestion or save a new what-if.",
+        "Add the supported kinds of change and run them on a synthetic year or on stored cases."
+      ],
       "next": "A run is kept as a snapshot; open its results, then its briefing for legislators."
     },
     "policy_run": {
       "title": "What-if results",
       "purpose": "What the what-if would change, counted from the same cases scored twice, with each figure's definition beside it.",
-      "can_do": ["Read the counts by outcome, the cases that change and the safety signals.", "Open the legislator briefing."],
+      "can_do": [
+        "Read the counts by outcome, the cases that change and the safety signals.",
+        "Open the legislator briefing."
+      ],
       "next": "The briefing is built from these figures only; a change to the real rules is a separate, approved step."
     },
     "policy_briefing": {
       "title": "Legislator briefing",
       "purpose": "A plain-language briefing built only from the typed facts of one run. No model wrote it.",
-      "can_do": ["Read it on screen.", "Download it as HTML or Markdown."],
+      "can_do": [
+        "Read it on screen.",
+        "Download it as HTML or Markdown."
+      ],
       "next": "A briefing written with Muse is planned for a later release; this one is always available."
+    },
+    "apply_form": {
+      "title": "Application form",
+      "purpose": "Tell the City about your project, yourself and your documents. The form asks only for what this kind of project needs.",
+      "can_do": [
+        "Answer the questions and add the documents, or say a document was sent to the City separately.",
+        "Save a draft and come back to it in My permits.",
+        "Submit; if something is missing you see exactly what, and nothing you typed is lost."
+      ],
+      "next": "After you submit you get a reference number. The City checks the application, and any request from the City appears in My permits."
+    },
+    "apply_receipt": {
+      "title": "Application received",
+      "purpose": "The record that the City received your application, with its reference number.",
+      "can_do": [
+        "Track the application in My permits.",
+        "Download a copy of what you submitted."
+      ],
+      "next": "The City's intake agent checks the application next, and then a person at the City decides. Nothing is approved automatically."
+    },
+    "city_permits": {
+      "title": "Permits and applications",
+      "purpose": "Where you start a permit application or come back to one you already started.",
+      "can_do": [
+        "Start an application.",
+        "Track or resume an application.",
+        "Read what you will need before you begin."
+      ],
+      "next": "You choose a project type and fill in its form."
     }
   }
 }

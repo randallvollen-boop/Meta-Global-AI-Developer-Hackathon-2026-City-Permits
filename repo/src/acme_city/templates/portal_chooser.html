@@ -1,24 +1,43 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% macro type_card(card) %}
+<a class="card type-card" href="{{ card.href }}" data-testid="type-card" data-type-key="{{ card.type_key }}">
+  <span class="type-ic-wrap">{% if card.icon_url %}<img class="type-ic" src="{{ card.icon_url }}" alt="">{% else %}<svg class="type-ic-fallback" aria-hidden="true"><use href="#c-permit"/></svg>{% endif %}</span>
+  <span class="type-text"><strong>{{ card.label }}</strong><span class="muted">{{ card.description }}</span></span>
+</a>
+{% endmacro %}
+
+{% block toasts %}
+{% if saved %}<div class="toast on city-toast" role="status" data-testid="draft-saved">Your draft {{ saved }} was saved. Pick the same project below to continue it.</div>{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="page-head"><div><h1>What are you trying to do?</h1><p class="sub">Choose your project. The portal asks only for what that kind of project needs.</p></div></div>
+<div class="page-head chooser-head">
+  <div><h1>What are you trying to do?</h1><p class="sub">Choose your project. The portal asks only for what that kind of project needs.</p></div>
+  <div class="actions"><a class="btn" href="/apply/track" data-testid="track-link">Track an existing application</a> {{ ui.help_button('apply') }}</div>
+</div>
 
 <p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
-{% if saved %}<p class="muted" role="status" data-testid="draft-saved">Your draft {{ saved }} was saved. Pick the same project below to continue it.</p>{% endif %}
 
+<div class="chooser-layout">
+<div class="chooser-main">
 {% for group in groups %}
-<section class="panel" aria-labelledby="group-{{ group.key }}" data-testid="portal-group" data-group="{{ group.key }}">
+<section class="panel chooser-group" aria-labelledby="group-{{ group.key }}" data-testid="portal-group" data-group="{{ group.key }}">
   <h2 id="group-{{ group.key }}">{{ group.label }}</h2>
-  <div class="type-cards">
-    {% for card in group.cards %}
-    <a class="card type-card" href="{{ card.href }}" data-testid="type-card" data-type-key="{{ card.type_key }}">
-      {% if card.icon_url %}<img class="type-ic" src="{{ card.icon_url }}" alt="">{% endif %}
-      <strong>{{ card.label }}</strong>
-      <span class="muted">{{ card.description }}</span>
-      <span class="pill info" data-testid="process-pill" title="{{ card.pill_text }}">{{ card.pill }}</span>
-    </a>
-    {% endfor %}
+  {% if group.cards %}
+  <div class="type-cards compact">
+    {% for card in group.cards %}{{ type_card(card) }}{% endfor %}
   </div>
+  {% endif %}
+  {% if group.more %}
+  <details class="more-types" data-testid="more-types"{% if not group.cards %} open{% endif %}>
+    <summary>{% if group.cards %}More {{ group.label | lower }} permits{% else %}All {{ group.label | lower }} permits{% endif %} ({{ group.more | length }})</summary>
+    <div class="type-cards compact">
+      {% for card in group.more %}{{ type_card(card) }}{% endfor %}
+    </div>
+  </details>
+  {% endif %}
 </section>
 {% endfor %}
 
@@ -26,15 +45,15 @@
 <section class="panel" aria-labelledby="drafts-heading">
   <h2 id="drafts-heading">Your drafts</h2>
   <ul data-testid="portal-drafts">
-    {% for item in drafts %}<li><a href="/apply/{{ item.type_key }}?draft={{ item.reference }}">{{ item.reference }}</a> ({{ item.type_key }})</li>{% endfor %}
+    {% for item in drafts %}<li><a href="/apply/{{ item.type_key }}?draft={{ item.reference }}">{{ item.reference }}</a> ({{ item.type_label }})</li>{% endfor %}
   </ul>
+  <p class="muted"><a href="/apply/track?tab=drafts">See your drafts in My permits</a></p>
 </section>
 {% endif %}
+</div>
 
-<p><a class="btn" href="/apply/track" data-testid="track-link">Track an existing application</a></p>
-<ul class="muted pill-legend">
-  {% for key, pair in process_pills.items() %}<li><strong>{{ pair[0] }}</strong>: {{ pair[1] }}</li>{% endfor %}
-</ul>
-
+<aside class="chooser-aside" aria-label="Questions about permits" data-testid="chooser-help-column">
 {% include "components/help_panel.html" %}
+</aside>
+</div>
 {% endblock %}

@@ -56,7 +56,7 @@
       "process_category": "simple",
       "discretionary": false,
       "service_target_days": 5,
-      "description": "A residential deck, fence or other yard structure, reviewed at the counter.",
+      "description": "A residential deck or fence",
       "fee_schedule_key": "fee_commercial_demo"
     },
     {
@@ -150,7 +150,7 @@
       "process_category": "simple",
       "discretionary": false,
       "service_target_days": 5,
-      "description": "A residential patio, reviewed at the counter.",
+      "description": "A residential patio",
       "required_fields": [
         "parcel_number",
         "project_description",
@@ -343,7 +343,7 @@
       "process_category": "formal_review",
       "discretionary": true,
       "service_target_days": 20,
-      "description": "A site plan reviewed by the planning board. Discretionary: only a person or the board decides.",
+      "description": "A site plan reviewed by the planning board.",
       "required_fields": [
         "parcel_number",
         "project_description"
@@ -366,7 +366,7 @@
       "process_category": "formal_review",
       "discretionary": true,
       "service_target_days": 20,
-      "description": "A request to change the zoning of a parcel. Discretionary: only a person or the board decides.",
+      "description": "A request to change the zoning of a parcel.",
       "required_fields": [
         "parcel_number",
         "project_description",
@@ -391,7 +391,7 @@
       "process_category": "formal_review",
       "discretionary": true,
       "service_target_days": 20,
-      "description": "A request to vary the zoning rules of a parcel. Discretionary: only a person or the board decides.",
+      "description": "A request to vary the zoning rules of a parcel.",
       "required_fields": [
         "parcel_number",
         "project_description",
@@ -415,7 +415,7 @@
       "process_category": "formal_review",
       "discretionary": true,
       "service_target_days": 20,
-      "description": "A certificate that a change is appropriate to a historic property. Discretionary: only a person or the board decides.",
+      "description": "A certificate that a change is appropriate to a historic property.",
       "required_fields": [
         "parcel_number",
         "project_description",

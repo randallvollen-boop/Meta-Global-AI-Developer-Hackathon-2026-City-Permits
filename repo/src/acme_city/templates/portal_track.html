@@ -2,74 +2,198 @@
 
 {% import "_ui.html" as ui with context %}
 
-{% block content %}
-<div class="page-head"><div><h1>Track an application</h1><p class="sub">Look up an application by its reference number.</p></div><div class="actions">{{ ui.help_button('apply_track') }}</div></div>
-<section class="panel">
-  <form method="get" action="/apply/track" role="search" data-testid="track-form">
-    <p class="field"><label for="track-ref">Reference number</label><input id="track-ref" name="ref" value="{{ ref }}" required></p>
-    <p><button type="submit" class="btn primary">Track</button> <a class="btn" href="/apply">Start an application</a></p>
-  </form>
-  {% if not_found %}<p class="action-denied" role="alert" data-testid="track-none">No application with that reference is in your records.</p>{% endif %}
-  {% if revised %}<p class="muted" role="status" data-testid="revised-notice">{{ revised }} revised document(s) received. The City will review them.</p>{% endif %}
-</section>
+{% macro pin() %}<svg class="pin" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>{% endmacro %}
 
-{% if tracked %}
-<section class="panel" data-testid="tracked-application">
-  <h2>{{ tracked.reference }}: {{ tracked.type_label }}</h2>
-  <p>Status: <span class="pill info" data-testid="tracked-status">{{ tracked.status_word }}</span></p>
-  <p><a href="{{ tracked.workspace_href }}" data-testid="open-case">Open the case</a></p>
-  <h3>Messages from the City</h3>
-  <ul data-testid="city-messages">
-    {% for item in tracked.messages %}
-    <li>{{ item.message }}{% if item.applicant_must %} <strong>You must:</strong> {{ item.applicant_must }}{% endif %}</li>
+{% macro steps(card) %}
+<ol class="steps" aria-label="{{ card.progress.summary }}" data-testid="progress-steps">
+  {% for step in card.progress.steps %}
+  <li class="step step-{{ step.state }}" data-state="{{ step.state }}"{% if step.state in ('current', 'stopped') %} aria-current="step"{% endif %}><span class="step-dot" aria-hidden="true">{% if step.state == 'done' %}&#10003;{% elif step.state == 'stopped' %}&times;{% else %}{{ loop.index }}{% endif %}</span><span class="step-label">{{ step.label }}<span class="visually-hidden">: {{ step.state_word }}</span></span></li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
+{% macro app_card(card, detail=false) %}
+<article class="permit-card" data-testid="permit-card" data-status="{{ card.status }}" data-reference="{{ card.reference }}" data-kind="{{ card.kind }}">
+  <header class="permit-card-head">
+    <div class="permit-id">
+      <h2 class="permit-title">{{ card.title }}</h2>
+      {% if card.address %}<p class="permit-addr" data-testid="permit-address">{{ pin() }}<span>{{ card.address }}</span></p>{% endif %}
+      <p class="permit-ref" data-testid="permit-ref">{% if card.kind == 'draft' %}Draft {{ card.reference }}{% else %}Application {{ card.reference }}{% endif %}</p>
+    </div>
+    <p class="permit-badge"><span class="badge badge-{{ card.badge.tone }}" data-testid="status-badge">{{ card.badge.text }}</span>{{ ui.info('application_status') }}</p>
+  </header>
+
+  {% if card.request %}
+  <div class="request-box" {% if detail %}id="request" {% endif %}role="group" aria-labelledby="req-{{ card.reference }}" data-testid="request-box">
+    <svg class="request-icon" aria-hidden="true"><use href="#i-alert"/></svg>
+    <div class="request-body">
+      <strong id="req-{{ card.reference }}" data-testid="request-title">{{ card.request.title }}</strong>
+      <p data-testid="request-text">{{ card.request.text }}</p>
+      {% if card.more_requests %}<p class="muted">{{ card.more_requests }} more request{{ 's' if card.more_requests != 1 else '' }} on the application.</p>{% endif %}
+    </div>
+    <div class="request-actions">
+      <a class="btn gold" href="{{ card.primary.href }}" data-testid="primary-action">{{ card.primary.label }}</a>
+      {% if not detail %}<a href="{{ card.request_href }}" data-testid="view-request">View request</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if card.kind == 'application' %}{{ steps(card) }}{% else %}<p class="muted" data-testid="draft-note">Not submitted yet. Nothing has been sent to the City.</p>{% endif %}
+
+  <dl class="permit-meta" data-testid="permit-meta">
+    {% if card.kind == 'application' %}
+    <div><dt>Submitted</dt><dd data-testid="permit-submitted">{{ card.submitted_date }}</dd></div>
+    <div><dt>Status</dt><dd><span data-testid="tracked-status">{{ card.status_word }}</span></dd></div>
     {% else %}
-    <li class="muted">No message from the City yet.</li>
+    <div><dt>Last saved</dt><dd>{{ card.saved_date }}</dd></div>
+    {% endif %}
+  </dl>
+
+  <p class="permit-links" data-testid="permit-links">
+    {% if not card.request and not (detail and card.primary.label == 'View application') %}<a class="btn {{ 'gold' if card.primary.label in ('Continue application', 'Download permit') else 'primary' }}" href="{{ card.primary.href }}" data-testid="primary-action">{{ card.primary.label }}</a>{% endif %}
+    {% if card.kind == 'application' %}
+    {% if not detail and card.primary.label != 'View application' %}<a href="{{ card.view_href }}" data-testid="view-application">View application</a>{% endif %}
+    <a href="{{ card.download_href }}" download data-testid="download-submission">Download submission</a>
+    {% endif %}
+  </p>
+</article>
+{% endmacro %}
+
+{% macro activity_list(events, show_ref) %}
+{% if events %}
+<section class="panel activity" aria-labelledby="activity-h" data-testid="recent-activity">
+  <h2 id="activity-h">Recent activity</h2>
+  <ul class="activity-list">
+    {% for event in events %}
+    <li data-testid="activity-item"><time datetime="{{ event.when.isoformat() }}" title="{{ event.stamp }}">{{ event.date }}</time><span>{{ event.title }}{% if show_ref %} <span class="muted">({{ event.reference }})</span>{% endif %}{% if event.text %}<span class="activity-text">{{ event.text }}</span>{% endif %}</span></li>
     {% endfor %}
-    {% if tracked.decision_reason %}<li>Decision note: {{ tracked.decision_reason }}</li>{% endif %}
   </ul>
-  {% if tracked.decision_conditions %}
-  <h3>Conditions of your approval</h3>
-  <ol data-testid="city-conditions">
-    {% for condition in tracked.decision_conditions %}
-    <li>{{ condition }}</li>
-    {% endfor %}
-  </ol>
-  {% endif %}
-  {% if tracked.documents %}
-  <h3>Your documents</h3>
-  <ul data-testid="tracked-documents">
-    {% for doc in tracked.documents %}
-    <li data-doc-type="{{ doc.type }}">{{ doc.label }}:
-      {% if doc.have %}received
-      {% elif doc.declared_separately %}<span data-testid="declared-separately">Declared sent separately &mdash; not yet received</span>
-      {% else %}not received{% endif %}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-  {% if tracked.revisions_requested %}
-  <h3>Submit revised documents</h3>
-  <form method="post" action="/apply/track/{{ tracked.application_id }}/revise" enctype="multipart/form-data" data-testid="revise-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="reference" value="{{ tracked.reference }}">
-    {% for doc in tracked.documents %}
-    <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
-    {% endfor %}
-    <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
-  </form>
-  <h3>Send the answer back to the City</h3>
-  <p class="muted">Sending the answer creates a new revision of your application. The City assesses it again from the start.</p>
-  <form method="post" action="/apply/track/{{ tracked.application_id }}/resubmit" enctype="multipart/form-data" data-testid="resubmit-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="reference" value="{{ tracked.reference }}">
-    <input type="hidden" name="expected_version" value="{{ tracked.application_version }}">
-    {% for doc in tracked.documents %}
-    <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
-    {% endfor %}
-    <p><button type="submit" class="btn primary" data-testid="resubmit-submit">Send the answer to the City</button></p>
-  </form>
-  {% endif %}
 </section>
 {% endif %}
+{% endmacro %}
 
-{% include "components/help_panel.html" %}
+{% block toasts %}
+{% if saved %}<div class="toast on city-toast" role="status" data-testid="draft-saved">Your draft {{ saved }} was saved.</div>
+{% elif revised %}<div class="toast on city-toast" role="status" data-testid="revised-notice">{{ revised }} revised document(s) received. The City will review them.</div>
+{% elif resubmitted %}<div class="toast on city-toast" role="status" data-testid="resubmitted-notice">Your response was sent to the City. The application is back with the City to check again.</div>{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-head tracker-head">
+  <div><h1>My permits</h1><p class="sub">Track your applications and respond to requests from the City.</p></div>
+  <div class="actions">{{ ui.help_button('apply_track') }}<a class="btn gold" href="/apply" data-testid="start-application">Start an application</a></div>
+</div>
+
+<div class="tracker-layout">
+<div class="tracker-main">
+  {% if tracked %}
+  <p class="back-link"><a href="/apply/track" data-testid="all-permits">&larr; All my permits</a></p>
+  <section class="panel tracked" data-testid="tracked-application" aria-label="Application {{ tracked.reference }}">
+    {{ app_card(tracked.card, true) }}
+    <p class="detail-more">{{ ui.detail_link('my-permit', tracked.reference, 'Record details') }}</p>
+    <h3>Messages from the City</h3>
+    <ul data-testid="city-messages">
+      {% for item in tracked.messages %}
+      <li>{{ item.message }}</li>
+      {% else %}
+      <li class="muted">No message from the City yet.</li>
+      {% endfor %}
+      {% if tracked.decision_reason %}<li>Decision note: {{ tracked.decision_reason }}</li>{% endif %}
+    </ul>
+    {% if tracked.requests %}
+    <h3>What the City asked</h3>
+    <ul data-testid="city-requests">
+      {% for item in tracked.requests %}<li><strong>{{ item.title }}.</strong> {{ item.text }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if tracked.decision_conditions %}
+    <h3>Conditions of your approval</h3>
+    <ol data-testid="city-conditions">
+      {% for condition in tracked.decision_conditions %}
+      <li>{{ condition }}</li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+    {% if tracked.documents %}
+    <h3>Your documents</h3>
+    <ul data-testid="tracked-documents">
+      {% for doc in tracked.documents %}
+      <li data-doc-type="{{ doc.type }}">{{ doc.label }}:
+        {% if doc.have %}received
+        {% elif doc.declared_separately %}<span data-testid="declared-separately">Declared sent separately &mdash; not yet received</span>
+        {% else %}not received{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p><a href="{{ tracked.workspace_href }}" data-testid="open-case">Open the case</a></p>
+    {% if tracked.revisions_requested %}
+    <div id="respond" class="respond" data-testid="respond-section">
+    <h3>Submit revised documents</h3>
+    <form method="post" action="/apply/track/{{ tracked.application_id }}/revise" enctype="multipart/form-data" data-testid="revise-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="reference" value="{{ tracked.reference }}">
+      {% for doc in tracked.documents %}
+      <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+      {% endfor %}
+      <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
+    </form>
+    <h3>Send the answer back to the City</h3>
+    <p class="muted">Sending the answer creates a new revision of your application. The City assesses it again from the start.</p>
+    <form method="post" action="/apply/track/{{ tracked.application_id }}/resubmit" enctype="multipart/form-data" data-testid="resubmit-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="reference" value="{{ tracked.reference }}">
+      <input type="hidden" name="expected_version" value="{{ tracked.application_version }}">
+      {% for doc in tracked.documents %}
+      <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+      {% endfor %}
+      <p><button type="submit" class="btn primary" data-testid="resubmit-submit">Send the answer to the City</button></p>
+    </form>
+    </div>
+    {% endif %}
+  </section>
+  {{ activity_list(tracked.activity, false) }}
+
+  {% else %}
+  {% if not_found %}<p class="action-denied" role="alert" data-testid="track-none">No application with that reference is in your records.</p>{% endif %}
+
+  {% if pm.empty %}
+  <section class="panel empty-state" data-testid="my-permits-empty">
+    <h2>You have no applications yet</h2>
+    <p>Start an application and it will be listed here, with what the City needs from you and where it stands.</p>
+    <p><a class="btn gold" href="/apply" data-testid="empty-start">Start an application</a></p>
+  </section>
+  {% else %}
+  <nav class="tracker-tabs" aria-label="My permits views" data-testid="permit-tabs">
+    <ul>
+      {% for tab in pm.tabs %}
+      <li><a href="/apply/track?tab={{ tab.key }}" data-testid="tab-{{ tab.key }}"{% if tab.selected %} aria-current="page"{% endif %}>{{ tab.label }} <span class="tab-count">({{ tab.count }})</span></a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  <div class="permit-list" data-testid="permit-list" data-tab="{{ pm.selected }}">
+    {% for card in pm.cards %}{{ app_card(card) }}{% else %}
+    <p class="muted" data-testid="tab-empty">Nothing here yet. <a href="/apply">Start an application</a>.</p>
+    {% endfor %}
+  </div>
+  {{ activity_list(pm.activity, true) }}
+  {% endif %}
+  {% endif %}
+
+  <form method="get" action="/apply/track" role="search" class="track-find" data-testid="track-form">
+    <p class="field"><label for="track-ref">Find an application by reference number</label><span class="track-row"><input id="track-ref" name="ref" value="{{ ref }}" required><button type="submit" class="btn">Track</button></span></p>
+  </form>
+</div>
+
+<aside class="tracker-aside" aria-label="Help and next steps">
+  <section class="panel side-card" data-testid="what-next">
+    <h2>What happens next</h2>
+    <p data-testid="next-step">{{ next_step }}</p>
+  </section>
+  <section class="panel side-card" data-testid="need-help">
+    <h2>Need help?</h2>
+    <p>Ask below, or contact <a href="{{ contact_href }}" data-testid="contact-link">{{ contact_label }}</a>.</p>
+  </section>
+  {% include "components/help_panel.html" %}
+</aside>
+</div>
 {% endblock %}

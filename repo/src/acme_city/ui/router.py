@@ -256,6 +256,13 @@ def require_actor(
 # ------------------------------------------------------------------- rendering
 
 
+def _applicant_name(session: Session, actor: ActorContext | None) -> str:
+    """Return the acting applicant's name for the page header ("" for staff)."""
+    from acme_city.applicant_portal.service import applicant_display_name
+
+    return applicant_display_name(session, actor)
+
+
 def page_context(
     request: Request,
     session: Session,
@@ -287,6 +294,7 @@ def page_context(
         "agent_status": agent_views.sidebar_status(session, actor),
         "csrf_token": csrf_token(settings, actor.session_id),
         "fictional_demo": True,
+        "applicant_name": _applicant_name(session, actor),
         "ui_drawer": patterns.drawer_state(request, session, actor),
         **extra,
     }

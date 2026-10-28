@@ -1,22 +1,38 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
 {% block content %}
+{% macro go(label, next_path, testid, primary) %}
+{% if is_applicant %}
+<a class="{{ 'city-cta' if primary else 'city-cta city-cta-quiet' }}" href="{{ next_path }}" data-testid="{{ testid }}">{{ label }} <svg aria-hidden="true"><use href="#c-arrow"/></svg></a>
+{% elif applicant %}
+<form method="post" action="/ui/actor" class="city-go" data-testid="{{ testid }}-form">
+  <input type="hidden" name="actor_id" value="{{ applicant.actor_id }}">
+  <input type="hidden" name="next" value="{{ next_path }}">
+  <button type="submit" class="{{ 'city-cta' if primary else 'city-cta city-cta-quiet' }}" data-testid="{{ testid }}">{{ label }} <svg aria-hidden="true"><use href="#c-arrow"/></svg></button>
+</form>
+{% endif %}
+{% endmacro %}
 <div class="city-wrap city-page">
-  <h1>Permits</h1>
-  <p class="city-lede">Apply for a permit, save a draft, and track an application with the Planning and Permits office.</p>
-  <section class="city-entry" aria-labelledby="entry-h" data-testid="permits-entry">
-    <h2 id="entry-h">Continue to permit services</h2>
-    {% if applicant %}
-    <p>The permit services are for applicants. In this demonstration you continue as the fictional applicant.</p>
-    {% if actor %}<p class="muted">You are currently acting as <strong>{{ actor.label }}</strong>; continuing switches to the applicant.</p>{% endif %}
-    <form method="post" action="/ui/actor" data-testid="permits-entry-form">
-      <input type="hidden" name="actor_id" value="{{ applicant.actor_id }}">
-      <input type="hidden" name="next" value="{{ permits_home }}">
-      <button type="submit" class="city-cta" data-testid="permits-continue">Continue as applicant <svg aria-hidden="true"><use href="#c-arrow"/></svg></button>
-    </form>
-    {% else %}
-    <p class="action-denied" role="alert">The applicant account is not available.</p>
-    {% endif %}
+  <div class="page-head"><div><h1>Permits and applications</h1><p class="city-lede">Apply for a permit, save a draft, and track an application with the Planning and Permits office.</p></div><div class="actions">{{ ui.help_button('city_permits') }}</div></div>
+
+  <section class="city-entry city-entry-main" aria-labelledby="entry-h" data-testid="permits-entry">
+    <h2 id="entry-h">What would you like to do?</h2>
+    {% if not applicant and not is_applicant %}<p class="action-denied" role="alert">The applicant account is not available.</p>{% endif %}
+    {% if actor and not is_applicant %}<p class="muted">You are currently acting as <strong>{{ actor.label }}</strong>. In this demonstration these buttons switch to the fictional applicant.</p>{% endif %}
+    <div class="city-actions" data-testid="permits-actions">
+      {{ go('Start an application', permits_home, 'permits-start', true) }}
+      {{ go('Track or resume an application', track_home, 'permits-track', false) }}
+    </div>
   </section>
+
+  <section class="city-entry" aria-labelledby="need-h" data-testid="permits-need">
+    <h2 id="need-h">What you'll need</h2>
+    <ul class="city-need">
+      {% for item in what_you_need %}<li data-testid="need-item"><strong>{{ item.title }}</strong><span>{{ item.text }}</span></li>{% endfor %}
+    </ul>
+    <p class="muted">Questions before you start? <a href="{{ help_href }}" data-testid="permits-help-link">Contact permit services</a>.</p>
+  </section>
+
   <section class="city-entry" aria-labelledby="community-h" data-testid="permits-community">
     <h2 id="community-h">Permits in my community</h2>
     <p>See which permits have been applied for near you. Look one up by address, street or permit number. No sign-in is needed.</p>

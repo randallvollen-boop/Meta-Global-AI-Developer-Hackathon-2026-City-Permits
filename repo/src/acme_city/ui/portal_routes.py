@@ -19,17 +19,24 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from acme_city.applicant_help import views as help_views
 from acme_city.applicant_help.service import ApplicantHelpService
-from acme_city.applicant_portal import forms
-from acme_city.applicant_portal.service import PortalService, applicant_party
+from acme_city.applicant_portal import content as portal_content
+from acme_city.applicant_portal import forms, permits_view
+from acme_city.applicant_portal.service import (
+    MAX_UPLOAD_BYTES,
+    UPLOAD_EXTENSIONS,
+    PortalService,
+    applicant_display_name,
+    applicant_party,
+)
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
-from acme_city.core.errors import AcmeError, NotFoundError
+from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
 from acme_city.ui.router import (
     CSRF_FIELD,
     error_response,
@@ -89,6 +96,16 @@ class _Incomplete(Exception):
     """The applicant pressed Submit with something still missing."""
 
 
+class _Rejected(Exception):
+    """A file was refused; the draft is kept and nothing is submitted."""
+
+
+def _upload_rules() -> str:
+    """Return the accepted formats and the size limit, from the upload rules."""
+    megabytes = MAX_UPLOAD_BYTES // (1024 * 1024)
+    return f"Accepted: PDF, PNG, JPG or plain text (.txt), up to {megabytes} MB each."
+
+
 def _declared(form: Any, spec: forms.FormSpec) -> set[str]:
     """Return the document types the applicant ticked "Sent to the City separately"."""
     return {
@@ -111,7 +128,7 @@ def _values(form: Any, spec: forms.FormSpec) -> dict[str, str]:
     for name in names:
         value = form.get(name)
         out[name] = str(value).strip() if isinstance(value, str) else ""
-    return out
+    return spec.with_defaults(out)
 
 
 async def _files(form: Any, spec: forms.FormSpec) -> list[tuple[str, str, bytes]]:
@@ -143,7 +160,9 @@ def _form_context(
     notice: str = "",
     help_conversation_id: str = "",
     help_question: str = "",
+    upload_problems: dict[str, str] | None = None,
 ) -> dict[str, Any]:
+    values = spec.with_defaults(values)
     documents = service.draft_documents(draft)
     declared = set(sent_separately or ())
     state = service.completeness(
@@ -171,6 +190,13 @@ def _form_context(
         form_error=error,
         form_notice=notice,
         located=service.locate(values.get("address_text", "")),
+        rule_hints=service.rule_hints(spec),
+        upload_rules=_upload_rules(),
+        upload_accept=",".join(sorted(UPLOAD_EXTENSIONS)),
+        upload_problems=dict(upload_problems or {}),
+        document_purposes={
+            doc_type: portal_content.document_purpose(doc_type) for doc_type, _label in spec.documents
+        },
         help_question=help_question,
         **_help_panel(
             request,
@@ -184,12 +210,8 @@ def _form_context(
 
 
 def _default_values(session: Session, actor: ActorContext) -> dict[str, str]:
-    from acme_city.persistence.models import registry
-
-    party = applicant_party(actor)
-    row = session.get(registry.Party, party) if party else None
     return {
-        "applicant_name": row.display_name if row is not None else "",
+        "applicant_name": applicant_display_name(session, actor),
         "applicant_email": "",
         "applicant_phone": "",
         "address_text": "",
@@ -245,20 +267,25 @@ def ui_portal_chooser(
     if refused is not None:
         return refused
     service = _service(request, session)
+    groups = service.chooser()
+    type_labels = {card["type_key"]: card["label"] for group in groups for card in group["all"]}
     context = page_context(
         request,
         session,
         resolved,
         screen="portal",
         title="What are you trying to do?",
-        groups=service.chooser(),
+        groups=groups,
         drafts=[
-            {"reference": row.reference, "type_key": row.permit_type_key}
+            {
+                "reference": row.reference,
+                "type_key": row.permit_type_key,
+                "type_label": type_labels.get(row.permit_type_key, row.permit_type_key),
+            }
             for row in service.my_drafts(resolved)
         ],
         saved=saved,
         portal_notice=forms.PORTAL_NOTICE,
-        process_pills=forms.PROCESS_PILLS,
         help_question=help_question,
         **_help_panel(
             request,
@@ -312,27 +339,42 @@ def ui_portal_track(
     request: Request,
     ref: str = "",
     revised: str = "",
+    resubmitted: str = "",
+    saved: str = "",
+    tab: str = "",
     help_conversation: str = Query("", alias="help"),
     help_question: str = "",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
-    """Look an application up by reference."""
+    """Show "My permits"; with a reference, show that application in full."""
     resolved, refused = _portal_guard(request, session, actor)
     if refused is not None:
         return refused
     service = _service(request, session)
     tracked = service.track(ref, resolved) if ref.strip() else None
+    pm = None if tracked else permits_view.my_permits(session, resolved, tab=tab)
+    share = portal_content.content().get("share", {})
     context = page_context(
         request,
         session,
         resolved,
         screen="portal",
-        title="Track an application",
+        title="My permits",
         ref=ref,
         tracked=tracked,
+        pm=pm,
+        next_step=(
+            tracked["card"]["next_step"]
+            if tracked
+            else (pm or {}).get("next_step", "")
+        ),
+        contact_href=share.get("contact_href", "/city/contact"),
+        contact_label=share.get("contact_label", "Planning and Permits"),
         not_found=bool(ref.strip()) and tracked is None,
         revised=revised,
+        resubmitted=resubmitted,
+        saved=saved,
         portal_notice=forms.PORTAL_NOTICE,
         help_question=help_question,
         **_help_panel(
@@ -345,6 +387,8 @@ def ui_portal_track(
             reference=ref,
         ),
     )
+    if tracked is None and pm is None:  # pragma: no cover - pm is built whenever tracked is not
+        raise AssertionError
     return render(request, "portal_track.html", context)
 
 
@@ -487,11 +531,89 @@ def ui_portal_submitted(
         session,
         resolved,
         screen="portal",
-        title="Application submitted",
+        title="Application received",
         tracked=tracked,
+        receipt=portal_content.content()["receipt"],
         portal_notice=forms.PORTAL_NOTICE,
     )
     return render(request, "portal_submitted.html", context)
+
+
+@router.get("/apply/submitted/{reference}/copy", operation_id="ui_portal_copy")
+def ui_portal_copy(
+    reference: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Download a printable copy of what the applicant submitted.
+
+    The copy holds the applicant's own entries and the received documents. It
+    carries no finding, no comment and no staff name, and it is not a permit.
+    """
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    record = _service(request, session).copy_record(reference, resolved)
+    if record is None:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="That application is not available to you",
+            message="No application with that reference is in your records.",
+            code="not_found",
+            back="/apply/track",
+        )
+    from acme_city.ui.router import templates
+
+    body = templates.get_template("portal_copy.html").render(
+        record=record, copy_note=portal_content.content()["receipt"]["copy_note"]
+    )
+    return Response(
+        body,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="application-{record["reference"]}.html"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.get("/apply/permit/{reference}", operation_id="ui_portal_permit_download")
+def ui_portal_permit_download(
+    reference: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Download the printable permit of an issued application the applicant owns."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    issued = _service(request, session).issued_permit(reference, resolved)
+    if issued is None:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="No permit is available for that application",
+            message="The permit can be downloaded once it has been issued.",
+            code="not_found",
+            back="/apply/track",
+        )
+    from acme_city.permits.issuance import render_permit_artifact
+
+    return Response(
+        render_permit_artifact(session, issued.id),
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="permit-{issued.permit_number}.html"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("/apply/{type_key}", operation_id="ui_portal_form")
@@ -595,14 +717,28 @@ async def ui_portal_post(
     draft = None
     error_text = ""
     notice = ""
+    upload_problems: dict[str, str] = {}
     try:
         verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
         draft = service.save_draft(
             spec, values, certification_accepted, resolved,
             reference=str(form.get("draft", "")), sent_separately=declared,
         )
+        removing = str(form.get("remove_doc", ""))
+        if removing and removing in dict(spec.documents):
+            if service.remove_upload(draft, removing, resolved):
+                labels = dict(spec.documents)
+                notice = f"Removed the file for {labels[removing][:1].lower() + labels[removing][1:]}. Your other entries are kept in a draft."
         for doc_type, filename, content in await _files(form, spec):
-            service.store_upload(draft, doc_type, filename, content, resolved)
+            try:
+                service.store_upload(draft, doc_type, filename, content, resolved)
+            except ValidationError as problem:
+                upload_problems[doc_type] = problem.message
+        if upload_problems:
+            # Keep the draft and every other entry; the refused file is simply not stored.
+            session.commit()
+            error_text = next(iter(upload_problems.values()))
+            raise _Rejected
         if intent == "submit":
             incomplete = service.completeness(
                 spec,
@@ -627,9 +763,11 @@ async def ui_portal_post(
             )
         session.commit()
         if intent == "save":
-            return RedirectResponse(f"/apply?saved={draft.reference}", status_code=303)
-        notice = "Your changes are kept in a draft. Nothing has been submitted."
-    except _Incomplete:
+            return RedirectResponse(
+                f"/apply/track?tab=drafts&saved={draft.reference}", status_code=303
+            )
+        notice = notice or "Your changes are kept in a draft. Nothing has been submitted."
+    except (_Incomplete, _Rejected):
         pass
     except AcmeError as error:
         session.rollback()
@@ -644,5 +782,6 @@ async def ui_portal_post(
         request, session, resolved, service, spec,
         values=values, certification_accepted=certification_accepted, draft=draft,
         sent_separately=declared, attempted=attempted, error=error_text, notice=notice,
+        upload_problems=upload_problems,
     )
     return render(request, "portal_form.html", context, status_code=422 if (error_text or attempted) else 200)

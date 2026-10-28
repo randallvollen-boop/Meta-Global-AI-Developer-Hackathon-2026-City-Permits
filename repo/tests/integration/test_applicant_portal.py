@@ -106,13 +106,15 @@ def fence_files():
     }
 
 
-def test_chooser_groups_seventeen_types_with_pills(client) -> None:
+def test_chooser_groups_seventeen_types_without_process_badges(client) -> None:
+    # Changed deliberately (applicant UI restyle): the groups are Home and property, Business and
+    # construction, Planning and land use; the repeated process badges and their legend moved off the cards.
     choose(client, "persona_applicant")
     page = client.get("/apply").text
     assert page.count('data-testid="type-card"') == 17
-    for pill in ("Permit portal", "Portal + plans", "Plan review process"):
-        assert pill in page
-    for group in ("Quick home projects", "Building with plans", "Formal review"):
+    for pill in ("Permit portal", "Portal + plans", "Plan review process", "process-pill"):
+        assert pill not in page
+    for group in ("Home and property", "Business and construction", "Planning and land use"):
         assert group in page
     assert 'data-testid="track-link"' in page
     assert "ACME City never asks for permit fees by gift card or wire transfer." in page
@@ -152,7 +154,7 @@ def test_submit_creates_an_application_awaiting_intake(client, environment) -> N
     location = response.headers["location"]
     assert location.startswith("/apply/submitted/")
     page = client.get(location).text
-    assert "Application submitted" in page
+    assert "Application received" in page  # restyled receipt (was "Application submitted")
     reference = re.search(r'data-testid="submitted-reference">([^<]+)<', page).group(1)
     assert "Awaiting intake agent" in page
     factory = SessionFactory(environment.database_url)

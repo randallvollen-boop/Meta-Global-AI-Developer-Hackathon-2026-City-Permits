@@ -14,6 +14,7 @@ address a type may require.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -41,11 +42,12 @@ PROCESS_PILLS: dict[str, tuple[str, str]] = {
     ),
 }
 
-#: The chooser groups and the permit types in each.
+#: The chooser groups and the permit types in each.  The group titles come
+#: from ``config/applicant_portal.json``; the keys here only order the types.
 GROUPS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
-        "quick_home",
-        "Quick home projects",
+        "home_property",
+        "Home and property",
         (
             "deck_fence",
             "patio",
@@ -54,26 +56,35 @@ GROUPS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
             "hvac",
             "water_heater",
             "residential_electric",
+            "res_building",
         ),
     ),
     (
-        "building_plans",
-        "Building with plans",
-        ("res_building", "com_ti", "fire_alarm", "sign"),
+        "business_construction",
+        "Business and construction",
+        ("com_ti", "sign", "fire_alarm", "change_occupancy", "row_encroachment"),
     ),
     (
-        "formal",
-        "Formal review",
+        "planning_land_use",
+        "Planning and land use",
         (
-            "change_occupancy",
             "site_plan_review",
             "rezoning",
             "zoning_variance",
             "certificate_appropriateness",
-            "row_encroachment",
         ),
     ),
 )
+
+#: The common projects: compact cards in the open.  Every other type is in the
+#: expandable part of its group.
+COMMON_TYPES: frozenset[str] = frozenset(
+    {"deck_fence", "patio", "shed", "residential_electric", "com_ti", "sign"}
+)
+
+#: The two things a deck-or-fence application can be about.
+STRUCTURE_FENCE = "fence"
+STRUCTURE_DECK = "deck"
 
 #: Plain labels of the documents.
 DOCUMENT_LABELS: dict[str, str] = {
@@ -108,7 +119,7 @@ FIELD_LABELS: dict[str, str] = {
     "front_setback_ft": "Front setback (ft)",
     "lot_coverage_pct": "Lot coverage (percent)",
     "height_ft": "Fence height (ft)",
-    "setback_ft": "Setback from the property line (ft)",
+    "setback_ft": "Distance from the property line (ft)",
     "occupancy_load": "Occupancy load (people)",
     "sign_type": "Sign type",
     "sign_area_sqft": "Sign dimensions (sq ft)",
@@ -128,21 +139,50 @@ FIELD_LABELS: dict[str, str] = {
 LOCATOR_FIELDS: frozenset[str] = frozenset({"parcel_number", "property_address"})
 
 
+_UNIT = re.compile(r"\(([^()]+)\)\s*$")
+_UNIT_SYMBOLS = {"percent": "%"}
+
+
 @dataclass(frozen=True)
 class FieldSpec:
-    """One field of an application form."""
+    """One field of an application form.
+
+    ``when`` makes a field apply only while another field has a value, for
+    example the fence questions while "What are you building?" is Fence.  A
+    field that does not apply is never required, never stored and never sent.
+    ``fact_key`` is the name the value is stored under on the application when
+    it differs from the form name (two groups can ask for the same fact).
+    ``rule`` names the published rule(s) whose limit is quoted beside the field.
+    """
 
     key: str
     label: str
-    kind: str = "text"  # text | number | textarea | select | checkbox
+    kind: str = "text"  # text | number | textarea | select | checkbox | choice
     options: tuple[tuple[str, str], ...] = ()
     hint: str = ""
     required: bool = True
+    when: tuple[str, str] | None = None
+    fact_key: str = ""
+    default: str = ""
+    rule: str = ""
+    info: str = ""
+
+    @property
+    def fact(self) -> str:
+        """Return the name the value is stored under on the application."""
+        return self.fact_key or self.key
+
+    @property
+    def unit(self) -> str:
+        """Return the unit written in the label, for example ``ft``."""
+        match = _UNIT.search(self.label)
+        if self.kind != "number" or match is None:
+            return ""
+        return _UNIT_SYMBOLS.get(match.group(1), match.group(1))
 
 
 def _f(key: str, label: str | None = None, kind: str = "text", **extra: Any) -> FieldSpec:
     return FieldSpec(key=key, label=label or FIELD_LABELS.get(key, key), kind=kind, **extra)
-
 
 
 #: The portal's own fields and extra documents per permit type.  The permit
@@ -150,23 +190,57 @@ def _f(key: str, label: str | None = None, kind: str = "text", **extra: Any) -> 
 #: :func:`form_for`.
 _SPECS: dict[str, dict[str, Any]] = {
     "deck_fence": {
-        "note": "Fences are limited by height and location. The front yard has a lower limit than the side or rear.",
         "needs_business": False,
         "fields": (
-            _f("height_ft", "Fence height (ft)", "number"),
-            _f("fence_material", "Fence material"),
+            _f(
+                "structure_kind",
+                "What are you building?",
+                "choice",
+                options=((STRUCTURE_FENCE, "Fence"), (STRUCTURE_DECK, "Deck")),
+                default=STRUCTURE_FENCE,
+            ),
+            _f("height_ft", "Fence height (ft)", "number", when=("structure_kind", STRUCTURE_FENCE)),
+            _f("fence_material", "Fence material", when=("structure_kind", STRUCTURE_FENCE)),
             _f(
                 "location",
                 "Location on the property",
                 "select",
                 options=(("front", "Front yard"), ("side_rear", "Side or rear yard")),
+                when=("structure_kind", STRUCTURE_FENCE),
+                rule="DF-1,DF-2",
             ),
-            _f("setback_ft", kind="number"),
-            _f("property_line_ack", "I will not build over the property line", "checkbox"),
+            _f(
+                "setback_ft",
+                kind="number",
+                when=("structure_kind", STRUCTURE_FENCE),
+                info="distance_from_property_line",
+            ),
+            _f(
+                "property_line_ack",
+                "I will not build over the property line",
+                "checkbox",
+                when=("structure_kind", STRUCTURE_FENCE),
+            ),
+            _f(
+                "deck_height_ft",
+                "Deck height above the ground (ft)",
+                "number",
+                when=("structure_kind", STRUCTURE_DECK),
+                fact_key="height_ft",
+                rule="DF-4",
+            ),
+            _f(
+                "deck_setback_ft",
+                "Distance from the rear property line (ft)",
+                "number",
+                when=("structure_kind", STRUCTURE_DECK),
+                fact_key="setback_ft",
+                rule="DF-3",
+                info="distance_from_property_line",
+            ),
             _f("project_description", kind="textarea"),
         ),
         "documents": ("site_plan", "material_spec"),
-        "facts": {"structure_kind": "fence"},
     },
     "patio": {
         "note": "A patio must keep its distance from the property line.",
@@ -353,6 +427,45 @@ class FormSpec:
     constant_facts: dict[str, Any]
     discretionary: bool = False
 
+    def applies(self, field: FieldSpec, values: dict[str, str]) -> bool:
+        """Return whether a field applies to the answers given so far."""
+        if field.when is None:
+            return True
+        key, wanted = field.when
+        current = str(values.get(key) or "").strip()
+        if not current:
+            controller = next((item for item in self.fields if item.key == key), None)
+            current = controller.default if controller is not None else ""
+        return current == wanted
+
+    def field_groups(self) -> list[dict[str, Any]]:
+        """Return the fields in runs that share the same ``when`` condition.
+
+        A run with a condition is one set of questions that applies to one
+        answer (for example the Fence questions); the page shows it with a
+        title and the server ignores it when the answer is different.
+        """
+        runs: list[dict[str, Any]] = []
+        for field in self.fields:
+            if runs and runs[-1]["when"] == field.when:
+                runs[-1]["fields"].append(field)
+                continue
+            title = ""
+            if field.when is not None:
+                controller = next((item for item in self.fields if item.key == field.when[0]), None)
+                if controller is not None:
+                    title = dict(controller.options).get(field.when[1], "")
+            runs.append({"when": field.when, "title": title, "fields": [field]})
+        return runs
+
+    def with_defaults(self, values: dict[str, str]) -> dict[str, str]:
+        """Return the values with each unanswered field's default filled in."""
+        out = dict(values)
+        for field in self.fields:
+            if field.default and not str(out.get(field.key) or "").strip():
+                out[field.key] = field.default
+        return out
+
 
 def humanize(key: str) -> str:
     """Return a plain label for a key that has none."""
@@ -402,6 +515,9 @@ def form_for(
 
 __all__ = [
     "CERTIFICATION_TEXT",
+    "COMMON_TYPES",
+    "STRUCTURE_DECK",
+    "STRUCTURE_FENCE",
     "DOCUMENT_LABELS",
     "FIELD_LABELS",
     "GROUPS",
