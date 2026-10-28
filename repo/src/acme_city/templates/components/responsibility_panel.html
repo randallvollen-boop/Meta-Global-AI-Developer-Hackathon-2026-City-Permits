@@ -1,3 +1,4 @@
+{% macro readable(iso) %}{% set m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}<time datetime="{{ iso }}" title="{{ iso }}">{{ iso[8:10] | int }} {{ m[iso[5:7] | int - 1] }} {{ iso[0:4] }}</time>{% endmacro %}
 {# The responsibility panel of a governed record.
 
    It always answers the same eight questions: who owns the record, who
@@ -28,11 +29,11 @@
     </div>
     <div class="responsibility-item">
       <dt>Source last changed</dt>
-      <dd data-testid="responsibility-last-source-update">{{ responsibility.last_source_update or 'Freshness information unavailable' }}</dd>
+      <dd data-testid="responsibility-last-source-update">{% if responsibility.last_source_update %}{{ readable(responsibility.last_source_update) }}{% else %}Freshness information unavailable{% endif %}</dd>
     </div>
     <div class="responsibility-item">
       <dt>Last received or checked</dt>
-      <dd data-testid="responsibility-last-received">{{ responsibility.last_received or 'Freshness information unavailable' }}</dd>
+      <dd data-testid="responsibility-last-received">{% if responsibility.last_received %}{{ readable(responsibility.last_received) }}{% else %}Freshness information unavailable{% endif %}</dd>
     </div>
     <div class="responsibility-item">
       <dt>Version</dt>

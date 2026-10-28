@@ -370,6 +370,14 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
             "note": "Test a proposed rule change on a set of cases before anything changes.",
         },
     ]
+    if view_models.may_open_screen(session, actor, "ops_dashboard"):
+        related.append(
+            {
+                "label": "Operations dashboard",
+                "href": "/ops/dashboard",
+                "note": "How permit work is going, counted from the stored cases.",
+            }
+        )
 
     return {
         "scope_label": "Sample applications · synthetic",
@@ -961,6 +969,28 @@ def rules_register(
             f"/rules?tab={tab}&view={view}&version={row['row_id']}"
         )
 
+    # Drafts made from a what-if run (policy conversion) link back to the run.
+    # They are listed on every view so the origin of a draft stays one click
+    # away, whichever register is open.
+    from acme_city.policy.drafts import PolicyDraftService  # noqa: PLC0415
+
+    run_links = PolicyDraftService(session).links(actor)
+    policy_drafts: list[dict[str, Any]] = []
+    for kind, all_rows in (("rule", rule_rows), ("fee", fee_rows)):
+        for row in all_rows:
+            run_id = run_links.get(row["row_id"])
+            if run_id:
+                policy_drafts.append(
+                    {
+                        "kind": kind,
+                        "title": row["title"],
+                        "version": row["version_label"],
+                        "status": row["status"],
+                        "href": f"/policy/runs/{run_id}#draft",
+                        "register_href": f"/rules?tab={'rules' if kind == 'rule' else 'fees'}&view=drafts&version={row['row_id']}",
+                    }
+                )
+
     selected = _selected_version(session, actor, tab, version_id, type_labels)
     actions: list[dict[str, Any]] = []
     if selected is not None:
@@ -988,6 +1018,7 @@ def rules_register(
         "date_column_label": (
             "Proposed effective date" if view == "drafts" else "Effective period"
         ),
+        "policy_drafts": policy_drafts,
         "selected": selected,
         "actions": actions,
         "denied_action_explanations": view_models.denied_action_explanations(actions),

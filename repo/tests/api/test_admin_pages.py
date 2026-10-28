@@ -106,8 +106,9 @@ def test_the_planning_overview_links_the_city_view_and_the_what_if(
     response = client.get("/overview")
     assert 'href="/insight/city"' in response.text
     assert 'href="/policy/scenarios"' in response.text
-    # The Operations dashboard does not exist yet, so no link to it is invented.
-    assert "/operations" not in response.text
+    # Changed deliberately (P3c merged): the brief says to link the Operations
+    # dashboard from the overview once it exists.
+    assert 'href="/ops/dashboard"' in response.text
 
 
 def test_the_planning_overview_is_refused_to_the_other_personas(

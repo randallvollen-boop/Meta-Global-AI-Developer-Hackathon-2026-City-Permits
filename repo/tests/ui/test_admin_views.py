@@ -107,7 +107,7 @@ def test_the_overview_counts_the_applications_that_need_attention(
         assert entry["href"].startswith("/permits/")
 
 
-def test_the_overview_links_the_city_view_and_the_what_if_but_no_dashboard(
+def test_the_overview_links_the_city_view_the_what_if_and_the_dashboard(
     session: Session,
 ) -> None:
     actor = actor_for(session, "persona_city_administrator")
@@ -115,8 +115,8 @@ def test_the_overview_links_the_city_view_and_the_what_if_but_no_dashboard(
     hrefs = [item["href"] for item in overview["related"]]
     assert "/insight/city" in hrefs
     assert "/policy/scenarios" in hrefs
-    # The Operations dashboard is not built yet, so no link to it is invented.
-    assert not any("operation" in href or "dashboard" in href for href in hrefs)
+    # Changed deliberately (P3c merged): the Operations dashboard is linked.
+    assert "/ops/dashboard" in hrefs
 
 
 def test_the_overview_counts_the_versions_that_are_not_published(

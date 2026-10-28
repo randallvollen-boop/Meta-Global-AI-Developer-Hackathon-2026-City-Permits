@@ -34,6 +34,21 @@
 
 {% include "components/responsibility_panel.html" %}
 
+{% if catalogue.policy_drafts %}
+<section class="panel" aria-labelledby="policy-drafts-heading" data-testid="policy-drafts">
+  <h2 id="policy-drafts-heading">Drafts made from a what-if run</h2>
+  <p class="muted">Each draft below was saved from a what-if run. The run shows the cases the change would affect.</p>
+  <ul>
+    {% for item in catalogue.policy_drafts %}
+    <li>
+      <a href="{{ item.register_href }}">{{ item.title }} ({{ item.version }})</a>, {{ item.status | replace('_', ' ') }}:
+      <a href="{{ item.href }}" data-testid="{{ item.kind }}-policy-link">Made from a what-if run</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <section class="panel" aria-labelledby="rules-register-heading">
   <h2 id="rules-register-heading">
     {% if catalogue.tab == 'rules' %}Rule versions{% else %}Fee schedule versions{% endif %}

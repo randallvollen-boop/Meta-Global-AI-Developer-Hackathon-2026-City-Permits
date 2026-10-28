@@ -148,7 +148,7 @@
     {% endfor %}
     </tbody>
   </table></div>
-  <p class="muted">Needs independent approval: the City Administrator who saved these drafts is recorded as their author and cannot approve or publish them. Another administrator reviews them on <a href="/rules-fees">Rules and fees</a>.</p>
+  <p class="muted">Needs independent approval: the City Administrator who saved these drafts is recorded as their author and cannot approve or publish them. Another administrator reviews them on <a href="/rules?tab=rules&view=drafts">Rules and fees</a>.</p>
   {% elif d.convertible %}
   <p>Every change in this what-if can become a draft rule or fee change. It is saved as a draft that needs independent approval; nothing published changes.</p>
   <ul data-testid="policy-draft-plan">{% for i in d.steps %}<li>{{ i.summary }}</li>{% endfor %}</ul>

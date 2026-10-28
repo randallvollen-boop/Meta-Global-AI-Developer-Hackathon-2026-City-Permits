@@ -55,7 +55,7 @@
     <p><button type="submit" class="button button-primary btn primary" data-testid="action-submit">{{ item.label }}</button></p>
   </form>
   {% else %}
-  <p class="action-denied">This action is not available to your persona. The reason is shown with the lock above.</p>
+  <p class="action-denied">{{ item.reason }}</p>
   {% endif %}
 </details>
 {% endmacro %}
