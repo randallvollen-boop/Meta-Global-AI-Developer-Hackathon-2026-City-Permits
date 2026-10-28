@@ -93,6 +93,10 @@ SCREENS: tuple[dict[str, str], ...] = (
         "label": "What-if",
         "href": "/policy/scenarios",
     },
+    {"key": "ops_dashboard", "label": "Operations", "href": "/ops/dashboard"},
+    {"key": "ops_audit", "label": "Audit log", "href": "/ops/audit"},
+    {"key": "ops_support", "label": "Support", "href": "/ops/support"},
+    {"key": "ops_checks", "label": "Checks", "href": "/ops/checks"},
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -121,6 +125,10 @@ SCREEN_DOMAIN: dict[str, str] = {
     "review_queue": "permits",
     "insight_city": "permits",
     "policy_scenarios": "permits",
+    "ops_dashboard": "permits",
+    "ops_audit": "records",
+    "ops_support": "permits",
+    "ops_checks": "records",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -209,6 +217,16 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     # policy grants.  The run and briefing keys exist for their help entries;
     # the service checks the run and briefing grants again on every read.
     "policy_scenarios": (("policy.scenario.manage", None),),
+    # The operations screens are the City Administrator's, each opened by its
+    # own grant.  Support is opened by any of its three grants.
+    "ops_dashboard": (("ops.dashboard.view", None),),
+    "ops_audit": (("ops.audit_log.view", None),),
+    "ops_support": (
+        ("support.lookup.view", None),
+        ("support.help_request.answer", None),
+        ("support.case.record", None),
+    ),
+    "ops_checks": (("ops.checks.run", None),),
     "policy_run": (("policy.run.view", None),),
     "policy_briefing": (("policy.brief.view", None),),
 }

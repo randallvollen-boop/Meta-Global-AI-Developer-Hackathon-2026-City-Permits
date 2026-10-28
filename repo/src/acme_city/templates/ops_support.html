@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Support</h1>
+    <p class="sub">Look up a case, answer the questions applicants sent through Ask the City, and record help given outside the application. Support reads and answers; it cannot decide, issue, return or waive anything.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('ops_support') }}</div>
+</div>
+
+<p class="muted">* Required</p>
+
+<section class="card" aria-labelledby="lookup-h" data-testid="support-lookup">
+  <div class="card-b">
+  <h2 id="lookup-h">Look up an application</h2>
+  <form method="get" action="/ops/support" class="ops-filters">
+    <label>Reference <span aria-hidden="true">*</span>
+      <input name="ref" value="{{ reference }}" required aria-required="true" maxlength="96" placeholder="for example SYN-APP-005" data-testid="support-ref">
+    </label>
+    <button type="submit" class="btn" data-testid="support-lookup-go">Look up</button>
+  </form>
+  {% if lookup %}
+  <div data-testid="support-lookup-result">
+    <h3><span class="mono">{{ lookup.reference }}</span></h3>
+    <p>Status: <strong data-testid="support-status">{{ lookup.status }}</strong>. Permit type: {{ lookup.permit_type or 'not recorded' }}. First submitted: <span class="mono">{{ lookup.submitted_at or 'not submitted' }}</span>.</p>
+    <h4>Timeline</h4>
+    <ul data-testid="support-timeline">
+      {% for t in lookup.timeline %}<li><span class="mono">{{ t.when }}</span> {{ t.what }}</li>{% else %}<li class="muted">Nothing has happened on this case yet.</li>{% endfor %}
+    </ul>
+    <h4>Comments the applicant can read</h4>
+    <ul data-testid="support-comments">
+      {% for c in lookup.comments %}<li data-testid="support-comment"><span class="mono">{{ c.created_at }}</span> {{ c.body }}</li>{% else %}<li class="muted">No comment was written for the applicant.</li>{% endfor %}
+    </ul>
+    <p class="muted">Internal notes are never shown on this screen.</p>
+  </div>
+  {% elif lookup_done %}
+  <p data-testid="support-lookup-none">No application has the reference "{{ reference }}".</p>
+  {% endif %}
+  </div>
+</section>
+
+{% if can_answer %}
+<section class="card" aria-labelledby="requests-h" data-testid="support-requests">
+  <div class="card-b">
+  <h2 id="requests-h">Help requests from applicants</h2>
+  <p class="muted">Each request is a question an applicant sent with Ask the City. You see the question and the part of the conversation that led to it, and nothing the applicant asked afterwards.</p>
+  <p>
+    <a href="/ops/support?request_status=open" data-testid="support-filter-open"{% if request_status == 'open' %} aria-current="true"{% endif %}>Open</a> |
+    <a href="/ops/support?request_status=answered" data-testid="support-filter-answered"{% if request_status == 'answered' %} aria-current="true"{% endif %}>Answered</a>
+  </p>
+  {% for r in help_requests %}
+  <article class="ops-request{% if focus_request == r.request_id %} is-focus{% endif %}" id="request-{{ r.request_id }}" data-testid="help-request-card" data-status="{{ r.status }}">
+    <h3 class="mono">{{ r.request_id }}</h3>
+    <p>From {{ r.applicant }}{% if r.reference %}, about <span class="mono">{{ r.reference }}</span>{% endif %}, sent <span class="mono">{{ r.created_at }}</span>.</p>
+    <p data-testid="help-request-question"><strong>Question:</strong> {{ r.question }}</p>
+    {% if r.snapshot %}
+    <details><summary>The conversation up to the request ({{ r.snapshot|length }})</summary>
+      <ol data-testid="help-request-snapshot">{% for t in r.snapshot %}<li>{{ t.question }} <span class="muted">({{ t.outcome }}{% if t.label %}; {{ t.label }}{% endif %})</span></li>{% endfor %}</ol>
+    </details>
+    {% endif %}
+    {% if r.status == 'open' %}
+    <form method="post" action="/ui/actions/support.help_request.answer" data-testid="help-answer-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="/ops/support">
+      <input type="hidden" name="help_request_id" value="{{ r.request_id }}">
+      <input type="hidden" name="expected_version" value="{{ r.version }}">
+      <p class="field">
+        <label for="reply-{{ r.request_id }}">Your reply <span aria-hidden="true">*</span></label>
+        <textarea id="reply-{{ r.request_id }}" name="reply" rows="3" maxlength="2000" required aria-required="true" data-testid="help-reply"></textarea>
+      </p>
+      {% if r.reference and not r.archived %}<p class="muted">Because this request is about {{ r.reference }}, your reply is also written on the case as a comment the applicant reads.</p>{% endif %}
+      {% if r.archived %}<p class="muted" data-testid="help-archived-note">{{ r.reference }} is archived and cannot change, so your reply is kept on the help request only.</p>{% endif %}
+      {% if not r.reference %}<p class="muted">This request is not about a case, so your reply is shown in the applicant's help history.</p>{% endif %}
+      <p><button type="submit" class="btn primary" data-testid="help-answer">Answer</button></p>
+    </form>
+    {% else %}
+    <p data-testid="help-request-reply"><strong>Reply:</strong> {{ r.reply }} <span class="muted">(answered {{ r.answered_at }})</span></p>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="muted" data-testid="support-requests-empty">No {{ request_status }} help request.</p>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if can_record %}
+<section class="card" aria-labelledby="record-h" data-testid="support-record">
+  <div class="card-b">
+  <h2 id="record-h">Record assistance</h2>
+  <form method="post" action="/ui/actions/support.case.record" data-testid="support-record-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="/ops/support">
+    <input type="hidden" name="expected_version" value="0">
+    <p class="field"><label for="case-ref">Reference (optional)</label>
+      <input id="case-ref" name="reference" maxlength="96" data-testid="case-reference"></p>
+    <p class="field"><label for="case-channel">Channel <span aria-hidden="true">*</span></label>
+      <select id="case-channel" name="channel" required aria-required="true" data-testid="case-channel">
+        {% for c in channels %}<option value="{{ c.key }}">{{ c.label }}</option>{% endfor %}
+      </select></p>
+    <p class="field"><label for="case-summary">Summary <span aria-hidden="true">*</span></label>
+      <textarea id="case-summary" name="summary" rows="3" maxlength="1000" required aria-required="true" data-testid="case-summary"></textarea></p>
+    <p><button type="submit" class="btn primary" data-testid="case-record">Record support case</button></p>
+  </form>
+  <h3>Recent support cases</h3>
+  <div class="tbl-wrap"><table class="data-table" data-testid="support-cases">
+    <caption class="visually-hidden">Recent support cases</caption>
+    <thead><tr><th scope="col">Recorded</th><th scope="col">Reference</th><th scope="col">Channel</th><th scope="col">Summary</th></tr></thead>
+    <tbody>
+      {% for c in support_cases %}<tr data-testid="support-case-row"><td class="mono">{{ c.created_at }}</td><td class="mono">{{ c.reference or 'none' }}</td><td>{{ c.channel }}</td><td>{{ c.summary }}</td></tr>
+      {% else %}<tr><td colspan="4" class="muted" data-testid="support-cases-empty">No support case is recorded yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="faq-h" data-testid="support-faq">
+  <div class="card-b">
+  <h2 id="faq-h">Short FAQ</h2>
+  <dl>{% for f in faq %}<dt><strong>{{ f.question }}</strong></dt><dd>{{ f.answer }}</dd>{% endfor %}</dl>
+  <h2>Contact</h2>
+  <p data-testid="support-contact">{{ contact.desk }} {{ contact.phone }}</p>
+  <p class="callout" data-testid="support-emergency">{{ contact.emergency }}</p>
+  </div>
+</section>
+{% endblock %}

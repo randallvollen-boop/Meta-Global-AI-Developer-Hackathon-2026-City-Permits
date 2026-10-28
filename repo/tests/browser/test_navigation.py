@@ -32,6 +32,11 @@ SCREENS = (
     ("/admin", "Administration"),
     ("/insight/city", "City view"),
     ("/policy/scenarios", "What-if"),
+    # P3c: the four operations screens of the City Administrator.
+    ("/ops/dashboard", "Operations dashboard"),
+    ("/ops/audit", "Audit log"),
+    ("/ops/support", "Support"),
+    ("/ops/checks", "Checks"),
 )
 
 #: The screens that are swept as the persona that owns them.
@@ -83,6 +88,11 @@ NAVIGATION_BY_PERSONA = {
         "insight_city",
         # Changed deliberately (policy 2): the What-if screen follows the City view.
         "policy_scenarios",
+        # Changed deliberately (P3c): the operations screens follow the What-if screen.
+        "ops_dashboard",
+        "ops_audit",
+        "ops_support",
+        "ops_checks",
     ],
 }
 
@@ -104,6 +114,11 @@ for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_re
 #: Policy 2: the What-if screen is held by the City Administrator only.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
     HIDDEN_SCREENS[_persona].append("/policy/scenarios")
+#: P3c: the four operations screens are held by the City Administrator only.
+for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
+    HIDDEN_SCREENS[_persona].extend(
+        ["/ops/dashboard", "/ops/audit", "/ops/support", "/ops/checks"]
+    )
 
 
 def test_the_screens_render_without_a_page_error(

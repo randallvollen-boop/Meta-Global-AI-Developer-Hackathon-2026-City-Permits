@@ -131,6 +131,9 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
         "policy_scenario_revisions",
         "policy_runs",
     ),
+    # Parity phase 3c: the support cases the City Administrator records.  Added
+    # to the required groups deliberately: the table is new schema.
+    "support": ("support_cases",),
 }
 
 
@@ -318,8 +321,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0011 since the chat 2 migration (after 0010, the policy 2 migration: what-if scenarios and immutable runs).
-    assert health.revision == "0011"
+    # Head is 0012 since the P3c migration (support cases), after 0011 (the chat 2 outcomes).
+    assert health.revision == "0012"
     assert database.database_url not in str(health.to_dict())
 
 

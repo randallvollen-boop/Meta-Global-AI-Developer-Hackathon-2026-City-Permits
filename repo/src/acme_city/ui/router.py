@@ -2803,11 +2803,14 @@ router.include_router(_portal_routes.router)
 
 from acme_city.ui import detail_routes as _detail_routes  # noqa: E402
 from acme_city.ui import reviewer_details as _reviewer_details  # noqa: E402,F401
+from acme_city.ui import ops_routes as _ops_routes  # noqa: E402
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 
 patterns.install(templates)
 router.include_router(_detail_routes.router)
 router.include_router(_policy_routes.router)
+router.include_router(_ops_routes.router)
+ACTION_HANDLERS.update(_ops_routes.HANDLERS)
 
 
 __all__ = [

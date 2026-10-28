@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+{% set v = view %}
+<div class="page-head">
+  <div>
+    <h1>Operations dashboard</h1>
+    <p class="sub">A read-only picture of how permit work is going. Every figure is a count or a mean over stored rows, and its definition is printed beside it. Read at <span class="mono" data-testid="ops-as-of">{{ v.as_of }}</span>.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('ops_dashboard') }}</div>
+</div>
+
+<section class="card" aria-labelledby="synthetic-heading" data-testid="ops-synthetic">
+  <div class="card-b">
+  <h2 id="synthetic-heading">Synthetic data</h2>
+  <p data-testid="ops-synthetic-note">{{ v.synthetic.note }}{% if v.synthetic.mode == 'include' and v.synthetic.available %} <span class="ops-badge" data-testid="ops-synthetic-badge">synthetic data included</span>{% endif %}</p>
+  {% if v.synthetic.available %}
+  <p>
+    {% if v.synthetic.mode == 'include' %}
+    <a href="/ops/dashboard" data-testid="ops-synthetic-toggle">Leave the synthetic history out</a>
+    {% else %}
+    <a href="/ops/dashboard?synthetic=include" data-testid="ops-synthetic-toggle">Include the synthetic history (labelled)</a>
+    {% endif %}
+  </p>
+  {% endif %}
+  </div>
+</section>
+
+<section aria-labelledby="figures-heading" data-testid="ops-figures">
+  <h2 id="figures-heading" class="visually-hidden">Figures</h2>
+  <div class="ops-figures">
+    {% for f in v.figures %}
+    <div class="card ops-figure" data-testid="ops-figure" data-figure="{{ f.key }}">
+      <span class="k">{{ f.label }}</span>
+      <span class="v" data-testid="ops-figure-value">{{ f.display }}</span>
+      <span class="d" data-testid="ops-figure-definition">{{ f.definition }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="decisions-heading" data-testid="ops-decisions">
+  <div class="card-b">
+  <h2 id="decisions-heading">Decisions recorded, by outcome</h2>
+  <p class="muted">Decision rows, all time, grouped by outcome.</p>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Decisions recorded by outcome</caption>
+    <thead><tr><th scope="col">Outcome</th><th scope="col">Decisions</th></tr></thead>
+    <tbody>{% for row in v.decision_rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  </div>
+</section>
+
+<div class="ops-charts">
+{% for chart in v.charts %}
+<section class="card" aria-labelledby="{{ chart.testid }}-h" data-testid="{{ chart.testid }}-section">
+  <div class="card-b">
+  <h2 id="{{ chart.testid }}-h">{{ chart.title }}</h2>
+  <p class="muted">{{ chart.definition }}</p>
+  {% if chart.rows %}
+  {{ chart.svg|safe }}
+  <div class="tbl-wrap"><table class="data-table" data-testid="{{ chart.testid }}-table">
+    <caption class="visually-hidden">{{ chart.title }}</caption>
+    <thead><tr><th scope="col">Group</th><th scope="col">Applications</th></tr></thead>
+    <tbody>{% for row in chart.rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}
+    <tr><th scope="row">Total</th><td>{{ chart.total }}</td></tr></tbody>
+  </table></div>
+  {% else %}
+  <p class="muted" data-testid="{{ chart.testid }}-empty">Nothing to show: no application matches this definition yet.</p>
+  {% endif %}
+  </div>
+</section>
+{% endfor %}
+</div>
+{% endblock %}

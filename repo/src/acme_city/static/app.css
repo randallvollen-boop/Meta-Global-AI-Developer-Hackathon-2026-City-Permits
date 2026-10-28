@@ -852,3 +852,27 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .policy-screen .btn, .policy-screen .button { white-space: normal; text-align: left; max-width: 100%; }
 .policy-screen .inline-form { display: inline-block; max-width: 100%; }
 .policy-screen h1, .policy-screen h2, .policy-screen li, .policy-screen p { overflow-wrap: anywhere; }
+
+/* Parity phase 3c: operations screens (dashboard, audit log, support, checks) */
+.ops-chart { width: 100%; max-width: 560px; height: auto; display: block; }
+.ops-chart .chart-bar { fill: var(--accent); }
+.ops-chart .chart-label, .ops-chart .chart-value { font: 12px var(--f-body); fill: var(--fg); }
+.ops-figures { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: .6rem 0 1rem; }
+.ops-figure { padding: 14px 16px; display: grid; gap: 4px; }
+.ops-figure .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-3); }
+.ops-figure .v { font: 600 1.6rem/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.ops-figure .d { font-size: .78rem; color: var(--fg-2); }
+.ops-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.ops-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; border: 1px solid var(--line); background: var(--surface-2); }
+.ops-badge.person { background: var(--accent-soft); color: var(--accent); }
+.ops-badge.agent { background: var(--muse-soft); color: var(--muse); }
+.ops-badge.system { background: var(--surface-2); color: var(--fg-2); }
+.ops-badge.pass { background: var(--ok-soft); color: var(--ok); }
+.ops-badge.fail { background: var(--bad-soft); color: var(--bad); }
+.ops-badge.not_applicable { background: var(--warn-soft); color: var(--warn); }
+.ops-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: .4rem 0 1rem; }
+.ops-filters label { display: grid; gap: 2px; font-size: .8rem; }
+.ops-request { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin: 10px 0; }
+.ops-request.is-focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.ops-pager { display: flex; gap: 12px; align-items: center; margin: .6rem 0; }
+@media (max-width: 720px) { .ops-figures { grid-template-columns: repeat(1, minmax(0,1fr)); } }

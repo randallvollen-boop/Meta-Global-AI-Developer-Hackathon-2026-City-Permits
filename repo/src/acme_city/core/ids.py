@@ -82,6 +82,7 @@ ID_PREFIXES: frozenset[str] = frozenset(
         "polscen",
         "polrev",
         "polrun",
+        "support",
     }
 )
 

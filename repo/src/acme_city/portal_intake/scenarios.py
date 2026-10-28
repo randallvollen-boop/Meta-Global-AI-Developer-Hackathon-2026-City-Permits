@@ -44,6 +44,9 @@ CHANNELS: tuple[str, ...] = ("portal", "counter_scan", "email", "mail", "fax")
 #: builds the same records.
 RANDOM_SEED = 20261027
 
+#: The share of random arrivals that state a high priority.
+RANDOM_HIGH_PRIORITY_SHARE = 0.2
+
 _BASE_RECEIVED = datetime(2026, 10, 27, 9, 0, tzinfo=UTC)
 
 #: The seventeen permit types of the demonstration, in a fixed order.
@@ -559,6 +562,14 @@ def _random_records(count: int, sequence_start: int) -> list[IntakeRecordCommand
             "submitted_site_text": site_address,
         }
         facts.update(_RANDOM_FACTS.get(permit_type_key, {}))
+        # P3c: some random arrivals state that they are high priority.  The roll
+        # comes from its own generator, so it does not move any other value of
+        # the random scenario.  The record only states a priority; the intake
+        # agent records it and a person may change it.  The simulator never
+        # assigns a status such as returned or revisions requested: only the
+        # authorized human actions make those transitions.
+        if random.Random(f"{RANDOM_SEED}:{sequence_start}:{index}:priority").random() < RANDOM_HIGH_PRIORITY_SHARE:
+            facts["priority"] = "high"
         document_types = _RANDOM_DOCUMENTS.get(permit_type_key, ("site_plan",))
         documents: list[dict[str, Any]] = []
         for document_index, document_type in enumerate(document_types):

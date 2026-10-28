@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Checks</h1>
+    <p class="sub">A fixed list of read-only invariant checks, run inside the application: no subprocess, no test runner and no network. A run changes no permit, decision, fee or comment, and records one audit event.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('ops_checks') }}</div>
+</div>
+
+<section class="card" aria-labelledby="run-h" data-testid="checks-run-panel">
+  <div class="card-b">
+  <h2 id="run-h">Run the checks</h2>
+  <form method="post" action="/ui/actions/ops.checks.run" data-testid="checks-run-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="/ops/checks">
+    <input type="hidden" name="expected_version" value="{{ runs_version }}">
+    <p><button type="submit" class="btn primary" data-testid="checks-run">Run checks</button>
+    <span class="muted">{% if runs_version %}{{ runs_version }} earlier run(s) are recorded.{% else %}No run is recorded yet.{% endif %}</span></p>
+  </form>
+  </div>
+</section>
+
+{% if recorded %}
+<section class="card" aria-labelledby="result-h" data-testid="checks-result" data-run-id="{{ recorded.run_id }}">
+  <div class="card-b">
+  <h2 id="result-h">Result of the run {{ ui.info('ops_not_applicable') }}</h2>
+  <p>Run <span class="mono" data-testid="checks-run-id">{{ recorded.run_id }}</span> at <span class="mono">{{ recorded.ran_at }}</span>:
+    <strong data-testid="checks-count-pass">{{ recorded.counts.pass or 0 }}</strong> passed,
+    <strong data-testid="checks-count-fail">{{ recorded.counts.fail or 0 }}</strong> failed,
+    <strong data-testid="checks-count-na">{{ recorded.counts.not_applicable or 0 }}</strong> not applicable.</p>
+  <div class="tbl-wrap"><table class="data-table" data-testid="checks-table">
+    <caption class="visually-hidden">Result of each check</caption>
+    <thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Why</th></tr></thead>
+    <tbody>
+      {% for item in recorded.results %}
+      <tr data-testid="check-row" data-check="{{ item.check_id }}" data-status="{{ item.status }}">
+        <th scope="row">{{ item.title }}</th>
+        <td><span class="ops-badge {{ item.status }}" data-testid="check-status">{% if item.status == 'pass' %}Pass{% elif item.status == 'fail' %}Fail{% else %}Not applicable{% endif %}</span></td>
+        <td data-testid="check-reason">{{ item.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  </div>
+</section>
+{% else %}
+<p class="muted" data-testid="checks-empty">No run has been recorded yet. Press "Run checks" to run them.</p>
+{% endif %}
+{% endblock %}
