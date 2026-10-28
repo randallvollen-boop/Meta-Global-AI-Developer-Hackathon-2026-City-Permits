@@ -39,6 +39,8 @@
       <svg class="city-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor" opacity=".18"/><path d="M6 25h20M8 25V13l8-6 8 6v12M13 25v-7h6v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="city-wordmark"><b>City of Acme</b>{% if portal_page %}<small data-testid="city-service-name">Permit Services</small>{% endif %}</span>
     </a>
+    <div class="city-header-tools">
+    <a class="city-help-link" href="/help" data-testid="help-link"{% if active == 'help' %} aria-current="page"{% endif %}>Help and guides</a>
     {% if is_applicant %}
     <details class="city-account" data-testid="applicant-account">
       <summary class="city-account-trigger" aria-label="Account: {{ shown_name }}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg><span class="city-account-name" data-testid="applicant-name">{{ shown_name }}</span></summary>
@@ -50,6 +52,7 @@
     {% else %}
     <p class="city-hours">City Hall (555) 010-0100</p>
     {% endif %}
+    </div>
   </div>
   <nav class="city-nav" aria-label="{{ 'Permit services' if portal_page else 'City website' }}">
     <div class="city-wrap">
@@ -93,7 +96,7 @@
 
 <footer class="city-footer">
   <div class="city-wrap">
-    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="{{ '/apply/help/panel' if portal_page else '/city/contact' }}">Help</a></p>
+    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="{{ '/apply/help/panel' if portal_page else '/city/contact' }}">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
     <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
     <p class="city-footer-note">1 Example Plaza, Acme (fictional address) &middot; (555) 010-0100 &middot; Weekdays, 8:30 a.m. to 4:30 p.m.</p>
   </div>

@@ -1,0 +1,475 @@
+{
+  "fictional_demo": true,
+  "note": "Words for the in-app help pages: the hub, the tutorial, the how-to guides and the list of technical documents. Fictional ACME demonstration wording only. Screen labels in the steps are copied from the screens. The tutorial and the guides state no fee, limit or rule; those come from rules_and_fees.json.",
+  "hub": {
+    "title": "Help and documentation",
+    "intro": "Everything in this demonstration is fictional: the City, the people, the addresses, the rules and the fees. Pick the kind of help you need.",
+    "cards": [
+      {
+        "key": "tutorial",
+        "title": "Tutorial",
+        "summary": "A guided walk through the demo story, one person at a time: Applicant, Permit Reviewer, Data Steward and City Administrator.",
+        "href": "/help/tutorial"
+      },
+      {
+        "key": "how-to",
+        "title": "How-to guides",
+        "summary": "Short pages for one task each, such as applying for a fence permit or recording a decision.",
+        "href": "/help/how-to"
+      },
+      {
+        "key": "technical",
+        "title": "Technical documentation",
+        "summary": "The solution architecture, the operations runbook, the use case and the user stories, shown read only.",
+        "href": "/help/technical"
+      },
+      {
+        "key": "glossary",
+        "title": "Glossary",
+        "summary": "Plain definitions of the terms the screens use, such as Muse label, reason code and record status.",
+        "href": "/help/glossary"
+      }
+    ]
+  },
+  "tutorial": {
+    "title": "Tutorial: the demo story",
+    "intro": "The story follows one fence permit through the City. An applicant applies, a permit reviewer checks the application, a data steward settles a question about who the applicant is, and a city administrator tests a rule change. Each section is for one person. The numbered steps use the labels you see on the screens.",
+    "switch_note": "You act as one person at a time. To change person, press \"Demo: switch user\" at the bottom left of any screen and pick the next one. The tutorial does not switch for you.",
+    "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a Muse answer, it is a recorded replay: a stored answer shown again, labelled \"Recorded replay\" (a labelled demonstration fixture). No model is called when you follow these steps.",
+    "state_note": "Some screens are empty until the demo data is prepared. The steps say when. If a list is empty, ask whoever runs the demo to prepare the data as the user test guide describes in the technical documentation.",
+    "sections": [
+      {
+        "persona": "Applicant",
+        "persona_id": "persona_applicant",
+        "intro": "The applicant is a resident who wants to put up a fence. You use the City of Acme website, which has its own menu apart from the staff screens.",
+        "steps": [
+          {
+            "do": "On the persona screen choose \"Applicant\".",
+            "see": "You land on the City of Acme home page, signed in as the applicant.",
+            "href": "/city/"
+          },
+          {
+            "do": "Click \"Apply for a permit\".",
+            "see": "The \"Permits and applications\" page opens.",
+            "href": "/city/permits"
+          },
+          {
+            "do": "Click \"Start an application\".",
+            "see": "The page \"What are you trying to do?\" lists the permit types as cards.",
+            "href": "/apply"
+          },
+          {
+            "do": "Click the \"Residential deck or fence\" card.",
+            "see": "The application form opens.",
+            "href": "/apply/deck_fence"
+          },
+          {
+            "do": "Choose \"Fence\". Type the property address 400 Lantren Row (spelled as the form spells it) and the fence height 6. Leave the rest blank.",
+            "see": "The form accepts what you typed. Nothing is saved until you press \"Submit application\".",
+            "href": "/apply/deck_fence"
+          },
+          {
+            "do": "Click \"Submit application\".",
+            "see": "A summary headed \"There is a problem\" lists every missing item, and a message sits beside each field. Everything you typed is kept.",
+            "href": "/apply/deck_fence"
+          },
+          {
+            "do": "Fix each item: Fence material cedar; Location \"Side or rear yard\"; Distance 2; tick \"I will not build over the property line\"; add a Project description; Email t.aldous@example.invalid; add a Site sketch and a Material specification with \"Add file\" (a small text file works); tick the certification.",
+            "see": "Each message beside a field goes away once the field is complete.",
+            "href": "/apply/deck_fence"
+          },
+          {
+            "do": "Click \"Submit application\" again.",
+            "see": "A receipt headed \"Application received\" shows your reference number and the status \"Awaiting intake agent\".",
+            "href": "/apply/track"
+          },
+          {
+            "do": "Click \"Track application\", or \"My permits\" in the top menu.",
+            "see": "\"My permits\" lists your applications under the tabs Active, Drafts and Closed.",
+            "href": "/apply/track"
+          },
+          {
+            "do": "Click \"Start an application\", then \"Residential deck or fence\". In \"Ask about your permit\" type \"Do I need a permit for a 6 ft fence?\" and click \"Ask\".",
+            "see": "The answer shows the label \"Recorded replay\" and cites ACME Code §14-305 and §14-306. It is a stored answer that was shown again.",
+            "href": "/apply/deck_fence"
+          }
+        ]
+      },
+      {
+        "persona": "Permit Reviewer",
+        "persona_id": "persona_permit_reviewer",
+        "intro": "The permit reviewer checks submitted applications against the rules and records a decision. In the untouched demo data, the first case cannot be approved yet, and the steps show why.",
+        "steps": [
+          {
+            "do": "Use \"Demo: switch user\" and choose \"Permit Reviewer\".",
+            "see": "You land on the Work queue.",
+            "href": "/queue"
+          },
+          {
+            "do": "In the Work queue click \"Open application\" on SYN-APP-001.",
+            "see": "The permit workspace opens for that application.",
+            "href": "/queue"
+          },
+          {
+            "do": "Click the tabs \"Documents\", \"People & property\", \"Activity\" and \"Review\" in turn.",
+            "see": "Each tab shows one part of the case: the files sent in, the people and the property, what has happened, and the review.",
+            "href": "/queue"
+          },
+          {
+            "do": "Under Actions click \"Run application checks\", then \"Start\", then submit the form.",
+            "see": "A message says the validation finished with an outcome and a version. The rule results list what passed. Blockers listed on the page are open data questions, such as an identity or payer link nobody has approved yet, and they are separate from the rule results.",
+            "href": "/queue"
+          },
+          {
+            "do": "Click \"Record review decision\", then \"Start\", choose the Outcome \"approved\", write a Reason and submit.",
+            "see": "In the untouched demo data the server refuses with a reason: the application has unresolved blockers and cannot be approved. A data steward has to approve the links first, or the demo has to be prepared in the ready for review state.",
+            "href": "/queue"
+          },
+          {
+            "do": "Open \"Review queue\" in the left menu.",
+            "see": "In the untouched demo data it says no case is in review in this area. Cases appear here once a steward advances them to review.",
+            "href": "/queue/review"
+          }
+        ]
+      },
+      {
+        "persona": "Data Steward",
+        "persona_id": "persona_data_steward",
+        "intro": "The data steward keeps the records of people, organizations and properties right. Here the steward settles whether two similar business names are the same organization. The records come from ERP (enterprise resource planning) software, the City's finance system.",
+        "steps": [
+          {
+            "do": "Use \"Demo: switch user\" and choose \"Data Steward\".",
+            "see": "You land on the Work queue.",
+            "href": "/queue"
+          },
+          {
+            "do": "Click \"Master records\" in the left menu, on the tab \"People & organizations\".",
+            "see": "The list shows the master records. A master record is the one agreed version of a person, organization or property.",
+            "href": "/masters"
+          },
+          {
+            "do": "Click \"Data issues\" in the left menu.",
+            "see": "\"Needs review\" lists open questions. It reads \"Nothing needs review\" until the Cedarline steward demonstration data is loaded, then it shows 3.",
+            "href": "/steward"
+          },
+          {
+            "do": "Open the case for ERP-BL-00413 (Cedarline Coffee Works).",
+            "see": "Six numbered sections run from \"1. What is the problem?\" to \"6. What happened?\". Section 3 compares the source record with two lookalike master records, Cedarline Coffee Works LLC and Cedarline Coffee Roasters LLC.",
+            "href": "/steward"
+          },
+          {
+            "do": "Under \"5. What will this action do?\" read the preview of each action. Choose \"Confirm link to Cedarline Coffee Works LLC\", click \"Start\", write a Decision note and submit.",
+            "see": "A message says it recorded the decision and the new version number. \"Data issues\" now shows one case less under \"Needs review\" and one under Resolved. Never confirm the link to Cedarline Coffee Roasters LLC: its number, name and unit all differ.",
+            "href": "/steward"
+          }
+        ]
+      },
+      {
+        "persona": "City Administrator",
+        "persona_id": "persona_city_administrator",
+        "intro": "The city administrator tests a rule change on past cases before anyone changes a rule, then looks at how the City is doing.",
+        "steps": [
+          {
+            "do": "Use \"Demo: switch user\" and choose \"City Administrator\".",
+            "see": "You land on the planning overview.",
+            "href": "/overview"
+          },
+          {
+            "do": "Click \"What-if\" in the left menu.",
+            "see": "The page lists suggestions and your saved what-ifs.",
+            "href": "/policy/scenarios"
+          },
+          {
+            "do": "Under \"Start from a suggestion\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\".",
+            "see": "The editor opens. When the synthetic year (sample data) is loaded, the seed 20261028 and the case count 600 are already filled in.",
+            "href": "/policy/scenarios"
+          },
+          {
+            "do": "Click \"Run what-if\".",
+            "see": "The results page compares the current rule with the change. With the prepared sample data, 600 cases are tested and 28 of them change outcome: approvals go from 306 to 334 and denials from 80 to 52.",
+            "href": "/policy/scenarios"
+          },
+          {
+            "do": "Click \"Legislator briefing\", then \"Write the briefing with Muse\".",
+            "see": "The briefing shows the label \"Recorded replay\" with the sections Summary, Key effects, and Risks and trade-offs.",
+            "href": "/policy/scenarios"
+          },
+          {
+            "do": "Go back to the results page and click \"Save as a draft rule change\".",
+            "see": "The change is saved as a draft that needs independent approval. \"Approve\" and \"Publish\" are disabled, and the reason beside them says you authored this version so another administrator must approve it.",
+            "href": "/policy/scenarios"
+          },
+          {
+            "do": "Open \"City view\", then \"Operations\", \"Audit log\", \"Support\" and \"Checks\" in the left menu.",
+            "see": "Each page loads. Operations shows the figures, and the Audit log shows what each person and system did.",
+            "href": "/ops/dashboard"
+          }
+        ]
+      }
+    ]
+  },
+  "howto": {
+    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first.",
+    "guides": [
+      {
+        "slug": "apply-for-a-fence-or-deck-permit",
+        "title": "Apply for a fence or deck permit",
+        "summary": "Fill in the application, fix what the form points out, and send it.",
+        "who": "Applicant",
+        "persona_ids": [
+          "persona_applicant"
+        ],
+        "screen_label": "Start an application",
+        "screen_href": "/apply",
+        "steps": [
+          "Open the City website and click \"Apply for a permit\", or open \"Start an application\" in the top menu.",
+          "Click the \"Residential deck or fence\" card.",
+          "Choose \"Fence\" or \"Deck\" and type the property address and the size or height.",
+          "Press \"Submit application\" even if the form is not complete. It never stays disabled. A summary headed \"There is a problem\" lists what is missing and a message sits beside each field.",
+          "Fill in the missing items. Fields marked * are required, and optional fields say \"(optional)\".",
+          "Add the files with \"Add file\": a site sketch and a material specification.",
+          "Tick \"I will not build over the property line\" and the certification.",
+          "Press \"Submit application\". A receipt headed \"Application received\" shows your reference number."
+        ],
+        "result": "The status is \"Awaiting intake agent\". Keep the reference number to find the application later."
+      },
+      {
+        "slug": "track-an-application-and-answer-a-request",
+        "title": "Track an application and answer a request for information",
+        "summary": "See where an application stands and send the City what it asks for.",
+        "who": "Applicant",
+        "persona_ids": [
+          "persona_applicant"
+        ],
+        "screen_label": "My permits",
+        "screen_href": "/apply/track",
+        "steps": [
+          "Click \"My permits\" in the top menu. Applications are listed under the tabs Active, Drafts and Closed.",
+          "To find one by number, type it in \"Find an application by reference number\" and click \"Track\".",
+          "Read the progress steps and the status on the application card.",
+          "If the City has asked for something, a box on the card names the request. Click \"View request\" to read it.",
+          "On the application page read \"Messages from the City\" and \"What the City asked\".",
+          "Under \"Submit revised documents\" add the files the City asked for and click \"Submit revised documents\".",
+          "Under \"Send the answer back to the City\" check the files and click \"Send the answer to the City\".",
+          "Read the confirmation. The City assesses the application again from the start."
+        ],
+        "result": "The application goes back to the City with a new revision. The original submission time is kept."
+      },
+      {
+        "slug": "ask-the-help-assistant-and-ask-the-city",
+        "title": "Ask the help assistant and ask the City",
+        "summary": "Get a cited answer about a permit, or send a question to a person at the City.",
+        "who": "Applicant",
+        "persona_ids": [
+          "persona_applicant"
+        ],
+        "screen_label": "Start an application",
+        "screen_href": "/apply",
+        "steps": [
+          "Open \"Start an application\", \"My permits\" or an application form. The panel \"Ask about your permit\" is on each.",
+          "Type your question under \"Your question\", for example \"Do I need a permit for a 6 ft fence?\"",
+          "Click \"Ask\". You can also click one of the questions the City is often asked.",
+          "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded replay\".",
+          "Open a citation, such as ACME Code §14-306, to read the rule text the answer relies on.",
+          "If the assistant did not answer, the page says so and shows the rule text that matches your words.",
+          "To reach a person, find \"Ask a person at the City\", type under \"Your question\" and click \"Ask the City\".",
+          "Find your request under \"Your requests to the City\"."
+        ],
+        "result": "The assistant explains the published rules and never decides a permit. A person at the City answers the request you send."
+      },
+      {
+        "slug": "review-an-application-and-record-a-decision",
+        "title": "Review an application and record a decision",
+        "summary": "Run the rule checks on a case and record the outcome with a reason.",
+        "who": "Permit Reviewer",
+        "persona_ids": [
+          "persona_permit_reviewer"
+        ],
+        "screen_label": "Work queue",
+        "screen_href": "/queue",
+        "steps": [
+          "Open \"Work queue\" or \"Review queue\" and click \"Open application\" on a case.",
+          "Read the tabs \"Documents\", \"People & property\", \"Activity\" and \"Review\".",
+          "Under Actions click \"Run application checks\", then \"Start\", and submit the form.",
+          "Read the rule results and any blockers on the page. A blocker is an open question, such as an identity link, that must be settled first.",
+          "Click \"Record review decision\" and then \"Start\".",
+          "Choose the Outcome: approved, denied, modified or information_requested. For a denial also choose the denial reason code.",
+          "Write the Reason. It is required.",
+          "Submit the form and read the message at the top."
+        ],
+        "result": "The decision is recorded against the versions you saw. If blockers remain, the server refuses an approval and says why."
+      },
+      {
+        "slug": "resolve-a-data-issue",
+        "title": "Resolve a data issue (the Cedarline example)",
+        "summary": "Decide whether two similar records are the same organization.",
+        "who": "Data Steward",
+        "persona_ids": [
+          "persona_data_steward"
+        ],
+        "screen_label": "Data issues",
+        "screen_href": "/steward",
+        "steps": [
+          "Click \"Data issues\" in the left menu. With the Cedarline demonstration data loaded, \"Needs review\" lists 3 cases.",
+          "Open the case for ERP-BL-00413 (Cedarline Coffee Works).",
+          "Read the sections 1 to 4 in order. Section 3 compares the source record with each master record it might belong to. Section 4 lists what agrees and what conflicts.",
+          "Look at Cedarline Coffee Roasters LLC, the near-duplicate. Its name, license number and unit all conflict with the source record. A similar name is not the same organization.",
+          "Under \"5. What will this action do?\" read the preview of each action. The guide's answer for the near-duplicate is \"Reject match\": never confirm a link to Cedarline Coffee Roasters LLC.",
+          "Click \"Reject match\", then \"Start\". Write a Decision note that names the conflicts, and submit.",
+          "Read the message and the section \"6. What happened?\".",
+          "If a candidate agrees on every compared field, as Cedarline Coffee Works LLC does for this record, the case also offers \"Confirm link to Cedarline Coffee Works LLC\". Choose the action that matches the evidence."
+        ],
+        "result": "A rejected match links nothing, and the source record keeps all its values. Another candidate can be linked by proposing again."
+      },
+      {
+        "slug": "run-a-what-if-and-write-the-briefing",
+        "title": "Run a what-if and write the briefing",
+        "summary": "Test a rule change on sample cases and produce a briefing for a decision maker.",
+        "who": "City Administrator",
+        "persona_ids": [
+          "persona_city_administrator"
+        ],
+        "screen_label": "What-if",
+        "screen_href": "/policy/scenarios",
+        "steps": [
+          "Click \"What-if\" in the left menu.",
+          "Under \"Start from a suggestion\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\", or build your own under \"Or start empty\".",
+          "In \"Run this what-if\" check the Population, the Seed and the Number of cases.",
+          "Click \"Run what-if\".",
+          "Read \"Recommendation by outcome, baseline and scenario\" and \"Cases that change, and which way\".",
+          "Click \"Legislator briefing\".",
+          "Click \"Write the briefing with Muse\". The source label shows whether the text is a recorded replay.",
+          "Read the sections, then use \"Download (HTML)\" or \"Download (Markdown)\" if you need a copy."
+        ],
+        "result": "The figures come from the rule engine. Muse only explains them. In the demonstration the briefing is a recorded replay."
+      },
+      {
+        "slug": "propose-and-approve-a-rule-change",
+        "title": "Propose and approve a rule change",
+        "summary": "Turn a what-if into a draft and move it through approval. The author cannot approve their own draft.",
+        "who": "City Administrator",
+        "persona_ids": [
+          "persona_city_administrator"
+        ],
+        "screen_label": "Rules and fees",
+        "screen_href": "/rules",
+        "steps": [
+          "Run a what-if as described in the guide on what-ifs.",
+          "On the results page, under \"Path to a real change\", click \"Save as a draft rule change\".",
+          "Read the table. The draft is in force nowhere. It lists its author and who can approve it.",
+          "Open \"Rules and fees\" in the left menu and choose the view Drafts.",
+          "Select the draft version and click \"Submit for review\".",
+          "A different administrator opens the same draft and clicks \"Approve version\".",
+          "That administrator then clicks \"Publish version\". The draft becomes the version in force.",
+          "If you wrote the draft, the buttons \"Approve version\" and \"Publish version\" are guarded and the reason reads \"You authored this version; another administrator must approve it.\""
+        ],
+        "result": "Nothing changes in the live rules until a second person approves and publishes. The demo offers one administrator persona, so the approval step needs a second administrator account that the persona switch does not offer."
+      },
+      {
+        "slug": "reconcile-a-payment",
+        "title": "Reconcile a payment",
+        "summary": "Assess a fee, match a payment to it and confirm the balance.",
+        "who": "City Administrator",
+        "persona_ids": [
+          "persona_city_administrator"
+        ],
+        "screen_label": "Reconciliation",
+        "screen_href": "/reconciliation",
+        "steps": [
+          "Click \"Reconciliation\" in the left menu.",
+          "Find the assessment with \"Search by application reference or assessment id\" and click \"Search the assessments\". Click \"View details\" on the row.",
+          "Under \"Finance actions\" choose \"Assess application\" if none exists. Enter the Declared valuation and a Reason.",
+          "Choose \"Confirm allocation\". Pick the Receipt, enter the Amount and the Currency, a new Idempotency key and a Reason. An idempotency key makes sure the same request is never applied twice.",
+          "Choose \"Reconcile assessment\" and list the receipts.",
+          "Read \"Allocation position\" and \"Fee lines\" for the selected assessment.",
+          "Check that the balance is 0.00 and the status is exact before any permit is issued."
+        ],
+        "result": "A permit cannot be issued without an exact, settled allocation. Partial, overpaid, reversed and unmatched payments each keep their own status and balance."
+      },
+      {
+        "slug": "read-the-operations-dashboard-and-audit-log",
+        "title": "Read the operations dashboard and the audit log",
+        "summary": "See how the City is doing and who did what.",
+        "who": "City Administrator",
+        "persona_ids": [
+          "persona_city_administrator"
+        ],
+        "screen_label": "Operations",
+        "screen_href": "/ops/dashboard",
+        "steps": [
+          "Click \"Operations\" in the left menu.",
+          "Read \"Figures\" and \"Decisions recorded, by outcome\". Every figure is a count or a mean over stored rows. No model is used.",
+          "Under \"Synthetic data\" click \"Include the synthetic history (labelled)\" to add the sample year, or \"Leave the synthetic history out\" to remove it.",
+          "Click \"Audit log\" in the left menu.",
+          "Narrow the list with the filters Actor type, Action and \"Search (optional)\", then click \"Apply filters\".",
+          "Click \"Details\" on a row to open the event in a side panel.",
+          "Use \"Newer\" and \"Older\" to move between pages, and \"Clear filters\" to start again."
+        ],
+        "result": "The audit log is read only. It records every action once and nobody can edit it."
+      }
+    ]
+  },
+  "technical": {
+    "title": "Technical documentation",
+    "intro": "These documents describe how the demonstration is built and run. They are shown read only, straight from the repository.",
+    "html_note": "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page.",
+    "documents": [
+      {
+        "slug": "architecture",
+        "title": "Solution architecture",
+        "summary": "The architecture page for the ACME City Permits solution: context, components, data and controls.",
+        "format": "html",
+        "root": "project",
+        "path": "docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html"
+      },
+      {
+        "slug": "runbook",
+        "title": "Operations runbook",
+        "summary": "How to start, reset and run the demonstration, the queues, the agents and the failure handling.",
+        "format": "markdown",
+        "root": "project",
+        "path": "docs/operations/RUNBOOK.md"
+      },
+      {
+        "slug": "use-case-fence",
+        "title": "Use case: the fence permit",
+        "summary": "The use case the demonstration is built around.",
+        "format": "markdown",
+        "root": "project",
+        "path": "docs/operations/USE_CASE_FENCE.md"
+      },
+      {
+        "slug": "user-stories",
+        "title": "User stories",
+        "summary": "What each kind of user needs from the service.",
+        "format": "markdown",
+        "root": "project",
+        "path": "docs/operations/USER_STORIES.md"
+      },
+      {
+        "slug": "readme",
+        "title": "Project overview",
+        "summary": "What the project is and how the folders are laid out.",
+        "format": "markdown",
+        "root": "project",
+        "path": "README.md"
+      },
+      {
+        "slug": "repo-readme",
+        "title": "Application overview",
+        "summary": "How to install and run the application.",
+        "format": "markdown",
+        "root": "repo",
+        "path": "README.md"
+      },
+      {
+        "slug": "user-test-guide",
+        "title": "User test guide",
+        "summary": "Commands and walkthroughs for trying the application, with the prepared demo states.",
+        "format": "markdown",
+        "root": "repo",
+        "path": "USER_TEST_GUIDE.md"
+      }
+    ]
+  }
+}
