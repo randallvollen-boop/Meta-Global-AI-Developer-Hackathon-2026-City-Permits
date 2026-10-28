@@ -29,6 +29,7 @@ from acme_city.changes.state_machine import permitted_targets
 from acme_city.core.clock import utc_now
 from acme_city.finance.service import FinanceService
 from acme_city.governance.service import GovernanceService
+from acme_city.muse.schemas import PRIVATE_TASKS
 from acme_city.permits.comments import comment_view, comments_for
 from acme_city.persistence.models import (
     agent,
@@ -54,14 +55,18 @@ SCREENS: tuple[dict[str, str], ...] = (
     # other persona is unchanged.
     {"key": "overview", "label": "Planning overview", "href": "/overview"},
     {"key": "queue", "label": "Work queue", "href": "/queue"},
-    {"key": "applicants", "label": "Applicants", "href": "/applicants"},
+    {"key": "applicants", "label": "People & organizations", "href": "/applicants"},
     {
         "key": "masters",
-        "label": "Properties, businesses and contractors",
+        "label": "Master records",
         "href": "/masters",
     },
     {"key": "permit", "label": "Permit workspace", "href": ""},
-    {"key": "steward", "label": "Steward review", "href": "/steward"},
+    # The steward's four work areas are Data issues, Master records, Source
+    # records and Activity.  "Review queue" is the Permit Reviewer's name.
+    {"key": "steward", "label": "Data issues", "href": "/steward"},
+    {"key": "source_records", "label": "Source records", "href": "/source-records"},
+    {"key": "activity", "label": "Activity", "href": "/activity"},
     {"key": "rules", "label": "Rules and fees", "href": "/rules"},
     {"key": "reconciliation", "label": "Reconciliation", "href": "/reconciliation"},
     {"key": "governance", "label": "Governance and sources", "href": "/governance"},
@@ -97,6 +102,10 @@ SCREENS: tuple[dict[str, str], ...] = (
         "label": "What-if",
         "href": "/policy/scenarios",
     },
+    {"key": "ops_dashboard", "label": "Operations", "href": "/ops/dashboard"},
+    {"key": "ops_audit", "label": "Audit log", "href": "/ops/audit"},
+    {"key": "ops_support", "label": "Support", "href": "/ops/support"},
+    {"key": "ops_checks", "label": "Checks", "href": "/ops/checks"},
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -115,6 +124,8 @@ SCREEN_DOMAIN: dict[str, str] = {
     "masters": "parcels",
     "permit": "permits",
     "steward": "applicants",
+    "source_records": "applicants",
+    "activity": "applicants",
     "rules": "building_rules",
     "reconciliation": "finance",
     "governance": "records",
@@ -126,6 +137,10 @@ SCREEN_DOMAIN: dict[str, str] = {
     "review_queue": "permits",
     "insight_city": "permits",
     "policy_scenarios": "permits",
+    "ops_dashboard": "permits",
+    "ops_audit": "records",
+    "ops_support": "permits",
+    "ops_checks": "records",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -170,6 +185,18 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
         ("registry.crosswalk.decide", "applicants"),
         ("change.case.transition", None),
         ("source.record.update", "applicants"),
+    ),
+    # The source-record catalogue and the activity of a steward's decisions are
+    # read by the stewards (and by the City Administrator, who holds the same
+    # read grants); the Permit Reviewer and the Applicant hold none of them.
+    "source_records": (
+        ("registry.provenance.view", "applicants"),
+        ("registry.crosswalk.decide", "applicants"),
+        ("source.record.update", "applicants"),
+    ),
+    "activity": (
+        ("registry.crosswalk.decide", "applicants"),
+        ("change.case.transition", None),
     ),
     "rules": (
         ("rule.version.draft", "building_rules"),
@@ -217,6 +244,16 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     # policy grants.  The run and briefing keys exist for their help entries;
     # the service checks the run and briefing grants again on every read.
     "policy_scenarios": (("policy.scenario.manage", None),),
+    # The operations screens are the City Administrator's, each opened by its
+    # own grant.  Support is opened by any of its three grants.
+    "ops_dashboard": (("ops.dashboard.view", None),),
+    "ops_audit": (("ops.audit_log.view", None),),
+    "ops_support": (
+        ("support.lookup.view", None),
+        ("support.help_request.answer", None),
+        ("support.case.record", None),
+    ),
+    "ops_checks": (("ops.checks.run", None),),
     "policy_run": (("policy.run.view", None),),
     "policy_briefing": (("policy.brief.view", None),),
 }
@@ -485,8 +522,13 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     if applications:
         permit_href = f"/permits/{applications[0].id}"
     items: list[dict[str, Any]] = []
+    # People & organizations is a tab of Master records for a persona that may
+    # open Master records, so it is not listed twice.
+    masters_open = may_open_screen(session, actor, "masters")
     for screen in SCREENS:
         key = screen["key"]
+        if key == "applicants" and masters_open:
+            continue
         permissions = SCREEN_PERMISSIONS.get(key, ())
         if not any(
             holds_grant(session, actor, permission, domain_id)
@@ -1566,6 +1608,7 @@ def allowed_actions_for(
                 label="Move change case",
                 path="/ui/actions/change.transition",
                 permission="change.case.transition",
+                domain_id="applicants",
                 destination="Configured steward queue",
                 description=(
                     "Move a change case to the next permitted state. The server decides "
@@ -3628,9 +3671,13 @@ def rules_fees(session: Session, actor: ActorContext) -> dict[str, Any]:
             )
         ).scalars().all()
     ]
+    from acme_city.policy.drafts import PolicyDraftService  # noqa: PLC0415
+
     return {
         "versions": versions,
         "fee_schedules": fee_schedules,
+        # draft id -> the what-if run it was made from (only for a holder of the run grant)
+        "policy_links": PolicyDraftService(session).links(actor),
         "permit_type_icons": permit_type_icons(session, actor),
         "responsibility": responsibility(
             session,
@@ -3879,7 +3926,9 @@ def model_runs(
         raw_refs = row.input_refs or {}
         refs = list(raw_refs) if not isinstance(raw_refs, dict) else [raw_refs]
         run_application = raw_refs.get("application_id") if isinstance(raw_refs, dict) else None
-        if isinstance(raw_refs, dict) and str(raw_refs.get("task") or "") == "applicant_assist":
+        if isinstance(raw_refs, dict) and str(raw_refs.get("task") or "") in PRIVATE_TASKS:
+            # A chat run is private to its applicant; a what-if run is shown
+            # only through the policy screens, to the holders of its grants.
             continue
         if application_id and application_id != run_application and application_id not in refs:
             continue

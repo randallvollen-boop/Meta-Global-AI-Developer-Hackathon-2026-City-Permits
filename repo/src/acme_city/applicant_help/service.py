@@ -47,9 +47,9 @@ from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
-from acme_city.muse.payloads import assert_no_truth_in_payload
+from acme_city.muse.payloads import _application_is_visible, assert_no_truth_in_payload
 from acme_city.persistence.models import help as help_models
-from acme_city.persistence.models import model_run
+from acme_city.persistence.models import model_run, permit
 
 #: The grant that lets an applicant ask a question.
 PERMISSION_ASK = "applicant.help.ask"
@@ -254,6 +254,54 @@ class ApplicantHelpService:
         ).scalars()
         return sum(1 for outcome in rows if outcome in UNSUCCESSFUL_OUTCOMES)
 
+    def asks_for_a_person(self, question: str) -> bool:
+        """Return whether a question asks for a person at the City.
+
+        The phrases are in the configuration.  The check only decides when the
+        panel *prompts* "Ask the City"; the button itself is always available.
+        """
+        text = " ".join(str(question or "").lower().split())
+        return any(phrase in text for phrase in self._config.person_phrases)
+
+    def escalation_state(
+        self, conversation: help_models.HelpConversation | None
+    ) -> dict[str, Any]:
+        """Return whether the panel prompts the applicant to ask the City.
+
+        The prompt is offered after the third unsuccessful turn of the
+        conversation, counted once per submitted turn, and whenever the last
+        question asks for a person.  A conversation that already has a help
+        request is not prompted again.  The "Ask the City" button never
+        depends on this state.
+        """
+        threshold = self._config.escalation_threshold
+        state: dict[str, Any] = {
+            "unsuccessful": 0,
+            "threshold": threshold,
+            "offered": False,
+            "reason": "",
+            "text": "",
+            "requested": False,
+        }
+        if conversation is None:
+            return state
+        count = self.unsuccessful_turn_count(conversation)
+        state["unsuccessful"] = count
+        state["requested"] = bool(self.help_requests(conversation))
+        turns = self.turns(conversation)
+        asked = bool(turns) and self.asks_for_a_person(turns[-1].question)
+        if state["requested"]:
+            return state
+        if asked:
+            state.update(offered=True, reason="asked_for_a_person", text=self._config.prompt_person)
+        elif count >= threshold:
+            state.update(
+                offered=True,
+                reason="unsuccessful_turns",
+                text=self._config.prompt_unsuccessful.replace("{count}", str(count)),
+            )
+        return state
+
     # ------------------------------------------------------------------ writing
 
     def _authorize(self, actor: ActorContext, action: str) -> None:
@@ -444,6 +492,9 @@ class ApplicantHelpService:
         conversation_id: str,
         expected_version: int,
         question: str = "",
+        placement: str = "chooser",
+        permit_type_key: str = "",
+        application_id: str = "",
     ) -> help_models.HelpRequest:
         """Ask a person at the City to answer the applicant.
 
@@ -487,15 +538,25 @@ class ApplicantHelpService:
                 f"the question is longer than {config.max_message_length} characters"
             )
         if conversation is None:
+            # A request made before any question starts its own conversation.
+            # It is tied to the case the applicant is looking at, so the answer
+            # of the City can reach that case; the case must be the applicant's.
+            tied: permit.Application | None = None
+            if application_id:
+                tied = self._session.get(permit.Application, application_id)
+                if tied is None:
+                    raise NotFoundError("that application is not available to you")
+                if not _application_is_visible(actor, tied):
+                    raise NotFoundError("that application is not available to you")
             conversation = help_models.HelpConversation(
                 id=new_id("helpconv"),
                 correlation_id=new_id("corr"),
                 created_at=self._now,
                 owner_actor_id=actor.actor_id,
                 owner_session_hash=session_hash(actor),
-                application_id=None,
-                permit_type_key=None,
-                placement="chooser",
+                application_id=tied.id if tied is not None else None,
+                permit_type_key=permit_type_key or None,
+                placement=placement if placement in help_models.HELP_PLACEMENTS else "chooser",
                 turn_count=0,
                 version=0,
             )

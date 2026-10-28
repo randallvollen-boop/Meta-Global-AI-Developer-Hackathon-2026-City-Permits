@@ -246,7 +246,13 @@ def decorate_application_item(
             "applicant_name": applicant_name(session, application),
             "address": address_with_unit(session, application),
             "project_type": item.get("subtitle", ""),
-            "stage_label": stage_label(application.status),
+            # A portal arrival that the intake agent has not run on yet keeps
+            # the queue's established wording.
+            "stage_label": (
+                "Awaiting intake agent"
+                if application.status == "submitted" and application.scenario_id is None
+                else stage_label(application.status)
+            ),
             "issue_label": issue,
             "issue_code": code,
             "next_party": next_party,

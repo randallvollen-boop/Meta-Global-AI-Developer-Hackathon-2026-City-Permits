@@ -44,7 +44,9 @@ def approve_the_applicant_link(page, server: BrowserServer, submit_action, login
         },
     )
     assert "Recorded the approve decision" in message
-    page.reload(wait_until="domcontentloaded")
+    # Changed deliberately (steward restyle): a decided link leaves "Needs review"
+    # and is listed under the Resolved filter of Data issues.
+    page.goto(f"{server.base_url}/steward?filter=resolved", wait_until="domcontentloaded")
     approved = page.locator('[data-testid="crosswalk-row"][data-link-status="approved"]')
     assert approved.count() >= 1
 
@@ -72,7 +74,8 @@ def approve_the_contractor_link(page, server: BrowserServer, submit_action, logi
             "reason": "the registration and the declared contractor agree",
         },
     )
-    page.reload(wait_until="domcontentloaded")
+    # Changed deliberately (steward restyle): see above; both links are Resolved.
+    page.goto(f"{server.base_url}/steward?filter=resolved", wait_until="domcontentloaded")
     approved = page.locator('[data-testid="crosswalk-row"][data-link-status="approved"]')
     assert approved.count() >= 2
 

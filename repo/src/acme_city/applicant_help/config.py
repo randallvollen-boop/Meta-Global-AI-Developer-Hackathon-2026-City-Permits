@@ -74,6 +74,15 @@ class HelpConfig:
     demo_questions: tuple[tuple[str, str], ...] = ()
     #: The plain sentence shown for each refusal reason.
     refusal_texts: tuple[tuple[str, str], ...] = ()
+    #: The number of unsuccessful turns after which the panel prompts the
+    #: applicant to ask a person at the City.
+    escalation_threshold: int = 3
+    #: The phrases that tell the panel the applicant asked for a person.
+    person_phrases: tuple[str, ...] = ()
+    #: The prompt after the threshold, with a ``{count}`` placeholder.
+    prompt_unsuccessful: str = ""
+    #: The prompt after the applicant asked for a person.
+    prompt_person: str = ""
 
     def refusal_text(self, reason: str) -> str:
         """Return the sentence of a refusal reason, or an empty string."""
@@ -233,6 +242,21 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
             raise ValidationError(
                 f"the refusal reason {reason!r} has no sentence in the configuration"
             )
+    escalation = document.get("escalation") or {}
+    if not isinstance(escalation, dict):
+        raise ValidationError("the applicant help escalation section must be an object")
+    threshold = escalation.get("threshold", 3)
+    if not isinstance(threshold, int) or threshold < 1:
+        raise ValidationError("the applicant help escalation threshold must be positive")
+    phrases = tuple(
+        str(item).strip().lower()
+        for item in (escalation.get("person_phrases") or [])
+        if str(item).strip()
+    )
+    prompt_unsuccessful = str(escalation.get("prompt_unsuccessful", "")).strip()
+    prompt_person = str(escalation.get("prompt_person", "")).strip()
+    if not prompt_unsuccessful or not prompt_person:
+        raise ValidationError("the applicant help configuration needs both escalation prompts")
     return HelpConfig(
         notice=notice,
         fallback_label=fallback_label,
@@ -250,6 +274,10 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
         refusal_reasons=refusal_reasons,
         demo_questions=tuple(demo_questions),
         refusal_texts=refusal_texts,
+        escalation_threshold=threshold,
+        person_phrases=phrases,
+        prompt_unsuccessful=prompt_unsuccessful,
+        prompt_person=prompt_person,
     )
 
 

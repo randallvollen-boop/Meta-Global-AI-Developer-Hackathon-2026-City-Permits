@@ -145,6 +145,38 @@
     "finance_statuses": {
       "label": "Receipt settlement, allocation and account link",
       "text": "Receipt settlement says whether the money has settled in the ledger. Payment allocation says whether it was allocated to an assessment. The account identity link says whether the payer account is linked to a canonical party. The outstanding balance says what is still owed. They are four separate facts, and the permit status is a fifth."
+    },
+    "ops_actor_type": {
+      "label": "Actor type",
+      "text": "A person is a persona the interface can select, or a staff user added in Administration. An agent is a service identity that holds an agent role, such as the intake agent. Everything else, including a record with no actor, is the system. The type comes from the identity records the server holds, not from the text of an audit row."
+    },
+    "ops_not_applicable": {
+      "label": "Not applicable",
+      "text": "A check is not applicable when there is nothing it can inspect. The seeded history, such as the D07 approval and permit that the fixture inserts without a decision or issuance audit event, is reported as not applicable (historical seed). It is never counted as a pass and no event is made up for it."
+    },
+    "party_record_status": {
+      "label": "Record status",
+      "text": "Whether the person or organization record itself is active in the master data. It says nothing about any license or registration the record holds."
+    },
+    "license_status": {
+      "label": "License or registration status",
+      "text": "Whether the license or registration held by the person or organization is valid. An active organization can hold an expired registration; both can be correct."
+    },
+    "data_issue": {
+      "label": "Data issue",
+      "text": "A discrepancy that a steward still has to resolve, such as two sources disagreeing. It is shown only when an open issue exists."
+    },
+    "source_last_changed": {
+      "label": "Source last changed",
+      "text": "The time the source system says it last changed the record. It is separate from the time this application last received or checked it."
+    },
+    "match_evidence": {
+      "label": "Evidence before score",
+      "text": "The agreements and conflicts the matcher found are the evidence. A score only orders the candidates; it is an uncalibrated heuristic and not the chance that two records are the same."
+    },
+    "action_preview": {
+      "label": "What this action will do",
+      "text": "A preview of the records an action would link or leave unlinked, the application relationship that would change, which source values are kept and whether an issue would remain. Nothing is written until you press the action."
     }
   },
   "screens": {
@@ -168,21 +200,24 @@
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
     },
     "applicants": {
-      "title": "Applicants",
-      "purpose": "One record per person or business, with where each value comes from.",
+      "title": "People & organizations",
+      "purpose": "One record per person or organization, with where each value comes from.",
       "can_do": [
-        "Open an applicant to see the current value and its source.",
+        "Search by name or alias, and filter people or organizations.",
+        "Open a record for its overview, sources and history.",
         "Request a correction where your persona may."
       ],
       "next": "A correction goes to the system that owns the value; it is not edited here."
     },
     "masters": {
-      "title": "Properties, businesses and contractors",
-      "purpose": "The master records for parcels, businesses and contractors, each owned by GIS, ERP Finance or Permitting.",
+      "title": "Master records",
+      "purpose": "The master records for people and organizations, properties, business licenses and contractor registrations, each owned by a source system.",
       "can_do": [
-        "Open a record to see its sources and history."
+        "Switch between the four collections with the tabs.",
+        "Open a record for its overview, sources and history.",
+        "Open source details to see who owns a value and where to change it."
       ],
-      "next": "To change a value, change it in the system that owns it."
+      "next": "To change a value, change it in the system that owns it; a steward can request the correction."
     },
     "permit": {
       "title": "Permit workspace",
@@ -194,13 +229,13 @@
       "next": "A steward confirms identity and property links, the reviewer records the decision, a fee is assessed and paid, and the permit is issued."
     },
     "steward": {
-      "title": "Steward review",
-      "purpose": "Muse and the matcher propose which records are the same business or person; the steward decides.",
+      "title": "Data issues",
+      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. The matcher and Muse propose; the steward decides.",
       "can_do": [
-        "Approve or reject a proposed link.",
-        "Check the evidence behind a proposal before deciding."
+        "Filter by Needs review, Assigned to me, Awaiting source or Resolved.",
+        "Open an issue to read the evidence, preview what an action will do, and record a decision."
       ],
-      "next": "The decision is recorded with its evidence and appears in the history of the record."
+      "next": "The decision is recorded with the evidence and the note, and appears in the history of the record. A permit decision is a separate step."
     },
     "rules": {
       "title": "Rules and fees",
@@ -313,18 +348,20 @@
       "purpose": "What the what-if would change, counted from the same cases scored twice, with each figure's definition beside it.",
       "can_do": [
         "Read the counts by outcome, the cases that change and the safety signals.",
+        "Ask Muse to explain the results (City Administrator).",
         "Open the legislator briefing."
       ],
       "next": "The briefing is built from these figures only; a change to the real rules is a separate, approved step."
     },
     "policy_briefing": {
       "title": "Legislator briefing",
-      "purpose": "A plain-language briefing built only from the typed facts of one run. No model wrote it.",
+      "purpose": "A plain-language briefing built only from the typed facts of one run. It is the deterministic briefing unless an accepted Muse briefing is shown, and the source is always labelled.",
       "can_do": [
         "Read it on screen.",
+        "Ask Muse to write it (City Administrator); every claim is checked against the typed facts first.",
         "Download it as HTML or Markdown."
       ],
-      "next": "A briefing written with Muse is planned for a later release; this one is always available."
+      "next": "If Muse's answer fails a check, the deterministic briefing stays on screen with a label saying so."
     },
     "apply_form": {
       "title": "Application form",
@@ -354,6 +391,60 @@
         "Read what you will need before you begin."
       ],
       "next": "You choose a project type and fill in its form."
+    },
+    "ops_dashboard": {
+      "title": "Operations dashboard",
+      "purpose": "See how permit work is going across the City: how many cases are open, how old they are, what the intake agent did and what needs a person.",
+      "can_do": [
+        "Read each figure with its definition beside it.",
+        "Include or leave out the labelled synthetic history."
+      ],
+      "next": "Open the queues or the audit log to look at the cases and actions behind a number."
+    },
+    "ops_audit": {
+      "title": "Audit log",
+      "purpose": "Read the append-only record of what was done in the application and who or what did it. It is read only.",
+      "can_do": [
+        "Filter by actor type and by action, or search.",
+        "Open the record a row refers to, or the details of the event."
+      ],
+      "next": "If a row needs follow-up, open its record and act there with the right role."
+    },
+    "ops_support": {
+      "title": "Support",
+      "purpose": "Help applicants: look up a case, answer the questions sent through Ask the City and record assistance given outside the application.",
+      "can_do": [
+        "Look up an application by its reference.",
+        "Answer an open help request.",
+        "Record a support case."
+      ],
+      "next": "An answer tied to a case appears on the applicant's tracking page; otherwise it appears in their help history."
+    },
+    "ops_checks": {
+      "title": "Checks",
+      "purpose": "Confirm that the application still keeps its own rules: the personas, who decided what, audit records, fees and comment privacy.",
+      "can_do": [
+        "Run the fixed list of read-only checks.",
+        "Read why each check passed, failed or does not apply."
+      ],
+      "next": "A failed check lists the record that broke the rule; fix it in the screen that owns the record."
+    },
+    "source_records": {
+      "title": "Source records",
+      "purpose": "The accepted records received from each source system, with the master record each one is linked to.",
+      "can_do": [
+        "Filter by source system.",
+        "Open source details to see the full identifiers and who owns the source."
+      ],
+      "next": "To compare a source record with the master records, open the Data issues queue."
+    },
+    "activity": {
+      "title": "Activity",
+      "purpose": "Decisions and changes recorded for the records you steward. It is not the administrator's audit log.",
+      "can_do": [
+        "Read who decided what, when, and the note they gave."
+      ],
+      "next": "Open a record from its link to see its full history."
     }
   }
 }

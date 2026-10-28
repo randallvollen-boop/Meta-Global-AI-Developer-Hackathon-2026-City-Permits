@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+{% set v = view %}
+<div class="page-head">
+  <div>
+    <h1>Audit log</h1>
+    <p class="sub">A read-only view of the append-only audit records, newest first. It is not a second trail: it reads the one the application writes. The type of an actor comes from the identity records the server holds, not from the text of a row.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('ops_audit') }}</div>
+</div>
+
+<form method="get" action="/ops/audit" class="ops-filters" data-testid="audit-filters">
+  <label>Actor type {{ ui.info('ops_actor_type') }}
+    <select name="actor_type" data-testid="audit-filter-actor-type">
+      <option value="">Any actor type</option>
+      {% for t in v.actor_types %}<option value="{{ t.key }}"{% if v.filters.actor_type == t.key %} selected{% endif %}>{{ t.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Action
+    <select name="action" data-testid="audit-filter-action">
+      <option value="">Any action</option>
+      {% for a in v.actions %}<option value="{{ a }}"{% if v.filters.action == a %} selected{% endif %}>{{ a }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Search (optional)
+    <input type="search" name="search" value="{{ v.filters.search }}" maxlength="120" data-testid="audit-filter-search">
+  </label>
+  <button type="submit" class="btn" data-testid="audit-filter-apply">Apply filters</button>
+  <a href="/ops/audit" data-testid="audit-filter-clear">Clear filters</a>
+</form>
+
+<p data-testid="audit-count"><strong>{{ v.total }}</strong> audit records match. Page {{ v.page }} of {{ v.pages }}.</p>
+
+<section class="card" aria-labelledby="audit-h">
+  <div class="card-b">
+  <h2 id="audit-h" class="visually-hidden">Audit records</h2>
+  <div class="tbl-wrap"><table class="data-table" data-testid="audit-rows">
+    <caption class="visually-hidden">Audit records, newest first</caption>
+    <thead><tr><th scope="col">When</th><th scope="col">Actor</th><th scope="col">Type</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Outcome</th><th scope="col">Detail</th></tr></thead>
+    <tbody>
+      {% for r in v.rows %}
+      <tr data-testid="audit-row" data-actor-type="{{ r.actor_type }}">
+        <td class="mono">{{ r.occurred_at }}</td>
+        <td>{{ r.actor_label or r.actor_id or 'none' }}{% if r.actor_label %}<br><span class="mono muted">{{ r.actor_id }}</span>{% endif %}</td>
+        <td><span class="ops-badge {{ r.actor_type }}" data-testid="audit-actor-type">{{ r.actor_type }}</span></td>
+        <td class="mono">{{ r.action }}</td>
+        <td>{% if r.target_type %}{% if r.href %}<a href="{{ r.href }}" data-testid="audit-record-link">{{ r.target_type }} {{ r.target_id }}</a>{% else %}<span data-testid="audit-record-text">{{ r.target_type }} {{ r.target_id }}</span>{% endif %}{% else %}<span class="muted">none</span>{% endif %}</td>
+        <td>{{ r.outcome }}<br><span class="muted">version {{ r.versions }}</span></td>
+        <td>{{ ui.detail_link('audit-event', r.event_id, 'Details') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted" data-testid="audit-empty">No audit record matches these filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  </div>
+</section>
+
+<nav class="ops-pager" aria-label="Pages" data-testid="audit-pager">
+  {% set q = v.query ~ ('&' if v.query else '') %}
+  {% if v.page > 1 %}<a href="/ops/audit?{{ q }}page={{ v.page - 1 }}" data-testid="audit-prev" rel="prev">Newer</a>{% else %}<span class="muted">Newer</span>{% endif %}
+  <span>Page {{ v.page }} of {{ v.pages }}</span>
+  {% if v.page < v.pages %}<a href="/ops/audit?{{ q }}page={{ v.page + 1 }}" data-testid="audit-next" rel="next">Older</a>{% else %}<span class="muted">Older</span>{% endif %}
+</nav>
+{% include "components/evidence_panel.html" %}
+{% endblock %}

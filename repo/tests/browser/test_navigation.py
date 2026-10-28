@@ -20,10 +20,13 @@ from conftest import BrowserServer
 #: ``PERSONA_SCREENS``.
 SCREENS = (
     ("/queue", "Work queue"),
-    ("/applicants", "Applicants"),
-    ("/masters", "Properties, businesses and contractors"),
+    # Changed deliberately (steward restyle): the screens carry their new names.
+    ("/applicants", "People & organizations"),
+    ("/masters", "Master records"),
     ("/permits/app_synth_001", "Permit workspace"),
-    ("/steward", "Steward review"),
+    ("/steward", "Data issues"),
+    ("/source-records", "Source records"),
+    ("/activity", "Activity"),
     ("/rules", "Rules and fees"),
     ("/reconciliation", "Reconciliation"),
     ("/governance", "Governance and sources"),
@@ -35,6 +38,11 @@ SCREENS = (
     # The planning overview is the City Administrator's home and carries its
     # own grant, so it is swept with the Administrator.
     ("/overview", "Planning overview"),
+    # P3c: the four operations screens of the City Administrator.
+    ("/ops/dashboard", "Operations dashboard"),
+    ("/ops/audit", "Audit log"),
+    ("/ops/support", "Support"),
+    ("/ops/checks", "Checks"),
 )
 
 #: The screens that are swept as the persona that owns them.
@@ -53,12 +61,16 @@ PERSONA_SCREENS: tuple[tuple[str, str, str], ...] = (
 #: the review queue.  No other persona gains a screen.
 NAVIGATION_BY_PERSONA = {
     "persona_applicant": ["queue", "applicants", "permit"],
+    # Changed deliberately (steward restyle): People & organizations is a tab of
+    # Master records, so "applicants" leaves the Data Steward's and the City
+    # Administrator's lists; Source records and Activity follow Data issues.
     "persona_data_steward": [
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "agent_intake",
         "intake_queue",
@@ -77,10 +89,11 @@ NAVIGATION_BY_PERSONA = {
         # the other screens is unchanged.
         "overview",
         "queue",
-        "applicants",
         "masters",
         "permit",
         "steward",
+        "source_records",
+        "activity",
         "rules",
         "reconciliation",
         "governance",
@@ -90,17 +103,22 @@ NAVIGATION_BY_PERSONA = {
         "insight_city",
         # Changed deliberately (policy 2): the What-if screen follows the City view.
         "policy_scenarios",
+        # Changed deliberately (P3c): the operations screens follow the What-if screen.
+        "ops_dashboard",
+        "ops_audit",
+        "ops_support",
+        "ops_checks",
     ],
 }
 
 #: The screens a persona may not open; each one answers 403.
 HIDDEN_SCREENS = {
-    "persona_applicant": ["/steward", "/rules", "/rules-fees", "/reconciliation", "/governance",
+    "persona_applicant": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
                            "/agent/intake", "/agent/adjudication", "/admin",
                            "/queue/intake", "/queue/early-resolution", "/queue/review"],
     "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin",
                               "/queue/review"],
-    "persona_permit_reviewer": ["/steward", "/rules", "/rules-fees", "/reconciliation", "/governance",
+    "persona_permit_reviewer": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
                                 "/agent/intake", "/admin", "/queue/intake",
                                 "/queue/early-resolution"],
     "persona_city_administrator": ["/queue/intake", "/queue/early-resolution", "/queue/review"],
@@ -115,6 +133,11 @@ for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_re
 #: own grant, so no other persona may open it.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
     HIDDEN_SCREENS[_persona].append("/overview")
+#: P3c: the four operations screens are held by the City Administrator only.
+for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
+    HIDDEN_SCREENS[_persona].extend(
+        ["/ops/dashboard", "/ops/audit", "/ops/support", "/ops/checks"]
+    )
 
 
 def test_the_screens_render_without_a_page_error(
@@ -254,16 +277,33 @@ def test_the_evidence_and_history_panels_stay_present(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_city_administrator")
+    # Changed deliberately (steward restyle): the steward's collection screens
+    # (Master records, Data issues, Source records, Activity) no longer end with a
+    # collection-wide "No evidence is recorded" panel.  Evidence lives in the
+    # selected record or case, so those screens are swept as a record's Sources
+    # view and as a focused case instead (below).
+    collection_screens = {"/applicants", "/masters", "/steward", "/source-records", "/activity"}
     for path, _title in SCREENS:
+        if path in collection_screens:
+            continue
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert page.locator('[data-testid="evidence-panel"]').count() == 1, path
+    page.goto(
+        f"{server.base_url}/masters/party_cedarline?view=sources", wait_until="domcontentloaded"
+    )
+    assert page.locator('[data-testid="evidence-panel"]').count() == 1
+    page.goto(f"{server.base_url}/masters", wait_until="domcontentloaded")
+    assert page.locator('[data-testid="evidence-panel"]').count() == 0
 
 
 def test_the_history_panel_stays_present_on_the_record_screens(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_city_administrator")
-    for path in ("/permits/app_synth_001", "/steward", "/applicants/party_cedarline"):
+    # Changed deliberately (steward restyle): a record's history is its History
+    # view, and the Data issues queue itself carries no history (a focused case
+    # lists what happened).
+    for path in ("/permits/app_synth_001", "/applicants/party_cedarline?view=history"):
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert page.locator('[data-testid="history-panel"]').count() == 1, path
 

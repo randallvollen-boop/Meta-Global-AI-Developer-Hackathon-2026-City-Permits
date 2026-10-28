@@ -84,6 +84,43 @@
     region.appendChild(list);
   }
 
+  function renderEscalation(panel, escalation) {
+    var slot = panel.querySelector("[data-help-escalation-slot]");
+    if (!slot) return;
+    slot.innerHTML = "";
+    if (!escalation || !escalation.offered) return;
+    var prompt = document.createElement("p");
+    prompt.className = "callout";
+    prompt.setAttribute("role", "status");
+    prompt.setAttribute("data-testid", "help-escalation-prompt");
+    prompt.setAttribute("data-reason", escalation.reason || "");
+    prompt.appendChild(document.createTextNode((escalation.text || "") + " "));
+    var link = document.createElement("a");
+    link.setAttribute("href", "#help-ask-city");
+    link.textContent = "Go to Ask the City";
+    prompt.appendChild(link);
+    slot.appendChild(prompt);
+  }
+
+  function carryLastQuestion(panel, payload) {
+    var turns = payload.turns || [];
+    if (!turns.length) return;
+    var last = turns[turns.length - 1].question || "";
+    var form = panel.querySelector("[data-testid=help-escalate-form]");
+    if (!form) return;
+    var hidden = form.querySelector('input[type=hidden][name="question"]');
+    var area = form.querySelector('textarea[name="question"]');
+    var shown = form.querySelector("[data-testid=help-escalate-question]");
+    if (hidden) {
+      hidden.value = last;
+      if (shown && shown.tagName !== "TEXTAREA") shown.textContent = "Your question: " + last;
+    } else if (area && (!area.value || area.value === area.getAttribute("data-carried"))) {
+      /* Carry the last question over, but never overwrite what the applicant typed. */
+      area.value = last;
+      area.setAttribute("data-carried", last);
+    }
+  }
+
   function showRefusal(form, message) {
     var region = document.createElement("p");
     region.className = "action-denied";
@@ -121,6 +158,8 @@
           result.payload.conversation_version
         );
         renderTurns(panel, result.payload);
+        renderEscalation(panel, result.payload.escalation);
+        carryLastQuestion(panel, result.payload);
       })
       .catch(function () {
         /* The ordinary post is the fallback: it works without this script. */

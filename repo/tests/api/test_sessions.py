@@ -159,6 +159,6 @@ def test_healthz_reports_the_migration_state_without_a_path(client: TestClient) 
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["database"] == "current"
-    # Head is 0011 since the chat 2 migration (after 0010, the policy 2 migration: what-if scenarios and immutable runs).
-    assert payload["schema_revision"] == "0011"
+    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
+    assert payload["schema_revision"] == "0013"
     assert "sqlite" not in response.text

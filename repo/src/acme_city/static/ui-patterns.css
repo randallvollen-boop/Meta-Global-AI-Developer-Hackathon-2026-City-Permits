@@ -81,6 +81,12 @@ html.ui-js .ui-info-fallback { display: none; }
 .ui-drawer-section dt { color: var(--fg-2, #4a5b6b); }
 .ui-drawer-section dd { margin: 0; overflow-wrap: anywhere; }
 .ui-drawer-section dd.mono { font-family: var(--f-mono, ui-monospace, monospace); font-size: .8rem; }
+.ui-drawer-tabs { display: flex; gap: 4px; margin: 0 0 14px; border-bottom: 1px solid var(--line, #dde3e9); }
+.ui-drawer-tabs a { padding: 8px 10px; font-size: .84rem; font-weight: 600; color: var(--fg-2, #4a5b6b); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.ui-drawer-tabs a[aria-current="page"] { color: var(--fg, #142230); border-bottom-color: var(--accent, #1f5f8b); }
+.ui-drawer-tabs a:focus-visible { outline: 2px solid var(--accent, #1f5f8b); outline-offset: 2px; }
+.ui-drawer-section table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.ui-drawer-section th, .ui-drawer-section td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line-soft, #e9edf1); vertical-align: top; overflow-wrap: anywhere; }
 .ui-drawer-links { margin: 16px 0 0; padding-left: 18px; font-size: .9rem; }
 .ui-drawer-refused { margin: 0; padding: 12px; border-radius: 8px; background: var(--bad-soft, #fbe6e3); color: var(--fg, #142230); }
 

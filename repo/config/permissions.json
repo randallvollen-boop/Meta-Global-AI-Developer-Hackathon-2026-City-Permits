@@ -362,6 +362,69 @@
       "sensitive": false
     },
     {
+      "permission_id": "ops.dashboard.view",
+      "action": "ops.dashboard.view",
+      "category": "ops",
+      "description": "Open the operations dashboard: active cases, ages, intake agent results, decisions and what needs a person, each with its definition. Read only.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "ops.audit_log.view",
+      "action": "ops.audit_log.view",
+      "category": "ops",
+      "description": "Open the audit log: a read-only, paged view of the append-only audit records, filtered by actor type, action and search. It adds no second trail.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "support.lookup.view",
+      "action": "support.lookup.view",
+      "category": "support",
+      "description": "Look up an application by reference on the support screen: its status, timeline and the comments written for the applicant. Internal notes are never shown.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "support.help_request.answer",
+      "action": "support.help_request.answer",
+      "category": "support",
+      "description": "Answer a help request an applicant sent through Ask the City. The reply and the answered status are recorded together; on a case that can still change it also adds a comment the applicant reads. It gives no power to decide, issue, return or waive.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "support.case.record",
+      "action": "support.case.record",
+      "category": "support",
+      "description": "Record assistance given outside the application as a support case: an optional reference, the channel and a short summary.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "ops.checks.run",
+      "action": "ops.checks.run",
+      "category": "ops",
+      "description": "Run the fixed list of read-only invariant checks and record that the run happened. A run changes no permit, decision, fee or comment.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "policy.muse.brief",
+      "action": "policy.muse.brief",
+      "category": "policy",
+      "description": "Ask Muse Spark to write or explain the briefing of a what-if run from its typed facts, and read those recorded Muse runs. The answer is validated claim by claim; a rejected answer falls back to the deterministic briefing. It writes no application, finding, decision or fee row.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.draft.convert",
+      "action": "policy.draft.convert",
+      "category": "policy",
+      "description": "Save a what-if run as draft rule and fee schedule versions through the existing draft commands. The drafts stay drafts: the author cannot approve or publish them, and nothing published changes.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.muse.propose",
+      "action": "policy.muse.propose",
+      "category": "policy",
+      "description": "Ask Muse Spark to propose a what-if in plain language, and read those recorded Muse runs. A proposal is validated change by change and is never saved or run until the City Administrator saves it explicitly.",
+      "sensitive": true
+    },
+    {
       "permission_id": "permit.case.archive",
       "action": "permit.case.archive",
       "category": "permit",
@@ -533,6 +596,9 @@
       "agent.toggle",
       "config.manage",
       "insight.city.view",
+      "ops.audit_log.view",
+      "ops.checks.run",
+      "ops.dashboard.view",
       "permit.case.archive",
       "permit.case.restore",
       "permit.icon.generate",
@@ -542,7 +608,10 @@
       "policy.scenario.manage",
       "property.view",
       "records.configuration.view",
-      "records.document.view"
+      "records.document.view",
+      "support.case.record",
+      "support.help_request.answer",
+      "support.lookup.view"
     ],
     "auditor": [
       "records.audit.view",

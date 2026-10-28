@@ -13,6 +13,11 @@ a link):
 * ``GET  /policy/runs/{id}``                    the results
 * ``GET  /policy/runs/{id}/briefing``           the deterministic briefing
 * ``GET  /policy/runs/{id}/briefing/download``  the briefing as HTML or Markdown
+* ``POST /policy/runs/{id}/briefing/muse``      ask Muse to write the briefing (``policy.muse.brief``)
+* ``POST /policy/runs/{id}/draft``              save the run as draft rule and fee versions (``policy.draft.convert``)
+* ``POST /policy/runs/{id}/explain``            ask Muse to explain the results (``policy.muse.brief``)
+* ``POST /policy/propose``                      ask Muse to propose a what-if (``policy.muse.propose``)
+* ``GET  /policy/proposals/{id}``               a recorded proposal, with the save control
 
 Every write checks the CSRF token, the grant and a mandatory expected version,
 and is audited without free text.
@@ -37,12 +42,24 @@ from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
 from acme_city.policy import briefing as briefing_module
 from acme_city.policy import runs as runs_module
 from acme_city.policy import views
+from acme_city.policy.drafts import (
+    HANDOFF_STATUS,
+    OWN_VERSION_REASON,
+    PERMISSION_CONVERT,
+    PolicyDraftService,
+)
 from acme_city.policy.service import (
     PERMISSION_BRIEF_VIEW,
     PERMISSION_EXECUTE,
     PERMISSION_MANAGE,
     PERMISSION_RUN_VIEW,
     PolicyService,
+)
+from acme_city.policy.muse import (
+    FALLBACK_NOTICE,
+    PERMISSION_MUSE_BRIEF,
+    PERMISSION_MUSE_PROPOSE,
+    PolicyMuseService,
 )
 from acme_city.policy.suggestions import FENCE_KEY, SUGGESTIONS
 from acme_city.ui import patterns
@@ -68,6 +85,9 @@ NOTICES = {
     "created": "The what-if was saved.",
     "saved": "A new revision of the what-if was saved.",
     "deleted": "The what-if was deleted. The runs made from it are kept.",
+    "muse": "The Muse answer was recorded. Its source and its checks are shown below.",
+    "drafted": "Saved as a draft rule change. It needs independent approval; nothing published has changed.",
+    "drafted_again": "This run was already saved as a draft. Nothing new was made.",
 }
 
 
@@ -110,6 +130,24 @@ def _read_guard(
     request: Request, session: Session, actor: ActorContext | None
 ) -> tuple[ActorContext | None, Any]:
     return _guard(request, session, actor, SCREEN)
+
+
+def _muse(request: Request, session: Session) -> PolicyMuseService:
+    """Return the what-if agent bound to the request session and the server settings."""
+    return PolicyMuseService(session, request.app.state.settings)
+
+
+def _muse_state(muse: PolicyMuseService, actor: ActorContext, permission: str) -> dict[str, Any]:
+    """Return what a screen needs to show a Muse control: the grant and the live setting."""
+    return {
+        "can": muse.can(actor, permission),
+        "live": muse.live_enabled,
+        "mode_note": (
+            "Live Muse calls are on (server setting); the shared call cap and error stop apply."
+            if muse.live_enabled
+            else "Live Muse calls are off. Muse answers come from recorded demonstration fixtures only."
+        ),
+    }
 
 
 # ------------------------------------------------------------------- the list
@@ -157,6 +195,7 @@ def ui_policy_scenarios(
         starting_text=_starting_text(starting),
         notice=NOTICES.get(notice, ""),
         model_runs=[],
+        propose=_propose_panel(request, session, resolved),
         evidence=[
             {
                 "label": "Stored what-ifs and runs",
@@ -165,14 +204,35 @@ def ui_policy_scenarios(
                 "received_at": None,
             },
             {
-                "label": "No model used",
+                "label": "No model counts anything",
                 "kind": "label",
-                "detail": "Every figure on these screens is counted by the permit engine; no model writes or computes any of it in this release",
+                "detail": "Every figure on these screens is counted by the permit engine. Muse only explains a run or proposes a change, when asked, and its answers are checked before they are shown",
                 "received_at": None,
             },
         ],
     )
     return render(request, "policy_scenarios.html", context)
+
+
+def _propose_panel(request: Request, session: Session, actor: ActorContext) -> dict[str, Any]:
+    """Return the data of the "Ask Muse to propose a what-if" panel."""
+    muse = _muse(request, session)
+    state = _muse_state(muse, actor, PERMISSION_MUSE_PROPOSE)
+    recent = muse.recent_proposals(actor) if state["can"] else []
+    state["recent"] = [
+        {"id": r.model_run_id, "question": r.question, "accepted": r.accepted,
+         "created_at": r.created_at, "mode": r.mode}
+        for r in recent
+    ]
+    state["examples"] = PROPOSE_EXAMPLES
+    return state
+
+
+#: The questions the demonstration set has recorded proposals for.
+PROPOSE_EXAMPLES = (
+    "What if the side and rear yard fence limit were 7 ft?",
+    "What if no permit were required for a shed?",
+)
 
 
 def _starting_text(starting: dict[str, str]) -> str:
@@ -192,9 +252,18 @@ async def ui_policy_scenario_create(
         return refused
     try:
         verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        proposal_id = str(form.get("proposal", "")).strip()
+        changes: list[dict[str, Any]] = []
+        name = str(form.get("name", ""))
+        if proposal_id:
+            # A proposal is saved only here, by the Administrator's own press of the
+            # save button; the changes are validated again against today's rules first.
+            proposed_name, changes = _muse(request, session).changes_for_save(resolved, proposal_id)
+            name = name.strip() or proposed_name
         scenario = PolicyService(session).create_scenario(
             resolved,
-            name=str(form.get("name", "")),
+            name=name,
+            changes=changes,
             suggestion_key=str(form.get("suggestion", "")).strip() or None,
             starting_population={
                 "permit_type": str(form.get("start_permit_type", "")).strip(),
@@ -202,6 +271,7 @@ async def ui_policy_scenario_create(
                 "category": str(form.get("start_category", "")).strip(),
             },
             expected_version=_expected_version(form),
+            source_proposal_id=proposal_id or None,
         )
         session.commit()
     except AcmeError as error:
@@ -390,6 +460,7 @@ def ui_policy_run(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    notice: str = "",
 ) -> Any:
     resolved, refused = _read_guard(request, session, actor)
     if refused is not None:
@@ -399,6 +470,8 @@ def ui_policy_run(
         run = service.run_for(resolved, run_id)
         state = service.scenario_state(run.scenario_id)
         can_brief = service.can(resolved, PERMISSION_BRIEF_VIEW)
+        explain = _explain_panel(request, session, resolved, run, notice)
+        draft_panel = _draft_panel(session, resolved, run)
     except AcmeError as error:
         return _refusal(request, session, resolved, error, action="policy.run.read",
                         target_type="policy_run", target_id=run_id, back="/policy/scenarios")
@@ -406,6 +479,9 @@ def ui_policy_run(
         request, session, resolved, screen=SCREEN, title=f"What-if results: {run.scenario_name}",
         run=views.run_view(run, scenario_deleted=bool(state and state[0])),
         can_brief=can_brief,
+        explain=explain,
+        draft_panel=draft_panel,
+        notice=NOTICES.get(notice, ""),
         model_runs=[],
         evidence=[
             {
@@ -423,6 +499,51 @@ def ui_policy_run(
         ],
     )
     return render(request, "policy_run.html", context)
+
+
+def _draft_panel(session: Session, actor: ActorContext, run: Any) -> dict[str, Any]:
+    """Return what the run page needs for "Save as a draft rule change"."""
+    service = PolicyDraftService(session)
+    plan = service.plan(actor, run.id)
+    conversion = service.conversion_for(actor, run.id)
+    return {
+        "can": service.can(actor, PERMISSION_CONVERT),
+        "convertible": plan.convertible,
+        "steps": [{"kind": item.kind, "summary": item.summary} for item in plan.items],
+        "blockers": list(plan.blockers),
+        "version": 0 if conversion is None else conversion.version,
+        "conversion": None if conversion is None else {
+            "id": conversion.id,
+            "author": conversion.converted_by_actor_id,
+            "drafts": service.drafts_view(actor, conversion),
+        },
+        "status_text": HANDOFF_STATUS,
+        "own_reason": OWN_VERSION_REASON,
+    }
+
+
+@router.post("/policy/runs/{run_id}/draft", operation_id="ui_policy_run_draft")
+async def ui_policy_run_draft(
+    run_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    resolved, refused = _read_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        _, created = PolicyDraftService(session).convert(
+            resolved, run_id, expected_version=_expected_version(form)
+        )
+        session.commit()
+    except AcmeError as error:
+        return _refusal(request, session, resolved, error, action="policy.draft.convert",
+                        target_type="policy_run", target_id=run_id, back=f"/policy/runs/{run_id}")
+    key = "drafted" if created else "drafted_again"
+    return RedirectResponse(f"/policy/runs/{run_id}?notice={key}#draft-heading", status_code=303)
 
 
 def _briefing_for(
@@ -447,15 +568,18 @@ def ui_policy_briefing(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    notice: str = "",
 ) -> Any:
     resolved, refused, _service, run = _briefing_for(request, session, actor, run_id, "policy.brief.read")
     if refused is not None:
         return refused
-    briefing = briefing_module.build_briefing(run)
+    briefing, muse_panel = _briefing_and_panel(request, session, resolved, run)
     context = page_context(
         request, session, resolved, screen=SCREEN, title=briefing.title,
         briefing=briefing,
         run_id=run.id,
+        muse=muse_panel,
+        notice=NOTICES.get(notice, ""),
         model_runs=[],
         evidence=[
             {
@@ -465,9 +589,13 @@ def ui_policy_briefing(
                 "received_at": run.created_at.isoformat(),
             },
             {
-                "label": briefing_module.DETERMINISTIC_SOURCE,
+                "label": briefing.source_label,
                 "kind": "label",
-                "detail": "Built from the typed facts of the run; the Muse-written briefing is a later release",
+                "detail": (
+                    "Written by Muse from the typed facts of the run and checked claim by claim"
+                    if briefing.writer == "muse"
+                    else "Built from the typed facts of the run; Muse writes a briefing only when asked, and only an accepted one replaces this"
+                ),
                 "received_at": None,
             },
         ],
@@ -490,7 +618,7 @@ def ui_policy_briefing_download(
         return _refusal(request, session, resolved, ValidationError("the format is html or md"),
                         action="policy.brief.download", target_type="policy_run", target_id=run_id,
                         back=f"/policy/runs/{run_id}/briefing")
-    briefing = briefing_module.build_briefing(run)
+    briefing, _panel = _briefing_and_panel(request, session, resolved, run)
     service.record_download(resolved, run, format)
     session.commit()
     if format == "html":
@@ -506,6 +634,173 @@ def ui_policy_briefing_download(
             "X-Content-Type-Options": "nosniff",
         },
     )
+
+
+def _briefing_and_panel(
+    request: Request, session: Session, actor: ActorContext, run: Any
+) -> tuple[briefing_module.Briefing, dict[str, Any]]:
+    """Return the briefing to show and the data of the Muse panel.
+
+    The accepted Muse briefing replaces the deterministic one only for a person
+    who holds the Muse grant; everyone else, and every rejected or missing
+    answer, gets the deterministic briefing with its own label.
+    """
+    muse = _muse(request, session)
+    panel = _muse_state(muse, actor, PERMISSION_MUSE_BRIEF)
+    panel.update({"version": 0, "latest": None, "source": None, "fallback": "", "rejected": False,
+                  "issues": [], "cites": []})
+    if not panel["can"]:
+        return briefing_module.build_briefing(run), panel
+    briefing, latest = muse.briefing_for(actor, run)
+    panel["version"] = muse.brief_version(actor, run, "brief")
+    if latest is not None:
+        panel["latest"] = latest
+        panel["source"] = latest.source
+        if latest.accepted:
+            panel["cites"] = list(latest.cited_facts)
+        else:
+            panel["rejected"] = True
+            panel["fallback"] = FALLBACK_NOTICE
+            panel["issues"] = [{"code": i.get("code", ""), "message": i.get("message", "")}
+                               for i in latest.issues[:12]]
+            briefing = briefing_module.Briefing(
+                **{**briefing.__dict__,
+                   "source_label": f"{briefing_module.DETERMINISTIC_SOURCE} {latest.notice}"}
+            )
+    return briefing, panel
+
+
+def _explain_panel(
+    request: Request, session: Session, actor: ActorContext, run: Any, notice: str
+) -> dict[str, Any]:
+    """Return the data of the "Explain with Muse" panel of the results screen."""
+    muse = _muse(request, session)
+    panel = _muse_state(muse, actor, PERMISSION_MUSE_BRIEF)
+    panel.update({"version": 0, "result": None, "paragraphs": [], "fallback": ""})
+    if not panel["can"]:
+        return panel
+    panel["version"] = muse.brief_version(actor, run, "explain")
+    latest = muse.latest_brief(actor, run, "explain")
+    if latest is None:
+        return panel
+    panel["result"] = latest
+    if latest.accepted and latest.output is not None:
+        panel["paragraphs"] = [
+            {"section": section["section"], "question": section["question"],
+             "text": " ".join(t["text"].strip() for t in section["sentences"]),
+             "facts": sorted({c["fact_id"] for t in section["sentences"] for c in t["claims"]})}
+            for section in latest.output["sections"]
+        ]
+    else:
+        panel["fallback"] = (
+            f"{latest.notice} The figures on this screen are counted by the engine and are the "
+            "only account of the run."
+        )
+    return panel
+
+
+@router.post("/policy/runs/{run_id}/briefing/muse", operation_id="ui_policy_briefing_muse")
+async def ui_policy_briefing_muse(
+    run_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Ask Muse to write the briefing of a run, then show it or the fallback."""
+    return _muse_run_post(request, session, actor, form, run_id, purpose="brief",
+                          back=f"/policy/runs/{run_id}/briefing?notice=muse")
+
+
+@router.post("/policy/runs/{run_id}/explain", operation_id="ui_policy_run_explain")
+async def ui_policy_run_explain(
+    run_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Ask Muse to explain the results of a run."""
+    return _muse_run_post(request, session, actor, form, run_id, purpose="explain",
+                          back=f"/policy/runs/{run_id}?notice=muse#explain-heading")
+
+
+def _muse_run_post(
+    request: Request, session: Session, actor: ActorContext | None, form: Any, run_id: str,
+    *, purpose: str, back: str,
+) -> Any:
+    resolved, refused = _read_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        run = PolicyService(session).run_for(resolved, run_id)
+        _muse(request, session).request_brief(
+            resolved, run, purpose=purpose, expected_version=_expected_version(form)
+        )
+        session.commit()
+    except AcmeError as error:
+        return _refusal(request, session, resolved, error, action="policy.muse.brief",
+                        target_type="policy_run", target_id=run_id,
+                        back=f"/policy/runs/{run_id}")
+    return RedirectResponse(back, status_code=303)
+
+
+@router.post("/policy/propose", operation_id="ui_policy_propose")
+async def ui_policy_propose(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Ask Muse to propose a what-if; nothing is saved."""
+    resolved, refused = _read_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        result = _muse(request, session).request_proposal(
+            resolved, question=str(form.get("question", "")), expected_version=_expected_version(form)
+        )
+        session.commit()
+    except AcmeError as error:
+        return _refusal(request, session, resolved, error, action="policy.muse.propose",
+                        target_type="policy_proposal", target_id="", back="/policy/scenarios")
+    return RedirectResponse(f"/policy/proposals/{result.model_run_id}", status_code=303)
+
+
+@router.get("/policy/proposals/{proposal_id}", operation_id="ui_policy_proposal")
+def ui_policy_proposal(
+    proposal_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    resolved, refused = _read_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = PolicyService(session)
+    try:
+        proposal = _muse(request, session).proposal(resolved, proposal_id)
+        can_save = service.can(resolved, PERMISSION_MANAGE)
+    except AcmeError as error:
+        return _refusal(request, session, resolved, error, action="policy.muse.propose.read",
+                        target_type="policy_proposal", target_id=proposal_id, back="/policy/scenarios")
+    context = page_context(
+        request, session, resolved, screen=SCREEN, title="Proposed what-if",
+        proposal=proposal,
+        can_save=can_save,
+        model_runs=[],
+        evidence=[
+            {
+                "label": proposal.source["source_label"],
+                "kind": "label",
+                "detail": "Muse proposes; each change was checked on its own against today's published rules. Nothing is saved until you save it",
+                "received_at": None,
+            },
+        ],
+    )
+    return render(request, "policy_proposal.html", context)
 
 
 # ------------------------------------------------------------- the detail kind

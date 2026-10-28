@@ -120,6 +120,10 @@ class DetailView:
     subtitle: str = ""
     sections: tuple[Section, ...] = ()
     links: tuple[tuple[str, str], ...] = ()
+    #: Views of one record, as ``(label, kind, item_id, active)``.  The drawer
+    #: shows them as links that switch the open detail (a record profile has
+    #: Overview, Sources and History).
+    tabs: tuple[tuple[str, str, str, bool], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -261,6 +265,26 @@ def detail_href(request: Request, kind: str, item_id: str) -> str:
     return current_query(request, **{DETAIL_PARAM: f"{kind}:{item_id}"})
 
 
+def tab_links(view: DetailView | None, base: str) -> list[dict[str, Any]]:
+    """Return the tab links of a view, each opening the same page with that detail.
+
+    ``base`` is the address of the page without the detail parameter.
+    """
+    if view is None or not view.tabs:
+        return []
+    joiner = "&" if "?" in base else "?"
+    return [
+        {
+            "label": label,
+            "kind": kind,
+            "id": item_id,
+            "active": active,
+            "href": f"{base}{joiner}{DETAIL_PARAM}={kind}:{item_id}",
+        }
+        for label, kind, item_id, active in view.tabs
+    ]
+
+
 def drawer_state(
     request: Request, session: Session, actor: ActorContext | None
 ) -> dict[str, Any] | None:
@@ -273,13 +297,15 @@ def drawer_state(
     if parsed is None:
         return None
     outcome = resolve(request, session, actor, *parsed)
+    close_href = current_query(request, **{DETAIL_PARAM: None})
     return {
         "status": outcome.status,
         "kind": outcome.kind,
         "id": outcome.item_id,
         "view": outcome.view,
         "message": outcome.message,
-        "close_href": current_query(request, **{DETAIL_PARAM: None}),
+        "close_href": close_href,
+        "tabs": tab_links(outcome.view, close_href),
     }
 
 
@@ -305,6 +331,7 @@ __all__ = [
     "drawer_state",
     "install",
     "parse_detail",
+    "tab_links",
     "register_detail",
     "resolve",
     "screen_help",

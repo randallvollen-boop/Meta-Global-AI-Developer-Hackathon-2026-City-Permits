@@ -1120,6 +1120,24 @@
           "source": "explicit"
         },
         {
+          "permission_id": "policy.muse.brief",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.draft.convert",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "policy.muse.propose",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "permit.case.archive",
           "domains": [
             "permits"
@@ -1132,6 +1150,42 @@
           "domains": [
             "permits"
           ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "ops.dashboard.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "ops.audit_log.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "support.lookup.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "support.help_request.answer",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "support.case.record",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "ops.checks.run",
+          "domains": [],
           "record_scope": [],
           "source": "explicit"
         }

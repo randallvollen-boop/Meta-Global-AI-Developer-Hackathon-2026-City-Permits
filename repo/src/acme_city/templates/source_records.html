@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% import "components/steward.html" as st with context %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Source records</h1>
+    <p class="sub">The accepted records each source system has sent, and the master record each one is linked to.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('source_records') }}</div>
+</div>
+
+<nav class="tabs source-filters" aria-label="Source systems" data-testid="source-filters">
+  <a href="{{ catalogue.all_href }}" data-testid="source-filter" data-system=""{% if not catalogue.system %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>All sources <span class="n">{{ catalogue.all_count }}</span></a>
+  {% for s in catalogue.systems %}<a href="{{ s.href }}" data-testid="source-filter" data-system="{{ s.key }}"{% if s.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ s.label }} <span class="n">{{ s.count }}</span></a>{% endfor %}
+</nav>
+
+<section class="panel" aria-labelledby="source-records-heading">
+  <h2 id="source-records-heading" class="visually-hidden">Source records</h2>
+  <form class="filters toolbar" method="get" action="/source-records">
+    {% if catalogue.system %}<input type="hidden" name="system" value="{{ catalogue.system }}">{% endif %}
+    <p class="field"><label for="source-query">Search by record or source</label><input id="source-query" type="search" name="q" value="{{ catalogue.query }}"></p>
+    <p><button type="submit" class="button">Search</button></p>
+  </form>
+  <table class="data-table" data-testid="source-record-table">
+    <caption class="visually-hidden">Accepted source records</caption>
+    <thead>
+      <tr><th scope="col">Source</th><th scope="col">Record</th><th scope="col">Version</th><th scope="col">Source last changed {{ ui.info('source_last_changed') }}</th><th scope="col">Last received</th><th scope="col">Linked to</th></tr>
+    </thead>
+    <tbody>
+      {% for row in catalogue.rows %}
+      <tr data-link-state="{{ row.state }}">
+        <td>{{ row.source }}</td>
+        <th scope="row">{{ ui.detail_link('source', row.detail_id, row.record_id, 'mono') }}</th>
+        <td class="nowrap">{{ row.version }}</td>
+        <td class="nowrap">{{ ui_time(row.changed) }}</td>
+        <td class="nowrap">{{ ui_time(row.received) }}</td>
+        <td>{{ row.linked }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No source record matches.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {{ st.pager(catalogue.paging) }}
+</section>
+{% endblock %}
