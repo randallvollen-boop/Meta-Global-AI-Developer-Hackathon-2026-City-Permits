@@ -355,6 +355,27 @@
       "sensitive": false
     },
     {
+      "permission_id": "policy.muse.brief",
+      "action": "policy.muse.brief",
+      "category": "policy",
+      "description": "Ask Muse Spark to write or explain the briefing of a what-if run from its typed facts, and read those recorded Muse runs. The answer is validated claim by claim; a rejected answer falls back to the deterministic briefing. It writes no application, finding, decision or fee row.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.draft.convert",
+      "action": "policy.draft.convert",
+      "category": "policy",
+      "description": "Save a what-if run as draft rule and fee schedule versions through the existing draft commands. The drafts stay drafts: the author cannot approve or publish them, and nothing published changes.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "policy.muse.propose",
+      "action": "policy.muse.propose",
+      "category": "policy",
+      "description": "Ask Muse Spark to propose a what-if in plain language, and read those recorded Muse runs. A proposal is validated change by change and is never saved or run until the City Administrator saves it explicitly.",
+      "sensitive": true
+    },
+    {
       "permission_id": "permit.case.archive",
       "action": "permit.case.archive",
       "category": "permit",

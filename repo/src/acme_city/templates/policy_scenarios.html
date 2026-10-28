@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
 <div class="policy-screen">
@@ -50,6 +51,32 @@
     </p>
     <p><button type="submit" class="button btn" data-testid="policy-create">Save what-if</button></p>
   </form>
+</section>
+
+<section class="card" aria-labelledby="propose-heading" data-testid="policy-propose">
+  <h2 id="propose-heading">Ask Muse to propose a what-if</h2>
+  <p class="muted" data-testid="policy-propose-mode">{{ propose.mode_note }}</p>
+  {% if propose.can %}
+  <p class="muted">Describe a change in plain words. Muse proposes changes of the supported kinds only; each one is checked on its own against today's published rules, and nothing is saved until you save it.</p>
+  <form method="post" action="/policy/propose" data-testid="policy-propose-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="0">
+    <p class="field">
+      <label for="policy-question">Your what-if question <span aria-hidden="true">*</span></label>
+      <textarea id="policy-question" name="question" rows="2" maxlength="500" required aria-required="true" data-testid="policy-question"></textarea>
+    </p>
+    <p class="muted">* Required. Examples from the demonstration set: {% for q in propose.examples %}<em>{{ q }}</em>{% if not loop.last %}; {% endif %}{% endfor %}</p>
+    <p><button type="submit" class="button btn" data-testid="policy-propose-submit">Ask Muse to propose</button></p>
+  </form>
+  {% if propose.recent %}
+  <h3>Recent proposals</h3>
+  <ul data-testid="policy-proposals">
+    {% for r in propose.recent %}<li><a href="/policy/proposals/{{ r.id }}">{{ r.question }}</a> <span class="muted">{% if r.accepted %}checked{% else %}not usable{% endif %} · {{ r.mode }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% else %}
+  <p class="muted" data-testid="policy-propose-guard">Your role cannot do this.</p>
+  {% endif %}
 </section>
 
 <section class="card" aria-labelledby="saved-heading" data-testid="policy-list">

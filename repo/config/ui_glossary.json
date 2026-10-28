@@ -302,18 +302,20 @@
       "purpose": "What the what-if would change, counted from the same cases scored twice, with each figure's definition beside it.",
       "can_do": [
         "Read the counts by outcome, the cases that change and the safety signals.",
+        "Ask Muse to explain the results (City Administrator).",
         "Open the legislator briefing."
       ],
       "next": "The briefing is built from these figures only; a change to the real rules is a separate, approved step."
     },
     "policy_briefing": {
       "title": "Legislator briefing",
-      "purpose": "A plain-language briefing built only from the typed facts of one run. No model wrote it.",
+      "purpose": "A plain-language briefing built only from the typed facts of one run. It is the deterministic briefing unless an accepted Muse briefing is shown, and the source is always labelled.",
       "can_do": [
         "Read it on screen.",
+        "Ask Muse to write it (City Administrator); every claim is checked against the typed facts first.",
         "Download it as HTML or Markdown."
       ],
-      "next": "A briefing written with Muse is planned for a later release; this one is always available."
+      "next": "If Muse's answer fails a check, the deterministic briefing stays on screen with a label saying so."
     },
     "apply_form": {
       "title": "Application form",

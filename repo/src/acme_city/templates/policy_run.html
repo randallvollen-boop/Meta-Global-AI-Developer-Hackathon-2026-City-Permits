@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
 <div class="policy-screen">
@@ -14,6 +15,8 @@
     {% if can_brief %}<a class="button btn primary button-primary" href="/policy/runs/{{ r.id }}/briefing" data-testid="policy-open-briefing">Legislator briefing</a>{% else %}<span class="muted" data-testid="policy-briefing-guard">Your role cannot open the briefing.</span>{% endif %}
   </div>
 </div>
+
+{% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
 
 <section class="card" aria-labelledby="pop-heading" data-testid="policy-population">
   <h2 id="pop-heading">Population {{ ui.info('policy_population') }}</h2>
@@ -120,6 +123,80 @@
   {% else %}<p class="muted">Every case in the population has a usable valuation.</p>{% endif %}
   {% else %}<p class="muted" data-testid="policy-fees-none">This what-if changes no fee, so there is no fee comparison.</p>{% endif %}
 </section>
+<section class="card" aria-labelledby="draft-heading" id="draft" data-testid="policy-draft">
+  <h2 id="draft-heading">Path to a real change</h2>
+  {% set d = draft_panel %}
+  {% if d.conversion %}
+  <p data-testid="policy-draft-status"><span class="badge badge-draft">{{ d.status_text }}</span> Saved from this run as draft versions. Nothing published has changed: a draft is not in force.</p>
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-draft-table">
+    <caption class="visually-hidden">Draft versions made from this run</caption>
+    <thead><tr><th scope="col">Draft</th><th scope="col">What it changes</th><th scope="col">Status</th><th scope="col">Author</th><th scope="col">Who can approve</th><th scope="col">Approve or publish</th></tr></thead>
+    <tbody>
+    {% for x in d.conversion.drafts %}
+    <tr data-testid="policy-draft-row" data-kind="{{ x.kind }}" data-draft-id="{{ x.id }}" data-status="{{ x.status }}">
+      <th scope="row" class="mono">{{ x.label }}</th>
+      <td>{{ x.summary }}</td>
+      <td data-testid="policy-draft-state"><span class="badge badge-{{ x.status }}">{{ x.status_label }}</span></td>
+      <td>{% if x.you_are_author %}You (City Administrator){% else %}{{ x.author_actor_id }}{% endif %}</td>
+      <td data-testid="policy-draft-approvers">{% for a in x.approvers %}{{ a.label }}{% if not a.selectable %} (not a selectable persona in this demo){% endif %}{% if not loop.last %}; {% endif %}{% else %}No other account holds approval for this kind of change.{% endfor %}</td>
+      <td>
+        <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-approve">Approve</button>
+        <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-publish">Publish</button>
+        <span class="muted" data-testid="policy-draft-reason">{{ x.reason_you_cannot or 'Approval and publication are done on Rules and fees by someone other than the author.' }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted">Needs independent approval: the City Administrator who saved these drafts is recorded as their author and cannot approve or publish them. Another administrator reviews them on <a href="/rules-fees">Rules and fees</a>.</p>
+  {% elif d.convertible %}
+  <p>Every change in this what-if can become a draft rule or fee change. It is saved as a draft that needs independent approval; nothing published changes.</p>
+  <ul data-testid="policy-draft-plan">{% for i in d.steps %}<li>{{ i.summary }}</li>{% endfor %}</ul>
+  {% if d.can %}
+  <form method="post" action="/policy/runs/{{ r.id }}/draft" data-testid="policy-draft-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="{{ d.version }}">
+    <button type="submit" class="button btn primary button-primary" data-testid="policy-draft-submit">Save as a draft rule change</button>
+  </form>
+  {% else %}
+  <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-submit">Save as a draft rule change</button>
+  <span class="muted" data-testid="policy-draft-guard">Your role cannot do this.</span>
+  {% endif %}
+  {% else %}
+  <p>This what-if cannot be saved as a draft. It can still be run, read and briefed.</p>
+  <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-submit">Save as a draft rule change</button>
+  <span class="muted" data-testid="policy-draft-guard">Not available: these changes stay simulation-only, because a draft can only hold a rule limit or operator change or a fee change.</span>
+  <ul data-testid="policy-draft-blockers">{% for b in d.blockers %}<li>{{ b }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+<section class="card" aria-labelledby="explain-heading" data-testid="policy-explain">
+  <h2 id="explain-heading">Explain with Muse</h2>
+  <p class="muted" data-testid="policy-explain-mode">{{ explain.mode_note }}</p>
+  {% if explain.can %}
+    {% if explain.result and explain.result.accepted %}
+    <div data-testid="policy-explanation">
+      <p class="muted" data-testid="policy-explain-source">{{ muse_source(explain.result.source) }}</p>
+      {% for p in explain.paragraphs %}
+      <p data-testid="policy-explanation-paragraph">{{ p.text }}</p>
+      <p class="muted">Cites: {{ p.facts|join(', ') or 'no figure' }}</p>
+      {% endfor %}
+      <p class="muted">Muse explains figures the engine counted; it computes nothing and recommends nothing.</p>
+    </div>
+    {% elif explain.result %}
+    <p class="callout" data-testid="policy-explain-fallback">{{ explain.fallback }}</p>
+    {% else %}
+    <p class="muted">Muse can explain these results in plain words. Every figure it states is checked against the counted figures above before you see it; if any claim fails, nothing of the explanation is shown.</p>
+    {% endif %}
+    <form method="post" action="/policy/runs/{{ r.id }}/explain" data-testid="policy-explain-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="expected_version" value="{{ explain.version }}">
+      <button type="submit" class="button btn" data-testid="policy-explain-submit">{% if explain.result %}Ask again{% else %}Explain with Muse{% endif %}</button>
+    </form>
+  {% else %}
+  <p class="muted" data-testid="policy-explain-guard">Your role cannot do this.</p>
+  {% endif %}
+</section>
+
 {% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

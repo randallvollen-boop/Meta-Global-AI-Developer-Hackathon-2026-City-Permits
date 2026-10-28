@@ -5,10 +5,11 @@ else: no model is called and no number is typed by hand.  Each fact carries a
 value, a unit, a direction, the population and the identities of the
 baseline and the scenario it compares.  Each sentence names the facts it uses.
 
-The Muse-written briefing arrives with policy 3.  Its place is
-:data:`MUSE_BRIEFING_WRITER`, a hook that is ``None`` in this release; a
-writer plugged in there receives the same facts and must return a
-:class:`Briefing`, which the screen then labels with its own source.
+The Muse-written briefing (policy 3) is asked for explicitly, by a person with
+the ``policy.muse.brief`` grant, through :mod:`acme_city.policy.muse`; it is
+validated claim by claim, and a rejected one leaves this deterministic briefing
+on screen with a clear label.  :data:`MUSE_BRIEFING_WRITER` stays ``None`` so
+that nothing writes a briefing implicitly, in an export or in a test.
 """
 # REQUIRES: PER-02, UX-01
 # The briefing states only typed facts of a stored run; no model is called.
@@ -91,18 +92,20 @@ class Briefing:
     facts: tuple[Fact, ...]
     footer: str = FOOTER
     content_hash: str = ""
+    #: ``deterministic`` or ``muse``; a Muse briefing shows the facts each section cites.
+    writer: str = "deterministic"
 
 
 class BriefingWriter(Protocol):
-    """The seam for the Muse-written briefing (policy 3)."""
+    """The seam for an implicit briefing writer; none is plugged in (see ``policy.muse``)."""
 
     def write(self, facts: Sequence[Fact], run: models.PolicyRun) -> Briefing | None:
         """Return a briefing, or ``None`` to fall back to the deterministic one."""
         ...
 
 
-#: Policy 3 plugs the Muse writer in here.  ``None`` means the briefing is
-#: always the deterministic one.
+#: ``None`` means :func:`build_briefing` always returns the deterministic one.
+#: The Muse briefing is never written implicitly.
 MUSE_BRIEFING_WRITER: BriefingWriter | None = None
 
 

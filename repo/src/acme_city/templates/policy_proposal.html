@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+{% from "components/muse_source.html" import muse_source %}
+
+{% block content %}
+<div class="policy-screen">
+<div class="page-head">
+  <div>
+    <h1>Proposed what-if</h1>
+    <p class="sub"><a href="/policy/scenarios">All what-ifs</a></p>
+  </div>
+</div>
+
+<section class="card" aria-labelledby="question-heading" data-testid="policy-proposal">
+  <h2 id="question-heading">Your question</h2>
+  <p data-testid="policy-proposal-question">{{ proposal.question }}</p>
+  <p class="muted" data-testid="policy-proposal-source">{{ muse_source(proposal.source) }}</p>
+</section>
+
+{% if proposal.accepted %}
+<section class="card" aria-labelledby="changes-heading" data-testid="policy-proposal-changes">
+  <h2 id="changes-heading">Proposed changes</h2>
+  <p class="muted">Each change was read and applied on its own to a copy of today's published rules, and the set was applied together. Nothing is saved and nothing has run. Muse proposes; you decide.</p>
+  <ol>
+    {% for item in proposal.items %}
+    <li data-testid="policy-proposal-change"><strong>{{ item.description }}</strong><br><span class="muted">Muse's reason: {{ item.rationale }}</span></li>
+    {% endfor %}
+  </ol>
+  {% if can_save %}
+  <form method="post" action="/policy/scenarios" data-testid="policy-proposal-save-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="0">
+    <input type="hidden" name="proposal" value="{{ proposal.model_run_id }}">
+    <p class="field">
+      <label for="proposal-name">Name of the what-if <span aria-hidden="true">*</span></label>
+      <input id="proposal-name" name="name" maxlength="200" required aria-required="true" value="{{ proposal.name }}" data-testid="policy-proposal-name">
+    </p>
+    <p class="muted">* Required</p>
+    <p><button type="submit" class="button btn primary button-primary" data-testid="policy-proposal-save">Save as a what-if</button>
+    <span class="muted">Saving only stores the what-if. You run it afterwards.</span></p>
+  </form>
+  {% else %}
+  <p class="muted" data-testid="policy-proposal-save-guard">Your role cannot do this.</p>
+  {% endif %}
+</section>
+{% else %}
+<section class="card" aria-labelledby="notused-heading" data-testid="policy-proposal-rejected">
+  <h2 id="notused-heading">No what-if was proposed</h2>
+  <p class="callout" data-testid="policy-proposal-notice">{{ proposal.notice }}</p>
+  {% if proposal.items %}
+  <h3>What was checked</h3>
+  <ol data-testid="policy-proposal-checks">
+    {% for item in proposal.items %}
+    <li>{{ item.description }}{% if item.issues %}: <span class="muted">{{ item.issues|join('; ') }}</span>{% endif %}</li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  {% if proposal.issues and not proposal.items %}
+  <ul>{% for i in proposal.issues[:8] %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
+  {% endif %}
+  <p><a class="button btn" href="/policy/scenarios">Build the what-if yourself</a></p>
+</section>
+{% endif %}
+{% include "components/evidence_panel.html" %}
+</div>
+{% endblock %}

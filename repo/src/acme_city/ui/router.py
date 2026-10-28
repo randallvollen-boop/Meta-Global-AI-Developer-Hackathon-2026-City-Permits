@@ -63,6 +63,7 @@ from acme_city.governance.schemas import (
     RegisterDatasetCommand,
 )
 from acme_city.governance.service import GovernanceService
+from acme_city.persistence.models import finance as finance_models
 from acme_city.permits import icons as permit_icons
 from acme_city.permits import queues
 from acme_city.permits.decisions import PermitDecisionCommand
@@ -1703,8 +1704,25 @@ def _rule_submit(ctx: ActionContext) -> Outcome:
     )
 
 
+def _refuse_own_version(ctx: ActionContext, model: Any) -> None:
+    """Say plainly why an author cannot approve or publish their own version.
+
+    The service refuses it too; this only gives the refusal its plain words.
+    """
+    row = ctx.session.get(model, ctx.text("rule_version_id") or ctx.text("fee_schedule_version_id"))
+    if row is not None and row.author_actor_id is not None and row.author_actor_id == ctx.actor.actor_id:
+        raise PermissionDeniedError(
+            "You authored this version; another administrator must approve it.",
+            actor_id=ctx.actor.actor_id,
+            action="ui.action",
+            target_type=model.__tablename__,
+            target_id=row.id,
+        )
+
+
 def _rule_approve(ctx: ActionContext) -> Outcome:
     """Approve a rule version that somebody else authored."""
+    _refuse_own_version(ctx, finance_models.RuleVersion)
     command = RuleLifecycleCommand(
         rule_version_id=ctx.text("rule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
@@ -1725,6 +1743,7 @@ def _rule_approve(ctx: ActionContext) -> Outcome:
 
 def _rule_publish(ctx: ActionContext) -> Outcome:
     """Publish an approved rule version."""
+    _refuse_own_version(ctx, finance_models.RuleVersion)
     command = PublishRuleCommand(
         rule_version_id=ctx.text("rule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,
@@ -1791,6 +1810,8 @@ def _fee_transition(
     message: str,
 ) -> Outcome:
     """Move one fee schedule version through its lifecycle."""
+    if transition in ("approve", "publish"):
+        _refuse_own_version(ctx, finance_models.FeeScheduleVersion)
     command = FeeScheduleLifecycleCommand(
         fee_schedule_version_id=ctx.text("fee_schedule_version_id"),
         expected_version=ctx.integer("expected_version") or 0,

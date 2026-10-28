@@ -20,6 +20,8 @@ from acme_city.muse.payloads import fixture_root
 from acme_city.muse.schemas import (
     EXTRACTION_SCHEMA_VERSION,
     APPLICANT_ASSIST_SCHEMA_VERSION,
+    POLICY_BRIEF_SCHEMA_VERSION,
+    POLICY_PROPOSE_SCHEMA_VERSION,
     MATCH_SCHEMA_VERSION,
     TASK_CONFIG,
     TASK_OUTPUT_MODELS,
@@ -80,6 +82,8 @@ def test_the_schema_names_its_version(task: str) -> None:
         EXTRACTION_SCHEMA_VERSION,
         MATCH_SCHEMA_VERSION,
         APPLICANT_ASSIST_SCHEMA_VERSION,  # chat 2 added the third task
+        POLICY_BRIEF_SCHEMA_VERSION,  # policy 3 added the fourth and fifth tasks
+        POLICY_PROPOSE_SCHEMA_VERSION,
     }
     assert config["prompt_version"]
     assert config["schema_name"]
