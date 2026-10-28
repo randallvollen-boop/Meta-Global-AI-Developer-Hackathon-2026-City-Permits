@@ -27,7 +27,7 @@
   <div class="card-b">
     <ul class="issue-list" data-testid="saved-queues">
       {% for link in saved_queues %}
-      <li><a href="{{ link.href }}" data-testid="saved-queue-link" data-queue="{{ link.key }}">{{ link.label }}</a> — {{ link.note }}</li>
+      <li><a href="{{ link.href }}" data-testid="saved-queue-link" data-queue="{{ link.key }}">{{ link.label }}</a>: {{ link.note }}</li>
       {% endfor %}
     </ul>
   </div>
@@ -126,7 +126,7 @@
           {% if item.submitted_on %}<div>Submitted {{ item.submitted_on }}</div>
           <div class="t2">Waiting since {{ item.waiting_since }} &middot; Updated {{ item.last_updated }}</div>
           {% if item.age_days is not none %}<div class="t2"><span class="age {{ 'old' if item.age_days >= 7 else '' }}">{{ item.age_days }} days old</span></div>{% endif %}
-          {% if item.target_days %}<div class="t2" data-testid="queue-target" data-target-state="{{ item.target_state }}">Review target {{ item.target_days }} days{{ ' - over target' if item.target_state == 'over' else '' }}</div>{% endif %}
+          {% if item.target_days %}<div class="t2" data-testid="queue-target" data-target-state="{{ item.target_state }}">Review target {{ item.target_days }} days{{ ', over target' if item.target_state == 'over' else '' }}</div>{% endif %}
           {% elif item.age_days is not none %}<span class="age">{{ item.age_days }} days old</span>{% else %}-{% endif %}
         </td>
         <td><a class="btn sm" href="{{ item.href }}" data-testid="queue-action">{{ item.action_label }}</a></td>

@@ -66,7 +66,7 @@ def _resolve_case_tech(ctx: DetailContext, key: str) -> DetailView | None:
     if blockers:
         sections.append(
             Section(
-                "Issues - exact codes",
+                "Issues (exact codes)",
                 tuple(
                     Row(reviewer_views.issue_label(b["code"]), f"{b['code']}: {b['detail']}", mono=True, info="reason_code")
                     for b in blockers
@@ -74,7 +74,7 @@ def _resolve_case_tech(ctx: DetailContext, key: str) -> DetailView | None:
             )
         )
     else:
-        sections.append(Section("Issues - exact codes", lines=("No issue is recorded.",)))
+        sections.append(Section("Issues (exact codes)", lines=("No issue is recorded.",)))
     return DetailView(
         title="Technical details",
         subtitle=application.source_application_number,
@@ -128,7 +128,7 @@ def _resolve_doc_history(ctx: DetailContext, document_id: str) -> DetailView | N
             )
         )
     return DetailView(
-        title=f"{row.document_type} - history",
+        title=f"{row.document_type}: history",
         subtitle=application.source_application_number,
         sections=tuple(sections),
     )

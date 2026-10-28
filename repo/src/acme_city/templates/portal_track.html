@@ -120,7 +120,7 @@
       {% for doc in tracked.documents %}
       <li data-doc-type="{{ doc.type }}">{{ doc.label }}:
         {% if doc.have %}received
-        {% elif doc.declared_separately %}<span data-testid="declared-separately">Declared sent separately &mdash; not yet received</span>
+        {% elif doc.declared_separately %}<span data-testid="declared-separately">Declared sent separately: not yet received</span>
         {% else %}not received{% endif %}</li>
       {% endfor %}
     </ul>
@@ -133,7 +133,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="reference" value="{{ tracked.reference }}">
       {% for doc in tracked.documents %}
-      <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+      <p class="field"><label for="rev-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately: not yet received){% endif %}</label><input id="rev-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
       {% endfor %}
       <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
     </form>
@@ -144,7 +144,7 @@
       <input type="hidden" name="reference" value="{{ tracked.reference }}">
       <input type="hidden" name="expected_version" value="{{ tracked.application_version }}">
       {% for doc in tracked.documents %}
-      <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately &mdash; not yet received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
+      <p class="field"><label for="res-{{ doc.type }}">{{ doc.label }} {% if doc.have %}(received){% elif doc.declared_separately %}(declared sent separately: not yet received){% endif %}</label><input id="res-{{ doc.type }}" type="file" name="file__{{ doc.type }}" accept=".pdf,.png,.jpg,.jpeg,.txt"></p>
       {% endfor %}
       <p><button type="submit" class="btn primary" data-testid="resubmit-submit">Send the answer to the City</button></p>
     </form>

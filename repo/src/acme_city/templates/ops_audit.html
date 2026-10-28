@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Audit log</h1>
-    <p class="sub">A read-only view of the append-only audit records, newest first. It is not a second trail: it reads the one the application writes. The type of an actor comes from the identity records the server holds, not from the text of a row.</p>
+    <p class="sub">A read-only view of the append-only audit records, newest first. It reads the one audit trail the application writes. The server takes the type of an actor from its identity records and ignores the text of a row.</p>
   </div>
   <div class="actions">{{ ui.help_button('ops_audit') }}</div>
 </div>

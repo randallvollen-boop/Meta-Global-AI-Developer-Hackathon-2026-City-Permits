@@ -121,7 +121,7 @@ def ui_ops_audit(
             session, actor_type=actor_type, action=action, search=search, page=page
         ),
         model_runs=[],
-        evidence=_evidence("The append-only audit records", "read only; this screen adds no second trail"),
+        evidence=_evidence("The append-only audit records", "read only; this screen reads the one audit trail"),
     )
     return render(request, "ops_audit.html", context)
 

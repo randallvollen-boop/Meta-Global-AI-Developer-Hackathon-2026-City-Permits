@@ -160,7 +160,7 @@ def test_headline_demo_run_to_draft_needs_independent_approval(client, settings)
     assert "Save as a draft rule change" in page.text
     assert 'data-testid="policy-draft-submit"' in page.text and "disabled" not in page.text.split(
         'data-testid="policy-draft-form"')[1].split("</form>")[0]
-    assert "Draft — needs independent approval" not in page.text  # not before the press
+    assert "Draft: needs independent approval" not in page.text  # not before the press
 
     saved = client.post(
         f"{run_path}/draft",
@@ -170,7 +170,7 @@ def test_headline_demo_run_to_draft_needs_independent_approval(client, settings)
     )
     assert saved.status_code == 303, saved.text
     after = client.get(saved.headers["location"].split("#")[0])
-    assert HANDOFF_STATUS in after.text and "Draft — needs independent approval" in after.text
+    assert HANDOFF_STATUS in after.text and "Draft: needs independent approval" in after.text
     assert 'data-testid="policy-draft-row"' in after.text and 'data-kind="rule"' in after.text
     assert "DF-2" in after.text
     assert OWN_VERSION_REASON in after.text  # the plain reason beside the guarded buttons

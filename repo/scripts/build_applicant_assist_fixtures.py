@@ -158,8 +158,8 @@ def _fence_timing_paragraphs() -> list[dict[str, Any]]:
         },
         {
             "text": (
-                "That figure is the target the City works to. It is not a promise "
-                "about your application and it is not a completion date."
+                "That figure is the target the City works to. It makes no promise "
+                "about your application and gives no completion date."
             ),
             "citations": [
                 {

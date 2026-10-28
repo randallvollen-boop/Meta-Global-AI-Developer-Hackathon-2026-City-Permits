@@ -425,7 +425,7 @@ def test_the_other_populations_are_labelled_as_a_retrospective_re_scoring(client
     assert "Retrospective re-scoring" in current and "Synthetic year (sample data)" not in current
     decided = client.get(run_it(client, editor, kind="decided_range", range_start="2020-01-01",
                                 range_end="2030-01-01")).text
-    assert "Retrospective re-scoring" in decided and "not a reconstruction of the decisions" in decided
+    assert "Retrospective re-scoring" in decided and "does not reconstruct the decisions" in decided
     bad = client.post(f"{editor}/run", data={"csrf_token": csrf_of(client.get(editor).text),
                                              "expected_version": version_of(client.get(editor).text),
                                              "kind": "decided_range", "range_start": "tomorrow"})
@@ -504,7 +504,7 @@ def test_the_briefing_is_deterministic_typed_and_labelled(client) -> None:
     assert _strip_tokens(first) == _strip_tokens(second), "the same run gives the same briefing"
     assert "Deterministic briefing built from the typed facts of this run. No model was used." in first
     assert 'data-testid="policy-briefing-synthetic"' in first and "Synthetic data" in first
-    assert "Fictional ACME City data. Impact estimates from the ACME permit engine; not a forecast of staff time or a legal opinion." in first
+    assert "Fictional ACME City data. Impact estimates come from the ACME permit engine. They forecast no staff time and give no legal opinion." in first
     assert 'data-testid="policy-download-html"' in first and "Download (HTML)" in first
     assert "ACME Code §14-306" in first
     lowered = first.lower()

@@ -75,7 +75,7 @@ DRAFT_OPERATORS: Final = ("min", "max", "equals")
 OWN_VERSION_REASON: Final = "You authored this version; another administrator must approve it."
 
 #: The status wording of a converted draft.
-HANDOFF_STATUS: Final = "Draft — needs independent approval"
+HANDOFF_STATUS: Final = "Draft: needs independent approval"
 
 KIND_RULE: Final = "rule"
 KIND_FEE: Final = "fee"
@@ -483,8 +483,8 @@ def status_label(status: str) -> str:
     """Return the plain status of a converted draft."""
     return {
         "draft": HANDOFF_STATUS,
-        "in_review": "In review — needs independent approval",
-        "approved": "Approved — ready for publication",
+        "in_review": "In review: needs independent approval",
+        "approved": "Approved: ready for publication",
         "published": "Published",
         "retired": "Retired",
     }.get(status, status)

@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
+  "bundle_content_hash": "d850c71dcab0afdd08a63583ac419b9d98eceafa08ab25f18052cc06e3164881",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -21,11 +21,11 @@
       {
         "citations": [
           {
-            "quote": "This is the fictional number of days the City aims to review a case of this type in. It is a target the City works to, it is not a promise about your application, and it is not a completion date.",
+            "quote": "This is the fictional number of days the City aims to review a case of this type in. It is a target the City works to. It makes no promise about your application and gives no completion date.",
             "source_id": "service_target.deck_fence"
           }
         ],
-        "text": "That figure is the target the City works to. It is not a promise about your application and it is not a completion date."
+        "text": "That figure is the target the City works to. It makes no promise about your application and gives no completion date."
       }
     ],
     "cannot_answer": false,
@@ -35,7 +35,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "how long will my fence permit take",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "cae1e6d960a3690554d7d270e3ee82c81e39d429a7344824af4f6409f967cf6a",
+  "replay_key": "8c9a51a9a9486706a808e210ce6977d5c1af434840733a26eb0cc906d13b5754",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

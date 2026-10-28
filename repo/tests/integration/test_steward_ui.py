@@ -517,7 +517,7 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert 'data-detail-kind="source"' in q4
     # Evidence comes before the score, the score is explained, and no percentage is invented.
     assert q4.index("Agreements") < q4.index('data-testid="score-line"')
-    assert "It adds up from" in q4 and "not a probability" in q4
+    assert "It adds up from" in q4 and "does not state the probability" in q4
     assert "%" not in q4.split('data-testid="score-line"')[1].split("</p>")[0]
     # The provenance label stays on screen even for the deterministic matcher.
     assert 'data-testid="provenance"' in q4 and "Deterministic matcher" in q4

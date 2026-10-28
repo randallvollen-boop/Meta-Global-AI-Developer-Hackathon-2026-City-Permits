@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "b4063200ea6b2677308573dd46584d04a6e50311ea30781177625d0c7a2e7d62",
+  "bundle_content_hash": "d850c71dcab0afdd08a63583ac419b9d98eceafa08ab25f18052cc06e3164881",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -16,7 +16,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "will my fence permit be approved",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "772cd64e42fac204f5125f92ce3fcd375a2725d3b6e007a6071a468311f7fe5e",
+  "replay_key": "75276f34d2f10329f439c57e946c67399ba9d46cb890d29fdda7053c65d20c16",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

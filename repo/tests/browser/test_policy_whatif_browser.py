@@ -122,7 +122,7 @@ def test_the_draft_path_ends_at_needs_independent_approval_on_a_phone_and_a_desk
         assert button.inner_text() == "Save as a draft rule change"
         button.click()
         page.wait_for_selector('[data-testid="policy-draft-status"]')
-        assert "Draft — needs independent approval" in page.locator('[data-testid="policy-draft-state"]').first.inner_text()
+        assert "Draft: needs independent approval" in page.locator('[data-testid="policy-draft-state"]').first.inner_text()
         assert page.locator('[data-testid="policy-draft-approve"]').first.is_disabled()
         assert page.locator('[data-testid="policy-draft-publish"]').first.is_disabled()
         reason = page.locator('[data-testid="policy-draft-reason"]').first.inner_text()
