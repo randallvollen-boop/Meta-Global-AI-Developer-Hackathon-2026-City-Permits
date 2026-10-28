@@ -178,6 +178,10 @@ def test_public_envelope_drops_supplied_detail() -> None:
 def test_demo_warning_for_ephemeral_secret_is_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     from acme_city.app import create_app
 
+    # An earlier in-process Alembic run (logging.fileConfig) may have disabled the logger.
+    app_logger = logging.getLogger("acme_city")
+    app_logger.disabled = False
+    app_logger.propagate = True
     settings = load(tmp_path, ACME_DATABASE_URL=f"sqlite:///{tmp_path / 'w.db'}")
     with caplog.at_level(logging.WARNING, logger="acme_city"):
         create_app(settings).state.session_factory.dispose()
