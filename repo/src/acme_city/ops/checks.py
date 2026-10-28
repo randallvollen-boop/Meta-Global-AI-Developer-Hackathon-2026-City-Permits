@@ -156,7 +156,7 @@ def _result(
     if seed:
         notes.append(f"{_plural(seed, unit)} {SEED_WORDS}")
     if exempt:
-        notes.append(f"{_plural(exempt, unit)} exempted by a stated rule, not counted as passed")
+        notes.append(f"{_plural(exempt, unit)} exempted by a stated rule and not counted as passed")
     if detail:
         notes.append(detail)
     suffix = ("; " + "; ".join(notes)) if notes else ""

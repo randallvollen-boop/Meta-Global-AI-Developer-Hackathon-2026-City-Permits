@@ -568,7 +568,7 @@ def intake_queue(
             "target": (
                 "The service target is the fictional number of days the City "
                 "aims to review a case of that permit type in. It is a "
-                "demonstration figure, never a promise."
+                "demonstration figure and makes no promise."
             ),
             "signals": (
                 "A signal is shown only where the server holds the fact: the "
