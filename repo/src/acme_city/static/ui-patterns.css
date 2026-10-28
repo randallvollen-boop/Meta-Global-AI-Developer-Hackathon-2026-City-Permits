@@ -113,7 +113,8 @@ html.ui-js .ui-info-fallback { display: none; }
 .top-help-link:hover, .top-help-link[aria-current="page"] { background: var(--accent-soft); }
 .top-help-link:focus-visible, .city-help-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .city-header-tools { display: flex; align-items: center; gap: 14px; }
-.city-help-link { color: #fff; font-weight: 600; font-size: .92rem; text-decoration: underline; text-underline-offset: 3px; }
+.city-help-link { color: #fff; font-weight: 600; font-size: .92rem; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+@media (max-width: 760px) { .city-help-more { display: none; } .city-wordmark b { white-space: nowrap; } .city-header-tools { flex-shrink: 0; } }
 .help-page { max-width: 62rem; padding-bottom: 2rem; }
 .help-crumbs { margin: 0 0 .5rem; font-size: .88rem; color: var(--fg-2); }
 .help-cards { list-style: none; margin: 1rem 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 14px; }
