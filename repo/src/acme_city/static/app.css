@@ -920,3 +920,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
   .data-table th, .data-table td { overflow-wrap: anywhere; }
   .nowrap { white-space: nowrap; }
 }
+
+/* Demo scenario clock label in the top bar. */
+.demo-date { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-2); white-space: nowrap; }
+.demo-date .info-tip { cursor: help; }

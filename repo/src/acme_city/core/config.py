@@ -36,6 +36,9 @@ ENV_MUSE_ALLOWLIST: Final = "ACME_MUSE_MODEL_ALLOWLIST"
 ENV_MUSE_LIVE_CALL_CAP: Final = "ACME_MUSE_LIVE_CALL_CAP"
 ENV_MUSE_IMAGE_DAILY_CAP: Final = "ACME_MUSE_IMAGE_DAILY_CAP"
 ENV_EVIDENCE_ROOT: Final = "ACME_EVIDENCE_ROOT"
+#: ``auto`` (derive the demo date from the seeded data), an ISO date
+#: (``2026-10-14``) or empty (the real clock, the default).
+ENV_SCENARIO_CLOCK: Final = "ACME_SCENARIO_CLOCK"
 ENV_KEY_FILE: Final = "ACME_KEY_FILE"
 ENV_GIS_BASE_URL: Final = "ACME_GIS_BASE_URL"
 ENV_GIS_AUTO_PROPOSE_SCORE: Final = "ACME_GIS_AUTO_PROPOSE_SCORE"
@@ -113,6 +116,10 @@ class Settings(BaseModel):
     #: (``config/gis_field_map.json``) and nothing else.
     gis_base_url: str = ""
     gis_auto_propose_score: int = DEFAULT_GIS_AUTO_PROPOSE_SCORE
+    #: The demo scenario clock: empty for the real clock (the default),
+    #: ``auto`` to derive one date at start-up from the seeded demo data, or an
+    #: ISO date.  Only a database marked as the fictional demo honours it.
+    scenario_clock: str = ""
     #: Whether the applicant help assistant may call the provider.
     #:
     #: The setting is off by default and stays off when a credential is
@@ -284,6 +291,8 @@ class Settings(BaseModel):
             "on",
         }
 
+        scenario_clock = (pick(ENV_SCENARIO_CLOCK, "") or "").strip()
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -297,6 +306,7 @@ class Settings(BaseModel):
 
         return cls(
             database_url=database_url,
+            scenario_clock=scenario_clock,
             secret_key=SecretStr(resolved_secret),
             demo_timezone=demo_timezone,
             muse_model_allowlist=muse_model_allowlist,

@@ -82,6 +82,7 @@
       <div class="crumbs" aria-label="Breadcrumb">ACME City <span>/</span> <b>{{ current_label or title }}</b>{% if screen == 'permit' and detail and detail.application %}<span>/</span> <span class="mono">{{ detail.application.source_application_number }}</span>{% endif %}</div>
       <p class="app-title visually-hidden"><a href="/queue">ACME City permit workspace</a></p>
       <div class="top-right persona">
+        {% set demo_clock = scenario_clock() %}{% if demo_clock %}<span class="demo-date" data-testid="demo-date">{{ demo_clock.label }} <span class="info-tip" tabindex="0" role="note" aria-label="{{ demo_clock.help }}" title="{{ demo_clock.help }}">&#9432;</span></span>{% endif %}
         {% if actor %}
         <details class="account-menu" data-testid="persona-select">
           <summary class="account-trigger" aria-label="Account: {{ actor.label }}">

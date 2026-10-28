@@ -31,7 +31,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
-from acme_city.core.clock import utc_now
+from acme_city.core.clock import app_now
 from acme_city.fixtures.loader import REPO_ROOT
 from acme_city.persistence.models import (
     audit,
@@ -222,7 +222,7 @@ def freshness_warning(
         days = contract.get("refresh_expectation_days")
         if not days or last_checked is None:
             return ""
-        age = ((now or utc_now()) - last_checked).days
+        age = ((now or app_now()) - last_checked).days
         if age > int(days):
             return f"Last checked {age} days ago; the source is expected to refresh every {int(days)} days."
     return ""

@@ -76,6 +76,8 @@ def main(argv: list[str] | None = None) -> int:
     environment = os.environ.copy()
     if args.database:
         environment["ACME_DATABASE_URL"] = args.database
+    # The demo reads ages against one demo date; an explicit setting wins.
+    environment.setdefault("ACME_SCENARIO_CLOCK", "auto")
     command = [
         sys.executable,
         "-m",
