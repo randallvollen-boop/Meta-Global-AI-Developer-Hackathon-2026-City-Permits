@@ -10,6 +10,30 @@
       "label": "Muse run",
       "text": "One recorded execution of the model task for a case. A run proposes values; it never writes a record. A steward accepts or corrects the proposal and the reviewer decides."
     },
+    "party_record_status": {
+      "label": "Record status",
+      "text": "Whether the person or organization record itself is active in the master data. It says nothing about any license or registration the record holds."
+    },
+    "license_status": {
+      "label": "License or registration status",
+      "text": "Whether the license or registration held by the person or organization is valid. An active organization can hold an expired registration; both can be correct."
+    },
+    "data_issue": {
+      "label": "Data issue",
+      "text": "A discrepancy that a steward still has to resolve, such as two sources disagreeing. It is shown only when an open issue exists."
+    },
+    "source_last_changed": {
+      "label": "Source last changed",
+      "text": "The time the source system says it last changed the record. It is separate from the time this application last received or checked it."
+    },
+    "match_evidence": {
+      "label": "Evidence before score",
+      "text": "The agreements and conflicts the matcher found are the evidence. A score only orders the candidates; it is an uncalibrated heuristic and not the chance that two records are the same."
+    },
+    "action_preview": {
+      "label": "What this action will do",
+      "text": "A preview of the records an action would link or leave unlinked, the application relationship that would change, which source values are kept and whether an issue would remain. Nothing is written until you press the action."
+    },
     "extraction_checks": {
       "label": "Extraction checks",
       "text": "Extraction checks test the shape of what Muse returned: the fields are present, the values have the right type and every value cites a place in a document. They say nothing about whether the application meets a rule."
@@ -95,16 +119,16 @@
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
     },
     "applicants": {
-      "title": "Applicants",
-      "purpose": "One record per person or business, with where each value comes from.",
-      "can_do": ["Open an applicant to see the current value and its source.", "Request a correction where your persona may."],
+      "title": "People & organizations",
+      "purpose": "One record per person or organization, with where each value comes from.",
+      "can_do": ["Search by name or alias, and filter people or organizations.", "Open a record for its overview, sources and history.", "Request a correction where your persona may."],
       "next": "A correction goes to the system that owns the value; it is not edited here."
     },
     "masters": {
-      "title": "Properties, businesses and contractors",
-      "purpose": "The master records for parcels, businesses and contractors, each owned by GIS, ERP Finance or Permitting.",
-      "can_do": ["Open a record to see its sources and history."],
-      "next": "To change a value, change it in the system that owns it."
+      "title": "Master records",
+      "purpose": "The master records for people and organizations, properties, business licenses and contractor registrations, each owned by a source system.",
+      "can_do": ["Switch between the four collections with the tabs.", "Open a record for its overview, sources and history.", "Open source details to see who owns a value and where to change it."],
+      "next": "To change a value, change it in the system that owns it; a steward can request the correction."
     },
     "permit": {
       "title": "Permit workspace",
@@ -113,10 +137,22 @@
       "next": "A steward resolves findings, the reviewer records the decision, and the permit is issued only when the balance is paid."
     },
     "steward": {
-      "title": "Steward review",
-      "purpose": "Muse and the matcher propose which records are the same business or person; the steward decides.",
-      "can_do": ["Approve or reject a proposed link.", "Check the evidence behind a proposal before deciding."],
-      "next": "The decision is recorded with its evidence and appears in the history of the record."
+      "title": "Data issues",
+      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. The matcher and Muse propose; the steward decides.",
+      "can_do": ["Filter by Needs review, Assigned to me, Awaiting source or Resolved.", "Open an issue to read the evidence, preview what an action will do, and record a decision."],
+      "next": "The decision is recorded with the evidence and the note, and appears in the history of the record. A permit decision is a separate step."
+    },
+    "source_records": {
+      "title": "Source records",
+      "purpose": "The accepted records received from each source system, with the master record each one is linked to.",
+      "can_do": ["Filter by source system.", "Open source details to see the full identifiers and who owns the source."],
+      "next": "To compare a source record with the master records, open the Data issues queue."
+    },
+    "activity": {
+      "title": "Activity",
+      "purpose": "Decisions and changes recorded for the records you steward. It is not the administrator's audit log.",
+      "can_do": ["Read who decided what, when, and the note they gave."],
+      "next": "Open a record from its link to see its full history."
     },
     "rules": {
       "title": "Rules and fees",
