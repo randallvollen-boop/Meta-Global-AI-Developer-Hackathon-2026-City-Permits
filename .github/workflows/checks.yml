@@ -1,0 +1,53 @@
+# The ten local gates of ACME City permits, run on every push and pull request.
+#
+# No secrets are used: the workflow has read-only repository access, no
+# META_API_KEY, and points the key file at nothing, so the code can never find a
+# provider credential.  Every Muse call therefore stops at "no provider
+# credential is configured" before any network request, and the tests that
+# exercise the client use mock transports.  Playwright downloads its own
+# Chromium from the Playwright CDN only; nothing talks to Meta.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: repo
+    env:
+      ACME_KEY_FILE: /nonexistent/no-keys.env
+      ACME_DEPLOYMENT_MODE: demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.28"
+          enable-cache: true
+          cache-dependency-glob: repo/uv.lock
+      - name: Install dependencies (frozen lockfile)
+        run: uv sync --frozen
+      - name: Install the test browser
+        run: uv run playwright install --with-deps chromium
+      - name: Run the 10 gates
+        run: uv run python scripts/run_all_checks.py
+      - name: Keep the gate logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence
+          path: repo/evidence/runs/final
+          if-no-files-found: ignore
+          retention-days: 14

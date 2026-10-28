@@ -772,6 +772,12 @@ On the City of Acme website, linked from `/city/permits` and the home page servi
 
 Every model run shown on the evidence panel and the workspace has a source label such as "Muse Spark (live)" or "Muse Spark (replay)" with tokens and latency. The macro `templates/components/muse_source.html` is the one to reuse on the chat, briefing and what-if screens when they are built.
 
+## Production mode
+
+Everything in this runbook describes demo mode, which is the default and the mode the judges use. A second mode, `ACME_DEPLOYMENT_MODE=production`, removes the persona selector, the simulators, fixture replay and the scenario clock, and refuses to start against a demo database or without `ACME_SECRET_KEY`. It is opt-in, and the start scripts never set it.
+
+The modes, every setting, the deploy, rollback, restore and key rotation steps, the evidence and the open items are in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Use `GET /readyz` for readiness (503 when the database is unreachable, behind the expected migration, or in production marked as a demo) and `GET /healthz` for liveness.
+
 ## Fence flow
 
 ```mermaid
