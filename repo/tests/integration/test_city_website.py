@@ -101,10 +101,14 @@ def test_permits_entry_posts_to_existing_selector(client: TestClient) -> None:
     assert client.get("/apply").status_code == 200
 
 
-def test_permits_entry_skips_interstitial_for_applicant(client: TestClient) -> None:
+def test_permits_entry_gives_an_applicant_direct_links(client: TestClient) -> None:
+    # Changed deliberately (applicant UI restyle): /city/permits is now the "Permits and applications"
+    # page for everyone; an applicant gets plain links, not a redirect past it.
     choose(client, "persona_applicant")
     response = client.get("/city/permits", follow_redirects=False)
-    assert response.status_code == 303 and response.headers["location"] == "/apply"
+    assert response.status_code == 200
+    assert 'href="/apply"' in response.text and 'href="/apply/track"' in response.text
+    assert 'action="/ui/actor"' not in response.text.split('data-testid="permits-entry"')[1].split("</section>")[0]
 
 
 def test_portal_pages_use_city_layout_without_staff_nav(client: TestClient) -> None:
