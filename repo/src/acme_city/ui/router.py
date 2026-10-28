@@ -272,6 +272,7 @@ def page_context(
         "actor": {
             "actor_id": actor.actor_id,
             "label": actor_label(session, actor.actor_id),
+            "department": view_models.actor_department(session, actor.actor_id),
         },
         "personas": persona_options(session),
         "navigation": navigation(session, actor),
@@ -327,6 +328,7 @@ def error_response(
             {
                 "actor_id": actor.actor_id,
                 "label": actor_label(session, actor.actor_id),
+                "department": view_models.actor_department(session, actor.actor_id),
             }
             if actor is not None
             else None

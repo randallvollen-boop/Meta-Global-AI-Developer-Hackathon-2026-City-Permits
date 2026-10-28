@@ -128,7 +128,7 @@ def test_switcher_lists_exactly_four_personas(client: TestClient, path: str) -> 
     assert 'data-testid="demo-switch"' in text
     ids = re.findall(r'data-demo-persona="([^"]+)"', text)
     assert sorted(ids) == sorted(("persona_applicant", *STAFF))
-    assert "Demo: switch user" in text
+    assert "Demo controls" in text  # renamed from "Demo: switch user" (bottom-left Demo controls button)
 
 
 def test_staff_pages_still_render_and_portal_stays_blocked(client: TestClient) -> None:
@@ -240,3 +240,23 @@ def test_a_refused_screen_keeps_the_navigation_and_offers_home(client: TestClien
     assert 'href="/queue"' in page or 'href="/applicants"' in page
     # the refusal itself leaks nothing from the screen
     assert "Administration</h1>" not in page
+
+
+def test_the_toast_and_the_demo_control_are_anchored_to_different_corners() -> None:
+    css = (Path(__file__).resolve().parents[2] / "src/acme_city/static")
+    app, demo = (css / "app.css").read_text(), (css / "demo-switch.css").read_text()
+    toast = re.search(r"\n\.toast \{([^}]*)\}", app).group(1)
+    control = re.search(r"\n\.demo-switch \{([^}]*)\}", demo).group(1)
+    assert "top:" in toast and "right:" in toast and "bottom:" not in toast
+    assert "bottom:" in control and "left:" in control and "right:" not in control
+    assert 'toast-top-right' in (css.parent / "templates/base.html").read_text()
+    assert 'demo-corner-bottom-left' in (css.parent / "templates/_demo_switch.html").read_text()
+
+
+def test_the_top_bar_names_the_account_and_signs_out(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    page = client.get("/queue").text
+    assert 'class="seg-btn"' not in page and 'class="seg"' not in page
+    assert 'data-testid="acting-persona"' in page and "Data Steward" in page
+    assert 'action="/ui/end"' in page and 'data-testid="sign-out"' in page
+    assert 'id="toast"' in page and 'aria-live="polite"' in re.search(r'<div[^>]*id="toast"[^>]*>', page).group(0)

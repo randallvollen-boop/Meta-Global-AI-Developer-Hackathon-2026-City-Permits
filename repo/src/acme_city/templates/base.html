@@ -81,27 +81,18 @@
       <p class="app-title visually-hidden"><a href="/queue">ACME City permit workspace</a></p>
       <div class="top-right persona">
         {% if actor %}
-        <div class="seg" role="group" aria-label="Acting as">
-          {% for persona in personas %}
-          <form method="post" action="/ui/actor">
-            <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-            <input type="hidden" name="next" value="{{ request.url.path }}">
-            <button type="submit" class="seg-btn" aria-pressed="{{ 'true' if persona.actor_id == actor.actor_id else 'false' }}" aria-label="{{ persona.label }}" title="{{ persona.label }}"><span class="dot" style="background:{{ persona_dots.get(persona.label, 'var(--accent)') }}"></span><span class="lbl-long">{{ persona.label }}</span></button>
-          </form>
-          {% endfor %}
-        </div>
-        <form method="post" action="/ui/end" class="persona-end">
-          <button type="submit" class="button button-quiet btn sm ghost">End session</button>
-        </form>
-        <p class="persona-current visually-hidden" data-testid="acting-persona">
-          Acting as <strong>{{ actor.label }}</strong>
-        </p>
-        <label class="visually-hidden" for="persona-select">Acting persona</label>
-        <select id="persona-select" name="actor_id" data-testid="persona-select" class="visually-hidden" aria-hidden="true" tabindex="-1">
-          {% for persona in personas %}
-          <option value="{{ persona.actor_id }}" {% if persona.actor_id == actor.actor_id %}selected{% endif %}>{{ persona.label }}</option>
-          {% endfor %}
-        </select>
+        <details class="account-menu" data-testid="persona-select">
+          <summary class="account-trigger" aria-label="Account: {{ actor.label }}">
+            <span class="dot" style="background:{{ persona_dots.get(actor.label, 'var(--accent)') }}"></span>
+            <span class="account-name" data-testid="acting-persona">{{ actor.label }}{% if actor.department %} <span class="account-dept">&middot; {{ actor.department }}</span>{% endif %}</span>
+          </summary>
+          <div class="account-panel">
+            <p class="account-line">Signed in as <strong>{{ actor.label }}</strong>{% if actor.department %}<br><span class="muted">{{ actor.department }}</span>{% endif %}</p>
+            <form method="post" action="/ui/end" class="persona-end">
+              <button type="submit" class="button button-quiet btn sm" data-testid="sign-out">Sign out</button>
+            </form>
+          </div>
+        </details>
         {% else %}
         <p class="persona-current"><a class="button btn" href="/select">Choose a persona</a></p>
         {% endif %}
@@ -188,7 +179,7 @@
 </nav>
 {% endif %}
 {% if screen != 'select' %}{% include "_demo_switch.html" %}{% endif %}
-<div class="toast" id="toast" role="status"></div>
+<div class="toast toast-top-right" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script src="/ui/static/app.js" defer></script>
 <script src="/ui/static/property.js" defer></script>

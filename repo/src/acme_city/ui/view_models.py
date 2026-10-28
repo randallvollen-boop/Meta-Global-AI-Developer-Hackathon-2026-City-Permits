@@ -276,6 +276,16 @@ def holds_grant(
     return False
 
 
+def actor_department(session: Session, actor_id: str | None) -> str:
+    """Return the department on an actor record (display information only)."""
+    if not actor_id:
+        return ""
+    row = session.execute(
+        select(governance.Actor).where(governance.Actor.actor_id == actor_id)
+    ).scalar_one_or_none()
+    return (row.department or "") if row is not None else ""
+
+
 def actor_label(session: Session, actor_id: str | None) -> str:
     """Return the display label of one actor."""
     if not actor_id:
@@ -3938,6 +3948,7 @@ __all__ = [
     "SCREEN_DOMAIN",
     "SCREEN_PERMISSIONS",
     "SCREENS",
+    "actor_department",
     "home_for",
     "may_open_screen",
     "screen_for_path",
