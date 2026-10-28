@@ -92,7 +92,7 @@
     },
     "queue_issue": {
       "label": "Issue",
-      "text": "The issue is the main thing holding the case, in plain words. The exact code that the system recorded is one click away under Exact code. A data issue says Waiting on steward only when it has really been sent to a steward."
+      "text": "The issue is the main thing holding the case, in plain words. The exact code that the system recorded is one click away under Exact code. The next-party column names a steward only after the issue has really been sent to one."
     },
     "queue_dates": {
       "label": "Dates",

@@ -415,7 +415,11 @@ def _ai_summary(detail: dict[str, Any]) -> dict[str, Any]:
     return {
         "has_run": run is not None,
         "run_id": run["run_id"] if run else "",
-        "source_label": run["source_label"] if run else "",
+        "source_label": (
+            "Recorded replay"
+            if run and run.get("mode") == "replay"
+            else (run["source_label"] if run else "")
+        ),
         "fields": fields,
         "total": len(fields),
         "suggested": suggested,
