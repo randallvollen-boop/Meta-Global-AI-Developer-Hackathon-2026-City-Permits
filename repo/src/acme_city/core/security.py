@@ -89,7 +89,10 @@ class SecurityHeadersMiddleware:
                         headers["Content-Security-Policy"] = PAGE_CSP
                 headers["X-Content-Type-Options"] = "nosniff"
                 headers["Referrer-Policy"] = "same-origin"
-                headers["X-Frame-Options"] = "DENY"
+                # A route that allows same-origin framing (the in-app document
+                # viewer) gets the matching legacy header; everything else is DENY.
+                framed = "frame-ancestors 'self'" in headers.get("content-security-policy", "")
+                headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
                 headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
                 if self.production:
                     headers["Strict-Transport-Security"] = HSTS
