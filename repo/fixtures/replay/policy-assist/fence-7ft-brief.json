@@ -277,10 +277,10 @@
     ],
     "title": "What-if briefing: side and rear yard fence height limit"
   },
-  "prompt_version": "acme-policy-brief-prompt-v1",
+  "prompt_version": "acme-policy-brief-prompt-v2",
   "purpose": "brief",
   "recorded_at": "2026-10-28T12:00:00Z",
-  "replay_key": "4368a756c3c62d31f4334c7bb043d4de156a14c43679c9ab9c0709d1eb9c6cbf",
+  "replay_key": "57c89be65c8bfce847ca477f98a7064346e0023007363c814c721592bc2d3ef7",
   "run_content_hash_at_build": "78e5495b9fb41844c25f8355454afadac841bd66e80de75cc7a5c22061d32633",
   "schema_version": "acme-policy-brief-schema-v1",
   "task": "policy_brief"

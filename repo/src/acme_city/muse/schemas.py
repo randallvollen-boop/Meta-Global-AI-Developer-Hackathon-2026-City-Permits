@@ -47,7 +47,7 @@ MATCH_PROMPT_VERSION: Final = "acme-match-prompt-v1"
 APPLICANT_ASSIST_PROMPT_VERSION: Final = "acme-assist-prompt-v1"
 
 #: The versions of the what-if policy prompts (policy 3).
-POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v1"
+POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v2"
 POLICY_PROPOSE_PROMPT_VERSION: Final = "acme-policy-propose-prompt-v1"
 
 #: The provider that serves the Standard Muse models.

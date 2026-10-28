@@ -137,8 +137,12 @@ BRIEF_INSTRUCTIONS: Final = (
     "word revenue; fees are hypothetical assessed fees. Never say that a permit is not required.\n"
     "Never recommend that anyone adopt, enact or approve the change. Never promise an outcome.\n"
     "Use the sections summary, key_effects, risks, protected and, optionally, question (a\n"
-    "legislator's question with its answer sentences). Answer with one JSON object that matches\n"
-    "the schema exactly."
+    "legislator's question with its answer sentences).\n"
+    "Answer with one JSON object that matches the schema exactly, with all four top-level fields:\n"
+    "title (a short plain heading that states no figure), sections (each with section,\n"
+    "question and sentences; each sentence with text, claims and rule_refs, using empty lists\n"
+    "when a sentence has none), cannot_brief (false when you write the briefing) and reason\n"
+    "(empty when you write the briefing; no_facts or needs_a_person when cannot_brief is true)."
 )
 
 PROPOSE_INSTRUCTIONS: Final = (
