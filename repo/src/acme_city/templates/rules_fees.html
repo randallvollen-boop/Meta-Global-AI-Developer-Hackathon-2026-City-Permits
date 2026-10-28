@@ -31,7 +31,7 @@
       <tr>
         <th scope="col">Rule</th><th scope="col">Version</th><th scope="col">Permit type</th>
         <th scope="col">Title</th><th scope="col">Citation</th><th scope="col">Status</th>
-        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">Effective from</th>
+        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">Effective from</th><th scope="col">What-if run</th>
       </tr>
     </thead>
     <tbody>
@@ -46,9 +46,10 @@
         <td>{{ version.author_actor_id or '-' }}</td>
         <td>{{ version.approver_actor_id or '-' }}</td>
         <td>{{ version.effective_from }}</td>
+        <td>{% if catalogue.policy_links.get(version.row_id) %}<a href="/policy/runs/{{ catalogue.policy_links[version.row_id] }}#draft" data-testid="rule-policy-link">Made from a what-if run</a>{% else %}-{% endif %}</td>
       </tr>
       {% else %}
-      <tr><td colspan="9" class="muted">No rule version is stored.</td></tr>
+      <tr><td colspan="10" class="muted">No rule version is stored.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -62,7 +63,7 @@
       <tr>
         <th scope="col">Schedule</th><th scope="col">Version</th><th scope="col">Status</th>
         <th scope="col">Currency</th><th scope="col">Effective from</th><th scope="col">Effective to</th>
-        <th scope="col">Author</th><th scope="col">Approver</th>
+        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">What-if run</th>
       </tr>
     </thead>
     <tbody>
@@ -76,9 +77,10 @@
         <td>{{ schedule.effective_to or 'open' }}</td>
         <td>{{ schedule.author_actor_id or '-' }}</td>
         <td>{{ schedule.approver_actor_id or '-' }}</td>
+        <td>{% if catalogue.policy_links.get(schedule.row_id) %}<a href="/policy/runs/{{ catalogue.policy_links[schedule.row_id] }}#draft" data-testid="fee-policy-link">Made from a what-if run</a>{% else %}-{% endif %}</td>
       </tr>
       {% else %}
-      <tr><td colspan="8" class="muted">No fee schedule version is stored.</td></tr>
+      <tr><td colspan="9" class="muted">No fee schedule version is stored.</td></tr>
       {% endfor %}
     </tbody>
   </table>

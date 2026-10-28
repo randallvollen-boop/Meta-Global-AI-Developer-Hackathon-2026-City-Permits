@@ -3621,9 +3621,13 @@ def rules_fees(session: Session, actor: ActorContext) -> dict[str, Any]:
             )
         ).scalars().all()
     ]
+    from acme_city.policy.drafts import PolicyDraftService  # noqa: PLC0415
+
     return {
         "versions": versions,
         "fee_schedules": fee_schedules,
+        # draft id -> the what-if run it was made from (only for a holder of the run grant)
+        "policy_links": PolicyDraftService(session).links(actor),
         "permit_type_icons": permit_type_icons(session, actor),
         "responsibility": responsibility(
             session,

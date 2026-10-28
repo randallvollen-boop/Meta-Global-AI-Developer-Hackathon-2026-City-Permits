@@ -14,6 +14,7 @@ a link):
 * ``GET  /policy/runs/{id}/briefing``           the deterministic briefing
 * ``GET  /policy/runs/{id}/briefing/download``  the briefing as HTML or Markdown
 * ``POST /policy/runs/{id}/briefing/muse``      ask Muse to write the briefing (``policy.muse.brief``)
+* ``POST /policy/runs/{id}/draft``              save the run as draft rule and fee versions (``policy.draft.convert``)
 * ``POST /policy/runs/{id}/explain``            ask Muse to explain the results (``policy.muse.brief``)
 * ``POST /policy/propose``                      ask Muse to propose a what-if (``policy.muse.propose``)
 * ``GET  /policy/proposals/{id}``               a recorded proposal, with the save control
@@ -41,6 +42,12 @@ from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
 from acme_city.policy import briefing as briefing_module
 from acme_city.policy import runs as runs_module
 from acme_city.policy import views
+from acme_city.policy.drafts import (
+    HANDOFF_STATUS,
+    OWN_VERSION_REASON,
+    PERMISSION_CONVERT,
+    PolicyDraftService,
+)
 from acme_city.policy.service import (
     PERMISSION_BRIEF_VIEW,
     PERMISSION_EXECUTE,
@@ -79,6 +86,8 @@ NOTICES = {
     "saved": "A new revision of the what-if was saved.",
     "deleted": "The what-if was deleted. The runs made from it are kept.",
     "muse": "The Muse answer was recorded. Its source and its checks are shown below.",
+    "drafted": "Saved as a draft rule change. It needs independent approval; nothing published has changed.",
+    "drafted_again": "This run was already saved as a draft. Nothing new was made.",
 }
 
 
@@ -462,6 +471,7 @@ def ui_policy_run(
         state = service.scenario_state(run.scenario_id)
         can_brief = service.can(resolved, PERMISSION_BRIEF_VIEW)
         explain = _explain_panel(request, session, resolved, run, notice)
+        draft_panel = _draft_panel(session, resolved, run)
     except AcmeError as error:
         return _refusal(request, session, resolved, error, action="policy.run.read",
                         target_type="policy_run", target_id=run_id, back="/policy/scenarios")
@@ -470,6 +480,7 @@ def ui_policy_run(
         run=views.run_view(run, scenario_deleted=bool(state and state[0])),
         can_brief=can_brief,
         explain=explain,
+        draft_panel=draft_panel,
         notice=NOTICES.get(notice, ""),
         model_runs=[],
         evidence=[
@@ -488,6 +499,51 @@ def ui_policy_run(
         ],
     )
     return render(request, "policy_run.html", context)
+
+
+def _draft_panel(session: Session, actor: ActorContext, run: Any) -> dict[str, Any]:
+    """Return what the run page needs for "Save as a draft rule change"."""
+    service = PolicyDraftService(session)
+    plan = service.plan(actor, run.id)
+    conversion = service.conversion_for(actor, run.id)
+    return {
+        "can": service.can(actor, PERMISSION_CONVERT),
+        "convertible": plan.convertible,
+        "steps": [{"kind": item.kind, "summary": item.summary} for item in plan.items],
+        "blockers": list(plan.blockers),
+        "version": 0 if conversion is None else conversion.version,
+        "conversion": None if conversion is None else {
+            "id": conversion.id,
+            "author": conversion.converted_by_actor_id,
+            "drafts": service.drafts_view(actor, conversion),
+        },
+        "status_text": HANDOFF_STATUS,
+        "own_reason": OWN_VERSION_REASON,
+    }
+
+
+@router.post("/policy/runs/{run_id}/draft", operation_id="ui_policy_run_draft")
+async def ui_policy_run_draft(
+    run_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    resolved, refused = _read_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    try:
+        verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
+        _, created = PolicyDraftService(session).convert(
+            resolved, run_id, expected_version=_expected_version(form)
+        )
+        session.commit()
+    except AcmeError as error:
+        return _refusal(request, session, resolved, error, action="policy.draft.convert",
+                        target_type="policy_run", target_id=run_id, back=f"/policy/runs/{run_id}")
+    key = "drafted" if created else "drafted_again"
+    return RedirectResponse(f"/policy/runs/{run_id}?notice={key}#draft-heading", status_code=303)
 
 
 def _briefing_for(

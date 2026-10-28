@@ -109,3 +109,26 @@ def test_the_muse_demo_path_fits_a_phone_and_a_desktop(page, server: BrowserServ
         assert page.locator('[data-testid="policy-proposal-save"]').is_visible()
         assert overflow(page) <= 1, (width, "proposal")
     assert page.recorded_errors == []
+
+
+def test_the_draft_path_ends_at_needs_independent_approval_on_a_phone_and_a_desktop(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    for width, height in ((390, 844), (1280, 900)):
+        page.set_viewport_size({"width": width, "height": height})
+        _editor, run = open_fence_run(page, server)
+        button = page.locator('[data-testid="policy-draft-submit"]')
+        assert button.inner_text() == "Save as a draft rule change"
+        button.click()
+        page.wait_for_selector('[data-testid="policy-draft-status"]')
+        assert "Draft — needs independent approval" in page.locator('[data-testid="policy-draft-state"]').first.inner_text()
+        assert page.locator('[data-testid="policy-draft-approve"]').first.is_disabled()
+        assert page.locator('[data-testid="policy-draft-publish"]').first.is_disabled()
+        reason = page.locator('[data-testid="policy-draft-reason"]').first.inner_text()
+        assert reason == "You authored this version; another administrator must approve it."
+        assert overflow(page) <= 1, (width, "draft")
+        page.goto(f"{server.base_url}/rules-fees", wait_until="domcontentloaded")
+        assert page.locator('[data-testid="rule-policy-link"]').count() >= 1
+        assert overflow(page) <= 1, (width, "rules")
+    assert page.recorded_errors == []
