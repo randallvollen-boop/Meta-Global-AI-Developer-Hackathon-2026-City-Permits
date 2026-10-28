@@ -95,6 +95,20 @@ def csrf(client: TestClient, path: str) -> str:
     return match.group(1)
 
 
+def link_version(environment: Settings, record: str) -> int:
+    """Return the version of the newest link of one source record."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            rows = session.execute(
+                select(registry.Crosswalk).where(registry.Crosswalk.source_record_id == record)
+                .order_by(registry.Crosswalk.created_at)
+            ).scalars().all()
+            return rows[-1].version
+    finally:
+        factory.dispose()
+
+
 def case_path(client: TestClient, record: str) -> str:
     """Return the focused-case address of the issue about one source record."""
     queue = client.get("/steward?filter=needs_review").text
@@ -591,6 +605,7 @@ def test_defer_keeps_the_issue_open_and_remove_link_takes_a_link_away(client: Te
     path = case_path(client, "PER-AP-0003")
     deferred = post(client, "registry.defer", {
         "source_system_id": "permitting", "dataset_key": "applicant_profiles", "source_record_id": "PER-AP-0003",
+        "expected_version": str(link_version(environment, "PER-AP-0003")),
         "reason": "waiting for the owner to confirm the trading name",
     }, path)
     assert deferred.status_code == 200 and deferred.json()["pending"] is True
@@ -599,6 +614,7 @@ def test_defer_keeps_the_issue_open_and_remove_link_takes_a_link_away(client: Te
     # A deferral needs a reason.
     refused = post(client, "registry.defer", {
         "source_system_id": "permitting", "dataset_key": "applicant_profiles", "source_record_id": "PER-AP-0003", "reason": " ",
+        "expected_version": str(link_version(environment, "PER-AP-0003")),
     }, path)
     assert refused.status_code == 422
     # Confirm, then remove the link with a reason.
@@ -766,3 +782,76 @@ def test_a_change_case_and_a_parcel_link_open_as_focused_cases(client: TestClien
     assert [int(n) for n in re.findall(r'data-question="(\d)"', parcel.text)] == [1, 2, 3, 4, 5, 6]
     assert "412 Mapel Rdg Dr" in parcel.text and "Approve parcel link" in parcel.text
     assert "The Permit Reviewer still confirms the parcel" in parcel.text
+
+
+# ------------------------- mandatory version, CSRF and grant on defer and remove
+
+RECORD = {"source_system_id": "permitting", "dataset_key": "applicant_profiles", "source_record_id": "PER-AP-0003"}
+
+
+def _approved_link(client: TestClient, environment: Settings) -> tuple[str, int]:
+    seed(environment)
+    assert post(client, "registry.decide", {**RECORD, "decision": "approve", "reason": "ok"}, "/steward").status_code == 200
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            row = session.execute(select(registry.Crosswalk).where(registry.Crosswalk.link_status == "approved")).scalar_one()
+            return row.id, row.version
+    finally:
+        factory.dispose()
+
+
+def test_defer_needs_the_version_csrf_and_the_grant(client: TestClient, environment: Settings) -> None:
+    choose(client, "persona_data_steward")
+    seed(environment)
+    version = link_version(environment, "PER-AP-0003")
+    fields = {**RECORD, "reason": "waiting"}
+    assert post(client, "registry.defer", fields, "/steward").status_code == 422  # missing version
+    stale = post(client, "registry.defer", {**fields, "expected_version": str(version + 5)}, "/steward")
+    assert stale.status_code == 409
+    token_less = client.post(
+        "/ui/actions/registry.defer",
+        data={"next": "/steward", **fields, "expected_version": str(version)},
+        headers={"Accept": "application/json"}, follow_redirects=False,
+    )
+    assert token_less.status_code in (400, 403)
+    assert "Deferred" not in client.get("/activity").text
+    choose(client, "persona_city_administrator")
+    token = csrf(client, "/steward")
+    choose(client, "persona_permit_reviewer")
+    denied = client.post(
+        "/ui/actions/registry.defer",
+        data={"csrf_token": token, "next": "/steward", **fields, "expected_version": str(version)},
+        headers={"Accept": "application/json"}, follow_redirects=False,
+    )
+    assert denied.status_code in (400, 403)
+    choose(client, "persona_data_steward")
+    ok = post(client, "registry.defer", {**fields, "expected_version": str(version)}, "/steward")
+    assert ok.status_code == 200
+
+
+def test_remove_needs_the_version_csrf_and_the_grant(client: TestClient, environment: Settings) -> None:
+    choose(client, "persona_data_steward")
+    crosswalk_id, version = _approved_link(client, environment)
+    fields = {**RECORD, "decision": "remove", "crosswalk_id": crosswalk_id, "reason": "wrong organization"}
+    assert post(client, "registry.decide", fields, "/steward").status_code == 422  # missing version
+    stale = post(client, "registry.decide", {**fields, "expected_version": str(version + 5)}, "/steward")
+    assert stale.status_code == 409
+    token_less = client.post(
+        "/ui/actions/registry.decide",
+        data={"next": "/steward", **fields, "expected_version": str(version)},
+        headers={"Accept": "application/json"}, follow_redirects=False,
+    )
+    assert token_less.status_code in (400, 403)
+    choose(client, "persona_permit_reviewer")
+    reviewer_token = csrf(client, "/agent/adjudication")
+    denied = client.post(
+        "/ui/actions/registry.decide",
+        data={"csrf_token": reviewer_token, "next": "/steward", **fields, "expected_version": str(version)},
+        headers={"Accept": "application/json"}, follow_redirects=False,
+    )
+    assert denied.status_code == 403
+    choose(client, "persona_data_steward")
+    assert link_version(environment, "PER-AP-0003") == version  # nothing changed so far
+    ok = post(client, "registry.decide", {**fields, "expected_version": str(version)}, "/steward")
+    assert ok.status_code == 200

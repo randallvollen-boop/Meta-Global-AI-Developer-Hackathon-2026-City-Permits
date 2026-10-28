@@ -324,6 +324,8 @@ class RegistryService:
             raise NotFoundError(
                 "no source link was found for the stated source record; propose the link first"
             )
+        if command.decision == "remove" and command.expected_version is None:
+            raise ValidationError("an expected version is required to remove a link")
         if command.expected_version is not None and crosswalk.version != command.expected_version:
             return ConflictResult(
                 code="version_conflict",
@@ -378,8 +380,9 @@ class RegistryService:
         dataset_key: str,
         source_record_id: str,
         reason: str,
+        expected_version: int | None,
         actor: ActorContext,
-    ) -> VersionedResult[CrosswalkView]:
+    ) -> VersionedResult[CrosswalkView] | ConflictResult:
         """Put a proposed link aside with a note, without deciding it.
 
         Nothing is linked, rejected or changed: the proposal stays open and the
@@ -401,6 +404,17 @@ class RegistryService:
         proposed = next((row for row in rows if row.link_status == "proposed"), None)
         if proposed is None:
             raise NotFoundError("no proposed link exists for the stated source record")
+        if expected_version is None:
+            raise ValidationError("an expected version is required to defer a decision")
+        if proposed.version != expected_version:
+            return ConflictResult(
+                code="version_conflict",
+                expected_version=expected_version,
+                current_version=proposed.version,
+                differences=(
+                    {"field": "link_status", "expected": expected_version, "current": proposed.version},
+                ),
+            )
         event = self._audit.append(
             action="registry.crosswalk.defer",
             actor=actor,

@@ -1093,6 +1093,17 @@ def _conflict(result: ConflictResult) -> AcmeError:
     )
 
 
+def _stale_link(result: ConflictResult) -> AcmeError:
+    """A stale link version is a 409, with the two versions."""
+    from acme_city.core.errors import ConflictError
+
+    return ConflictError(
+        "the record changed since it was read; read it again and retry",
+        expected_version=result.expected_version,
+        current_version=result.current_version,
+    )
+
+
 def _registry_propose(ctx: ActionContext) -> Outcome:
     """Propose the candidate links of one source record."""
     command = MatchProposalCommand(
@@ -1131,7 +1142,7 @@ def _registry_decide(ctx: ActionContext) -> Outcome:
     )
     result = RegistryService(ctx.session).decide(command, ctx.actor)
     if isinstance(result, ConflictResult):
-        raise _conflict(result)
+        raise _stale_link(result)
     view = result.value
     return Outcome(
         message=(
@@ -1154,8 +1165,11 @@ def _registry_defer(ctx: ActionContext) -> Outcome:
         dataset_key=ctx.text("dataset_key"),
         source_record_id=record,
         reason=ctx.text("reason"),
+        expected_version=ctx.integer("expected_version"),
         actor=ctx.actor,
     )
+    if isinstance(result, ConflictResult):
+        raise _stale_link(result)
     view = result.value
     return Outcome(
         message=f"Deferred the decision on {record}. The issue stays open with your note.",

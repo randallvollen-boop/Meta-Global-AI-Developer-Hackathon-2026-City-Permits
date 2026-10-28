@@ -1827,8 +1827,10 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
                     domain_id=domain,
                     destination="Registry crosswalk",
                     description="Put the decision aside with a note, for example while you wait for more information.",
+                    expected_version=pending.version,
                     fields=(
                         *common_fields,
+                        view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
                         view_models._field("reason", "Why are you deferring?", field_type="textarea", required=True),
                     ),
                 ),
