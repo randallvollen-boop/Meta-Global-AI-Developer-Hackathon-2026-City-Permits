@@ -382,6 +382,11 @@ def _strictify(node: Any) -> Any:
         for key, value in node.items():
             if key in _DROPPED_SCHEMA_KEYWORDS:
                 continue
+            if key in ("properties", "$defs") and isinstance(value, dict):
+                # These map field and definition names, never keywords: a
+                # field called "title" is kept.
+                strict[key] = {name: _strictify(item) for name, item in value.items()}
+                continue
             strict[key] = _strictify(value)
         if strict.get("type") == "object" or "properties" in strict:
             strict["additionalProperties"] = False
