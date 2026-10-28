@@ -2,109 +2,311 @@
 {% import "components/action_form.html" as forms %}
 {% import "_ui.html" as ui with context %}
 
+{# Rules and fee schedules.
+
+   Two registers (rules and fee schedules) and three views of each:
+   published, drafts and history.  The selected version shows the diffed
+   records, the applicability, the recorded history and the next authorized
+   action, in the order of the lifecycle. #}
+
 {% block content %}
 <div class="page-head">
   <div>
     <h1>Rules and fees</h1>
-    <p class="sub">Versioned rule sets and fee schedules. Synthetic ACME values.</p>
+    <p class="sub">
+      Versioned rule sets and fee schedules. Synthetic ACME values: they are not
+      the rules, the fees or the practice of any real jurisdiction.
+    </p>
   </div>
   <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
 
+<nav class="tabs" role="tablist" aria-label="Rules and fees registers">
+  {% for item in catalogue.tabs %}
+  <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == catalogue.tab else 'false' }}" data-testid="rules-tab" data-tab="{{ item.key }}">{{ item.label }}</a>
+  {% endfor %}
+</nav>
+<nav class="tabs" role="tablist" aria-label="Register views">
+  {% for item in catalogue.views %}
+  <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == catalogue.view else 'false' }}" data-testid="rules-view" data-view="{{ item.key }}">{{ item.label }}</a>
+  {% endfor %}
+</nav>
+
 {% include "components/responsibility_panel.html" %}
 
-<section class="panel card" aria-labelledby="permit-type-icons-heading" data-testid="permit-type-icons">
-  <div class="card-h"><h2 id="permit-type-icons-heading">Permit type icons</h2></div>
-  <div class="card-b">
-    <p class="muted" style="margin:0">
-      Permit type icons are managed in Administration.
-      <a href="/admin?tab=permit-types">Open Administration</a>.
-    </p>
-  </div>
-</section>
-
-<section class="panel" aria-labelledby="rule-versions-heading">
-  <h2 id="rule-versions-heading">Rule versions</h2>
-  <table class="data-table" data-testid="rule-table">
-    <caption class="visually-hidden">Stored rule versions</caption>
-    <thead>
-      <tr>
-        <th scope="col">Rule</th><th scope="col">Version</th><th scope="col">Permit type</th>
-        <th scope="col">Title</th><th scope="col">Citation</th><th scope="col">Status</th>
-        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">Effective from</th><th scope="col">What-if run</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for version in catalogue.versions %}
-      <tr data-testid="rule-row" data-status="{{ version.status }}" data-rule-id="{{ version.row_id }}">
-        <th scope="row">{{ version.rule_id }}</th>
-        <td>{{ version.version_label }}</td>
-        <td>{{ version.permit_type_key or 'all' }}</td>
-        <td>{{ version.title }}</td>
-        <td class="mono">{{ version.citation }}</td>
-        <td><span class="badge badge-{{ version.status }}">{{ version.status }}</span></td>
-        <td>{{ version.author_actor_id or '-' }}</td>
-        <td>{{ version.approver_actor_id or '-' }}</td>
-        <td>{{ version.effective_from }}</td>
-        <td>{% if catalogue.policy_links.get(version.row_id) %}<a href="/policy/runs/{{ catalogue.policy_links[version.row_id] }}#draft" data-testid="rule-policy-link">Made from a what-if run</a>{% else %}-{% endif %}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="10" class="muted">No rule version is stored.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
-<section class="panel" aria-labelledby="fee-heading">
-  <h2 id="fee-heading">Fee schedule versions</h2>
-  <table class="data-table" data-testid="fee-table">
-    <caption class="visually-hidden">Stored fee schedule versions</caption>
-    <thead>
-      <tr>
-        <th scope="col">Schedule</th><th scope="col">Version</th><th scope="col">Status</th>
-        <th scope="col">Currency</th><th scope="col">Effective from</th><th scope="col">Effective to</th>
-        <th scope="col">Author</th><th scope="col">Approver</th><th scope="col">What-if run</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for schedule in catalogue.fee_schedules %}
-      <tr data-testid="fee-row" data-status="{{ schedule.status }}" data-fee-id="{{ schedule.row_id }}">
-        <th scope="row">{{ schedule.fee_schedule_id }}</th>
-        <td>{{ schedule.version_label }}</td>
-        <td><span class="badge badge-{{ schedule.status }}">{{ schedule.status }}</span></td>
-        <td>{{ schedule.currency }}</td>
-        <td>{{ schedule.effective_from }}</td>
-        <td>{{ schedule.effective_to or 'open' }}</td>
-        <td>{{ schedule.author_actor_id or '-' }}</td>
-        <td>{{ schedule.approver_actor_id or '-' }}</td>
-        <td>{% if catalogue.policy_links.get(schedule.row_id) %}<a href="/policy/runs/{{ catalogue.policy_links[schedule.row_id] }}#draft" data-testid="fee-policy-link">Made from a what-if run</a>{% else %}-{% endif %}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="9" class="muted">No fee schedule version is stored.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p class="muted">
-    The fee schedule and every rule above are synthetic demonstration values. They
-    are not the fees, the codes or the practice of any real jurisdiction.
-  </p>
-</section>
-
-{% include "components/evidence_panel.html" %}
-
-<section class="panel card" aria-labelledby="rules-actions-heading">
-  <div class="card-h"><h2 id="rules-actions-heading">Next actions</h2></div>
-  <div class="card-b act">
-  {% for item in actions %}
-    {{ forms.action_form(item, csrf_token) }}
-  {% endfor %}
-  {% if denied_action_explanations %}
-  <ul class="denied-list" data-testid="denied-actions">
-    {% for denied in denied_action_explanations %}
-    <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+{% if catalogue.policy_drafts %}
+<section class="panel" aria-labelledby="policy-drafts-heading" data-testid="policy-drafts">
+  <h2 id="policy-drafts-heading">Drafts made from a what-if run</h2>
+  <p class="muted">Each draft below was saved from a what-if run. The run shows the cases the change would affect.</p>
+  <ul>
+    {% for item in catalogue.policy_drafts %}
+    <li>
+      <a href="{{ item.register_href }}">{{ item.title }} ({{ item.version }})</a>, {{ item.status | replace('_', ' ') }}:
+      <a href="{{ item.href }}" data-testid="{{ item.kind }}-policy-link">Made from a what-if run</a>
+    </li>
     {% endfor %}
   </ul>
+</section>
+{% endif %}
+
+<section class="panel" aria-labelledby="rules-register-heading">
+  <h2 id="rules-register-heading">
+    {% if catalogue.tab == 'rules' %}Rule versions{% else %}Fee schedule versions{% endif %}
+  </h2>
+  <p class="muted">{{ catalogue.row_count_label }}</p>
+  {% if catalogue.view == 'history' %}
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="rule-history-table">
+    <caption class="visually-hidden">The recorded lifecycle events of the catalogue</caption>
+    <thead>
+      <tr>
+        <th scope="col">When</th><th scope="col">Action</th><th scope="col">Version</th>
+        <th scope="col">Actor</th><th scope="col">Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in catalogue.history %}
+      <tr data-testid="rule-history-row" data-action="{{ event.action }}">
+        <td>{{ event.occurred_date }}</td>
+        <th scope="row">{{ event.action }}</th>
+        <td class="mono"><a href="/rules?tab={{ catalogue.tab }}&view=published&version={{ event.version_id }}">{{ event.version_label }}</a></td>
+        <td>{{ event.actor }}</td>
+        <td>{{ event.reason or 'no reason recorded' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No lifecycle event has been recorded for this register yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">
+    The history is the append-only record of what happened to each version.
+  </p>
+  {% else %}
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="rule-table">
+    <caption class="visually-hidden">Stored rule and fee schedule versions</caption>
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Project type</th>
+        <th scope="col">Version</th>
+        <th scope="col">Status</th>
+        <th scope="col">{{ catalogue.date_column_label }}</th>
+        <th scope="col">Next action</th>
+        <th scope="col">Assigned approver</th>
+        <th scope="col">Approved by</th>
+        <th scope="col">Approved on</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in catalogue.rows %}
+      <tr data-testid="rule-row" data-status="{{ row.status }}" data-rule-id="{{ row.row_id }}" data-version-label="{{ row.version_label }}">
+        <th scope="row">{{ row.title }}</th>
+        <td>{{ row.project_type }}</td>
+        <td class="mono">{{ row.version_label }}</td>
+        <td><span class="badge badge-{{ row.status }}">{{ row.status_label }}</span></td>
+        <td>{{ row.effective_period }}</td>
+        <td>
+          {% if row.next_action.available %}
+          <a class="btn sm" href="{{ row.href }}" data-testid="rule-next-action">{{ row.next_action.label }}</a>
+          {% else %}
+          <span class="muted" data-testid="rule-next-action">{{ row.next_action.label }}</span>
+          {% if row.next_action.reason %}<span class="t2">: {{ row.next_action.reason }}</span>{% endif %}
+          {% endif %}
+        </td>
+        <td>{{ row.assigned_approver }}</td>
+        <td>{{ row.approved_by }}</td>
+        <td>{{ row.approved_on }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="muted">No version is stored in this view.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">
+    Internal keys and full timestamps are in the details of the selected version.
+    {{ ui.info('version_date_basis') }}
+  </p>
   {% endif %}
+</section>
+
+{% if catalogue.selected %}
+{% set selected = catalogue.selected %}
+<section class="panel card" aria-labelledby="selected-version-heading" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
+  <div class="card-h">
+    <h2 id="selected-version-heading">{{ selected.version_label }}: {{ selected.title }}</h2>
+    <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
+  </div>
+  <div class="card-b" style="display:grid;gap:14px">
+
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-states">
+      <caption class="visually-hidden">The recorded states of the selected version</caption>
+      <tbody>
+        <tr><th scope="row">Draft</th><td>{{ selected.states.draft }}</td></tr>
+        <tr><th scope="row">Approval</th><td>{{ selected.states.approval }}</td></tr>
+        <tr><th scope="row">Publication</th><td>{{ selected.states.publication }}</td></tr>
+        <tr><th scope="row">Effective period</th><td>{{ selected.states.effective_period }}</td></tr>
+        <tr><th scope="row">Application applicability</th><td>{{ selected.states.applicability }}</td></tr>
+        <tr><th scope="row">Assigned approver</th><td>{{ selected.assigned_approver }}</td></tr>
+        <tr><th scope="row">Approved by</th><td>{{ selected.approved_by }}</td></tr>
+        <tr><th scope="row">Approved on</th><td>{{ selected.approved_on }}</td></tr>
+        <tr><th scope="row">Internal key</th><td class="mono">{{ selected.internal_key }}</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Published and proposed side by side</h3>
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-sides">
+      <caption class="visually-hidden">The published version and the proposed version</caption>
+      <thead>
+        <tr><th scope="col">Side</th><th scope="col">Version</th><th scope="col">Status</th><th scope="col">Effective period</th><th scope="col">Recorded value</th></tr>
+      </thead>
+      <tbody>
+        {% if selected.published_side %}
+        <tr data-testid="selected-published-side">
+          <th scope="row">Published</th><td class="mono">{{ selected.published_side.label }}</td>
+          <td>{{ selected.published_side.status_label }}</td><td>{{ selected.published_side.effective_period }}</td>
+          <td class="mono">{{ selected.published_side.limit }}</td>
+        </tr>
+        {% else %}
+        <tr data-testid="selected-published-side"><th scope="row">Published</th><td colspan="4" class="muted">No published version of this rule is stored.</td></tr>
+        {% endif %}
+        {% if selected.proposed_side %}
+        <tr data-testid="selected-proposed-side">
+          <th scope="row">Proposed</th><td class="mono">{{ selected.proposed_side.label }}</td>
+          <td>{{ selected.proposed_side.status_label }}</td><td>{{ selected.proposed_side.effective_period }}</td>
+          <td class="mono">{{ selected.proposed_side.limit }}</td>
+        </tr>
+        {% else %}
+        <tr data-testid="selected-proposed-side"><th scope="row">Proposed</th><td colspan="4" class="muted">This version is the published one; no proposed version is stored.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+    </div>
+
+    <h3 id="version-diff">What changed</h3>
+    {% if selected.diff %}
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-diff">
+      <caption class="visually-hidden">The fields that differ between the two stored version records</caption>
+      <thead>
+        <tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr>
+      </thead>
+      <tbody>
+        {% for change in selected.diff %}
+        <tr data-testid="diff-row" data-field="{{ change.field }}">
+          <th scope="row">{{ change.label }}</th>
+          <td class="mono">{{ change.before or '(not set)' }}</td>
+          <td class="mono">{{ change.after or '(not set)' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="muted">Diffed against {{ selected.compared_with }}, the stored version before this one. Nothing here is invented.</p>
+    {% else %}
+    <p class="muted" data-testid="selected-version-diff-empty">{{ selected.diff_note }}</p>
+    {% endif %}
+
+    <h3>Recorded reason</h3>
+    <p data-testid="selected-version-reason">{{ selected.reason }}</p>
+
+    <h3>Supporting material</h3>
+    <dl class="kv" data-testid="selected-version-supporting">
+      {% for item in selected.supporting %}<div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>{% endfor %}
+    </dl>
+
+    {% if selected.overlap_warning %}
+    <p class="notice" role="status" data-testid="selected-version-overlap">{{ selected.overlap_warning }}</p>
+    {% endif %}
+
+    <h3>Which applications use it</h3>
+    <p class="muted" data-testid="selected-version-applicability">{{ selected.applicability.basis_text }}</p>
+    <p class="muted">{{ selected.applicability.note }}</p>
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-applications">
+      <caption class="visually-hidden">The applications the version applies to</caption>
+      <thead><tr><th scope="col">Application</th><th scope="col">Basis date</th><th scope="col">Open</th></tr></thead>
+      <tbody>
+        {% for item in selected.applicability.applications %}
+        <tr data-testid="selected-version-application-row">
+          <th scope="row">{{ item.reference }}</th>
+          <td>{{ item.basis_date }}</td>
+          <td><a class="btn sm" href="{{ item.href }}">Open the case</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted">No sample application falls inside this effective period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Review, approval and publication history</h3>
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-history">
+      <caption class="visually-hidden">The recorded events of the selected version</caption>
+      <thead><tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Actor</th><th scope="col">Reason</th></tr></thead>
+      <tbody>
+        {% for event in selected.history %}
+        <tr data-testid="selected-version-history-row" data-action="{{ event.action }}">
+          <td>{{ event.occurred_date }}</td>
+          <th scope="row">{{ event.action }}</th>
+          <td>{{ event.actor }}</td>
+          <td>{{ event.reason or 'no reason recorded' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">No event is recorded for this version yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Next authorized action</h3>
+    <p data-testid="selected-version-next-action">
+      {% if selected.next_action.available %}
+      <span class="pill ok">{{ selected.next_action.label }}</span>
+      {% else %}
+      <span class="pill plain">{{ selected.next_action.label }}</span>
+      <span class="muted">: {{ selected.next_action.reason }}</span>
+      {% endif %}
+    </p>
+
+    <div class="card-b act" style="padding:0">
+    {% for item in catalogue.actions %}
+      {% if item.is_link %}
+      <div class="act-row" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="true">
+        <span class="t">{{ item.label }}</span>
+        <span class="d">{{ item.description }}</span>
+        <span class="go"><a class="btn sm" href="{{ item.href }}">{{ item.label }}</a></span>
+      </div>
+      {% else %}
+      {{ forms.action_form(item, csrf_token, request.url.path + ('?' + request.url.query if request.url.query else '')) }}
+      {% endif %}
+    {% endfor %}
+    {% if catalogue.denied_action_explanations %}
+    <ul class="denied-list" data-testid="denied-actions">
+      {% for denied in catalogue.denied_action_explanations %}
+      <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    </div>
   </div>
 </section>
+{% endif %}
+
+{% if catalogue.draft_action %}
+<section class="panel card" aria-labelledby="rules-draft-heading">
+  <div class="card-h"><h2 id="rules-draft-heading">Draft a new version</h2></div>
+  <div class="card-b act">
+    {{ forms.action_form(catalogue.draft_action, csrf_token, request.url.path) }}
+  </div>
+</section>
+{% endif %}
+
+{% include "components/evidence_panel.html" %}
 {% endblock %}

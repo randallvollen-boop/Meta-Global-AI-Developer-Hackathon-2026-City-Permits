@@ -1,14 +1,83 @@
 {% extends "base.html" %}
 {% import "components/action_form.html" as forms %}
+{% import "_ui.html" as ui with context %}
+
+{# Governance and sources.
+
+   The screen opens with the sources: where the data comes from, when it last
+   changed, who resolves its problems and where a correction is made.  The
+   tabs below hold the responsibilities, the authority rules, the access map
+   and the recorded history. #}
 
 {% block content %}
 
-<div class="page-head"><div><h1>Governance and sources</h1><p class="sub">Who owns each dataset, and what arrived without an owner.</p></div></div>
+<div class="page-head">
+  <div>
+    <h1>Governance and sources</h1>
+    <p class="sub">Who owns each dataset, where the data comes from, and what arrived without an owner.</p>
+  </div>
+  <div class="actions">{{ ui.help_button('governance') }}</div>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Governance sections">
+  {% for item in governance.tabs %}
+  <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == governance.tab else 'false' }}" data-testid="governance-tab" data-tab="{{ item.key }}">{{ item.label }}</a>
+  {% endfor %}
+</nav>
 
 {% include "components/responsibility_panel.html" %}
 
+{% if governance.tab == 'sources' %}
+<section class="panel" aria-labelledby="source-overview-heading">
+  <h2 id="source-overview-heading">Source overview</h2>
+  <p class="muted">
+    Freshness is the last time the source reported a change and the last time the
+    demonstration received or checked a record. It is not a count of open issues.
+    {{ ui.info('source_freshness') }}
+  </p>
+  <div class="kpis" data-testid="source-overview">
+    {% for item in governance.sources %}
+    <section class="card kpi" aria-labelledby="source-{{ item.source_system_id }}-heading" data-testid="source-card" data-source-system-id="{{ item.source_system_id }}">
+      <div class="k" id="source-{{ item.source_system_id }}-heading">
+        <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-db"/></svg>
+        {{ item.label }}
+      </div>
+      <div class="v num" data-testid="source-record-count">{{ item.record_count }}</div>
+      <div class="s">stored records</div>
+      <p class="t2" style="margin:6px 0 0">{{ item.records }}</p>
+      <dl class="responsibility-grid" style="margin-top:8px">
+        <div class="responsibility-item">
+          <dt>Source last changed</dt>
+          <dd data-testid="source-last-changed">{{ item.last_changed or 'Freshness information unavailable' }}</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Last received or checked</dt>
+          <dd data-testid="source-last-received">{{ item.last_received or 'Freshness information unavailable' }}</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Open recorded issues</dt>
+          <dd data-testid="source-open-issues">{{ item.open_issues }}</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Responsible team</dt>
+          <dd data-testid="source-responsible-team">{{ item.responsible_team }}</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Change this in</dt>
+          <dd data-testid="source-correction-path">{{ item.correction_path or 'not declared' }}</dd>
+        </div>
+      </dl>
+      <p style="margin:8px 0 0">
+        <a class="btn sm" href="{{ item.detail_href }}" data-ui-detail data-detail-kind="source" data-detail-id="{{ item.source_system_id }}" aria-haspopup="dialog">Open the source</a>
+      </p>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+
 <section class="panel" aria-labelledby="datasets-heading">
   <h2 id="datasets-heading">Registered source datasets</h2>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="registration-table">
     <caption class="visually-hidden">Source registrations</caption>
     <thead>
@@ -36,6 +105,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
 <section class="panel" aria-labelledby="published-heading" data-testid="published-datasets">
@@ -44,6 +114,7 @@
   <h3 data-testid="published-dataset">{{ dataset.label }}</h3>
   <p class="muted">Owner: {{ dataset.owner }}. {{ dataset.notice }}</p>
   <h4 data-testid="simulated-departments-heading">Simulated departments</h4>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="dataset-subscribers">
     <caption class="visually-hidden">Subscriber departments of {{ dataset.label }}</caption>
     <thead><tr><th scope="col">Subscriber (simulated)</th><th scope="col">Contract</th><th scope="col">Fields it consumes</th></tr></thead>
@@ -53,53 +124,129 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endfor %}
 </section>
 
+<section class="panel" aria-labelledby="intake-heading">
+  <h2 id="intake-heading">Unowned intake and quarantine</h2>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="staged-table">
+    <caption class="visually-hidden">Staged records that may not publish</caption>
+    <thead>
+      <tr>
+        <th scope="col">Record</th><th scope="col">Source</th><th scope="col">Dataset</th>
+        <th scope="col">Version</th><th scope="col">Received</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in governance.staged %}
+      <tr data-testid="staged-row">
+        <th scope="row">{{ record.source_record_id }}</th>
+        <td>{{ record.source_system_id }}</td>
+        <td>{{ record.source_dataset_id }}</td>
+        <td>{{ record.source_record_version }}</td>
+        <td>{{ record.ingested_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No staged record is waiting.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <h3>Quarantine</h3>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="quarantine-table">
+    <caption class="visually-hidden">Quarantined records and their field errors</caption>
+    <thead><tr><th scope="col">Snapshot</th><th scope="col">Field</th><th scope="col">Code</th><th scope="col">Message</th><th scope="col">Queue</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for error in governance.quarantined %}
+      <tr data-testid="quarantine-row">
+        <th scope="row">{{ error.source_snapshot_id }}</th>
+        <td>{{ error.field_path }}</td>
+        <td>{{ error.error_code }}</td>
+        <td>{{ error.message }}</td>
+        <td>{{ error.responsible_queue_id or 'unassigned' }}</td>
+        <td>{{ error.status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No record is quarantined.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="synchronization-heading">
+  <h2 id="synchronization-heading">Synchronization</h2>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="synchronization-table">
+    <caption class="visually-hidden">Source commands and their acknowledgement</caption>
+    <thead><tr><th scope="col">Command</th><th scope="col">Case</th><th scope="col">Source</th><th scope="col">Operation</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
+    <tbody>
+      {% for command in governance.commands %}
+      <tr data-testid="synchronization-row" data-status="{{ command.status }}">
+        <th scope="row">{{ command.source_command_id }}</th>
+        <td>{{ command.change_case_id or '-' }}</td>
+        <td>{{ command.source_system_id }}</td>
+        <td>{{ command.operation }}</td>
+        <td>{{ command.accepted_source_version or '-' }}</td>
+        <td><span class="badge badge-{{ command.status }}">{{ command.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No command has been sent to a source.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% elif governance.tab == 'responsibilities' %}
 <section class="panel" aria-labelledby="domains-heading">
   <h2 id="domains-heading">Domains and queues</h2>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="domain-table">
     <caption class="visually-hidden">Governed domains</caption>
-    <thead>
-      <tr><th scope="col">Domain</th><th scope="col">Owner</th><th scope="col">Queue</th><th scope="col">Custodian</th><th scope="col">Default source</th><th scope="col">Version</th></tr>
-    </thead>
+    <thead><tr><th scope="col">Domain</th><th scope="col">Owner</th><th scope="col">Queue</th><th scope="col">Custodian</th><th scope="col">Default source</th><th scope="col">Version</th></tr></thead>
     <tbody>
       {% for domain in governance.domains %}
       <tr data-testid="domain-row">
         <th scope="row">{{ domain.domain_id }}</th>
-        <td>{{ domain.accountable_owner_actor_id or 'not assigned' }}</td>
+        <td>{{ domain.accountable_owner }}</td>
         <td>{{ domain.steward_queue_id or 'not assigned' }}</td>
-        <td>{{ domain.system_custodian_actor_id or 'not assigned' }}</td>
+        <td>{{ domain.system_custodian }}</td>
         <td>{{ domain.default_source_system_id or 'not declared' }}</td>
         <td>{{ domain.version }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
   <h3>Steward queues</h3>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="queue-configuration-table">
     <caption class="visually-hidden">Steward queues and their response targets</caption>
-    <thead>
-      <tr><th scope="col">Queue</th><th scope="col">Domain</th><th scope="col">Primary</th><th scope="col">Delegate</th><th scope="col">Escalation</th><th scope="col">First review target</th><th scope="col">Service promise</th></tr>
-    </thead>
+    <thead><tr><th scope="col">Queue</th><th scope="col">Domain</th><th scope="col">Primary</th><th scope="col">Delegate</th><th scope="col">Escalation</th><th scope="col">First review target</th><th scope="col">Service promise</th></tr></thead>
     <tbody>
       {% for queue in governance.queues %}
       <tr data-testid="queue-configuration-row">
         <th scope="row">{{ queue.queue_id }}</th>
         <td>{{ queue.domain_id }}</td>
-        <td>{{ queue.primary_actor_id or 'not assigned' }}</td>
-        <td>{{ queue.delegate_actor_id or 'not assigned' }}</td>
-        <td>{{ queue.escalation_actor_id or 'not assigned' }}</td>
+        <td>{{ queue.primary }}</td>
+        <td>{{ queue.delegate }}</td>
+        <td>{{ queue.escalation }}</td>
         <td>{{ queue.first_review_target_quantity }} {{ queue.first_review_target_unit }}</td>
         <td>{{ 'yes' if queue.service_promise else 'no' }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
 <section class="panel" aria-labelledby="assignments-heading">
   <h2 id="assignments-heading">Effective assignments</h2>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="assignment-table">
     <caption class="visually-hidden">Effective-dated assignments</caption>
     <thead><tr><th scope="col">Subject</th><th scope="col">Responsibility</th><th scope="col">Actor</th><th scope="col">Queue</th><th scope="col">Effective from</th><th scope="col">Effective to</th><th scope="col">Version</th></tr></thead>
@@ -119,10 +266,13 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
+{% elif governance.tab == 'authority' %}
 <section class="panel" aria-labelledby="policies-heading">
   <h2 id="policies-heading">Attribute authority</h2>
+  <div class="tbl-wrap">
   <table class="data-table" data-testid="policy-table">
     <caption class="visually-hidden">Authority policies</caption>
     <thead>
@@ -145,69 +295,64 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
-<section class="panel" aria-labelledby="intake-heading">
-  <h2 id="intake-heading">Unowned intake and quarantine</h2>
-  <table class="data-table" data-testid="staged-table">
-    <caption class="visually-hidden">Staged records that may not publish</caption>
-    <thead><tr><th scope="col">Record</th><th scope="col">Source</th><th scope="col">Dataset</th><th scope="col">Version</th><th scope="col">Received</th></tr></thead>
+{% elif governance.tab == 'access' %}
+<section class="panel" aria-labelledby="access-heading">
+  <h2 id="access-heading">Access</h2>
+  <p class="muted">
+    The grants each persona holds, read from the same persisted grants the server
+    decides with. A service identity is never selectable and no role label
+    authorizes an action.
+  </p>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="access-table">
+    <caption class="visually-hidden">The permission each persona holds</caption>
+    <thead>
+      <tr><th scope="col">Persona</th><th scope="col">Selectable</th><th scope="col">Permissions held</th><th scope="col">Count</th></tr>
+    </thead>
     <tbody>
-      {% for record in governance.staged %}
-      <tr data-testid="staged-row">
-        <th scope="row">{{ record.source_record_id }}</th>
-        <td>{{ record.source_system_id }}</td>
-        <td>{{ record.source_dataset_id }}</td>
-        <td>{{ record.source_record_version }}</td>
-        <td>{{ record.ingested_at }}</td>
+      {% for entry in governance.access %}
+      <tr data-testid="access-row" data-actor-id="{{ entry.actor_id }}">
+        <th scope="row">{{ entry.label }}</th>
+        <td>{{ 'yes' if entry.selectable else 'no' }}</td>
+        <td class="mono">{{ entry.permissions|join(', ') }}</td>
+        <td class="num">{{ entry.count }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="5" class="muted">No staged record is waiting.</td></tr>
       {% endfor %}
     </tbody>
   </table>
-  <h3>Quarantine</h3>
-  <table class="data-table" data-testid="quarantine-table">
-    <caption class="visually-hidden">Quarantined records and their field errors</caption>
-    <thead><tr><th scope="col">Snapshot</th><th scope="col">Field</th><th scope="col">Code</th><th scope="col">Message</th><th scope="col">Queue</th><th scope="col">Status</th></tr></thead>
-    <tbody>
-      {% for error in governance.quarantined %}
-      <tr data-testid="quarantine-row">
-        <th scope="row">{{ error.source_snapshot_id }}</th>
-        <td>{{ error.field_path }}</td>
-        <td>{{ error.error_code }}</td>
-        <td>{{ error.message }}</td>
-        <td>{{ error.responsible_queue_id or 'unassigned' }}</td>
-        <td>{{ error.status }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="6" class="muted">No record is quarantined.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  </div>
 </section>
 
-<section class="panel" aria-labelledby="synchronization-heading">
-  <h2 id="synchronization-heading">Synchronization</h2>
-  <table class="data-table" data-testid="synchronization-table">
-    <caption class="visually-hidden">Source commands and their acknowledgement</caption>
-    <thead><tr><th scope="col">Command</th><th scope="col">Case</th><th scope="col">Source</th><th scope="col">Operation</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
+{% elif governance.tab == 'history' %}
+<section class="panel" aria-labelledby="governance-history-heading">
+  <h2 id="governance-history-heading">History</h2>
+  <p class="muted">
+    The recorded governance events, newest first. The audit trail only grows.
+  </p>
+  <div class="tbl-wrap">
+  <table class="data-table" data-testid="governance-history-table">
+    <caption class="visually-hidden">The recorded governance events</caption>
+    <thead><tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Actor</th><th scope="col">Target</th><th scope="col">Reason</th></tr></thead>
     <tbody>
-      {% for command in governance.commands %}
-      <tr data-testid="synchronization-row" data-status="{{ command.status }}">
-        <th scope="row">{{ command.source_command_id }}</th>
-        <td>{{ command.change_case_id or '-' }}</td>
-        <td>{{ command.source_system_id }}</td>
-        <td>{{ command.operation }}</td>
-        <td>{{ command.accepted_source_version or '-' }}</td>
-        <td><span class="badge badge-{{ command.status }}">{{ command.status }}</span></td>
+      {% for event in governance.history %}
+      <tr data-testid="governance-history-row" data-action="{{ event.action }}">
+        <td>{{ event.occurred_date }}</td>
+        <th scope="row">{{ event.action }}</th>
+        <td>{{ event.actor }}</td>
+        <td class="mono">{{ event.target_type }}{% if event.target_id %} {{ event.target_id }}{% endif %}</td>
+        <td>{{ event.reason or 'no reason recorded' }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted">No command has been sent to a source.</td></tr>
+      <tr><td colspan="5" class="muted">No governance event has been recorded yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
+{% endif %}
 
 {% include "components/evidence_panel.html" %}
 

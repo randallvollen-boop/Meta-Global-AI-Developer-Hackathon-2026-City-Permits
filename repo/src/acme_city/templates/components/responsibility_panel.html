@@ -1,9 +1,12 @@
+{% macro readable(iso) %}{% set m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}<time datetime="{{ iso }}" title="{{ iso }}">{{ iso[8:10] | int }} {{ m[iso[5:7] | int - 1] }} {{ iso[0:4] }}</time>{% endmacro %}
 {# The responsibility panel of a governed record.
 
    It always answers the same eight questions: who owns the record, who
    stewards it, which source owns the facts, where a correction is made, when
-   the source last updated the record, when it was last received, which
-   version is current, and which issues are open. #}
+   the source last changed the record, when it was last received or checked,
+   which version is current, and which issues are open.  Freshness and open
+   issues are two different things: an unknown freshness is reported as
+   unknown, never as a number of issues. #}
 <section class="panel panel-responsibility" aria-labelledby="responsibility-heading" data-testid="responsibility-panel">
   <h2 id="responsibility-heading">Responsibility</h2>
   <p class="muted">{{ responsibility.domain_label }} ({{ responsibility.domain_id }})</p>
@@ -25,19 +28,19 @@
       <dd data-testid="responsibility-change-this-in">{{ responsibility.change_this_in or 'not declared' }}</dd>
     </div>
     <div class="responsibility-item">
-      <dt>Last source update</dt>
-      <dd data-testid="responsibility-last-source-update">{{ responsibility.last_source_update or 'unknown' }}</dd>
+      <dt>Source last changed</dt>
+      <dd data-testid="responsibility-last-source-update">{% if responsibility.last_source_update %}{{ readable(responsibility.last_source_update) }}{% else %}Freshness information unavailable{% endif %}</dd>
     </div>
     <div class="responsibility-item">
-      <dt>Last received</dt>
-      <dd data-testid="responsibility-last-received">{{ responsibility.last_received or 'unknown' }}</dd>
+      <dt>Last received or checked</dt>
+      <dd data-testid="responsibility-last-received">{% if responsibility.last_received %}{{ readable(responsibility.last_received) }}{% else %}Freshness information unavailable{% endif %}</dd>
     </div>
     <div class="responsibility-item">
       <dt>Version</dt>
       <dd data-testid="responsibility-version">{{ responsibility.version if responsibility.version is not none else 'unknown' }}</dd>
     </div>
     <div class="responsibility-item">
-      <dt>Open issues</dt>
+      <dt>Open recorded issues</dt>
       <dd data-testid="responsibility-open-issues">{{ responsibility.open_issues|length }}</dd>
     </div>
   </dl>

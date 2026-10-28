@@ -245,8 +245,14 @@ def login(page, server: BrowserServer):
     def sign_in(actor_id: str) -> None:
         page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
         page.locator(f'button[data-persona="{actor_id}"]').click()
-        # The Applicant lands on the City website; every staff persona lands on its queue.
-        landing = "/city/" if actor_id == "persona_applicant" else "/queue"
+        # The Applicant lands on the City website.  Every staff persona lands on
+        # its own home: the queue for the Data Steward and the Permit Reviewer,
+        # and the planning overview for the City Administrator, whose home the
+        # overview restyle moved deliberately.
+        landing = {
+            "persona_applicant": "/city/",
+            "persona_city_administrator": "/overview",
+        }.get(actor_id, "/queue")
         page.wait_for_url(f"{server.base_url}{landing}")
 
     return sign_in

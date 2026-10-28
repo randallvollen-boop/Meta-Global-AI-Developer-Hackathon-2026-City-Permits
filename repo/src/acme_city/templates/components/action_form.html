@@ -3,8 +3,11 @@
    A permitted action keeps its server form: the stable action id, the CSRF
    token, the expected version and the declared fields are posted to
    /ui/actions/{action_id} and the server decides.  A denied action shows a
-   lock and the server's reason; the browser never decides who may act. #}
+   lock and the server's reason; the browser never decides who may act.
+   A required field carries a visible star and the form carries the legend;
+   an optional field says so. #}
 {% macro action_form(item, csrf_token, next_path='') %}
+{% set required_fields = item.fields | selectattr('required') | list %}
 <details class="action act-card" data-testid="action" data-action-id="{{ item.action_id }}" data-permitted="{{ 'true' if item.permitted else 'false' }}">
   <summary class="act-summary">
     <span class="act-main">
@@ -20,6 +23,9 @@
   {% if item.description %}<p class="action-description">{{ item.description }}</p>{% endif %}
   {% if item.expected_version is not none %}<p class="action-version">Expected version: {{ item.expected_version }}</p>{% endif %}
   {% if item.permitted %}
+  {% if required_fields %}
+  <p class="muted required-legend" data-testid="required-legend"><span class="req-star" aria-hidden="true">*</span> Required</p>
+  {% endif %}
   <form method="post" action="{{ item.path }}" class="action-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="action_id" value="{{ item.action_id }}">
@@ -29,28 +35,27 @@
         <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
       {% elif field.type == 'select' %}
         <p class="field">
-          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% else %} <span class="optional-tag">(optional)</span>{% endif %}</label>
           <select id="{{ item.dom_id or item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
             {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
           </select>
         </p>
       {% elif field.type == 'textarea' %}
         <p class="field">
-          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% else %} <span class="optional-tag">(optional)</span>{% endif %}</label>
           <textarea id="{{ item.dom_id or item.action_id }}-{{ field.name }}" name="{{ field.name }}" rows="3" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
         </p>
       {% else %}
         <p class="field">
-          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% else %} <span class="optional-tag">(optional)</span>{% endif %}</label>
           <input id="{{ item.dom_id or item.action_id }}-{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
         </p>
       {% endif %}
     {% endfor %}
-    {% if item.fields|selectattr('required')|list %}<p class="muted req-legend">* Required</p>{% endif %}
     <p><button type="submit" class="button button-primary btn primary" data-testid="action-submit">{{ item.label }}</button></p>
   </form>
   {% else %}
-  <p class="action-denied">This action is not available to your persona. The reason is shown with the lock above.</p>
+  <p class="action-denied">{{ item.reason }}</p>
   {% endif %}
 </details>
 {% endmacro %}

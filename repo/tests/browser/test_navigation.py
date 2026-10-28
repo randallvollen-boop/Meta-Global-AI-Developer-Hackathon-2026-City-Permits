@@ -27,7 +27,7 @@ SCREENS = (
     ("/steward", "Data issues"),
     ("/source-records", "Source records"),
     ("/activity", "Activity"),
-    ("/rules-fees", "Rules and fees"),
+    ("/rules", "Rules and fees"),
     ("/reconciliation", "Reconciliation"),
     ("/governance", "Governance and sources"),
     ("/agent/intake", "Intake agent"),
@@ -35,6 +35,9 @@ SCREENS = (
     ("/admin", "Administration"),
     ("/insight/city", "City view"),
     ("/policy/scenarios", "What-if"),
+    # The planning overview is the City Administrator's home and carries its
+    # own grant, so it is swept with the Administrator.
+    ("/overview", "Planning overview"),
     # P3c: the four operations screens of the City Administrator.
     ("/ops/dashboard", "Operations dashboard"),
     ("/ops/audit", "Audit log"),
@@ -81,6 +84,10 @@ NAVIGATION_BY_PERSONA = {
         "review_queue",
     ],
     "persona_city_administrator": [
+        # Changed deliberately (the City Administrator planning overview): the
+        # Administrator lands on the overview, so it comes first.  The order of
+        # the other screens is unchanged.
+        "overview",
         "queue",
         "masters",
         "permit",
@@ -106,12 +113,12 @@ NAVIGATION_BY_PERSONA = {
 
 #: The screens a persona may not open; each one answers 403.
 HIDDEN_SCREENS = {
-    "persona_applicant": ["/steward", "/source-records", "/activity", "/masters", "/rules-fees", "/reconciliation", "/governance",
+    "persona_applicant": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
                            "/agent/intake", "/agent/adjudication", "/admin",
                            "/queue/intake", "/queue/early-resolution", "/queue/review"],
     "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin",
                               "/queue/review"],
-    "persona_permit_reviewer": ["/steward", "/source-records", "/activity", "/masters", "/rules-fees", "/reconciliation", "/governance",
+    "persona_permit_reviewer": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
                                 "/agent/intake", "/admin", "/queue/intake",
                                 "/queue/early-resolution"],
     "persona_city_administrator": ["/queue/intake", "/queue/early-resolution", "/queue/review"],
@@ -122,6 +129,10 @@ for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_re
 #: Policy 2: the What-if screen is held by the City Administrator only.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
     HIDDEN_SCREENS[_persona].append("/policy/scenarios")
+#: The planning overview is the City Administrator's own home and carries its
+#: own grant, so no other persona may open it.
+for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
+    HIDDEN_SCREENS[_persona].append("/overview")
 #: P3c: the four operations screens are held by the City Administrator only.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):
     HIDDEN_SCREENS[_persona].extend(

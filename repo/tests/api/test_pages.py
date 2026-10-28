@@ -43,16 +43,27 @@ SCREENS = (
 )
 
 #: The fields every governed detail view has to show.
+#:
+#: Changed deliberately (the City Administrator restyle): the freshness fields
+#: are now named "Source last changed" and "Last received or checked", and the
+#: issue count is named "Open recorded issues".  Freshness and open issues are
+#: two different facts, and the panel says so.
 RESPONSIBILITY_FIELDS = (
     "Owner",
     "Steward",
     "Source",
     "Change this in",
-    "Last source update",
-    "Last received",
+    "Source last changed",
+    "Last received or checked",
     "Version",
-    "Open issues",
+    "Open recorded issues",
 )
+
+#: Labels the steward screens use for fields the Administrator screens renamed.
+STEWARD_LABEL_ALTERNATIVES = {
+    "Last received or checked": ("Last received",),
+    "Open recorded issues": ("Open issues", "open issues"),
+}
 
 
 @pytest.fixture()
@@ -190,7 +201,14 @@ def test_every_governed_detail_view_shows_the_eight_responsibility_fields(
         response = client.get(address)
         assert response.status_code == 200, path
         for field in RESPONSIBILITY_FIELDS:
-            assert field in response.text, (path, field)
+            # Changed deliberately (merge of the steward restyle): the steward
+            # record screens keep their own shorter labels for the two fields
+            # the Administrator screens renamed; the Administrator screens keep
+            # the full labels.
+            accepted = STEWARD_LABEL_ALTERNATIVES.get(field, ()) if path.startswith(
+                ("/applicants", "/masters", "/permits", "/steward")
+            ) else ()
+            assert any(label in response.text for label in (field, *accepted)), (path, field)
 
 
 def test_the_pages_use_no_external_script_or_font(client: TestClient) -> None:

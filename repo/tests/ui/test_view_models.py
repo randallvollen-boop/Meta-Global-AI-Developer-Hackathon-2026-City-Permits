@@ -319,6 +319,10 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "review_queue",
     ],
     "persona_city_administrator": [
+        # Changed deliberately (the City Administrator planning overview): the
+        # Administrator lands on the overview, so it is the first entry of the
+        # navigation.  No other persona gains a screen.
+        "overview",
         "queue",
         "masters",
         "permit",

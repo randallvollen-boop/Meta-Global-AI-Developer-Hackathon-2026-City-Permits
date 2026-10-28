@@ -547,11 +547,13 @@ def test_work_queue_row_shows_icon_or_fallback(client: TestClient, seeded) -> No
         session.query(permit.PermitTypeIcon).filter_by(permit_type_id=type_row.id).delete()
         session.commit()
     assert 'data-testid="permit-type-icon-fallback"' in client.get("/queue?view=all").text
-    # The icon card moved to Administration; Rules and fees keeps a pointer.
-    rules = client.get("/rules-fees")
-    assert 'data-testid="permit-type-icons"' in rules.text
-    assert "Permit type icons are managed in Administration" in rules.text
-    admin = client.get("/admin?tab=permit-types")
+    # Changed deliberately (the City Administrator restyle): the icon cards
+    # moved from Rules and fees to Administration, in the Appearance tab, so
+    # Rules and fees no longer carries them at all.
+    rules = client.get("/rules")
+    assert 'data-testid="permit-type-icons"' not in rules.text
+    assert "permit-type-icon-row" not in rules.text
+    admin = client.get("/admin?tab=appearance")
     assert admin.text.count('data-testid="permit-type-icon-row"') == 17
 
 

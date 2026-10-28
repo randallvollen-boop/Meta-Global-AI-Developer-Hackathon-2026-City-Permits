@@ -37,9 +37,11 @@ CONTROL_SCREENS = (
     "/masters",
     "/permits/app_synth_001",
     "/steward",
+    # Changed deliberately (the City Administrator restyle): the rules and
+    # fees screen moved to /rules; the former address redirects to it.
     "/source-records",
     "/activity",
-    "/rules-fees",
+    "/rules",
     "/reconciliation",
     "/governance",
     "/agent/intake",
@@ -47,6 +49,9 @@ CONTROL_SCREENS = (
     "/admin",
     # P3insight: the City view, behind its own grant of the City Administrator.
     "/insight/city",
+    # Changed deliberately (the City Administrator restyle): the planning
+    # overview is the Administrator's home, behind its own grant.
+    "/overview",
 )
 
 #: The screens parity phase 3b added, with the persona that may open them.
@@ -149,9 +154,10 @@ def test_every_control_of_every_new_screen_carries_a_label(
 
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # City Administrator holds grants for all eleven of the original screens and the
-    # P3insight City view (twelve) and the policy 2 What-if screen (thirteen, a
-    # deliberate change of this count), the four P3c operations screens, and the steward restyle (18 in all, a deliberate
-    # change: Master records absorbs Applicants, Source records and Activity are new),
+    # P3insight City view (twelve), the policy 2 What-if screen (thirteen), the four P3c
+    # operations screens, the steward restyle (eighteen in all) and the planning
+    # overview (nineteen, a deliberate change of this count: the City Administrator's
+    # home gains one entry),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
     select_persona(client, "persona_city_administrator")
@@ -159,7 +165,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 18, path
+        assert len(items) == 19, path
         if reference is None:
             reference = items
         assert items == reference
@@ -181,6 +187,9 @@ def test_the_navigation_of_a_new_screen_matches_its_persona(
 
 #: Screen key -> path, in canonical navigation order.
 SCREEN_PATHS = {
+    # Changed deliberately (the City Administrator restyle): the planning
+    # overview is the Administrator's home and comes first.
+    "overview": "/overview",
     "queue": "/queue",
     "applicants": "/applicants",
     "masters": "/masters",
@@ -189,7 +198,7 @@ SCREEN_PATHS = {
     # Steward restyle: Source records and Activity follow Data issues.
     "source_records": "/source-records",
     "activity": "/activity",
-    "rules": "/rules-fees",
+    "rules": "/rules",
     "reconciliation": "/reconciliation",
     "governance": "/governance",
     "agent_intake": "/agent/intake",
@@ -238,6 +247,11 @@ EXPECTED_NAVIGATION = {
         "review_queue",
     ],
     "persona_city_administrator": [
+        # Changed deliberately (the City Administrator restyle): the planning
+        # overview is the Administrator's home, behind the grant
+        # admin.overview.view that only the Administrator holds.  No other
+        # persona's list changes.
+        "overview",
         "queue",
         "masters",
         "permit",

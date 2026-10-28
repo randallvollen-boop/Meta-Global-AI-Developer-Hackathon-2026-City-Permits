@@ -63,6 +63,7 @@ from acme_city.governance.schemas import (
     RegisterDatasetCommand,
 )
 from acme_city.governance.service import GovernanceService
+from acme_city.muse.image_client import IMAGE_COST_ESTIMATE_USD
 from acme_city.persistence.models import finance as finance_models
 from acme_city.permits import icons as permit_icons
 from acme_city.permits import queues
@@ -81,7 +82,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
-from acme_city.ui import agent_views, display, patterns, property_views, view_models
+from acme_city.ui import admin_views, agent_views, display, patterns, property_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
     allowed_actions_for,
@@ -418,6 +419,13 @@ async def switch_persona(
         # Demo smoothing: the new persona cannot open that screen, so land on its own home.
         home = view_models.home_for(session, new_actor)
         destination = f"{home['href']}?moved_from={wanted}"
+    elif destination == "/queue":
+        # A switch that asks for the generic staff landing lands on the home of
+        # the new persona.  The City Administrator's home is the planning
+        # overview; every other staff persona's home is the queue.
+        home = view_models.home_for(session, new_actor)
+        if home["href"] != destination:
+            destination = home["href"]
     response = RedirectResponse(destination, status_code=303)
     response.set_cookie(**cookie.set_cookie_kwargs())
     return response
@@ -888,23 +896,32 @@ def ui_town_map(
     return render(request, "town_map.html", context)
 
 
-@router.get("/rules-fees", operation_id="ui_rules_fees")
+@router.get("/rules-fees", operation_id="ui_rules_fees_old")
+def ui_rules_fees_old() -> RedirectResponse:
+    """Redirect the former rules and fees address to the current one."""
+    return RedirectResponse(url="/rules", status_code=303)
+
+
+@router.get("/rules", operation_id="ui_rules_fees")
 def ui_rules_fees(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "rules",
+    view: str = "published",
+    version: str = "",
 ) -> Any:
     """Show the rule and fee catalogue."""
     resolved, refused = _guard(request, session, actor, "rules")
     if refused is not None:
         return refused
-    catalogue = view_models.rules_fees(session, resolved)
-    settings: Settings = request.app.state.settings
-    catalogue["permit_type_icons"] = {
-        **catalogue["permit_type_icons"],
-        "global_cap": settings.muse_image_daily_cap,
-    }
-    actions = allowed_actions_for(session, resolved, "rules")
+    catalogue = admin_views.rules_register(
+        session,
+        resolved,
+        tab=tab,
+        view=view,
+        version_id=version or None,
+    )
     context = page_context(
         request,
         session,
@@ -913,10 +930,36 @@ def ui_rules_fees(
         title="Rules and fees",
         catalogue=catalogue,
         responsibility=catalogue["responsibility"],
-        actions=actions,
-        denied_action_explanations=view_models.denied_action_explanations(actions),
+        actions=catalogue["actions"],
+        denied_action_explanations=catalogue["denied_action_explanations"],
     )
     return render(request, "rules_fees.html", context)
+
+
+@router.get("/overview", operation_id="ui_planning_overview")
+def ui_planning_overview(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the planning overview of the City Administrator."""
+    resolved, refused = _guard(request, session, actor, "overview")
+    if refused is not None:
+        return refused
+    overview = admin_views.planning_overview(session, resolved)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="overview",
+        title="Planning overview",
+        overview=overview,
+        evidence_note=(
+            "This screen is a hub of counted records rather than one record. The "
+            "evidence of a record is on the record itself."
+        ),
+    )
+    return render(request, "overview.html", context)
 
 
 @router.get("/reconciliation", operation_id="ui_reconciliation")
@@ -924,13 +967,21 @@ def ui_reconciliation(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "assessments",
+    assessment: str = "",
+    q: str = "",
 ) -> Any:
     """Show the reconciliation screen."""
     resolved, refused = _guard(request, session, actor, "reconciliation")
     if refused is not None:
         return refused
-    position = view_models.reconciliation(session, resolved)
-    actions = allowed_actions_for(session, resolved, "reconciliation")
+    position = admin_views.reconciliation_screen(
+        session,
+        resolved,
+        tab=tab,
+        assessment_id=assessment or None,
+        query=q,
+    )
     context = page_context(
         request,
         session,
@@ -939,8 +990,8 @@ def ui_reconciliation(
         title="Reconciliation",
         position=position,
         responsibility=position["responsibility"],
-        actions=actions,
-        denied_action_explanations=view_models.denied_action_explanations(actions),
+        actions=position["actions"],
+        denied_action_explanations=position["denied_action_explanations"],
     )
     return render(request, "reconciliation.html", context)
 
@@ -950,12 +1001,13 @@ def ui_governance_sources(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "sources",
 ) -> Any:
     """Show the governance and sources screen."""
     resolved, refused = _guard(request, session, actor, "governance")
     if refused is not None:
         return refused
-    governance = view_models.governance_sources(session, resolved)
+    governance = admin_views.governance_screen(session, resolved, tab=tab)
     actions = allowed_actions_for(session, resolved, "governance")
     context = page_context(
         request,
@@ -1029,6 +1081,14 @@ def ui_administration(
     if refused is not None:
         return refused
     view = agent_views.administration(session, resolved)
+    settings: Settings = request.app.state.settings
+    # The appearance tab carries the limits, the cost and the provenance of
+    # the Muse Image generation, so the icons read the same everywhere.
+    view["permit_type_icons"] = {
+        **view["permit_type_icons"],
+        "global_cap": settings.muse_image_daily_cap,
+        "cost_estimate_usd": IMAGE_COST_ESTIMATE_USD,
+    }
     context = page_context(
         request,
         session,
@@ -1046,8 +1106,15 @@ def ui_administration(
 
 
 #: The tabs of the administration screen.  They work without JavaScript: the
-#: tab is a link that carries the section to show.
-_ADMIN_TABS: tuple[str, ...] = ("permit-types", "users", "reason-codes", "log")
+#: tab is a link that carries the section to show.  ``appearance`` holds the
+#: permit type icons, their limits, their cost and their provenance.
+_ADMIN_TABS: tuple[str, ...] = (
+    "permit-types",
+    "appearance",
+    "users",
+    "reason-codes",
+    "log",
+)
 
 
 @router.get("/permit-type-icons/{icon_id}", operation_id="ui_permit_type_icon")
