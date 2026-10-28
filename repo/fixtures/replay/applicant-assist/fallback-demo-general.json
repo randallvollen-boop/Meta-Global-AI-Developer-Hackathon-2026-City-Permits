@@ -1,0 +1,32 @@
+{
+  "bundle_content_hash": "cffc841e43fc75667f30f513c7ebbc943b121b75e43556a9bbd46e207c004bd0",
+  "context": {
+    "application_reference": "",
+    "permit_type_key": ""
+  },
+  "fixture_kind": "applicant_assist_replay",
+  "fixture_version": "2026.10.28-1",
+  "note": "A deterministic, labelled demonstration fixture of the applicant help assistant. It was written for this demonstration against the published text it quotes; it is not a recording of a Muse answer and it is never presented as one.",
+  "output": {
+    "answer": [
+      {
+        "citations": [
+          {
+            "quote": "ACME Code §14-305 — Fence height in the front yard is 4 feet.",
+            "source_id": "rule.DF-1.DF-1@1"
+          }
+        ],
+        "text": "The published ACME Code limits a fence in the front yard of a residential lot to 4 ft."
+      }
+    ],
+    "cannot_answer": false,
+    "next_steps": [],
+    "reason": ""
+  },
+  "prompt_version": "acme-assist-prompt-v1",
+  "question_key": "show me the acme rule text for a fence",
+  "recorded_at": "2026-10-28T00:00:00Z",
+  "replay_key": "a76efeec715eb111a3360e4992e42387813fafd8c6f11d19fb4c57f0d7dacf85",
+  "schema_version": "acme-assist-schema-v1",
+  "task": "applicant_assist"
+}

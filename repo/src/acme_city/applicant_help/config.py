@@ -64,6 +64,20 @@ class HelpConfig:
     suggested_questions: tuple[tuple[str, str], ...]
     lifecycle_passages: tuple[Passage, ...]
     steps_passages: tuple[Passage, ...]
+    #: The label of an answer a live run produced.
+    live_label: str = ""
+    #: The label of an answer a replay fixture produced.
+    replay_label: str = ""
+    #: The fixed list of reasons the assistant may refuse with.
+    refusal_reasons: tuple[str, ...] = ()
+    #: The suggested questions that are offered in demonstration mode only.
+    demo_questions: tuple[tuple[str, str], ...] = ()
+    #: The plain sentence shown for each refusal reason.
+    refusal_texts: tuple[tuple[str, str], ...] = ()
+
+    def refusal_text(self, reason: str) -> str:
+        """Return the sentence of a refusal reason, or an empty string."""
+        return dict(self.refusal_texts).get(reason, "")
 
     def passage(self, source_id: str) -> Passage | None:
         """Return one passage by its identifier."""
@@ -71,6 +85,16 @@ class HelpConfig:
             if passage.source_id == source_id:
                 return passage
         return None
+
+    def questions(self, *, demo_mode: bool) -> tuple[tuple[str, str], ...]:
+        """Return the suggested questions of the panel.
+
+        The demonstration offers one more question than a live deployment:
+        the one that shows the deterministic fallback on purpose.
+        """
+        if demo_mode:
+            return self.suggested_questions + self.demo_questions
+        return self.suggested_questions
 
 
 def _read_json(path: Path) -> Any:
@@ -172,6 +196,43 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
     no_match_text = str(document.get("no_match_text", "")).strip()
     if not no_match_text:
         raise ValidationError("the applicant help configuration needs a no-match text")
+    assist = document.get("assist") or {}
+    if not isinstance(assist, dict):
+        raise ValidationError("the applicant help assistant section must be an object")
+    live_label = str(assist.get("live_label", "")).strip()
+    if not live_label:
+        raise ValidationError("the applicant help configuration needs a live label")
+    replay_label = str(assist.get("replay_label", "")).strip()
+    if not replay_label:
+        raise ValidationError("the applicant help configuration needs a replay label")
+    reasons = assist.get("refusal_reasons")
+    if not isinstance(reasons, list) or not reasons:
+        raise ValidationError(
+            "the applicant help configuration needs the list of refusal reasons"
+        )
+    refusal_reasons = tuple(str(reason).strip() for reason in reasons if str(reason).strip())
+    if not refusal_reasons:
+        raise ValidationError("the applicant help refusal reasons may not be empty")
+    demo_questions: list[tuple[str, str]] = []
+    for entry in assist.get("demo_questions") or []:
+        if not isinstance(entry, dict):
+            raise ValidationError("a demonstration question is not an object")
+        identifier = str(entry.get("id", "")).strip()
+        text = str(entry.get("text", "")).strip()
+        if not identifier or not text:
+            raise ValidationError("a demonstration question needs an id and a text")
+        demo_questions.append((identifier, text))
+    texts = assist.get("refusal_texts") or {}
+    if not isinstance(texts, dict):
+        raise ValidationError("the applicant help refusal texts must be an object")
+    refusal_texts = tuple(
+        (str(key).strip(), str(value).strip()) for key, value in sorted(texts.items())
+    )
+    for reason in refusal_reasons:
+        if not dict(refusal_texts).get(reason):
+            raise ValidationError(
+                f"the refusal reason {reason!r} has no sentence in the configuration"
+            )
     return HelpConfig(
         notice=notice,
         fallback_label=fallback_label,
@@ -184,6 +245,11 @@ def load_config(path: Path | str | None = None) -> HelpConfig:
         suggested_questions=tuple(suggestions),
         lifecycle_passages=_passages(document.get("lifecycle_passages"), kind="lifecycle"),
         steps_passages=_passages(document.get("steps_passages"), kind="steps"),
+        live_label=live_label,
+        replay_label=replay_label,
+        refusal_reasons=refusal_reasons,
+        demo_questions=tuple(demo_questions),
+        refusal_texts=refusal_texts,
     )
 
 

@@ -65,10 +65,12 @@ from acme_city.muse.payloads import (
     read_document_fixture,
 )
 from acme_city.muse.schemas import (
+    APPLICANT_ASSIST_TASK,
     DEFAULT_MUSE_MODEL,
     EXTRACTION_TASK,
     MATCH_TASK,
     MUSE_PROVIDER,
+    PROPOSING_TASKS,
     TASK_CONFIG,
 )
 from acme_city.muse.validation import (
@@ -119,6 +121,48 @@ DISPOSITION_MAP: Final[dict[str, str]] = {
 
 #: One live call is in flight at a time.  The lock is process wide.
 _LIVE_DISPATCH_LOCK = threading.Lock()
+
+
+def allowed_model(settings: Settings) -> str:
+    """Return the model a run may use.
+
+    The model is the first entry of the configured allowlist that the
+    settings accept.  A model outside the Standard allowlist is never used.
+    """
+    for candidate in settings.muse_model_allowlist:
+        if settings.model_is_allowed(candidate):
+            return candidate
+    return DEFAULT_MUSE_MODEL
+
+
+def live_budget_error(session: Session, settings: Settings) -> str | None:
+    """Return why a live call may not be sent, if it may not be sent.
+
+    The budget and the error-stop policy are shared by every path that may
+    reach the provider: the proposing runs of this module and the applicant
+    help assistant both read the same cap and stop at the same recorded
+    provider error.
+
+    Args:
+        session: The open session.
+        settings: The application settings, which hold the call cap.
+
+    Returns:
+        The reason the call may not be sent, or ``None`` when it may.
+    """
+    rows = session.execute(
+        select(model_run.ModelRun).where(model_run.ModelRun.mode == "live")
+    ).scalars().all()
+    for row in rows:
+        if row.error:
+            return (
+                "a previous live run recorded a provider error; no further live call "
+                "is sent"
+            )
+    used = sum(1 for row in rows if row.completed_at is not None)
+    if used >= settings.muse_live_call_cap:
+        return "the live call budget of this build run is exhausted"
+    return None
 
 
 class MuseRunCommand(BaseModel):
@@ -247,6 +291,14 @@ class MuseService:
         config = TASK_CONFIG.get(command.task)
         if config is None:
             raise ValidationError(f"unknown Muse task: {command.task!r}")
+        if command.task not in PROPOSING_TASKS:
+            # The applicant assistant is not a proposing task.  It is
+            # dispatched by the applicant-help service, which owns the source
+            # bundle, the grant and the privacy of the conversation.
+            raise ValidationError(
+                "the applicant assistant task is dispatched by its own path and never "
+                "by the proposing run service"
+            )
         if command.prompt_version and command.prompt_version != config["prompt_version"]:
             raise ValidationError(
                 "the requested prompt version is not the current prompt version"
@@ -315,6 +367,11 @@ class MuseService:
             refs = row.input_refs or {}
             run_application = str(refs.get("application_id") or "")
             run_reference = str(refs.get("source_application_number") or "")
+            if str(refs.get("task") or "") == APPLICANT_ASSIST_TASK:
+                # A chat run belongs to the applicant who asked.  Staff never
+                # read an un-escalated conversation, so the run is not listed
+                # here at all.
+                continue
             if not self._record_is_visible(actor, run_application, run_reference):
                 continue
             if application_id and run_application != application_id:
@@ -404,10 +461,7 @@ class MuseService:
 
     def _model(self) -> str:
         """Return the model a run may use."""
-        for candidate in self._settings.muse_model_allowlist:
-            if self._settings.model_is_allowed(candidate):
-                return candidate
-        return DEFAULT_MUSE_MODEL
+        return allowed_model(self._settings)
 
     # --------------------------------------------------------------- recording
 
@@ -613,19 +667,7 @@ class MuseService:
 
     def _live_budget_error(self) -> str | None:
         """Return why a live call may not be sent, if it may not be sent."""
-        rows = self._session.execute(
-            select(model_run.ModelRun).where(model_run.ModelRun.mode == "live")
-        ).scalars().all()
-        for row in rows:
-            if row.error:
-                return (
-                    "a previous live run recorded a provider error; no further live call "
-                    "is sent"
-                )
-        used = sum(1 for row in rows if row.completed_at is not None)
-        if used >= self._settings.muse_live_call_cap:
-            return "the live call budget of this build run is exhausted"
-        return None
+        return live_budget_error(self._session, self._settings)
 
     def _dispatch_replay(
         self, command: MuseRunCommand, bundle: VisibleEvidenceBundle, fixture: Mapping[str, Any]
@@ -1054,4 +1096,6 @@ __all__ = [
     "ModelRunView",
     "TASK_PERMISSIONS",
     "UNCALIBRATED_SCORE_LABEL",
+    "allowed_model",
+    "live_budget_error",
 ]

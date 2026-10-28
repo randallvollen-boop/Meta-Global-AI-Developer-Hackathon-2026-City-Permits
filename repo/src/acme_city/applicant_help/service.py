@@ -12,6 +12,15 @@ Every write of the assistant is a governed action:
 The assistant itself writes nothing else: a question creates a turn, a turn
 quotes the source bundle, and "Ask the City" creates a help request.  It
 never changes an application, and it never decides anything.
+
+The answer of a question is produced in one of two ways.  The **deterministic**
+way quotes the passages of the bundle that match the question.  The **model**
+way asks the assistant path of :mod:`acme_city.applicant_help.assist` to write
+the prose of the answer, and that prose is validated against the very bundle
+it was given before the applicant reads it.  A model answer that fails the
+validation is never shown: the applicant receives the deterministic answer
+instead.  The model path writes a recorded run and nothing else, and it is
+only reached by an applicant who holds the grant of the assistant.
 """
 # REQUIRES: PER-04, PER-05, SEC-02, SEC-03, SEC-04
 # A question, a turn and a help request are the only writes of the assistant;
@@ -28,7 +37,8 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from acme_city.applicant_help import matching
+from acme_city.applicant_help import assist, matching
+from acme_city.applicant_help.assist_validation import validate_assistant_output
 from acme_city.applicant_help.config import HelpConfig, load_config
 from acme_city.applicant_help.sources import SourceBundle, build_bundle
 from acme_city.audit.service import AuditService
@@ -39,12 +49,21 @@ from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.muse.payloads import assert_no_truth_in_payload
 from acme_city.persistence.models import help as help_models
+from acme_city.persistence.models import model_run
 
 #: The grant that lets an applicant ask a question.
 PERMISSION_ASK = "applicant.help.ask"
 
 #: The grant that lets an applicant ask a person at the City.
 PERMISSION_ESCALATE = "applicant.help.escalate"
+
+#: The grant that lets the assistant write the prose of an answer.
+#:
+#: The grant is separate from the grant of the question: an applicant who may
+#: ask a question always receives the deterministic answer, and an applicant
+#: who also holds this grant may receive an answer the assistant wrote and
+#: that passed the validation.
+PERMISSION_ASSIST = "applicant.help.assist"
 
 #: The domain the help grants belong to.
 HELP_DOMAIN = "permits"
@@ -55,6 +74,21 @@ ACTION_ESCALATE = "applicant.help.escalate"
 
 #: The mode of an answer that was produced without a model.
 FALLBACK_MODE = "fallback"
+
+#: The mode of an answer the assistant wrote and that passed the validation.
+REPLAY_MODE = "replay"
+
+#: The mode of an answer a live run produced and that passed the validation.
+LIVE_MODE = "live"
+
+#: The outcomes of a turn that did not answer the question.
+#:
+#: A turn is counted once per submitted turn: a turn that matched nothing, a
+#: turn whose answer was refused by the validation, a turn the assistant
+#: could not answer and a turn whose run failed are all unsuccessful.
+UNSUCCESSFUL_OUTCOMES: frozenset[str] = frozenset(
+    {"no_match", "rejected", "unanswerable", "failed"}
+)
 
 
 @dataclass(frozen=True)
@@ -67,6 +101,8 @@ class Answer:
     paragraphs: tuple[dict[str, Any], ...]
     cannot_answer: bool
     reason: str
+    #: The recorded run that produced the answer, when a model produced it.
+    model_run_id: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Return the answer as a plain mapping."""
@@ -77,6 +113,7 @@ class Answer:
             "paragraphs": [dict(paragraph) for paragraph in self.paragraphs],
             "cannot_answer": self.cannot_answer,
             "reason": self.reason,
+            "model_run_id": self.model_run_id,
         }
 
 
@@ -88,6 +125,23 @@ class AskResult:
     turn: help_models.HelpTurn
     answer: Answer
     bundle: SourceBundle
+
+
+@dataclass(frozen=True)
+class _Answered:
+    """The answer of a question and how it was produced.
+
+    The outcome is the record of the turn: ``answered`` when the assistant
+    wrote the answer and the validation passed it, ``rejected`` when the
+    validation refused it, ``unanswerable`` when the assistant refused to
+    answer, ``failed`` when the run itself failed, and ``matched`` or
+    ``no_match`` when the deterministic answer answered the question.
+    """
+
+    outcome: str
+    answer: Answer
+    run_id: str = ""
+    validation_state: str = ""
 
 
 def session_hash(actor: ActorContext) -> str:
@@ -111,7 +165,9 @@ class ApplicantHelpService:
         settings: Any = None,
         now: datetime | None = None,
         config: HelpConfig | None = None,
+        muse_client: Any = None,
     ) -> None:
+        self._muse_client = muse_client
         self._session = session
         self._settings = settings
         self._now = now or utc_now()
@@ -125,6 +181,26 @@ class ApplicantHelpService:
     def config(self) -> HelpConfig:
         """Return the applicant-help configuration."""
         return self._config
+
+    @property
+    def live_enabled(self) -> bool:
+        """Return whether the assistant may reach the provider.
+
+        The switch is server-side and off by default.  A credential alone
+        never enables it.
+        """
+        settings = self._settings
+        return bool(settings is not None and settings.applicant_assist_live_enabled)
+
+    @property
+    def demo_mode(self) -> bool:
+        """Return whether the assistant answers without a model.
+
+        The demonstration mode is the mode in which the assistant answers
+        from the replay fixtures of the demonstration and from the published
+        text.  A live deployment leaves it.
+        """
+        return not self.live_enabled
 
     def conversation_for(
         self, actor: ActorContext, conversation_id: str
@@ -168,14 +244,15 @@ class ApplicantHelpService:
     ) -> int:
         """Return the number of turns of a conversation that did not answer.
 
-        A turn that found no published text and a turn whose answer was
-        refused are both counted once, and only once: one per submitted turn.
+        A turn that found no published text, a turn whose answer the
+        validation refused and a turn the assistant could not answer are all
+        counted once, and only once: one per submitted turn.
         """
         rows = self._session.execute(
             select(help_models.HelpTurn.outcome)
             .where(help_models.HelpTurn.conversation_id == conversation.id)
         ).scalars()
-        return sum(1 for outcome in rows if outcome != "matched")
+        return sum(1 for outcome in rows if outcome in UNSUCCESSFUL_OUTCOMES)
 
     # ------------------------------------------------------------------ writing
 
@@ -281,7 +358,12 @@ class ApplicantHelpService:
             application_id=application_id,
             now=self._now,
         )
-        answer = self._answer(bundle, clean)
+        context = {
+            "permit_type_key": bundle.permit_type_key,
+            "application_reference": bundle.application_reference,
+            "application_id": application_id,
+        }
+        answered = self._answer(actor, bundle, clean, context=context)
 
         if conversation is None:
             conversation = help_models.HelpConversation(
@@ -304,20 +386,42 @@ class ApplicantHelpService:
             created_at=self._now,
             conversation_id=conversation.id,
             question=clean,
-            outcome="matched" if answer.matched else "no_match",
-            answer=answer.to_dict(),
-            sources=self._source_snapshot(bundle, answer),
+            outcome=answered.outcome,
+            answer={**answered.answer.to_dict(), "model_run_id": answered.run_id},
+            sources=self._source_snapshot(bundle, answered.answer),
             bundle_hash=bundle.bundle_hash,
-            mode=answer.mode,
+            mode=answered.answer.mode,
             turn_number=conversation.turn_count + 1,
         )
         self._session.add(turn)
         conversation.turn_count += 1
         conversation.version += 1
         self._session.flush()
+        if answered.run_id:
+            # Tie the recorded run to the conversation and the turn it served.
+            # The run stays private to the applicant: staff screens never list
+            # a run of the assistant.
+            run = self._session.get(model_run.ModelRun, answered.run_id)
+            if run is not None:
+                refs = dict(run.input_refs or {})
+                refs["conversation_id"] = conversation.id
+                refs["turn_id"] = turn.id
+                run.input_refs = refs
+                self._session.flush()
 
         # The audit record carries the identifiers and the outcome of the
         # turn.  It never carries the text of the question.
+        metadata: dict[str, Any] = {
+            "turn_id": turn.id,
+            "outcome": turn.outcome,
+            "mode": turn.mode,
+            "placement": conversation.placement,
+            "matched_sources": len(turn.sources or []),
+            "bundle_hash": turn.bundle_hash or "",
+        }
+        if answered.run_id:
+            metadata["model_run_id"] = answered.run_id
+            metadata["validation_state"] = answered.validation_state
         self._audit.append(
             action=ACTION_ASK,
             actor=actor,
@@ -326,18 +430,11 @@ class ApplicantHelpService:
             after_version=conversation.version,
             reason="the applicant asked the help assistant a question",
             references=[turn.id],
-            metadata={
-                "turn_id": turn.id,
-                "outcome": turn.outcome,
-                "mode": turn.mode,
-                "placement": conversation.placement,
-                "matched_sources": len(turn.sources or []),
-                "bundle_hash": turn.bundle_hash or "",
-            },
+            metadata=metadata,
         )
         self._session.flush()
         return AskResult(
-            conversation=conversation, turn=turn, answer=answer, bundle=bundle
+            conversation=conversation, turn=turn, answer=answered.answer, bundle=bundle
         )
 
     def escalate(
@@ -439,7 +536,236 @@ class ApplicantHelpService:
 
     # ----------------------------------------------------------------- helpers
 
-    def _answer(self, bundle: SourceBundle, question: str) -> Answer:
+    def _answer(
+        self,
+        actor: ActorContext,
+        bundle: SourceBundle,
+        question: str,
+        *,
+        context: dict[str, str],
+    ) -> "_Answered":
+        """Return the answer of a question and the outcome of the turn.
+
+        The assistant path runs first when the applicant holds the grant of
+        the assistant.  An answer that passed the validation is shown.  An
+        answer that failed it, a run that failed and a question the
+        demonstration has no recorded answer for all end at the deterministic
+        answer, which quotes the published text.
+        """
+        assist_result = self._assist_answer(actor, bundle, question, context=context)
+        if assist_result is not None:
+            return assist_result
+        answer = self._fallback(bundle, question)
+        return _Answered(
+            outcome="matched" if answer.matched else "no_match",
+            answer=answer,
+            run_id="",
+            validation_state="",
+        )
+
+    def _assist_answer(
+        self,
+        actor: ActorContext,
+        bundle: SourceBundle,
+        question: str,
+        *,
+        context: dict[str, str],
+    ) -> "_Answered | None":
+        """Return the answer the assistant path produced, if it produced one.
+
+        ``None`` means that the assistant path did not run: the applicant does
+        not hold the grant of the assistant, or the demonstration holds no
+        recorded answer for the question.  In both cases the deterministic
+        answer is the answer.
+        """
+        if not self._may_assist(actor):
+            return None
+        settings = self._settings
+        if settings is None:
+            return None
+        dispatch = assist.dispatch_assist(
+            self._session,
+            settings,
+            bundle=bundle,
+            question=question,
+            context=context,
+            client=self._muse_client,
+            now=self._now,
+        )
+        if not dispatch.dispatched:
+            # No fixture matched the question and no live call was made: the
+            # demonstration has no recorded answer for this question.
+            return None
+        if dispatch.output is None:
+            # The run failed.  The failure is recorded and the applicant
+            # receives the deterministic answer.
+            run = assist.record_assist_run(
+                self._session,
+                actor_id=actor.actor_id,
+                dispatch=dispatch,
+                bundle=bundle,
+                question=question,
+                context=context,
+                conversation_id="",
+                turn_id="",
+                validation={
+                    "state": "failed",
+                    "issues": [],
+                    "status": "failed",
+                    "provider": {
+                        "response_id": dispatch.response_id,
+                        "response_status": dispatch.response_status,
+                    },
+                },
+                model=assist.allowed_model(settings),
+                now=self._now,
+            )
+            answer = self._fallback(bundle, question)
+            return _Answered(
+                outcome="failed",
+                answer=answer,
+                run_id=run.id,
+                validation_state="failed",
+            )
+        outcome = validate_assistant_output(
+            dispatch.output,
+            bundle=bundle,
+            server_figures=self._server_figures(bundle),
+            refusal_reasons=self._config.refusal_reasons,
+        )
+        validation = outcome.to_dict()
+        validation["status"] = "succeeded" if outcome.ok else "failed"
+        validation["provider"] = {
+            "response_id": dispatch.response_id,
+            "response_status": dispatch.response_status,
+        }
+        run = assist.record_assist_run(
+            self._session,
+            actor_id=actor.actor_id,
+            dispatch=dispatch,
+            bundle=bundle,
+            question=question,
+            context=context,
+            conversation_id="",
+            turn_id="",
+            validation=validation,
+            model=assist.allowed_model(settings),
+            now=self._now,
+        )
+        if not outcome.ok:
+            answer = self._fallback(bundle, question)
+            return _Answered(
+                outcome="rejected",
+                answer=answer,
+                run_id=run.id,
+                validation_state="failed",
+            )
+        if bool(dispatch.output.get("cannot_answer")):
+            # The assistant declined, with one of the fixed reasons.  The
+            # applicant sees the reason and the matching rule text.
+            answer = self._fallback(bundle, question)
+            reason = str(dispatch.output.get("reason") or "")
+            answer = Answer(
+                mode=answer.mode,
+                label=answer.label,
+                matched=answer.matched,
+                paragraphs=answer.paragraphs,
+                cannot_answer=True,
+                reason=reason,
+            )
+            return _Answered(
+                outcome="unanswerable",
+                answer=answer,
+                run_id=run.id,
+                validation_state="passed",
+            )
+        answer = self._model_answer(bundle, dispatch)
+        return _Answered(
+            outcome="answered",
+            answer=answer,
+            run_id=run.id,
+            validation_state="passed",
+        )
+
+    def _may_assist(self, actor: ActorContext) -> bool:
+        """Return whether the acting applicant may receive a model answer."""
+        from acme_city.applicant_portal.service import applicant_party
+
+        party = applicant_party(actor)
+        resource = ResourceContext(
+            domain_id=HELP_DOMAIN, record_ids=(party,) if party else ()
+        )
+        return self._permissions.allows(actor, PERMISSION_ASSIST, resource)
+
+    def _server_figures(self, bundle: SourceBundle) -> tuple[str, ...]:
+        """Return the figures the server computed itself.
+
+        They are the configured service targets of the bundle.  A figure of an
+        answer may be one of them even when no passage quotes it.
+        """
+        figures: list[str] = []
+        for source in bundle.passages:
+            if source.kind != "service_target":
+                continue
+            days = source.facts.get("service_target_days")
+            if days:
+                figures.append(str(days))
+        return tuple(figures)
+
+    def _model_answer(
+        self, bundle: SourceBundle, dispatch: assist.AssistDispatch
+    ) -> Answer:
+        """Return the answer the assistant wrote, with its citations."""
+        output = dispatch.output or {}
+        paragraphs: list[dict[str, Any]] = []
+        for entry in output.get("answer") or []:
+            citations: list[dict[str, Any]] = []
+            for citation in entry.get("citations") or []:
+                source = bundle.source(str(citation.get("source_id") or ""))
+                if source is None:
+                    continue
+                citations.append(
+                    {
+                        "source_id": source.source_id,
+                        "quote": str(citation.get("quote") or ""),
+                        "title": source.title,
+                        "version": source.version,
+                        "citation": source.citation,
+                    }
+                )
+            if not citations:
+                continue
+            first = citations[0]
+            paragraphs.append(
+                {
+                    "text": str(entry.get("text") or ""),
+                    "quote": first["quote"],
+                    "source_id": first["source_id"],
+                    "title": first["title"],
+                    "version": first["version"],
+                    "citation": first["citation"],
+                    "citations": citations,
+                }
+            )
+        label = (
+            self._config.live_label
+            if dispatch.mode == LIVE_MODE
+            else self._config.replay_label
+        )
+        answer = Answer(
+            mode=dispatch.mode,
+            label=label,
+            matched=True,
+            paragraphs=tuple(paragraphs),
+            cannot_answer=False,
+            reason="",
+        )
+        # The answer carries no truth: it explains and cites, and it decides
+        # nothing.
+        assert_no_truth_in_payload(answer.to_dict())
+        return answer
+
+    def _fallback(self, bundle: SourceBundle, question: str) -> Answer:
         """Return the deterministic answer of a question."""
         matches = matching.rank_passages(
             [source.to_dict() for source in bundle.passages],

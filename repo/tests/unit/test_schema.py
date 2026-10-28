@@ -318,8 +318,8 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0010 since the policy 2 migration (after 0009, the P3insight migration) (synthetic flags, business categories).
-    assert health.revision == "0010"
+    # Head is 0011 since the chat 2 migration (after 0010, the policy 2 migration: what-if scenarios and immutable runs).
+    assert health.revision == "0011"
     assert database.database_url not in str(health.to_dict())
 
 

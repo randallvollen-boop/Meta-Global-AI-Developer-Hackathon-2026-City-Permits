@@ -11,6 +11,7 @@
       "permission_ids": [
         "applicant.case.respond",
         "applicant.help.ask",
+        "applicant.help.assist",
         "applicant.help.escalate",
         "applicant.profile.edit",
         "application.revision.submit",
@@ -225,6 +226,18 @@
         },
         {
           "permission_id": "applicant.help.ask",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_1",
+            "SYN-APP-005"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "applicant.help.assist",
           "domains": [
             "applicants",
             "permits"
@@ -1770,6 +1783,17 @@
         },
         {
           "permission_id": "applicant.help.ask",
+          "domains": [
+            "applicants",
+            "permits"
+          ],
+          "record_scope": [
+            "party_applicant_2"
+          ],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "applicant.help.assist",
           "domains": [
             "applicants",
             "permits"

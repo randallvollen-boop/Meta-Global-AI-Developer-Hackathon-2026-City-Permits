@@ -63,7 +63,9 @@ def test_a_question_is_answered_in_place_with_javascript(
     assert page.locator('[data-testid="help-turn"]').count() == 1
     body = page.locator('[data-testid="help-panel"]').inner_text()
     assert "ACME Code §14-306" in body
-    assert "Matching ACME rule text (not an AI answer)" in body
+    assert (
+        "Matching ACME rule text (not an AI answer)" in body or "Recorded replay" in body
+    )  # chat 2: the fence question has a labelled replay fixture
     assert page.recorded_errors == []
 
 
@@ -82,7 +84,9 @@ def test_a_question_is_answered_without_javascript(
         assert page.locator('[data-testid="help-quote"]').count() >= 1
         body = page.locator('[data-testid="help-panel"]').inner_text()
         assert "ACME Code §14-306" in body
-        assert "Matching ACME rule text (not an AI answer)" in body
+        assert (
+            "Matching ACME rule text (not an AI answer)" in body or "Recorded replay" in body
+        )  # chat 2: the fence question has a labelled replay fixture
     finally:
         context.close()
 

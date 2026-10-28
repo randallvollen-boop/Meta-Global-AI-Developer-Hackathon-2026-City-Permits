@@ -19,6 +19,7 @@ from pydantic import ValidationError as PydanticValidationError
 from acme_city.muse.payloads import fixture_root
 from acme_city.muse.schemas import (
     EXTRACTION_SCHEMA_VERSION,
+    APPLICANT_ASSIST_SCHEMA_VERSION,
     MATCH_SCHEMA_VERSION,
     TASK_CONFIG,
     TASK_OUTPUT_MODELS,
@@ -78,6 +79,7 @@ def test_the_schema_names_its_version(task: str) -> None:
     assert config["schema_version"] in {
         EXTRACTION_SCHEMA_VERSION,
         MATCH_SCHEMA_VERSION,
+        APPLICANT_ASSIST_SCHEMA_VERSION,  # chat 2 added the third task
     }
     assert config["prompt_version"]
     assert config["schema_name"]

@@ -372,8 +372,8 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    # Head is 0010 since the policy 2 migration (after 0009, the P3insight migration) (synthetic flags, business categories).
-    assert revision == ("0010",)
+    # Head is 0011 since the chat 2 migration (after 0010, the policy 2 migration: what-if scenarios and immutable runs).
+    assert revision == ("0011",)
     assert "demo_environment" in tables
 
 

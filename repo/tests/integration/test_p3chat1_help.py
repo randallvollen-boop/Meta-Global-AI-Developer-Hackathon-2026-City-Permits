@@ -155,7 +155,13 @@ def test_a_question_is_answered_with_the_published_rule(client: TestClient) -> N
     location = ask(client, "/apply", FENCE_QUESTION)
     page = client.get("/apply", params={"help": conversation_of(location)}).text
     assert 'data-testid="help-turn"' in page
-    assert "Matching ACME rule text (not an AI answer)" in page
+    # Since chat 2 the fence question is one of the labelled demonstration
+    # fixtures, so the answer carries the replay label; the deterministic
+    # label is still the one of every question without a fixture.
+    assert (
+        "Matching ACME rule text (not an AI answer)" in page
+        or "Recorded replay" in page
+    )
     assert "ACME Code §14-306" in page
     assert 'data-testid="help-quote"' in page
     # The answer quotes the rule; it never promises an outcome.
@@ -187,7 +193,10 @@ def test_every_demo_question_is_answered_with_a_citation(client: TestClient) -> 
         version += 1
         page = client.get("/apply", params={"help": conversation}).text
         assert 'data-testid="help-turn"' in page, question
-        assert "Matching ACME rule text (not an AI answer)" in page, question
+        assert (
+            "Matching ACME rule text (not an AI answer)" in page
+            or "Recorded replay" in page
+        ), question
         assert page.count('data-testid="help-citation"') >= 1, question
 
 

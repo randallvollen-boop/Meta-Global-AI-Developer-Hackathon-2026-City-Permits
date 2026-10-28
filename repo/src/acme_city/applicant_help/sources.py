@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 from datetime import datetime
 from types import MappingProxyType
@@ -103,6 +104,11 @@ class Source:
     citation: str = ""
     keywords: tuple[str, ...] = ()
     facts: Mapping[str, Any] = field(default_factory=dict, compare=False)
+    #: Whether the passage states a **computed** fact of the City or of the
+    #: applicant's own case: an evaluated rule result, the configured service
+    #: target or a fee calculation.  A claim about a fee, a duration or a
+    #: dimension may only be made when the answer cites such a passage.
+    server_fact: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Return the source as a plain mapping."""
@@ -116,6 +122,7 @@ class Source:
             "sha256": self.sha256,
             "keywords": list(self.keywords),
             "facts": dict(self.facts),
+            "server_fact": self.server_fact,
         }
 
 
@@ -128,6 +135,16 @@ class SourceBundle:
     basis_at: datetime
     permit_type_key: str = ""
     application_reference: str = ""
+    #: The hash of the **content** of the bundle.
+    #:
+    #: The bundle hash covers the identifiers of every passage, and some of
+    #: them are generated: the identifier of a finding, for instance, changes
+    #: with every reset of the demonstration.  The content hash covers only
+    #: what a reader of the answer actually reads — the kind, the version, the
+    #: citation and the text of every passage — so the same published text
+    #: always carries the same content hash.  A recorded answer is replayed
+    #: only against the content hash it was written for.
+    content_hash: str = ""
 
     def to_payload(self) -> dict[str, Any]:
         """Return the bundle as the mapping the truth guard reads."""
@@ -155,6 +172,24 @@ def _hash(text: str) -> str:
 def _canonical(value: Any) -> str:
     """Return the canonical JSON text of a mapping."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _content_hash(passages: Sequence[Source]) -> str:
+    """Return the hash of the readable content of a bundle.
+
+    The hash covers what a reader of an answer reads: the kind, the version,
+    the citation and the text of every passage.  It deliberately leaves out the
+    identifier of a passage, because some identifiers are generated and change
+    with every reset of the demonstration while the published text they
+    carry does not.
+    """
+    material = [
+        [source.kind, source.version, source.citation, source.text]
+        for source in sorted(
+            passages, key=lambda item: (item.kind, item.version, item.citation, item.text)
+        )
+    ]
+    return _hash(_canonical(material))
 
 
 def _field_label(field_path: str | None) -> str:
@@ -242,6 +277,11 @@ def _rule_source(
                 "permit_type_key": type_row.key if type_row is not None else "",
             }
         ),
+        # The passage is rendered by the server from the structured fields of
+        # a published, effective rule version: its applicability, operator and
+        # threshold. That makes it the fact a dimension claim may cite.  It is
+        # a limit and never an exemption.
+        server_fact=True,
     )
 
 
@@ -321,6 +361,7 @@ def _target_source(type_row: permit.PermitType) -> Source:
                 "review_area": type_row.review_area or "",
             }
         ),
+        server_fact=True,
     )
 
 
@@ -346,6 +387,206 @@ def _config_source(
         keywords=tuple(keywords),
         facts=MappingProxyType({"status": status} if status else {}),
     )
+
+
+def _fee_schedule_source(row: finance.FeeScheduleVersion) -> Source:
+    """Return the passage of the published fee schedule in force.
+
+    The schedule is the City's own published fee, versioned and effective.
+    The passage names the fixed charge and the multiplier and nothing else:
+    it never names an assessed amount, because an assessed amount belongs to
+    one application and is computed from it.
+    """
+    definition = dict(row.definition or {})
+    currency = row.currency or "USD"
+    fixed_cents = int(definition.get("fixed_review_charge_cents") or 0)
+    multiplier = str(definition.get("valuation_multiplier") or "")
+    formula = str(definition.get("formula") or "")
+    lines = [
+        f"Published fee schedule {row.fee_schedule_id}, version {row.version_label}.",
+        f"Currency: {currency}.",
+    ]
+    if fixed_cents:
+        lines.append(f"Fixed review charge: {fixed_cents / 100:.2f} {currency}.")
+    if multiplier:
+        lines.append(f"Variable component: {multiplier} of the declared valuation.")
+    if formula:
+        lines.append(f"The schedule says: {formula}")
+    lines.append(
+        "The fee of an application is computed from this schedule and the declared "
+        "valuation of that application. The City assesses it and tells the applicant "
+        "the amount before any payment."
+    )
+    text = "\n".join(lines)
+    return Source(
+        source_id=f"fee_schedule.{row.fee_schedule_id}.{row.version_label}",
+        kind="fee_schedule",
+        title=f"Published fee schedule {row.fee_schedule_id} ({row.version_label})",
+        version=row.version_label,
+        text=text,
+        sha256=_hash(text),
+        citation="",
+        keywords=("fee", "fees", "cost", "price", "charge", "payment", "pay", "schedule"),
+        facts=MappingProxyType(
+            {
+                "fee_schedule_id": row.fee_schedule_id,
+                "version_label": row.version_label,
+                "currency": currency,
+                "fixed_review_charge_cents": fixed_cents,
+                "valuation_multiplier": multiplier,
+            }
+        ),
+        server_fact=True,
+    )
+
+
+#: The plain words of the outcome of an evaluated rule.
+_RULE_RESULT_WORDS: dict[str, str] = {
+    "pass": "the rule is met",
+    "condition": "the rule is met with a condition",
+    "fail": "the rule is not met",
+    "review": "a person at the City has to look at this rule",
+}
+
+
+def _case_rule_sources(
+    session: Session, application: permit.Application
+) -> list[Source]:
+    """Return the passages of the evaluated rules of the applicant's case.
+
+    The evaluation is the City's own computation against the published rule
+    versions: the recorded value, the limit of the rule and the result.  The
+    violation message of the rule appears only under the words of a rule that
+    is not met, because a message states what happens when a rule is not met,
+    not a fact about the applicant.
+    """
+    evaluation = session.execute(
+        select(permit.Evaluation)
+        .where(
+            permit.Evaluation.application_id == application.id,
+            permit.Evaluation.status == "current",
+            permit.Evaluation.stale.is_(False),
+        )
+        .order_by(permit.Evaluation.performed_at.desc(), permit.Evaluation.id)
+    ).scalars().first()
+    if evaluation is None:
+        return []
+    reference = application.source_application_number
+    sources: list[Source] = []
+    for result in evaluation.results or []:
+        if not isinstance(result, MappingABC):
+            continue
+        rule_id = str(result.get("rule_id") or "")
+        if not rule_id:
+            continue
+        citation = str(result.get("citation") or "")
+        version_label = str(result.get("version_label") or "")
+        status = str(result.get("status") or "")
+        unit = str(result.get("unit") or "").strip()
+        observed = result.get("observed_value")
+        limit = result.get("limit_value")
+        lines = [
+            f"The City evaluated {citation} ({version_label}) against your application.",
+        ]
+        if not bool(result.get("applicable", True)):
+            lines.append("This rule does not apply to your application.")
+        else:
+            field_path = str(result.get("field_path") or "")
+            if field_path:
+                lines.append(f"The fact this rule checks: {_field_label(field_path)}.")
+            if observed not in (None, ""):
+                value = f"{observed}{' ' + unit if unit else ''}"
+                lines.append(f"The recorded value is {value}.")
+            if limit not in (None, ""):
+                value = f"{limit}{' ' + unit if unit else ''}"
+                lines.append(f"The limit of this rule is {value}.")
+            lines.append(
+                "The result on your application: "
+                + _RULE_RESULT_WORDS.get(status, "a person at the City has to look at it")
+                + "."
+            )
+        message = str(result.get("message") or "").strip()
+        if message:
+            lines.append(f"If the rule is not met: {message}")
+        note = str(result.get("condition_note") or "").strip()
+        if note:
+            lines.append(f"Note: {note}")
+        text = "\n".join(lines)
+        sources.append(
+            Source(
+                source_id=f"case.{reference}.rule.{rule_id}",
+                kind="case_rule",
+                title=f"What the City evaluated: {citation}",
+                version=f"evaluation@{evaluation.version}",
+                text=text,
+                sha256=_hash(text),
+                citation=citation,
+                keywords=(reference, rule_id, citation, "evaluated", "result", "limit"),
+                facts=MappingProxyType(
+                    {
+                        "rule_id": rule_id,
+                        "version_label": version_label,
+                        "citation": citation,
+                        "status": status,
+                        "observed_value": observed,
+                        "limit_value": limit,
+                        "unit": unit,
+                    }
+                ),
+                server_fact=True,
+            )
+        )
+    return sources
+
+
+def _case_fee_source(
+    session: Session, application: permit.Application
+) -> list[Source]:
+    """Return the passage of the assessed fee of the applicant's case.
+
+    The assessment is the City's own computation from the published fee
+    schedule.  It is a fact of the applicant's own case and it is never
+    another applicant's.
+    """
+    assessment = session.execute(
+        select(finance.Assessment)
+        .where(
+            finance.Assessment.application_id == application.id,
+            finance.Assessment.status == "current",
+        )
+        .order_by(finance.Assessment.id)
+    ).scalars().first()
+    if assessment is None:
+        return []
+    reference = application.source_application_number
+    amount = int(assessment.assessed_total_cents or 0)
+    currency = assessment.currency or "USD"
+    text = (
+        f"The City assessed {amount / 100:.2f} {currency} for your application.\n"
+        "This amount is the assessment the City computed for this application from the "
+        "published fee schedule. It is not a payment receipt, and it changes when the "
+        "City reassesses the application."
+    )
+    return [
+        Source(
+            source_id=f"case.{reference}.fee",
+            kind="case_fee",
+            title="The assessed fee of your application",
+            version=f"assessment@{assessment.version}",
+            text=text,
+            sha256=_hash(text),
+            citation="",
+            keywords=(reference, "fee", "fees", "cost", "price", "assessed", "payment"),
+            facts=MappingProxyType(
+                {
+                    "assessment_id": assessment.id,
+                    "assessed_total_cents": amount,
+                    "currency": currency,
+                }
+            ),
+            server_fact=True,
+        )
+    ]
 
 
 def applicant_next_steps(
@@ -567,8 +808,16 @@ def build_bundle(
             )
         )
 
+    # The published fee schedule in force at the basis date: the City's own
+    # fee, versioned and effective.  It is the fact a fee answer may cite.
+    schedule = catalog.select_fee_schedule(session, basis_at)
+    if schedule is not None:
+        passages.append(_fee_schedule_source(schedule))
+
     if application is not None:
         passages.extend(_case_sources(session, actor, application))
+        passages.extend(_case_rule_sources(session, application))
+        passages.extend(_case_fee_source(session, application))
 
     ordered = tuple(sorted(passages, key=lambda item: item.source_id))
     bundle = SourceBundle(
@@ -577,6 +826,7 @@ def build_bundle(
         basis_at=basis_at,
         permit_type_key=permit_type_key,
         application_reference=reference,
+        content_hash=_content_hash(ordered),
     )
     # The bundle carries no truth: it holds published text and the
     # applicant's own case, never an expected outcome.

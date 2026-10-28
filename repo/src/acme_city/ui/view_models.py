@@ -3812,7 +3812,13 @@ def governance_sources(session: Session, actor: ActorContext) -> dict[str, Any]:
 def model_runs(
     session: Session, actor: ActorContext, *, application_id: str | None = None
 ) -> list[dict[str, Any]]:
-    """Return the recorded model runs with their explicit mode badge."""
+    """Return the recorded model runs with their explicit mode badge.
+
+    A run of the applicant help assistant is the record of a private
+    conversation.  It is never listed on a staff screen: staff read an
+    un-escalated chat never, and the administrator sees an escalated
+    conversation through the support screen instead.
+    """
     statement = select(model_run.ModelRun).order_by(model_run.ModelRun.started_at.desc())
     if application_id:
         statement = statement.where(
@@ -3826,6 +3832,8 @@ def model_runs(
         raw_refs = row.input_refs or {}
         refs = list(raw_refs) if not isinstance(raw_refs, dict) else [raw_refs]
         run_application = raw_refs.get("application_id") if isinstance(raw_refs, dict) else None
+        if isinstance(raw_refs, dict) and str(raw_refs.get("task") or "") == "applicant_assist":
+            continue
         if application_id and application_id != run_application and application_id not in refs:
             continue
         validation = dict(row.validation_result or {})

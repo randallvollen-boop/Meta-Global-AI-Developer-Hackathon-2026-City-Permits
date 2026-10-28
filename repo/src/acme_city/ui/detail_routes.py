@@ -111,6 +111,10 @@ def _resolve_muse_run(ctx: DetailContext, run_id: str) -> DetailView | None:
     if run is None:
         return None
     refs = run.input_refs if isinstance(run.input_refs, dict) else {}
+    if str(refs.get("task") or "") == "applicant_assist":
+        # A run of the applicant help assistant is the record of a private
+        # conversation.  Staff never open it.
+        return None
     application = ctx.session.execute(
         select(permit.Application).where(permit.Application.id == refs.get("application_id"))
     ).scalar_one_or_none()

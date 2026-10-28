@@ -47,8 +47,15 @@ from acme_city.persistence.types import UTCDateTime
 #:
 #: ``matched`` means the deterministic matcher found published text that
 #: answers the question; ``no_match`` means it found none, and the answer is
-#: an explicit no-match result rather than a guess.
-TURN_OUTCOMES: Final = frozenset({"matched", "no_match"})
+#: an explicit no-match result rather than a guess.  ``answered`` means the
+#: assistant wrote the answer and the validation passed it; ``rejected``
+#: means the validation refused the answer and the deterministic answer was
+#: shown instead; ``unanswerable`` means the assistant refused to answer and
+#: the deterministic answer was shown instead; ``failed`` means the run
+#: itself failed.
+TURN_OUTCOMES: Final = frozenset(
+    {"matched", "answered", "no_match", "rejected", "unanswerable", "failed"}
+)
 
 #: The states a help request may have.
 HELP_REQUEST_STATUSES: Final = frozenset({"open", "answered"})
@@ -106,7 +113,8 @@ class HelpTurn(IdMixin, CreatedAtMixin, Base):
     #: input: it is never rendered as markup and never becomes an
     #: instruction.
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    #: ``matched`` or ``no_match``.
+    #: ``matched``, ``answered``, ``no_match``, ``rejected``, ``unanswerable``
+    #: or ``failed``.
     outcome: Mapped[str] = mapped_column(String(16), nullable=False, default="no_match")
     #: The paragraphs of the answer and the citations of each one.
     answer: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
@@ -116,13 +124,18 @@ class HelpTurn(IdMixin, CreatedAtMixin, Base):
     #: The hash of the whole source bundle the answer was drawn from, so a
     #: later reader can tell that the published text has not moved.
     bundle_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    #: The mode the answer was produced in.  Phase 3 chat 1 answers without
-    #: a model, so the mode is ``fallback``.
+    #: The mode the answer was produced in: ``fallback`` when no model wrote
+    #: it, ``replay`` when a replay fixture did and ``live`` when a live run
+    #: did.
     mode: Mapped[str] = mapped_column(String(16), nullable=False, default="fallback")
     #: The number of this turn in its conversation, starting at one.
     turn_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     __table_args__ = (
-        CheckConstraint("outcome IN ('matched', 'no_match')", name="outcome_allowed"),
+        CheckConstraint(
+            "outcome IN ('matched', 'answered', 'no_match', 'rejected', "
+            "'unanswerable', 'failed')",
+            name="outcome_allowed",
+        ),
         CheckConstraint("mode IN ('fallback', 'replay', 'live')", name="mode_allowed"),
     )
 

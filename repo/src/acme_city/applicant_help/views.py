@@ -32,7 +32,7 @@ from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_help.sources import applicant_next_steps as _applicant_next_steps
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
-from acme_city.persistence.models import permit
+from acme_city.persistence.models import model_run, permit
 
 #: The statuses a case holds while it is with the reviewer.
 #:
@@ -147,6 +147,35 @@ def applicant_next_steps(
     return _applicant_next_steps(session, actor, application)
 
 
+def run_view(session: Session, turn: Any, label: str) -> dict[str, Any] | None:
+    """Return the source line of the model run behind a turn, if there is one.
+
+    The shape is the one ``components/muse_source.html`` renders: the mode, the
+    source label, the usage and the latency.  The run is read only when it
+    belongs to the very turn being shown, so a turn never shows another run.
+    """
+    answer = dict(turn.answer or {})
+    run_id = str(answer.get("model_run_id") or "")
+    if not run_id or turn.mode not in ("replay", "live"):
+        # A turn the validation refused shows the deterministic rule text; it
+        # carries no model source line, because no model answer is shown.
+        return None
+    row = session.get(model_run.ModelRun, run_id)
+    if row is None:
+        return None
+    refs = row.input_refs if isinstance(row.input_refs, dict) else {}
+    if str(refs.get("turn_id") or "") != str(turn.id):
+        return None
+    usage = row.usage if isinstance(row.usage, dict) else {}
+    return {
+        "run_id": row.id,
+        "mode": row.mode,
+        "source_label": label,
+        "usage": dict(usage),
+        "latency_ms": row.latency_ms,
+    }
+
+
 def turn_view(turn: Any) -> dict[str, Any]:
     """Return the view of one turn of the conversation."""
     answer = dict(turn.answer or {})
@@ -162,6 +191,16 @@ def turn_view(turn: Any) -> dict[str, Any]:
         "reason": str(answer.get("reason", "")),
         "sources": list(turn.sources or []),
     }
+
+
+def _turn_with_run(session: Session, turn: Any, config: Any) -> dict[str, Any]:
+    """Return the view of a turn with the source line of its run."""
+    view = turn_view(turn)
+    view["declined_text"] = (
+        config.refusal_text(view["reason"]) if view["outcome"] == "unanswerable" else ""
+    )
+    view["run"] = run_view(session, turn, view["label"])
+    return view
 
 
 def panel_context(
@@ -220,7 +259,7 @@ def panel_context(
         "help_placement": placement,
         "help_conversation_id": conversation.id if conversation is not None else "",
         "help_conversation_version": conversation.version if conversation is not None else 0,
-        "help_turns": [turn_view(turn) for turn in turns],
+        "help_turns": [_turn_with_run(session, turn, config) for turn in turns],
         "help_earlier_turns": earlier,
         "help_requests": [
             {
@@ -232,9 +271,10 @@ def panel_context(
             for row in requests
         ],
         "help_last_question": turns[-1].question if turns else "",
+        "help_demo_mode": service.demo_mode,
         "help_suggestions": [
             {"id": identifier, "text": text}
-            for identifier, text in config.suggested_questions
+            for identifier, text in config.questions(demo_mode=service.demo_mode)
         ],
         "help_max_length": config.max_message_length,
         "help_no_match_text": config.no_match_text,
@@ -258,6 +298,7 @@ __all__ = [
     "applicant_next_steps",
     "panel_context",
     "review_area_backlog",
+    "run_view",
     "timing_figures",
     "turn_view",
 ]
