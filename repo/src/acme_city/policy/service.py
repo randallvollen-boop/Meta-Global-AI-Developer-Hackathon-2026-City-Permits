@@ -235,11 +235,14 @@ class PolicyService:
         starting_population: Mapping[str, Any] | None = None,
         suggestion_key: str | None = None,
         expected_version: int | None = None,
+        source_proposal_id: str | None = None,
     ) -> models.PolicyScenario:
         """Save a new what-if as revision 1.
 
         A new record starts at version 0, so the expected version of a create
-        is 0 (the same rule the help conversations follow).
+        is 0 (the same rule the help conversations follow).  A what-if that
+        Muse proposed is saved here too, only after the Administrator pressed
+        save; ``source_proposal_id`` names the recorded proposal in the audit.
         """
         self._authorize(actor, PERMISSION_MANAGE)
         if _require_version(expected_version) != 0:
@@ -287,6 +290,7 @@ class PolicyService:
                 "revision": 1,
                 "change_count": len(stored),
                 "content_hash": revision.content_hash,
+                **({"source_proposal_id": source_proposal_id} if source_proposal_id else {}),
             },
         )
         self._session.flush()

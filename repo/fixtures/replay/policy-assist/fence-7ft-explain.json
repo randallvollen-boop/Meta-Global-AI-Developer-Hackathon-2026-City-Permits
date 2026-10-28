@@ -1,0 +1,195 @@
+{
+  "analysis_at_of_build": "2026-10-28T12:00:00+00:00",
+  "basis": {
+    "baseline_config_hash": "71722cb51f41975e24a3ba2b7718791d871539f0b51d33351fc1ec35d3295a03",
+    "changes_hash": "c02439aac3efb52f76e65ea5758fa8923316d2dc57e393aef9592916bd35013e",
+    "engine_version": "policy-kernel-1",
+    "facts_hash": "4199f95d6ade19a81e4701d653184524787e135212d45e8cbcd15c0f9ed0b3f1",
+    "generator_version": "synthetic-year-adapter-1",
+    "population_hash": "5afcc5a3716e4bfaf9456d7060518ee59208257c73bd44092a45d43974d13707",
+    "purpose": "explain",
+    "scenario_config_hash": "01e269bd8b043c0ef5bdc1c97ef486676838fffd775dfd8c33e0cbdcc919c58f"
+  },
+  "expect": "passes_validation",
+  "fixture_kind": "policy_assist_replay",
+  "fixture_version": "2026.10.28-1",
+  "name": "fence-7ft-explain",
+  "note": "A deterministic, labelled demonstration fixture of the what-if policy agent. It was written for this demonstration from the typed facts of one run (or the published configuration for a proposal); it is not a recording of a Muse answer and it is never presented as one.",
+  "output": {
+    "cannot_brief": false,
+    "reason": "",
+    "sections": [
+      {
+        "question": "",
+        "section": "summary",
+        "sentences": [
+          {
+            "claims": [
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "population.size",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "600"
+              }
+            ],
+            "rule_refs": [],
+            "text": "This what-if was tested on synthetic data: 600 generated cases, not real applications."
+          },
+          {
+            "claims": [],
+            "rule_refs": [
+              {
+                "citation": "ACME Code §14-306",
+                "configuration": "baseline",
+                "limit_value": "6",
+                "rule_id": "DF-2",
+                "unit": "",
+                "version": "DF-2@1"
+              },
+              {
+                "citation": "ACME Code §14-306",
+                "configuration": "scenario",
+                "limit_value": "7",
+                "rule_id": "DF-2",
+                "unit": "",
+                "version": "DF-2@1"
+              }
+            ],
+            "text": "It raises the side and rear yard fence height limit from 6 ft to 7 ft (ACME Code §14-306)."
+          }
+        ]
+      },
+      {
+        "question": "",
+        "section": "key_effects",
+        "sentences": [
+          {
+            "claims": [
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "cases.changed",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "28"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "population.size",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "600"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "cases.relaxed",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "28"
+              }
+            ],
+            "rule_refs": [],
+            "text": "28 of the 600 cases would get a different result, and every one of them moves in the relaxed direction (28 cases)."
+          },
+          {
+            "claims": [
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "outcome.approve.baseline",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "306"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "increase",
+                "fact_id": "outcome.approve.scenario",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "334"
+              }
+            ],
+            "rule_refs": [],
+            "text": "Recommendations to approve would rise from 306 to 334 cases."
+          },
+          {
+            "claims": [
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "none",
+                "fact_id": "outcome.deny.baseline",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "80"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "decrease",
+                "fact_id": "outcome.deny.scenario",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "52"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "decrease",
+                "fact_id": "outcome.deny.change",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "28"
+              }
+            ],
+            "rule_refs": [],
+            "text": "Recommendations to deny would fall from 80 to 52 cases, which is 28 fewer."
+          },
+          {
+            "claims": [
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "unchanged",
+                "fact_id": "holds.scenario",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "134"
+              },
+              {
+                "baseline_id": "baseline 71722cb51f41",
+                "direction": "unchanged",
+                "fact_id": "needs.scenario",
+                "population": "Synthetic year (sample data)",
+                "scenario_id": "scenario 01e269bd8b04",
+                "unit": "cases",
+                "value": "227"
+              }
+            ],
+            "rule_refs": [],
+            "text": "Cases held for a person are unchanged at 134, and cases that need information are unchanged at 227."
+          }
+        ]
+      }
+    ],
+    "title": "Explanation of the fence height what-if"
+  },
+  "prompt_version": "acme-policy-brief-prompt-v1",
+  "purpose": "explain",
+  "recorded_at": "2026-10-28T12:00:00Z",
+  "replay_key": "9bd47b9b6c133ef373b99925169537c67697f63d2ab0ee2d3f68cf753d6f10d3",
+  "run_content_hash_at_build": "78e5495b9fb41844c25f8355454afadac841bd66e80de75cc7a5c22061d32633",
+  "schema_version": "acme-policy-brief-schema-v1",
+  "task": "policy_brief"
+}

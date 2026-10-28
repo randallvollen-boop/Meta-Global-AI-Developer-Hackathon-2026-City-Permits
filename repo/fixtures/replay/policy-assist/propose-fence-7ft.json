@@ -1,0 +1,42 @@
+{
+  "basis": {
+    "baseline_config_hash": "71722cb51f41975e24a3ba2b7718791d871539f0b51d33351fc1ec35d3295a03",
+    "question_key": "what if the side and rear yard fence limit were 7 ft"
+  },
+  "expect": "passes_validation",
+  "fixture_kind": "policy_assist_replay",
+  "fixture_version": "2026.10.28-1",
+  "name": "propose-fence-7ft",
+  "note": "A deterministic, labelled demonstration fixture of the what-if policy agent. It was written for this demonstration from the typed facts of one run (or the published configuration for a proposal); it is not a recording of a Muse answer and it is never presented as one.",
+  "output": {
+    "cannot_propose": false,
+    "name": "Raise the side/rear fence height limit from 6 ft to 7 ft",
+    "proposals": [
+      {
+        "action": "",
+        "condition": "",
+        "discretionary": "",
+        "fee_schedule_id": "",
+        "fixed_review_charge_cents": -1,
+        "item": "",
+        "item_kind": "",
+        "kind": "rule_threshold",
+        "limit_value": "7",
+        "operator": "",
+        "permit_type_key": "",
+        "process_category": "",
+        "rationale": "The side and rear yard limit of ACME Code §14-306 would move from 6 to 7.",
+        "rule_id": "DF-2",
+        "service_target_days": -1,
+        "valuation_multiplier": ""
+      }
+    ],
+    "reason": ""
+  },
+  "prompt_version": "acme-policy-propose-prompt-v1",
+  "question": "What if the side and rear yard fence limit were 7 ft?",
+  "recorded_at": "2026-10-28T12:00:00Z",
+  "replay_key": "724f443923f43ad59f76df53e5aa155c6628cb0279238412d96fa7d855db3aec",
+  "schema_version": "acme-policy-propose-schema-v1",
+  "task": "policy_propose"
+}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
 <div class="policy-screen">
@@ -14,6 +15,8 @@
     {% if can_brief %}<a class="button btn primary button-primary" href="/policy/runs/{{ r.id }}/briefing" data-testid="policy-open-briefing">Legislator briefing</a>{% else %}<span class="muted" data-testid="policy-briefing-guard">Your role cannot open the briefing.</span>{% endif %}
   </div>
 </div>
+
+{% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
 
 <section class="card" aria-labelledby="pop-heading" data-testid="policy-population">
   <h2 id="pop-heading">Population {{ ui.info('policy_population') }}</h2>
@@ -120,6 +123,34 @@
   {% else %}<p class="muted">Every case in the population has a usable valuation.</p>{% endif %}
   {% else %}<p class="muted" data-testid="policy-fees-none">This what-if changes no fee, so there is no fee comparison.</p>{% endif %}
 </section>
+<section class="card" aria-labelledby="explain-heading" data-testid="policy-explain">
+  <h2 id="explain-heading">Explain with Muse</h2>
+  <p class="muted" data-testid="policy-explain-mode">{{ explain.mode_note }}</p>
+  {% if explain.can %}
+    {% if explain.result and explain.result.accepted %}
+    <div data-testid="policy-explanation">
+      <p class="muted" data-testid="policy-explain-source">{{ muse_source(explain.result.source) }}</p>
+      {% for p in explain.paragraphs %}
+      <p data-testid="policy-explanation-paragraph">{{ p.text }}</p>
+      <p class="muted">Cites: {{ p.facts|join(', ') or 'no figure' }}</p>
+      {% endfor %}
+      <p class="muted">Muse explains figures the engine counted; it computes nothing and recommends nothing.</p>
+    </div>
+    {% elif explain.result %}
+    <p class="callout" data-testid="policy-explain-fallback">{{ explain.fallback }}</p>
+    {% else %}
+    <p class="muted">Muse can explain these results in plain words. Every figure it states is checked against the counted figures above before you see it; if any claim fails, nothing of the explanation is shown.</p>
+    {% endif %}
+    <form method="post" action="/policy/runs/{{ r.id }}/explain" data-testid="policy-explain-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="expected_version" value="{{ explain.version }}">
+      <button type="submit" class="button btn" data-testid="policy-explain-submit">{% if explain.result %}Ask again{% else %}Explain with Muse{% endif %}</button>
+    </form>
+  {% else %}
+  <p class="muted" data-testid="policy-explain-guard">Your role cannot do this.</p>
+  {% endif %}
+</section>
+
 {% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

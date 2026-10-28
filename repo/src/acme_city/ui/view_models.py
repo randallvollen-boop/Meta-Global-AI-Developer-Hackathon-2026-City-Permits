@@ -29,6 +29,7 @@ from acme_city.changes.state_machine import permitted_targets
 from acme_city.core.clock import utc_now
 from acme_city.finance.service import FinanceService
 from acme_city.governance.service import GovernanceService
+from acme_city.muse.schemas import PRIVATE_TASKS
 from acme_city.permits.comments import comment_view, comments_for
 from acme_city.persistence.models import (
     agent,
@@ -3832,7 +3833,9 @@ def model_runs(
         raw_refs = row.input_refs or {}
         refs = list(raw_refs) if not isinstance(raw_refs, dict) else [raw_refs]
         run_application = raw_refs.get("application_id") if isinstance(raw_refs, dict) else None
-        if isinstance(raw_refs, dict) and str(raw_refs.get("task") or "") == "applicant_assist":
+        if isinstance(raw_refs, dict) and str(raw_refs.get("task") or "") in PRIVATE_TASKS:
+            # A chat run is private to its applicant; a what-if run is shown
+            # only through the policy screens, to the holders of its grants.
             continue
         if application_id and application_id != run_application and application_id not in refs:
             continue

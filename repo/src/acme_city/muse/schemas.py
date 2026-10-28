@@ -33,6 +33,10 @@ MATCH_SCHEMA_VERSION: Final = "acme-match-schema-v1"
 #: The version of the applicant-assist output schema.
 APPLICANT_ASSIST_SCHEMA_VERSION: Final = "acme-assist-schema-v1"
 
+#: The versions of the what-if policy tasks (policy 3).
+POLICY_BRIEF_SCHEMA_VERSION: Final = "acme-policy-brief-schema-v1"
+POLICY_PROPOSE_SCHEMA_VERSION: Final = "acme-policy-propose-schema-v1"
+
 #: The version of the extraction prompt.
 EXTRACTION_PROMPT_VERSION: Final = "acme-extraction-prompt-v1"
 
@@ -41,6 +45,10 @@ MATCH_PROMPT_VERSION: Final = "acme-match-prompt-v1"
 
 #: The version of the applicant-assist prompt.
 APPLICANT_ASSIST_PROMPT_VERSION: Final = "acme-assist-prompt-v1"
+
+#: The versions of the what-if policy prompts (policy 3).
+POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v1"
+POLICY_PROPOSE_PROMPT_VERSION: Final = "acme-policy-propose-prompt-v1"
 
 #: The provider that serves the Standard Muse models.
 MUSE_PROVIDER: Final = "meta"
@@ -56,6 +64,10 @@ MATCH_SCHEMA_NAME: Final = "acme_city_match_proposal"
 
 #: The schema name the provider is asked to enforce for the applicant assistant.
 APPLICANT_ASSIST_SCHEMA_NAME: Final = "acme_city_applicant_assist"
+
+#: The schema names the provider is asked to enforce for the what-if policy tasks.
+POLICY_BRIEF_SCHEMA_NAME: Final = "acme_city_policy_brief"
+POLICY_PROPOSE_SCHEMA_NAME: Final = "acme_city_policy_propose"
 
 #: The JSON Schema keywords that are removed from the generated schema.
 #:
@@ -167,6 +179,21 @@ MATCH_TASK: Final = "match_proposal"
 #: rather than by :class:`~acme_city.muse.service.MuseService`.
 APPLICANT_ASSIST_TASK: Final = "applicant_assist"
 
+#: The task names of the what-if policy agent (policy 3).
+#:
+#: Both are dispatched by their own application-independent path
+#: (:mod:`acme_city.policy.muse`) under dedicated grants.  They write no
+#: observation, no match proposal and no business row, and their runs are
+#: readable only by the holders of those grants.
+POLICY_BRIEF_TASK: Final = "policy_brief"
+POLICY_PROPOSE_TASK: Final = "policy_propose"
+
+#: The tasks whose runs belong to the what-if screens, never to a general run list.
+POLICY_TASKS: Final = (POLICY_BRIEF_TASK, POLICY_PROPOSE_TASK)
+
+#: The tasks whose runs no general run list may show.
+PRIVATE_TASKS: Final = (APPLICANT_ASSIST_TASK, *POLICY_TASKS)
+
 #: The tasks whose output is a proposal the City may act on.
 PROPOSING_TASKS: Final = (EXTRACTION_TASK, MATCH_TASK)
 
@@ -201,6 +228,104 @@ class AssistantOutput(MuseOutputModel):
     reason: str = Field(max_length=200)
 
 
+class PolicyClaim(MuseOutputModel):
+    """One figure of a sentence, bound to one typed fact of the run.
+
+    The claim repeats the typed fact it rests on: the value, the unit, the
+    direction, the population and the identities of the baseline and the
+    scenario it compares.  The server compares every field with the fact it
+    holds; a claim that differs in any field refuses the whole response.
+    """
+
+    fact_id: str = Field(max_length=120)
+    value: str = Field(max_length=40)
+    unit: str = Field(max_length=20)
+    direction: str = Field(max_length=20)
+    population: str = Field(max_length=200)
+    baseline_id: str = Field(max_length=80)
+    scenario_id: str = Field(max_length=80)
+
+
+class PolicyRuleRef(MuseOutputModel):
+    """One rule source a sentence names.
+
+    A rule threshold or an ACME Code section may only be named through a
+    versioned rule source of the run: the rule id, its version label, the
+    citation, the limit and the unit, in the baseline or in the scenario.
+    """
+
+    rule_id: str = Field(max_length=40)
+    version: str = Field(max_length=40)
+    citation: str = Field(max_length=80)
+    limit_value: str = Field(max_length=40)
+    unit: str = Field(max_length=20)
+    configuration: str = Field(max_length=20)
+
+
+class PolicySentence(MuseOutputModel):
+    """One sentence and the facts and rule sources it rests on."""
+
+    text: str = Field(max_length=1200)
+    claims: list[PolicyClaim]
+    rule_refs: list[PolicyRuleRef]
+
+
+class PolicySection(MuseOutputModel):
+    """One section of the briefing: a heading key and its sentences."""
+
+    section: str = Field(max_length=40)
+    question: str = Field(max_length=300)
+    sentences: list[PolicySentence]
+
+
+class PolicyBriefOutput(MuseOutputModel):
+    """The legislator briefing or explanation of one what-if run.
+
+    The briefing explains figures the engine counted.  It computes nothing
+    and recommends nothing.
+    """
+
+    title: str = Field(max_length=200)
+    sections: list[PolicySection]
+    cannot_brief: bool
+    reason: str = Field(max_length=200)
+
+
+class PolicyProposedChange(MuseOutputModel):
+    """One proposed change, in a flat strict form.
+
+    An unused text field is empty, an unused number is -1.  The server turns
+    the record into a change request of the supported kinds and validates it
+    on its own; a kind the release does not support is refused by name.
+    """
+
+    kind: str = Field(max_length=60)
+    rule_id: str = Field(max_length=40)
+    limit_value: str = Field(max_length=40)
+    operator: str = Field(max_length=20)
+    condition: str = Field(max_length=200)
+    permit_type_key: str = Field(max_length=64)
+    item_kind: str = Field(max_length=20)
+    item: str = Field(max_length=64)
+    action: str = Field(max_length=20)
+    process_category: str = Field(max_length=40)
+    discretionary: str = Field(max_length=10)
+    service_target_days: int
+    fee_schedule_id: str = Field(max_length=64)
+    fixed_review_charge_cents: int
+    valuation_multiplier: str = Field(max_length=40)
+    rationale: str = Field(max_length=500)
+
+
+class PolicyProposeOutput(MuseOutputModel):
+    """The what-if the agent proposes for an administrator to review and save."""
+
+    name: str = Field(max_length=200)
+    proposals: list[PolicyProposedChange]
+    cannot_propose: bool
+    reason: str = Field(max_length=200)
+
+
 #: The output model, prompt version and schema version of every task.
 TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
     EXTRACTION_TASK: {
@@ -221,6 +346,18 @@ TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
         "schema_version": APPLICANT_ASSIST_SCHEMA_VERSION,
         "schema_name": APPLICANT_ASSIST_SCHEMA_NAME,
     },
+    POLICY_BRIEF_TASK: {
+        "output_model": "PolicyBriefOutput",
+        "prompt_version": POLICY_BRIEF_PROMPT_VERSION,
+        "schema_version": POLICY_BRIEF_SCHEMA_VERSION,
+        "schema_name": POLICY_BRIEF_SCHEMA_NAME,
+    },
+    POLICY_PROPOSE_TASK: {
+        "output_model": "PolicyProposeOutput",
+        "prompt_version": POLICY_PROPOSE_PROMPT_VERSION,
+        "schema_version": POLICY_PROPOSE_SCHEMA_VERSION,
+        "schema_name": POLICY_PROPOSE_SCHEMA_NAME,
+    },
 }
 
 #: The strict output model of every task.
@@ -228,6 +365,8 @@ TASK_OUTPUT_MODELS: Final[dict[str, type[MuseOutputModel]]] = {
     EXTRACTION_TASK: ExtractionOutput,
     MATCH_TASK: MatchOutput,
     APPLICANT_ASSIST_TASK: AssistantOutput,
+    POLICY_BRIEF_TASK: PolicyBriefOutput,
+    POLICY_PROPOSE_TASK: PolicyProposeOutput,
 }
 
 
@@ -286,7 +425,24 @@ __all__ = [
     "EXTRACTION_SCHEMA_NAME",
     "EXTRACTION_SCHEMA_VERSION",
     "EXTRACTION_TASK",
+    "POLICY_BRIEF_PROMPT_VERSION",
+    "POLICY_BRIEF_SCHEMA_NAME",
+    "POLICY_BRIEF_SCHEMA_VERSION",
+    "POLICY_BRIEF_TASK",
+    "POLICY_PROPOSE_PROMPT_VERSION",
+    "POLICY_PROPOSE_SCHEMA_NAME",
+    "POLICY_PROPOSE_SCHEMA_VERSION",
+    "POLICY_PROPOSE_TASK",
+    "POLICY_TASKS",
+    "PRIVATE_TASKS",
     "PROPOSING_TASKS",
+    "PolicyBriefOutput",
+    "PolicyClaim",
+    "PolicyProposeOutput",
+    "PolicyProposedChange",
+    "PolicyRuleRef",
+    "PolicySection",
+    "PolicySentence",
     "AssistantCitation",
     "AssistantOutput",
     "AssistantParagraph",
