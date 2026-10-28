@@ -39,7 +39,7 @@
         <td><span class="ref"><a href="{{ row.href }}">{{ row.reference }}</a></span><div class="t2">{{ row.applicant_name }}</div></td>
         <td>{{ row.permit_type_label }}</td>
         <td>{{ row.review_area or 'unassigned' }}</td>
-        <td>{{ row.owner_label or '—' }}</td>
+        <td>{{ row.owner_label or 'Unassigned' }}</td>
         <td>
           {% if row.recommendation %}
           <span class="pill {{ 'ok' if row.recommendation.proposed_outcome == 'approve' else 'bad' if row.recommendation.proposed_outcome == 'deny' else 'warn' }}"

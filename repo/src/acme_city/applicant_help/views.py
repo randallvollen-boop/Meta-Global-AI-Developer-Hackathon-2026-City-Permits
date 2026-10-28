@@ -119,8 +119,8 @@ def timing_figures(
             "days": int(type_row.service_target_days or 0),
             "definition": (
                 "This is the fictional number of days the City aims to review a "
-                "case of this type in. It is a target the City works to, not a "
-                "promise about your application."
+                "case of this type in. It is a target the City works to. It makes "
+                "no promise about your application."
             ),
         }
     if area:

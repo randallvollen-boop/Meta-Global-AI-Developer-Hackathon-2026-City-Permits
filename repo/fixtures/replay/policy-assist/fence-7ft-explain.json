@@ -36,7 +36,7 @@
               }
             ],
             "rule_refs": [],
-            "text": "This what-if was tested on synthetic data: 600 generated cases, not real applications."
+            "text": "This what-if was tested on synthetic data: 600 generated cases. None of them is a real application."
           },
           {
             "claims": [],

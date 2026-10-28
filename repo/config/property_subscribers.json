@@ -89,7 +89,7 @@
         "USEDSCRP",
         "BUSLICCAT"
       ],
-      "contract_text": "Reads the address, parcel use and business licence category (for example bars) to plan premises checks and patrols. Writes nothing back.",
+      "contract_text": "Reads the address, parcel use and business license category (for example bars) to plan premises checks and patrols. Writes nothing back.",
       "signal_key": "late_night_premises",
       "signal_label": "Licensed late-night premises (synthetic)"
     }

@@ -85,7 +85,7 @@ def test_governance_and_sources_lists_them_under_the_same_heading(client) -> Non
     assert ">Simulated departments<" in body
     for label in ("Sanitation", "Police"):
         assert re.search(rf"<th scope=\"row\">{label}</th>", body)
-    assert "Reads the address, parcel use and business licence category" in body
+    assert "Reads the address, parcel use and business license category" in body
 
 
 def test_the_sanitation_signal_follows_the_parcel(client) -> None:

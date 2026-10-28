@@ -108,7 +108,7 @@
     </div>
     {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
     <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
-      It is an ordering aid built from the evidence above, not a probability of a match.
+      It is an ordering aid built from the evidence above. It does not state the probability of a match.
       {% if cand.score_parts %}It adds up from:
       {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
     </p>

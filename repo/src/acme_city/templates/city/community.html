@@ -2,8 +2,8 @@
 {% block content %}
 <div class="city-wrap city-page">
   <h1>Permits in my community</h1>
-  <p class="city-lede">Look up a permit by address, street or permit number, and see where permits are being applied for across the city. This page shows public facts only: it never shows the names or contact details of residents, documents, notes, fees or findings.</p>
-  {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some of the permits below are generated demonstration data, not real permits.</p>{% endif %}
+  <p class="city-lede">Look up a permit by address, street or permit number, and see where permits are being applied for across the city. This page shows public facts only. It leaves out the names and contact details of residents, and all documents, notes, fees and findings.</p>
+  {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some of the permits below are generated demonstration data. None of them is a real permit.</p>{% endif %}
 
   <form method="get" action="/city/community" class="insight-filters" role="search" data-testid="community-lookup">
     <label for="community-q">Address, street or permit number

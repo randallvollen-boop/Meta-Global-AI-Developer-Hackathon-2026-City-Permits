@@ -27,11 +27,11 @@ from acme_city.policy import views
 
 DETERMINISTIC_SOURCE = "Deterministic briefing built from the typed facts of this run. No model was used."
 FOOTER = (
-    "Fictional ACME City data. Impact estimates from the ACME permit engine; "
-    "not a forecast of staff time or a legal opinion."
+    "Fictional ACME City data. Impact estimates come from the ACME permit engine. "
+    "They forecast no staff time and give no legal opinion."
 )
 SYNTHETIC_LABEL = "Synthetic data"
-SYNTHETIC_BANNER = "The cases counted here are generated samples, not real applications."
+SYNTHETIC_BANNER = "The cases counted here are generated samples. None of them is a real application."
 
 
 @dataclass(frozen=True)
@@ -278,7 +278,7 @@ def build_deterministic(run: models.PolicyRun, facts: Sequence[Fact] | None = No
             f"{count} {_plural(count, 'case')} would stop failing a rule. Each is listed so a person can judge the risk."
         )
         bullets = tuple(
-            f"{s['case_ref']} ({s['type']}): {s['citation']} — {s['what']}" for s in safety[:25]
+            f"{s['case_ref']} ({s['type']}): {s['citation']}: {s['what']}" for s in safety[:25]
         )
         if count > 25:
             bullets += (f"…and {count - 25} more on the results screen.",)
@@ -303,7 +303,7 @@ def build_deterministic(run: models.PolicyRun, facts: Sequence[Fact] | None = No
     if view["fees"]:
         paragraphs_f = [
             f"Hypothetical assessed fees for the priced cases: {v('fees.baseline')} USD in the baseline and "
-            f"{v('fees.scenario')} USD in the scenario. These are not money collected and not a forecast of it.",
+            f"{v('fees.scenario')} USD in the scenario. These amounts are hypothetical. No money is collected and none is forecast.",
         ]
         unpriced = v("fees.unpriceable")
         if unpriced:

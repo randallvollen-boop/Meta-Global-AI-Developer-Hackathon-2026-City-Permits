@@ -54,16 +54,16 @@ DEFINITIONS: dict[str, str] = {
     "district": "District: the zoning district of the parcel the permit is sited on.",
     "outcome": (
         "Outcome: the current recorded decision. Approved with conditions is an approval "
-        "that carries at least one condition. Not decided means no decision is recorded yet "
+        "that has at least one condition. Not decided means no decision is recorded yet "
         "(or the case was withdrawn or returned)."
     ),
     "exceptions": (
         "Exceptions: a variance request, a decision with a waiver, a denial, or an approval "
-        "with conditions. One permit can carry more than one."
+        "with conditions. One permit can have more than one."
     ),
     "category": (
-        "Business category: the category on the business licence of the business the permit "
-        "is linked to. Only permits linked to a business carry one."
+        "Business category: the category on the business license of the business the permit "
+        "is linked to. Only permits linked to a business have one."
     ),
     "trend": "Monthly trend: permits by the calendar month of submission.",
 }

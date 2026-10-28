@@ -84,12 +84,12 @@ RETIRE_NOTE = (
 )
 
 SYNTHETIC_NOTE = (
-    "Synthetic data: every case in this population is a generated sample, not a real "
-    "application. It shows how the rule behaves, not what any real applicant did."
+    "Synthetic data: every case in this population is a generated sample, and none "
+    "is a real application. It shows how the rule behaves and says nothing about any real applicant."
 )
 RETROSPECTIVE_NOTE = (
     "Retrospective re-scoring: stored cases are scored again under the rules in force "
-    "now. It is not a reconstruction of the decisions made at the time."
+    "now. It does not reconstruct the decisions made at the time."
 )
 
 
