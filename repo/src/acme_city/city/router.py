@@ -11,19 +11,22 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
-from acme_city.ui.router import render, templates, ui_actor
+from acme_city.ui.router import _applicant_name, render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
 router = APIRouter(prefix="/city", tags=["city-website"])
 
 #: Where the Permits entry lands once the applicant persona is active.
 PERMITS_HOME = "/apply"
+
+#: Where "Track or resume an application" lands: My permits.
+TRACK_HOME = "/apply/track"
 
 #: Simple informational pages.  All content is fictional.
 SERVICE_PAGES: dict[str, dict[str, Any]] = {
@@ -115,6 +118,32 @@ SERVICE_PAGES: dict[str, dict[str, Any]] = {
     },
 }
 
+#: Footer pages.  They are on the website but not in its navigation.
+INFO_PAGES: dict[str, dict[str, Any]] = {
+    "accessibility": {
+        "title": "Accessibility",
+        "intro": "This is a fictional demonstration site. If any part of it is hard to use, tell Planning and Permits and ask for the same service another way.",
+        "sections": [
+            {"heading": "Ask for help", "items": [
+                "Call Planning and Permits at (555) 010-0120 (a fictional number).",
+                "Visit City Hall at 1 Example Plaza, Acme (fictional address), weekdays 8:30 a.m. to 4:30 p.m.",
+            ]},
+        ],
+        "aside": {"heading": "Planning and Permits", "lines": ["(555) 010-0120", "Weekdays, 8:30 a.m. to 4:30 p.m."]},
+    },
+    "privacy": {
+        "title": "Privacy",
+        "intro": "This demonstration holds only fictional records. Please do not type real personal information into it.",
+        "sections": [
+            {"heading": "What the demonstration keeps", "items": [
+                "What you enter in an application, the files you add and the actions you take are stored in the demonstration's own database so you can track them.",
+                "Nothing is sent to a real city or to a real source system.",
+            ]},
+        ],
+        "aside": {"heading": "Questions", "lines": ["Planning and Permits", "(555) 010-0120"]},
+    },
+}
+
 NEWS: tuple[dict[str, str], ...] = (
     {"date": "Oct 24", "title": "Fall leaf collection begins next week", "body": "Bag leaves in paper yard-waste bags and leave them at the curb on your regular trash day."},
     {"date": "Oct 20", "title": "Online permit applications now open", "body": "Homeowners and contractors can start, save, and track permit applications from the Permits page."},
@@ -124,6 +153,10 @@ NEWS: tuple[dict[str, str], ...] = (
 
 # The layout also frames the applicant portal, whose context has no website data.
 templates.env.globals["city_services"] = SERVICE_PAGES
+
+from acme_city.applicant_portal import content as _portal_content  # noqa: E402
+
+templates.env.globals["portal_content"] = _portal_content.content
 
 
 def city_context(
@@ -146,6 +179,7 @@ def city_context(
             else None
         ),
         "personas": persona_options(session),
+        "applicant_name": _applicant_name(session, actor),
         "fictional_demo": True,
         **extra,
     }
@@ -170,25 +204,30 @@ def city_permits(
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ):
-    """Enter the permit services.
+    """Permits and applications: where an applicant starts or resumes.
 
-    An applicant goes straight to the portal.  Anyone else sees a short page
-    whose button posts to the existing persona selector for the Applicant
-    persona; no grant is given here.
+    An applicant sees two links.  Anyone else sees two buttons that post to the
+    existing persona selector for the Applicant persona, so signing in happens
+    behind the buttons; no grant is given here.
     """
-    if actor is not None and actor_label(session, actor.actor_id) == "Applicant":
-        return RedirectResponse(PERMITS_HOME, status_code=303)
+    is_applicant = actor is not None and actor_label(session, actor.actor_id) == "Applicant"
     applicant = next(
         (p for p in persona_options(session) if p["label"] == "Applicant"), None
     )
+    from acme_city.applicant_portal import content as portal_content
+
     context = city_context(
         request,
         session,
         actor,
-        title="Permits",
+        title="Permits and applications",
         active_nav="permits",
         applicant=applicant,
+        is_applicant=is_applicant,
         permits_home=PERMITS_HOME,
+        track_home=TRACK_HOME,
+        what_you_need=portal_content.content().get("what_you_need", []),
+        help_href=portal_content.content().get("share", {}).get("contact_href", "/city/contact"),
     )
     return render(request, "city/permits_entry.html", context)
 
@@ -303,7 +342,7 @@ def city_service_page(
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """One informational page of the City website."""
-    page = SERVICE_PAGES.get(slug)
+    page = SERVICE_PAGES.get(slug) or INFO_PAGES.get(slug)
     if page is None:
         context = city_context(
             request, session, actor, title="Page not found", active_nav=""

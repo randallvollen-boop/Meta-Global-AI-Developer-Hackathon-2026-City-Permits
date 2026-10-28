@@ -1,4 +1,5 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 {% macro req() %}<span class="req-star" aria-hidden="true" data-testid="required-star">*</span>{% endmacro %}
@@ -8,24 +9,67 @@
 {% set need = state.blocking | map(attribute='anchor') | list if attempted else [] %}
 {% macro bad(anchor) %}{% if attempted and msgs.get(anchor) %} aria-invalid="true" aria-describedby="err-{{ anchor }}"{% endif %}{% endmacro %}
 {% macro err(anchor) %}{% if attempted and msgs.get(anchor) %}<span class="field-error" id="err-{{ anchor }}" data-error-for="{{ anchor }}" data-testid="field-error"><span class="visually-hidden">Error: </span>{{ msgs.get(anchor) }}</span>{% endif %}{% endmacro %}
+{% macro hints(field) %}{% for line in rule_hints.get(field.key, []) %}<span class="field-hint" data-testid="rule-hint">{{ line }}</span>{% endfor %}{% endmacro %}
+
+{% macro field_row(field) %}
+    {% set rq = 'required aria-required="true"' | safe if field.required else '' %}
+    {% set a = 'f-' ~ field.key %}
+    {% set tag %}{% if field.required %} {{ req() }}{% else %} {{ opt() }}{% endif %}{% endset %}
+    {% if field.kind == 'choice' %}
+    <div class="field choice-field{% if a in need %} needed{% endif %}" role="radiogroup" aria-labelledby="lbl-{{ field.key }}" data-choice="{{ field.key }}" data-testid="structure-choice">
+      <label id="lbl-{{ field.key }}" class="choice-label" for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
+      <div class="choice-options">
+        {% for value, label in field.options %}
+        <label class="choice-opt"><input type="radio" id="{{ a if loop.first else a ~ '-' ~ value }}" name="{{ field.key }}" value="{{ value }}" data-choice-input {% if values.get(field.key) == value %}checked{% endif %}{% if loop.first %}{{ bad(a) }}{% endif %}> <span>{{ label }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p class="field{% if a in need %} needed{% endif %}">
+      {% if field.kind == 'checkbox' %}
+        <label><input id="{{ a }}" type="checkbox" name="{{ field.key }}" {{ rq }}{{ bad(a) }} {% if values.get(field.key) in ('on', 'true', '1') %}checked{% endif %}> {{ field.label }}{{ tag }}</label>{{ err(a) }}
+      {% elif field.kind == 'select' %}
+        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{% if field.info %}{{ ui.info(field.info) }}{% endif %}{{ err(a) }}
+        <select id="{{ a }}" name="{{ field.key }}" {{ rq }}{{ bad(a) }}><option value="">Choose</option>{% for value, label in field.options %}<option value="{{ value }}" {% if values.get(field.key) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        {{ hints(field) }}
+      {% elif field.kind == 'textarea' %}
+        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
+        <textarea id="{{ a }}" name="{{ field.key }}" rows="3" {{ rq }}{{ bad(a) }}>{{ values.get(field.key, '') }}</textarea>
+      {% elif field.kind == 'number' %}
+        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{% if field.info %}{{ ui.info(field.info) }}{% endif %}{{ err(a) }}
+        <span class="num-wrap"><input id="{{ a }}" class="num" name="{{ field.key }}" type="number" inputmode="decimal" step="any" min="0" value="{{ values.get(field.key, '') }}" {{ rq }}{{ bad(a) }}>{% if field.unit %}<span class="unit" aria-hidden="true">{{ field.unit }}</span>{% endif %}</span>
+        {{ hints(field) }}
+      {% else %}
+        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
+        <input id="{{ a }}" name="{{ field.key }}" type="text" value="{{ values.get(field.key, '') }}" {{ rq }}{{ bad(a) }}>
+      {% endif %}
+    </p>
+    {% endif %}
+{% endmacro %}
+
 <div class="page-head">
   <div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-      {% if icon_url %}<img class="type-ic" src="{{ icon_url }}" alt="" data-testid="form-icon">{% endif %}
-      <span class="pill info" data-testid="form-pill">{{ spec.pill }}</span>
+    <div class="form-kicker">
+      {% if icon_url %}<span class="type-ic-wrap"><img class="type-ic" src="{{ icon_url }}" alt="" data-testid="form-icon"></span>{% endif %}
+      <span class="muted" data-testid="form-pill">{{ spec.pill_text }}</span>
     </div>
     <h1 data-testid="form-title">{{ spec.label }}</h1>
     <p class="sub">{{ spec.description }}</p>
     {% if spec.note %}<p class="muted" data-testid="form-note">{{ spec.note }}</p>{% endif %}
+    {% if spec.discretionary %}<p class="muted" data-testid="form-discretionary">{{ portal_content().discretionary_note }}</p>{% endif %}
   </div>
+  <div class="actions">{{ ui.help_button('apply_form') }}</div>
 </div>
 <p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
 {% if form_error %}<p class="action-denied" role="alert" data-testid="form-error">{{ form_error }}</p>{% endif %}
 {% if form_notice %}<p class="muted" role="status" data-testid="form-notice">{{ form_notice }}</p>{% endif %}
 
+<div class="form-layout">
 <form method="post" action="/apply/{{ spec.type_key }}" enctype="multipart/form-data" class="portal-form" novalidate data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-locate-url="/apply/locate" data-testid="application-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="draft" value="{{ draft.reference if draft else '' }}">
+  {# Pressing Enter in a field must keep the draft, never remove a file or submit. #}
+  <button type="submit" name="intent" value="update" class="visually-hidden" tabindex="-1" aria-hidden="true" formnovalidate>Update</button>
 
   <p class="muted required-legend" data-testid="required-legend"><span class="req-star" aria-hidden="true">*</span> Required</p>
 
@@ -39,16 +83,9 @@
   </div>
   {% endif %}
 
-  <fieldset class="panel">
-    <legend>About you</legend>
-    <p class="field{% if 'f-applicant_name' in need %} needed{% endif %}"><label for="f-applicant_name">Applicant name {{ req() }}</label>{{ err('f-applicant_name') }}<input id="f-applicant_name" name="applicant_name" value="{{ values.applicant_name }}" required aria-required="true"{{ bad('f-applicant_name') }}></p>
-    <p class="field{% if 'f-applicant_email' in need %} needed{% endif %}"><label for="f-applicant_email">Email {{ req() }}</label>{{ err('f-applicant_email') }}<input id="f-applicant_email" type="email" name="applicant_email" value="{{ values.applicant_email }}" required aria-required="true"{{ bad('f-applicant_email') }}></p>
-    <p class="field"><label for="f-applicant_phone">Phone {{ opt() }}</label><input id="f-applicant_phone" name="applicant_phone" value="{{ values.applicant_phone }}"></p>
-    {% if spec.needs_business %}<p class="field{% if 'f-business_name' in need %} needed{% endif %}"><label for="f-business_name">Business name {{ req() }}</label>{{ err('f-business_name') }}<input id="f-business_name" name="business_name" value="{{ values.business_name }}" required aria-required="true"{{ bad('f-business_name') }}></p>{% endif %}
-  </fieldset>
-
-  <fieldset class="panel">
-    <legend>Property</legend>
+  <fieldset class="panel form-section" data-testid="section-project">
+    <legend><span class="section-no" aria-hidden="true">1</span> Project and property</legend>
+    {% for field in spec.fields if field.kind == 'choice' %}{{ field_row(field) }}{% endfor %}
     <p class="field{% if 'f-address_text' in need %} needed{% endif %}">
       <label for="f-address_text">Property address {{ req() }}</label>
       {{ err('f-address_text') }}
@@ -62,47 +99,56 @@
         {% if located.found and located.ambiguous %}<p class="muted">More than one address fits; a person at the City will confirm the property.</p>{% endif %}
       {% endif %}
     </div>
-  </fieldset>
-
-  <fieldset class="panel">
-    <legend>About the project</legend>
-    {% for field in spec.fields %}
-    {% set rq = 'required aria-required="true"' | safe if field.required else '' %}
-    {% set a = 'f-' ~ field.key %}
-    {% set tag %}{% if field.required %} {{ req() }}{% else %} {{ opt() }}{% endif %}{% endset %}
-    <p class="field{% if a in need %} needed{% endif %}">
-      {% if field.kind == 'checkbox' %}
-        <label><input id="{{ a }}" type="checkbox" name="{{ field.key }}" {{ rq }}{{ bad(a) }} {% if values.get(field.key) in ('on', 'true', '1') %}checked{% endif %}> {{ field.label }}{{ tag }}</label>{{ err(a) }}
-      {% elif field.kind == 'select' %}
-        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
-        <select id="{{ a }}" name="{{ field.key }}" {{ rq }}{{ bad(a) }}><option value="">Choose</option>{% for value, label in field.options %}<option value="{{ value }}" {% if values.get(field.key) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-      {% elif field.kind == 'textarea' %}
-        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
-        <textarea id="{{ a }}" name="{{ field.key }}" rows="3" {{ rq }}{{ bad(a) }}>{{ values.get(field.key, '') }}</textarea>
-      {% else %}
-        <label for="{{ a }}">{{ field.label }}{{ tag }}</label>{{ err(a) }}
-        <input id="{{ a }}" name="{{ field.key }}" type="{{ 'number' if field.kind == 'number' else 'text' }}" {% if field.kind == 'number' %}step="any" min="0"{% endif %} value="{{ values.get(field.key, '') }}" {{ rq }}{{ bad(a) }}>
-      {% endif %}
-    </p>
+    {% for run in spec.field_groups() %}
+    {% set shown = run.fields | rejectattr('kind', 'equalto', 'choice') | list %}
+    {% if shown %}
+    {% if run.when %}
+    {% set active = spec.applies(run.fields[0], values) %}
+    <div class="when-group{% if not active %} is-inactive{% endif %}" data-when-key="{{ run.when[0] }}" data-when-value="{{ run.when[1] }}" data-testid="when-group" data-when-group="{{ run.when[1] }}">
+      <h3 class="when-title">{{ run.title }} questions</h3>
+      {% if not active %}<p class="muted when-note">These apply only if you choose {{ run.title }}. They are ignored otherwise.</p>{% endif %}
+      {% for field in shown %}{{ field_row(field) }}{% endfor %}
+    </div>
+    {% else %}
+    {% for field in shown %}{{ field_row(field) }}{% endfor %}
+    {% endif %}
+    {% endif %}
     {% endfor %}
   </fieldset>
 
-  <fieldset class="panel" data-testid="document-checklist">
-    <legend>Required documents</legend>
-    <p class="muted">PDF, PNG, JPG or plain text, up to 5 MB each. If you already sent a document to the City another way, tick &ldquo;Sent to the City separately&rdquo;; the City will still need to receive it.</p>
+  <fieldset class="panel form-section" data-testid="section-details">
+    <legend><span class="section-no" aria-hidden="true">2</span> Your details</legend>
+    <p class="field{% if 'f-applicant_name' in need %} needed{% endif %}"><label for="f-applicant_name">Applicant name {{ req() }}</label>{{ err('f-applicant_name') }}<input id="f-applicant_name" name="applicant_name" value="{{ values.applicant_name }}" autocomplete="name" required aria-required="true"{{ bad('f-applicant_name') }}></p>
+    <p class="field{% if 'f-applicant_email' in need %} needed{% endif %}"><label for="f-applicant_email">Email {{ req() }}</label>{{ err('f-applicant_email') }}<input id="f-applicant_email" type="email" name="applicant_email" value="{{ values.applicant_email }}" autocomplete="email" required aria-required="true"{{ bad('f-applicant_email') }}></p>
+    <p class="field"><label for="f-applicant_phone">Phone {{ opt() }}</label><input id="f-applicant_phone" name="applicant_phone" value="{{ values.applicant_phone }}" autocomplete="tel"></p>
+    {% if spec.needs_business %}<p class="field{% if 'f-business_name' in need %} needed{% endif %}"><label for="f-business_name">Business name {{ req() }}</label>{{ err('f-business_name') }}<input id="f-business_name" name="business_name" value="{{ values.business_name }}" required aria-required="true"{{ bad('f-business_name') }}></p>{% endif %}
+  </fieldset>
+
+  <fieldset class="panel form-section" data-testid="document-checklist">
+    <legend><span class="section-no" aria-hidden="true">3</span> Documents</legend>
+    <p class="muted" data-testid="upload-rules">{{ upload_rules }} If you already sent a document to the City another way, tick &ldquo;Sent to the City separately&rdquo;; the City will still need to receive it.</p>
     <ul class="doc-list">
       {% for doc_type, label in spec.documents %}
       {% set a = 'file-' ~ doc_type %}
-      <li class="doc-row{% if a in need %} needed{% endif %}" data-doc-type="{{ doc_type }}" data-added="{{ 'true' if doc_type in draft_documents else 'false' }}">
-        <span class="doc-label">{{ label }} {{ req() }}</span>
+      {% set added = doc_type in draft_documents %}
+      {% set sep = doc_type in sent_separately and not added %}
+      <li class="doc-row{% if a in need %} needed{% endif %}" data-doc-type="{{ doc_type }}" data-added="{{ 'true' if added else 'false' }}">
+        <div class="doc-main">
+          <span class="doc-label">{{ label }} {{ req() }}</span>
+          {% if document_purposes.get(doc_type) %}<span class="doc-purpose muted" data-testid="doc-purpose">{{ document_purposes[doc_type] }}</span>{% endif %}
+        </div>
         {{ err(a) }}
-        {% set sep = doc_type in sent_separately and doc_type not in draft_documents %}
-        <span class="pill {{ 'ok' if (doc_type in draft_documents or sep) else 'warn' }}" data-testid="doc-status">{{ 'Added' if doc_type in draft_documents else ('Sent separately' if sep else 'Add file') }}</span>
-        {% if doc_type in draft_documents %}<span class="muted mono">{{ draft_documents[doc_type] }}</span>{% endif %}
+        {% if upload_problems.get(doc_type) %}<p class="field-error" role="alert" data-testid="doc-problem"><span class="visually-hidden">Problem with the file: </span>{{ upload_problems[doc_type] }}</p>{% endif %}
+        <div class="doc-status-line">
+          <span class="pill {{ 'ok' if (added or sep) else 'warn' }}" data-testid="doc-status">{{ 'Added' if added else ('Sent separately' if sep else 'Add file') }}</span>
+          {% if added %}<span class="muted mono doc-file" data-testid="doc-filename">{{ draft_documents[doc_type] }}</span>{% endif %}
+          {% if added %}<button type="submit" name="remove_doc" value="{{ doc_type }}" class="btn ghost sm" formnovalidate data-testid="doc-remove">Remove</button>{% endif %}
+        </div>
         <span class="drop-zone" data-drop-zone>
-          <label for="{{ a }}" class="visually-hidden">{{ label }} file</label>
-          <input id="{{ a }}" type="file" name="file__{{ doc_type }}" aria-required="true" accept=".pdf,.png,.jpg,.jpeg,.txt"{{ bad(a) }}>
-          <span class="muted" data-drop-hint hidden>Drop a file here</span>
+          <label for="{{ a }}" class="doc-pick">{{ 'Replace file' if added else 'Add file' }}<span class="visually-hidden"> for {{ label }}</span></label>
+          <input id="{{ a }}" type="file" name="file__{{ doc_type }}" aria-required="true" accept="{{ upload_accept }}"{{ bad(a) }} data-doc-input>
+          <span class="muted" data-drop-hint hidden>or drop a file here</span>
+          <span class="doc-chosen muted" data-doc-chosen aria-live="polite"></span>
         </span>
         <label class="sent-separately"><input type="checkbox" name="sent_separately__{{ doc_type }}" id="sent-{{ doc_type }}" data-sent-separately {% if doc_type in sent_separately %}checked{% endif %}> Sent to the City separately</label>
       </li>
@@ -110,20 +156,21 @@
     </ul>
   </fieldset>
 
-  <fieldset class="panel{% if 'f-certification_accepted' in need %} needed{% endif %}">
-    <legend>Certification</legend>
+  <fieldset class="panel form-section{% if 'f-certification_accepted' in need %} needed{% endif %}" data-testid="section-review">
+    <legend><span class="section-no" aria-hidden="true">4</span> Review and submit</legend>
     {{ err('f-certification_accepted') }}
     <p><label><input type="checkbox" name="certification_accepted" id="f-certification_accepted" {% if state.certification_accepted %}checked{% endif %} data-testid="certify" aria-required="true"{{ bad('f-certification_accepted') }}> {{ certification }} {{ req() }}</label></p>
+    <p class="muted needs-status" role="status" aria-live="polite" data-testid="completeness-banner" data-complete="{{ 'true' if state.can_submit else 'false' }}" data-status>{{ state.status }}</p>
+    <p class="form-buttons">
+      <button type="submit" name="intent" value="submit" class="btn primary" data-testid="submit-application">Submit application</button>
+      <button type="submit" name="intent" value="save" class="btn" data-testid="save-draft" formnovalidate>Save draft</button>
+      <a class="btn" href="/apply">Choose a different project</a>
+    </p>
   </fieldset>
-
-  <p class="muted needs-status" role="status" aria-live="polite" data-testid="completeness-banner" data-complete="{{ 'true' if state.can_submit else 'false' }}" data-status>{{ state.status }}</p>
-
-  <p class="form-buttons">
-    <button type="submit" name="intent" value="submit" class="btn primary" data-testid="submit-application">Submit application</button>
-    <button type="submit" name="intent" value="save" class="btn" data-testid="save-draft" formnovalidate>Save draft</button>
-    <a class="btn" href="/apply">Choose a different project</a>
-  </p>
 </form>
 
+<aside class="form-aside" aria-label="Help with this application" data-testid="form-help-column">
 {% include "components/help_panel.html" %}
+</aside>
+</div>
 {% endblock %}

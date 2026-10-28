@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy of application {{ record.reference }}</title>
+<style>
+body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#17222e;max-width:720px;margin:2rem auto;padding:0 1rem}
+h1{font-family:Georgia,"Times New Roman",serif;color:#12304f;margin:0 0 .25rem}
+h2{font-family:Georgia,"Times New Roman",serif;color:#12304f;font-size:1.15rem;margin:1.5rem 0 .5rem;border-bottom:1px solid #d5dce4}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem}
+dt{font-weight:700}dd{margin:0}
+.note{background:#fff6d6;border:1px solid #e8d48a;padding:.5rem .75rem;border-radius:6px;font-size:.9rem}
+@media print{body{margin:0}}
+</style>
+</head>
+<body>
+<p class="note">Fictional demonstration. This is a record of what was submitted, from the City of Acme demonstration site. {{ copy_note }}</p>
+<h1>Application {{ record.reference }}</h1>
+<p>{{ record.type_label }}</p>
+<h2>Summary</h2>
+<dl>
+  <dt>Reference</dt><dd>{{ record.reference }}</dd>
+  <dt>Project type</dt><dd>{{ record.type_label }}</dd>
+  <dt>Address</dt><dd>{{ record.address or 'Not recorded' }}</dd>
+  <dt>Submitted</dt><dd>{{ record.submitted_stamp }}</dd>
+  <dt>Status when downloaded</dt><dd>{{ record.status_word }}</dd>
+  {% if record.applicant_name %}<dt>Applicant</dt><dd>{{ record.applicant_name }}</dd>{% endif %}
+</dl>
+{% if record.answers %}
+<h2>Your answers</h2>
+<dl>{% for label, value in record.answers %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>
+{% endif %}
+{% if record.documents %}
+<h2>Documents</h2>
+<dl>{% for label, status in record.documents %}<dt>{{ label }}</dt><dd>{{ status }}</dd>{% endfor %}</dl>
+{% endif %}
+</body>
+</html>

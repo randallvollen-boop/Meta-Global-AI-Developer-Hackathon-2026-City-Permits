@@ -2,6 +2,12 @@
    pages, which render inside it.  No staff application chrome appears here. #}
 {% set active = active_nav if active_nav is defined else 'permits' %}
 {% set on_chooser = request.url.path.rstrip('/') == '/apply' %}
+{% set path = request.url.path.rstrip('/') %}
+{% set portal_page = path == '/apply' or path.startswith('/apply/') %}
+{% set is_applicant = actor is defined and actor and actor.label == 'Applicant' %}
+{% set shown_name = (applicant_name if applicant_name is defined and applicant_name else (actor.label if actor else '')) %}
+{% set portal_active = 'track' if path == '/apply/track' else ('help' if path == '/apply/help/panel' else 'start') %}
+{% set portal_text = portal_content() %}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -25,18 +31,35 @@
 </defs></svg>
 <a class="skip-link" href="#main">Skip to the main content</a>
 
-<div class="city-demo" role="note" data-testid="city-demo-banner">Fictional City of Acme website for a software demonstration. No real city, service, fee or person is represented. The Demo controls button is only for ease of switching in this demonstration; in a real deployment people would sign in through the City's front door and their role would come from that sign-in.</div>
+<div class="city-demo" role="note" data-testid="city-demo-banner">{{ portal_text.disclosure_strip }}</div>
 
 <header class="city-header">
   <div class="city-wrap city-header-row">
-    <a class="city-brand" href="/city/" aria-label="City of Acme home">
+    <a class="city-brand" href="/city/" aria-label="City of Acme{% if portal_page %}, Permit Services{% endif %}, home">
       <svg class="city-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor" opacity=".18"/><path d="M6 25h20M8 25V13l8-6 8 6v12M13 25v-7h6v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span class="city-wordmark"><b>City of Acme</b><small>Fictional demonstration</small></span>
+      <span class="city-wordmark"><b>City of Acme</b>{% if portal_page %}<small data-testid="city-service-name">Permit Services</small>{% endif %}</span>
     </a>
+    {% if is_applicant %}
+    <details class="city-account" data-testid="applicant-account">
+      <summary class="city-account-trigger" aria-label="Account: {{ shown_name }}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg><span class="city-account-name" data-testid="applicant-name">{{ shown_name }}</span></summary>
+      <div class="city-account-panel">
+        <p class="city-account-line">Signed in as <strong>{{ shown_name }}</strong></p>
+        <form method="post" action="/ui/end"><button type="submit" class="city-signout" data-testid="sign-out">Sign out</button></form>
+      </div>
+    </details>
+    {% else %}
     <p class="city-hours">City Hall (555) 010-0100</p>
+    {% endif %}
   </div>
-  <nav class="city-nav" aria-label="City website">
+  <nav class="city-nav" aria-label="{{ 'Permit services' if portal_page else 'City website' }}">
     <div class="city-wrap">
+      {% if portal_page %}
+      <ul data-testid="applicant-nav">
+        <li><a href="/apply/track" data-testid="nav-my-permits"{% if portal_active == 'track' %} aria-current="page"{% endif %}>My permits</a></li>
+        <li><a href="/apply" data-testid="nav-start"{% if portal_active == 'start' %} aria-current="page"{% endif %}>Start an application</a></li>
+        <li><a href="/apply/help/panel" data-testid="nav-help"{% if portal_active == 'help' %} aria-current="page"{% endif %}>Help</a></li>
+      </ul>
+      {% else %}
       <ul>
         <li><a href="/city/"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a></li>
         <li><a href="/city/permits" data-testid="nav-permits"{% if active == 'permits' %} aria-current="page"{% endif %}>Permits</a></li>
@@ -44,6 +67,7 @@
         <li><a href="/city/{{ slug }}"{% if active == slug %} aria-current="page"{% endif %}>{{ svc.title }}</a></li>
         {% endfor %}
       </ul>
+      {% endif %}
     </div>
   </nav>
 </header>
@@ -53,8 +77,8 @@
     <ol>
       <li><a href="/city/">Home</a></li>
       {% if active == 'permits' %}
-      <li>{% if on_chooser or title == 'Permits' %}<span aria-current="page">Permits</span>{% else %}<a href="{{ permits_crumb|default('/apply') }}">Permits</a>{% endif %}</li>
-      {% if not on_chooser and title != 'Permits' %}<li><span aria-current="page">{{ title }}</span></li>{% endif %}
+      <li>{% if on_chooser or title in ('Permits', 'Permits and applications') %}<span aria-current="page">{{ 'Permits' if title == 'Permits' else ('Start an application' if on_chooser else title) }}</span>{% else %}<a href="{{ permits_crumb|default('/apply') }}">Permits</a>{% endif %}</li>
+      {% if not on_chooser and title not in ('Permits', 'Permits and applications') %}<li><span aria-current="page">{{ title }}</span></li>{% endif %}
       {% elif active != 'home' %}
       <li><span aria-current="page">{{ title }}</span></li>
       {% endif %}
@@ -68,29 +92,19 @@
 </main>
 
 <footer class="city-footer">
-  <div class="city-wrap city-footer-grid">
-    <div>
-      <p class="city-footer-name">City of Acme</p>
-      <p>1 Example Plaza, Acme (fictional address)<br>(555) 010-0100<br>Weekdays, 8:30 a.m. to 4:30 p.m.</p>
-    </div>
-    <div>
-      <p class="city-footer-name">Services</p>
-      <ul>
-        <li><a href="/city/permits">Permits</a></li>
-        {% for slug, svc in city_services.items() %}<li><a href="/city/{{ slug }}">{{ svc.title }}</a></li>{% endfor %}
-      </ul>
-    </div>
-    <div>
-      <p class="city-footer-name">About this site</p>
-      <p>Every name, address, phone number, fee and permit on this site is synthetic. The City of Acme does not exist.</p>
-    </div>
+  <div class="city-wrap">
+    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="{{ '/apply/help/panel' if portal_page else '/city/contact' }}">Help</a></p>
+    <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
+    <p class="city-footer-note">1 Example Plaza, Acme (fictional address) &middot; (555) 010-0100 &middot; Weekdays, 8:30 a.m. to 4:30 p.m.</p>
   </div>
 </footer>
 
+{% block toasts %}{% endblock %}
 {% include "_demo_switch.html" %}
 {% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 <script src="/ui/static/property.js" defer></script>
 <script src="/ui/static/help.js" defer></script>
+<script src="/ui/static/applicant.js" defer></script>
 <script src="/ui/static/ui-patterns.js" defer></script>
 </body>
 </html>
