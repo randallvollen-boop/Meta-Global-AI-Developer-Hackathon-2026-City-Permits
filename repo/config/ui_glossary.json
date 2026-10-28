@@ -118,6 +118,14 @@
       "label": "Review decision",
       "text": "The Permit Reviewer records the decision of record. An agent recommendation only proposes an outcome and is never the decision. Fee assessment, payment and permit issuance are separate steps after the decision."
     },
+    "ops_actor_type": {
+      "label": "Actor type",
+      "text": "A person is a persona the interface can select, or a staff user added in Administration. An agent is a service identity that holds an agent role, such as the intake agent. Everything else, including a record with no actor, is the system. The type comes from the identity records the server holds, not from the text of an audit row."
+    },
+    "ops_not_applicable": {
+      "label": "Not applicable",
+      "text": "A check is not applicable when there is nothing it can inspect. The seeded history, such as the D07 approval and permit that the fixture inserts without a decision or issuance audit event, is reported as not applicable (historical seed). It is never counted as a pass and no event is made up for it."
+    },
     "party_record_status": {
       "label": "Record status",
       "text": "Whether the person or organization record itself is active in the master data. It says nothing about any license or registration the record holds."
@@ -345,6 +353,43 @@
         "Read what you will need before you begin."
       ],
       "next": "You choose a project type and fill in its form."
+    },
+    "ops_dashboard": {
+      "title": "Operations dashboard",
+      "purpose": "See how permit work is going across the City: how many cases are open, how old they are, what the intake agent did and what needs a person.",
+      "can_do": [
+        "Read each figure with its definition beside it.",
+        "Include or leave out the labelled synthetic history."
+      ],
+      "next": "Open the queues or the audit log to look at the cases and actions behind a number."
+    },
+    "ops_audit": {
+      "title": "Audit log",
+      "purpose": "Read the append-only record of what was done in the application and who or what did it. It is read only.",
+      "can_do": [
+        "Filter by actor type and by action, or search.",
+        "Open the record a row refers to, or the details of the event."
+      ],
+      "next": "If a row needs follow-up, open its record and act there with the right role."
+    },
+    "ops_support": {
+      "title": "Support",
+      "purpose": "Help applicants: look up a case, answer the questions sent through Ask the City and record assistance given outside the application.",
+      "can_do": [
+        "Look up an application by its reference.",
+        "Answer an open help request.",
+        "Record a support case."
+      ],
+      "next": "An answer tied to a case appears on the applicant's tracking page; otherwise it appears in their help history."
+    },
+    "ops_checks": {
+      "title": "Checks",
+      "purpose": "Confirm that the application still keeps its own rules: the personas, who decided what, audit records, fees and comment privacy.",
+      "can_do": [
+        "Run the fixed list of read-only checks.",
+        "Read why each check passed, failed or does not apply."
+      ],
+      "next": "A failed check lists the record that broke the rule; fix it in the screen that owns the record."
     },
     "source_records": {
       "title": "Source records",

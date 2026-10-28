@@ -289,6 +289,9 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 #: Policy 2 adds the What-if screen after the City view, behind its own grant
 #: (``policy.scenario.manage``), which only the City Administrator holds.
 #:
+#: P3c adds the dashboard, the audit log, support and the checks after it, each
+#: behind its own grant that only the City Administrator holds.
+#:
 #: Steward restyle (changed deliberately): the Data Steward and the City
 #: Administrator hold Master records, where People & organizations is a tab, so
 #: "applicants" is no longer listed for them (the Applicant and the Permit
@@ -330,6 +333,11 @@ EXPECTED_NAVIGATION: dict[str, list[str]] = {
         "admin",
         "insight_city",
         "policy_scenarios",
+        # P3c: the four operations screens follow the What-if screen.
+        "ops_dashboard",
+        "ops_audit",
+        "ops_support",
+        "ops_checks",
     ],
 }
 

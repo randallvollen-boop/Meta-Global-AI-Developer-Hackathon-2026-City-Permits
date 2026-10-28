@@ -29,8 +29,8 @@ def make_settings(tmp_path: Path, name: str = "migrations.db") -> Settings:
 def test_upgrade_from_empty_database_creates_the_schema(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     revision = initialize_database(settings)
-    # Head is 0011 since the chat 2 migration (after 0010, the policy 2 migration: what-if scenarios and immutable runs).
-    assert revision == "0011"
+    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
+    assert revision == "0013"
 
     engine = create_engine(settings.database_url, future=True)
     try:
@@ -41,7 +41,7 @@ def test_upgrade_from_empty_database_creates_the_schema(tmp_path: Path) -> None:
         engine.dispose()
 
     assert "alembic_version" in tables
-    assert recorded == "0011"
+    assert recorded == "0013"
     assert set(Base.metadata.tables) <= tables
 
 
@@ -50,7 +50,7 @@ def test_downgrade_and_upgrade_again_on_a_disposable_database(tmp_path: Path) ->
     config = alembic_config(settings)
 
     command.upgrade(config, "head")
-    assert current_revision(settings) == "0011"
+    assert current_revision(settings) == "0013"
 
     command.downgrade(config, "base")
     assert current_revision(settings) is None
@@ -64,7 +64,7 @@ def test_downgrade_and_upgrade_again_on_a_disposable_database(tmp_path: Path) ->
     assert "applications" not in tables
 
     command.upgrade(config, "head")
-    assert current_revision(settings) == "0011"
+    assert current_revision(settings) == "0013"
 
 
 def test_alembic_check_reports_no_ungenerated_changes(tmp_path: Path) -> None:

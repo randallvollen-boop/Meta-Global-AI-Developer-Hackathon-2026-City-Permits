@@ -150,7 +150,7 @@ def test_every_control_of_every_new_screen_carries_a_label(
 def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # City Administrator holds grants for all eleven of the original screens and the
     # P3insight City view (twelve) and the policy 2 What-if screen (thirteen, a
-    # deliberate change of this count), and the steward restyle (14, a deliberate
+    # deliberate change of this count), the four P3c operations screens, and the steward restyle (18 in all, a deliberate
     # change: Master records absorbs Applicants, Source records and Activity are new),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
@@ -159,7 +159,7 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 14, path
+        assert len(items) == 18, path
         if reference is None:
             reference = items
         assert items == reference
@@ -204,6 +204,11 @@ SCREEN_PATHS = {
     "insight_city": "/insight/city",
     # Parity phase 3 policy 2 adds the What-if screen after the City view.
     "policy_scenarios": "/policy/scenarios",
+    # Parity phase 3c adds the four operations screens after the What-if screen.
+    "ops_dashboard": "/ops/dashboard",
+    "ops_audit": "/ops/audit",
+    "ops_support": "/ops/support",
+    "ops_checks": "/ops/checks",
 }
 
 #: The screens each persona may open (same table as the view-model tests).
@@ -250,6 +255,13 @@ EXPECTED_NAVIGATION = {
         # What-if screen, behind the grant policy.scenario.manage that only the
         # Administrator holds.  No other persona's list changes.
         "policy_scenarios",
+        # Changed deliberately (P3c): the City Administrator gains the four
+        # operations screens, each behind its own grant that only the
+        # Administrator holds.  No other persona's list changes.
+        "ops_dashboard",
+        "ops_audit",
+        "ops_support",
+        "ops_checks",
     ],
 }
 

@@ -17,6 +17,7 @@ from acme_city.persistence.models import (
     policy,
     registry,
     source,
+    support,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "policy",
     "registry",
     "source",
+    "support",
 ]

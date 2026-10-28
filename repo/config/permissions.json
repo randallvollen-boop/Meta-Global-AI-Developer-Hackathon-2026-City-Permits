@@ -355,6 +355,48 @@
       "sensitive": false
     },
     {
+      "permission_id": "ops.dashboard.view",
+      "action": "ops.dashboard.view",
+      "category": "ops",
+      "description": "Open the operations dashboard: active cases, ages, intake agent results, decisions and what needs a person, each with its definition. Read only.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "ops.audit_log.view",
+      "action": "ops.audit_log.view",
+      "category": "ops",
+      "description": "Open the audit log: a read-only, paged view of the append-only audit records, filtered by actor type, action and search. It adds no second trail.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "support.lookup.view",
+      "action": "support.lookup.view",
+      "category": "support",
+      "description": "Look up an application by reference on the support screen: its status, timeline and the comments written for the applicant. Internal notes are never shown.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "support.help_request.answer",
+      "action": "support.help_request.answer",
+      "category": "support",
+      "description": "Answer a help request an applicant sent through Ask the City. The reply and the answered status are recorded together; on a case that can still change it also adds a comment the applicant reads. It gives no power to decide, issue, return or waive.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "support.case.record",
+      "action": "support.case.record",
+      "category": "support",
+      "description": "Record assistance given outside the application as a support case: an optional reference, the channel and a short summary.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "ops.checks.run",
+      "action": "ops.checks.run",
+      "category": "ops",
+      "description": "Run the fixed list of read-only invariant checks and record that the run happened. A run changes no permit, decision, fee or comment.",
+      "sensitive": false
+    },
+    {
       "permission_id": "policy.muse.brief",
       "action": "policy.muse.brief",
       "category": "policy",
@@ -547,6 +589,9 @@
       "agent.toggle",
       "config.manage",
       "insight.city.view",
+      "ops.audit_log.view",
+      "ops.checks.run",
+      "ops.dashboard.view",
       "permit.case.archive",
       "permit.case.restore",
       "permit.icon.generate",
@@ -556,7 +601,10 @@
       "policy.scenario.manage",
       "property.view",
       "records.configuration.view",
-      "records.document.view"
+      "records.document.view",
+      "support.case.record",
+      "support.help_request.answer",
+      "support.lookup.view"
     ],
     "auditor": [
       "records.audit.view",

@@ -297,6 +297,26 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Tests: new `tests/integration/test_reviewer_ui.py` (20) and `tests/browser/test_reviewer_ui_browser.py` (3). Changed deliberately: `tests/api/test_pages.py` (the label "Run validation" is now "Run application checks"); `tests/browser/test_ui_patterns_browser.py` (two tests: the first drawer link and the first info popover on the workspace are now Technical details and Suggested fields, so each test selects the `muse-run` link and the `muse_provenance` popover it is about).
 - Not removed or hidden: Muse labels and run details (Run details link in the summary and the run strip), extraction proposal, adjudication recommendation, findings and waivers, comments, priority and owner, approve with conditions, reconfirmation, `/queue/review`, finance, issuance, document provenance (moved into the document history flyout), revision history. Postponed: asking the applicant for a specific item has no separate workflow in the app, so only "Ask the applicant for revisions" (request revisions) exists and is named as such. The old `Findings` and `Timeline` tabs were merged into Review and Activity; ids `muse-panel`, `fields-panel`, `findings-panel` and `timeline-panel` are kept.
 
+## 2026-10-28 — P3c: operations dashboard, audit log, support, checks (`feature/parity-p3`, from main 2b3272b)
+
+- Spec: `BRIEF-P3-OPERATIONS.md` section P3c (c1 to c5) and the standing UI rules. Fictional ACME data only. Nothing pushed, no live model call, no image opened.
+- Screens (City Administrator only, each behind its own grant): `/ops/dashboard`, `/ops/audit`, `/ops/support`, `/ops/checks`; navigation keys `ops_dashboard`, `ops_audit`, `ops_support`, `ops_checks` after the What-if entry. Six grants added to `config/permissions.json` and seeded on the City Administrator in `config/actors.json`.
+- Migration 0012: `support_cases`. Head tests moved 0011 to 0012.
+- c1: `ops/dashboard.py`. Every figure carries its definition; the synthetic history is excluded by default and labelled when included (`?synthetic=include`).
+- c2: `ops/audit_log.py`. Actor type from server identity rows (agent role, selectable or persona-role actor), filters, paging, links by target type with a text fallback, event detail in the shared flyout (`audit-event`).
+- c3: `ops/support.py`. Lookup (applicant-visible comments only), help-request list with the escalated snapshot, version-checked answer (reply, status and, on a case that can change, an applicant-visible comment, in one transaction), recorded support cases.
+- c4: `ops/checks.py`. Eight in-process checks, each with a passing and a failing fixture. D07 and the parcel-matching exemption are reported as not applicable (historical seed) or as exceptions, never as passes. One `checks.run` audit event per run; the version of the screen is the number of earlier runs.
+- c5: the three writes go through the UI dispatcher (`ops.checks.run`, `support.help_request.answer`, `support.case.record`). Random intake states a high priority for a share of arrivals (own random stream, other values unchanged); it never assigns returned or revisions requested. RUNBOOK and USER_STORIES updated.
+- Changed tests (deliberately): head 0011 to 0012 in test_migrations, test_schema, test_reset, test_sessions; navigation lists gain the four screens in test_view_models, test_vc04 (the navigation count 13 to 17), test_navigation, test_insight_city_view. New: test_ops_checks (35), test_ops_dashboard, test_ops_audit_log, test_p3c_screens, test_p3c_walkthrough, test_p3c_ops_browser.
+- Pre-existing failure on main 2b3272b, not touched: `tests/integration/test_intake_triage.py::test_a_new_record_waits_for_the_intake_agent` expects the words "Awaiting intake agent" on `/queue?view=all`, which the reviewer restyle removed.
+
+## 2026-10-28 — P3chat chat3: escalation, the Administrator's answers, privacy tests (`feature/parity-p3`)
+
+- Escalation counting: `ApplicantHelpService.escalation_state` (threshold and phrases in `config/applicant_help.json`), a prompt on the panel and in the JSON answer, rendered in place by `help.js`; the last question is carried into the Ask the City form. "Ask the City" stays available regardless of the prompt.
+- Fix: a request made before any question now starts a conversation tied to the page's case (placement, type and application are passed through, and a case of another applicant is refused), so the City's answer can reach the case.
+- The Administrator answer service and the P3c handoff (`/ops/support`, the audit-log link to a help request) were built in P3c; the applicant panel now shows the reply as "Answer from the City".
+- Tests: `test_p3chat3_escalation` (19: counting, restarts, cross-applicant, staff leakage, audit without text, retry), `test_p3chat3_escalation_browser` (5: three placements, with and without JavaScript, the reply reaching the applicant). Changed tests: none. Replay fixtures rebuilt: not needed (`--check` unchanged); published text unchanged.
+
 ## 2026-10-28 — Data Steward screens restyled (ui-steward)
 
 - Branch `feature/ui-steward` from main `ee78093`. Brief: `BRIEF-UI-STEWARD.md`, on the shared patterns of `BRIEF-UI-PATTERNS.md` and the standing UI rules. Fictional ACME data only; no model call; no migration.
