@@ -185,10 +185,10 @@
     ],
     "title": "Explanation of the fence height what-if"
   },
-  "prompt_version": "acme-policy-brief-prompt-v1",
+  "prompt_version": "acme-policy-brief-prompt-v2",
   "purpose": "explain",
   "recorded_at": "2026-10-28T12:00:00Z",
-  "replay_key": "9bd47b9b6c133ef373b99925169537c67697f63d2ab0ee2d3f68cf753d6f10d3",
+  "replay_key": "db0de7ba5a7a9bab5696bca15be63ec645f057e3bfdc2a8ef0f4427c602cc3c3",
   "run_content_hash_at_build": "78e5495b9fb41844c25f8355454afadac841bd66e80de75cc7a5c22061d32633",
   "schema_version": "acme-policy-brief-schema-v1",
   "task": "policy_brief"

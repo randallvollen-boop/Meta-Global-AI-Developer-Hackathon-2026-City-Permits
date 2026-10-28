@@ -47,7 +47,7 @@ MATCH_PROMPT_VERSION: Final = "acme-match-prompt-v1"
 APPLICANT_ASSIST_PROMPT_VERSION: Final = "acme-assist-prompt-v1"
 
 #: The versions of the what-if policy prompts (policy 3).
-POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v1"
+POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v2"
 POLICY_PROPOSE_PROMPT_VERSION: Final = "acme-policy-propose-prompt-v1"
 
 #: The provider that serves the Standard Muse models.
@@ -381,6 +381,11 @@ def _strictify(node: Any) -> Any:
         strict: dict[str, Any] = {}
         for key, value in node.items():
             if key in _DROPPED_SCHEMA_KEYWORDS:
+                continue
+            if key in ("properties", "$defs") and isinstance(value, dict):
+                # These map field and definition names, never keywords: a
+                # field called "title" is kept.
+                strict[key] = {name: _strictify(item) for name, item in value.items()}
                 continue
             strict[key] = _strictify(value)
         if strict.get("type") == "object" or "properties" in strict:

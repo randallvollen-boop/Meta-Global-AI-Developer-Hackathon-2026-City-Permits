@@ -337,6 +337,18 @@ def test_the_schema_is_strict() -> None:
     assert "schema_invalid" in codes(out)
 
 
+def test_the_schema_sent_to_muse_requires_every_field_the_validator_requires() -> None:
+    # A live briefing came back without "title" because the strict schema
+    # builder dropped the field along with the "title" metadata keyword.
+    from acme_city.muse.schemas import TASK_OUTPUT_MODELS, task_schema
+
+    for task, model in TASK_OUTPUT_MODELS.items():
+        sent = task_schema(task)
+        assert set(sent["properties"]) == set(model.model_fields), task
+        assert sorted(sent["required"]) == sorted(model.model_fields), task
+    assert "title" in task_schema("policy_brief")["required"]
+
+
 def test_the_required_sections_depend_on_the_purpose() -> None:
     out = good_output()
     out["sections"] = out["sections"][:2]
