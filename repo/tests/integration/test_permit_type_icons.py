@@ -323,7 +323,10 @@ def test_generation_records_attempt_and_pending_candidate(seeded) -> None:
                 permit.PermitType.id == "permit_type_deck_fence"
             )
         ).scalar_one()
-        assert type_row.icon_id is None  # pending until saved
+        # Pending until saved: the type keeps its bundled seed icon (deck and
+        # fence had none before the 14 seed icons were added, so this was None).
+        assert type_row.icon_id == "icon_seed_deck_fence"
+        assert type_row.icon_id != icon_id
         attempts = session.execute(
             select(audit.AuditEvent).where(
                 audit.AuditEvent.action == icon_service.ATTEMPT_ACTION
@@ -524,16 +527,26 @@ def test_yesterday_attempts_do_not_count_toward_today(seeded) -> None:
 
 
 def test_work_queue_row_shows_icon_or_fallback(client: TestClient, seeded) -> None:
-    _settings, _factory = seeded
+    _settings, factory = seeded
     select_persona(client, ADMIN)
-    client.get("/admin?tab=permit-types")  # seeds the bundled icons
     queue = client.get("/queue?view=all")
     assert queue.status_code == 200
     body = queue.text
-    # At least one seeded application type renders its image, and a type
-    # without an icon renders the labelled line-tile fallback.
-    assert 'data-testid="permit-type-icon"' in body or "permit-type-icons/" in body
-    assert 'data-testid="permit-type-icon-fallback"' in body
+    # Every permit type now carries a bundled icon, so no seeded application
+    # row falls back to the line tile.  (Before the 14 added icons, two types
+    # with applications had none and this test asserted the fallback.)
+    assert 'data-testid="permit-type-icon"' in body
+    assert 'data-testid="permit-type-icon-fallback"' not in body
+    # The fallback still works for a type whose icon rows are gone: remove
+    # every icon of one type that has applications and the tile reappears.
+    with factory() as session:
+        type_row = session.execute(
+            select(permit.PermitType).where(permit.PermitType.id == "permit_type_sign")
+        ).scalar_one()
+        type_row.icon_id = None
+        session.query(permit.PermitTypeIcon).filter_by(permit_type_id=type_row.id).delete()
+        session.commit()
+    assert 'data-testid="permit-type-icon-fallback"' in client.get("/queue?view=all").text
     # The icon card moved to Administration; Rules and fees keeps a pointer.
     rules = client.get("/rules-fees")
     assert 'data-testid="permit-type-icons"' in rules.text
@@ -547,8 +560,182 @@ def test_reset_loads_seed_icons_and_rules_render_writes_nothing(client: TestClie
     with factory() as session:
         seeded_rows = session.execute(select(permit.PermitTypeIcon)).scalars().all()
     assert {row.source for row in seeded_rows} == {"seed"}
-    assert len(seeded_rows) == 3
+    # One bundled icon per permit type: 3 original plus 14 added.
+    assert len(seeded_rows) == 17
     select_persona(client, ADMIN)
     assert client.get("/rules-fees").status_code == 200
     with factory() as session:
-        assert len(session.execute(select(permit.PermitTypeIcon)).scalars().all()) == 3
+        assert len(session.execute(select(permit.PermitTypeIcon)).scalars().all()) == 17
+
+
+# ------------------------------------------------ all 17 types carry an icon
+
+
+
+def _all_type_icons(factory) -> dict[str, str]:
+    """Return permit type key -> current icon url for every permit type."""
+    with factory() as session:
+        types = session.execute(select(permit.PermitType)).scalars().all()
+        assert len(types) == 17
+        urls: dict[str, str] = {}
+        for row in types:
+            assert row.icon_id, f"{row.key} has no seeded icon after reset"
+            urls[row.key] = f"/permit-type-icons/{row.icon_id}"
+        return urls
+
+
+def test_every_permit_type_has_a_seeded_current_icon_after_reset(seeded) -> None:
+    _settings, factory = seeded
+    urls = _all_type_icons(factory)
+    assert len(set(urls.values())) == 17  # one distinct icon per type
+    with factory() as session:
+        for row in session.execute(select(permit.PermitType)).scalars().all():
+            icons = session.execute(
+                select(permit.PermitTypeIcon).where(
+                    permit.PermitTypeIcon.permit_type_id == row.id
+                )
+            ).scalars().all()
+            assert len(icons) == 1, row.key
+            icon = icons[0]
+            assert icon.source == "seed" and icon.is_current is True
+            assert icon.media_type == "image/webp"
+            assert describe_image(icon.image_data)[1:] == (192, 192), row.key
+    # Every mapped slug has a bundled asset, and every type is mapped.
+    assert len(icon_service.PERMIT_TYPE_SEED_ICONS) == 17
+    for slug in icon_service.PERMIT_TYPE_SEED_ICONS.values():
+        assert (icon_service.STATIC_ICON_DIR / f"{slug}.webp").is_file(), slug
+
+
+def test_ensure_seeded_only_fills_types_without_icon_rows(seeded) -> None:
+    _settings, factory = seeded
+    with factory() as session:
+        before = {
+            row.id: row.icon_id
+            for row in session.execute(select(permit.PermitType)).scalars().all()
+        }
+        icon_service.ensure_seeded(session)  # idempotent: nothing is missing
+        session.commit()
+        after = {
+            row.id: row.icon_id
+            for row in session.execute(select(permit.PermitType)).scalars().all()
+        }
+        assert before == after
+        # A type with a changed current icon keeps it; a type that lost its rows
+        # gets its bundled seed back.
+        hvac = session.execute(
+            select(permit.PermitType).where(permit.PermitType.id == "permit_type_hvac")
+        ).scalar_one()
+        session.query(permit.PermitTypeIcon).filter_by(permit_type_id=hvac.id).delete()
+        hvac.icon_id = None
+        session.flush()
+        icon_service.ensure_seeded(session)
+        session.commit()
+        assert hvac.icon_id == "icon_seed_hvac"
+
+
+def _add_applications_for_missing_types(factory) -> dict[str, str]:
+    """Add one submitted application to every type that has none.
+
+    The fixture population has applications for only four of the 17 types, so
+    the queue and workspace checks create the rest here.  Returns permit type
+    key -> application id for all 17 types.
+    """
+    from acme_city.core.clock import utc_now
+
+    moment = utc_now()
+    result: dict[str, str] = {}
+    with factory() as session:
+        for row in session.execute(select(permit.PermitType)).scalars().all():
+            existing = session.execute(
+                select(permit.Application)
+                .where(permit.Application.permit_type_id == row.id)
+                .order_by(permit.Application.id)
+            ).scalars().first()
+            if existing is None:
+                existing = permit.Application(
+                    id=f"app_icon_{row.key}",
+                    source_application_number=f"ICON-{row.key}",
+                    permit_type_id=row.id,
+                    status="submitted",
+                    revision=1,
+                    initial_submitted_at=moment,
+                    revision_submitted_at=moment,
+                    description="Icon coverage case (fictional).",
+                    submitted_facts={},
+                    correlation_id=f"corr_icon_{row.key}",
+                )
+                session.add(existing)
+                session.add(
+                    permit.ApplicationRevision(
+                        id=f"rev_icon_{row.key}",
+                        application_id=existing.id,
+                        revision_number=1,
+                        submitted_at=moment,
+                        snapshot={},
+                    )
+                )
+            result[row.key] = existing.id
+        session.commit()
+    assert len(result) == 17
+    return result
+
+
+def test_portal_chooser_and_form_show_the_icon_of_every_type(
+    client: TestClient, seeded
+) -> None:
+    _settings, factory = seeded
+    urls = _all_type_icons(factory)
+    select_persona(client, "persona_applicant")
+    chooser = client.get("/apply")
+    assert chooser.status_code == 200
+    assert chooser.text.count('data-testid="type-card"') == 17
+    for key, url in urls.items():
+        assert f'data-type-key="{key}"' in chooser.text, key
+        assert f'<img class="type-ic" src="{url}"' in chooser.text, key
+    for key, url in urls.items():
+        form = client.get(f"/apply/{key}")
+        assert form.status_code == 200, key
+        assert f'<img class="type-ic" src="{url}" alt="" data-testid="form-icon">' in form.text, key
+
+
+def test_city_home_and_rules_fees_show_no_per_type_icon_by_design(
+    client: TestClient, seeded
+) -> None:
+    # The City of Acme home page lists services, not permit types, and the
+    # Rules and fees screen only points to Administration, where the icon
+    # cards live.  Neither renders a permit type icon, so this pins that
+    # design instead of forcing an icon in.
+    _settings, factory = seeded
+    urls = _all_type_icons(factory)
+    home = client.get("/city")
+    assert home.status_code == 200
+    select_persona(client, ADMIN)
+    rules = client.get("/rules-fees")
+    assert rules.status_code == 200
+    for page in (home, rules):
+        assert "/permit-type-icons/" not in page.text
+    # The Administration permit-type tab is where all 17 are shown.
+    admin = client.get("/admin?tab=permit-types")
+    for key, url in urls.items():
+        assert f'<img class="type-ic" src="{url}"' in admin.text, key
+
+
+def test_work_queue_and_workspace_show_the_icon_of_every_type(
+    client: TestClient, seeded
+) -> None:
+    _settings, factory = seeded
+    urls = _all_type_icons(factory)
+    applications = _add_applications_for_missing_types(factory)
+    select_persona(client, ADMIN)
+    queue = client.get("/queue?view=all&page_size=500")
+    assert queue.status_code == 200
+    for key, url in urls.items():
+        assert f'src="{url}" alt="" data-testid="permit-type-icon"' in queue.text, key
+    assert 'data-testid="permit-type-icon-fallback"' not in queue.text
+    for key, application_id in applications.items():
+        page = client.get(f"/permits/{application_id}")
+        assert page.status_code == 200, (key, page.text[:300])
+        assert f'src="{urls[key]}" alt="" data-testid="permit-type-icon"' in page.text, key
+        # The history panel is an audit rail of actions; it carries no per-type
+        # image by design, so the icon appears once, in the workspace header.
+        assert page.text.count('data-testid="permit-type-icon"') == 1, key
