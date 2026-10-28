@@ -1980,7 +1980,7 @@ def _applicant_source_record(
 
 
 def permit_type_icons(session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the five permit types with their current and candidate icons.
+    """Return every permit type with their current and candidate icons.
 
     Seed icons are loaded by the fixture reset, so rendering writes nothing.
     Generation is never

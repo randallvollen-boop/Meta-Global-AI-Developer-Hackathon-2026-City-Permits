@@ -16,7 +16,7 @@ Date: October 27, 2026
 | Muse core M1–M2 | GO / verified non-live slice | Parent rerun: 99 passed; strict provider contract and truth isolation; router mounted; no live call/spend; live integrated gate pending |
 | Eight-screen UI M3–M4 | GO / verified | Real app router mounted; 33 UI API/view-model checks and 26 Playwright browser checks passed; exactly four personas and eight screens |
 | UI redesign (mockup v4) | GO / verified | Built by Muse Wonder, reviewed and fixed by the parent; 675 tests and all 10 gates pass; commit `52eeb68`; :8266 runs it |
-| Muse Image permit-type icons | GO / verified (mocked) | Administrator-only governed action; 3/type/day and 10/day caps; $0.01 each; 3 seed icons loaded at reset; the first live generation waits for Randall |
+| Muse Image permit-type icons | GO / verified (mocked) | Administrator-only governed action; 3/type/day and 10/day caps; $0.01 each; 17 seed icons loaded at reset (14 generated outside the in-app flow, see the runbook); the first live generation waits for Randall |
 | Local dependencies/migrations/tests/browser checks | GO / verified | 659 tests passed; collection, fresh migration, Alembic drift, deterministic evidence and publication-tree gates passed |
 | Four-persona selector | GO / fixed | Exactly Applicant, Data Steward, Permit Reviewer and City Administrator; service identities remain nonselectable and grants remain explicit |
 | Bounded Meta Standard calls | GO / verified | 2026-10-27: output budget and field-name enum fixed; third call `resp_6ae06df6700abbe810734468` completed and validated; failures preserved in `live/` and `live-2/` |

@@ -1,0 +1,231 @@
+{
+  "model": "muse-image-1.0",
+  "generated": "2026-10-28",
+  "style": "wrap_icon_prompt from src/acme_city/muse/image_client.py",
+  "icons": [
+    {
+      "permit_type_key": "certificate_appropriateness",
+      "permit_type_id": "permit_type_certificate_appropriateness",
+      "file": "certificate-appropriateness.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 3214,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "9328ce56ebd66c08",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a classic historic house facade with columns and a pediment, beside a rosette ribbon seal"
+    },
+    {
+      "permit_type_key": "change_occupancy",
+      "permit_type_id": "permit_type_change_occupancy",
+      "file": "change-occupancy.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2486,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "d5ddaf89198b271b",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a storefront building with two curved arrows circling around it to show a change of use"
+    },
+    {
+      "permit_type_key": "deck_fence",
+      "permit_type_id": "permit_type_deck_fence",
+      "file": "deck-fence.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2316,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "445f391cac190046",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a short wooden picket fence section beside a small backyard deck with railing"
+    },
+    {
+      "permit_type_key": "fire_alarm",
+      "permit_type_id": "permit_type_fire_alarm",
+      "file": "fire-alarm.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2184,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "79d010e3288596e8",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a wall-mounted red fire alarm pull station beside a round ceiling smoke detector"
+    },
+    {
+      "permit_type_key": "hvac",
+      "permit_type_id": "permit_type_hvac",
+      "file": "hvac.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 3132,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "333dfeb64fbec1dc",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: an outdoor air-conditioning condenser unit with a round fan grille"
+    },
+    {
+      "permit_type_key": "patio",
+      "permit_type_id": "permit_type_patio",
+      "file": "patio.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2842,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "1f65dd51827622a5",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a square stone-paver patio with a small outdoor table and two chairs"
+    },
+    {
+      "permit_type_key": "pod",
+      "permit_type_id": "permit_type_pod",
+      "file": "pod.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 1416,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "c1057f3ce5c077f4",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a portable storage container box beside a small open-top dumpster"
+    },
+    {
+      "permit_type_key": "residential_electric",
+      "permit_type_id": "permit_type_residential_electric",
+      "file": "residential-electric.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2490,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "3229408b569065ad",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a house-mounted electric meter and service panel with a lightning bolt"
+    },
+    {
+      "permit_type_key": "rezoning",
+      "permit_type_id": "permit_type_rezoning",
+      "file": "rezoning.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2556,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "fad20ce388cf68a1",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a top-down map of city blocks with one block shaded in a different colour, and a pencil"
+    },
+    {
+      "permit_type_key": "row_encroachment",
+      "permit_type_id": "permit_type_row_encroachment",
+      "file": "row-encroachment.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2184,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "fdb44b80fbd7fe98",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a striped traffic barricade and an orange traffic cone at the edge of a street curb and sidewalk"
+    },
+    {
+      "permit_type_key": "shed",
+      "permit_type_id": "permit_type_shed",
+      "file": "shed.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2038,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "7288a4c156c8ed46",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a small detached garden shed with a pitched roof and a single door"
+    },
+    {
+      "permit_type_key": "site_plan_review",
+      "permit_type_id": "permit_type_site_plan_review",
+      "file": "site-plan-review.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 3520,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "cfe3054cf6a315d0",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: an overhead site plan drawing of a building footprint with a parking lot, beside a magnifying glass"
+    },
+    {
+      "permit_type_key": "water_heater",
+      "permit_type_id": "permit_type_water_heater",
+      "file": "water-heater.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 1268,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "ba406729aa6cca5e",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a tall cylindrical residential water heater tank with a pipe on top"
+    },
+    {
+      "permit_type_key": "zoning_variance",
+      "permit_type_id": "permit_type_zoning_variance",
+      "file": "zoning-variance.webp",
+      "size": [
+        192,
+        192
+      ],
+      "bytes": 2070,
+      "source_size": [
+        1600,
+        1600
+      ],
+      "sha256": "9de3334b682c80c3",
+      "prompt": "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, simple bold shapes, generous padding, flat even lighting, no text, no letters, no numbers, no logos, no watermarks. Subject: a property boundary outline with a building that extends past a dashed setback line, and a small balance scale"
+    }
+  ]
+}
