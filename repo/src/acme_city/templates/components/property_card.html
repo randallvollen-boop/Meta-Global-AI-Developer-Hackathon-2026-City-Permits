@@ -10,12 +10,12 @@
     </span>
   </div>
   <div class="card-b">
-    <p class="muted">The city identifies property by parcel number, not by address. The locator corrected what the applicant typed to the closest official address, then the parcel layer said which parcel that point falls in. <strong>Simulated enterprise GIS: every value is synthetic.</strong></p>
+    <p class="muted">The city identifies a property by its parcel number. The locator corrected what the applicant typed to the closest official address, then the parcel layer said which parcel that point falls in. <strong>Simulated enterprise GIS: every value is synthetic.</strong></p>
     <div class="prop-grid">
       <dl class="prop-facts" data-testid="property-facts">
         <dt>Address the applicant typed</dt><dd data-testid="property-typed">{{ prop.submitted_text }}</dd>
         <dt>Standardized address</dt><dd data-testid="property-standardized">{{ prop.matched_address or 'none chosen yet' }}</dd>
-        <dt>Parcel number <span class="faint">(the key the city uses)</span></dt>
+        <dt>Parcel number <span class="faint">(the city's identifier)</span></dt>
         <dd data-testid="property-parcel"><strong class="mono">{{ prop.parcel_number or 'none yet' }}</strong>{% if prop.record_href %} <a href="{{ prop.record_href }}">Open property record</a>{% endif %}</dd>
         <dt>Locator score and status</dt>
         <dd data-testid="property-score">{% if prop.score is not none %}{{ '%g' % prop.score }}{% else %}no score{% endif %}, {{ prop.status_word }}</dd>
@@ -42,7 +42,7 @@
           <th scope="row">{{ candidate.address }}{% if candidate.current %} <span class="pill plain">chosen</span>{% endif %}</th>
           <td>{{ '%g' % candidate.score }}</td>
           <td>{{ candidate.status_word }}</td>
-          <td class="mono">{{ candidate.parcel_number or '-' }}</td>
+          <td class="mono">{{ candidate.parcel_number or 'none' }}</td>
         </tr>
         {% else %}
         <tr><td colspan="4" class="muted">The locator returned no candidate.</td></tr>

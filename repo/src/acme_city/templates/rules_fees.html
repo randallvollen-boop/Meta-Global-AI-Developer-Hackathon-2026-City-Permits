@@ -14,19 +14,19 @@
   <div>
     <h1>Rules and fees</h1>
     <p class="sub">
-      Versioned rule sets and fee schedules. Synthetic ACME values: they are not
+      Versioned rule sets and fee schedules. Synthetic ACME values that do not state
       the rules, the fees or the practice of any real jurisdiction.
     </p>
   </div>
   <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
 
-<nav class="tabs" role="tablist" aria-label="Rules and fees registers">
+<nav class="tabs" role="tablist" aria-label="Rules and fees lists">
   {% for item in catalogue.tabs %}
   <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == catalogue.tab else 'false' }}" data-testid="rules-tab" data-tab="{{ item.key }}">{{ item.label }}</a>
   {% endfor %}
 </nav>
-<nav class="tabs" role="tablist" aria-label="Register views">
+<nav class="tabs" role="tablist" aria-label="Version views">
   {% for item in catalogue.views %}
   <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == catalogue.view else 'false' }}" data-testid="rules-view" data-view="{{ item.key }}">{{ item.label }}</a>
   {% endfor %}
@@ -57,7 +57,7 @@
   {% if catalogue.view == 'history' %}
   <div class="tbl-wrap">
   <table class="data-table" data-testid="rule-history-table">
-    <caption class="visually-hidden">The recorded lifecycle events of the catalogue</caption>
+    <caption class="visually-hidden">The recorded lifecycle events of the versions</caption>
     <thead>
       <tr>
         <th scope="col">When</th><th scope="col">Action</th><th scope="col">Version</th>
@@ -74,7 +74,7 @@
         <td>{{ event.reason or 'no reason recorded' }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="5" class="muted">No lifecycle event has been recorded for this register yet.</td></tr>
+      <tr><td colspan="5" class="muted">No lifecycle event has been recorded for this list yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

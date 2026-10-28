@@ -13,7 +13,7 @@
       <span class="tl-dot {{ 'muse' if entry.action.startswith('muse.') or '.icon.' in entry.action else 'ok' if entry.outcome == 'accepted' else 'acc' }}"><svg aria-hidden="true"><use href="#i-{{ 'spark' if entry.action.startswith('muse.') or '.icon.' in entry.action else 'check' if entry.outcome == 'accepted' else 'clock' }}"/></svg></span>
       <div>
         <div class="a">{{ entry.action }} <span class="badge badge-{{ entry.outcome }}">{{ entry.outcome }}</span></div>
-        <div class="m">{{ entry.actor_label }} · {{ entry.occurred_at }} · versions {{ entry.before_version if entry.before_version is not none else '-' }} to {{ entry.after_version if entry.after_version is not none else '-' }}{% if entry.reason or entry.denial_reason %} · {{ entry.reason or entry.denial_reason }}{% endif %}</div>
+        <div class="m">{{ entry.actor_label }} · {{ entry.occurred_at }} · versions {{ entry.before_version if entry.before_version is not none else 'none' }} to {{ entry.after_version if entry.after_version is not none else 'none' }}{% if entry.reason or entry.denial_reason %} · {{ entry.reason or entry.denial_reason }}{% endif %}</div>
       </div>
     </div>
     {% endfor %}
@@ -37,7 +37,7 @@
         <td>{{ entry.actor_label }}</td>
         <td class="mono">{{ entry.action }}</td>
         <td><span class="badge badge-{{ entry.outcome }}">{{ entry.outcome }}</span></td>
-        <td>{{ entry.before_version if entry.before_version is not none else '-' }} to {{ entry.after_version if entry.after_version is not none else '-' }}</td>
+        <td>{{ entry.before_version if entry.before_version is not none else 'none' }} to {{ entry.after_version if entry.after_version is not none else 'none' }}</td>
         <td>{{ entry.reason or entry.denial_reason or '' }}</td>
       </tr>
       {% endfor %}

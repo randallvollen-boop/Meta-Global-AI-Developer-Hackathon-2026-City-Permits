@@ -49,7 +49,7 @@
     {% for issue in responsibility.open_issues %}
     <li>
       <span class="badge badge-{{ 'blocking' if issue.blocking else 'open' }}">{{ issue.status }}</span>
-      {{ issue.kind }}: {{ issue.type }} - {{ issue.detail }}
+      {{ issue.kind }}: {{ issue.type }}, {{ issue.detail }}
       {% if issue.assigned_actor_id %}(assigned to {{ issue.assigned_actor_id }}){% endif %}
     </li>
     {% endfor %}
@@ -59,7 +59,7 @@
   <p class="muted" data-testid="responsibility-queue">
     Queue {{ responsibility.queue }} ({{ responsibility.queue_label }}).
     First review target: {{ responsibility.response_target }}. This is a configured
-    demonstration target and not a service promise.
+    demonstration target and makes no service promise.
   </p>
   {% endif %}
 </section>
