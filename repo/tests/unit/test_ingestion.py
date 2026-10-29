@@ -121,6 +121,19 @@ def test_a_changed_version_creates_a_new_immutable_snapshot(seeded: Settings) ->
     factory = SessionFactory(seeded.database_url)
     try:
         with transaction(factory) as session:
+            session.add(registry_automation.RegistryAutomationPolicy(
+                id="policy_active_but_paused",
+                version=1,
+                mode="paused",
+                status="active",
+                matcher_version="registry-candidates-v1",
+                thresholds={},
+                source_scopes=["applicant_profiles"],
+                reason="prove the safe default does not enqueue",
+                recorded_by_actor_id="persona_data_steward",
+                activated_at=datetime(2026, 10, 29, 12, 0, tzinfo=UTC),
+            ))
+            session.flush()
             service = IngestionService(session)
             payload = dict(APPLICANT_PROFILE)
             payload["contact_email"] = "t.aldous+updated@example.invalid"
@@ -152,7 +165,10 @@ def test_a_changed_version_creates_a_new_immutable_snapshot(seeded: Settings) ->
             assert [row.source_record_version for row in snapshots] == ["3", "4"]
             assert snapshots[0].raw_payload["contact_email"] == "t.aldous@example.invalid"
             assert snapshots[1].raw_payload["contact_email"] == "t.aldous+updated@example.invalid"
-            assert session.execute(select(registry_automation.RegistryAutomationJob)).scalars().all() == []
+            jobs = session.execute(
+                select(registry_automation.RegistryAutomationJob)
+            ).scalars().all()
+            assert jobs == []
     finally:
         factory.dispose()
 

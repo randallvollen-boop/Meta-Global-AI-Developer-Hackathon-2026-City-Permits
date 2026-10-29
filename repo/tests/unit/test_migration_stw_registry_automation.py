@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, inspect, text
 
 from acme_city.core.config import Settings
 from acme_city.persistence.session import initialize_database
+from tests.support.migration_head import migration_head
 
 TABLES = {
     "registry_automation_policies",
@@ -27,7 +28,7 @@ def settings_for(tmp_path) -> Settings:
 
 def test_migration_creates_registry_automation_tables_and_no_rows(tmp_path) -> None:
     settings = settings_for(tmp_path)
-    assert initialize_database(settings) == "stw_registry_automation"
+    assert initialize_database(settings) == migration_head()
     engine = create_engine(settings.database_url, future=True)
     try:
         with engine.connect() as connection:
@@ -52,9 +53,12 @@ def test_policy_and_job_defaults_are_safe(tmp_path) -> None:
                   ('policy_test', 'registry-v1', '{}', '[]', 'preview only', 'actor_steward')
                 """
             ))
-            row = connection.execute(text(
-                "SELECT mode, status, version FROM registry_automation_policies WHERE id='policy_test'"
-            )).one()
+            query = """
+                SELECT mode, status, version
+                FROM registry_automation_policies
+                WHERE id='policy_test'
+            """
+            row = connection.execute(text(query)).one()
             assert tuple(row) == ("paused", "draft", 1)
     finally:
         engine.dispose()
