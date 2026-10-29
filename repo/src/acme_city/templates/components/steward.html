@@ -4,8 +4,18 @@
 
    st.source_summary(summary)   Source · Source last changed · Last received or checked · View source details
    st.pager(paging)             Previous / next page links that keep the other query values
+   st.affected(applications)    The applications a task of the queue affects
    st.pill(label, tone)         A status that never wraps #}
 {% import "_ui.html" as ui with context %}
+
+{% macro affected(applications) -%}
+{% if applications %}
+  {% for app in applications[:3] %}<a href="{{ app.href }}">{{ app.number }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+  {%- if applications|length > 3 %} <span class="muted">+{{ applications|length - 3 }} more</span>{% endif %}
+{% else %}
+  <span class="muted">None open</span>
+{% endif %}
+{%- endmacro %}
 
 {% macro source_summary(summary) -%}
 <p class="source-summary" data-testid="source-summary">

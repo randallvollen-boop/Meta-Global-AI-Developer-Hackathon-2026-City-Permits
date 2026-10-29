@@ -80,7 +80,11 @@ def test_data_issues_and_a_focused_case_at_both_widths(page, server: BrowserServ
     assert page.locator("[data-issue-row]").count() == 3
     counts = page.locator('[data-testid="issue-filter-count"]').all_inner_texts()
     assert counts == ["3", "0", "0", "0"]
-    page.locator('[data-testid="issue-link"]', has_text="ERP-BL-00413").click()
+    # The row of the record: the task is the link, the reference is the text
+    # under the source.
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
     page.wait_for_selector('[data-question="6"]')
     assert page.locator('[data-testid="candidate"]').count() == 2
     assert page.locator('[data-testid="similar-note"]').is_visible()
@@ -97,7 +101,9 @@ def test_data_issues_and_a_focused_case_at_both_widths(page, server: BrowserServ
 def test_a_decision_made_in_the_browser_shows_on_the_case(page, server: BrowserServer, login, cedarline, submit_action) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")
-    page.locator('[data-testid="issue-link"]', has_text="PER-AP-0003").click()
+    page.locator("[data-issue-row]", has_text="PER-AP-0003").locator(
+        '[data-testid="issue-link"]'
+    ).click()
     page.wait_for_selector('[data-question="5"]')
     message = submit_action("registry.decide", {"reason": "the alias and the declared reference agree"})
     assert "Recorded the approve decision for PER-AP-0003" in message

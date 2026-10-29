@@ -216,7 +216,7 @@ def test_the_queue_pages_the_work(client: TestClient) -> None:
 def test_the_filters_are_read_through_a_get_request(client: TestClient) -> None:
     """The filter form sends its values in the address, never in the body."""
     body = client.get("/steward").text
-    form = re.search(r'<form class="queue-filter-form".*?</form>', body, re.S)
+    form = re.search(r'<form class="queue-filter-form[^"]*".*?</form>', body, re.S)
     assert form is not None
     assert 'method="get"' in form.group(0)
     assert 'name="record_type"' in form.group(0)

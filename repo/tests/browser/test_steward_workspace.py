@@ -1,7 +1,9 @@
 """The workspace of the Data Steward in a browser.
 
-The queue reads its search and its filters from the address of the request,
-and the queue with the filters open fits a phone.
+The queue reads its search and its filters from the address of the request.
+On a desktop it is a table with its columns; on a phone it is one card per
+task, and the bar of the phone keeps the four work screens and the demo
+switcher reachable.
 
 Fictional ACME City data only.
 """
@@ -9,7 +11,22 @@ Fictional ACME City data only.
 
 from __future__ import annotations
 
+import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+from acme_city.fixtures.steward_demo import seed_cedarline
+from acme_city.persistence.session import SessionFactory, transaction
+
+
+@pytest.fixture()
+def cedarline(server: BrowserServer) -> list[str]:
+    """Add the Cedarline proposals to the database of the browser server."""
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            return seed_cedarline(session)
+    finally:
+        factory.dispose()
 
 
 def test_the_queue_with_the_filters_open_fits_a_phone(
@@ -55,5 +72,57 @@ def test_the_filters_keep_the_queue_readable_at_a_phone(
     filters = page.locator('[data-testid="queue-filters"]')
     assert filters.locator("summary").inner_text().strip().lower() == "more filters"
     assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_queue_reads_as_one_card_per_task_on_a_phone(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """At 390 pixels the table becomes one card per task, and every card fits."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert not page.locator('[data-testid="issue-table"] thead').is_visible()
+    rows = page.locator("[data-issue-row]")
+    assert rows.count() == 3
+    assert rows.first.evaluate("element => getComputedStyle(element).display") == "block"
+    for index in range(rows.count()):
+        box = rows.nth(index).bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_queue_keeps_its_columns_on_a_desktop(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """On a desktop the queue keeps its columns, its reason and its action."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert page.locator('[data-testid="issue-table"] thead').is_visible()
+    assert page.locator("[data-issue-row]").first.evaluate(
+        "element => getComputedStyle(element).display"
+    ) == "table-row"
+    assert page.locator('[data-testid="issue-reason"]').count() == 3
+    assert page.locator('[data-testid="issue-action"]').count() == 3
+    assert page.locator('[data-testid="issue-reference"]').count() == 3
+    assert page.recorded_errors == []
+
+
+def test_the_bar_and_the_demo_switch_stay_reachable(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """The four work screens and the demo switcher stay reachable on a phone."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    entries = page.locator(".mobile-nav > a")
+    assert entries.count() == 4
+    assert page.locator('[data-testid="demo-switch"]').is_visible()
+    assert_not_covered(page, page.locator('[data-testid="demo-switch"] > summary'))
     assert_not_covered(page, page.locator("main h1").first)
     assert page.recorded_errors == []

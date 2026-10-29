@@ -1,1 +1,71 @@
-/* Steward screens. Every selector starts with .stw- or body[data-screen=...]. Empty until a steward slice fills it. */
+/* Steward screens. Every selector starts with .stw- or body[data-screen=...].
+   The work queue of the Data Steward reads as one table on a desktop and as
+   one card per task on a phone.  The colours are the tokens of the shared
+   stylesheet, so the screen follows the theme of the application. */
+
+.stw-queue { margin-bottom: 16px; }
+.stw-queue-table { width: 100%; }
+.stw-summary { margin: 0 0 10px; color: var(--fg-2); font-size: .82rem; }
+.stw-row .stw-cell-task a { font-weight: 600; }
+.stw-reason {
+  display: block; margin-top: 2px; color: var(--fg-2); font-size: .8rem;
+  font-weight: 400; line-height: 1.35;
+}
+.stw-reference {
+  display: block; margin-top: 2px; color: var(--fg-3); font-size: .72rem;
+  font-family: var(--f-mono); overflow-wrap: anywhere;
+}
+.stw-cell-action { text-align: right; white-space: nowrap; }
+
+/* The search and the filters of the queue. */
+.stw-search {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
+}
+.stw-search label { color: var(--fg-2); font-size: .82rem; }
+.stw-search input[type="search"] {
+  flex: 1 1 16rem; min-width: 0; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: var(--r-sm); background: var(--surface); color: var(--fg); font: inherit;
+}
+.stw-filters { margin: 0 0 12px; }
+.stw-filters > summary { color: var(--fg-2); font-size: .82rem; cursor: pointer; }
+.stw-filter-form {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 10px;
+}
+.stw-filter-form .field { display: grid; gap: 4px; }
+.stw-filter-form label { color: var(--fg-2); font-size: .78rem; }
+.stw-filter-form select {
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--fg); font: inherit;
+}
+.stw-filter-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* On a phone one task is one card: the task, the record, the reason, the
+   source, the status and the action.  The column heads become the labels of
+   the card, so nothing is left unnamed. */
+@media (max-width: 760px) {
+  body[data-screen="steward"] .stw-queue-table thead { display: none; }
+  body[data-screen="steward"] .stw-queue-table,
+  body[data-screen="steward"] .stw-queue-table tbody,
+  body[data-screen="steward"] .stw-queue-table tr,
+  body[data-screen="steward"] .stw-queue-table th,
+  body[data-screen="steward"] .stw-queue-table td { display: block; width: 100%; }
+  body[data-screen="steward"] .stw-row {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="steward"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="steward"] .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .68rem; text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  body[data-screen="steward"] .stw-cell-task { margin-bottom: 2px; font-size: .92rem; }
+  body[data-screen="steward"] .stw-cell-task::before { content: none; }
+  body[data-screen="steward"] .stw-cell-record::before { content: none; }
+  body[data-screen="steward"] .stw-cell-action { margin-top: 8px; text-align: left; }
+  body[data-screen="steward"] .stw-cell-action::before { content: none; }
+  body[data-screen="steward"] .stw-filter-form { display: grid; gap: 8px; }
+  body[data-screen="steward"] .stw-filter-form select { width: 100%; }
+}
