@@ -73,12 +73,43 @@ FORBIDDEN_REQUEST_KEYS: Final = frozenset(
 )
 
 
+def live_call_block_reason(settings: Settings) -> str | None:
+    """Return why a live provider call is locked out, or ``None`` when it may go."""
+    if settings.public_demo or settings.is_production:
+        return "live Muse calls are locked on the hosted deployment"
+    if not settings.muse_live_calls_allowed:
+        return "live Muse calls are not allowed (ACME_MUSE_LIVE_CALLS_ALLOWED)"
+    return None
+
+
+def assert_live_call_allowed(settings: Settings) -> None:
+    """Raise :class:`MuseLiveCallBlocked` unless a live call is allowed."""
+    reason = live_call_block_reason(settings)
+    if reason is not None:
+        raise MuseLiveCallBlocked(reason)
+
+
 class MuseRequestError(ValueError):
     """The payload violates the provider request contract.
 
     The error is raised before any network call: a payload that names a model
     outside the allowlist, enables a tool or carries an unbounded output
     budget is never dispatched.
+    """
+
+
+class MuseLiveCallBlocked(MuseRequestError):
+    """A live provider call was refused by the hosted dispatch lock.
+
+    It is a request error, so every caller that records a refused request
+    records this one the same way.  It is raised before any network I/O, even
+    when a credential is configured.  Replay and cassette paths never reach the
+    dispatch layer.
+
+    The callers record it as a provider error, which the live-call error stop
+    counts: after enabling ``ACME_MUSE_LIVE_CALLS_ALLOWED`` on a non-hosted
+    instance that had refused a live run, reset the demo.  The budget is
+    OPR-14's to refine.
     """
 
 
@@ -287,7 +318,8 @@ class MuseClient:
 
         The request is sent exactly once.  A failure is returned as a failed
         response rather than raised, so that the failure can be recorded as an
-        immutable run.
+        immutable run.  A request the hosted dispatch lock refuses is the one
+        exception: it raises :class:`MuseLiveCallBlocked`.
         """
         self.check_payload(payload)
         self.request_summary = summarize_request(payload)
@@ -297,6 +329,8 @@ class MuseClient:
         # the policy tasks and the triage summary) honours it.
         if not self._settings.provider_enabled:
             return ProviderResponse(status="failed", error=PROVIDER_DISABLED_ERROR)
+
+        assert_live_call_allowed(self._settings)
 
         key = self._settings.meta_api_key
         secret = key.get_secret_value() if key is not None else ""
@@ -381,11 +415,14 @@ __all__ = [
     "META_RESPONSES_URL",
     "PROVIDER_DISABLED_ERROR",
     "MuseClient",
+    "MuseLiveCallBlocked",
     "MuseRequestError",
     "ProviderResponse",
     "REDACTED",
+    "assert_live_call_allowed",
     "extract_output_text",
     "extract_usage",
+    "live_call_block_reason",
     "redact_secret",
     "summarize_request",
 ]

@@ -26,7 +26,7 @@ from typing import Final
 import httpx
 
 from acme_city.core.config import Settings
-from acme_city.muse.client import redact_secret
+from acme_city.muse.client import live_call_block_reason, redact_secret
 
 #: The one endpoint an icon generation may call.
 META_IMAGES_URL: Final = "https://api.meta.ai/v1/images/generations"
@@ -137,6 +137,9 @@ class MuseImageClient:
                 error="external AI provider calls are disabled in this deployment "
                 "(ACME_MUSE_PROVIDER_ENABLED)",
             )
+        blocked = live_call_block_reason(self._settings)
+        if blocked is not None:
+            return ImageResult(ok=False, error=blocked)
         key = self._settings.meta_api_key
         secret = key.get_secret_value() if key is not None else ""
         if not secret:
