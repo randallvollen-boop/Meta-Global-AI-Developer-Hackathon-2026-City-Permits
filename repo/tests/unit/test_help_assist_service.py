@@ -328,7 +328,6 @@ def live_settings(tmp_path: Path, cap: str = "2") -> Settings:
         {
             "META_API_KEY": CREDENTIAL,
             "ACME_APPLICANT_ASSIST_LIVE_ENABLED": "true",
-            "ACME_MUSE_LIVE_CALLS_ALLOWED": "true",
             "ACME_MUSE_LIVE_CALL_CAP": cap,
         },
     )

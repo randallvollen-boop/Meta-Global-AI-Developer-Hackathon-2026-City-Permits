@@ -84,11 +84,10 @@ def tripwire(monkeypatch: pytest.MonkeyPatch) -> TripwireTransport:
 
 
 LIVE_FEATURES = {
-    "ACME_MUSE_LIVE_CALLS_ALLOWED": "true",
     "ACME_APPLICANT_ASSIST_LIVE_ENABLED": "true",
     "ACME_POLICY_ASSIST_LIVE_ENABLED": "true",
 }
-LOCK_TEXT = "locked on the hosted deployment"
+LOCK_TEXT = "locked on the hosted demo"
 
 
 def client_for(tmp_path: Path, **extra: str):
@@ -160,13 +159,12 @@ def act(client: TestClient, action_id: str, fields: dict[str, Any], next_path: s
 
 def test_the_clients_refuse_to_dispatch_when_hosted(tmp_path: Path) -> None:
     for extra in (
-        {"ACME_PUBLIC_DEMO": "true", "ACME_MUSE_LIVE_CALLS_ALLOWED": "true"},
+        {"ACME_PUBLIC_DEMO": "true"},
         {
+            "ACME_PUBLIC_DEMO": "true",
             "ACME_DEPLOYMENT_MODE": "production",
             "ACME_MUSE_PROVIDER_ENABLED": "true",
-            "ACME_MUSE_LIVE_CALLS_ALLOWED": "true",
         },
-        {"ACME_PUBLIC_DEMO": "true"},
     ):
         settings = build_settings(tmp_path, **extra)
         stub = TripwireTransport()
@@ -185,8 +183,8 @@ def test_the_clients_refuse_to_dispatch_when_hosted(tmp_path: Path) -> None:
         assert stub.calls == []
 
 
-def test_live_calls_must_be_allowed_even_when_not_hosted(tmp_path: Path) -> None:
-    settings = build_settings(tmp_path, ACME_MUSE_PROVIDER_ENABLED="true")
+def test_the_hosted_lock_names_its_explicit_opt_in(tmp_path: Path) -> None:
+    settings = build_settings(tmp_path, ACME_PUBLIC_DEMO="true")
     assert settings.muse_live_calls_allowed is False
     stub = TripwireTransport()
     refused = MuseImageClient(settings, transport=stub).generate("a deck")
@@ -194,8 +192,9 @@ def test_live_calls_must_be_allowed_even_when_not_hosted(tmp_path: Path) -> None
     assert stub.calls == []
 
 
-def test_the_stub_is_reached_when_allowed_and_not_hosted(tmp_path: Path) -> None:
-    settings = build_settings(tmp_path, ACME_MUSE_LIVE_CALLS_ALLOWED="true")
+@pytest.mark.parametrize("extra", [{}, {"ACME_PUBLIC_DEMO": "true", "ACME_MUSE_LIVE_CALLS_ALLOWED": "true"}])
+def test_the_stub_is_reached_when_not_hosted_or_explicitly_allowed(tmp_path: Path, extra: dict[str, str]) -> None:
+    settings = build_settings(tmp_path, **extra)
     stub = TripwireTransport()
     result = MuseImageClient(settings, transport=stub).generate("a deck")
     assert len(stub.calls) == 1
