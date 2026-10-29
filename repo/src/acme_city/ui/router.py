@@ -83,6 +83,7 @@ from acme_city.rules.schemas import (
     RuleLifecycleCommand,
 )
 from acme_city.rules.service import RuleCatalogService
+from acme_city.ui import admin_tabs as _admin_tabs
 from acme_city.ui import admin_views, agent_views, display, patterns, property_views, view_models
 from acme_city.ui.view_models import (
     actor_label,
@@ -576,71 +577,6 @@ def ui_work_queue(
         and view_models.holds_grant(session, resolved, "application.submit", "permits"),
     )
     return render(request, "work_queue.html", context)
-
-
-@router.get("/queue/intake", operation_id="ui_intake_queue")
-def ui_intake_queue(
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-    tab: str = "active",
-    q: str = "",
-    channel: str = "",
-    permit_type: str = "",
-    priority: str = "",
-    owner: str = "",
-    sort: str = "age",
-) -> Any:
-    """Show the intake queue of the Data Steward."""
-    resolved, refused = _guard(request, session, actor, "intake_queue")
-    if refused is not None:
-        return refused
-    queue = queues.intake_queue(
-        session,
-        resolved,
-        tab=tab,
-        query=q,
-        channel=channel,
-        permit_type=permit_type,
-        priority=priority,
-        owner=owner,
-        sort=sort,
-    )
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="intake_queue",
-        title="Intake queue",
-        queue=queue,
-        agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
-        can_process=view_models.holds_grant(
-            session, resolved, "permit.intake.process_selected", "permits"
-        ),
-    )
-    return render(request, "intake_queue.html", context)
-
-
-@router.get("/queue/early-resolution", operation_id="ui_early_resolution")
-def ui_early_resolution(
-    request: Request,
-    session: Session = Depends(get_session),
-    actor: ActorContext | None = Depends(ui_actor),
-) -> Any:
-    """Show the early-resolution board of the Data Steward."""
-    resolved, refused = _guard(request, session, actor, "early_resolution")
-    if refused is not None:
-        return refused
-    board = queues.early_resolution(session, resolved)
-    context = page_context(
-        request,
-        session,
-        resolved,
-        screen="early_resolution",
-        title="Early resolution",
-        board=board,
-    )
-    return render(request, "early_resolution.html", context)
 
 
 @router.get("/queue/review", operation_id="ui_review_queue")
@@ -1142,6 +1078,11 @@ def ui_administration(
         "global_cap": settings.muse_image_daily_cap,
         "cost_estimate_usd": IMAGE_COST_ESTIMATE_USD,
     }
+    # The tabs work without JavaScript: each tab is a link that carries the
+    # section to show.  ``admin_tabs`` holds the registered tabs and the parts
+    # of the Users tab.
+    tabs = _admin_tabs.visible_tabs(session, resolved)
+    keys = [entry.key for entry in tabs]
     context = page_context(
         request,
         session,
@@ -1152,22 +1093,19 @@ def ui_administration(
         evidence=view["evidence"],
         model_runs=view["model_runs"],
         history=view["audit_history"],
-        tab=tab if tab in _ADMIN_TABS else _ADMIN_TABS[0],
-        admin_tabs=list(_ADMIN_TABS),
+        tab=tab if tab in keys else keys[0],
+        admin_tabs=keys,
+        admin_tab_labels={entry.key: entry.label for entry in tabs},
+        admin_tab_templates=[entry.template for entry in tabs],
+        admin_users_extras=[
+            extra.template for extra in _admin_tabs.ADMIN_USERS_EXTRAS_PROVIDERS
+        ],
+        admin_icon_generation={"available": False, "reason": ""},
     )
+    for provider in [*tabs, *_admin_tabs.ADMIN_USERS_EXTRAS_PROVIDERS]:
+        if provider.context_fn is not None:
+            context.update(provider.context_fn(session, resolved))
     return render(request, "admin.html", context)
-
-
-#: The tabs of the administration screen.  They work without JavaScript: the
-#: tab is a link that carries the section to show.  ``appearance`` holds the
-#: permit type icons, their limits, their cost and their provenance.
-_ADMIN_TABS: tuple[str, ...] = (
-    "permit-types",
-    "appearance",
-    "users",
-    "reason-codes",
-    "log",
-)
 
 
 @router.get("/permit-type-icons/{icon_id}", operation_id="ui_permit_type_icon")
@@ -2856,6 +2794,8 @@ from acme_city.ui import help_docs_routes as _help_docs_routes  # noqa: E402
 from acme_city.ui import ops_routes as _ops_routes  # noqa: E402
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 from acme_city.ui import steward_routes as _steward_routes  # noqa: E402
+from acme_city.ui import steward_automation_routes as _steward_automation_routes  # noqa: E402
+from acme_city.ui import agent_routes as _agent_routes  # noqa: E402
 
 from acme_city.ui import nav_plugins as _nav_plugins  # noqa: E402
 from acme_city.ui import screen_meta as _screen_meta  # noqa: E402
@@ -2870,6 +2810,11 @@ router.include_router(_ops_routes.router)
 router.include_router(_help_docs_routes.router)
 ACTION_HANDLERS.update(_ops_routes.HANDLERS)
 router.include_router(_steward_routes.router)
+router.include_router(_steward_automation_routes.router)
+router.include_router(_agent_routes.router)
+ACTION_HANDLERS.update(_steward_routes.HANDLERS)
+ACTION_HANDLERS.update(_steward_automation_routes.HANDLERS)
+ACTION_HANDLERS.update(_agent_routes.ACTIONS)
 
 
 __all__ = [
