@@ -1,26 +1,54 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
-{% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
-<div class="policy-screen">
+<div class="policy-screen admin-b">
 <div class="page-head">
   <div>
-    <h1>What-if</h1>
-    <p class="sub">Test a proposed change to the permit rules on a set of cases before anything is changed. A what-if is kept beside the live rules; saving or running one never changes a rule, a fee, a permit type or an application.</p>
+    <h1>What-if scenarios</h1>
+    <p class="sub">Compare proposed rules using fictional cases. Published rules stay unchanged.</p>
   </div>
-  <div class="actions">{{ ui.help_button('policy_scenarios') }}</div>
+  <div class="actions">
+    <a class="button btn" href="#create-whatif" data-testid="policy-create-anchor">Create a what-if</a>
+    {{ ui.help_button('policy_scenarios') }}
+  </div>
 </div>
 
 {% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
 
-<section class="card" aria-labelledby="new-whatif-heading" data-testid="policy-new">
+{% set saved_work %}
+<section class="card" aria-labelledby="saved-heading" data-testid="policy-list">
+  <h2 id="saved-heading">Saved what-ifs</h2>
+  <div class="tbl-wrap" role="region" aria-label="Saved what-ifs">
+    <table class="data-table admin-b-stack">
+      <caption class="visually-hidden">Saved what-ifs</caption>
+      <thead><tr><th scope="col">What-if</th><th scope="col">Revision</th><th scope="col">Runs</th><th scope="col">Created</th></tr></thead>
+      <tbody>
+        {% for s in scenarios %}
+        <tr data-testid="policy-row">
+          <th scope="row"><a href="/policy/scenarios/{{ s.id }}">{{ s.name }}</a></th>
+          <td data-label="Revision">{{ s.revision }}</td>
+          <td data-label="Runs">{{ s.runs }}</td>
+          <td data-label="Created">{{ s.created_label }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted" data-testid="policy-empty">No what-if is saved yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endset %}
+
+{% set creation %}
+<section class="card" aria-labelledby="new-whatif-heading" id="create-whatif" data-testid="policy-new">
   <h2 id="new-whatif-heading">New what-if</h2>
   {% if starting %}
   <p data-testid="policy-starting" class="muted">Starting population from the City view: {{ starting_text }}. It is carried into the what-if and offered again when you run it.</p>
   {% endif %}
-  <p class="muted">* Required</p>
-  <h3>Start from a suggestion</h3>
+
+  <h3>Start from an example</h3>
+  <p class="muted">Each example is a proposed change to a published rule. The what-if is saved beside the live rules and never changes them.</p>
   <ul class="policy-suggestions" data-testid="policy-suggestions">
     {% for item in suggestions %}
     <li>
@@ -38,38 +66,59 @@
     </li>
     {% endfor %}
   </ul>
-  <h3>Or start empty</h3>
-  <form method="post" action="/policy/scenarios" data-testid="policy-create-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="expected_version" value="0">
-    {% if starting.permit_type %}<input type="hidden" name="start_permit_type" value="{{ starting.permit_type }}">{% endif %}
-    {% if starting.district %}<input type="hidden" name="start_district" value="{{ starting.district }}">{% endif %}
-    {% if starting.category %}<input type="hidden" name="start_category" value="{{ starting.category }}">{% endif %}
-    <p class="field">
-      <label for="policy-name">Name of the what-if <span aria-hidden="true">*</span></label>
-      <input id="policy-name" name="name" maxlength="200" required aria-required="true" data-testid="policy-name">
-    </p>
-    <p><button type="submit" class="button btn" data-testid="policy-create">Save what-if</button></p>
-  </form>
-</section>
 
-<section class="card" aria-labelledby="propose-heading" data-testid="policy-propose">
-  <h2 id="propose-heading">Ask Muse to propose a what-if</h2>
+  <details>
+    <summary>Build a what-if</summary>
+    <p class="muted">A what-if starts empty. You add the changes yourself, one at a time.</p>
+    <form method="post" action="/policy/scenarios" data-testid="policy-create-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="expected_version" value="0">
+      {% if starting.permit_type %}<input type="hidden" name="start_permit_type" value="{{ starting.permit_type }}">{% endif %}
+      {% if starting.district %}<input type="hidden" name="start_district" value="{{ starting.district }}">{% endif %}
+      {% if starting.category %}<input type="hidden" name="start_category" value="{{ starting.category }}">{% endif %}
+      <p class="field">
+        <label for="policy-name">Name of the what-if <span aria-hidden="true">*</span></label>
+        <input id="policy-name" name="name" maxlength="200" required aria-required="true" data-testid="policy-name">
+      </p>
+      <p class="muted">* Required</p>
+      <p><button type="submit" class="button btn" data-testid="policy-create">Save what-if</button></p>
+    </form>
+  </details>
+
+  <div data-testid="policy-propose">
+  <h3>Explore recorded Muse examples</h3>
   <p class="muted" data-testid="policy-propose-mode">{{ propose.mode_note }}</p>
   {% if propose.can %}
-  <p class="muted">Describe a change in plain words. Muse proposes changes of the supported kinds only; each one is checked on its own against today's published rules, and nothing is saved until you save it.</p>
+  <p class="muted">Muse proposes changes of the supported kinds only. Each one is checked on its own against today's published rules, and nothing is saved until you save it.</p>
+  {% if not propose.live %}
   <form method="post" action="/policy/propose" data-testid="policy-propose-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="expected_version" value="0">
     <p class="field">
-      <label for="policy-question">Your what-if question <span aria-hidden="true">*</span></label>
+      <label for="policy-question-choice">Recorded example</label>
+      <select id="policy-question-choice" name="question" data-testid="policy-question-choice">
+        {% for q in propose.examples %}<option value="{{ q.value }}">{{ q.label }}</option>{% endfor %}
+      </select>
+    </p>
+    <p><button type="submit" class="button btn" data-testid="policy-propose-choice-submit">Propose this example</button></p>
+  </form>
+  {% endif %}
+  <form method="post" action="/policy/propose" data-testid="policy-propose-free-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="expected_version" value="0">
+    <p class="field">
+      <label for="policy-question">Your question <span aria-hidden="true">*</span></label>
       <textarea id="policy-question" name="question" rows="2" maxlength="500" required aria-required="true" data-testid="policy-question"></textarea>
     </p>
-    <p class="muted">* Required. Examples from the demonstration set: {% for q in propose.examples %}<em>{{ q }}</em>{% if not loop.last %}; {% endif %}{% endfor %}</p>
+    {% if not propose.live %}
+    <p class="muted">* Required. Only the recorded example above can be answered locally. Another question is refused, and nothing is sent anywhere.</p>
+    {% else %}
+    <p class="muted">* Required</p>
+    {% endif %}
     <p><button type="submit" class="button btn" data-testid="policy-propose-submit">Ask Muse to propose</button></p>
   </form>
   {% if propose.recent %}
-  <h3>Recent proposals</h3>
+  <h4>Recent proposals</h4>
   <ul data-testid="policy-proposals">
     {% for r in propose.recent %}<li><a href="/policy/proposals/{{ r.id }}">{{ r.question }}</a> <span class="muted">{% if r.accepted %}checked{% else %}not usable{% endif %} · {{ r.mode }}</span></li>{% endfor %}
   </ul>
@@ -77,44 +126,33 @@
   {% else %}
   <p class="muted" data-testid="policy-propose-guard">Your role cannot do this.</p>
   {% endif %}
+  </div>
 </section>
+{% endset %}
 
-<section class="card" aria-labelledby="saved-heading" data-testid="policy-list">
-  <h2 id="saved-heading">Saved what-ifs</h2>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Saved what-ifs</caption>
-    <thead><tr><th scope="col">What-if</th><th scope="col">Revision</th><th scope="col">Runs</th><th scope="col">Saved</th></tr></thead>
-    <tbody>
-      {% for s in scenarios %}
-      <tr data-testid="policy-row">
-        <th scope="row"><a href="/policy/scenarios/{{ s.id }}">{{ s.name }}</a></th>
-        <td>{{ s.revision }}</td><td>{{ s.runs }}</td><td class="mono">{{ s.created_at }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4" class="muted" data-testid="policy-empty">No what-if is saved yet. Start from a suggestion above.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-</section>
+{% if scenarios %}{{ saved_work }}{{ creation }}{% else %}{{ creation }}{{ saved_work }}{% endif %}
 
 <section class="card" aria-labelledby="runs-heading" data-testid="policy-recent-runs">
   <h2 id="runs-heading">Recent runs</h2>
   <p class="muted">A run is a kept snapshot. It stays here even after its what-if is deleted.</p>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Recent runs</caption>
-    <thead><tr><th scope="col">Run of</th><th scope="col">Population {{ ui.info('policy_population') }}</th><th scope="col">Cases</th><th scope="col">Made</th></tr></thead>
-    <tbody>
-      {% for r in recent_runs %}
-      <tr data-testid="policy-run-row">
-        <th scope="row"><a href="/policy/runs/{{ r.id }}">{{ r.name }}</a> <span class="muted">revision {{ r.revision }}</span>{% if r.deleted %} <span class="muted">(what-if deleted)</span>{% endif %}</th>
-        <td>{{ r.population }}{% if r.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</td>
-        <td>{{ r.size }}</td><td class="mono">{{ r.created_at }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4" class="muted">No run has been made yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+  <div class="tbl-wrap" role="region" aria-label="Recent runs">
+    <table class="data-table admin-b-stack">
+      <caption class="visually-hidden">Recent runs</caption>
+      <thead><tr><th scope="col">Run of</th><th scope="col">Population {{ ui.info('policy_population') }}</th><th scope="col">Cases</th><th scope="col">Created</th></tr></thead>
+      <tbody>
+        {% for r in recent_runs %}
+        <tr data-testid="policy-run-row">
+          <th scope="row"><a href="/policy/runs/{{ r.id }}">{{ r.name }}</a> <span class="muted">revision {{ r.revision }}</span>{% if r.deleted %} <span class="muted">(what-if deleted)</span>{% endif %}</th>
+          <td data-label="Population">{{ r.population }}{% if r.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</td>
+          <td data-label="Cases">{{ r.size }}</td>
+          <td data-label="Created">{{ r.created_label }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">No run has been made yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 {% include "components/evidence_panel.html" %}
 </div>

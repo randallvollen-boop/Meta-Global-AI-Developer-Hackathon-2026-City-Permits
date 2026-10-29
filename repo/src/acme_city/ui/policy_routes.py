@@ -28,6 +28,7 @@ and is audited without free text.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -194,13 +195,15 @@ def ui_policy_scenarios(
         request, session, resolved, screen=SCREEN, title="What-if",
         scenarios=[
             {"id": s.id, "name": s.name, "revision": s.current_revision, "version": s.version,
-             "created_at": s.created_at.isoformat(), "runs": len(service.runs_of(resolved, s.id)) if service.can(resolved, PERMISSION_RUN_VIEW) else 0}
+             "created_at": s.created_at.isoformat(), "created_label": _date_label(s.created_at),
+             "runs": len(service.runs_of(resolved, s.id)) if service.can(resolved, PERMISSION_RUN_VIEW) else 0}
             for s in scenarios
         ],
         recent_runs=[
             {"id": r.id, "name": r.scenario_name, "revision": r.scenario_revision_number,
              "population": r.population_label, "size": r.population_size,
              "synthetic": bool(r.population_synthetic), "created_at": r.created_at.isoformat(),
+             "created_label": _date_label(r.created_at),
              "deleted": (service.scenario_state(r.scenario_id) or (False, ""))[0]}
             for r in recent
         ],
@@ -230,7 +233,7 @@ def ui_policy_scenarios(
 
 
 def _propose_panel(request: Request, session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the data of the "Ask Muse to propose a what-if" panel."""
+    """Return the data of the "Explore recorded Muse examples" panel."""
     muse = _muse(request, session)
     state = _muse_state(muse, actor, PERMISSION_MUSE_PROPOSE)
     recent = muse.recent_proposals(actor) if state["can"] else []
@@ -243,10 +246,28 @@ def _propose_panel(request: Request, session: Session, actor: ActorContext) -> d
     return state
 
 
-#: The questions the demonstration set has recorded proposals for.
+def _date_label(moment: datetime) -> str:
+    """Return a date in plain words, without the time of the day.
+
+    A saved what-if carries the moment it was created, not the moment it was
+    last edited, so the screen says "Created" and shows the date.
+    """
+    return f"{moment.day} {moment.strftime('%B')} {moment.year}"
+
+
+#: The questions the demonstration set has recorded proposals for.  The first
+#: one is a recorded answer, the second one the recorded example of a request
+#: the agent cannot serve.  With live calls off these are the only questions
+#: that can be answered, so the screen offers them as they are.
 PROPOSE_EXAMPLES = (
-    "What if the side and rear yard fence limit were 7 ft?",
-    "What if no permit were required for a shed?",
+    {
+        "value": "What if the side and rear yard fence limit were 7 ft?",
+        "label": "What if the side and rear yard fence limit were 7 ft?",
+    },
+    {
+        "value": "What if no permit were required for a shed?",
+        "label": "Example of an unsupported request",
+    },
 )
 
 

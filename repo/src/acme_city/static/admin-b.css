@@ -27,6 +27,9 @@
 .admin-b .admin-b-nav { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .1rem 0 0; }
 .admin-b .admin-b-nav a { white-space: nowrap; }
 
+/* An anchor target clears the header above it. */
+.admin-b [id] { scroll-margin-top: 1rem; }
+
 /* A record row: the name first, the facts beside it. */
 .admin-b .admin-b-records { list-style: none; margin: 0; padding: 0; }
 .admin-b .admin-b-record {

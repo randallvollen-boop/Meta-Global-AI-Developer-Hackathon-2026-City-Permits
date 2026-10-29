@@ -65,3 +65,57 @@ def test_the_other_screens_keep_their_feedback_region(
         assert page.locator('[data-testid="feedback"]').count() == 1, path
         assert page.locator('[data-testid="feedback-message"]').count() == 1, path
     assert page.recorded_errors == []
+
+
+def test_a_saved_what_if_stacks_on_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The saved list is one table that stacks, with a name for every field."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    open_screen(page, server, "/policy/scenarios")
+    row = page.locator('[data-testid="policy-row"]').first
+    assert row.count() == 1
+    cell = row.locator('td[data-label="Revision"]')
+    assert cell.count() == 1
+    shown = cell.evaluate("element => getComputedStyle(element, '::before').content")
+    assert "Revision" in shown, shown
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- the scenarios list
+
+
+def test_the_scenarios_list_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The list of what-ifs fits a phone and its first action stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    assert_no_horizontal_overflow(page)
+    assert page.locator(".admin-b").count() == 1
+    suggestion = page.locator('[data-testid="policy-suggestion"]').first
+    assert suggestion.is_visible()
+    assert_not_covered(page, suggestion)
+    assert page.recorded_errors == []
+
+
+def test_the_scenarios_list_offers_the_recorded_examples(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The recorded questions are choices, and the empty form opens when asked."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    choice = page.locator('[data-testid="policy-question-choice"]')
+    assert choice.count() == 1
+    text = choice.inner_text()
+    assert "What if the side and rear yard fence limit were 7 ft?" in text
+    assert "Example of an unsupported request" in text
+    # The disclosure is opened before its control is used.
+    page.locator('details:has([data-testid="policy-create-form"]) > summary').click()
+    assert page.locator('[data-testid="policy-name"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
