@@ -1,0 +1,18 @@
+ACME City Permits
+Copyright 2026 Randall Vollen
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product is a demonstration built for the Meta Global AI Developer
+Hackathon 2026. All people, businesses, parcels, permits, fees and rules in
+it are fictional.
+
+The following are not covered by this license:
+
+- intake/: the hackathon build package and reference material as received
+  from third parties, kept unchanged as source evidence. Their own terms
+  apply.
+- Fonts and icons embedded in the built architecture pages under
+  docs/solution-architecture/: third-party assets under their own terms.
+- Third-party Python and JavaScript dependencies, each under its own
+  license, as listed in repo/uv.lock.

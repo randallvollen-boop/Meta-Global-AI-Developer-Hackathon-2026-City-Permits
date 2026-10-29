@@ -37,3 +37,7 @@ Sibling workspace for the ACME City permitting option, built on registry master 
 4. Use `repo/` only after implementation is explicitly released.
 
 The original RailFlow workspace remains separate at `../Meta-Global-AI-Developer-Hackathon-2026/`.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE); NOTICE lists the third-party material the license does not cover.
