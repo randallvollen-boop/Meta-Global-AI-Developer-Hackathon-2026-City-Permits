@@ -33,3 +33,19 @@ def test_neighbouring_lots_do_not_repeat_the_same_picture() -> None:
 
 def test_a_zoning_without_pictures_keeps_the_plain_lot() -> None:
     assert svg._building_svg(_lot("9", 60, 82, zoning="X-9"), 700.0, STREETS) == ""
+
+
+def test_the_city_view_map_draws_the_same_town_as_the_town_map() -> None:
+    lots = [_lot("ACME-P-1014", 60, 82), _lot("ACME-P-1015", 118, 82, zoning="C-2")]
+    town = svg.town_map_svg(lots, STREETS, [], caption="Town")
+    city = svg.district_map_svg(lots, STREETS, {"R-1": 2, "C-2": None}, {}, [], caption="City")
+    view = lambda drawing: drawing.split('viewBox="')[1].split('"')[0]
+    assert view(city) == view(town)
+    for part in ('class="gis-ground"', 'class="gis-asphalt"', ">Heron Street</textPath>"):
+        assert part in city
+    assert city.count('class="gis-building"') == town.count('class="gis-building"') > 0
+    # The shade is a tint over the building, so the picture shows through it.
+    tint = city.split('data-parcel="ACME-P-1014"')[1].split("</g>")[0]
+    assert tint.index('class="gis-building"') < tint.index('class="insight-tint"')
+    assert f'fill-opacity="{svg.TINT_OPACITY}"' in tint and 0 < svg.TINT_OPACITY < 1
+    assert 'class="insight-parcel insight-hatch"' in city
