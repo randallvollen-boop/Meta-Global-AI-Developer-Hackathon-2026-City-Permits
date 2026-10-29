@@ -44,7 +44,10 @@ Every existing test, the start scripts, and the judged deployment run in demo mo
 | `ACME_APPLICANT_ASSIST_LIVE_ENABLED`, `ACME_POLICY_ASSIST_LIVE_ENABLED` | off | off | Task switches, checked in addition to the global switch |
 | `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Existing caps, unchanged |
 | `ACME_GIS_BASE_URL`, `ACME_GIS_AUTO_PROPOSE_SCORE`, `ACME_DEMO_TIMEZONE`, `ACME_EVIDENCE_ROOT`, `ACME_KEY_FILE` | as before | as before | Unchanged |
-| `ACME_RUN_MIGRATIONS`, `ACME_BIND_PORT`, `ACME_FORWARDED_ALLOW_IPS` | container entrypoint only | container entrypoint only | Skip the upgrade, listen port, proxy addresses uvicorn trusts |
+| `ACME_RUN_MIGRATIONS`, `ACME_BIND_PORT`, `ACME_FORWARDED_ALLOW_IPS` | container entrypoint only | container entrypoint only | Skip the upgrade, listen port, proxy addresses uvicorn trusts. `PORT`, when set, wins over `ACME_BIND_PORT` |
+| `ACME_RATE_LIMIT_ALL_PER_MINUTE`, `_WRITE_`, `_SESSION_`, `_UPLOAD_` (`..._PER_MINUTE`) | 0 (off) | 0 (off) | Requests per minute per client address for all requests, state-changing requests, persona switches and uploads. For the public demonstration only; see `DEPLOY_RENDER.md` |
+| `ACME_TRUSTED_PROXY_HOPS`, `ACME_MAX_REQUEST_BYTES`, `ACME_PUBLIC_DEMO` | 0, 32 MB, off | 0, 32 MB, off | Extra trusted proxies on the right of `X-Forwarded-For`, largest request body (`0` is off), and the public-demonstration notice |
+| `ACME_DEMO_SEED_ON_START` | off | refused | Demo image only: rebuild the fictional data on every start |
 
 The general Muse command (`/api/muse/run`) now defaults to the `replay` mode instead of `live`, so a command that omits the mode cannot spend a live call. A caller that wants a live run names `"mode": "live"`. In production a replay is refused and a live run is refused while the provider switch is off.
 
@@ -74,6 +77,10 @@ Prerequisites: a TLS (Transport Layer Security) terminating reverse proxy in fro
 6. Expect staff pages to show "Sign-in is not configured" until identity is connected.
 
 The container build and run are not exercised by the automated checks in this repository. `docker compose config` and `docker build --check` validated the files; no image was built or started for this change.
+
+## Public demonstration on Render
+
+The hosted demonstration (`demo` mode, fictional data, seeded on every start, rate limited) is set up from `render.yaml`. The steps, settings and rollback are in [DEPLOY_RENDER.md](DEPLOY_RENDER.md). It does not change anything in the production path above.
 
 ## Rollback
 
