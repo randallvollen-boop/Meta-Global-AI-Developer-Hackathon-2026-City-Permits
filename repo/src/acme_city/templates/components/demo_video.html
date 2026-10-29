@@ -1,0 +1,13 @@
+{# The demonstration video on the persona selector.
+
+   It never plays on its own and loads nothing until the play button is
+   pressed.  The captions are part of the picture.  At picture lock the cut
+   is swapped by replacing static/video/demo-video.mp4. #}
+<figure class="demo-video" data-testid="demo-video">
+  <figcaption class="demo-video-caption">A short tour of the app, from the first permit request to the shared record.</figcaption>
+  <video controls preload="none" playsinline width="1280" height="720"
+         poster="/ui/static/video/demo-video-poster.jpg" data-testid="demo-video-player">
+    <source src="/ui/static/video/demo-video.mp4" type="video/mp4">
+    <a href="/ui/static/video/demo-video.mp4">Download the tour video (MP4, 8 MB)</a>
+  </video>
+</figure>
