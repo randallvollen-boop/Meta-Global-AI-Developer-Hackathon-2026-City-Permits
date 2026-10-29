@@ -316,3 +316,24 @@ def test_city_permit_activity_hierarchy_fits_a_phone(
     fits_a_phone(page)
     assert_not_covered(page, page.locator('[data-testid="filter-apply"]'))
     assert page.recorded_errors == []
+
+
+# ----------------------------------------------------------- City chart tokens
+
+
+def test_city_charts_use_theme_tokens_in_light_and_dark(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Chart paint follows theme tokens while labels and tables remain present."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/insight/city")
+    bar = page.locator(".insight-bars rect").first
+    light_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    page.evaluate("document.documentElement.dataset.theme = 'dark'")
+    dark_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    assert light_fill != dark_fill
+    assert page.locator('[data-testid="district-table"]').count() == 1
+    assert page.locator('[data-testid="trend-table"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="insight-trend-chart"]'))
+    assert page.recorded_errors == []

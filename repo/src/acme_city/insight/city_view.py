@@ -249,7 +249,7 @@ def city_view(
         height = 0 if not peak else round(110 * item["permits"] / peak)
         x = 10 + position * (bar_width + 6)
         bars.append(
-            f'<g><title>{item["month"]}: {item["permits"]} permits</title>'
+            f'<g tabindex="0" role="listitem" aria-label="{item['month']}: {item['permits']} permits"><title>{item["month"]}: {item["permits"]} permits</title>'
             f'<rect x="{x}" y="{130 - height}" width="{bar_width}" height="{height}"/>'
             f'<text x="{x + bar_width / 2}" y="{125 - height}" text-anchor="middle">{item["permits"]}</text>'
             f'<text x="{x + bar_width / 2}" y="148" text-anchor="middle">{item["month"][2:]}</text></g>'

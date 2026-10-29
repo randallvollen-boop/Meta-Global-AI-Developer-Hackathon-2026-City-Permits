@@ -213,3 +213,12 @@
     width: 100%;
   }
 }
+.admin-b .insight-bars [tabindex="0"]:focus rect {
+  stroke: var(--fg);
+  stroke-width: 2px;
+}
+.admin-b .insight-bars,
+.admin-b .insight-map {
+  max-width: 100%;
+  height: auto;
+}
