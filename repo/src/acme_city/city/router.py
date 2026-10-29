@@ -326,7 +326,6 @@ def city_community_permit(
         community_return_url,
         display_date,
         normalize_query,
-        normalize_type,
         status_badge_class,
         status_explanation,
     )
@@ -355,7 +354,7 @@ def city_community_permit(
         permits_crumb="/city/permits",
         record=record,
         back_url=community_return_url(q, type),
-        has_return_context=bool(normalize_query(q) or normalize_type(type)),
+        has_return_context=bool(normalize_query(q)),
         display_date=display_date,
         status_explanation=status_explanation,
         status_badge_class=status_badge_class,

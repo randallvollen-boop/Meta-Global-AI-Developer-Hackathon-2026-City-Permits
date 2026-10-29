@@ -457,6 +457,16 @@ def test_a_direct_record_link_offers_the_plain_way_back(client, sensitive_case) 
     assert "Back to community permits" in body
 
 
+def test_a_record_link_with_only_a_type_returns_to_the_recent_list(client, sensitive_case) -> None:
+    body = client.get(
+        f"/city/community/permit/{sensitive_case['reference']}", params={"type": "rezoning"}
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community?type=rezoning#community-recent"' in back.group(0)
+    assert "Back to community permits" in body
+
+
 def test_the_return_link_is_always_local(client, sensitive_case) -> None:
     reference = sensitive_case["reference"]
     body = client.get(
