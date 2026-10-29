@@ -52,8 +52,14 @@ NOT_APPLICABLE = "not_applicable"
 #: The wording of the not-applicable result for the historical seed.
 SEED_WORDS = "not applicable (historical seed)"
 
-#: The four personas the interface may select, in selector order.
-PERSONAS: tuple[str, ...] = ("Applicant", "Data Steward", "Permit Reviewer", "City Administrator")
+#: The five personas the interface may select, in selector order.
+PERSONAS: tuple[str, ...] = (
+    "Applicant",
+    "Data Steward",
+    "Permit Reviewer",
+    "City Administrator",
+    "Agent Operator",
+)
 
 #: The grants the City Administrator never holds.
 FORBIDDEN_FOR_ADMINISTRATOR: tuple[str, ...] = (
@@ -183,8 +189,8 @@ def _result(
 
 
 def check_personas(session: Session) -> CheckResult:
-    """Exactly four personas are selectable, and they are the four named ones."""
-    title = "Exactly 4 selectable personas"
+    """Exactly five personas are selectable, and they are the five named ones."""
+    title = f"Exactly {len(PERSONAS)} selectable personas"
     labels = sorted(
         row[0]
         for row in session.execute(
@@ -192,7 +198,7 @@ def check_personas(session: Session) -> CheckResult:
         ).all()
     )
     if labels == sorted(PERSONAS):
-        return CheckResult("personas", title, PASS, "the selector offers " + ", ".join(PERSONAS) + ".", passed=4)
+        return CheckResult("personas", title, PASS, "the selector offers " + ", ".join(PERSONAS) + ".", passed=len(PERSONAS))
     return CheckResult(
         "personas",
         title,

@@ -86,9 +86,9 @@ def test_the_baseline_names_the_d07_rows_from_the_fixture_bundle() -> None:
 # ------------------------------------------------------- 1 personas
 
 
-def test_personas_pass_with_the_four(session) -> None:
+def test_personas_pass_with_the_five(session) -> None:
     result = checks.check_personas(session)
-    assert result.status == PASS and result.passed == 4
+    assert result.status == PASS and result.passed == 5
 
 
 def test_personas_fail_with_a_fifth_selectable_actor(session) -> None:

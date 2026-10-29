@@ -1,0 +1,911 @@
+{
+  "note": "The grants of the four original personas before W0-3 added the Agent Operator. Never edited: a deliberate grant change of one of these personas is recorded in persona_grant_deltas.json instead.",
+  "personas": {
+    "persona_applicant": [
+      {
+        "permission_id": "applicant.case.respond",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "applicant.help.ask",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "applicant.help.assist",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "applicant.help.escalate",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "applicant.profile.edit",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.revision.submit",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.submit",
+        "domains": [
+          "applicants",
+          "permits"
+        ],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "correction.request.submit",
+        "domains": [],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.document.view",
+        "domains": [],
+        "record_scope": [
+          "party_applicant_1",
+          "SYN-APP-005"
+        ],
+        "source": "explicit"
+      }
+    ],
+    "persona_data_steward": [
+      {
+        "permission_id": "agent.run.intake",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "applicant.profile.edit",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.revision.submit",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.submit",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.withdraw",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "change.case.transition",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "correction.request.submit",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "parcel.match.propose",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.advance",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.assign",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.comment",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.priority",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.return",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.finding.waive",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.intake.process_selected",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "property.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.document.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.crosswalk.decide",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.crosswalk.propose",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.provenance.view",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "rule.version.draft",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "source.quarantine.resolve",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "source.record.update",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "source.snapshot.stage",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      }
+    ],
+    "persona_permit_reviewer": [
+      {
+        "permission_id": "agent.run.adjudication",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.evaluate",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "application.revision.submit",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "correction.request.submit",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "parcel.confirm",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "parcel.match.propose",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.assign",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.comment",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.request_revisions",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.decide",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.issue",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "property.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.document.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      }
+    ],
+    "persona_city_administrator": [
+      {
+        "permission_id": "admin.actor.manage",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "admin.overview.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "admin.session.revoke",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "agent.run.adjudication",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "agent.run.intake",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "agent.toggle",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "config.manage",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "correction.request.submit",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "finance.account.link",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "finance.allocation.confirm",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "finance.assessment.create",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "finance.payment.import",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "governance.assignment.manage",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "governance.authority_policy.manage",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "governance.authority_policy.publish",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "governance.dataset.register",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "governance.queue.manage",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "insight.city.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "ops.audit_log.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "ops.checks.run",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "ops.dashboard.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.archive",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.case.restore",
+        "domains": [
+          "permits"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "permit.icon.generate",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.brief.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.draft.convert",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.muse.brief",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.muse.propose",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.run.execute",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.run.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "policy.scenario.manage",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "property.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.audit.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.configuration.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "records.document.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.crosswalk.decide",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.crosswalk.propose",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "registry.provenance.view",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "rule.version.approve",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "rule.version.draft",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "rule.version.publish",
+        "domains": [
+          "applicants",
+          "permits",
+          "contractors",
+          "businesses",
+          "parcels",
+          "addresses",
+          "zoning",
+          "building_rules",
+          "finance",
+          "records"
+        ],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "support.case.record",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "support.help_request.answer",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      },
+      {
+        "permission_id": "support.lookup.view",
+        "domains": [],
+        "record_scope": [],
+        "source": "explicit"
+      }
+    ]
+  }
+}

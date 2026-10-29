@@ -33,6 +33,7 @@ PERSONA_LABELS = {
     "persona_permit_reviewer": "Permit Reviewer",
     "persona_data_steward": "Data Steward",
     "persona_city_administrator": "City Administrator",
+    "persona_agent_operator": "Agent Operator",
 }
 
 #: Documents larger than this are not read.

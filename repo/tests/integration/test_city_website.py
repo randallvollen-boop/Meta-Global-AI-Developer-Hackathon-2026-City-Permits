@@ -126,12 +126,12 @@ def test_portal_pages_use_city_layout_without_staff_nav(client: TestClient) -> N
 
 
 @pytest.mark.parametrize("path", ["/city/", "/apply", "/queue"])
-def test_switcher_lists_exactly_four_personas(client: TestClient, path: str) -> None:
+def test_switcher_lists_exactly_five_personas(client: TestClient, path: str) -> None:
     choose(client, "persona_applicant" if path == "/apply" else "persona_data_steward")
     text = client.get(path).text
     assert 'data-testid="demo-switch"' in text
     ids = re.findall(r'data-demo-persona="([^"]+)"', text)
-    assert sorted(ids) == sorted(("persona_applicant", *STAFF))
+    assert sorted(ids) == sorted(("persona_applicant", *STAFF, "persona_agent_operator"))
     assert "Demo controls" in text  # renamed from "Demo: switch user" (bottom-left Demo controls button)
 
 

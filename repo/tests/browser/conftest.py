@@ -248,10 +248,13 @@ def login(page, server: BrowserServer):
         # The Applicant lands on the City website.  Every staff persona lands on
         # its own home: the queue for the Data Steward and the Permit Reviewer,
         # and the planning overview for the City Administrator, whose home the
-        # overview restyle moved deliberately.
+        # overview restyle moved deliberately.  The Agent Operator, who may not
+        # open the queue, lands on its temporary home, the intake agent screen
+        # (W0-3), with the screen it moved from in the query.
         landing = {
             "persona_applicant": "/city/",
             "persona_city_administrator": "/overview",
+            "persona_agent_operator": "/agent/intake*",
         }.get(actor_id, "/queue")
         page.wait_for_url(f"{server.base_url}{landing}")
 

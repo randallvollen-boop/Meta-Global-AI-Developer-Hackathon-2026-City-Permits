@@ -163,13 +163,14 @@ def test_scenario_clock_is_disabled_in_production(tmp_path: Path) -> None:
 # ----------------------------------------------------------- demo unchanged
 
 
-def test_demo_mode_still_offers_the_four_personas_and_the_switch(demo) -> None:
+def test_demo_mode_still_offers_the_five_personas_and_the_switch(demo) -> None:
     actors = demo.get("/api/session/actors").json()["actors"]
     assert {a["label"] for a in actors} == {
         "Applicant",
         "Data Steward",
         "Permit Reviewer",
         "City Administrator",
+        "Agent Operator",
     }
     page = demo.get("/select")
     assert page.status_code == 200

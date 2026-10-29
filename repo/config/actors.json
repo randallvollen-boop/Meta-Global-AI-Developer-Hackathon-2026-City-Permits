@@ -2,7 +2,7 @@
   "catalog_version": "2",
   "scope": "acme_city",
   "fictional_demo": true,
-  "note": "Exactly four selectable human personas are offered by the persona selector. The service identities below are organizational bindings: accountable owners, custodians, the shared delegate, the cross-domain governance routing identity and a second applicant identity used for record-scope checks. A service identity is never selectable. Every grant is explicit: a role label never authorizes an action and a client-supplied role field is never trusted. Administrator configuration access carries no permit approval.",
+  "note": "Exactly five selectable human personas are offered by the persona selector. The service identities below are organizational bindings: accountable owners, custodians, the shared delegate, the cross-domain governance routing identity and a second applicant identity used for record-scope checks. A service identity is never selectable. Every grant is explicit: a role label never authorizes an action and a client-supplied role field is never trusted. Administrator configuration access carries no permit approval.",
   "roles": [
     {
       "role_id": "applicant",
@@ -192,6 +192,17 @@
         "application.evaluate",
         "records.document.view",
         "registry.provenance.view"
+      ]
+    },
+    {
+      "role_id": "agent_operator",
+      "label": "Agent Operator",
+      "boundary": "Wakes and runs the intake and adjudication agents and processes a selection of waiting cases; no permit decision.",
+      "permission_ids": [
+        "agent.run.adjudication",
+        "agent.run.intake",
+        "agent.toggle",
+        "permit.intake.process_selected"
       ]
     }
   ],
@@ -1194,6 +1205,54 @@
       "active_when_seeded": true,
       "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
       "actor_id": "persona_city_administrator"
+    },
+    {
+      "label": "Agent Operator",
+      "selectable": true,
+      "source_role_ids": [
+        "agent_operator"
+      ],
+      "domain_scope": [
+        "permits"
+      ],
+      "record_scope": [],
+      "responsibility": "Runs the City's helper agents and the processing batches; the agents propose and recommend, a person decides.",
+      "grants": [
+        {
+          "permission_id": "agent.toggle",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.intake",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.adjudication",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.intake.process_selected",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "fictional": true,
+      "active_when_seeded": true,
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request",
+      "actor_id": "persona_agent_operator"
     }
   ],
   "service_identities": [

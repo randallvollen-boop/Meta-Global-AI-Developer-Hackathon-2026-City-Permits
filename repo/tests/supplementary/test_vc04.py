@@ -322,4 +322,4 @@ def test_the_persona_selector_never_offers_a_service_identity(
     assert "service_delegate" not in body
     assert "Intake Clerk" not in body
     assert "Accountable Data Owner" not in body
-    assert body.count('data-persona=') == 4
+    assert body.count('data-persona=') == 5

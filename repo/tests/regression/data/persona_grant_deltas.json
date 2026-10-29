@@ -1,0 +1,4 @@
+{
+  "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. Only OPR-3 and STW-18 add entries. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
+  "deltas": []
+}

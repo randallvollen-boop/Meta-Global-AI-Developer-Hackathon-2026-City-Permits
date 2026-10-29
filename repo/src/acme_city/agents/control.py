@@ -1,7 +1,8 @@
 """The awake/asleep control of the two agents.
 
-An agent is asleep by default.  Only the City Administrator may wake it or
-put it back to sleep, and every change is a governed, audited action.  A run
+An agent is asleep by default.  Only a persona with the ``agent.toggle``
+grant (the City Administrator, the Agent Operator) may wake it or put it back
+to sleep, and every change is a governed, audited action.  A run
 of an agent is refused while the agent sleeps: the browser never decides that
 an agent may act.
 """
@@ -32,9 +33,14 @@ AGENT_KEYS: tuple[str, ...] = (agent_models.AGENT_INTAKE, agent_models.AGENT_ADJ
 PERMISSION_TOGGLE = "agent.toggle"
 
 #: The grant each agent needs to run.
+#:
+#: The ``linking`` key is the contract of the linking agent of the steward
+#: automation: its grant is reserved and no persona holds it yet, and it is
+#: not one of ``AGENT_KEYS``, so it can be neither woken nor run.
 PERMISSION_RUN: dict[str, str] = {
     agent_models.AGENT_INTAKE: "agent.run.intake",
     agent_models.AGENT_ADJUDICATION: "agent.run.adjudication",
+    "linking": "agent.run.linking",
 }
 
 #: The label of each agent, for the screen and the audit trail.
@@ -155,7 +161,7 @@ class AgentControlService:
 
     def authorize_run(self, actor: ActorContext, agent_key: str) -> None:
         """Refuse a run the acting persona may not perform."""
-        permission = PERMISSION_RUN.get(agent_key)
+        permission = PERMISSION_RUN.get(agent_key) if agent_key in AGENT_KEYS else None
         if permission is None:
             raise ValidationError(f"unknown agent: {agent_key!r}")
         self._permissions.authorize(

@@ -466,6 +466,7 @@ def _persona_label(actor_id: str) -> str:
         "persona_data_steward": "Data Steward",
         "persona_permit_reviewer": "Permit Reviewer",
         "persona_city_administrator": "City Administrator",
+        "persona_agent_operator": "Agent Operator",
     }.get(actor_id, actor_id)
 
 

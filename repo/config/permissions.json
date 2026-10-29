@@ -260,7 +260,7 @@
       "permission_id": "agent.toggle",
       "action": "agent.toggle",
       "category": "agent",
-      "description": "Wake an agent or put it back to sleep. Only the City Administrator holds this grant.",
+      "description": "Wake an agent or put it back to sleep. The City Administrator and the Agent Operator hold this grant.",
       "sensitive": false
     },
     {
