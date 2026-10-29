@@ -78,7 +78,7 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 - Text only Vollen Data Services branding. No wrong brand word, logo or client mark reaches the output, and the builder denylist enforces that.
 - Every mockup frame says "Example with fictional data".
 - The page states no measured benefit, accuracy, savings, performance, compliance or production readiness claim, and no tamper-proof claim.
-- The shared kit is not edited. The unused Aptos face in the kit shell remains, and its embedding rights outside the kit owner stay unverified.
+- The page embeds no fonts and uses no kit icons. `page/extra.css` sets system font stacks, and `page/icons.json` holds our own 38 line icons, which the kit builder uses in place of its set. The kit's Aptos font data was removed (2026-10-28).
 - The standalone standard and its templates are absent on this host. The kit README, this fact sheet, the sibling worked example and the Vollen Linux instructions set the page shape.
 
 ## Planned content

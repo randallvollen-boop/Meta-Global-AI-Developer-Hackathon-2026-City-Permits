@@ -40,4 +40,4 @@ The original RailFlow workspace remains separate at `../Meta-Global-AI-Developer
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE); NOTICE lists the third-party material the license does not cover.
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
