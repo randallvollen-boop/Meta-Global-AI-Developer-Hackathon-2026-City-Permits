@@ -51,7 +51,7 @@ def ingestion_service(session: Session) -> IngestionService:
 
 @router.get("/systems", operation_id="list_source_systems")
 def list_source_systems(
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the simulated source systems and the internal components."""
@@ -86,7 +86,7 @@ def list_source_systems(
 def write_source_record(
     source_system_id: str,
     command: SourceRecordWriteCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Write a new version of a record of a simulated source system.
@@ -118,7 +118,7 @@ def ingest_source_records(
     source_system_id: str,
     dataset_key: str,
     command: IngestCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Ingest a batch of source records and report the run denominators."""
@@ -146,7 +146,7 @@ def list_source_snapshots(
     record_id: str | None = None,
     status: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the preserved raw snapshots of a dataset."""
@@ -191,7 +191,7 @@ def list_source_observations(
     source_system_id: str,
     dataset_key: str,
     limit: int = Query(default=100, ge=1, le=500),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the counted observations of a dataset with their denominators."""
@@ -230,7 +230,7 @@ def list_source_quarantine_errors(
     source_system_id: str,
     dataset_key: str,
     limit: int = Query(default=100, ge=1, le=500),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the recorded field errors of the quarantined records of a dataset."""

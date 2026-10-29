@@ -83,7 +83,7 @@ def _needs_sign_in(actor: ActorContext | None) -> Any:
 @router.get("/help", operation_id="ui_help_hub")
 def ui_help_hub(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the hub: the tutorial, the guides, the technical documents, the glossary."""
@@ -98,7 +98,7 @@ def ui_help_hub(
 @router.get("/help/tutorial", operation_id="ui_help_tutorial")
 def ui_help_tutorial(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the tutorial."""
@@ -120,7 +120,7 @@ def ui_help_tutorial(
 @router.get("/help/how-to", operation_id="ui_help_howto_index")
 def ui_help_howto_index(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """List the task guides, those for the visitor's own role first."""
@@ -145,7 +145,7 @@ def ui_help_howto_index(
 def ui_help_howto(
     slug: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show one task guide."""
@@ -162,7 +162,7 @@ def ui_help_howto(
 @router.get("/help/glossary", operation_id="ui_help_glossary")
 def ui_help_glossary(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """List the terms of the information popovers."""
@@ -178,7 +178,7 @@ def ui_help_glossary(
 @router.get("/help/technical", operation_id="ui_help_technical")
 def ui_help_technical(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """List the technical documents."""
@@ -207,7 +207,7 @@ def ui_help_technical(
 def ui_help_document(
     slug: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show one technical document: Markdown rendered, or an HTML page in a sandbox."""
@@ -244,7 +244,7 @@ def ui_help_document_file(
     slug: str,
     request: Request,
     download: bool = False,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Serve an HTML document with a sandboxing policy, or as a download."""

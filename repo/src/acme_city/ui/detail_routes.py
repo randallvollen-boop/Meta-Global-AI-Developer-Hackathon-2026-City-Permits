@@ -45,7 +45,7 @@ def ui_detail(
     kind: str,
     item_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> HTMLResponse:
     """Return the drawer fragment for one detail address."""
     from acme_city.ui.router import safe_next, templates, ui_actor
