@@ -145,3 +145,24 @@
 @media (min-width: 900px) {
   .admin-b .admin-b-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
 }
+
+/* governance, rules and City view (ADB-10 to ADB-15) */
+.admin-b .admin-b-attention {
+  border-left: 4px solid var(--warn);
+}
+.admin-b .admin-b-attention p:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.admin-b .admin-b-source-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.admin-b .admin-b-source-card {
+  min-width: 0;
+}
+.admin-b .admin-b-source-card .responsibility-grid {
+  grid-template-columns: 1fr;
+}

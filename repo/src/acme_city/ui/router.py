@@ -1008,6 +1008,7 @@ def ui_governance_sources(
         responsibility=governance["responsibility"],
         actions=actions,
         denied_action_explanations=view_models.denied_action_explanations(actions),
+        quiet_feedback=True,
     )
     return render(request, "governance_sources.html", context)
 

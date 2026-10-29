@@ -36,7 +36,7 @@ from acme_city.persistence.models import (
     source,
 )
 from acme_city.rules import approval_policy, catalog
-from acme_city.ui import property_views, view_models
+from acme_city.ui import admin_b_labels, property_views, view_models
 from acme_city.ui.view_models import action as build_action
 from acme_city.ui.view_models import _field
 
@@ -1721,9 +1721,16 @@ def governance_screen(
     """
     tab = tab if tab in dict(_GOVERNANCE_TABS) else "sources"
     service = GovernanceService(session)
-    registrations = [
-        view.model_dump(mode="json") for view in service.list_registrations()
-    ]
+    registrations = []
+    for view in service.list_registrations():
+        item = view.model_dump(mode="json")
+        item["dataset_label"] = admin_b_labels.identifier_label(item["dataset_key"])
+        item["source_label"] = admin_b_labels.identifier_label(item["source_system_id"])
+        item["domain_label"] = admin_b_labels.identifier_label(item.get("domain_id"), missing="No domain assigned")
+        item["owner_label"] = _actor_label(session, item.get("accountable_owner_actor_id"))
+        item["queue_label"] = admin_b_labels.identifier_label(item.get("steward_queue_id"), missing="No queue assigned")
+        item["custodian_label"] = _actor_label(session, item.get("system_custodian_actor_id"))
+        registrations.append(item)
     domains = [
         {
             "domain_id": row.domain_id,
@@ -1839,6 +1846,7 @@ def governance_screen(
             for key, label in _GOVERNANCE_TABS
         ],
         "sources": sources,
+        "attention": {"staged_records": len(staged), "quarantine_errors": len(quarantined)},
         "registrations": registrations,
         "domains": domains,
         "queues": queues,

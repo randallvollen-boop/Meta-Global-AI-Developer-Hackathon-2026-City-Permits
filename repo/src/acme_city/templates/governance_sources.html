@@ -13,7 +13,7 @@
 
 <div class="page-head">
   <div>
-    <h1>Governance and sources</h1>
+    <h1>Data sources and ownership</h1>
     <p class="sub">Who owns each dataset, where the data comes from, and what arrived without an owner.</p>
   </div>
   <div class="actions">{{ ui.help_button('governance') }}</div>
@@ -25,6 +25,14 @@
   {% endfor %}
 </nav>
 
+{% if governance.tab == 'sources' %}
+<section class="panel admin-b-attention" aria-labelledby="governance-attention-heading" data-testid="governance-attention">
+  <h2 id="governance-attention-heading">Records needing attention</h2>
+  <p><strong>{{ governance.attention.staged_records }}</strong> staged records and <strong>{{ governance.attention.quarantine_errors }}</strong> recorded quarantine errors.</p>
+  <p><a href="#intake-heading">View records</a> <a href="#governance-actions-heading">Manage governance</a></p>
+</section>
+{% endif %}
+
 {% include "components/responsibility_panel.html" %}
 
 {% if governance.tab == 'sources' %}
@@ -35,9 +43,9 @@
     demonstration received or checked a record. The number of open issues is a separate fact.
     {{ ui.info('source_freshness') }}
   </p>
-  <div class="kpis" data-testid="source-overview">
+  <div class="admin-b-source-grid" data-testid="source-overview">
     {% for item in governance.sources %}
-    <section class="card kpi" aria-labelledby="source-{{ item.source_system_id }}-heading" data-testid="source-card" data-source-system-id="{{ item.source_system_id }}">
+    <section class="card admin-b-source-card" aria-labelledby="source-{{ item.source_system_id }}-heading" data-testid="source-card" data-source-system-id="{{ item.source_system_id }}">
       <div class="k" id="source-{{ item.source_system_id }}-heading">
         <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-db"/></svg>
         {{ item.label }}
@@ -90,12 +98,12 @@
     <tbody>
       {% for registration in governance.registrations %}
       <tr data-testid="registration-row" data-state="{{ registration.registration_state }}">
-        <th scope="row">{{ registration.dataset_key }}</th>
-        <td>{{ registration.source_system_id }}</td>
-        <td>{{ registration.domain_id or 'not assigned' }}</td>
-        <td>{{ registration.accountable_owner_actor_id or 'not assigned' }}</td>
-        <td>{{ registration.steward_queue_id or 'not assigned' }}</td>
-        <td>{{ registration.system_custodian_actor_id or 'not assigned' }}</td>
+        <th scope="row">{{ registration.dataset_label }}</th>
+        <td>{{ registration.source_label }}</td>
+        <td>{{ registration.domain_label }}</td>
+        <td>{{ registration.owner_label }}</td>
+        <td>{{ registration.queue_label }}</td>
+        <td>{{ registration.custodian_label }}</td>
         <td>{{ registration.correction_route or 'not declared' }}</td>
         <td><span class="badge badge-{{ registration.registration_state }}">{{ registration.registration_state }}</span></td>
         <td>{{ 'yes' if registration.publishable else 'no' }}</td>
@@ -128,7 +136,7 @@
   {% endfor %}
 </section>
 
-<section class="panel" aria-labelledby="intake-heading">
+<section class="panel" id="intake-heading-panel" aria-labelledby="intake-heading">
   <h2 id="intake-heading">Unowned intake and quarantine</h2>
   <div class="tbl-wrap">
   <table class="data-table" data-testid="staged-table">

@@ -220,3 +220,20 @@ def test_the_scenarios_list_offers_the_recorded_examples(
     assert page.locator('[data-testid="policy-name"]').is_visible()
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
+
+
+# ------------------------------------------------ governance and source overview
+
+
+def test_governance_source_overview_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Source attention and cards fit 390px and remain reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=sources")
+    assert page.locator("h1").inner_text() == "Data sources and ownership"
+    assert page.locator('[data-testid="governance-attention"]').count() == 1
+    assert page.locator('[data-testid="source-card"]').count() == 3
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="source-card"]').last)
+    assert page.recorded_errors == []
