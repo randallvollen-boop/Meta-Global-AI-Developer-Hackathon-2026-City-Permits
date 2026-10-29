@@ -21,6 +21,11 @@ from typing import Any
 REPO_DIR = Path(__file__).resolve().parents[3]
 PROJECT_ROOT = REPO_DIR.parent
 CONTENT_PATH = REPO_DIR / "config" / "help_content.json"
+#: Optional overlay files, merged on top of the base file in name order.
+OVERLAY_DIR = REPO_DIR / "config" / "help_content.d"
+
+#: The key that identifies an item of a list of objects, tried in this order.
+_ID_KEYS = ("slug", "key", "persona_id")
 
 #: The persona labels, by the id the session uses.
 PERSONA_LABELS = {
@@ -34,9 +39,105 @@ PERSONA_LABELS = {
 MAX_BYTES = 3_000_000
 
 
+def _claim(owners: dict[str, str], path: str, owner: str, value: Any) -> None:
+    """Record that ``owner`` wrote every leaf under ``path``; a second owner is an error."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _claim(owners, f"{path}/{key}", owner, item)
+    elif isinstance(value, list):
+        for n, item in enumerate(value):
+            _claim(owners, f"{path}/{n}", owner, item)
+    else:
+        if owners.setdefault(path, owner) != owner:
+            raise ValueError(f"help overlay {owner}: {path} is also set by {owners[path]}")
+
+
+def _merge(base: Any, over: Any, owners: dict[str, str], owner: str, where: str = "") -> Any:
+    """Return ``base`` with ``over`` laid on top; nothing can be deleted.
+
+    Objects merge key by key, and a new key is added.  A list of objects with an
+    id (slug, key or persona_id) merges by id, and an overlay item with no match
+    is appended.  A list without ids (the steps) is addressed by position: the
+    overlay gives an object such as ``{"2": "new text"}``, and the index equal to
+    the length appends.  A plain list in an overlay must be at least as long as
+    the base list.  A value never changes kind (null, a string or a different
+    container cannot replace what is there), and two overlay files may not set
+    the same value.
+    """
+    if over is None:
+        raise ValueError(f"help overlay {owner} {where}: null would delete content")
+    if isinstance(base, dict):
+        if not isinstance(over, dict):
+            raise ValueError(f"help overlay {owner} {where}: expected an object")
+        merged = dict(base)
+        for key, value in over.items():
+            if key in base:
+                merged[key] = _merge(base[key], value, owners, owner, f"{where}/{key}")
+            else:
+                if value is None:
+                    raise ValueError(f"help overlay {owner} {where}/{key}: null is not content")
+                _claim(owners, f"{where}/{key}", owner, value)
+                merged[key] = value
+        return merged
+    if isinstance(base, list):
+        if isinstance(over, dict):
+            merged = list(base)
+            for key in sorted(over, key=lambda k: int(k) if k.isdigit() else -1):
+                if not key.isdigit() or int(key) > len(merged):
+                    raise ValueError(f"help overlay {owner} {where}: no item {key}")
+                index = int(key)
+                if index == len(merged):
+                    if over[key] is None:
+                        raise ValueError(f"help overlay {owner} {where}/{key}: null is not content")
+                    _claim(owners, f"{where}/{key}", owner, over[key])
+                    merged.append(over[key])
+                else:
+                    merged[index] = _merge(merged[index], over[key], owners, owner, f"{where}/{key}")
+            return merged
+        if not isinstance(over, list):
+            raise ValueError(f"help overlay {owner} {where}: expected a list")
+        id_key = next(
+            (k for k in _ID_KEYS if base and all(isinstance(i, dict) and k in i for i in base)),
+            None,
+        )
+        if id_key is None:
+            if len(over) < len(base):
+                raise ValueError(f"help overlay {owner} {where}: a step cannot be removed")
+            merged = [
+                _merge(b, o, owners, owner, f"{where}/{n}") for n, (b, o) in enumerate(zip(base, over))
+            ]
+            for n, item in enumerate(over[len(base):], start=len(base)):
+                if item is None:
+                    raise ValueError(f"help overlay {owner} {where}/{n}: null is not content")
+                _claim(owners, f"{where}/{n}", owner, item)
+                merged.append(item)
+            return merged
+        merged = list(base)
+        for item in over:
+            if not isinstance(item, dict) or id_key not in item:
+                raise ValueError(f"help overlay {owner} {where}: an item needs a {id_key}")
+            index = next((n for n, b in enumerate(merged) if b[id_key] == item[id_key]), None)
+            if index is None:
+                _claim(owners, f"{where}/{item[id_key]}", owner, item)
+                merged.append(item)
+            else:
+                merged[index] = _merge(merged[index], item, owners, owner, f"{where}/{item[id_key]}")
+        return merged
+    if isinstance(over, (dict, list)):
+        raise ValueError(f"help overlay {owner} {where}: expected a plain value")
+    if type(over) is not type(base):
+        raise ValueError(f"help overlay {owner} {where}: the value changes kind")
+    _claim(owners, where, owner, over)
+    return over
+
+
 @lru_cache(maxsize=1)
 def _content() -> dict[str, Any]:
-    return json.loads(CONTENT_PATH.read_text(encoding="utf-8"))
+    data = json.loads(CONTENT_PATH.read_text(encoding="utf-8"))
+    owners: dict[str, str] = {}
+    for path in sorted(OVERLAY_DIR.glob("*.json")):
+        data = _merge(data, json.loads(path.read_text(encoding="utf-8")), owners, path.stem)
+    return data
 
 
 def reload() -> None:
@@ -121,6 +222,7 @@ def read_document(entry: dict[str, Any]) -> Loaded:
 
 __all__ = [
     "CONTENT_PATH",
+    "OVERLAY_DIR",
     "PERSONA_LABELS",
     "PROJECT_ROOT",
     "REPO_DIR",
