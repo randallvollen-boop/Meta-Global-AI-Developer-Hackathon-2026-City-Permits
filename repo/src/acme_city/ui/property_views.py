@@ -245,6 +245,7 @@ def application_property(
             parcels,
             match.parcel_number,
             points,
+            streets=_street_rows(catalog),
             caption=(
                 f"Parcel {match.parcel_number} with the located address point and its "
                 "neighbouring parcels"
@@ -328,6 +329,7 @@ def steward_parcel_proposals(session: Session, actor: ActorContext) -> list[dict
                 parcels,
                 anchor,
                 points,
+                streets=_street_rows(catalog),
                 caption=(
                     f"The submitted point against the candidate parcels for "
                     f"{application.source_application_number}"
@@ -470,6 +472,7 @@ def property_record(
         parcels,
         parcel.source_parcel_number,
         points,
+        streets=_street_rows(catalog),
         caption=f"Parcel {parcel.source_parcel_number} and its neighbours",
         linked=True,
         margin=120.0,

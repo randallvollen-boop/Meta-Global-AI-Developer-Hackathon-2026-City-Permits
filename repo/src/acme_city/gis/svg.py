@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from html import escape
+from pathlib import Path
 from typing import Any
 
 #: The marker letter and the plain-text label of every application status.
@@ -24,6 +25,90 @@ STATUS_MARKS: dict[str, tuple[str, str]] = {
     "withdrawn": ("W", "Withdrawn"),
     "issued": ("I", "Issued"),
 }
+
+#: The folder of the top down building pictures.  A file named after its
+#: zoning district and a variant letter (``r1a.webp``, ``c2b.webp``) is one
+#: picture for that district; dropping in another file adds a variant.
+TILE_DIR = Path(__file__).resolve().parent.parent / "static" / "map-tiles"
+
+#: The URL prefix of the building pictures.
+TILE_URL = "/ui/static/map-tiles/"
+
+#: The margin between the lot line and the building picture, in map units.
+TILE_INSET = 2.0
+
+
+def _zoning_tiles() -> dict[str, tuple[str, ...]]:
+    """Return the building pictures of every zoning district, in a fixed order."""
+    tiles: dict[str, tuple[str, ...]] = {}
+    for code in ("R-1", "R-2", "C-1", "C-2", "PF"):
+        stem = code.replace("-", "").lower()
+        names = sorted(path.name for path in TILE_DIR.glob(f"{stem}*.webp"))
+        if names:
+            tiles[code] = tuple(TILE_URL + name for name in names)
+    return tiles
+
+
+#: The building pictures by zoning district.  Every picture shares one camera
+#: height, a noon sun, the front at the bottom edge and the same lawn at the
+#: other edges, so lots read as one neighbourhood once each faces its street.
+ZONING_TILES: dict[str, tuple[str, ...]] = _zoning_tiles()
+
+
+def _facing(parcel: MapParcel, streets: list[dict[str, Any]]) -> int:
+    """Return the turn, in degrees, that points the front of a lot at its street.
+
+    A picture has its front at the bottom edge.  The nearest street decides
+    the turn: 0 when the street is below the lot on screen, 180 above, -90 to
+    the right and 90 to the left.
+    """
+    x0, y0, x1, y1 = _bounds(parcel.rings)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    best: tuple[float, int] | None = None
+    for street in streets:
+        path = street["path"]
+        for (ax, ay), (bx, by) in zip(path, path[1:]):
+            dx, dy = bx - ax, by - ay
+            length = dx * dx + dy * dy
+            t = 0.0 if length == 0 else max(0.0, min(1.0, ((cx - ax) * dx + (cy - ay) * dy) / length))
+            px, py = ax + t * dx, ay + t * dy
+            distance = (px - cx) ** 2 + (py - cy) ** 2
+            if abs(px - cx) >= abs(py - cy):
+                turn = -90 if px > cx else 90
+            else:
+                turn = 0 if py < cy else 180  # map y grows upward; screen y grows down
+            if best is None or distance < best[0]:
+                best = (distance, turn)
+    return best[1] if best else 0
+
+
+def _parcel_seed(parcel: MapParcel) -> int:
+    digits = "".join(ch for ch in parcel.number if ch.isdigit())
+    return int(digits) if digits else sum(map(ord, parcel.number))
+
+
+def _building_svg(parcel: MapParcel, flip: float, streets: list[dict[str, Any]]) -> str:
+    """Return the building picture of one lot, turned to face its street."""
+    tiles = ZONING_TILES.get(parcel.zoning)
+    if not tiles:
+        return ""
+    seed = _parcel_seed(parcel)
+    tile = tiles[seed % len(tiles)]
+    mirror = (seed // len(tiles)) % 2 == 1
+    x0, y0, x1, y1 = _bounds(parcel.rings)
+    size = min(x1 - x0, y1 - y0) - 2 * TILE_INSET
+    cx, cy = (x0 + x1) / 2, flip - (y0 + y1) / 2
+    turn = _facing(parcel, streets) if streets else 0
+    transform = f"rotate({turn} {cx:.1f} {cy:.1f})" if turn else ""
+    if mirror:
+        transform += f" translate({2 * cx:.1f} 0) scale(-1 1)"
+    attribute = f' transform="{transform.strip()}"' if transform else ""
+    return (
+        f'<image class="gis-building" href="{tile}" '
+        f'x="{cx - size / 2:.1f}" y="{cy - size / 2:.1f}" '
+        f'width="{size:.1f}" height="{size:.1f}" preserveAspectRatio="xMidYMid slice"{attribute}/>'
+    )
+
 
 #: The extent of the town grid.
 EXTENT = (0.0, 0.0, 960.0, 700.0)
@@ -124,7 +209,9 @@ def _markers(parcels: list[MapParcel], flip: float, scale: float) -> str:
     return "".join(out)
 
 
-def _parcel_group(parcel: MapParcel, flip: float, linked: bool) -> str:
+def _parcel_group(
+    parcel: MapParcel, flip: float, linked: bool, streets: list[dict[str, Any]] | None = None
+) -> str:
     classes = f"gis-parcel zoning-{escape(parcel.zoning or 'none')}"
     if parcel.role:
         classes += f" is-{parcel.role}"
@@ -132,16 +219,37 @@ def _parcel_group(parcel: MapParcel, flip: float, linked: bool) -> str:
         f'class="{classes}" data-parcel="{escape(parcel.number)}" '
         f'data-address="{escape(parcel.site_address)}"'
     )
+    d = _path(parcel.rings, flip)
     shape = (
         f"<title>{escape(_parcel_title(parcel))}</title>"
-        f'<path d="{_path(parcel.rings, flip)}"/>'
+        f'<path d="{d}"/>'
     )
+    building = _building_svg(parcel, flip, streets or [])
+    if building:
+        shape += building + f'<path class="gis-lot" d="{d}"/>'
     if linked and parcel.href:
         return (
             f'<a href="{escape(parcel.href)}" aria-label="{escape(_parcel_title(parcel))}">'
             f"<g {attributes}>{shape}</g></a>"
         )
     return f"<g {attributes}>{shape}</g>"
+
+
+def _street_svg(street: dict[str, Any], flip: float, *, named: bool) -> str:
+    """Return one street: a sidewalk band, the asphalt and, on the town map, its name."""
+    d = "M" + " L".join(f"{x:.1f},{flip - y:.1f}" for x, y in street["path"])
+    key = escape(str(street["street_key"]))
+    path_id = f' id="street-{key}"' if named else ""
+    out = (
+        f'<g class="gis-street"><title>{escape(street["name"])}</title>'
+        f'<path class="gis-sidewalk" d="{d}"/><path class="gis-asphalt"{path_id} d="{d}"/></g>'
+    )
+    if named:
+        out += (
+            f'<text class="gis-street-name" dy="3"><textPath href="#street-{key}" startOffset="3%">'
+            f"{escape(street['name'])}</textPath></text>"
+        )
+    return out
 
 
 def parcel_inset_svg(
@@ -152,6 +260,7 @@ def parcel_inset_svg(
     caption: str,
     linked: bool,
     margin: float = 70.0,
+    streets: list[dict[str, Any]] | None = None,
 ) -> str:
     """Return a small SVG of the subject parcel, its neighbours and the points."""
     subject = next((p for p in parcels if p.number == subject_number), None)
@@ -169,7 +278,9 @@ def parcel_inset_svg(
             continue
         drawn.append(parcel)
     scale = width / 260.0
-    body = "".join(_parcel_group(p, flip, linked) for p in drawn)
+    body = f'<rect class="gis-ground" x="{xmin:.1f}" y="{flip - ymax:.1f}" width="{width:.1f}" height="{height:.1f}"/>'
+    body += "".join(_street_svg(street, flip, named=False) for street in streets or [])
+    body += "".join(_parcel_group(p, flip, linked, streets) for p in drawn)
     body += _markers(drawn, flip, scale)
     body += "".join(
         _point_svg(point, flip, scale)
@@ -197,22 +308,11 @@ def town_map_svg(
     xmin, ymin, xmax, ymax = EXTENT
     flip = ymax
     width, height = xmax - xmin, ymax - ymin
-    street_svg = []
-    for street in streets:
-        path = street["path"]
-        d = "M" + " L".join(f"{x:.1f},{flip - y:.1f}" for x, y in path)
-        key = escape(str(street["street_key"]))
-        street_svg.append(
-            f'<g class="gis-street"><title>{escape(street["name"])}</title>'
-            f'<path id="street-{key}" d="{d}"/></g>'
-        )
-        street_svg.append(
-            f'<text class="gis-street-name" dy="-5"><textPath href="#street-{key}" startOffset="3%">'
-            f"{escape(street['name'])}</textPath></text>"
-        )
-    parcel_svg = "".join(_parcel_group(p, flip, linked) for p in parcels)
+    street_svg = [_street_svg(street, flip, named=True) for street in streets]
+    parcel_svg = "".join(_parcel_group(p, flip, linked, streets) for p in parcels)
     scale = 1.4
     body = (
+        f'<rect class="gis-ground" x="{xmin:.0f}" y="0" width="{width:.0f}" height="{height:.0f}"/>'
         f'<g class="gis-layer-streets">{"".join(street_svg)}</g>'
         f'<g class="gis-layer-parcels">{parcel_svg}</g>'
         f'<g class="gis-layer-markers">{_markers(parcels, flip, scale)}</g>'
@@ -330,6 +430,7 @@ def legend_html() -> str:
 
 __all__ = [
     "STATUS_MARKS",
+    "ZONING_TILES",
     "district_map_svg",
     "MapParcel",
     "MapPoint",

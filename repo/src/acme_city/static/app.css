@@ -745,8 +745,23 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
 .gis-parcel.is-candidate path { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 2; stroke-dasharray: 5 3; }
 .gis-parcel.is-picked path { stroke: var(--accent); stroke-width: 3; }
 .gis-parcel:hover path { fill: var(--accent-soft); }
+/* Building pictures: every lot draws its picture at the same inset under one
+   outline, so the five zoning pictures sit together as one town. */
+.gis-parcel .gis-building { pointer-events: none; }
+.gis-parcel path.gis-lot { fill: none; }
+.gis-parcel.is-subject path.gis-lot { fill: var(--accent-soft); fill-opacity: .35; }
+.gis-parcel.is-candidate path.gis-lot { fill: var(--warn-soft); fill-opacity: .35; }
+.gis-parcel:hover path.gis-lot { fill: var(--accent-soft); fill-opacity: .3; }
 .gis-street path { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
-.gis-street-name { font-size: 11px; fill: var(--ink-2, #55616d); pointer-events: none; }
+/* The town map and the parcel inset read as one aerial neighbourhood: lawn
+   ground, a light sidewalk band and asphalt.  The colours stand for the
+   pictures, so they stay the same in both themes. */
+.gis-svg { --map-lawn: #425123; --map-sidewalk: #989787; --map-asphalt: #5f6468; --map-label: #f4f4f1; }
+.gis-ground { fill: var(--map-lawn); }
+.gis-street path.gis-sidewalk { stroke: var(--map-sidewalk); stroke-width: 20; stroke-linecap: butt; }
+.gis-street path.gis-asphalt { stroke: var(--map-asphalt); stroke-width: 13; stroke-linecap: butt; }
+.gis-street-name { font-size: 9px; font-weight: 600; letter-spacing: .02em; fill: var(--ink-2, #55616d); pointer-events: none; }
+.gis-svg .gis-street-name { fill: var(--map-label); }
 .gis-point.gis-address circle { fill: var(--accent); }
 .gis-point.gis-submitted path { stroke: var(--bad); stroke-width: 2.5; fill: none; }
 .gis-point.gis-candidate path { fill: var(--warn); stroke: var(--ink, #1b2630); stroke-width: 1; }
