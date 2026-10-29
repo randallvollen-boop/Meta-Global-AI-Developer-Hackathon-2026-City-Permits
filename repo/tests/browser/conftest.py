@@ -305,3 +305,65 @@ def screenshot_dir(tmp_path: Path) -> Path:
 def write_manifest(path: Path, payload: dict[str, object]) -> None:
     """Write one browser manifest as JSON."""
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+#: The fixed layers that may cover content on a phone: the mobile navigation
+#: and the demo switch.
+COVERING_LAYERS = '.mobile-nav, [data-testid="demo-switch"]'
+
+#: Centre the element, then report every fixed layer that overlaps it or takes
+#: the hit at its centre.  A layer that contains the element, or that the
+#: element contains, is not a cover.
+_COVER_PROBE = """([element, selector]) => {
+  element.scrollIntoView({block: "center", inline: "nearest"});
+  const box = element.getBoundingClientRect();
+  const problems = [];
+  if (box.width === 0 || box.height === 0) {
+    problems.push("the element has no size");
+    return problems;
+  }
+  const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+  if (hit === null) {
+    problems.push("nothing is hit at the centre of the element");
+  } else if (hit !== element && !element.contains(hit)) {
+    const layer = hit.closest(selector);
+    problems.push(`centre hit ${layer ? layer.className || layer.tagName : hit.tagName}`);
+  }
+  for (const layer of document.querySelectorAll(selector)) {
+    if (layer.contains(element) || element.contains(layer)) continue;
+    const style = getComputedStyle(layer);
+    if (style.display === "none" || style.visibility === "hidden") continue;
+    const other = layer.getBoundingClientRect();
+    const width = Math.min(box.right, other.right) - Math.max(box.left, other.left);
+    const height = Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top);
+    if (width > 0 && height > 0) {
+      problems.push(`overlapped by ${layer.dataset.testid || layer.className}`);
+    }
+  }
+  return problems;
+}"""
+
+
+@pytest.fixture()
+def viewport_390(page):
+    """Return the page with a 390 by 844 pixel phone viewport."""
+    page.set_viewport_size({"width": 390, "height": 844})
+    return page
+
+
+def assert_no_horizontal_overflow(page) -> None:
+    """Fail if the document is wider than the viewport."""
+    overflow = page.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
+    assert overflow <= 1, f"the page overflows horizontally by {overflow} pixels"
+
+
+def assert_not_covered(page, locator) -> None:
+    """Fail if the mobile navigation or the demo switch covers the element.
+
+    The element is scrolled to the centre of the viewport first, so a control
+    that only sits under a fixed layer at one scroll position is not reported.
+    """
+    handle = locator.element_handle()
+    assert handle is not None, "the element exists"
+    problems = page.evaluate(_COVER_PROBE, [handle, COVERING_LAYERS])
+    assert problems == [], f"the element is covered: {problems}"

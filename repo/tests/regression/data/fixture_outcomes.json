@@ -1,0 +1,362 @@
+{
+  "note": "Outcomes after reset_demo. Regenerate only for a deliberate, reviewed change: python tests/regression/test_fixture_outcomes_snapshot.py",
+  "seeded_row_counts": {
+    "actor_grants": 554,
+    "actor_roles": 27,
+    "actors": 19,
+    "addresses": 71,
+    "agent_controls": 2,
+    "agent_run_nodes": 0,
+    "agent_runs": 0,
+    "agent_steps": 0,
+    "allocations": 1,
+    "application_actions": 0,
+    "application_comments": 0,
+    "application_drafts": 0,
+    "application_findings": 0,
+    "application_parcel_matches": 0,
+    "application_parties": 19,
+    "application_revisions": 13,
+    "application_sites": 13,
+    "applications": 13,
+    "assessment_lines": 2,
+    "assessments": 1,
+    "assignments": 51,
+    "audit_events": 0,
+    "audit_references": 0,
+    "authority_policies": 19,
+    "canonical_entities": 9,
+    "change_cases": 0,
+    "change_dependencies": 0,
+    "consumer_acknowledgements": 0,
+    "credentials": 5,
+    "crosswalks": 0,
+    "dataset_subscribers": 6,
+    "decisions": 1,
+    "demo_environment": 1,
+    "documents": 0,
+    "domains": 11,
+    "draft_documents": 0,
+    "evaluations": 0,
+    "evidence_references": 0,
+    "extraction_observations": 0,
+    "fee_schedule_versions": 2,
+    "finance_account_links": 0,
+    "finance_accounts": 3,
+    "gis_streets": 6,
+    "governance_issues": 0,
+    "help_conversations": 0,
+    "help_requests": 0,
+    "help_turns": 0,
+    "impact_reviews": 0,
+    "ingestion_runs": 0,
+    "match_proposals": 0,
+    "model_inputs": 0,
+    "model_outputs": 0,
+    "model_runs": 0,
+    "outbox_deliveries": 0,
+    "parcel_addresses": 71,
+    "parcels": 69,
+    "parties": 9,
+    "party_aliases": 4,
+    "party_contacts": 5,
+    "payment_events": 3,
+    "payments": 8,
+    "permissions": 82,
+    "permit_type_icons": 17,
+    "permit_types": 17,
+    "permits": 1,
+    "policy_draft_conversions": 0,
+    "policy_runs": 0,
+    "policy_scenario_revisions": 0,
+    "policy_scenarios": 0,
+    "provenance": 0,
+    "quarantine_errors": 0,
+    "reason_codes": 12,
+    "recommendations": 0,
+    "reconciliation_results": 0,
+    "review_tasks": 0,
+    "role_permissions": 92,
+    "roles": 14,
+    "rule_versions": 28,
+    "sessions": 0,
+    "source_commands": 0,
+    "source_contracts": 23,
+    "source_observations": 0,
+    "source_snapshots": 41,
+    "source_systems": 5,
+    "steward_queues": 10,
+    "support_cases": 0,
+    "zoning_districts": 5
+  },
+  "applications": {
+    "app_d02": {
+      "scenario_id": "D02",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d03": {
+      "scenario_id": "D03",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d04": {
+      "scenario_id": "D04",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d05": {
+      "scenario_id": "D05",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d06": {
+      "scenario_id": "D06",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d07": {
+      "scenario_id": "D07",
+      "status": "issued",
+      "decision": [
+        "approved"
+      ],
+      "reason_codes": [],
+      "fee_total_cents": 22000,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d08": {
+      "scenario_id": "D08",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_d09_blank_location": {
+      "scenario_id": "D09",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "review",
+      "rule_results": [
+        [
+          "DF-1",
+          "review"
+        ],
+        [
+          "DF-2",
+          "review"
+        ]
+      ]
+    },
+    "app_d09_setback": {
+      "scenario_id": "D09",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "review",
+      "rule_results": [
+        [
+          "DF-3",
+          "review"
+        ],
+        [
+          "DF-4",
+          "condition"
+        ]
+      ]
+    },
+    "app_d09_setback_nan": {
+      "scenario_id": "D09",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "review",
+      "rule_results": [
+        [
+          "DF-3",
+          "review"
+        ],
+        [
+          "DF-4",
+          "condition"
+        ]
+      ]
+    },
+    "app_d09_unknown_sign": {
+      "scenario_id": "D09",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "review",
+      "rule_results": [
+        [
+          "SG-1",
+          "review"
+        ],
+        [
+          "SG-2",
+          "review"
+        ],
+        [
+          "SG-3",
+          "review"
+        ],
+        [
+          "SG-4",
+          "pass"
+        ]
+      ]
+    },
+    "app_d11": {
+      "scenario_id": "D11",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    },
+    "app_synth_001": {
+      "scenario_id": "D01",
+      "status": "submitted",
+      "decision": null,
+      "reason_codes": [],
+      "fee_total_cents": null,
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "CT-1",
+          "pass"
+        ],
+        [
+          "CT-2",
+          "pass"
+        ]
+      ]
+    }
+  },
+  "fence_rules": {
+    "DF-1": {
+      "scenario": "fence-front-too-tall",
+      "rule_outcome": "fail",
+      "rule_results": [
+        [
+          "DF-1",
+          "fail"
+        ]
+      ],
+      "fee_total_cents": 10120
+    },
+    "DF-2": {
+      "scenario": "fence-conforming-rear",
+      "rule_outcome": "pass",
+      "rule_results": [
+        [
+          "DF-2",
+          "pass"
+        ]
+      ],
+      "fee_total_cents": 10120
+    }
+  }
+}
