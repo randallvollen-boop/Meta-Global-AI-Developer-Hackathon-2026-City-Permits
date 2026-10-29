@@ -1,0 +1,96 @@
+{
+  "note": "The hooks the administration screen keeps.  Every listed data-testid and every listed behaviour attribute must stay in the template it belongs to: a redesign may add hooks, but it may not rename or drop one.  The baseline is read by tests/ui/test_admin_contract.py.",
+  "templates": {
+    "admin.html": {
+      "testids": [
+        "admin-tab"
+      ],
+      "attributes": [
+        "data-tab"
+      ]
+    },
+    "admin/_appearance.html": {
+      "testids": [
+        "admin-section",
+        "icon-attempts-today",
+        "icon-cost",
+        "icon-editor",
+        "icon-generate",
+        "icon-generate-form",
+        "icon-global-cap",
+        "icon-history",
+        "icon-limits",
+        "icon-per-type-cap",
+        "icon-provenance",
+        "icon-save",
+        "icon-save-form",
+        "icon-thumb",
+        "permit-type-current-icon",
+        "permit-type-icon-provenance",
+        "permit-type-icon-row"
+      ],
+      "attributes": [
+        "data-icon-history",
+        "data-icon-pick",
+        "data-permit-type",
+        "data-section"
+      ]
+    },
+    "admin/_log.html": {
+      "testids": [
+        "admin-configuration-log",
+        "admin-log-row",
+        "admin-section"
+      ],
+      "attributes": [
+        "data-action",
+        "data-section"
+      ]
+    },
+    "admin/_permit_types.html": {
+      "testids": [
+        "admin-add-permit-type",
+        "admin-add-permit-type-submit",
+        "admin-document-toggle",
+        "admin-document-toggle-button",
+        "admin-permit-type-row",
+        "admin-permit-types",
+        "admin-required-documents",
+        "admin-section"
+      ],
+      "attributes": [
+        "data-permit-type",
+        "data-section"
+      ]
+    },
+    "admin/_reason_codes.html": {
+      "testids": [
+        "admin-add-reason-code",
+        "admin-add-reason-code-submit",
+        "admin-reason-code-retire",
+        "admin-reason-code-row",
+        "admin-reason-codes",
+        "admin-section"
+      ],
+      "attributes": [
+        "data-code",
+        "data-section"
+      ]
+    },
+    "admin/_users.html": {
+      "testids": [
+        "admin-add-user",
+        "admin-add-user-submit",
+        "admin-people",
+        "admin-person-row",
+        "admin-section",
+        "admin-service-identities",
+        "admin-service-identity-row"
+      ],
+      "attributes": [
+        "data-actor-id",
+        "data-section"
+      ]
+    }
+  }
+}
