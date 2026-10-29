@@ -10,6 +10,8 @@ the server.
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,7 +19,10 @@ from sqlalchemy.orm import Session
 from acme_city.adapters.sources.base import SourceCommand, adapter_for, available_adapters
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_actor, get_internal_reader, get_session
+from acme_city.core.errors import ValidationError
 from acme_city.ingestion.schemas import (
+    MAX_INGEST_RECORDS,
+    MAX_RECORD_PAYLOAD_BYTES,
     IngestCommand,
     QuarantineErrorView,
     SourceObservationView,
@@ -26,6 +31,15 @@ from acme_city.ingestion.schemas import (
 )
 from acme_city.ingestion.service import IngestionService
 from acme_city.persistence.models import source
+
+
+def enforce_payload_limit(payload: dict, *, where: str) -> None:
+    """Refuse a record payload that is larger than one source record may be."""
+    if len(json.dumps(payload, default=str).encode("utf-8")) > MAX_RECORD_PAYLOAD_BYTES:
+        raise ValidationError(
+            f"{where} is larger than {MAX_RECORD_PAYLOAD_BYTES} bytes; split or trim it"
+        )
+
 
 router = APIRouter(prefix="/api/sources", tags=["sources"])
 
@@ -81,6 +95,7 @@ def write_source_record(
     caller expects the record to hold.  The source answers with an explicit
     acknowledgement: accepted, rejected, timeout or conflict.
     """
+    enforce_payload_limit(command.payload, where="the record payload")
     adapter = adapter_for(source_system_id, session)
     acknowledgement = adapter.apply(
         SourceCommand(
@@ -107,6 +122,13 @@ def ingest_source_records(
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Ingest a batch of source records and report the run denominators."""
+    if len(command.records) > MAX_INGEST_RECORDS:
+        raise ValidationError(
+            f"an intake request carries at most {MAX_INGEST_RECORDS} records; "
+            f"this one carries {len(command.records)}"
+        )
+    for record in command.records:
+        enforce_payload_limit(record.payload, where="a record payload")
     payload = command.model_copy(
         update={"source_system_id": source_system_id, "dataset_key": dataset_key}
     )
