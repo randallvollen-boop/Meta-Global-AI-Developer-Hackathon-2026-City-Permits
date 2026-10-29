@@ -48,6 +48,13 @@
 .admin-b .admin-b-change > h3 { margin: 0 0 .2rem; font-size: .95rem; }
 .admin-b .admin-b-change > p { margin: .2rem 0; }
 .admin-b .admin-b-change .admin-b-change-why { color: var(--fg-2); font-size: .85rem; }
+.admin-b .admin-b-change-kind {
+  margin: 0 0 .2rem; font-size: .74rem; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--fg-3);
+}
+.admin-b .admin-b-change-label { font-weight: 600; }
+.admin-b .admin-b-changes { margin: .4rem 0; padding-left: 1.2rem; }
+.admin-b .admin-b-changes > li { margin: .3rem 0; }
 
 /* The state of the screen in one line, above the detail. */
 .admin-b .admin-b-state {

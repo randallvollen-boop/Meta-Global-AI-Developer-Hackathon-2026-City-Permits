@@ -824,9 +824,11 @@ def ui_policy_proposal(
         return _refusal(request, session, resolved, error, action="policy.muse.propose.read",
                         target_type="policy_proposal", target_id=proposal_id, back="/policy/scenarios")
     context = page_context(
-        request, session, resolved, screen=SCREEN, title="Proposed what-if",
+        request, session, resolved, screen=SCREEN, title="Review proposed changes",
         proposal=proposal,
         can_save=can_save,
+        cards=_change_cards(proposal),
+        why_label=_why_label(proposal),
         model_runs=[],
         evidence=[
             {
@@ -838,6 +840,59 @@ def ui_policy_proposal(
         ],
     )
     return render(request, "policy_proposal.html", context)
+
+
+#: The short name of each kind of proposed change, used by the change cards.
+CHANGE_KIND_LABELS = {
+    "rule_threshold": "Rule limit",
+    "rule_retirement": "Retire a rule",
+    "requirement": "Required information",
+    "process_category": "Process category",
+    "discretionary": "By right or discretionary",
+    "service_target": "Service target",
+    "fee": "Fee",
+}
+
+
+def _change_parts(description: str) -> tuple[str, str]:
+    """Return the affected rule or permit type of a change and the change itself.
+
+    A change is written as "Change <where>: <what>", for example "Change ACME
+    Code §14-306 (rule DF-2, Deck fence): limit 6 to 7".  A change that names
+    no rule has no separator, and all of it is the change.
+    """
+    head, separator, tail = description.partition(": ")
+    if not separator:
+        return "", description
+    return head, tail
+
+
+def _change_cards(proposal: Any) -> list[dict[str, str]]:
+    """Return one card for every proposed change of a proposal."""
+    cards: list[dict[str, str]] = []
+    for item in proposal.items:
+        description = str(item.get("description", ""))
+        where, what = _change_parts(description)
+        cards.append(
+            {
+                "where": where,
+                "what": what,
+                "why": str(item.get("rationale", "")),
+                "kind_label": CHANGE_KIND_LABELS.get(str(item.get("kind", "")), "Change"),
+            }
+        )
+    return cards
+
+
+def _why_label(proposal: Any) -> str:
+    """Return the name of the source of the explanation of a proposal.
+
+    A recorded answer is not a live answer, and a deterministic text is not a
+    model answer.  The label says which one the reader is looking at.
+    """
+    if proposal.mode == "live":
+        return "Why Muse says so"
+    return "Why the recorded answer says so"
 
 
 # ------------------------------------------------------------- the detail kind

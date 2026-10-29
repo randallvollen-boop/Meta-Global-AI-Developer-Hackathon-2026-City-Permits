@@ -47,7 +47,7 @@
   <p data-testid="policy-starting" class="muted">Starting population from the City view: {{ starting_text }}. It is carried into the what-if and offered again when you run it.</p>
   {% endif %}
 
-  <h3>Start from an example</h3>
+  <h3 id="examples">Start from an example</h3>
   <p class="muted">Each example is a proposed change to a published rule. The what-if is saved beside the live rules and never changes them.</p>
   <ul class="policy-suggestions" data-testid="policy-suggestions">
     {% for item in suggestions %}
@@ -67,7 +67,7 @@
     {% endfor %}
   </ul>
 
-  <details>
+  <details id="build-whatif">
     <summary>Build a what-if</summary>
     <p class="muted">A what-if starts empty. You add the changes yourself, one at a time.</p>
     <form method="post" action="/policy/scenarios" data-testid="policy-create-form">

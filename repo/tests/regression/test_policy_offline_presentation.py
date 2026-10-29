@@ -111,3 +111,53 @@ def test_no_provider_is_called_for_the_list(client: TestClient, monkeypatch) -> 
 
     monkeypatch.setattr("acme_city.muse.client.MuseClient.create_response", refuse)
     assert _list(client)
+
+
+# -------------------------------------------------------- the proposal review
+
+
+def _propose(client: TestClient, question: str) -> str:
+    """Ask for a proposal and return the page that shows it."""
+    page = client.get("/policy/scenarios")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    response = client.post(
+        "/policy/propose",
+        data={"csrf_token": token, "expected_version": "0", "question": question},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    return response.text
+
+
+def test_a_checked_proposal_says_that_nothing_is_saved_yet(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[0])
+    assert "Checked proposal. No what-if has been saved." in body
+    assert "This saves a what-if. It does not run it, and it changes no published rule." in body
+    assert 'data-testid="policy-proposal-save"' in body
+
+
+def test_a_checked_proposal_names_the_change_the_rule_and_its_source(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[0])
+    assert "Change ACME Code §14-306" in body
+    assert "limit 6 to 7" in body
+    assert "Rule limit" in body
+    assert "Why the recorded answer says so" in body
+    assert "Recorded replay" in body
+
+
+def test_a_refused_proposal_offers_a_way_out_and_no_save(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[1])
+    assert "These changes could not be used" in body
+    assert "Choose an example" in body
+    assert "Build a what-if" in body
+    assert 'data-testid="policy-proposal-save"' not in body
+    assert "not supported in this release" in body.lower()
+
+
+def test_a_refused_proposal_keeps_the_question_it_was_given(client: TestClient) -> None:
+    """A refused question is never answered with a different proposal."""
+    question = "What if every fee were free on Tuesdays?"
+    body = _propose(client, question)
+    assert question in body
+    assert "no recorded demonstration answer matches this request" in body
+    assert "Nothing was saved." in body

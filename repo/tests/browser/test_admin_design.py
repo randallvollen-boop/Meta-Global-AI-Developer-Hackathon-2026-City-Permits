@@ -86,6 +86,45 @@ def test_a_saved_what_if_stacks_on_a_phone(
     assert page.recorded_errors == []
 
 
+# ------------------------------------------------------- the proposal review
+
+
+def test_the_proposal_review_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The checked proposal fits a phone and its save control stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-question"]').fill(
+        "What if the side and rear yard fence limit were 7 ft?"
+    )
+    page.locator('[data-testid="policy-propose-submit"]').click()
+    page.wait_for_selector('[data-testid="policy-proposal-changes"]')
+    assert_no_horizontal_overflow(page)
+    save = page.locator('[data-testid="policy-proposal-save"]')
+    assert save.is_visible()
+    assert_not_covered(page, save)
+    assert page.recorded_errors == []
+
+
+def test_a_refused_proposal_offers_the_way_back(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A refused proposal offers the two ways forward and no save."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-question"]').fill(
+        "What if no permit were required for a shed?"
+    )
+    page.locator('[data-testid="policy-propose-submit"]').click()
+    page.wait_for_selector('[data-testid="policy-proposal-rejected"]')
+    assert page.locator('[data-testid="policy-proposal-save"]').count() == 0
+    assert page.locator('a[href="/policy/scenarios#examples"]').count() == 1
+    assert page.locator('a[href="/policy/scenarios#build-whatif"]').count() == 1
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
 # ------------------------------------------------------- the scenarios list
 
 
