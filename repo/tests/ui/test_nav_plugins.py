@@ -359,15 +359,22 @@ def test_the_brand_links_to_the_persona_home(client: TestClient, session: Sessio
 
 
 def test_a_secondary_item_renders_the_more_tools_group(client: TestClient) -> None:
-    select_persona(client, "persona_data_steward")
+    # The Permit Reviewer has no navigation profile, so its navigation shows
+    # no More tools group.  The Data Steward has one since its lane grouped
+    # the secondary tools (STW-2).
+    select_persona(client, "persona_permit_reviewer")
     plain = client.get("/queue").text
     assert "More tools" not in plain
     assert 'class="nav-more' not in plain
+    select_persona(client, "persona_data_steward")
+    saved = view_models.NAV_PROFILES.get("persona_data_steward")
     view_models.NAV_PROFILES["persona_data_steward"] = _secondary_last_two
     try:
         html = client.get("/queue").text
     finally:
-        view_models.NAV_PROFILES.pop("persona_data_steward")
+        view_models.NAV_PROFILES.pop("persona_data_steward", None)
+        if saved is not None:
+            view_models.NAV_PROFILES["persona_data_steward"] = saved
     desktop = re.search(r'<details class="nav-more" data-testid="nav-more".*?</details>', html, re.S)
     mobile = re.search(
         r'<details class="nav-more nav-more-mobile" data-testid="nav-more-mobile".*?</details>',
@@ -384,4 +391,7 @@ def test_a_secondary_item_renders_the_more_tools_group(client: TestClient) -> No
     primary = re.search(r'<nav class="nav app-nav".*?<ul>(.*?)</ul>', html, re.S)
     assert primary is not None and 'data-screen-key="queue"' in primary.group(1)
     assert 'data-screen-key="intake_queue"' not in primary.group(1)
+    # The profile the lane registered is back, so the steward keeps its own
+    # group, and a persona without a profile still shows none.
+    select_persona(client, "persona_permit_reviewer")
     assert client.get("/queue").text.count("More tools") == 0

@@ -282,5 +282,8 @@ def test_the_queue_fits_a_phone_and_no_fixed_layer_covers_it(
     assert page.locator(".mobile-nav").is_visible()
     assert page.locator('[data-testid="demo-switch"]').is_visible()
     assert_not_covered(page, page.locator("main h1").first)
-    assert_not_covered(page, page.locator('.mobile-nav a[href="/queue"]'))
+    # Changed deliberately (steward restyle, STW-2): the Data Steward groups
+    # its secondary tools under More tools, so the bar entry that is checked is
+    # its own work queue and not the permit queue.
+    assert_not_covered(page, page.locator('.mobile-nav a[href="/steward"]'))
     assert page.recorded_errors == []
