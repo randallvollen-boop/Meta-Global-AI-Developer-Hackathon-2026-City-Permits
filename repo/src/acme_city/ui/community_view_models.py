@@ -45,6 +45,17 @@ _MONTHS = (
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 )
 
+#: The badge style each public status wears.  The style comes from the civic
+#: palette the City website already uses; the words beside it always spell the
+#: status out.
+STATUS_BADGE_CLASSES: dict[str, str] = {
+    "Received": "badge-neutral",
+    "In review": "badge-info",
+    "Approved": "badge-ok",
+    "Denied": "badge-bad",
+    "Permit issued": "badge-ok",
+}
+
 _RULES_PATH = REPO_ROOT / "config" / "rules_and_fees.json"
 
 
@@ -75,6 +86,11 @@ def display_date(value: str) -> str:
 def status_explanation(status: str) -> str:
     """Return the fixed explanation of a public status."""
     return STATUS_EXPLANATIONS.get((status or "").strip(), UNKNOWN_STATUS)
+
+
+def status_badge_class(status: str) -> str:
+    """Return the badge style a public status wears."""
+    return STATUS_BADGE_CLASSES.get((status or "").strip(), "badge-neutral")
 
 
 def normalize_query(query: str) -> str:
@@ -117,6 +133,7 @@ def public_record_url(reference: str, q: str = "", type: str = "") -> str:
 __all__ = [
     "MAX_QUERY_LENGTH",
     "NOT_RECORDED",
+    "STATUS_BADGE_CLASSES",
     "STATUS_EXPLANATIONS",
     "UNKNOWN_STATUS",
     "community_url",
@@ -125,5 +142,6 @@ __all__ = [
     "normalize_type",
     "permit_type_keys",
     "public_record_url",
+    "status_badge_class",
     "status_explanation",
 ]

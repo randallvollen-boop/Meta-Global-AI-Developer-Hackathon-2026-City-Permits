@@ -16,6 +16,7 @@ from acme_city.insight.public import PUBLIC_STATUS
 from acme_city.ui.community_view_models import (
     MAX_QUERY_LENGTH,
     NOT_RECORDED,
+    STATUS_BADGE_CLASSES,
     STATUS_EXPLANATIONS,
     UNKNOWN_STATUS,
     community_url,
@@ -24,6 +25,7 @@ from acme_city.ui.community_view_models import (
     normalize_type,
     permit_type_keys,
     public_record_url,
+    status_badge_class,
     status_explanation,
 )
 
@@ -56,6 +58,16 @@ def test_an_unknown_status_gets_neutral_wording() -> None:
     assert status_explanation("") == UNKNOWN_STATUS
     assert status_explanation("Archived") == UNKNOWN_STATUS
     assert status_explanation("not a status") == UNKNOWN_STATUS
+
+
+def test_every_public_status_wears_a_badge_style() -> None:
+    assert set(STATUS_BADGE_CLASSES) == set(PUBLIC_STATUS.values())
+    for style in STATUS_BADGE_CLASSES.values():
+        assert style.startswith("badge-")
+    assert status_badge_class("In review") == "badge-info"
+    assert status_badge_class("Denied") == "badge-bad"
+    assert status_badge_class("") == "badge-neutral"
+    assert status_badge_class("Archived") == "badge-neutral"
 
 
 def test_the_search_text_is_collapsed_and_clipped() -> None:

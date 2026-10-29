@@ -17,6 +17,11 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
+from acme_city.ui.community_view_models import (
+    display_date,
+    public_record_url,
+    status_badge_class,
+)
 from acme_city.ui.router import _applicant_name, render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
@@ -294,6 +299,9 @@ def city_community(
         permits_crumb="/city/permits",
         summary=summary,
         lookup=result,
+        display_date=display_date,
+        status_badge_class=status_badge_class,
+        public_record_url=public_record_url,
     )
     return render(request, "city/community.html", context)
 

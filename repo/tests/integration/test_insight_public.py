@@ -317,6 +317,86 @@ def test_every_result_item_carries_its_reference(client, sensitive_case) -> None
     assert f'data-reference="{reference}"' in body
 
 
+def test_the_results_are_cards_and_not_a_table(client, sensitive_case) -> None:
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    results = re.search(r'<ul[^>]*data-testid="community-result-table".*?</ul>', body, re.S)
+    assert results, "the results are a list of cards"
+    assert "<table" not in results.group(0)
+    assert "<tr" not in results.group(0)
+    assert '<table class="data-table" data-testid="community-district-table">' in body
+
+
+def test_a_result_card_leads_with_the_address_and_carries_one_link(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(f"/city/community?q={reference}").text
+    card = re.search(r'<li class="community-card"[^>]*>.*?</li>', body, re.S)
+    assert card, "the card is there"
+    text = card.group(0)
+    assert text.count("<a ") == 1
+    assert f'href="/city/community/permit/{reference}"' in text
+    assert "View public record" in text
+    assert 'aria-label="View the public record for' in text
+    assert '<p class="community-card-address">' in text
+    assert '<p class="community-card-type">' in text
+    assert "<time datetime=" in text
+
+
+def test_the_recent_records_show_only_without_a_query(client, sensitive_case) -> None:
+    assert 'data-testid="community-recent"' in client.get("/city/community").text
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    assert 'data-testid="community-recent"' not in body
+
+
+def test_a_long_search_explains_the_limit(client, settings) -> None:
+    result = with_session(settings, lambda s: lookup(s, "Acme"))
+    assert result["truncated"] is True
+    assert len(result["records"]) == 40
+    body = client.get("/city/community?q=Acme").text
+    assert 'data-testid="community-truncated"' in body
+    assert "Showing the first 40 matching records." in body
+
+
+def test_a_short_search_marks_the_field(client) -> None:
+    body = client.get("/city/community?q=ab").text
+    field = re.search(r'<input[^>]*data-testid="community-q"[^>]*>', body).group(0)
+    assert 'aria-invalid="true"' in field
+    assert "community-q-too-short" in field
+    assert 'data-testid="community-too-short"' in body
+    assert "Type at least three characters." in body
+
+
+def test_a_valid_search_does_not_mark_the_field(client, sensitive_case) -> None:
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    field = re.search(r'<input[^>]*data-testid="community-q"[^>]*>', body).group(0)
+    assert "aria-invalid" not in field
+
+
+def test_the_privacy_explanation_is_in_a_disclosure(client) -> None:
+    body = client.get("/city/community").text
+    details = re.search(
+        r'<details[^>]*data-testid="community-privacy".*?</details>', body, re.S
+    )
+    assert details, "the explanation is in a disclosure"
+    assert "names and contact details" in details.group(0)
+    assert "documents, notes, fees and findings" in details.group(0)
+
+
+def test_the_json_contract_of_the_community_pages_is_unchanged(client, sensitive_case) -> None:
+    body = client.get("/city/community?format=json").json()
+    assert list(body) == ["fields", "total", "districts", "synthetic_present"]
+    assert body["fields"] == list(PUBLIC_FIELDS)
+    assert list(body["total"]) == ["value", "display", "suppressed"]
+    assert list(body["districts"][0]) == ["code", "total"]
+    query = client.get("/city/community?q=Acme&format=json").json()
+    assert list(query) == [
+        "fields", "total", "districts", "synthetic_present",
+        "query", "result_total", "permits",
+    ]
+    assert list(query["permits"][0]) == list(PUBLIC_FIELDS)
+    record = client.get(f"/city/community/permit/{sensitive_case['reference']}?format=json").json()
+    assert list(record) == list(PUBLIC_FIELDS)
+
+
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:
     assert tuple(field.name for field in fields(PublicPermit)) == PUBLIC_FIELDS
     assert PUBLIC_FIELDS == (
