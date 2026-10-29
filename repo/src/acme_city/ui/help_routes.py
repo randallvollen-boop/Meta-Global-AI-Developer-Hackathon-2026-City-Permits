@@ -130,7 +130,7 @@ def ui_portal_help_panel(
     conversation: str = "",
     type_key: str = "",
     application_id: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the help panel on its own page.
@@ -177,7 +177,7 @@ def ui_portal_help_panel(
 @router.post("/apply/help", operation_id="ui_portal_help_ask")
 async def ui_portal_help_ask(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -244,7 +244,7 @@ async def ui_portal_help_ask(
 @router.post("/apply/help/escalate", operation_id="ui_portal_help_escalate")
 async def ui_portal_help_escalate(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
