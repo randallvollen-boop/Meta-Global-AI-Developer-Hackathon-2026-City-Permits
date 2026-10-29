@@ -27,4 +27,8 @@ def register_label(tab: str, view: str) -> str:
     return f"{identifier_label(tab)} register, {identifier_label(view)} versions"
 
 
-__all__ = ["PERMISSION_LABELS", "identifier_label", "permission_label", "register_label"]
+def comparison_label(baseline: str) -> str:
+    return f"Compared with {baseline}"
+
+
+__all__ = ["PERMISSION_LABELS", "identifier_label", "permission_label", "register_label", "comparison_label"]

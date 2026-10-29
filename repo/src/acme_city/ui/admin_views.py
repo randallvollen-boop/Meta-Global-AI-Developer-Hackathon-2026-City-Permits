@@ -1210,6 +1210,10 @@ def _selected_rule(
         "compared_with": (
             f"{catalog.version_label(previous)}" if previous is not None else ""
         ),
+        "comparison": {
+            "diff_baseline": catalog.version_label(previous) if previous is not None else "No predecessor",
+            "published_baseline": published_side["label"] if published_side else "No published counterpart",
+        },
         "reason": (
             (approval_event.reason or "")
             if approval_event is not None and approval_event.reason
@@ -1355,6 +1359,10 @@ def _selected_fee(
             if previous is not None
             else ""
         ),
+        "comparison": {
+            "diff_baseline": (f"{previous.fee_schedule_id} {previous.version_label}" if previous is not None else "No predecessor"),
+            "published_baseline": published_side["label"] if published_side else "No published counterpart",
+        },
         "reason": (
             (approval_event.reason or "")
             if approval_event is not None and approval_event.reason

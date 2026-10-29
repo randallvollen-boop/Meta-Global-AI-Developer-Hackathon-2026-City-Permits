@@ -172,3 +172,13 @@
 .admin-b .admin-b-rules-register .btn {
   display: inline-flex;
 }
+.admin-b [data-testid="selected-version"] {
+  scroll-margin-top: 6rem;
+}
+.admin-b [data-testid="selected-version"] .card-b {
+  min-width: 0;
+}
+.admin-b [data-testid="selected-version-sides"],
+.admin-b [data-testid="selected-version-diff"] {
+  min-width: 34rem;
+}

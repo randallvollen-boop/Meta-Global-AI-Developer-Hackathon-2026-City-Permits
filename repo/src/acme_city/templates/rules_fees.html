@@ -136,7 +136,7 @@
 
 {% if catalogue.selected %}
 {% set selected = catalogue.selected %}
-<section class="panel card" aria-labelledby="selected-version-heading" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
+<section class="panel card" aria-labelledby="selected-version-heading" id="selected-version-review" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
   <div class="card-h">
     <h2 id="selected-version-heading">{{ selected.version_label }}: {{ selected.title }}</h2>
     <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
@@ -160,7 +160,8 @@
     </table>
     </div>
 
-    <h3>Published and proposed side by side</h3>
+    <h3>Published comparison</h3>
+    <p class="muted" data-testid="selected-published-baseline">Published baseline: {{ selected.comparison.published_baseline }}</p>
     <div class="tbl-wrap">
     <table class="data-table" data-testid="selected-version-sides">
       <caption class="visually-hidden">The published version and the proposed version</caption>
@@ -191,6 +192,7 @@
     </div>
 
     <h3 id="version-diff">What changed</h3>
+    <p class="muted" data-testid="selected-diff-baseline">Compared with {{ selected.comparison.diff_baseline }}</p>
     {% if selected.diff %}
     <div class="tbl-wrap">
     <table class="data-table" data-testid="selected-version-diff">

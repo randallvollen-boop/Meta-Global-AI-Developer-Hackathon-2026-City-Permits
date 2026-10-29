@@ -254,3 +254,25 @@ def test_rules_and_fees_registers_fit_a_phone(
     assert page.locator('[data-testid="rules-view"]').count() == 3
     fits_a_phone(page)
     assert page.recorded_errors == []
+
+
+# ------------------------------------------------------ selected version review
+
+
+def test_selected_rule_version_review_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A selected version names both comparison baselines and stays reachable."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/rules?tab=rules&view=published&version=rulever_CT-1_v1",
+    )
+    selected = page.locator('[data-testid="selected-version"]')
+    assert selected.count() == 1
+    assert page.locator('[data-testid="selected-published-baseline"]').count() == 1
+    assert page.locator('[data-testid="selected-diff-baseline"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator("#selected-version-heading"))
+    assert page.recorded_errors == []
