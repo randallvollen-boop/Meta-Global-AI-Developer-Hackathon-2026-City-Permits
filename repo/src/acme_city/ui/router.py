@@ -252,7 +252,7 @@ def safe_next(value: str | None, fallback: str = "/queue") -> str:
     return value
 
 
-def ui_actor(request: Request, session: Session = Depends(get_session)) -> ActorContext | None:
+def ui_actor(request: Request, session: Session = Depends(get_session, scope="function")) -> ActorContext | None:
     """Return the acting persona, or ``None`` when no session is presented."""
     try:
         return SessionService(session, request.app.state.settings).resolve_actor(request)
@@ -262,7 +262,7 @@ def ui_actor(request: Request, session: Session = Depends(get_session)) -> Actor
 
 def require_actor(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> ActorContext:
     """Return the acting persona, or ``None`` when no session is presented."""
@@ -387,7 +387,7 @@ def error_response(
 @persona_router.get("/select", operation_id="select_persona", name="select_persona")
 def select_persona(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the persona selector.
@@ -416,7 +416,7 @@ def select_persona(
 
 
 @signin_router.get("/select", operation_id="sign_in_not_configured")
-def sign_in_not_configured(request: Request, session: Session = Depends(get_session)) -> Any:
+def sign_in_not_configured(request: Request, session: Session = Depends(get_session, scope="function")) -> Any:
     """Production mode: say that sign-in is not configured instead of offering personas."""
     from acme_city.auth.identity import (
         SIGN_IN_NOT_CONFIGURED_MESSAGE,
@@ -446,7 +446,7 @@ def sign_in_not_configured(request: Request, session: Session = Depends(get_sess
 @persona_router.post("/ui/actor", operation_id="switch_persona")
 async def switch_persona(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> RedirectResponse:
     """Establish a server-held session for the selected persona."""
     form = await request.form()
@@ -488,7 +488,7 @@ async def switch_persona(
 @router.post("/ui/end", operation_id="end_persona")
 async def end_persona(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(ui_actor),
 ) -> RedirectResponse:
     """Revoke the current server-held session."""
@@ -542,7 +542,7 @@ def _guard(
 @router.get("/queue", operation_id="ui_work_queue")
 def ui_work_queue(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     view: str = "my",
     department: str | None = None,
@@ -582,7 +582,7 @@ def ui_work_queue(
 @router.get("/queue/review", operation_id="ui_review_queue")
 def ui_review_queue(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     area: str = "",
 ) -> Any:
@@ -610,7 +610,7 @@ def ui_review_queue(
 @router.get("/insight/city", operation_id="ui_insight_city")
 def ui_insight_city(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     type: str = "",
     outcome: str = "",
@@ -677,7 +677,7 @@ def ui_insight_city(
 def ui_permit_workspace(
     application_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the permit workspace of one application."""
@@ -729,7 +729,7 @@ def _locator_for(request: Request, session: Session) -> Any:
 def ui_property_find(
     request: Request,
     q: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Find a property: the locator corrects the address, the parcel is the key."""
@@ -777,7 +777,7 @@ def ui_property_find(
 def ui_property_suggest(
     request: Request,
     text: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Return locator suggestions for the Find a property box."""
@@ -797,7 +797,7 @@ def ui_property_suggest(
 def ui_property_record(
     parcel_number: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the property record of one parcel."""
@@ -834,7 +834,7 @@ def ui_town_map(
     parcel: str = "",
     application: str = "",
     q: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the map of the fictional town (staff personas)."""
@@ -894,7 +894,7 @@ def ui_rules_fees_old() -> RedirectResponse:
 @router.get("/rules", operation_id="ui_rules_fees")
 def ui_rules_fees(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "rules",
     view: str = "published",
@@ -928,7 +928,7 @@ def ui_rules_fees(
 @router.get("/overview", operation_id="ui_planning_overview")
 def ui_planning_overview(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the planning overview of the City Administrator."""
@@ -954,7 +954,7 @@ def ui_planning_overview(
 @router.get("/reconciliation", operation_id="ui_reconciliation")
 def ui_reconciliation(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "assessments",
     assessment: str = "",
@@ -988,7 +988,7 @@ def ui_reconciliation(
 @router.get("/governance", operation_id="ui_governance_sources")
 def ui_governance_sources(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "sources",
 ) -> Any:
@@ -1015,7 +1015,7 @@ def ui_governance_sources(
 @router.get("/agent/intake", operation_id="ui_agent_intake")
 def ui_agent_intake(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the intake agent screen."""
@@ -1025,7 +1025,7 @@ def ui_agent_intake(
 @router.get("/agent/adjudication", operation_id="ui_agent_adjudication")
 def ui_agent_adjudication(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the adjudication agent screen."""
@@ -1061,7 +1061,7 @@ def _render_agent(
 @router.get("/admin", operation_id="ui_administration")
 def ui_administration(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "permit-types",
 ) -> Any:
@@ -1121,7 +1121,7 @@ def ui_administration(
 def ui_permit_type_icon(
     icon_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Serve one permit type icon's bytes to an actor who may view its type.
@@ -2669,7 +2669,7 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
 async def run_ui_action(
     action_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Run one explicit action and report what actually happened.
