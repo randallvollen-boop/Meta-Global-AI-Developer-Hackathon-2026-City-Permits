@@ -333,7 +333,7 @@ QUEUE_LINKS: tuple[dict[str, Any], ...] = (
         "key": "intake_queue",
         "label": "Intake queue",
         "href": "/queue/intake",
-        "permission": "permit.intake.process_selected",
+        "permission": "permit.intake.queue.view",
         "domain_id": "permits",
         "note": "the saved views of the cases that arrived and wait for the City",
     },

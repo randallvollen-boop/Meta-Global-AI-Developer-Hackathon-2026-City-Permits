@@ -20,6 +20,13 @@
       "reason": "The read grant keeps the intake queue open to the Data Steward after the run grant moved."
     },
     {
+      "actor_id": "persona_data_steward",
+      "permission_id": "permit.intake.process_selected",
+      "change": "remove",
+      "slice": "OPR-4",
+      "reason": "Processing a selection of waiting cases runs the intake agent, so the execution grant follows the run grant to the Agent Operator."
+    },
+    {
       "actor_id": "persona_permit_reviewer",
       "permission_id": "agent.run.adjudication",
       "change": "remove",
