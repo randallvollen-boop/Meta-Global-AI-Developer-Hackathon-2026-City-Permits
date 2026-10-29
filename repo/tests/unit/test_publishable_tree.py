@@ -99,3 +99,19 @@ def test_a_listed_set_may_raise_the_size_limit_for_its_own_files(
     manifest["sets"][0]["max_bytes"] = len(large)
     write(tmp_path, "config/publishable_binaries.json", json.dumps(manifest).encode())
     assert scanner.scan() == []
+
+
+def test_an_unpinned_folder_admits_its_types_on_header_and_size(scanner, tmp_path: Path) -> None:
+    mp4 = b"\x00\x00\x00\x18ftypisom re-encoded draft"
+    write(tmp_path, "video/tour.mp4", mp4)
+    write(tmp_path, "video/poster.jpg", b"\xff\xd8\xff\xe0 still")
+    sets = [{"directory": "video", "source": "test", "suffixes": [".mp4", ".jpg"]}]
+    write(tmp_path, "config/publishable_binaries.json", json.dumps({"sets": sets}).encode())
+    assert scanner.scan() == []
+
+    write(tmp_path, "video/notes.webp", WEBP)
+    write(tmp_path, "video/fake.mp4", b"not a video at all")
+    assert scanner.scan() == [
+        "video/fake.mp4: content does not match its file type",
+        "video/notes.webp: unexpected binary or file type",
+    ]

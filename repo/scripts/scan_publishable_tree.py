@@ -58,28 +58,48 @@ BINARY_HEADERS = {
 SIZE_LIMIT = 5 * 1024 * 1024
 
 
-def load_binary_manifest() -> dict[Path, tuple[str, int]]:
-    """Return every listed binary file with its expected sha256 and its size limit."""
+Pinned = dict[Path, tuple[str, int]]
+Folders = dict[Path, tuple[set[str], int]]
+
+
+def load_binary_manifest() -> tuple[Pinned, Folders]:
+    """Return the pinned files (sha256, size limit) and the unpinned folders (suffixes, size limit).
+
+    A set with ``files`` pins each file by its hash. A set with ``suffixes``
+    instead admits any file of those types in its folder, checked by header
+    and size only, for media that is re-encoded often, such as the tour video.
+    """
     data = json.loads((REPO_ROOT / BINARY_MANIFEST).read_text(encoding="utf-8"))
-    return {
-        Path(entry["directory"]) / name: (digest, int(entry.get("max_bytes", SIZE_LIMIT)))
-        for entry in data["sets"]
-        for name, digest in entry["files"].items()
-    }
+    pinned: Pinned = {}
+    folders: Folders = {}
+    for entry in data["sets"]:
+        limit = int(entry.get("max_bytes", SIZE_LIMIT))
+        if "suffixes" in entry:
+            folders[Path(entry["directory"])] = ({s.lower() for s in entry["suffixes"]}, limit)
+        for name, digest in entry.get("files", {}).items():
+            pinned[Path(entry["directory"]) / name] = (digest, limit)
+    return pinned, folders
 
 
-def binary_finding(
-    relative: Path, path: Path, manifest: dict[Path, tuple[str, int]]
-) -> str | None:
+def size_limit(relative: Path, pinned: Pinned, folders: Folders) -> int:
+    """Return the size limit that applies to a file."""
+    if relative in pinned:
+        return pinned[relative][1]
+    suffixes, limit = folders.get(relative.parent, (set(), SIZE_LIMIT))
+    return limit if relative.suffix.lower() in suffixes else SIZE_LIMIT
+
+
+def binary_finding(relative: Path, path: Path, pinned: Pinned, folders: Folders) -> str | None:
     """Return why a binary file may not be published, or None when it is listed and genuine."""
-    if relative not in manifest:
+    suffixes, _limit = folders.get(relative.parent, (set(), SIZE_LIMIT))
+    unpinned = relative not in pinned and path.suffix.lower() in suffixes
+    if relative not in pinned and not unpinned:
         return "unexpected binary or file type"
-    expected, _limit = manifest[relative]
     check = BINARY_HEADERS.get(path.suffix.lower())
     content = path.read_bytes()
     if check is None or not check(content[:12]):
         return "content does not match its file type"
-    if hashlib.sha256(content).hexdigest() != expected:
+    if not unpinned and hashlib.sha256(content).hexdigest() != pinned[relative][0]:
         return f"sha256 differs from {BINARY_MANIFEST}"
     return None
 
@@ -101,9 +121,9 @@ def candidate_files() -> list[Path]:
 
 def scan() -> list[str]:
     findings: list[str] = []
-    manifest = load_binary_manifest()
+    pinned, folders = load_binary_manifest()
     files = candidate_files()
-    for missing in sorted(set(manifest) - {path.relative_to(REPO_ROOT) for path in files}):
+    for missing in sorted(set(pinned) - {path.relative_to(REPO_ROOT) for path in files}):
         findings.append(f"{missing}: listed in {BINARY_MANIFEST} but not in the tree")
     for path in files:
         relative = path.relative_to(REPO_ROOT)
@@ -113,12 +133,12 @@ def scan() -> list[str]:
         if path.is_symlink():
             findings.append(f"{relative}: symbolic links are not expected")
             continue
-        limit = manifest[relative][1] if relative in manifest else SIZE_LIMIT
+        limit = size_limit(relative, pinned, folders)
         if path.stat().st_size > limit:
             findings.append(f"{relative}: file exceeds its {limit} byte source-tree limit")
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES:
-            problem = binary_finding(relative, path, manifest)
+            problem = binary_finding(relative, path, pinned, folders)
             if problem is not None:
                 findings.append(f"{relative}: {problem}")
             continue
