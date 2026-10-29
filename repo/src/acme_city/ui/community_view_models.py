@@ -130,12 +130,25 @@ def public_record_url(reference: str, q: str = "", type: str = "") -> str:
     return f"{url}?{query_string}" if query_string else url
 
 
+def community_return_url(q: str = "", type: str = "") -> str:
+    """Return the local community URL a resident returns to after a record.
+
+    The URL is rebuilt from the bounded search text and the permit type.  It
+    points at the list the resident came from: the results of a search, or the
+    recent records when there was no search.
+    """
+    url = community_url(q, type)
+    anchor = "#community-results" if normalize_query(q) else "#community-recent"
+    return f"{url}{anchor}"
+
+
 __all__ = [
     "MAX_QUERY_LENGTH",
     "NOT_RECORDED",
     "STATUS_BADGE_CLASSES",
     "STATUS_EXPLANATIONS",
     "UNKNOWN_STATUS",
+    "community_return_url",
     "community_url",
     "display_date",
     "normalize_query",

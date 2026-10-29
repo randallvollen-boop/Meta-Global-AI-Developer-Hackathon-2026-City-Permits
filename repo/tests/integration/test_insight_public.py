@@ -333,7 +333,7 @@ def test_a_result_card_leads_with_the_address_and_carries_one_link(client, sensi
     assert card, "the card is there"
     text = card.group(0)
     assert text.count("<a ") == 1
-    assert f'href="/city/community/permit/{reference}"' in text
+    assert f'href="/city/community/permit/{reference}' in text
     assert "View public record" in text
     assert 'aria-label="View the public record for' in text
     assert '<p class="community-card-address">' in text
@@ -395,6 +395,77 @@ def test_the_json_contract_of_the_community_pages_is_unchanged(client, sensitive
     assert list(query["permits"][0]) == list(PUBLIC_FIELDS)
     record = client.get(f"/city/community/permit/{sensitive_case['reference']}?format=json").json()
     assert list(record) == list(PUBLIC_FIELDS)
+
+
+def test_the_forms_keep_each_others_state(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    assert f'name="q" value="{reference}"' in body
+    assert 'name="type" value="rezoning"' in body
+    search = re.search(r'<form[^>]*data-testid="community-lookup".*?</form>', body, re.S)
+    assert search and 'name="type" value="rezoning"' in search.group(0)
+    overview = re.search(
+        r'<form[^>]*action="/city/community"[^>]*class="insight-filters".*?</form>', body, re.S
+    )
+    assert overview and f'name="q" value="{reference}"' in overview.group(0)
+
+
+def test_an_unknown_type_is_not_carried(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "not-a-type"}).text
+    assert 'name="type" value="not-a-type"' not in body
+    assert 'name="type" value=""' in body
+
+
+def test_the_clear_link_clears_the_search_and_keeps_the_type(client) -> None:
+    body = client.get("/city/community", params={"q": "Acme", "type": "rezoning"}).text
+    clear = re.search(r'<a[^>]*data-testid="community-clear-search"[^>]*>', body)
+    assert clear
+    assert 'href="/city/community?type=rezoning"' in clear.group(0)
+
+
+def test_a_record_link_carries_the_search_and_the_type(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    card = re.search(r'<li class="community-card"[^>]*>.*?</li>', body, re.S)
+    assert card
+    href = re.search(r'href="([^"]+)"', card.group(0)).group(1)
+    assert href.startswith(f"/city/community/permit/{reference}")
+    assert "q=" in href
+    assert "type=rezoning" in href
+
+
+def test_the_record_page_returns_to_the_same_search(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(
+        f"/city/community/permit/{reference}", params={"q": "Acme", "type": "rezoning"}
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community?q=Acme&amp;type=rezoning#community-results"' in back.group(0)
+    assert "Back to search results" in body
+
+
+def test_a_direct_record_link_offers_the_plain_way_back(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community#community-recent"' in back.group(0)
+    assert "Back to community permits" in body
+
+
+def test_the_return_link_is_always_local(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(
+        f"/city/community/permit/{reference}",
+        params={"q": "https://example.invalid/evil", "type": "not-a-type"},
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    href = re.search(r'href="([^"]+)"', back.group(0)).group(1)
+    assert href.startswith("/city/community")
+    assert href.split("?")[0] == "/city/community"
+    assert "://" not in href
 
 
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:

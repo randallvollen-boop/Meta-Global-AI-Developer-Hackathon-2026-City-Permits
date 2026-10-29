@@ -1,5 +1,7 @@
 {% extends "city/layout.html" %}
 {% block content %}
+{% set return_q = lookup.query if lookup else '' %}
+{% set return_type = summary.type %}
 <div class="city-wrap city-page community-page">
   <h1>Permits in my community</h1>
   <p class="city-lede">Find public permit records by address, street, or permit number.</p>
@@ -8,17 +10,18 @@
   <section class="community-search-panel" aria-labelledby="community-search-heading">
     <h2 id="community-search-heading" class="visually-hidden">Find a permit record</h2>
     <form method="get" action="/city/community" class="community-search-form" role="search" data-testid="community-lookup">
+      <input type="hidden" name="type" value="{{ return_type }}">
       <label for="community-q">Address, street, or permit number
-        <input id="community-q" type="search" name="q" value="{{ lookup.query if lookup else '' }}" maxlength="80" data-testid="community-q" aria-describedby="community-q-hint{% if lookup and lookup.too_short %} community-q-too-short{% endif %}"{% if lookup and lookup.too_short %} aria-invalid="true"{% endif %}>
+        <input id="community-q" type="search" name="q" value="{{ return_q }}" maxlength="80" data-testid="community-q" aria-describedby="community-q-hint{% if lookup and lookup.too_short %} community-q-too-short{% endif %}"{% if lookup and lookup.too_short %} aria-invalid="true"{% endif %}>
       </label>
       <button type="submit" class="city-cta" data-testid="community-search">Search permits</button>
-      {% if lookup and lookup.query %}<a class="community-clear" href="/city/community" data-testid="community-clear-search">Clear search</a>{% endif %}
+      {% if return_q %}<a class="community-clear" href="{{ community_url('', return_type) }}" data-testid="community-clear-search">Clear search</a>{% endif %}
       <p class="community-hint" id="community-q-hint">Enter at least three characters. Use a fictional ACME City address.</p>
     </form>
   </section>
 
   {% if lookup %}
-  <section class="community-results" aria-labelledby="results-h" data-testid="community-results">
+  <section class="community-results" id="community-results" aria-labelledby="results-h" data-testid="community-results">
     <h2 id="results-h">Search results</h2>
     {% if lookup.too_short %}
     <p class="community-notice" id="community-q-too-short" data-testid="community-too-short">Type at least three characters.</p>
@@ -35,7 +38,7 @@
     {% endif %}
   </section>
   {% elif summary.recent %}
-  <section class="community-recent" aria-labelledby="recent-h" data-testid="community-recent">
+  <section class="community-recent" id="community-recent" aria-labelledby="recent-h" data-testid="community-recent">
     <h2 id="recent-h">Recently submitted</h2>
     <ul class="community-cards">
       {% for r in summary.recent %}{% include "city/_community_permit_card.html" %}{% endfor %}
@@ -48,6 +51,7 @@
   <section class="community-overview" aria-labelledby="map-h" data-testid="community-map-section">
     <h2 id="map-h">Permits across ACME City</h2>
     <form method="get" action="/city/community" class="insight-filters">
+      <input type="hidden" name="q" value="{{ return_q }}">
       <label for="community-type">Permit type
         <select id="community-type" name="type" data-testid="community-type">
           <option value="">All types</option>

@@ -12,5 +12,5 @@
     <span class="community-card-reference">{{ 'Permit number' if r.permit_number else 'Application number' }} {{ r.reference }}</span>
     {% if r.synthetic %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}
   </p>
-  <a class="community-card-link" href="{{ public_record_url(r.reference) }}" aria-label="View the public record for {{ r.address }}, {{ r.reference }}">View public record</a>
+  <a class="community-card-link" href="{{ public_record_url(r.reference, return_q, return_type) }}" aria-label="View the public record for {{ r.address }}, {{ r.reference }}">View public record</a>
 </li>

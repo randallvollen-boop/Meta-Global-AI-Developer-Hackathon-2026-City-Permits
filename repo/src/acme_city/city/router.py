@@ -18,7 +18,11 @@ from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
 from acme_city.ui.community_view_models import (
+    community_return_url,
+    community_url,
     display_date,
+    normalize_query,
+    normalize_type,
     public_record_url,
     status_badge_class,
 )
@@ -302,6 +306,7 @@ def city_community(
         display_date=display_date,
         status_badge_class=status_badge_class,
         public_record_url=public_record_url,
+        community_url=community_url,
     )
     return render(request, "city/community.html", context)
 
@@ -313,6 +318,8 @@ def city_community_permit(
     reference: str,
     request: Request,
     format: str = "",
+    q: str = "",
+    type: str = "",
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
 ):
@@ -340,6 +347,8 @@ def city_community_permit(
         active_nav="permits",
         permits_crumb="/city/permits",
         record=record,
+        back_url=community_return_url(q, type),
+        has_return_context=bool(normalize_query(q) or normalize_type(type)),
     )
     return render(request, "city/community_permit.html", context)
 

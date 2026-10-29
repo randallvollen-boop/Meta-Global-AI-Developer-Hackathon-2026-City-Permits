@@ -20,6 +20,6 @@
     <dt>Contractor business</dt><dd data-field="contractor_business">{{ record.contractor_business }}</dd>
   </dl>
   {% if record.synthetic %}<p data-testid="record-synthetic-note">This record is generated demonstration data. It is not a real permit.</p>{% endif %}
-  <p><a href="/city/community">Back to Permits in my community</a></p>
+  <p><a href="{{ back_url }}" data-testid="community-back">{{ 'Back to search results' if has_return_context else 'Back to community permits' }}</a></p>
 </div>
 {% endblock %}

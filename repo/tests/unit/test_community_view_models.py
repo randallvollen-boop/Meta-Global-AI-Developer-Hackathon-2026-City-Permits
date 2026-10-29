@@ -19,6 +19,7 @@ from acme_city.ui.community_view_models import (
     STATUS_BADGE_CLASSES,
     STATUS_EXPLANATIONS,
     UNKNOWN_STATUS,
+    community_return_url,
     community_url,
     display_date,
     normalize_query,
@@ -136,3 +137,19 @@ def test_the_return_context_stays_inside_the_community_pages() -> None:
     assert "q=Example+Lane" in url
     assert "type=rezoning" in url
     assert Path(url.split("?")[0]).name == "ACME-2026-000731"
+
+
+def test_the_return_url_points_back_at_the_list_the_resident_came_from() -> None:
+    assert community_return_url() == "/city/community#community-recent"
+    assert community_return_url("", "rezoning") == (
+        "/city/community?type=rezoning#community-recent"
+    )
+    assert community_return_url("Example Lane") == (
+        "/city/community?q=Example+Lane#community-results"
+    )
+    assert community_return_url("Example Lane", "rezoning") == (
+        "/city/community?q=Example+Lane&type=rezoning#community-results"
+    )
+    assert community_return_url("Example Lane", "not-a-type") == (
+        "/city/community?q=Example+Lane#community-results"
+    )
