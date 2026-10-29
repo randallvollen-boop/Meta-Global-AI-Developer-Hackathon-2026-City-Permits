@@ -227,3 +227,166 @@
   }
 }
 
+/* The planning overview: attention first, then the versions that are not
+   published, then the compact property and source sections. */
+
+.adm-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 1rem;
+}
+
+.adm-summary-item {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.adm-summary-item--attention {
+  border-color: var(--accent);
+}
+
+.adm-summary-label {
+  margin: 0;
+  color: var(--fg);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.adm-summary-value {
+  margin: 0;
+  font: 600 1.7rem/1.1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-summary-definition {
+  margin: 4px 0 0;
+  color: var(--fg-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.adm-summary-link {
+  margin-top: 8px;
+  font-size: 0.84rem;
+}
+
+.adm-overview-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.adm-overview-section {
+  margin-bottom: 16px;
+}
+
+.adm-overview-table {
+  table-layout: fixed;
+}
+
+.adm-overview-table thead th:nth-child(1) {
+  width: 30%;
+}
+
+.adm-overview-table thead th:nth-child(2) {
+  width: 46%;
+}
+
+.adm-overview-table thead th:nth-child(3) {
+  width: 24%;
+}
+
+.adm-note {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-property-address {
+  display: block;
+}
+
+.adm-property-parcel {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-property-site {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-related {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.adm-related li {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+@media (max-width: 1080px) {
+  .adm-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adm-overview-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-overview-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-overview-table,
+  .adm-overview-table tbody,
+  .adm-overview-table tr,
+  .adm-overview-table th,
+  .adm-overview-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-overview-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-overview-table th,
+  .adm-overview-table td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}
+

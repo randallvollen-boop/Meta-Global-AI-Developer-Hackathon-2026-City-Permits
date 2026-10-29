@@ -48,3 +48,42 @@ def test_the_appearance_section_fits_a_phone_and_keeps_the_saved_icons(
     assert_not_covered(page, page.locator(".demo-switch > summary"))
     assert_not_covered(page, page.locator('[data-testid="permit-type-current-icon"]').first)
     assert page.recorded_errors == []
+
+
+def test_the_planning_overview_fits_a_phone_and_leads_with_attention(
+    page, server: BrowserServer, login
+) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/overview", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+
+    for testid in (
+        "overview-attention-count",
+        "overview-changes-count",
+        "overview-property-count",
+        "overview-sources-count",
+    ):
+        assert page.locator(f'[data-testid="{testid}"]').is_visible(), testid
+
+    # Attention comes before the versions that are not published.
+    order = page.evaluate(
+        "() => ['attention', 'changes', 'property', 'sources'].map("
+        "(key) => document.querySelector(`[data-testid=overview-${key}-count]`)"
+        ".getBoundingClientRect().top)"
+    )
+    assert order == sorted(order)
+
+    # The property context still opens in the shared drawer on a phone.
+    link = page.locator('[data-detail-kind="property-context"]').first
+    link.scroll_into_view_if_needed()
+    assert_not_covered(page, link)
+    link.click()
+    drawer = page.locator('[data-testid="ui-drawer"]')
+    drawer.wait_for(state="visible")
+    assert "Property context" in drawer.inner_text()
+    page.keyboard.press("Escape")
+    drawer.wait_for(state="hidden")
+
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert page.recorded_errors == []

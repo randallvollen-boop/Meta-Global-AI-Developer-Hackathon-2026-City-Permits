@@ -99,6 +99,56 @@ def test_the_planning_overview_names_the_scope_of_its_counts(
     assert "Sample applications · synthetic" in response.text
 
 
+def test_the_planning_overview_leads_with_attention_and_the_unpublished_versions(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/overview")
+    assert response.status_code == 200
+    body = response.text
+    for label in (
+        "Applications needing attention",
+        "Applications with property details",
+        "Unpublished rule and fee versions",
+        "Simulated source systems",
+    ):
+        assert label in body, label
+    # Attention comes first, then the versions that are not published.
+    order = [
+        body.index(f'data-testid="overview-{key}-count"')
+        for key in ("attention", "changes", "property", "sources")
+    ]
+    assert order == sorted(order)
+    # A count is never renamed into a promise it does not make.
+    assert "Awaiting approval" not in body
+    assert "unique properties" not in body
+    assert "healthy connections" not in body
+
+
+def test_the_planning_overview_keeps_the_records_behind_the_counts(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/overview")
+    body = response.text
+    for testid in (
+        "overview-attention-table",
+        "overview-attention-row",
+        "overview-changes-table",
+        "overview-changes-row",
+        "overview-property-table",
+        "overview-property-row",
+        "overview-sources-table",
+        "overview-source-row",
+    ):
+        assert f'data-testid="{testid}"' in body, testid
+    # The property context still opens in the shared drawer.
+    assert 'data-detail-kind="property-context"' in body
+    # The next step of a version and the approval policy are still named.
+    assert 'data-testid="overview-changes-next-step"' in body
+    assert 'data-testid="overview-approval-policy"' in body
+
+
 def test_the_planning_overview_links_the_city_view_and_the_what_if(
     client: TestClient,
 ) -> None:
