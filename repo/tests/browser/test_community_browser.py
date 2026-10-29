@@ -3,8 +3,15 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
+from acme_city.ui.view_models import PERSONA_PROFILES
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 #: The link that opens one public record from a result card.
@@ -300,5 +307,178 @@ def test_a_long_search_wraps_instead_of_widening_the_page(
             "}"
         )
         assert lines > 1, "the long search text wraps onto more than one line"
+    finally:
+        context.close()
+
+
+#: The five personas the demo switch offers, with the actor id of each.
+DEMO_PERSONAS = (
+    ("persona_applicant", "Applicant"),
+    ("persona_data_steward", "Data Steward"),
+    ("persona_permit_reviewer", "Permit Reviewer"),
+    ("persona_city_administrator", "City Administrator"),
+    ("persona_agent_operator", "Agent Operator"),
+)
+
+#: The community pages the provider probe renders.
+COMMUNITY_PAGES = (
+    "/city/community",
+    "/city/community?q=Acme",
+    "/city/community/permit/ACME-2026-000731",
+)
+
+#: A probe that renders the community pages with a transport that fails every
+#: call.  It runs in its own process, with the source of this worktree on the
+#: path, so the check covers the code that is shipped and not the copy the
+#: test process happens to import.
+PROVIDER_PROBE = """
+import json
+import os
+from pathlib import Path
+
+import httpx
+from fastapi.testclient import TestClient
+
+calls = []
+
+
+def refuse(self, request):
+    calls.append(str(request.url))
+    raise httpx.ConnectError("the community pages must never call the provider")
+
+
+httpx.HTTPTransport.handle_request = refuse
+
+from acme_city.app import create_app
+from acme_city.core.config import Settings
+
+settings = Settings.load(
+    environ={
+        "ACME_DATABASE_URL": os.environ["ACME_DATABASE_URL"],
+        "ACME_SECRET_KEY": os.environ["ACME_SECRET_KEY"],
+    },
+    key_file=Path(os.environ["ACME_KEY_FILE"]),
+)
+app = create_app(settings)
+paths = json.loads(os.environ["ACME_COMMUNITY_PAGES"])
+with TestClient(app) as client:
+    for path in paths:
+        response = client.get(path)
+        assert response.status_code == 200, (path, response.status_code)
+        assert "Muse" not in response.text, path
+assert calls == [], calls
+print("no provider call")
+"""
+
+
+def test_the_demo_switch_offers_the_five_personas(browser, server: BrowserServer) -> None:
+    """The switch names the five personas and keeps its own label."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        switch = page.locator('[data-testid="demo-switch"]')
+        assert switch.count() == 1
+        summary = switch.locator("summary")
+        # the visible label stays as it is, and the control still says what it does
+        assert summary.inner_text().strip() == "Demo controls"
+        assert "switch user" in (summary.get_attribute("aria-label") or "")
+        buttons = switch.locator("button[data-demo-persona]")
+        assert buttons.count() == len(DEMO_PERSONAS)
+        labels = buttons.evaluate_all(
+            "buttons => buttons.map(b => b.childNodes[0].textContent.trim())"
+        )
+        assert labels == [label for _, label in DEMO_PERSONAS]
+        assert sorted(labels) == sorted(PERSONA_PROFILES)
+        # the closed switch covers nothing of the resident page
+        assert_not_covered(page, page.locator('[data-testid="community-q"]'))
+    finally:
+        context.close()
+
+
+@pytest.mark.parametrize("actor_id,label", DEMO_PERSONAS)
+def test_the_demo_switch_works_at_390_pixels(
+    browser, server: BrowserServer, actor_id: str, label: str
+) -> None:
+    """Every persona can be chosen from the switch, and the public pages still work."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        switch = page.locator('[data-testid="demo-switch"]')
+        # the closed switch covers nothing of the resident page
+        assert_not_covered(page, page.locator('[data-testid="community-q"]'))
+
+        switch.locator("summary").click()
+        assert switch.locator(".demo-switch-panel").is_visible()
+        with page.expect_navigation(wait_until="networkidle"):
+            switch.locator(f'button[data-demo-persona="{actor_id}"]').click()
+
+        # the chosen persona acts on the public pages too
+        page.goto(f"{server.base_url}/city/community?q=Acme", wait_until="networkidle")
+        switch = page.locator('[data-testid="demo-switch"]')
+        switch.locator("summary").click()
+        current = switch.locator(".demo-switch-current").inner_text().strip()
+        assert current == f"Now acting as {label}"
+        switch.locator("summary").click()
+
+        assert page.locator('[data-testid="community-result-total"]').is_visible()
+        assert page.locator(CARD_LINK).count() >= 1
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator('[data-testid="community-search"]'))
+    finally:
+        context.close()
+
+
+def test_the_community_pages_never_call_the_model_provider(
+    server: BrowserServer, tmp_path: Path
+) -> None:
+    """A raising transport stub proves the community pages make no model call."""
+    repo_root = Path(__file__).resolve().parents[2]
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(repo_root / "src"),
+        "ACME_DATABASE_URL": server.settings.database_url,
+        "ACME_SECRET_KEY": "browser-acceptance-secret-value",
+        "ACME_KEY_FILE": str(tmp_path / "missing.env"),
+        "ACME_COMMUNITY_PAGES": json.dumps(COMMUNITY_PAGES),
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", PROVIDER_PROBE],
+        cwd=str(repo_root),
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "no provider call" in result.stdout
+
+
+def test_the_browser_never_leaves_the_loopback_origin(
+    browser, server: BrowserServer
+) -> None:
+    """The resident flow asks the local server for everything, including any model."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    outside: list[str] = []
+
+    def guard(route) -> None:
+        url = route.request.url
+        if url.startswith(server.base_url) or url.startswith(("data:", "blob:")):
+            route.continue_()
+            return
+        outside.append(url)
+        route.abort()
+
+    page.route("**/*", guard)
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        page.fill('[data-testid="community-q"]', "Acme")
+        page.locator('[data-testid="community-search"]').click()
+        page.wait_for_load_state("networkidle")
+        page.locator(CARD_LINK).first.click()
+        page.wait_for_load_state("networkidle")
+        assert outside == []
     finally:
         context.close()
