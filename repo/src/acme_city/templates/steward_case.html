@@ -9,13 +9,26 @@
 {% block content %}
 {% set c = case %}
 <p class="crumb"><a href="{{ back_href or '/steward' }}">&larr; Data issues</a></p>
-<div class="page-head">
-  <div>
-    <h1 data-testid="case-title">{{ c.title }}</h1>
-    <p class="sub"><span class="pill {{ 'ok' if c.status == 'resolved' else 'warn' if c.status == 'awaiting_source' else 'bad' }} nowrap" data-testid="case-status">{{ c.status_label }}</span></p>
+
+<section class="stw-case-summary" aria-labelledby="case-task-heading" data-testid="case-summary">
+  <div class="page-head">
+    <div>
+      <h1 id="case-task-heading" data-testid="case-title">{{ c.summary.task }}</h1>
+      <p class="sub" data-testid="case-summary-record">{{ c.summary.record or c.title }}{% if c.summary.reference %} <span class="stw-reference">{{ c.summary.reference }}</span>{% endif %}</p>
+    </div>
+    <div class="actions">{{ ui.help_button('steward') }}</div>
   </div>
-  <div class="actions">{{ ui.help_button('steward') }}</div>
-</div>
+  <dl class="stw-case-facts">
+    <dt>Status</dt>
+    <dd><span class="pill {{ 'ok' if c.summary.status == 'resolved' else 'warn' if c.summary.status == 'awaiting_source' else 'bad' }} nowrap" data-testid="case-status">{{ c.summary.status_label }}</span></dd>
+    <dt>Source</dt>
+    <dd data-testid="case-summary-source">{{ c.summary.source }}</dd>
+    <dt>Affected applications</dt>
+    <dd data-testid="case-summary-applications">{% if c.summary.application_count %}<a href="#case-applications">{{ c.summary.application_count }} application{{ '' if c.summary.application_count == 1 else 's' }}</a>{% else %}<span class="muted">None open</span>{% endif %}</dd>
+    <dt>Next step</dt>
+    <dd data-testid="case-summary-next">{{ c.summary.next_step }}</dd>
+  </dl>
+</section>
 
 {% if confirmation %}
 <p class="case-confirmation" role="status" data-testid="case-confirmation">{{ confirmation }}</p>
@@ -35,7 +48,7 @@
   <h2 id="q2">2. Why does it matter?</h2>
   <p>{{ c.why }}</p>
   {% if c.applications %}
-  <table class="data-table" data-testid="case-applications">
+  <table class="data-table" id="case-applications" data-testid="case-applications">
     <caption class="visually-hidden">Affected applications and what is still outstanding on each permit</caption>
     <thead><tr><th scope="col">Affected application</th><th scope="col">Status</th><th scope="col">Still outstanding on the permit</th></tr></thead>
     <tbody>

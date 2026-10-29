@@ -126,3 +126,47 @@ def test_the_bar_and_the_demo_switch_stay_reachable(
     assert_not_covered(page, page.locator('[data-testid="demo-switch"] > summary'))
     assert_not_covered(page, page.locator("main h1").first)
     assert page.recorded_errors == []
+
+
+def test_the_case_opens_with_a_compact_summary_of_the_task(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """The case names the task, the record, the source, the status and the next step."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="case-summary"]')
+    summary = page.locator('[data-testid="case-summary"]')
+    summary_text = summary.inner_text()
+    assert summary.locator("h1").inner_text().strip() == "Check the business identity"
+    assert "Cedarline Coffee Works" in summary_text
+    assert "ERP-BL-00413" in summary_text
+    assert summary.locator('[data-testid="case-status"]').inner_text().strip() == "Needs review"
+    assert summary.locator('[data-testid="case-summary-source"]').inner_text().strip()
+    assert summary.locator('[data-testid="case-summary-next"]').inner_text().strip()
+    # The summary reads before the comparison and repeats none of its text.
+    page_html = page.content()
+    assert page_html.index("case-summary") < page_html.index('data-question="3"')
+    assert "Source record ERP-BL-00413" not in summary_text
+    assert "Check the business identity" not in page_html.split('data-question="1"')[1]
+    assert page.recorded_errors == []
+
+
+def test_the_case_summary_fits_a_phone(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """The summary of the case and the questions below it fit a 390 pixel screen."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="case-summary"]')
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert_not_covered(page, page.locator('[data-testid="case-summary-next"]'))
+    assert page.locator('[data-testid="case-q6"]').count() == 1
+    assert page.recorded_errors == []

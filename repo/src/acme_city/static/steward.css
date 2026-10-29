@@ -17,6 +17,18 @@
 }
 .stw-cell-action { text-align: right; white-space: nowrap; }
 
+/* The compact summary of a focused case.  It names the task, the record, the
+   source, the status, the affected applications and the next step before the
+   six questions, so the steward reads the situation once. */
+.stw-case-summary { margin-bottom: 14px; }
+.stw-case-facts {
+  display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px;
+  margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--r-md); background: var(--surface);
+}
+.stw-case-facts dt { color: var(--fg-2); font-size: .78rem; }
+.stw-case-facts dd { margin: 0; font-size: .85rem; overflow-wrap: anywhere; }
+
 /* The search and the filters of the queue. */
 .stw-search {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
@@ -43,6 +55,9 @@
    source, the status and the action.  The column heads become the labels of
    the card, so nothing is left unnamed. */
 @media (max-width: 760px) {
+  body[data-screen="steward"] .stw-case-facts { grid-template-columns: 1fr; gap: 1px; }
+  body[data-screen="steward"] .stw-case-facts dt { margin-top: 7px; font-size: .72rem; }
+  body[data-screen="steward"] .stw-case-facts dd { font-size: .84rem; }
   body[data-screen="steward"] .stw-queue-table thead { display: none; }
   body[data-screen="steward"] .stw-queue-table,
   body[data-screen="steward"] .stw-queue-table tbody,

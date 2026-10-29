@@ -83,6 +83,24 @@ QUEUE_FILTERS: tuple[tuple[str, str], ...] = steward_queue_views.QUEUE_FILTERS
 #: The label of each state of a task.
 STATUS_LABELS: dict[str, str] = steward_queue_views.STATUS_LABELS
 
+#: What the steward does next in a focused case that is still open.
+OPEN_NEXT_STEPS: dict[str, str] = {
+    "link": "Compare the record with each candidate, then confirm the link, reject it or defer it.",
+    "linked": "Open the master record to see where each value came from.",
+    "parcel": "Compare the submitted address with the parcel, then approve or reject the link.",
+    "case": "Move the case to the next state, or wait for the source to answer.",
+    "issue": "Resolve the recorded issue so the work it blocks can continue.",
+}
+
+#: What the steward does next in a focused case that is finished.
+CLOSED_NEXT_STEPS: dict[str, str] = {
+    "link": "The link is decided. Open the master record to see where each value came from.",
+    "linked": "The link is decided. Open the master record to see where each value came from.",
+    "parcel": "The parcel link is decided. The Permit Reviewer still confirms the parcel.",
+    "case": "The case is closed. Open the record to see what the source answered.",
+    "issue": "The issue is closed. Open the record to see what changed.",
+}
+
 #: The four collections of Master records, in tab order.
 MASTER_TABS: tuple[tuple[str, str], ...] = (
     ("people", "People & organizations"),
@@ -1900,6 +1918,10 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
     return {
         "kind": "link",
         "id": proposal.id,
+        "record_name": name,
+        "record_reference": record_id,
+        "source_name": source_label,
+        "record_type": _party_type(session, lead["entity_id"] if lead else None),
         "title": (
             f"{record_id}" + (f": {name}" if name else "")
         ),
@@ -2013,6 +2035,10 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
     return {
         "kind": "parcel",
         "id": application_id,
+        "record_name": match.submitted_text or "",
+        "record_reference": application.source_application_number,
+        "source_name": "GIS: Address locator (simulated)",
+        "record_type": "parcel",
         "title": f"Parcel link for {application.source_application_number}",
         "status": "needs_review" if waiting else "resolved",
         "status_label": STATUS_LABELS["needs_review" if waiting else "resolved"],
@@ -2134,6 +2160,10 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
         "commands": commands,
         "deliveries": deliveries,
         "id": case.id,
+        "record_name": _party_label(session, target_party) if target_party else case.title,
+        "record_reference": case.id,
+        "source_name": case.destination or "Configured steward queue",
+        "record_type": "correction",
         "title": case.title,
         "status": status,
         "status_label": STATUS_LABELS[status],
@@ -2169,6 +2199,10 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
     return {
         "kind": "issue",
         "id": row.id,
+        "record_name": party.display_name if party is not None else str(row.subject_id),
+        "record_reference": row.id,
+        "source_name": row.responsible_queue_id or "Steward queue",
+        "record_type": "issue",
         "title": row.description,
         "status": status,
         "status_label": STATUS_LABELS[status],
@@ -2189,6 +2223,14 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
 
 def focused_case(session: Session, actor: ActorContext, kind: str, item_id: str) -> dict[str, Any]:
     """Return the focused case for one queue address, or an empty dict."""
+    case = _focused_case(session, actor, kind, item_id)
+    if case:
+        case["summary"] = _case_summary(case)
+    return case
+
+
+def _focused_case(session: Session, actor: ActorContext, kind: str, item_id: str) -> dict[str, Any]:
+    """Build the focused case of one queue address."""
     if kind == "linked":
         crosswalk = session.get(registry.Crosswalk, item_id)
         if crosswalk is None:
@@ -2198,6 +2240,33 @@ def focused_case(session: Session, actor: ActorContext, kind: str, item_id: str)
     return builder(session, actor, item_id) if builder else {}
 
 
+def _case_summary(case: dict[str, Any]) -> dict[str, Any]:
+    """Return the compact summary of a focused case.
+
+    The summary names the task, the record, the source, the status, the
+    affected applications and the next step.  It repeats nothing the six
+    questions below it already say, so the steward reads the situation once
+    and then the evidence.
+    """
+    kind = str(case.get("kind", ""))
+    task = steward_queue_views.TASK_TITLES.get(kind, steward_queue_views.TASK_TITLES["issue"])
+    if kind in ("link", "linked"):
+        task = steward_queue_views.IDENTITY_TASKS.get(str(case.get("record_type", "")), task)
+    status = str(case.get("status", "needs_review"))
+    steps = CLOSED_NEXT_STEPS if status == "resolved" else OPEN_NEXT_STEPS
+    applications = list(case.get("applications") or [])
+    return {
+        "task": task,
+        "record": str(case.get("record_name", "")),
+        "reference": str(case.get("record_reference", "")),
+        "source": str(case.get("source_name", "")),
+        "status": status,
+        "status_label": str(case.get("status_label", "")),
+        "application_count": len(applications),
+        "next_step": steps.get(kind, OPEN_NEXT_STEPS["issue"]),
+    }
+
+
 def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Crosswalk) -> dict[str, Any]:
     """A decided link that has no stored proposal (for example one decided through the API)."""
     lead = _party_label(session, crosswalk.entity_id)
@@ -2205,6 +2274,10 @@ def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Cros
     return {
         "kind": "linked",
         "id": crosswalk.id,
+        "record_name": lead,
+        "record_reference": crosswalk.source_record_id,
+        "source_name": display.source_name(session, crosswalk.source_system_id, crosswalk.source_dataset_key),
+        "record_type": _party_type(session, crosswalk.entity_id),
         "title": f"{crosswalk.source_record_id}: {display.pretty(crosswalk.link_status)}",
         "status": "resolved",
         "status_label": STATUS_LABELS["resolved"],
