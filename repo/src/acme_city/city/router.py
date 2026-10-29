@@ -17,16 +17,6 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
-from acme_city.ui.community_view_models import (
-    community_return_url,
-    community_url,
-    display_date,
-    normalize_query,
-    normalize_type,
-    public_record_url,
-    status_badge_class,
-    status_explanation,
-)
 from acme_city.ui.router import _applicant_name, render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
@@ -277,6 +267,13 @@ def city_community(
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """Permits in my community: public lookup and district totals (read-only)."""
+    from acme_city.ui.community_view_models import (
+        community_url,
+        display_date,
+        public_record_url,
+        status_badge_class,
+    )
+
     as_json = _wants_json(request, format)
     limited = _community_gate(request, session, actor, as_json)
     if limited is not None:
@@ -325,6 +322,15 @@ def city_community_permit(
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """One public permit record.  A non-public case answers exactly like a missing one."""
+    from acme_city.ui.community_view_models import (
+        community_return_url,
+        display_date,
+        normalize_query,
+        normalize_type,
+        status_badge_class,
+        status_explanation,
+    )
+
     as_json = _wants_json(request, format)
     limited = _community_gate(request, session, actor, as_json)
     if limited is not None:
