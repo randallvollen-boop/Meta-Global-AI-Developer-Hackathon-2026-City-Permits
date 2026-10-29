@@ -13,8 +13,20 @@ LIST_STATES = (
     "/city/community?q=zzqqq",
 )
 
+#: The visible task control or the last content element of each list state.
+#: A state without a list names the control the resident has to use next:
+#: the search button when the search is too short, the notice itself when
+#: nothing matched.  Every state names one element, so the fixed mobile
+#: navigation and the demo switch are checked against all of them.
+LIST_STATE_TARGETS: dict[str, str] = {
+    "/city/community": '[data-testid="community-recent"] .community-card-link',
+    "/city/community?q=Acme": '[data-testid="community-result-table"] .community-card-link',
+    "/city/community?q=ab": '[data-testid="community-search"]',
+    "/city/community?q=zzqqq": '[data-testid="community-no-results"]',
+}
 
-def test_the_list_states_have_no_horizontal_overflow(browser, server: BrowserServer) -> None:
+
+def test_the_list_states_fit_and_stay_clear_at_both_widths(browser, server: BrowserServer) -> None:
     for width, height in ((1280, 900), (390, 844)):
         context = browser.new_context(viewport={"width": width, "height": height})
         page = context.new_page()
@@ -24,6 +36,9 @@ def test_the_list_states_have_no_horizontal_overflow(browser, server: BrowserSer
             for path in LIST_STATES:
                 page.goto(f"{server.base_url}{path}", wait_until="networkidle")
                 assert_no_horizontal_overflow(page)
+                if width == 390:
+                    # the fixed layers may not cover the control or the content
+                    assert_not_covered(page, page.locator(LIST_STATE_TARGETS[path]).last)
         finally:
             context.close()
         assert errors == [], (width, errors)
