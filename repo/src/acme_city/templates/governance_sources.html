@@ -98,8 +98,8 @@
     <tbody>
       {% for registration in governance.registrations %}
       <tr data-testid="registration-row" data-state="{{ registration.registration_state }}">
-        <th scope="row">{{ registration.dataset_label }}</th>
-        <td>{{ registration.source_label }}</td>
+        <th scope="row">{{ registration.dataset_label }} <span class="mono">{{ registration.dataset_key }}</span></th>
+        <td>{{ registration.source_label }} <span class="mono">{{ registration.source_system_id }}</span></td>
         <td>{{ registration.domain_label }}</td>
         <td>{{ registration.owner_label }}</td>
         <td>{{ registration.queue_label }}</td>
