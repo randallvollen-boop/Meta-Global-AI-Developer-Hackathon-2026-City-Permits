@@ -56,3 +56,36 @@ def test_the_results_are_cards_that_lead_with_the_address(browser, server: Brows
         assert href.startswith("/city/community/permit/"), href
     finally:
         context.close()
+
+
+def test_the_overview_fits_a_phone_and_keeps_the_district_table(viewport_390, server: BrowserServer) -> None:
+    page = viewport_390
+    page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+    assert_no_horizontal_overflow(page)
+    overview = page.locator('[data-testid="community-map-section"]')
+    assert overview.count() == 1
+    assert page.locator('[data-testid="community-district-table"]').is_visible()
+    assert page.locator('[data-testid="community-legend"]').is_visible()
+    assert page.locator('[data-testid="community-overview-submit"]').is_visible()
+    assert_not_covered(page, page.locator('[data-testid="community-overview-submit"]'))
+
+
+def test_the_overview_filter_narrows_the_district_table(browser, server: BrowserServer) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        values = [
+            option.get_attribute("value")
+            for option in page.locator('[data-testid="community-type"] option').all()
+        ]
+        chosen = next(value for value in values if value)
+        page.select_option('[data-testid="community-type"]', chosen)
+        page.locator('[data-testid="community-overview-submit"]').click()
+        page.wait_for_load_state("networkidle")
+        assert f"type={chosen}" in page.url
+        assert page.locator('[data-testid="community-district-table"] tr[data-district]').count() >= 1
+        # the search stayed where it was
+        assert page.locator('[data-testid="community-q"]').input_value() == ""
+    finally:
+        context.close()

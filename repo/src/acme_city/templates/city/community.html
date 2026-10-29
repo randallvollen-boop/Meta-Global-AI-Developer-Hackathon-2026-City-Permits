@@ -50,7 +50,8 @@
 
   <section class="community-overview" aria-labelledby="map-h" data-testid="community-map-section">
     <h2 id="map-h">Permits across ACME City</h2>
-    <form method="get" action="/city/community" class="insight-filters">
+    <p class="community-overview-scope" data-testid="community-overview-scope">Counts by zoning district. This overview covers the city. It does not use the address search.</p>
+    <form method="get" action="/city/community" class="insight-filters community-overview-form">
       <input type="hidden" name="q" value="{{ return_q }}">
       <label for="community-type">Permit type
         <select id="community-type" name="type" data-testid="community-type">
@@ -58,15 +59,20 @@
           {% for o in summary.type_options %}<option value="{{ o.key }}"{% if summary.type == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
         </select>
       </label>
-      <button type="submit" class="city-cta">Show</button>
+      <button type="submit" class="city-cta" data-testid="community-overview-submit">Update overview</button>
     </form>
     <p data-testid="community-total">Public permits shown: <strong>{{ summary.total.display }}</strong>. A total under 3 is shown as “fewer than 3” to protect privacy.</p>
     <div class="map-wrap" data-testid="community-map">{{ summary.map_svg|safe }}</div>
+    <ul class="insight-legend community-legend" data-testid="community-legend">
+      {% for item in summary.legend %}<li><span class="key {{ 'hatch' if loop.first else 's' ~ loop.index0 }}" aria-hidden="true"></span>{{ item }}</li>{% endfor %}
+    </ul>
+    <p class="community-note" data-testid="community-legend-note">Darker areas have more permits. Hatched areas have fewer than 3.</p>
     <table class="data-table" data-testid="community-district-table">
       <caption>Public permits by district</caption>
       <thead><tr><th scope="col">District</th><th scope="col">Public permits</th></tr></thead>
       <tbody>{% for d in summary.districts %}<tr data-district="{{ d.code }}"><th scope="row">{{ d.code }}</th><td>{{ d.total.display }}</td></tr>{% endfor %}</tbody>
     </table>
+    <p class="community-note" data-testid="community-suppression-note">Counts below 3 appear as “fewer than 3”. This includes zero.</p>
   </section>
 
   <details class="community-privacy" data-testid="community-privacy">

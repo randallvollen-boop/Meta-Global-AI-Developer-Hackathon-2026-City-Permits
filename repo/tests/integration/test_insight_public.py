@@ -405,7 +405,9 @@ def test_the_forms_keep_each_others_state(client, sensitive_case) -> None:
     search = re.search(r'<form[^>]*data-testid="community-lookup".*?</form>', body, re.S)
     assert search and 'name="type" value="rezoning"' in search.group(0)
     overview = re.search(
-        r'<form[^>]*action="/city/community"[^>]*class="insight-filters".*?</form>', body, re.S
+        r'<form[^>]*action="/city/community"[^>]*class="[^"]*insight-filters[^"]*".*?</form>',
+        body,
+        re.S,
     )
     assert overview and f'name="q" value="{reference}"' in overview.group(0)
 
@@ -466,6 +468,57 @@ def test_the_return_link_is_always_local(client, sensitive_case) -> None:
     assert href.startswith("/city/community")
     assert href.split("?")[0] == "/city/community"
     assert "://" not in href
+
+
+def test_the_overview_explains_its_own_scope(client) -> None:
+    body = client.get("/city/community").text
+    scope = re.search(r'<p[^>]*data-testid="community-overview-scope"[^>]*>(.*?)</p>', body, re.S)
+    assert scope
+    assert "Counts by zoning district." in scope.group(1)
+    assert "It does not use the address search." in scope.group(1)
+
+
+def test_the_overview_has_a_visible_legend_and_an_update_button(client) -> None:
+    body = client.get("/city/community").text
+    legend = re.search(r'<ul[^>]*data-testid="community-legend"[^>]*>(.*?)</ul>', body, re.S)
+    assert legend, "the legend is rendered"
+    assert "fewer than 3 (hatched)" in legend.group(1)
+    assert "fewest" in legend.group(1)
+    assert "most" in legend.group(1)
+    note = re.search(r'<p[^>]*data-testid="community-legend-note"[^>]*>(.*?)</p>', body, re.S)
+    assert note
+    assert "Darker areas have more permits." in note.group(1)
+    assert "Hatched areas have fewer than 3." in note.group(1)
+    button = re.search(r'<button[^>]*data-testid="community-overview-submit"[^>]*>', body)
+    assert button
+    assert "Update overview" in body
+
+
+def test_the_overview_keeps_the_district_table_and_the_hatching(client) -> None:
+    body = client.get("/city/community").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table
+    assert table.group(0).count('data-district="') == table.group(0).count('<th scope="row">')
+    assert '<td>' in table.group(0)
+    assert "insight-hatch" in body          # a suppressed district is hatched, not shaded
+    assert 'data-testid="insight-map"' in body
+    assert "Counts below 3 appear as “fewer than 3”. This includes zero." in body
+
+
+def test_the_overview_form_keeps_the_search(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    form = re.search(
+        r'<form[^>]*action="/city/community"[^>]*class="[^"]*community-overview-form[^"]*".*?</form>',
+        body,
+        re.S,
+    )
+    assert form
+    assert f'name="q" value="{reference}"' in form.group(0)
+    assert 'name="type"' in form.group(0)
+    assert "<option value=\"rezoning\" selected>" in form.group(0)
 
 
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:
