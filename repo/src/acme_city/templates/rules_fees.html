@@ -86,7 +86,7 @@
   </p>
   {% else %}
   <div class="tbl-wrap">
-  <table class="data-table" data-testid="rule-table">
+  <table class="data-table admin-b-stack admin-b-rules-register" data-testid="rule-table">
     <caption class="visually-hidden">Stored rule and fee schedule versions</caption>
     <thead>
       <tr>
@@ -105,11 +105,11 @@
       {% for row in catalogue.rows %}
       <tr data-testid="rule-row" data-status="{{ row.status }}" data-rule-id="{{ row.row_id }}" data-version-label="{{ row.version_label }}">
         <th scope="row">{{ row.title }}</th>
-        <td>{{ row.project_type }}</td>
-        <td class="mono">{{ row.version_label }}</td>
-        <td><span class="badge badge-{{ row.status }}">{{ row.status_label }}</span></td>
-        <td>{{ row.effective_period }}</td>
-        <td>
+        <td data-label="Type">{{ row.project_type }}</td>
+        <td class="mono" data-label="Version">{{ row.version_label }}</td>
+        <td data-label="Status"><span class="badge badge-{{ row.status }}">{{ row.status_label }}</span></td>
+        <td data-label="Effective period">{{ row.effective_period }}</td>
+        <td data-label="Next action">
           {% if row.next_action.available %}
           <a class="btn sm" href="{{ row.href }}" data-testid="rule-next-action">{{ row.next_action.label }}</a>
           {% else %}
@@ -117,9 +117,9 @@
           {% if row.next_action.reason %}<span class="t2">: {{ row.next_action.reason }}</span>{% endif %}
           {% endif %}
         </td>
-        <td>{{ row.assigned_approver }}</td>
-        <td>{{ row.approved_by }}</td>
-        <td>{{ row.approved_on }}</td>
+        <td data-label="Assigned approver">{{ row.assigned_approver }}</td>
+        <td data-label="Approved by">{{ row.approved_by }}</td>
+        <td data-label="Approved on">{{ row.approved_on }}</td>
       </tr>
       {% else %}
       <tr><td colspan="9" class="muted">No version is stored in this view.</td></tr>

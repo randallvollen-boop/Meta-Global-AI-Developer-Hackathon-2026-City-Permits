@@ -166,3 +166,9 @@
 .admin-b .admin-b-source-card .responsibility-grid {
   grid-template-columns: 1fr;
 }
+.admin-b .admin-b-rules-register tbody th {
+  overflow-wrap: anywhere;
+}
+.admin-b .admin-b-rules-register .btn {
+  display: inline-flex;
+}

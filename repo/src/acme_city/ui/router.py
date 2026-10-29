@@ -921,6 +921,7 @@ def ui_rules_fees(
         responsibility=catalogue["responsibility"],
         actions=catalogue["actions"],
         denied_action_explanations=catalogue["denied_action_explanations"],
+        quiet_feedback=True,
     )
     return render(request, "rules_fees.html", context)
 

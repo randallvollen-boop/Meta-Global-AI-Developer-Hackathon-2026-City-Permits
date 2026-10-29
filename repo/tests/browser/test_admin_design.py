@@ -237,3 +237,20 @@ def test_governance_source_overview_fits_a_phone(
     fits_a_phone(page)
     assert_not_covered(page, page.locator('[data-testid="source-card"]').last)
     assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- rules and fees register
+
+
+@pytest.mark.parametrize("tab", ["rules", "fees"])
+@pytest.mark.parametrize("view", ["published", "drafts", "history"])
+def test_rules_and_fees_registers_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390, tab: str, view: str
+) -> None:
+    """Both registers and all three views keep their records at 390px."""
+    login("persona_city_administrator")
+    open_screen(page, server, f"/rules?tab={tab}&view={view}")
+    assert page.locator('[data-testid="rules-tab"]').count() == 2
+    assert page.locator('[data-testid="rules-view"]').count() == 3
+    fits_a_phone(page)
+    assert page.recorded_errors == []

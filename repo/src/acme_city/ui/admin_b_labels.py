@@ -23,4 +23,8 @@ def permission_label(permission_id: str) -> str:
     return PERMISSION_LABELS.get(permission_id, identifier_label(permission_id))
 
 
-__all__ = ["PERMISSION_LABELS", "identifier_label", "permission_label"]
+def register_label(tab: str, view: str) -> str:
+    return f"{identifier_label(tab)} register, {identifier_label(view)} versions"
+
+
+__all__ = ["PERMISSION_LABELS", "identifier_label", "permission_label", "register_label"]
