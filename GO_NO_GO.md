@@ -1,52 +1,58 @@
 # Go / No-Go
 
-Date: October 27, 2026
+Date: October 29, 2026
+
+Evidence basis: local Git history and branch state through 2026-10-29, plus `BUILD_LOG.md`, `EVIDENCE_LOG.md`, `HANDOFF.md`, and the approved redesign DAG at `../acme-permits-parity-notes/astra-2026-10-29/dag-2026-10-29.json`. Where the October 29 coordination brief supplies a current external fact that the named files do not yet record, the row says so. No external service was queried for this refresh.
 
 | Gate | State | Evidence and next action |
 | --- | --- | --- |
-| Archive intake and integrity | GO | ZIP archive path, link, size, duplicate and CRC checks passed. The SHA-256 hash of the source matches the preserved copy |
-| Requirements available | GO | Authoritative plain-text specification and companion registers present |
-| City-permit alignment | GO for planning | `CITY_PERMIT_ALIGNMENT.md`; no implementation claim |
-| External click-through prototype | MISSING INPUT | The package names `PROTO-PERMIT-01` and says it is not bundled. A scoped local search found no source directory |
-| Final submission-option selection | HOLD | City Permits is released for a full local candidate build. Randall has not selected the final event submission between City Permits and RailFlow |
-| Local application implementation | GO / locally testable | Full candidate is implemented under `repo/`; owned loopback service is healthy at `http://127.0.0.1:8266` in documented ready-for-review replay mode |
-| Governed foundation F1 to F4 | GO / verified | Parent rerun: 107 passed. Migration and contract checks passed, with 4 personas and 10 requirement IDs implemented. Integrated acceptance is pending |
-| Registry and stewardship R1 to R4 | GO / verified slice | Parent rerun: 128 passed. The real app routers are mounted, the integrated OpenAPI contract has unique operations, and 20 more requirement IDs are implemented. The final manifest is pending |
-| Permit/rules/finance/issuance P1 to P5 | GO / verified slice | Parent rerun: 167 passed. Routers are mounted with 64 unique integrated operations, and the exact 150/170/20 arithmetic and deterministic issuance are covered. Live Muse and full AT19 are pending |
-| Muse core M1 to M2 | GO / verified non-live slice | Parent rerun: 99 passed. The strict provider contract and truth isolation are covered, the router is mounted, and no live call or spend occurred. The live integrated gate is pending |
-| Eight-screen UI M3 to M4 | GO / verified | The real app router is mounted. 33 user interface API and view-model checks and 26 Playwright browser checks passed, with exactly four personas and eight screens |
-| UI redesign (mockup v4) | GO / verified | Muse Wonder built it and the parent reviewed and fixed it. 675 tests and all 10 gates pass at commit `52eeb68`, and :8266 runs it |
-| Muse Image permit-type icons | GO / verified (mocked) | Administrator-only governed action with caps of 3 per type per day and 10 per day, at $0.01 each. 17 seed icons load at reset (14 were generated outside the in-app flow, see the runbook). The first live generation waits for Randall |
-| Local dependencies/migrations/tests/browser checks | GO / verified | 659 tests passed. The collection, fresh migration, Alembic drift, deterministic evidence and publication-tree gates passed |
-| Four-persona selector | GO / fixed | Exactly Applicant, Data Steward, Permit Reviewer and City Administrator. Service identities cannot be selected and grants stay explicit |
-| Bounded Meta Standard calls | GO / verified | 2026-10-27: the output budget and field-name enum are fixed. The third call, `resp_6ae06df6700abbe810734468`, completed and validated. The failed runs are kept in `live/` and `live-2/` |
-| Source/reference reuse | GO for read-only planning | The original package is preserved, and the bundled code was not executed or changed |
-| Git tracking | GO locally | Nested repository initialized on `main`; `/intake/` ignored |
-| GitHub publication owner | GO / fixed | `RandallVollen-boop` only; never `elawclerkdemo` or another owner |
-| GitHub personal-account authentication | BLOCKED | `gh` is authenticated only as `elawclerkdemo`. An interactive login for `RandallVollen-boop` is required |
-| GitHub remote creation | HOLD | The repository name and visibility are not yet specified, and no remote exists |
-| Commit | HOLD | No commit requested |
-| Push | HOLD | No push requested. Never push implicitly after remote setup |
-| Meta API authentication | GO for bounded tests | Live model catalog returned HTTP 200 in the original workspace |
-| Meta city-permit inference | GO / verified | Full live walkthrough passed; `run_acceptance.py --all --live-muse`: 39 passed, 0 failed, 0 blocked (`repo/evidence/runs/final-live/`) |
-| Credits and cash controls | PARTIAL | Randall reports $150 credits; provider balance, expiry and no-cash controls have not been independently inspected |
-| Rules/terms acceptance | HOLD | The user's action and a broader review of the original project are still required |
-| Internal knowledge library architecture page | GO / AS BUILT internal draft | Replaced 2026-10-27 under `acme-city-permits-architecture`. 57/57 requirements verified, 22/22 tasks done, live Muse succeeded, SHA-256 `995cace2…`, and the service stayed inactive |
-| Deployment/public publication/submission | HOLD | Not authorized |
-| Real municipal/client data | NO-GO | Fictional ACME data only |
+| Archive intake and integrity | GO | The preserved ZIP passed path, link, size, duplicate and CRC checks. The source and preserved-copy SHA-256 values matched. No later evidence changes this gate |
+| Requirements available | GO | The authoritative plain-text specification and companion registers are present. The approved parity work extends the candidate without replacing the preserved source evidence |
+| City-permit alignment | GO / implemented candidate | `CITY_PERMIT_ALIGNMENT.md` began as planning evidence. The build and evidence logs now record the implemented FastAPI candidate, acceptance assets and later parity phases |
+| External click-through prototype | MISSING INPUT | The package names `PROTO-PERMIT-01` but does not bundle it. Later parity work used Randall's separately supplied prototype; the original package artifact remains absent |
+| Final submission-option selection | GO / City Permits is the active direction | The project instructions and build history identify City Permits as the active hackathon direction. This does not authorize submission |
+| Local application implementation | GO / built | The application is under `repo/`. Local `main` is `df572d2`; later redesign work remains on isolated branches until integration |
+| Governed foundation F1 to F4 | GO / verified baseline | The original 107-test foundation rerun passed. Later migrations and features supersede that count, so the final redesign candidate needs a fresh integration gate |
+| Registry and stewardship R1 to R4 | GO / built and extended | The original 128-test slice passed. Later parity and steward work added queues, master records, source records and governed automation work. Final redesign integration remains pending |
+| Permit, rules, finance and issuance P1 to P5 | GO / built and extended | The original deterministic arithmetic and issuance gates passed. Later parity phases added seventeen types, governed policy work and broader review flows without replacing the protected outcomes |
+| Muse core M1 to M2 | GO / historical live evidence; hosted calls off | `HANDOFF.md` records a successful bounded live Muse run and 39 of 39 live acceptance checks on 2026-10-27. The hosted Render demo keeps live Muse off and uses replay unless explicitly enabled |
+| User interface | GO on current main; redesign in progress | Current `main` contains the built multi-screen interface. The October 29 DAG redesign is active across Wave 0 and six lanes and has not yet passed the final merged gate |
+| UI redesign | IN PROGRESS | The earlier mockup v4 redesign shipped locally at `52eeb68`. A newer DAG redesign is now in progress; community COM-1 to COM-6 and several Wave 0 slices exist on branches but are not all integrated into `main` |
+| Muse Image permit-type icons | GO / built | The governed Administrator action and daily caps are implemented. Later history replaces the selector art with owned persona icons. No new live image call is part of this refresh |
+| Dependencies, migrations, tests and browser checks | PARTIAL / final rerun pending | Earlier full gates passed, including the documented 987-test parity run. Later branch-tier evidence is targeted and one then-existing baseline supplementary failure was recorded. Run the complete integration gates after the DAG merge |
+| Five-persona selector | GO / approved and built on Wave 0; not yet on main | Applicant, Data Steward, Permit Reviewer, City Administrator and Agent Operator are the approved five. Commit `1f45909` adds Agent Operator on `feature/wave0`; local `main` at `df572d2` still has the earlier four-persona implementation until Wave 0 is integrated |
+| Bounded Meta Standard calls | GO / historical evidence only | The 2026-10-27 Standard calls and their immutable evidence remain recorded. No provider call was made for this refresh, and hosted live calls remain off |
+| Source and reference reuse | GO | The received package remains preserved and the bundled reference code was not executed or modified in place |
+| Git tracking | GO | The repository has substantial local history on `main` plus isolated feature branches and worktrees |
+| GitHub publication owner | GO / personal owner; private visibility UNVERIFIED in named files | `origin` is `https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits.git`. The October 29 coordination fact says the repository is private; visibility was not independently queried in this refresh |
+| GitHub personal-account authentication | UNVERIFIED / no longer the known remote blocker | The stale October 26 blocker said only `elawclerkdemo` was authenticated. That is superseded by the configured personal-owner remote and pushed `origin/main`; current CLI login details were not re-queried |
+| GitHub remote creation | GO | `origin` exists under `randallvollen-boop`. The old no-remote statement in `HANDOFF.md` is historical |
+| Commit | GO | Local history is established. Current `main` is `df572d2`; side-track and redesign work stays on separate branches until reviewed |
+| Push | GO / batched | `origin/main` exists at `6e96c36`. Local `main` is two commits ahead at `df572d2`; those local commits were not pushed during this refresh |
+| Meta API authentication | GO for the recorded bounded evidence | Historical catalog and inference evidence is recorded. Authentication was not re-tested and no key was read or copied |
+| Meta city-permit inference | GO / verified historical run | `HANDOFF.md` records `run_acceptance.py --all --live-muse` at 39 passed, zero failed and zero blocked. This does not mean the hosted demo performs live calls |
+| Credits and cash controls | PARTIAL | Randall reported $150 in credits. Provider balance, expiry and no-cash controls remain unverified in the named files |
+| Rules and terms acceptance | HOLD | The named files do not record Randall's acceptance or a completed final rules review |
+| Internal knowledge library architecture page | GO / update pending | The private page was recorded as AS BUILT for the earlier candidate. It needs another refresh after the October 29 redesign is integrated and verified |
+| Render web service | GO / live coordination fact | The October 29 brief identifies `https://acme-city-permits.onrender.com` as live. Local Git verifies the Render blueprint, readiness route and deployment runbook. Availability was not re-probed because this task forbids Render API calls |
+| Render deployment control | GO / manual | `render.yaml` has auto-deploy off, so pushes do not redeploy the service. Deployment remains a deliberate manual action. The hosted configuration keeps live Muse off |
+| Event schedule | GO / coordination fact | Building closes November 4, 2026. Judging runs November 5 through November 8, 2026. These dates come from the October 29 coordination brief and are UNVERIFIED in `BUILD_LOG.md`, `EVIDENCE_LOG.md` and `HANDOFF.md` |
+| Public publication and submission | HOLD | The public demo and private GitHub repository exist, but Randall still submits the hackathon entry himself. No submission, terms acceptance, social post or organizer contact is authorized here |
+| Real municipal or client data | NO-GO | Fictional ACME data only |
 
-No external repository, deployment, public publication, entry change, terms acceptance, or submission has occurred. The checked architecture status is available only in the authorized internal knowledge library.
+The old statements that no remote, commit or deployment existed are historical and no longer describe the project. The private personal GitHub remote and the live Render demo now exist. Render deployment is manual, hosted live Muse calls are off, and the October 29 redesign is still being integrated. Submission remains Randall's action.
 
-## 2026-10-27, parity phase 1 (worktree `acme-permits-parity-wt`)
+## 2026-10-29 parity and redesign status
 
 | Item | Decision | Note |
-|---|---|---|
-| Two people-driven agents | GO / built | Intake and adjudication agents sleep after a reset. Only the City Administrator wakes them (`agent.toggle`), and a person with `agent.run.intake` or `agent.run.adjudication` runs them. Agents stay service identities and are never personas. |
-| Adjudication confirm/revert | GO / built | Confirm needs `permit.decide` and records the reviewer's decision through the existing decision service. Revert needs a reason. A held recommendation cannot be confirmed. The build-2 agree or disagree stance and its columns are removed. |
-| Administration screen | GO / built | City Administrator only. It covers permit types, users, reason codes and the configuration log, and every change is a governed, audited action. |
-| Seventeen permit types | GO / built | Randall approved the requirements change. Twelve new ACME types have review areas, process categories, discretionary flags and published rules, and the evaluator gained one presence check (`required`). Discretionary types have no rule and are always held. |
-| Fee schedules for the new types | GO / documented deviation | The published fictional schedule already applies to every type, so the new types use it. No new published schedule was added because the brief protects the fee arithmetic and the existing D01 to D11 amounts. |
-| Configuration change scope | GO / built | A permit-type change takes effect for new intake only. The case records the requirements in force at arrival. |
-| Live provider calls | HOLD | None made in this phase. Muse stays in replay and the replay label is kept. |
-| Commit / push | HOLD | The parent reviews and commits. Nothing was committed or pushed in the worktree. |
-| Deployment/public publication/submission | HOLD | Not authorized |
+| --- | --- | --- |
+| People-driven agents | GO / built; redesign pending | Intake and adjudication behavior is built. The new Agent Operator persona and redesigned agent operations experience are part of the Wave 0 and operator lane work, not current `main` |
+| Adjudication confirm and revert | GO / built | Confirm and revert remain governed human actions with the existing decision-service checks |
+| Administration screen | GO / built | The City Administrator experience covers planning, rules and fees, governance, access, appearance and reconciliation. New DAG work is refining it |
+| Seventeen permit types | GO / built | The approved fictional ACME catalog and deterministic rules remain in the candidate |
+| Fee schedules for the new types | GO / documented deviation | The existing fictional published schedule applies across the types, preserving D01 to D11 arithmetic |
+| Configuration change scope | GO / built | Permit-type changes apply to new intake while cases retain the requirements in force at arrival |
+| Live provider calls | GO historically; OFF on hosted demo | Historical bounded live evidence exists. Render is configured for replay with live Muse disabled |
+| Commit and push | GO / controlled | The repository and remote exist. New lane work is committed in isolated branches; pushes and integration remain batched |
+| Deployment | GO / live and manual | The Render web service is live per the coordination brief. Auto-deploy is off, so a push alone does not change the hosted demo |
+| Submission | HOLD | Randall submits the entry. The draft and final entry remain separate from the live demo deployment |
