@@ -89,3 +89,37 @@ def test_the_overview_filter_narrows_the_district_table(browser, server: Browser
         assert page.locator('[data-testid="community-q"]').input_value() == ""
     finally:
         context.close()
+
+
+def test_the_record_page_fits_a_phone_and_explains_the_status(
+    viewport_390, server: BrowserServer
+) -> None:
+    page = viewport_390
+    page.goto(f"{server.base_url}/city/community?q=Acme", wait_until="networkidle")
+    href = page.locator(
+        '[data-testid="community-result-table"] .community-card-link'
+    ).first.get_attribute("href")
+    page.goto(f"{server.base_url}{href}", wait_until="networkidle")
+    assert_no_horizontal_overflow(page)
+    assert page.locator('[data-testid="community-record"]').is_visible()
+    assert page.locator('[data-testid="community-status-explanation"]').is_visible()
+    assert page.locator("h1.community-record-address").is_visible()
+    assert_not_covered(page, page.locator('[data-testid="community-back"]'))
+
+
+def test_the_record_page_returns_to_the_same_search(browser, server: BrowserServer) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community?q=Acme", wait_until="networkidle")
+        page.locator(
+            '[data-testid="community-result-table"] .community-card-link'
+        ).first.click()
+        page.wait_for_load_state("networkidle")
+        assert "/city/community/permit/" in page.url
+        page.locator('[data-testid="community-back"]').click()
+        page.wait_for_load_state("networkidle")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
+    finally:
+        context.close()

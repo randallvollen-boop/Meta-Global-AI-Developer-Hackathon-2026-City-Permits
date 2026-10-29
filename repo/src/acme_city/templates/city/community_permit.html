@@ -1,25 +1,52 @@
 {% extends "city/layout.html" %}
 {% block content %}
-<div class="city-wrap city-page">
-  <h1>Permit {{ record.reference }}{% if record.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}</h1>
-  <p class="city-lede">{{ record.permit_type }} at {{ record.address }}.</p>
-  <dl class="city-facts" data-testid="community-record">
-    <dt>{% if record.permit_number %}Permit number{% else %}Application number{% endif %}</dt><dd data-field="reference">{{ record.reference }}</dd>
-    <dt>Type</dt><dd data-field="permit_type">{{ record.permit_type }}</dd>
-    <dt>Parcel</dt><dd data-field="parcel">{{ record.parcel }}</dd>
-    <dt>Address</dt><dd data-field="address">{{ record.address }}</dd>
-    <dt>District</dt><dd data-field="district">{{ record.district }}</dd>
-    <dt>Work</dt><dd data-field="work_description">{{ record.work_description }}</dd>
-    <dt>Status</dt><dd data-field="status">{{ record.status }}</dd>
-    <dt>Submitted</dt><dd data-field="submitted_on">{{ record.submitted_on }}</dd>
-    <dt>Decided</dt><dd data-field="decided_on">{{ record.decided_on or 'not yet' }}</dd>
-    <dt>Issued</dt><dd data-field="issued_on">{{ record.issued_on or 'not yet' }}</dd>
-    <dt>Outcome</dt><dd data-field="outcome">{{ record.outcome or 'not decided' }}</dd>
-    <dt>Conditions</dt><dd data-field="conditions">{% if record.conditions %}<ul>{% for c in record.conditions %}<li>{{ c }}</li>{% endfor %}</ul>{% else %}none{% endif %}</dd>
-    <dt>Exception</dt><dd data-field="exception">{% if record.exception %}{{ record.exception_kinds|join(', ') }}{% else %}none{% endif %}</dd>
-    <dt>Contractor business</dt><dd data-field="contractor_business">{{ record.contractor_business }}</dd>
-  </dl>
+<div class="city-wrap city-page community-record-page">
+  <p class="community-back-link"><a href="{{ back_url }}" data-testid="community-back">{{ 'Back to search results' if has_return_context else 'Back to community permits' }}</a></p>
+
+  <h1 class="community-record-address">{{ record.address }}</h1>
+  <p class="city-lede community-record-type" data-field="permit_type">{{ record.permit_type }}</p>
+  <p class="community-record-reference">
+    {{ 'Permit number' if record.permit_number else 'Application number' }} <span data-field="reference">{{ record.reference }}</span>
+    {% if record.synthetic %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}
+  </p>
   {% if record.synthetic %}<p data-testid="record-synthetic-note">This record is generated demonstration data. It is not a real permit.</p>{% endif %}
-  <p><a href="{{ back_url }}" data-testid="community-back">{{ 'Back to search results' if has_return_context else 'Back to community permits' }}</a></p>
+
+  <p class="community-record-status"><span class="badge {{ status_badge_class(record.status) }}" data-field="status">{{ record.status }}</span></p>
+  <p class="community-record-explanation" data-testid="community-status-explanation">{{ status_explanation(record.status) }}</p>
+
+  <div class="community-record-columns" data-testid="community-record">
+    <section class="community-record-main" aria-labelledby="record-work-heading">
+      <h2 id="record-work-heading">Proposed work</h2>
+      <p class="community-record-work" data-field="work_description">{{ record.work_description }}</p>
+
+      <h2>Decision and conditions</h2>
+      <dl class="community-record-facts">
+        <dt>Decision</dt><dd data-field="outcome">{{ record.outcome or 'No decision recorded' }}</dd>
+        <dt>Conditions</dt><dd data-field="conditions">{% if record.conditions %}<ul>{% for c in record.conditions %}<li>{{ c }}</li>{% endfor %}</ul>{% else %}No conditions recorded{% endif %}</dd>
+        <dt>Special approvals</dt><dd data-field="exception">{% if record.exception %}{{ record.exception_kinds|join(', ') }}{% else %}None recorded{% endif %}</dd>
+      </dl>
+    </section>
+
+    <section class="community-record-side" aria-labelledby="record-dates-heading">
+      <h2 id="record-dates-heading">Recorded dates</h2>
+      <dl class="community-record-facts">
+        <dt>Submitted</dt><dd data-field="submitted_on">{% if record.submitted_on %}<time datetime="{{ record.submitted_on }}">{{ display_date(record.submitted_on) }}</time>{% else %}Not recorded{% endif %}</dd>
+        <dt>Decision recorded</dt><dd data-field="decided_on">{% if record.decided_on %}<time datetime="{{ record.decided_on }}">{{ display_date(record.decided_on) }}</time>{% else %}Not recorded{% endif %}</dd>
+        <dt>Permit issued</dt><dd data-field="issued_on">{% if record.issued_on %}<time datetime="{{ record.issued_on }}">{{ display_date(record.issued_on) }}</time>{% else %}Not recorded{% endif %}</dd>
+      </dl>
+
+      <h2>Property and permit details</h2>
+      <dl class="community-record-facts">
+        <dt>Address</dt><dd data-field="address">{{ record.address }}</dd>
+        <dt>Zoning district</dt><dd data-field="district">{{ record.district }}</dd>
+        <dt>Parcel</dt><dd data-field="parcel">{{ record.parcel }}</dd>
+        <dt>Contractor business</dt><dd data-field="contractor_business">{{ record.contractor_business or 'Not listed' }}</dd>
+      </dl>
+    </section>
+  </div>
+
+  <p class="community-note" data-testid="community-record-limits">This record does not show whether work has started or finished.</p>
+
+  <p class="community-back-link"><a href="{{ back_url }}" data-testid="community-back-bottom">{{ 'Back to search results' if has_return_context else 'Back to community permits' }}</a></p>
 </div>
 {% endblock %}

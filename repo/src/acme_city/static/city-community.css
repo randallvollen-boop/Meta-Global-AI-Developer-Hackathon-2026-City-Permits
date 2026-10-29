@@ -44,3 +44,27 @@
   .community-page .community-card { padding: 12px; }
   .community-page .community-search-form label { flex: 1 1 100%; }
 }
+
+.community-record-page { --community-gap: 24px; }
+.community-record-page > * + * { margin-top: var(--community-gap); }
+.community-record-page .community-back-link { margin: 0; }
+.community-record-page .community-record-address { font-size: 1.9rem; margin: 0; overflow-wrap: anywhere; }
+.community-record-page .community-record-type { margin: 0; font-weight: 600; }
+.community-record-page .community-record-reference { margin: 0; color: var(--fg-2); overflow-wrap: anywhere; }
+.community-record-page .community-record-status { margin: 0; }
+.community-record-page .community-record-explanation { margin: 0; max-width: 60ch; }
+.community-record-page .community-record-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.community-record-page .community-record-main h2,
+.community-record-page .community-record-side h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
+.community-record-page .community-record-work { margin: 0 0 1rem; max-width: 62ch; }
+.community-record-page .community-record-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 1rem; }
+.community-record-page .community-record-facts dt { font-weight: 600; }
+.community-record-page .community-record-facts dd { margin: 0; overflow-wrap: anywhere; }
+.community-record-page .community-record-facts ul { margin: 0; padding-left: 1.1rem; }
+.community-record-page .community-note { margin: 0; }
+
+@media (max-width: 900px) {
+  .community-record-page .community-record-columns { grid-template-columns: minmax(0, 1fr); }
+  .community-record-page .community-record-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .community-record-page .community-record-facts dd { margin-bottom: 10px; }
+}

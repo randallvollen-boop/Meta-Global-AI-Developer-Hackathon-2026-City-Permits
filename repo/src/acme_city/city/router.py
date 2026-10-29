@@ -25,6 +25,7 @@ from acme_city.ui.community_view_models import (
     normalize_type,
     public_record_url,
     status_badge_class,
+    status_explanation,
 )
 from acme_city.ui.router import _applicant_name, render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
@@ -349,6 +350,9 @@ def city_community_permit(
         record=record,
         back_url=community_return_url(q, type),
         has_return_context=bool(normalize_query(q) or normalize_type(type)),
+        display_date=display_date,
+        status_explanation=status_explanation,
+        status_badge_class=status_badge_class,
     )
     return render(request, "city/community_permit.html", context)
 

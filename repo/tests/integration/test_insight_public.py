@@ -27,6 +27,7 @@ from acme_city.insight.public import (
 )
 from acme_city.persistence.models import audit, finance, gis, permit, registry
 from acme_city.persistence.session import transaction
+from acme_city.ui.community_view_models import status_explanation
 from acme_city.ui.router import router as ui_router
 
 #: Distinct markers planted in the data a public record must never show.
@@ -519,6 +520,81 @@ def test_the_overview_form_keeps_the_search(client, sensitive_case) -> None:
     assert f'name="q" value="{reference}"' in form.group(0)
     assert 'name="type"' in form.group(0)
     assert "<option value=\"rezoning\" selected>" in form.group(0)
+
+
+def test_the_record_page_leads_with_the_address_and_keeps_every_field(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    heading = re.search(r'<h1[^>]*class="community-record-address"[^>]*>(.*?)</h1>', body, re.S)
+    assert heading
+    assert heading.group(1).strip()
+    assert heading.group(1).strip() != sensitive_case["reference"]
+    for name in DETAIL_FIELDS:
+        assert f'data-field="{name}"' in body, name
+
+
+def test_the_record_page_explains_the_public_status(client, settings) -> None:
+    def pick(session):
+        seen: dict[str, object] = {}
+        for record in public_permits(session):
+            seen.setdefault(record.status, record)
+        return seen
+
+    seen = with_session(settings, pick)
+    assert seen
+    for status, record in seen.items():
+        body = client.get(f"/city/community/permit/{record.reference}").text
+        explanation = re.search(
+            r'<p[^>]*data-testid="community-status-explanation"[^>]*>(.*?)</p>', body, re.S
+        )
+        assert explanation, status
+        assert status_explanation(status) in explanation.group(1)
+
+
+def test_the_record_page_spells_out_the_missing_values(client, settings) -> None:
+    def pick(session):
+        for record in public_permits(session):
+            if (
+                not record.contractor_business
+                and not record.decided_on
+                and not record.issued_on
+                and not record.conditions
+                and not record.outcome
+            ):
+                return record
+        return None
+
+    record = with_session(settings, pick)
+    assert record is not None, "the fixtures hold a record without a decision"
+    body = client.get(f"/city/community/permit/{record.reference}").text
+    assert "Not listed" in body
+    assert "Not recorded" in body
+    assert "No decision recorded" in body
+    assert "No conditions recorded" in body
+    assert "None recorded" in body
+    assert "not yet" not in body
+
+
+def test_the_record_page_shows_the_dates_as_readable_time(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    submitted = re.search(r'<dd data-field="submitted_on">(.*?)</dd>', body, re.S)
+    assert submitted
+    assert "<time datetime=" in submitted.group(1)
+    assert re.search(r'datetime="\d{4}-\d{2}-\d{2}"', submitted.group(1))
+
+
+def test_the_record_page_links_back_at_the_top_and_the_bottom(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    assert 'data-testid="community-back"' in body
+    assert 'data-testid="community-back-bottom"' in body
+    assert body.index('data-testid="community-back"') < body.index("<h1")
+    assert body.index('data-testid="community-back-bottom"') > body.index(
+        'data-testid="community-record"'
+    )
+
+
+def test_the_record_page_says_what_it_does_not_show(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    assert "This record does not show whether work has started or finished." in body
 
 
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:
