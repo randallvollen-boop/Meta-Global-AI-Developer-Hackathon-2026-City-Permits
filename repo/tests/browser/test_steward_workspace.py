@@ -170,3 +170,30 @@ def test_the_case_summary_fits_a_phone(
     assert_not_covered(page, page.locator('[data-testid="case-summary-next"]'))
     assert page.locator('[data-testid="case-q6"]').count() == 1
     assert page.recorded_errors == []
+
+
+def test_the_comparison_fits_a_phone(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """The comparison of the case fits a 390 pixel screen, with every value labelled."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="compare-table"]')
+    table = page.locator('[data-testid="compare-table"]').first
+    # On a phone the table becomes one card per field, and the column heads
+    # become the labels of the values.
+    assert not table.locator("thead").is_visible()
+    assert table.locator('[data-label="Source record"]').count() >= 1
+    assert table.locator('[data-label="Master record"]').count() >= 1
+    for row in table.locator("tbody tr").all():
+        box = row.bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []

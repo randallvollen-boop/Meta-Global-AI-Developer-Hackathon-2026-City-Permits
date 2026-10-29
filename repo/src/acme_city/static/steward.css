@@ -29,6 +29,27 @@
 .stw-case-facts dt { color: var(--fg-2); font-size: .78rem; }
 .stw-case-facts dd { margin: 0; font-size: .85rem; overflow-wrap: anywhere; }
 
+/* The typed comparison.  The raw value and the value the matcher normalized
+   stay apart, so a reader sees what was recorded and what was compared. */
+.stw-comparison { width: 100%; }
+.stw-comparison-label { margin: 0 0 2px; color: var(--fg-2); font-size: .78rem; }
+.stw-comparison-note { margin: 0 0 8px; font-size: .78rem; }
+.stw-value { display: block; overflow-wrap: anywhere; }
+.stw-normalized {
+  display: block; margin-top: 2px; color: var(--fg-3); font-size: .72rem;
+  font-family: var(--f-mono); overflow-wrap: anywhere;
+}
+.stw-disclosure { margin: 8px 0; }
+.stw-disclosure > summary { color: var(--fg-2); font-size: .82rem; cursor: pointer; }
+
+/* Sentence case in the steward workspace.  The shared stylesheet uppercases
+   the table headers, and the steward screens read better without it. */
+body[data-screen="steward"] .data-table thead th,
+body[data-screen="source_records"] .data-table thead th,
+body[data-screen="masters"] .data-table thead th {
+  text-transform: none; letter-spacing: normal; font-size: .74rem;
+}
+
 /* The search and the filters of the queue. */
 .stw-search {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
@@ -55,6 +76,25 @@
    source, the status and the action.  The column heads become the labels of
    the card, so nothing is left unnamed. */
 @media (max-width: 760px) {
+  /* One comparison field at a time: the field, then the source value, then
+     the master value, each with its own label. */
+  body[data-screen="steward"] .stw-comparison thead { display: none; }
+  body[data-screen="steward"] .stw-comparison,
+  body[data-screen="steward"] .stw-comparison tbody,
+  body[data-screen="steward"] .stw-comparison tr,
+  body[data-screen="steward"] .stw-comparison th,
+  body[data-screen="steward"] .stw-comparison td { display: block; width: 100%; }
+  body[data-screen="steward"] .stw-comparison tr {
+    margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="steward"] .stw-cell-field { font-weight: 600; }
+  body[data-screen="steward"] .stw-cell-source::before,
+  body[data-screen="steward"] .stw-cell-master::before {
+    content: attr(data-label); display: block; color: var(--fg-3);
+    font-size: .72rem;
+  }
+  body[data-screen="steward"] .stw-cell-result { margin-top: 4px; }
   body[data-screen="steward"] .stw-case-facts { grid-template-columns: 1fr; gap: 1px; }
   body[data-screen="steward"] .stw-case-facts dt { margin-top: 7px; font-size: .72rem; }
   body[data-screen="steward"] .stw-case-facts dd { font-size: .84rem; }

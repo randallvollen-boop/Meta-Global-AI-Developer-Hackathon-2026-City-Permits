@@ -33,6 +33,14 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import app_now
 from acme_city.fixtures.loader import REPO_ROOT
+from acme_city.ingestion.normalization import (
+    normalize_address,
+    normalize_email,
+    normalize_identifier,
+    normalize_name,
+    normalize_phone,
+    normalize_text,
+)
 from acme_city.persistence.models import (
     audit,
     change,
@@ -108,6 +116,13 @@ MASTER_TABS: tuple[tuple[str, str], ...] = (
     ("licenses", "Business licenses"),
     ("registrations", "Contractor registrations"),
 )
+
+#: The families of record a focused case can compare.
+COMPARISON_FAMILIES: tuple[str, ...] = ("party", "parcel", "address")
+
+#: The order the rows of a comparison are read in: what disagrees first,
+#: then what is missing on one side, and only then what agrees.
+COMPARISON_ORDER: tuple[str, ...] = ("conflicts", "no_comparison", "agrees")
 
 #: Grants that open the drawer kinds (the same predicate as the screens).
 RECORD_GRANTS: tuple[tuple[str, str | None], ...] = view_models.SCREEN_PERMISSIONS["applicants"]
@@ -1150,6 +1165,74 @@ def _payload_values(payload: dict[str, Any], keys: tuple[str, ...]) -> str:
     return ""
 
 
+def _comparison_row(
+    field: str,
+    left: str,
+    right: str,
+    result: str,
+    note: str = "",
+    left_normalized: str = "",
+    right_normalized: str = "",
+) -> dict[str, str]:
+    """Return one row of a comparison.
+
+    The raw value stays as it was recorded.  The normalized value, when the
+    matcher computed one, sits beside it and is never shown as the value
+    itself, so a reader sees what was recorded and what was compared.
+    """
+    return {
+        "field": field,
+        "source": left or "No value",
+        "master": right or "No value",
+        "result": result,
+        "note": note,
+        "source_normalized": left_normalized,
+        "master_normalized": right_normalized,
+    }
+
+
+def typed_comparison(
+    rows: list[dict[str, str]],
+    *,
+    family: str = "party",
+    caption: str = "",
+    current: bool = False,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Return one typed comparison, ready for the comparison renderer.
+
+    The rows come in the order a reader needs them: what disagrees first,
+    then what is missing on one side, and only then what agrees.  A missing
+    value stays missing; it is never filled in.  ``current`` marks a
+    comparison that was computed again after a decision was recorded.
+    """
+    def rank(row: dict[str, str]) -> int:
+        result = str(row.get("result", ""))
+        return COMPARISON_ORDER.index(result) if result in COMPARISON_ORDER else len(COMPARISON_ORDER)
+
+    ordered = sorted(rows, key=rank)
+    for row in ordered:
+        # A value that is not there is shown as missing, never as an empty
+        # cell that could be read as an empty value.
+        row["source"] = row.get("source") or "No value"
+        row["master"] = row.get("master") or "No value"
+        row.setdefault("note", "")
+        row.setdefault("source_normalized", "")
+        row.setdefault("master_normalized", "")
+    return {
+        "family": family,
+        "caption": caption,
+        "headers": {"source": "Source record", "master": "Master record", **(headers or {})},
+        "rows": ordered,
+        "conflicts": [row for row in ordered if row.get("result") == "conflicts"],
+        "missing": [row for row in ordered if row.get("result") == "no_comparison"],
+        "agreements": [row for row in ordered if row.get("result") == "agrees"],
+        "current": current,
+        "has_conflicts": any(row.get("result") == "conflicts" for row in ordered),
+        "has_missing": any(row.get("result") == "no_comparison" for row in ordered),
+    }
+
+
 def compare_with_party(
     session: Session, payload: dict[str, Any], party: registry.Party
 ) -> list[dict[str, str]]:
@@ -1173,8 +1256,18 @@ def compare_with_party(
     ).scalars().all()
     rows: list[dict[str, str]] = []
 
-    def add(field: str, left: str, right: str, result: str, note: str = "") -> None:
-        rows.append({"field": field, "source": left or "No value", "master": right or "No value", "result": result, "note": note})
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
 
     name = _payload_values(payload, ("organization_name", "holder_name", "display_name", "full_name"))
     if name:
@@ -1182,9 +1275,26 @@ def compare_with_party(
         hit = next((item for item in names if item and _norm(item) == _norm(name)), "")
         if hit:
             note = "matches a recorded alias" if hit in aliases and hit != party.display_name else ""
-            add("Name", name, hit if hit != party.display_name else party.display_name, "agrees", note)
+            shown = hit if hit != party.display_name else party.display_name
+            add(
+                "Name",
+                name,
+                shown,
+                "agrees",
+                note,
+                normalize_name(name).normalized,
+                normalize_name(shown).normalized,
+            )
         else:
-            add("Name", name, party.display_name, "conflicts", "similar words do not make the same organization")
+            add(
+                "Name",
+                name,
+                party.display_name,
+                "conflicts",
+                "similar words do not make the same organization",
+                normalize_name(name).normalized,
+                normalize_name(party.display_name).normalized,
+            )
     else:
         add("Name", "", party.display_name, "no_comparison")
 
@@ -1196,16 +1306,35 @@ def compare_with_party(
             named,
             party.display_name,
             "agrees" if ref == party.id else "conflicts",
+            "",
+            normalize_identifier(ref),
+            normalize_identifier(party.id),
         )
 
     email = _payload_values(payload, ("contact_email",))
     if email:
         mine = next((c.value for c in contacts if c.contact_type == "email"), "")
-        add("Email", email, mine, ("agrees" if _norm(mine) == _norm(email) else "conflicts") if mine else "no_comparison")
+        add(
+            "Email",
+            email,
+            mine,
+            ("agrees" if _norm(mine) == _norm(email) else "conflicts") if mine else "no_comparison",
+            "",
+            normalize_email(email),
+            normalize_email(mine),
+        )
     phone = _payload_values(payload, ("contact_phone",))
     if phone:
         mine = next((c.value for c in contacts if c.contact_type == "phone"), "")
-        add("Phone", phone, mine, ("agrees" if _norm(mine) == _norm(phone) else "conflicts") if mine else "no_comparison")
+        add(
+            "Phone",
+            phone,
+            mine,
+            ("agrees" if _norm(mine) == _norm(phone) else "conflicts") if mine else "no_comparison",
+            "",
+            normalize_phone(phone),
+            normalize_phone(mine),
+        )
 
     number = _payload_values(payload, ("license_number", "registration_number"))
     if number:
@@ -1213,9 +1342,25 @@ def compare_with_party(
         if not numbers:
             add("License or registration number", number, "", "no_comparison")
         elif any(_norm(n) == _norm(number) for n in numbers):
-            add("License or registration number", number, number, "agrees")
+            add(
+                "License or registration number",
+                number,
+                number,
+                "agrees",
+                "",
+                normalize_identifier(number),
+                normalize_identifier(number),
+            )
         else:
-            add("License or registration number", number, ", ".join(numbers), "conflicts", "a different number")
+            add(
+                "License or registration number",
+                number,
+                ", ".join(numbers),
+                "conflicts",
+                "a different number",
+                normalize_identifier(number),
+                normalize_identifier(", ".join(numbers)),
+            )
 
     address = _payload_values(payload, ("business_address",))
     if address:
@@ -1223,12 +1368,265 @@ def compare_with_party(
 
         official = _party_addresses(session, party.id)
         if not official:
-            add("Site address", address, "", "no_comparison")
+            add(
+                "Site address",
+                address,
+                "",
+                "no_comparison",
+                "",
+                normalize_address(address).normalized,
+                "",
+            )
         elif any(_norm(a) == _norm(address) for a in official):
-            add("Site address", address, address, "agrees")
+            add(
+                "Site address",
+                address,
+                address,
+                "agrees",
+                "",
+                normalize_address(address).normalized,
+                normalize_address(address).normalized,
+            )
         else:
-            add("Site address", address, ", ".join(official), "conflicts", "a different address or unit")
+            add(
+                "Site address",
+                address,
+                ", ".join(official),
+                "conflicts",
+                "a different address or unit",
+                normalize_address(address).normalized,
+                normalize_address(", ".join(official)).normalized,
+            )
     return rows
+
+
+def compare_with_parcel(
+    session: Session, payload: dict[str, Any], parcel: registry.Parcel
+) -> list[dict[str, str]]:
+    """Compare the values of a source record with one official parcel.
+
+    The parcel number and the jurisdiction are the identity of a parcel.  A
+    value the source did not send stays missing; it is never filled in.
+    """
+    rows: list[dict[str, str]] = []
+
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
+
+    number = _payload_values(payload, ("parcel_number", "submitted_parcel"))
+    official_number = parcel.source_parcel_number
+    if number:
+        same = _norm(number) == _norm(official_number)
+        add(
+            "Parcel number",
+            number,
+            official_number,
+            "agrees" if same else "conflicts",
+            "" if same else "a different parcel",
+            normalize_identifier(number),
+            normalize_identifier(official_number),
+        )
+    else:
+        add("Parcel number", "", official_number, "no_comparison")
+    jurisdiction = _payload_values(payload, ("jurisdiction_id", "jurisdiction"))
+    if jurisdiction:
+        same = _norm(jurisdiction) == _norm(parcel.jurisdiction_id)
+        add(
+            "Jurisdiction",
+            jurisdiction,
+            parcel.jurisdiction_id,
+            "agrees" if same else "conflicts",
+            "" if same else "another jurisdiction",
+            normalize_identifier(jurisdiction),
+            normalize_identifier(parcel.jurisdiction_id),
+        )
+    else:
+        add("Jurisdiction", "", parcel.jurisdiction_id, "no_comparison")
+    return rows
+
+
+def _written_unit(raw: str, address: Any) -> str:
+    """Return the unit of an address as it was written.
+
+    The comparison form of an address folds the case away, so the unit is
+    read back from the text the source sent.
+    """
+    if not address.unit_key:
+        return ""
+    pattern = re.escape(address.unit_key).replace(r"\ ", r"\s+")
+    match = re.search(pattern, raw, re.IGNORECASE)
+    return match.group(0) if match else address.unit_key
+
+
+def compare_with_address(
+    session: Session, payload: dict[str, Any], address: registry.Address
+) -> list[dict[str, str]]:
+    """Compare the values of a source record with one official address.
+
+    The street and the unit stay apart: two addresses in the same building
+    that name the unit differently are not the same place.  A missing value
+    stays missing.
+    """
+    rows: list[dict[str, str]] = []
+
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
+
+    source_text = _payload_values(payload, ("source_string", "business_address", "address_text"))
+    official_text = address.source_string or ""
+    source_address = normalize_address(source_text)
+    official_address = normalize_address(official_text)
+    if source_text and official_text:
+        same = (
+            source_address.building_key == official_address.building_key
+            and source_address.unit_key == official_address.unit_key
+        )
+        add(
+            "Address",
+            source_text,
+            official_text,
+            "agrees" if same else "conflicts",
+            "" if same else "a different address or unit",
+            source_address.normalized,
+            official_address.normalized,
+        )
+    elif source_text:
+        add(
+            "Address",
+            source_text,
+            "",
+            "no_comparison",
+            "",
+            source_address.normalized,
+            "",
+        )
+    else:
+        add("Address", "", official_text, "no_comparison")
+    source_unit = _written_unit(source_text, source_address)
+    official_unit = _written_unit(official_text, official_address)
+    if source_unit and official_unit:
+        same = _norm(source_unit) == _norm(official_unit)
+        add(
+            "Unit",
+            source_unit,
+            official_unit,
+            "agrees" if same else "conflicts",
+            "" if same else "another unit in the same building",
+            normalize_text(source_unit),
+            normalize_text(official_unit),
+        )
+    else:
+        add("Unit", source_unit, official_unit, "no_comparison")
+    return rows
+
+
+def _candidate_comparison(
+    session: Session, candidate: Any, payload: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Return the typed comparison of one candidate.
+
+    A party, a parcel and an address are compared in their own fields, so a
+    case never shows a party card for a parcel.  ``None`` means the record
+    the candidate names is not in the registry.
+    """
+    if candidate.entity_type == "party":
+        party = session.get(registry.Party, candidate.entity_id)
+        if party is None:
+            return None
+        numbers = [
+            f"{display.pretty(credential.credential_type)} {credential.number}"
+            for credential in session.execute(
+                select(registry.Credential).where(
+                    registry.Credential.holder_party_id == party.id
+                )
+            ).scalars()
+        ]
+        return {
+            "family": "party",
+            "name": party.display_name,
+            "type": display.pretty(party.party_type),
+            "credentials": numbers,
+            "record_ref": _ref("record", party.id),
+            "linkable": True,
+            "rows": compare_with_party(session, payload, party),
+        }
+    if candidate.entity_type == "parcel":
+        parcel = session.get(registry.Parcel, candidate.entity_id)
+        if parcel is None:
+            return None
+        return {
+            "family": "parcel",
+            "name": parcel.source_parcel_number,
+            "type": "Parcel",
+            "credentials": [],
+            "record_ref": _ref("parcel", parcel.parcel_id),
+            "linkable": False,
+            "rows": compare_with_parcel(session, payload, parcel),
+        }
+    if candidate.entity_type == "address":
+        address = session.get(registry.Address, candidate.entity_id)
+        if address is None:
+            return None
+        return {
+            "family": "address",
+            "name": address.source_string or address.address_id,
+            "type": "Address",
+            "credentials": [],
+            "record_ref": _ref("address", address.address_id),
+            "linkable": False,
+            "rows": compare_with_address(session, payload, address),
+        }
+    return None
+
+
+def _stored_evidence(
+    proposal: registry.MatchProposal | None, entity_id: str
+) -> tuple[list[dict[str, str]], list[dict[str, str]]] | None:
+    """Return the evidence the proposal recorded for one candidate.
+
+    The proposal stores the evidence it used, so a decision can be read with
+    the evidence that was recorded at the time.  ``None`` means the proposal
+    holds no evidence for that candidate.
+    """
+    if proposal is None or proposal.entity_id != entity_id:
+        return None
+    supporting = [dict(item) for item in (proposal.supporting_evidence or [])]
+    conflicting = [dict(item) for item in (proposal.conflicting_evidence or [])]
+    if not supporting and not conflicting:
+        return None
+    return supporting, conflicting
+
+
+def _evidence_items(items: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Return the evidence of one direction in the shape the screen reads."""
+    return [
+        {
+            "field": str(item.get("field", "")),
+            "text": str(item.get("detail", "")),
+            "method": _evidence_phrase(str(item.get("method", ""))),
+        }
+        for item in items
+    ]
 
 
 def _score_parts(supporting: tuple[Any, ...], conflicting: tuple[Any, ...]) -> list[dict[str, str]]:
@@ -1669,35 +2067,48 @@ def link_case(
 
     candidates = []
     for candidate in sorted(candidate_set.candidates, key=lambda c: c.score, reverse=True):
-        party = session.get(registry.Party, candidate.entity_id)
-        if party is None:
+        typed = _candidate_comparison(session, candidate, payload)
+        if typed is None:
             continue
-        numbers = [
-            f"{display.pretty(c.credential_type)} {c.number}"
-            for c in session.execute(
-                select(registry.Credential).where(registry.Credential.holder_party_id == party.id)
-            ).scalars()
-        ]
-        comparison = compare_with_party(session, payload, party)
+        comparison = typed_comparison(
+            typed["rows"],
+            family=typed["family"],
+            caption=f"Source record values against {typed['name']}",
+            current=decided is not None,
+        )
+        # The proposal keeps the evidence it used.  A candidate the proposal
+        # named is read with that evidence; the others are read with the
+        # evidence the matcher holds now.
+        recorded = _stored_evidence(proposal, candidate.entity_id)
+        if recorded is not None:
+            agreements = _evidence_items(recorded[0])
+            conflicts = _evidence_items(recorded[1])
+            evidence_source = "Recorded evidence"
+        else:
+            agreements = [
+                {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
+                for item in candidate.supporting
+            ]
+            conflicts = [
+                {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
+                for item in candidate.conflicting
+            ]
+            evidence_source = "Current evidence"
         candidates.append(
             {
                 "entity_id": candidate.entity_id,
-                "name": party.display_name,
-                "type": display.pretty(party.party_type),
-                "credentials": numbers,
+                "name": typed["name"],
+                "type": typed["type"],
+                "credentials": typed["credentials"],
                 "comparison": comparison,
-                "agreements": [
-                    {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
-                    for item in candidate.supporting
-                ],
-                "conflicts": [
-                    {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
-                    for item in candidate.conflicting
-                ],
-                "no_comparison": [row["field"] for row in comparison if row["result"] == "no_comparison"],
+                "agreements": agreements,
+                "conflicts": conflicts,
+                "evidence_source": evidence_source,
+                "no_comparison": [row["field"] for row in comparison["missing"]],
                 "score": candidate.score,
                 "score_parts": _score_parts(candidate.supporting, candidate.conflicting),
-                "record_ref": _ref("record", party.id),
+                "record_ref": typed["record_ref"],
+                "linkable": typed["linkable"],
                 "lead": candidate.entity_id == (decided.entity_id if decided is not None else proposal.entity_id),
             }
         )
@@ -1707,9 +2118,12 @@ def link_case(
     chosen = next((c for c in candidates if c["entity_id"] == selected_id), None)
     if chosen is None and len(candidates) == 1:
         chosen = candidates[0]
+    # One comparison is shown open; the other candidates stay in a disclosure.
+    shown = chosen or lead
     for candidate in candidates:
         candidate["selected"] = chosen is not None and candidate["entity_id"] == chosen["entity_id"]
         candidate["recommended"] = lead is not None and candidate["entity_id"] == lead["entity_id"]
+        candidate["open"] = shown is not None and candidate["entity_id"] == shown["entity_id"]
 
     # 1. The problem.
     if decided is not None:
@@ -2103,10 +2517,26 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
         "why": f"{application.source_application_number} cannot be decided until its parcel link is approved and the Permit Reviewer confirms the parcel.",
         "applications": outstanding,
         "parcel": proposal,
-        "compare_rows": [
-            {"field": "Address", "source": match.submitted_text or "No value", "master": match.matched_address or "No value",
-             "result": "agrees" if match.matched_address and _norm(match.submitted_text) == _norm(match.matched_address) else ("conflicts" if match.matched_address else "no_comparison")},
-        ],
+        "comparison": typed_comparison(
+            [
+                {
+                    "field": "Address",
+                    "source": match.submitted_text or "No value",
+                    "master": match.matched_address or "No value",
+                    "result": (
+                        "agrees"
+                        if match.matched_address and _norm(match.submitted_text) == _norm(match.matched_address)
+                        else ("conflicts" if match.matched_address else "no_comparison")
+                    ),
+                    "note": "",
+                    "source_normalized": normalize_address(match.submitted_text).normalized,
+                    "master_normalized": normalize_address(match.matched_address).normalized,
+                }
+            ],
+            family="parcel",
+            caption="What the applicant typed against what the locator found",
+            headers={"source": "Submitted", "master": "Found by the locator"},
+        ),
         "actions": actions,
         "result": result,
         "events": events,
@@ -2143,6 +2573,9 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
             "source": str((case.old_value or {}).get(key, "No value")),
             "master": str((case.proposed_value or {}).get(key, "No value")),
             "result": "conflicts" if (case.old_value or {}).get(key) != (case.proposed_value or {}).get(key) else "agrees",
+            "note": "",
+            "source_normalized": "",
+            "master_normalized": "",
         }
         for key in keys
     ]
@@ -2224,7 +2657,12 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
         "problem": case.reason or case.title,
         "why": "Applications that depend on this record are rechecked when the source accepts the change.",
         "applications": applications,
-        "compare_rows": rows,
+        "comparison": typed_comparison(
+            rows,
+            family="change",
+            caption="Current value against the proposed value",
+            headers={"source": "Current", "master": "Proposed"},
+        ),
         "case_evidence": [str(item) for item in (case.evidence or [])],
         "destination": case.destination or "Configured steward queue",
         "state_label": display.pretty(case.status),
