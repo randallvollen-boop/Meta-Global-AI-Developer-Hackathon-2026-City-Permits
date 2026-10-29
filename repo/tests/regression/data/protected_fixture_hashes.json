@@ -27,7 +27,12 @@
     "fixtures/replay/policy-assist/propose-no-permit-shed-unsupported.json": "00f67019e4526c1dce98aebee46df30c27acce2cc1b9221dad465f8b89979f51",
     "fixtures/replay/policy-assist/shed-300-brief-fails-validation.json": "8668492ce87a44ba5dbb987862e62b36f90676ab570c9fd054071bf1f049214e",
     "fixtures/source_variations.json": "b7526ce26af5b520a172849889d1c966e6dea5b46e75eb2344e5dfcbc3fa4b4a",
-    "config/rules_and_fees.json": "b7f95a2a8afa5cf588e102b543c9019c6ee32186c89d5ee498f85e5c5d1a36ed"
+    "config/rules_and_fees.json": "b7f95a2a8afa5cf588e102b543c9019c6ee32186c89d5ee498f85e5c5d1a36ed",
+    "config/domains.json": "c3b7f650d0651da33b97ad49800da9069352ddb52dcd318361c1c87fe7940942",
+    "config/source_contracts.json": "9eca6460537b6ee93a456f6900455ed03864783874808d4b4e44273e95dbef77",
+    "config/authority_policies.json": "db0ec753cbc4fc6b0ad720d362037c7a8ee384dc2a3868d796f939d3a92c928c",
+    "config/approval_policy.json": "635780a36608a20a67e7ad2ce3f5c850816823bfc15b0a86523ca6ed5167590f",
+    "config/synthetic_distributions.json": "bc303f81de2c058587554f7518bb9e4a2bff990e4b9bc89d22039f6f40dd0b86"
   },
   "demo_json_keys": {
     "scenarios": "1afd15307810e82d55bc53396e93fa3329ecb873e1eba7b01eb4ac3f01fd2117",

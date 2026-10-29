@@ -131,6 +131,27 @@ def test_an_acceptance_test_may_change_only_actor_ids(scratch: Path) -> None:
     assert violations and all("more than an actor-id literal" in v for v in violations)
 
 
+def test_actor_only_checks_only_the_acceptance_tests(scratch: Path, capsys) -> None:
+    line = _inside(ROUTER, "_agent_toggle")
+    _commit_change(scratch, ROUTER, line, line + "  # lane note")
+    source = (scratch / AT01).read_text(encoding="utf-8")
+    actor = next(a for a in ('"persona_permit_reviewer"', '"persona_data_steward"') if a in source)
+    (scratch / AT01).write_text(source.replace(actor, '"persona_agent_operator"'), encoding="utf-8")
+    _git(scratch, "commit", "-q", "-am", "actor ids")
+    # The router change belongs to a lane and is not checked without one.
+    assert check(scratch, _ownership(), None, "main~2", "HEAD") == []
+    assert main(["--actor-only", "--base", "main~2", "--repo", str(scratch)]) == 0
+    assert "only actor-id literals change" in capsys.readouterr().out
+
+    text = (scratch / AT01).read_text(encoding="utf-8")
+    (scratch / AT01).write_text(text.replace("assert ", "assert  ", 1), encoding="utf-8")
+    _git(scratch, "commit", "-q", "-am", "more than actor ids")
+    violations = check(scratch, _ownership(), None, "main~3", "HEAD")
+    assert violations and all(v.startswith(AT01) for v in violations)
+    assert main(["--actor-only", "--base", "main~3", "--repo", str(scratch)]) == 1
+    assert "violation(s) for actor-only files" in capsys.readouterr().out
+
+
 def test_an_unknown_lane_is_refused() -> None:
     with pytest.raises(SystemExit):
         check(REPO_ROOT, _ownership(), "nobody", "HEAD", "HEAD")

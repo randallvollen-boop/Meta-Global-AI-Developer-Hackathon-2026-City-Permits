@@ -9,6 +9,9 @@ the deck-and-fence rules with the fee their schedule assesses.
 
 Tables a later lane adds are excluded by name: each lane lists its tables in
 ``tests/support/schema_groups_<lane>.py``, which ``test_schema.py`` merges too.
+The actor, role and grant tables are excluded as well, because lanes add
+actors and change grants on purpose; the grant snapshot with
+``persona_grant_deltas.json`` guards those instead.
 The rules are evaluated in a session that is rolled back, so nothing is written.
 
 A lane never edits the snapshot to make this pass.  A deliberate, reviewed
@@ -53,6 +56,11 @@ SUPPORT = Path(__file__).resolve().parents[1] / "support"
 LANE_SCHEMA_GROUP_FILES: tuple[str, ...] = (
     "schema_groups_operator.py",
     "schema_groups_autolink.py",
+)
+
+#: The actor, role and grant tables, which lanes change on purpose.
+ACTOR_TABLES: frozenset[str] = frozenset(
+    {"actors", "actor_roles", "actor_grants", "roles", "role_permissions"}
 )
 
 #: The scenarios whose applications are recorded.
@@ -175,7 +183,7 @@ def observe(directory: Path) -> dict[str, Any]:
             )
         with transaction(factory) as session:
             reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
-        excluded = lane_tables()
+        excluded = lane_tables() | ACTOR_TABLES
         session = factory()
         try:
             counts = {
@@ -205,6 +213,7 @@ def recorded() -> dict[str, Any]:
 
 def test_the_seeded_row_counts_are_unchanged(observed, recorded) -> None:
     assert observed["seeded_row_counts"] == recorded["seeded_row_counts"]
+    assert not ACTOR_TABLES & set(recorded["seeded_row_counts"])
 
 
 def test_every_controlled_scenario_keeps_its_outcome(observed, recorded) -> None:

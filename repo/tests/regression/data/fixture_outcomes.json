@@ -1,9 +1,6 @@
 {
   "note": "Outcomes after reset_demo. Regenerate only for a deliberate, reviewed change: python tests/regression/test_fixture_outcomes_snapshot.py",
   "seeded_row_counts": {
-    "actor_grants": 554,
-    "actor_roles": 27,
-    "actors": 19,
     "addresses": 71,
     "agent_controls": 2,
     "agent_run_nodes": 0,
@@ -76,8 +73,6 @@
     "recommendations": 0,
     "reconciliation_results": 0,
     "review_tasks": 0,
-    "role_permissions": 92,
-    "roles": 14,
     "rule_versions": 28,
     "sessions": 0,
     "source_commands": 0,

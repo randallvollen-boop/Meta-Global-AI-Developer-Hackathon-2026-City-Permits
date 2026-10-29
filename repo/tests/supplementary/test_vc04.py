@@ -30,6 +30,8 @@ from acme_city.persistence.session import (
 )
 from acme_city.ui.router import router as ui_router
 
+# The screens each persona may open (same table as the view-model tests),
+# aggregated in tests/support/nav_expectations, one module per persona.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
 
@@ -223,9 +225,6 @@ SCREEN_PATHS = {
     "ops_support": "/ops/support",
     "ops_checks": "/ops/checks",
 }
-
-#: The screens each persona may open (same table as the view-model tests),
-#: aggregated in tests/support/nav_expectations, one module per persona.
 
 
 @pytest.mark.parametrize("actor_id", sorted(EXPECTED_NAVIGATION))

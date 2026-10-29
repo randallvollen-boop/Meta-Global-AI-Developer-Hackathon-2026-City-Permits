@@ -4,7 +4,9 @@
 fixture input the D01-D11 scenarios, the DF-1/DF-2 fence rules and the
 acceptance tests read: the files under ``fixtures/`` (the seeded population,
 the source variations, the evaluator truth, the town, the documents and the
-replay cassettes), ``config/rules_and_fees.json`` with the rule texts, and the
+replay cassettes), ``config/rules_and_fees.json`` with the rule texts, the
+other config files the reset and the scenarios read (domains, source contracts,
+authority policies, approval policy and synthetic distributions), and the
 seed subtrees of ``config/demo.json``, hashed per key so a new top-level key
 does not trip the guard.  Test modules are not hashed.
 
@@ -97,7 +99,14 @@ def test_the_guard_covers_the_scenario_rule_and_replay_inputs() -> None:
         "fixtures/source_variations.json",
         "fixtures/evaluator_truth.json",
         "config/rules_and_fees.json",
+        "config/domains.json",
+        "config/source_contracts.json",
+        "config/authority_policies.json",
+        "config/approval_policy.json",
+        "config/synthetic_distributions.json",
     } <= files
+    # Lanes edit their own actor blocks and grant lines, so these are not hashed.
+    assert not {"config/actors.json", "config/permissions.json"} & files
     assert any(path.startswith("fixtures/replay/") for path in files)
     assert any(path.startswith("fixtures/documents/") for path in files)
     # Every fixture file present now is protected.

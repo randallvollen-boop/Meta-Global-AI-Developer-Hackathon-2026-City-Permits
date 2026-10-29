@@ -12,6 +12,7 @@ ref, the script reads ``git diff base...head`` and fails when
 - a hunk of an actor-only file changes anything other than an actor-id
   literal.
 
+With ``--actor-only`` it checks only the actor-only files and needs no lane.
 The integrator runs it on every merge.  It exits 0 when the diff complies and
 1 with one line per violation when it does not.
 """
@@ -175,13 +176,18 @@ def check_actor_only(path: str, hunks: list[Hunk]) -> list[str]:
     return violations
 
 
-def check(repo: Path, ownership: dict, lane: str, base: str, head: str) -> list[str]:
-    """Return the violations of ``lane`` in ``git diff base...head``."""
-    if lane not in ownership["lanes"]:
+def check(
+    repo: Path, ownership: dict, lane: str | None, base: str, head: str
+) -> list[str]:
+    """Return the violations of ``lane`` in ``git diff base...head``.
+
+    With ``lane`` None only the actor-only files are checked.
+    """
+    if lane is not None and lane not in ownership["lanes"]:
         raise SystemExit(f"unknown lane {lane!r}; expected one of {ownership['lanes']}")
     violations: list[str] = []
     for path in changed_files(repo, base, head):
-        owners = ownership["functions"].get(path)
+        owners = ownership["functions"].get(path) if lane is not None else None
         actor_only = any(fnmatch.fnmatch(path, pattern) for pattern in ownership["actor_only"])
         if owners is None and not actor_only:
             continue
@@ -200,7 +206,11 @@ def check(repo: Path, ownership: dict, lane: str, base: str, head: str) -> list[
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--lane", required=True, help="the lane whose diff is checked")
+    scope = parser.add_mutually_exclusive_group(required=True)
+    scope.add_argument("--lane", help="the lane whose diff is checked")
+    scope.add_argument(
+        "--actor-only", action="store_true", help="check only the actor-only files"
+    )
     parser.add_argument("--base", required=True, help="the base ref, normally main")
     parser.add_argument("--head", default="HEAD", help="the head ref (default HEAD)")
     parser.add_argument("--repo", type=Path, default=REPO_ROOT, help="the repository directory")
@@ -210,10 +220,14 @@ def main(argv: list[str] | None = None) -> int:
     violations = check(args.repo, ownership, args.lane, args.base, args.head)
     for violation in violations:
         print(violation)
+    subject = args.lane or "actor-only files"
     if violations:
-        print(f"{len(violations)} line(s) outside the hunks {args.lane} owns")
+        print(f"{len(violations)} violation(s) for {subject}")
         return 1
-    print(f"{args.lane}: every hunk is inside the lane's own functions")
+    if args.lane:
+        print(f"{args.lane}: every hunk is inside the lane's own functions")
+    else:
+        print("actor-only files: only actor-id literals change")
     return 0
 
 
