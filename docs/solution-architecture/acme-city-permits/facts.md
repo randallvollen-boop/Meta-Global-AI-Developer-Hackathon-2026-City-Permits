@@ -6,7 +6,7 @@ Date: 2026-10-26. Audience: internal AVA Library. No client. Architecture status
 
 Never on the page: credentials, tokens or private email; people's names or contact details; local usernames, machine paths, hostnames, IP addresses or exact hardware; client names/data/logos/scans; City of Westerville logos, portal copies or implied endorsement; real applicant, contractor, parcel, payment or permit records; raw source archives; private account screenshots; deal terms, grant balances, prize claims or submission credentials; unmeasured accuracy, savings, performance or compliance claims; hidden chain-of-thought; Contributor model use; production-readiness or tamper-proof claims.
 
-Use only fictional ACME City records and examples. Vollen Data Services text branding only; no logo of any kind. Every interface mockup says “Example with fictional data.” Retain “Internal draft. [REVIEW REQUIRED] before external use.”
+Use only fictional ACME City records and examples. Vollen Data text branding only; the page is prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme; no logo of any kind. Every interface mockup says “Example with fictional data.” Retain “Internal draft. [REVIEW REQUIRED] before external use.”
 
 ## Evidence sources
 
