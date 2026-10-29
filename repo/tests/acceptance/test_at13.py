@@ -4,6 +4,12 @@ The same effective rule and fee versions and the same citations are used
 throughout.  A resubmission preserves the initial submission date, an author
 may not approve their own rule, and an overlapping published version is
 refused without an explicit precedence.  The history is retained.
+
+Every test here runs under both approval policies.  The consistent versions,
+the preserved initial submission date, the overlap block and the retained
+history hold in both.  The self-approval clause is the one that depends on the
+policy: ``independent`` blocks it (that is the AT13 requirement), ``single``
+allows it with a confirmation and a reason and records the basis.
 """
 
 from __future__ import annotations
@@ -17,13 +23,14 @@ from sqlalchemy import select
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
-from acme_city.core.errors import PermissionDeniedError
+from acme_city.core.errors import PermissionDeniedError, ValidationError
 from acme_city.core.results import ConflictResult
 from acme_city.finance.schemas import AssessmentCommand
 from acme_city.finance.service import FinanceService
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models import finance
+from acme_city.persistence.models.audit import AuditEvent
 from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.permits.schemas import ReviseApplicationCommand
@@ -36,6 +43,13 @@ from acme_city.rules.schemas import (
 from acme_city.rules.service import RuleCatalogService
 
 BASIS = datetime(2026, 9, 8, 14, 30, tzinfo=UTC)
+
+
+@pytest.fixture(params=["independent", "single"], autouse=True)
+def mode(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
+    """Run each AT13 test under both approval policies (ACME_APPROVAL_POLICY)."""
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", request.param)
+    return request.param
 
 
 @pytest.fixture()
@@ -154,12 +168,15 @@ def test_a_resubmission_preserves_the_initial_submission_date(
         factory.dispose()
 
 
-def test_an_author_may_not_approve_their_own_rule(seeded: Settings) -> None:
+def test_an_author_may_not_approve_their_own_rule(seeded: Settings, mode: str) -> None:
+    """AT13 self-approval clause: blocked when independent, recorded when single."""
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
             catalogue = RuleCatalogService(session)
-            steward = context_for(session, "persona_data_steward")
+            # The City Administrator holds the approval grant, so in independent mode the
+            # block below is the author check and not a missing permission.
+            author = context_for(session, "persona_city_administrator")
             drafted = catalogue.draft(
                 DraftRuleCommand(
                     rule_id="CT-3",
@@ -173,7 +190,7 @@ def test_an_author_may_not_approve_their_own_rule(seeded: Settings) -> None:
                     effective_from=BASIS,
                     reason="Fictional demonstration rule.",
                 ),
-                steward,
+                author,
             )
             reviewed = catalogue.submit_for_review(
                 RuleLifecycleCommand(
@@ -181,23 +198,64 @@ def test_an_author_may_not_approve_their_own_rule(seeded: Settings) -> None:
                     expected_version=drafted.version,
                     reason="Ready for review.",
                 ),
-                steward,
+                author,
             )
-            with pytest.raises(PermissionDeniedError):
+            stored = session.execute(
+                select(finance.RuleVersion).where(
+                    finance.RuleVersion.id == drafted.value.row_id
+                )
+            ).scalar_one()
+            if mode == "independent":
+                with pytest.raises(PermissionDeniedError):
+                    catalogue.approve(
+                        RuleLifecycleCommand(
+                            rule_version_id=drafted.value.row_id,
+                            expected_version=reviewed.version,
+                            reason="Self approval.",
+                            confirm_author_approval=True,
+                        ),
+                        author,
+                    )
+                assert stored.status == "in_review"
+                return
+            # Single-administrator policy: the author needs a reason and a confirmation.
+            with pytest.raises(ValidationError):
+                catalogue.approve(
+                    RuleLifecycleCommand(
+                        rule_version_id=drafted.value.row_id,
+                        expected_version=reviewed.version,
+                        reason="",
+                        confirm_author_approval=True,
+                    ),
+                    author,
+                )
+            with pytest.raises(ValidationError):
                 catalogue.approve(
                     RuleLifecycleCommand(
                         rule_version_id=drafted.value.row_id,
                         expected_version=reviewed.version,
                         reason="Self approval.",
                     ),
-                    steward,
+                    author,
                 )
-            stored = session.execute(
-                select(finance.RuleVersion).where(
-                    finance.RuleVersion.id == drafted.value.row_id
-                )
-            ).scalar_one()
             assert stored.status == "in_review"
+            approved = catalogue.approve(
+                RuleLifecycleCommand(
+                    rule_version_id=drafted.value.row_id,
+                    expected_version=reviewed.version,
+                    reason="Self approval under the single-administrator policy.",
+                    confirm_author_approval=True,
+                ),
+                author,
+            )
+            assert stored.status == "approved"
+            event = session.execute(
+                select(AuditEvent).where(AuditEvent.id == approved.audit_event_id)
+            ).scalar_one()
+            assert event.metadata_json["approval_basis_label"] == (
+                "Approved by the author (single-administrator policy)"
+            )
+            assert event.reason == "Self approval under the single-administrator policy."
     finally:
         factory.dispose()
 

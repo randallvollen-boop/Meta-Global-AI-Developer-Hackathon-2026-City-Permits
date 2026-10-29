@@ -1,0 +1,11 @@
+{
+  "policy_version": "1",
+  "scope": "acme_city",
+  "fictional_demo": true,
+  "note": "Who may approve and publish a rule version or a fee schedule version. Set approval_policy to single or independent. The environment variable ACME_APPROVAL_POLICY overrides this value for one run.",
+  "approval_policy": "single",
+  "values": {
+    "single": "One City Administrator may take a version from draft to published, including the author, with a confirmation and a reason recorded.",
+    "independent": "The author of a version may not approve or publish it. A different administrator must do both."
+  }
+}

@@ -14,6 +14,10 @@ The authoritative requirements remain outside this repository in the ignored int
 
 `../CITY_PERMIT_ALIGNMENT.md` holds the reviewed application mapping. Do not copy the intake tree into Git, and do not modify the preserved reference application in place.
 
+## Approval policy
+
+`config/approval_policy.json` holds the one approval policy setting for rule and fee schedule versions. `single` (the default) lets one City Administrator take a version from draft to published, including the administrator who wrote it. The author confirms the approval and gives a reason, and the record says the author approved it under the single-administrator policy. `independent` keeps the author from approving or publishing their own version, which is the AT13 self-approval rule. The environment variable `ACME_APPROVAL_POLICY` overrides the file for one run. An unknown value applies `independent`. The active policy shows on Rules and fees and on the overview.
+
 ## Implementation areas
 
 - governance and source registration;

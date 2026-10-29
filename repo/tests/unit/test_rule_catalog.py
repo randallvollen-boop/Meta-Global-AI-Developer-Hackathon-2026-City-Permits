@@ -219,7 +219,12 @@ def test_a_rule_moves_through_the_governed_lifecycle(seeded: Settings) -> None:
         factory.dispose()
 
 
-def test_an_author_may_not_approve_or_publish_their_own_rule(seeded: Settings) -> None:
+@pytest.mark.parametrize("mode", ["independent", "single"])
+def test_an_author_may_not_approve_or_publish_their_own_rule(
+    seeded: Settings, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    """Blocked when independent. Under single, the author's missing approval grant still blocks it."""
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", mode)
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
@@ -248,12 +253,16 @@ def test_an_author_may_not_approve_or_publish_their_own_rule(seeded: Settings) -
                 ),
                 steward,
             )
+            # Under single the author also needs a reason and a confirmation first;
+            # the Data Steward holds no approval grant, so the grant check still refuses.
+            confirm = mode == "single"
             with pytest.raises(PermissionDeniedError):
                 service.approve(
                     RuleLifecycleCommand(
                         rule_version_id=drafted.value.row_id,
                         expected_version=reviewed.version,
                         reason="Self approval.",
+                        confirm_author_approval=confirm,
                     ),
                     steward,
                 )
@@ -425,8 +434,13 @@ def test_an_unsupported_operator_is_refused(seeded: Settings) -> None:
         factory.dispose()
 
 
-def test_a_fee_schedule_moves_through_the_governed_lifecycle(seeded: Settings) -> None:
+def test_a_fee_schedule_moves_through_the_governed_lifecycle(
+    seeded: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A fee schedule is governed exactly like a rule version."""
+    # Pinned: the steward self-approval step below is about the independent policy
+    # (approval policy setting, Randall).
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", "independent")
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:

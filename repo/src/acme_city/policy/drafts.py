@@ -13,8 +13,9 @@ The conversion:
   recorded as the draft author); no other identity is ever used;
 * goes through :class:`~acme_city.rules.service.RuleCatalogService`, so the
   drafts are ordinary draft versions that still need the existing review,
-  approval and publication, and the existing check that an author cannot
-  approve or publish their own version;
+  approval and publication, and the approval policy: under ``independent`` an
+  author cannot approve or publish their own version, under ``single`` the
+  author may, with a confirmation and a reason;
 * is **version-bound**: it needs the expected version of the run's conversion
   state (0 before, 1 after) and it refuses when a published rule or fee it was
   made against has changed since the run;
@@ -61,6 +62,7 @@ from acme_city.policy.changes import (
 )
 from acme_city.kernel.selection import published_in_force
 from acme_city.policy.views import describe_change
+from acme_city.rules import approval_policy
 from acme_city.rules.schemas import DraftFeeScheduleCommand, DraftRuleCommand
 from acme_city.rules.service import FEE_DOMAIN, RULE_DOMAIN, RuleCatalogService
 
@@ -74,8 +76,23 @@ DRAFT_OPERATORS: Final = ("min", "max", "equals")
 #: The plain reason shown wherever the author tries to approve or publish.
 OWN_VERSION_REASON: Final = "You authored this version; another administrator must approve it."
 
-#: The status wording of a converted draft.
+#: The status wording of a converted draft under the independent policy.
 HANDOFF_STATUS: Final = "Draft: needs independent approval"
+
+#: The status wording of a converted draft under the single-administrator policy.
+HANDOFF_STATUS_SINGLE: Final = "Draft: ready for your approval"
+
+
+def handoff_status() -> str:
+    """Return the status wording of a converted draft under the active approval policy."""
+    return HANDOFF_STATUS_SINGLE if approval_policy.is_single() else HANDOFF_STATUS
+
+
+def _proposed_reason(run_id: str) -> str:
+    """Return the reason recorded on a draft made from a what-if run."""
+    if approval_policy.is_single():
+        return f"Proposed by what-if run {run_id}; ready for approval by a City Administrator."
+    return f"Proposed by what-if run {run_id}; needs independent approval."
 
 KIND_RULE: Final = "rule"
 KIND_FEE: Final = "fee"
@@ -277,8 +294,19 @@ class PolicyDraftService:
                     "you_are_author": row.author_actor_id == actor.actor_id,
                     "approver_actor_id": row.approver_actor_id,
                     "domain": domain,
-                    "approvers": self.approvers(domain, exclude_actor_id=row.author_actor_id),
-                    "reason_you_cannot": OWN_VERSION_REASON if row.author_actor_id == actor.actor_id else "",
+                    "approvers": self.approvers(
+                        domain,
+                        exclude_actor_id=None if approval_policy.is_single() else row.author_actor_id,
+                    ),
+                    "reason_you_cannot": (
+                        OWN_VERSION_REASON
+                        if row.author_actor_id == actor.actor_id and not approval_policy.is_single()
+                        else ""
+                    ),
+                    "open_href": (
+                        f"/rules?tab={'rules' if item['kind'] == KIND_RULE else 'fees'}"
+                        f"&view=drafts&version={row.id}"
+                    ),
                 }
             )
         return out
@@ -433,7 +461,7 @@ class PolicyDraftService:
             message=_replace_figure(after.get("message"), old_limit, new_limit),
             condition_note=_replace_figure(after.get("condition_note"), old_limit, new_limit),
             effective_from=self._now,
-            reason=f"Proposed by what-if run {run.id}; needs independent approval.",
+            reason=_proposed_reason(run.id),
         )
         result = service.draft(command, actor)
         row = self._session.get(finance.RuleVersion, result.value.row_id)
@@ -467,7 +495,7 @@ class PolicyDraftService:
             effective_from=self._now,
             currency=after["currency"],
             definition=definition,
-            reason=f"Proposed by what-if run {run.id}; needs independent approval.",
+            reason=_proposed_reason(run.id),
         )
         result = service.draft_fee_schedule(command, actor)
         return {
@@ -481,9 +509,14 @@ class PolicyDraftService:
 
 def status_label(status: str) -> str:
     """Return the plain status of a converted draft."""
+    single = approval_policy.is_single()
     return {
-        "draft": HANDOFF_STATUS,
-        "in_review": "In review: needs independent approval",
+        "draft": handoff_status(),
+        "in_review": (
+            "In review: ready for your approval"
+            if single
+            else "In review: needs independent approval"
+        ),
         "approved": "Approved: ready for publication",
         "published": "Published",
         "retired": "Retired",
@@ -493,11 +526,13 @@ def status_label(status: str) -> str:
 __all__ = [
     "ACTION_CONVERT",
     "HANDOFF_STATUS",
+    "HANDOFF_STATUS_SINGLE",
     "OWN_VERSION_REASON",
     "PERMISSION_CONVERT",
     "DraftPlan",
     "PlanItem",
     "PolicyDraftService",
+    "handoff_status",
     "plan_for_run",
     "status_label",
 ]

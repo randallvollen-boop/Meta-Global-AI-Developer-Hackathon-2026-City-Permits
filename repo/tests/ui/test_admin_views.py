@@ -320,8 +320,10 @@ def test_the_actions_of_the_selected_version_follow_the_lifecycle_order(
 
 
 def test_an_author_is_told_that_another_administrator_must_approve(
-    session: Session,
+    session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Pinned: this test is about the independent policy (approval policy setting, Randall).
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", "independent")
     from acme_city.rules.schemas import RuleLifecycleCommand
     from acme_city.rules.service import RuleCatalogService
 
@@ -543,3 +545,103 @@ def test_the_receipt_register_is_a_separate_tab_from_the_assessment(
     assert screen["tab"] == "receipts"
     # The register holds every receipt, not only the one of the assessment.
     assert len(screen["receipts"]) > 1
+
+
+# ------------------------------------------------------------ approval policy
+
+
+def _author_in_review(session: Session):
+    """Return the Administrator, who authors CT-2@2 here and submits it for review."""
+    from acme_city.rules.schemas import RuleLifecycleCommand
+    from acme_city.rules.service import RuleCatalogService
+
+    administrator = actor_for(session, "persona_city_administrator")
+    register = admin_views.rules_register(session, administrator, tab="rules", view="drafts")
+    row = next(item for item in register["rows"] if item["version_label"] == "CT-2@2")
+    stored = session.get(finance.RuleVersion, row["row_id"])
+    assert stored is not None
+    stored.author_actor_id = administrator.actor_id
+    RuleCatalogService(session).submit_for_review(
+        RuleLifecycleCommand(
+            rule_version_id=stored.id, expected_version=stored.version, reason="fictional step"
+        ),
+        administrator,
+    )
+    session.flush()
+    return administrator, row["row_id"]
+
+
+@pytest.mark.parametrize("mode", ["independent", "single"])
+def test_the_guarded_reason_for_an_author_appears_only_in_independent_mode(
+    session: Session, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", mode)
+    administrator, row_id = _author_in_review(session)
+    register = admin_views.rules_register(
+        session, administrator, tab="rules", view="drafts", version_id=row_id
+    )
+    approve = next(item for item in register["actions"] if item["label"] == "Approve version")
+    reason = "You authored this version; another administrator must approve it."
+    assert register["approval_policy"]["line"] == (
+        "Approval policy: single administrator"
+        if mode == "single"
+        else "Approval policy: independent approval"
+    )
+    if mode == "independent":
+        assert approve["permitted"] is False and reason in approve["reason"]
+        assert reason in register["selected"]["next_action"]["reason"]
+    else:
+        assert approve["permitted"] is True
+        assert register["selected"]["next_action"]["available"] is True
+        names = [field["name"] for field in approve["fields"]]
+        assert "confirm_author_approval" in names and "reason" in names
+        assert next(f for f in approve["fields"] if f["name"] == "reason")["required"]
+        assert next(f for f in approve["fields"] if f["name"] == "confirm_author_approval")["required"]
+
+
+def test_an_approval_by_the_author_shows_its_basis_in_every_view(
+    session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from acme_city.rules.schemas import RuleLifecycleCommand
+    from acme_city.rules.service import RuleCatalogService
+
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", "single")
+    administrator, row_id = _author_in_review(session)
+    stored = session.get(finance.RuleVersion, row_id)
+    RuleCatalogService(session).approve(
+        RuleLifecycleCommand(
+            rule_version_id=row_id,
+            expected_version=stored.version,
+            reason="Agreed.",
+            confirm_author_approval=True,
+        ),
+        administrator,
+    )
+    session.flush()
+    label = "Approved by the author (single-administrator policy)"
+    register = admin_views.rules_register(
+        session, administrator, tab="rules", view="drafts", version_id=row_id
+    )
+    assert label in register["selected"]["states"]["approval"]
+    assert any(event["basis"] == label for event in register["selected"]["history"])
+    history = admin_views.rules_register(session, administrator, tab="rules", view="history")
+    assert any(event["basis"] == label for event in history["history"])
+    from acme_city.ops import audit_log
+
+    rows = audit_log.audit_log(session, action="rule.version.approve")["rows"]
+    assert [row["basis"] for row in rows] == [label]
+
+
+@pytest.mark.parametrize("mode", ["independent", "single"])
+def test_the_overview_card_follows_the_approval_policy(
+    session: Session, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", mode)
+    overview = admin_views.planning_overview(
+        session, actor_for(session, "persona_city_administrator")
+    )
+    changes = overview["changes"]
+    expected = "single administrator" if mode == "single" else "independent approval"
+    assert changes["approval_policy"]["line"] == f"Approval policy: {expected}"
+    texts = {entry["status"]: entry["next_step"] for entry in changes["entries"]}
+    assert texts["draft"] == "Submit for review"

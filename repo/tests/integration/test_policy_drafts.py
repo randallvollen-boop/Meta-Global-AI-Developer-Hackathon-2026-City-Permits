@@ -147,7 +147,11 @@ def fence_run_through_the_screens(client: TestClient) -> tuple[str, str]:
 # ------------------------------------------------------------ the headline demo
 
 
-def test_headline_demo_run_to_draft_needs_independent_approval(client, settings) -> None:
+def test_headline_demo_run_to_draft_needs_independent_approval(
+    client, settings, monkeypatch
+) -> None:
+    # Pinned: this test is about the independent policy (approval policy setting, Randall).
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", "independent")
     _, run_path = fence_run_through_the_screens(client)
     run_id = run_path.rsplit("/", 1)[1]
     factory = open_factory(settings)
@@ -225,7 +229,11 @@ def test_headline_demo_run_to_draft_needs_independent_approval(client, settings)
     factory.dispose()
 
 
-def test_the_service_itself_refuses_self_approval_and_self_publication(settings) -> None:
+@pytest.mark.parametrize("mode", ["independent", "single"])
+def test_the_service_itself_refuses_self_approval_and_self_publication(
+    settings, monkeypatch, mode
+) -> None:
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", mode)
     factory = open_factory(settings)
     with transaction(factory) as session:
         admin = actor_context(session, ADMIN)
@@ -238,10 +246,54 @@ def test_the_service_itself_refuses_self_approval_and_self_publication(settings)
         catalogue.submit_for_review(
             RuleLifecycleCommand(rule_version_id=draft_id, expected_version=1, reason="x"), admin
         )
-        with pytest.raises(PermissionDeniedError):
-            catalogue.approve(RuleLifecycleCommand(rule_version_id=draft_id, expected_version=2, reason="x"), admin)
-        with pytest.raises(PermissionDeniedError):
-            catalogue.publish(PublishRuleCommand(rule_version_id=draft_id, expected_version=2, reason="x"), admin)
+        if mode == "independent":
+            with pytest.raises(PermissionDeniedError):
+                catalogue.approve(
+                    RuleLifecycleCommand(rule_version_id=draft_id, expected_version=2, reason="x"), admin
+                )
+            with pytest.raises(PermissionDeniedError):
+                catalogue.publish(
+                    PublishRuleCommand(rule_version_id=draft_id, expected_version=2, reason="x"), admin
+                )
+        else:
+            # Single: allowed, but only with a reason and an explicit confirmation.
+            with pytest.raises(ValidationError):
+                catalogue.approve(
+                    RuleLifecycleCommand(rule_version_id=draft_id, expected_version=2, reason="x"), admin
+                )
+            with pytest.raises(ValidationError):
+                catalogue.approve(
+                    RuleLifecycleCommand(
+                        rule_version_id=draft_id, expected_version=2, reason="", confirm_author_approval=True
+                    ),
+                    admin,
+                )
+            approved = catalogue.approve(
+                RuleLifecycleCommand(
+                    rule_version_id=draft_id, expected_version=2, reason="fence limit agreed",
+                    confirm_author_approval=True,
+                ),
+                admin,
+            )
+            published = catalogue.publish(
+                PublishRuleCommand(
+                    rule_version_id=draft_id, expected_version=approved.version, reason="in force",
+                    precedence="newest_effective_from",
+                ),
+                admin,
+            )
+            assert published.value.status == "published"
+            events = session.execute(
+                select(audit_models.AuditEvent).where(
+                    audit_models.AuditEvent.target_id == draft_id,
+                    audit_models.AuditEvent.action.in_(("rule.version.approve", "rule.version.publish")),
+                )
+            ).scalars().all()
+            labels = {e.action: e.metadata_json["approval_basis_label"] for e in events}
+            assert labels == {
+                "rule.version.approve": "Approved by the author (single-administrator policy)",
+                "rule.version.publish": "Published by the author (single-administrator policy)",
+            }
     factory.dispose()
 
 
@@ -451,7 +503,9 @@ def test_a_changed_published_rule_stops_the_conversion(settings) -> None:
     factory.dispose()
 
 
-def test_a_fee_draft_still_needs_another_person_to_approve_it(settings) -> None:
+@pytest.mark.parametrize("mode", ["independent", "single"])
+def test_a_fee_draft_still_needs_another_person_to_approve_it(settings, monkeypatch, mode) -> None:
+    monkeypatch.setenv("ACME_APPROVAL_POLICY", mode)
     factory = open_factory(settings)
     with transaction(factory) as session:
         admin = actor_context(session, ADMIN)
@@ -463,11 +517,44 @@ def test_a_fee_draft_still_needs_another_person_to_approve_it(settings) -> None:
         catalogue.submit_fee_schedule_for_review(
             FeeScheduleLifecycleCommand(fee_schedule_version_id=fee_id, expected_version=1, reason="x"), admin
         )
-        with pytest.raises(PermissionDeniedError):
-            catalogue.approve_fee_schedule(
-                FeeScheduleLifecycleCommand(fee_schedule_version_id=fee_id, expected_version=2, reason="x"), admin
-            )
         view = PolicyDraftService(session, now=NOW).drafts_view(admin, conversion)[0]
-        assert view["you_are_author"] and view["reason_you_cannot"] == OWN_VERSION_REASON
-        assert all(item["actor_id"] != ADMIN for item in view["approvers"])
+        assert view["you_are_author"]
+        if mode == "independent":
+            with pytest.raises(PermissionDeniedError):
+                catalogue.approve_fee_schedule(
+                    FeeScheduleLifecycleCommand(fee_schedule_version_id=fee_id, expected_version=2, reason="x"),
+                    admin,
+                )
+            with pytest.raises(PermissionDeniedError):
+                catalogue.publish_fee_schedule(
+                    FeeScheduleLifecycleCommand(fee_schedule_version_id=fee_id, expected_version=2, reason="x"),
+                    admin,
+                )
+            assert view["reason_you_cannot"] == OWN_VERSION_REASON
+            assert all(item["actor_id"] != ADMIN for item in view["approvers"])
+            assert view["status_label"] == "In review: needs independent approval"
+        else:
+            with pytest.raises(ValidationError):
+                catalogue.approve_fee_schedule(
+                    FeeScheduleLifecycleCommand(fee_schedule_version_id=fee_id, expected_version=2, reason="x"),
+                    admin,
+                )
+            approved = catalogue.approve_fee_schedule(
+                FeeScheduleLifecycleCommand(
+                    fee_schedule_version_id=fee_id, expected_version=2, reason="rate agreed",
+                    confirm_author_approval=True,
+                ),
+                admin,
+            )
+            published = catalogue.publish_fee_schedule(
+                FeeScheduleLifecycleCommand(
+                    fee_schedule_version_id=fee_id, expected_version=approved.version, reason="in force",
+                    effective_to=None, precedence="newest_effective_from",
+                ),
+                admin,
+            )
+            assert published.value.status == "published"
+            assert view["reason_you_cannot"] == ""
+            assert view["status_label"] == "In review: ready for your approval"
+            assert any(item["actor_id"] == ADMIN for item in view["approvers"])
     factory.dispose()

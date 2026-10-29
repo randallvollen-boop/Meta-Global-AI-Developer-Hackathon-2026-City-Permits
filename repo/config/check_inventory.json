@@ -190,11 +190,16 @@
         "tests/acceptance/test_at08.py::test_at08_a_refused_correction_keeps_the_accepted_source_value",
         "tests/acceptance/test_at08.py::test_at08_the_lifecycle_is_server_decided_and_the_outbox_survives_a_restart",
         "tests/acceptance/test_at08.py::test_at08_the_outbox_worker_survives_a_restart_and_stays_idempotent",
-        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
-        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
-        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
-        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
-        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[independent]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[single]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[independent]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[single]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[independent]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[single]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[independent]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[single]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[independent]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[single]"
       ]
     },
     {
@@ -916,11 +921,16 @@
         "AT13"
       ],
       "node_ids": [
-        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
-        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
-        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
-        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
-        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[independent]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[single]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[independent]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[single]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[independent]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[single]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[independent]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[single]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[independent]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[single]"
       ]
     },
     {
@@ -934,11 +944,16 @@
         "AT13"
       ],
       "node_ids": [
-        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
-        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
-        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
-        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
-        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[independent]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[single]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[independent]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[single]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[independent]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[single]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[independent]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[single]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[independent]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[single]"
       ]
     },
     {
@@ -952,11 +967,16 @@
         "AT13"
       ],
       "node_ids": [
-        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
-        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
-        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
-        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule",
-        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions"
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[independent]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[single]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[independent]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[single]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[independent]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[single]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[independent]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[single]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[independent]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[single]"
       ]
     },
     {
@@ -1360,11 +1380,16 @@
       "title": "the rule versions, the citations and the dates stay consistent",
       "expected": "the rule versions, the citations and the dates stay consistent",
       "node_ids": [
-        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions",
-        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date",
-        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule",
-        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused",
-        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule"
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[independent]",
+        "tests/acceptance/test_at13.py::test_the_evaluation_and_the_assessment_use_the_same_versions[single]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[independent]",
+        "tests/acceptance/test_at13.py::test_a_resubmission_preserves_the_initial_submission_date[single]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[independent]",
+        "tests/acceptance/test_at13.py::test_an_author_may_not_approve_their_own_rule[single]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[independent]",
+        "tests/acceptance/test_at13.py::test_an_overlapping_published_version_is_refused[single]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[independent]",
+        "tests/acceptance/test_at13.py::test_the_catalogue_retains_one_citation_per_rule[single]"
       ],
       "evidence_refs": [
         "fee_commercial_demo:2026.1",

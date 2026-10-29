@@ -130,6 +130,10 @@
       "label": "Date basis",
       "text": "The rule or fee version that applies to an application is chosen on its initial submission time. A later revision of the application does not switch the schedule, and publishing a new version never changes a decision or an assessment that was already made."
     },
+    "approval_policy": {
+      "label": "Approval policy",
+      "text": "Single administrator: one City Administrator can take a rule or fee change from draft to published, including the administrator who wrote it. The author confirms the approval and gives a reason, and the record says it was approved by the author. Independent approval: the author of a version cannot approve or publish it, and a different administrator must do both. The city sets this in config/approval_policy.json, and the ACME_APPROVAL_POLICY environment variable overrides it for one run."
+    },
     "assigned_approver": {
       "label": "Assigned approver",
       "text": "The accountable owner of the domain the version belongs to. It names who is responsible for approving. Whether the version was approved is a separate fact, recorded as an event with an approver and a date."

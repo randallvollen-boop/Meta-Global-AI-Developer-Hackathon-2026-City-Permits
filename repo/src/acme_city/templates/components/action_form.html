@@ -33,6 +33,10 @@
     {% for field in item.fields %}
       {% if field.type == 'hidden' %}
         <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      {% elif field.type == 'checkbox' %}
+        <p class="field">
+          <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}"><input id="{{ item.dom_id or item.action_id }}-{{ field.name }}" type="checkbox" name="{{ field.name }}" value="1" {% if field.required %}required{% endif %}> {{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
+        </p>
       {% elif field.type == 'select' %}
         <p class="field">
           <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% else %} <span class="optional-tag">(optional)</span>{% endif %}</label>

@@ -43,11 +43,12 @@ from acme_city.policy import briefing as briefing_module
 from acme_city.policy import runs as runs_module
 from acme_city.policy import views
 from acme_city.policy.drafts import (
-    HANDOFF_STATUS,
     OWN_VERSION_REASON,
     PERMISSION_CONVERT,
     PolicyDraftService,
+    handoff_status,
 )
+from acme_city.rules import approval_policy
 from acme_city.policy.service import (
     PERMISSION_BRIEF_VIEW,
     PERMISSION_EXECUTE,
@@ -86,9 +87,23 @@ NOTICES = {
     "saved": "A new revision of the what-if was saved.",
     "deleted": "The what-if was deleted. The runs made from it are kept.",
     "muse": "The Muse answer was recorded. Its source and its checks are shown below.",
-    "drafted": "Saved as a draft rule change. It needs independent approval; nothing published has changed.",
     "drafted_again": "This run was already saved as a draft. Nothing new was made.",
 }
+
+
+def _notice_text(key: str) -> str:
+    """Return the notice of a key; the "drafted" notice follows the approval policy."""
+    if key == "drafted":
+        if approval_policy.is_single():
+            return (
+                "Saved as a draft rule change. It is ready for your approval; "
+                "nothing published has changed."
+            )
+        return (
+            "Saved as a draft rule change. It needs independent approval; "
+            "nothing published has changed."
+        )
+    return NOTICES.get(key, "")
 
 
 def _expected_version(form: Any) -> int:
@@ -193,7 +208,7 @@ def ui_policy_scenarios(
         first_suggestion=FENCE_KEY,
         starting=starting,
         starting_text=_starting_text(starting),
-        notice=NOTICES.get(notice, ""),
+        notice=_notice_text(notice),
         model_runs=[],
         propose=_propose_panel(request, session, resolved),
         evidence=[
@@ -346,7 +361,7 @@ def ui_policy_scenario(
         },
         starting_text=_starting_text(spec_defaults),
         can_run=can_run,
-        notice=NOTICES.get(notice, ""),
+        notice=_notice_text(notice),
         model_runs=[],
         evidence=[
             {
@@ -481,7 +496,7 @@ def ui_policy_run(
         can_brief=can_brief,
         explain=explain,
         draft_panel=draft_panel,
-        notice=NOTICES.get(notice, ""),
+        notice=_notice_text(notice),
         model_runs=[],
         evidence=[
             {
@@ -517,8 +532,9 @@ def _draft_panel(session: Session, actor: ActorContext, run: Any) -> dict[str, A
             "author": conversion.converted_by_actor_id,
             "drafts": service.drafts_view(actor, conversion),
         },
-        "status_text": HANDOFF_STATUS,
+        "status_text": handoff_status(),
         "own_reason": OWN_VERSION_REASON,
+        "single": approval_policy.is_single(),
     }
 
 
@@ -579,7 +595,7 @@ def ui_policy_briefing(
         briefing=briefing,
         run_id=run.id,
         muse=muse_panel,
-        notice=NOTICES.get(notice, ""),
+        notice=_notice_text(notice),
         model_runs=[],
         evidence=[
             {

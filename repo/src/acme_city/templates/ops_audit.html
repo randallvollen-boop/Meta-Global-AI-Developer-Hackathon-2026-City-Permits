@@ -47,7 +47,7 @@
         <td><span class="ops-badge {{ r.actor_type }}" data-testid="audit-actor-type">{{ r.actor_type }}</span></td>
         <td class="mono">{{ r.action }}</td>
         <td>{% if r.target_type %}{% if r.href %}<a href="{{ r.href }}" data-testid="audit-record-link">{{ r.target_type }} {{ r.target_id }}</a>{% else %}<span data-testid="audit-record-text">{{ r.target_type }} {{ r.target_id }}</span>{% endif %}{% else %}<span class="muted">none</span>{% endif %}</td>
-        <td>{{ r.outcome }}<br><span class="muted">version {{ r.versions }}</span></td>
+        <td>{{ r.outcome }}<br><span class="muted">version {{ r.versions }}</span>{% if r.basis %}<br><span data-testid="audit-basis">{{ r.basis }}</span>{% endif %}</td>
         <td>{{ ui.detail_link('audit-event', r.event_id, 'Details') }}</td>
       </tr>
       {% else %}
