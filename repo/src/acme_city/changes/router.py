@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
-from acme_city.auth.router import get_actor, get_session
+from acme_city.auth.router import get_actor, get_internal_reader, get_session, holds_internal_view
 from acme_city.changes.dispatcher import ChangeDispatcher
 from acme_city.changes.schemas import (
     ChangeRequestCommand,
@@ -72,6 +72,9 @@ def list_change_cases(
 ) -> dict:
     """List the change cases, optionally by state or target."""
     statement = select(change.ChangeCase)
+    if not holds_internal_view(session, actor):
+        # Without an internal-view grant a caller sees only the changes it requested.
+        statement = statement.where(change.ChangeCase.requester_actor_id == actor.actor_id)
     if status:
         statement = statement.where(change.ChangeCase.status == status)
     if target_id:
@@ -93,7 +96,9 @@ def get_change_case(
 ) -> dict:
     """Return one change case with its commands, dependencies and tasks."""
     case = session.get(change.ChangeCase, change_case_id)
-    if case is None:
+    if case is None or (
+        case.requester_actor_id != actor.actor_id and not holds_internal_view(session, actor)
+    ):
         raise NotFoundError(f"no change case {change_case_id!r} exists")
     service = change_service(session)
     return service.case_view(case).model_dump(mode="json")
@@ -119,7 +124,7 @@ def transition_change_case(
 def preview_change_case_impact(
     change_case_id: str,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show the records that a change case would affect."""
     case = session.get(change.ChangeCase, change_case_id)
@@ -141,7 +146,7 @@ def preview_change_case_impact(
 def preview_change_impact(
     command: ImpactPreviewCommand,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show which records a change would affect before it is approved."""
     service = change_service(session)

@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
-from acme_city.auth.router import get_actor, get_session
+from acme_city.auth.router import get_actor, get_internal_reader, get_session
 from acme_city.core.errors import NotFoundError
 from acme_city.core.results import ConflictResult
 from acme_city.registry.provenance import crosswalk_view
@@ -81,7 +81,7 @@ def list_source_links(
     source_record_id: str | None = None,
     entity_id: str | None = None,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the source links, optionally for one source record or entity."""
     statement = select(registry.Crosswalk)
@@ -104,7 +104,7 @@ def list_source_link_history(
     source_system_id: str,
     source_record_id: str,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return every decision of one source record, oldest first."""
     service = registry_service(session)
@@ -116,7 +116,7 @@ def list_source_link_history(
 def get_trusted_view(
     entity_id: str,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return the trusted view of one canonical entity."""
     service = registry_service(session)

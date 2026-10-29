@@ -18,7 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
+from acme_city.auth.permissions import PermissionResolver
 from acme_city.auth.service import SessionService
+from acme_city.core.errors import PermissionDeniedError
 from acme_city.persistence.models import governance
 
 router = APIRouter(prefix="/api/session", tags=["session"])
@@ -54,6 +56,52 @@ def get_actor(
     """Resolve the acting actor from the server-held session."""
     settings = request.app.state.settings
     return SessionService(session, settings).resolve_actor(request)
+
+
+#: Permissions that mark an actor as internal staff for the read surfaces that
+#: expose source payloads, links, change cases and governance metadata.  An
+#: applicant never holds one of them, so an applicant session cannot read these.
+INTERNAL_VIEW_PERMISSIONS = frozenset(
+    {
+        "registry.provenance.view",
+        "registry.crosswalk.propose",
+        "registry.crosswalk.decide",
+        "change.case.transition",
+        "source.snapshot.stage",
+        "source.record.update",
+        "source.quarantine.resolve",
+        "governance.assignment.manage",
+        "governance.authority_policy.manage",
+        "governance.dataset.register",
+        "governance.queue.manage",
+        "records.audit.view",
+        "records.configuration.view",
+        "admin.health.view",
+    }
+)
+
+
+def holds_internal_view(session: Session, actor: ActorContext) -> bool:
+    """Return whether the persisted grants of ``actor`` include an internal-view permission."""
+    grants = PermissionResolver(session).grants_for(actor.actor_id)
+    return any(grant.action in INTERNAL_VIEW_PERMISSIONS for grant in grants)
+
+
+def get_internal_reader(
+    request: Request, session: Session = Depends(get_session)
+) -> ActorContext:
+    """Resolve the actor and require an internal-view permission.
+
+    The persisted grants decide; a role label or request field never does.
+    """
+    actor = get_actor(request, session)
+    if not holds_internal_view(session, actor):
+        raise PermissionDeniedError(
+            f"actor {actor.actor_id} may not read internal records",
+            actor_id=actor.actor_id,
+            action="records.internal.view",
+        )
+    return actor
 
 
 def session_service(request: Request, session: Session) -> SessionService:

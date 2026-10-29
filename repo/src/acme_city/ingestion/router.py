@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.adapters.sources.base import SourceCommand, adapter_for, available_adapters
 from acme_city.auth.context import ActorContext
-from acme_city.auth.router import get_actor, get_session
+from acme_city.auth.router import get_actor, get_internal_reader, get_session
 from acme_city.ingestion.schemas import (
     IngestCommand,
     QuarantineErrorView,
@@ -38,7 +38,7 @@ def ingestion_service(session: Session) -> IngestionService:
 @router.get("/systems", operation_id="list_source_systems")
 def list_source_systems(
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the simulated source systems and the internal components."""
     rows = session.execute(
@@ -125,7 +125,7 @@ def list_source_snapshots(
     status: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the preserved raw snapshots of a dataset."""
     statement = select(source.SourceSnapshot).where(
@@ -170,7 +170,7 @@ def list_source_observations(
     dataset_key: str,
     limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the counted observations of a dataset with their denominators."""
     rows = session.execute(
@@ -209,7 +209,7 @@ def list_source_quarantine_errors(
     dataset_key: str,
     limit: int = Query(default=100, ge=1, le=500),
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the recorded field errors of the quarantined records of a dataset."""
     rows = session.execute(
