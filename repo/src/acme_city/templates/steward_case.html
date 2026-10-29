@@ -8,7 +8,7 @@
 
 {% block content %}
 {% set c = case %}
-<p class="crumb"><a href="/steward">&larr; Data issues</a></p>
+<p class="crumb"><a href="{{ back_href or '/steward' }}">&larr; Data issues</a></p>
 <div class="page-head">
   <div>
     <h1 data-testid="case-title">{{ c.title }}</h1>

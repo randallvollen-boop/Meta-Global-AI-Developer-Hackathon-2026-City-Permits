@@ -43,6 +43,7 @@ from acme_city.ui.router import (
     error_response,
     page_context,
     render,
+    safe_next,
     ui_actor,
 )
 
@@ -295,12 +296,33 @@ def ui_steward_review(
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
     filter: str = "needs_review",
+    q: str = "",
+    record_type: str = "",
+    source: str = "",
+    page: int = 1,
 ) -> Any:
-    """Show Data issues, the steward's queue, with the real count behind each filter."""
+    """Show the work queue: the search, the filters, the views and the rows.
+
+    Every value arrives in the address of the request, so a steward can
+    bookmark a queue, send it to a colleague and come back to it from a
+    case with the same search, the same filters and the same page.
+    """
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    queue = steward_views.data_issues(session, resolved, filter_key=filter)
+    return_path = str(request.url.path)
+    if request.url.query:
+        return_path = f"{return_path}?{request.url.query}"
+    queue = steward_views.data_issues(
+        session,
+        resolved,
+        filter_key=filter,
+        query=q,
+        record_type=record_type,
+        source=source,
+        page=page,
+        return_path=return_path,
+    )
     # The parcel decisions are made inside each focused case; the queue page
     # keeps the generic "work from a source record" forms.
     actions = _role_reasons(
@@ -334,6 +356,7 @@ def ui_steward_case(
     request: Request,
     session: Session = Depends(get_session),
     actor: ActorContext | None = Depends(ui_actor),
+    back: str = "",
 ) -> Any:
     """Show one focused case: the problem, why it matters, the comparison, the evidence, the preview and the result."""
     resolved, refused = _guard(request, session, actor, "steward")
@@ -355,6 +378,11 @@ def ui_steward_case(
     confirmation = ""
     if feedback and feedback.get("outcome") == "accepted" and feedback.get("target_id") in case["target_ids"]:
         confirmation = str(feedback.get("reason") or "")
+    # The case keeps the address of the queue it was opened from, so an action
+    # that returns to the case returns to the same search, filters and page.
+    case_path = str(request.url.path)
+    if request.url.query:
+        case_path = f"{case_path}?{request.url.query}"
     context = page_context(
         request,
         session,
@@ -362,8 +390,9 @@ def ui_steward_case(
         screen="steward",
         title=f"Data issue: {case['title']}",
         case=case,
-        case_path=request.url.path,
+        case_path=case_path,
         confirmation=confirmation,
+        back_href=safe_next(back, "/steward"),
         help_screen="steward",
         quiet_feedback=True,
     )

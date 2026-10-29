@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
 {% import "components/action_form.html" as forms %}
+{% import "components/steward.html" as st with context %}
 
 {% block content %}
 <div class="page-head">
@@ -13,14 +14,56 @@
 
 {% if confirmation %}<p class="case-confirmation" role="status" data-testid="queue-confirmation">{{ confirmation }}</p>{% endif %}
 
+<form class="queue-search" method="get" action="/steward" role="search" data-testid="queue-search">
+  <label for="queue-query">Search records</label>
+  <input type="search" id="queue-query" name="q" value="{{ queue.query }}" placeholder="Name, address, or reference" data-testid="queue-search-input">
+  {% if queue.filter != 'needs_review' %}<input type="hidden" name="filter" value="{{ queue.filter }}">{% endif %}
+  {% if queue.record_type %}<input type="hidden" name="record_type" value="{{ queue.record_type }}">{% endif %}
+  {% if queue.source %}<input type="hidden" name="source" value="{{ queue.source }}">{% endif %}
+  <button type="submit" class="button btn" data-testid="queue-search-submit">Search</button>
+</form>
+
 <nav class="tabs issue-filters" aria-label="Data issue filters" data-testid="issue-filters">
   {% for f in queue.filters %}
   <a href="{{ f.href }}" data-testid="issue-filter" data-filter="{{ f.key }}"{% if f.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ f.label }} <span class="n" data-testid="issue-filter-count">{{ f.count }}</span></a>
   {% endfor %}
 </nav>
 
+<details class="queue-filters" data-testid="queue-filters"{% if queue.record_type or queue.source %} open{% endif %}>
+  <summary>More filters</summary>
+  <form class="queue-filter-form" method="get" action="/steward" data-testid="queue-filter-form">
+    {% if queue.filter != 'needs_review' %}<input type="hidden" name="filter" value="{{ queue.filter }}">{% endif %}
+    {% if queue.query %}<input type="hidden" name="q" value="{{ queue.query }}">{% endif %}
+    <div class="field">
+      <label for="queue-record-type">Record type</label>
+      <select id="queue-record-type" name="record_type" data-testid="queue-record-type">
+        <option value="">Every record type</option>
+        {% for option in queue.record_types %}
+        <option value="{{ option.value }}"{% if option.active %} selected{% endif %}>{{ option.label }} ({{ option.count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="queue-source">Source</label>
+      <select id="queue-source" name="source" data-testid="queue-source">
+        <option value="">Every source</option>
+        {% for option in queue.sources %}
+        <option value="{{ option.value }}"{% if option.active %} selected{% endif %}>{{ option.label }} ({{ option.count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="queue-filter-actions">
+      <button type="submit" class="button btn" data-testid="queue-filter-submit">Apply filters</button>
+      {% if queue.record_type or queue.source %}<a class="button button-quiet btn" href="{{ queue.clear_href }}" data-testid="queue-filter-clear">Clear filters</a>{% endif %}
+    </div>
+  </form>
+</details>
+
 <section class="panel" aria-labelledby="issues-heading">
   <h2 id="issues-heading" class="visually-hidden">{{ (queue.filters|selectattr('active')|first).label }}</h2>
+  {% if queue.query or queue.record_type or queue.source %}
+  <p class="queue-summary" data-testid="queue-summary">{{ queue.matched }} of {{ queue.total }} tasks match.</p>
+  {% endif %}
   <table class="data-table issue-table" data-testid="issue-table">
     <caption class="visually-hidden">Data issues: {{ (queue.filters|selectattr('active')|first).label }}</caption>
     <thead>
@@ -41,7 +84,7 @@
         <th scope="row"><a href="{{ row.href }}" data-testid="issue-link">{{ row.title }}</a></th>
         <td>{% if row.record_ref %}{% set parts = row.record_ref.split(':', 1) %}{{ ui.detail_link(parts[0], parts[1], row.record) }}{% else %}{{ row.record }}{% endif %}</td>
         <td>{% for app in row.applications[:3] %}<a href="{{ app.href }}">{{ app.number }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="muted">None open</span>{% endfor %}{% if row.applications|length > 3 %} <span class="muted">+{{ row.applications|length - 3 }} more</span>{% endif %}</td>
-        <td>{{ row.source }}</td>
+        <td>{{ row.source }}{% if row.source_reference %}<span class="queue-reference" data-testid="issue-reference">{{ row.source_reference }}</span>{% endif %}</td>
         <td class="nowrap"><span class="pill {{ 'ok' if row.status_key == 'resolved' else 'warn' if row.status_key == 'awaiting_source' else 'bad' }}" data-testid="issue-status">{{ row.status }}</span></td>
         {% if queue.show_assignment %}<td>{{ row.assignee or 'Unassigned' }}</td>{% endif %}
         {% if queue.show_age %}<td class="nowrap">{{ row.age }}</td>{% endif %}
@@ -49,7 +92,8 @@
       </tr>
       {% else %}
       <tr><td colspan="{{ 5 + (1 if queue.show_assignment else 0) + (1 if queue.show_age else 0) + (1 if queue.show_priority else 0) }}" class="muted" data-testid="queue-empty">
-        {% if queue.filter == 'needs_review' %}Nothing needs review. Compare a source record below to start a match.
+        {% if queue.query or queue.record_type or queue.source %}No task matches the search and the filters.
+        {% elif queue.filter == 'needs_review' %}Nothing needs review. Compare a source record below to start a match.
         {% elif queue.filter == 'assigned_to_me' %}Nothing is assigned to you.
         {% elif queue.filter == 'awaiting_source' %}Nothing is waiting for a source.
         {% else %}No issue has been resolved yet.{% endif %}
@@ -57,6 +101,7 @@
       {% endfor %}
     </tbody>
   </table>
+  {{ st.pager(queue.paging) }}
 </section>
 
 <section class="panel card" aria-labelledby="by-record-heading" data-testid="work-by-source-record">

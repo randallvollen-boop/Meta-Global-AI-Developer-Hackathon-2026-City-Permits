@@ -1472,7 +1472,17 @@ def _ref(kind: str, item_id: str | None) -> str:
     return f"{kind}:{item_id}" if item_id else ""
 
 
-def data_issues(session: Session, actor: ActorContext, *, filter_key: str = "needs_review") -> dict[str, Any]:
+def data_issues(
+    session: Session,
+    actor: ActorContext,
+    *,
+    filter_key: str = "needs_review",
+    query: str = "",
+    record_type: str = "",
+    source: str = "",
+    page: int = 1,
+    return_path: str = "",
+) -> dict[str, Any]:
     """Return the work queue with the real count behind every view.
 
     The projection lives in ``steward_queue_views``: it turns the collected
@@ -1491,6 +1501,11 @@ def data_issues(session: Session, actor: ActorContext, *, filter_key: str = "nee
         view_key=filter_key,
         actor_id=actor.actor_id,
         labels=labels,
+        query=query,
+        record_type=record_type,
+        source=source,
+        page=page,
+        return_path=return_path,
     )
 
 
