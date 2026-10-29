@@ -188,7 +188,7 @@ def city_context(
 @router.get("/", operation_id="city_home", include_in_schema=False)
 def city_home(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """The home page of the City website."""
@@ -201,7 +201,7 @@ def city_home(
 @router.get("/permits", operation_id="city_permits", include_in_schema=False)
 def city_permits(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """Permits and applications: where an applicant starts or resumes.
@@ -263,7 +263,7 @@ def city_community(
     q: str = "",
     type: str = "",
     format: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """Permits in my community: public lookup and district totals (read-only)."""
@@ -318,7 +318,7 @@ def city_community_permit(
     format: str = "",
     q: str = "",
     type: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """One public permit record.  A non-public case answers exactly like a missing one."""
@@ -366,7 +366,7 @@ def city_community_permit(
 def city_service_page(
     slug: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """One informational page of the City website."""

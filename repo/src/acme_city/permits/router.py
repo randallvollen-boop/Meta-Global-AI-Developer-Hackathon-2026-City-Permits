@@ -80,7 +80,7 @@ def _load_visible_application(
 
 @router.get("/applications", operation_id="list_applications")
 def list_applications(
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """List the applications the actor may see."""
@@ -106,7 +106,7 @@ def list_applications(
 @router.post("/applications", operation_id="submit_application")
 def submit_application(
     command: SubmitApplicationCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Submit an application and record its first immutable revision."""
@@ -117,7 +117,7 @@ def submit_application(
 @router.get("/applications/{application_id}", operation_id="get_application")
 def get_application(
     application_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return an application and its latest submitted revision."""
@@ -130,7 +130,7 @@ def get_application(
 def revise_application(
     application_id: str,
     command: ReviseApplicationCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Create a new submitted revision of an application."""
@@ -154,7 +154,7 @@ def revise_application(
 @router.post("/applications/{application_id}/evaluate", operation_id="evaluate_application")
 def evaluate_application(
     application_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Evaluate the current revision against the selected rule versions."""
@@ -167,7 +167,7 @@ def evaluate_application(
 )
 def list_evaluations(
     application_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return the evaluations of an application."""
@@ -189,7 +189,7 @@ def list_evaluations(
 def decide_application(
     application_id: str,
     command: PermitDecisionCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Record an actual reviewer decision.
@@ -220,7 +220,7 @@ def decide_application(
 def reconfirm_application(
     application_id: str,
     command: PermitDecisionCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Record a reviewer reconfirmation of a stale decision.
@@ -248,7 +248,7 @@ def reconfirm_application(
 def issue_permit(
     application_id: str,
     command: IssuePermitCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Issue a simulated permit from a current approved decision."""
@@ -272,7 +272,7 @@ def issue_permit(
 )
 def list_document_versions(
     application_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return the stored document versions of an application."""
@@ -287,7 +287,7 @@ async def store_document_version(
     application_id: str,
     document_type: str = Form(...),
     file: UploadFile = File(...),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Store one document version with the bytes that were received."""
@@ -306,7 +306,7 @@ async def store_document_version(
 @router.get("/documents/{document_id}/content", operation_id="download_document_version")
 def download_document_version(
     document_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> Response:
     """Return the bytes of one stored document version."""
@@ -329,7 +329,7 @@ def download_document_version(
 )
 def list_application_comments(
     application_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return the comments of an application the actor may read.
@@ -344,7 +344,7 @@ def list_application_comments(
 @router.get("/comments/{comment_id}", operation_id="get_application_comment")
 def get_application_comment(
     comment_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return one comment of an application the actor may read.
@@ -365,7 +365,7 @@ def get_application_comment(
 @router.post("/impacts", operation_id="apply_change_impact")
 def apply_change_impact(
     command: ChangeImpactCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Apply the impact of a source or catalogue change to the permit history."""
