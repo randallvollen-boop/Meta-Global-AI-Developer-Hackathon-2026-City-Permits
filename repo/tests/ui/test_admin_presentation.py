@@ -1,0 +1,150 @@
+"""The presentation primitives of the administration area.
+
+The shared macros and the operations helpers decide how a screen reads, never
+what it says: they add a label, a group or a disclosure around the values the
+view model already holds.  These checks prove that the primitives render the
+markup the screens expect, that the plain labels replace the technical ones
+and that the scope of the figures is always named.
+"""
+# REQUIRES: UX-01
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
+from acme_city.ui import ops_views
+
+TEMPLATES = Path(__file__).resolve().parents[2] / "src" / "acme_city" / "templates"
+
+
+def _environment() -> Environment:
+    """Return an environment that loads the templates of the application."""
+    return Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
+
+
+def _render(source: str) -> str:
+    """Render one source that uses the shared macros."""
+    template = _environment().from_string(
+        "{% import 'components/admin_patterns.html' as adm %}" + source
+    )
+    return template.render()
+
+
+# ------------------------------------------------------------- the macros
+
+
+def test_the_scope_note_names_the_scope_of_a_figure() -> None:
+    html = _render("{{ adm.scope_note('Sample history excluded.', 'adm-note') }}")
+    assert 'class="adm-scope-note"' in html
+    assert 'data-testid="adm-note"' in html
+    assert "Sample history excluded." in html
+
+
+def test_the_status_summary_shows_every_state_with_its_tone() -> None:
+    html = _render(
+        "{{ adm.status_summary([{'label': 'Approved', 'value': 3, 'tone': 'ok'}], 'adm-states') }}"
+    )
+    assert 'class="adm-status-summary"' in html
+    assert 'class="adm-status adm-status--ok"' in html
+    assert "Approved" in html and "3" in html
+
+
+def test_a_state_without_a_tone_keeps_the_plain_class() -> None:
+    html = _render(
+        "{{ adm.status_summary([{'label': 'Decisions recorded', 'value': 12}]) }}"
+    )
+    assert 'class="adm-status"' in html
+    assert "adm-status--" not in html
+
+
+def test_the_disclosure_holds_a_summary_and_its_body() -> None:
+    html = _render(
+        "{{ adm.disclosure('Required documents', '<p>Site plan</p>', 'adm-settings', true) }}"
+    )
+    assert 'class="adm-disclosure"' in html
+    assert 'data-testid="adm-settings"' in html
+    assert "open" in html
+    assert "Required documents" in html
+    assert "Site plan" in html
+
+
+def test_the_field_label_names_the_value_of_a_stacked_cell() -> None:
+    html = _render("<td>{{ adm.field_label('Review area') }}Building</td>")
+    assert 'class="adm-field-label"' in html
+    assert "Review area" in html
+    assert "Building" in html
+
+
+def test_the_macros_are_scoped_to_the_admin_area() -> None:
+    html = _render(
+        "{{ adm.scope_note('Scope', 'adm-note') }}"
+        "{{ adm.status_summary([{'label': 'Approved', 'value': 3, 'tone': 'ok'}]) }}"
+        "{{ adm.disclosure('Settings', 'Body') }}"
+        "{{ adm.field_label('Review area') }}"
+    )
+    groups = set(re.findall(r'class="([^"]+)"', html))
+    assert groups
+    for group in groups:
+        for name in group.split():
+            assert name.startswith("adm-"), name
+
+
+# ---------------------------------------------------- the operations words
+
+
+def test_every_dashboard_figure_has_a_plain_label() -> None:
+    assert set(ops_views.FIGURE_LABELS) == {
+        "active",
+        "average_age",
+        "needs_a_person",
+        "early_incomplete",
+        "agent_processed",
+        "decisions",
+    }
+    for key, label in ops_views.FIGURE_LABELS.items():
+        assert ops_views.label_for(key) == label
+        assert label == label[0].upper() + label[1:]
+        assert " - " not in label and "—" not in label
+
+
+def test_the_figures_sit_in_the_two_groups() -> None:
+    assert ops_views.FIGURE_GROUPS == (
+        ("workload", "Current workload"),
+        ("processing", "Recorded processing"),
+    )
+    for key in ops_views.FIGURE_LABELS:
+        assert ops_views.group_of(key) in {"workload", "processing"}
+    assert ops_views.group_of("active") == "workload"
+    assert ops_views.group_of("decisions") == "processing"
+
+
+def test_the_grouping_keeps_every_figure_and_its_own_value() -> None:
+    figures = [
+        {"key": "active", "label": "Active cases", "value": 4, "display": "4"},
+        {"key": "decisions", "label": "Decisions recorded", "value": 9, "display": "9"},
+    ]
+    groups = ops_views.figure_groups(figures)
+    assert [group["key"] for group in groups] == ["workload", "processing"]
+    workload, processing = groups
+    assert [figure["key"] for figure in workload["figures"]] == ["active"]
+    assert workload["figures"][0]["value"] == 4
+    assert workload["figures"][0]["label"] == "Active cases"
+    assert [figure["key"] for figure in processing["figures"]] == ["decisions"]
+    assert processing["figures"][0]["display"] == "9"
+
+
+def test_an_unknown_figure_is_kept_in_the_first_group() -> None:
+    groups = ops_views.figure_groups([{"key": "new_figure", "value": 1}])
+    assert groups[0]["figures"][0]["key"] == "new_figure"
+    assert groups[1]["figures"] == []
+
+
+def test_the_scope_of_the_figures_is_always_named() -> None:
+    excluded = ops_views.scope_statement(False)
+    included = ops_views.scope_statement(True)
+    assert "Fictional" in excluded and "ACME" not in excluded
+    assert excluded.endswith("Sample history excluded.")
+    assert included.endswith("Sample history included.")
