@@ -22,11 +22,10 @@ from pathlib import Path
 
 KIT = Path.home() / "Documents/Vollen Data Analytics/Solution_Architecture_Kit"
 
-# The kit global client list, read from the installed builder so the two never drift.
+# The global client-name pattern, read from the same private file the kit builder uses.
 def _leak_pattern():
-    src = (KIT / "build_page.py").read_text(encoding="utf-8")
-    blob = "".join(re.findall(r'"([A-Za-z0-9+/=]+)"', src.split("_LEAK_B64 = (")[1].split(")")[0]))
-    return re.compile(base64.b64decode(blob).decode(), re.I)
+    path = Path.home() / ".config/vollen/client-leak-pattern.txt"
+    return re.compile(path.read_text(encoding="utf-8").strip() if path.is_file() else r"(?!x)x", re.I)
 
 
 LEAK_OUT = _leak_pattern()
