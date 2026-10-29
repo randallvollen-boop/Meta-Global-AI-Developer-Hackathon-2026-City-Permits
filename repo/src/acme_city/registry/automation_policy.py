@@ -43,19 +43,19 @@ DEFAULT_THRESHOLDS: dict[str, Thresholds] = {
 class SafetyChecks:
     """Facts that a threshold is never allowed to override."""
 
-    source_accepted_current: bool = True
-    source_contract_eligible: bool = True
-    target_exists_with_correct_type: bool = True
-    identifier_namespace_known: bool = True
-    required_identity_fields_present: bool = True
-    no_identity_conflict: bool = True
-    no_protected_manual_decision: bool = True
-    comparison_current: bool = True
-    no_active_link_replacement: bool = True
-    undo_supported: bool = True
-    permissions_granted: bool = True
-    unique_target: bool = True
-    corroborating_identity_evidence: bool = True
+    source_accepted_current: bool
+    source_contract_eligible: bool
+    target_exists_with_correct_type: bool
+    identifier_namespace_known: bool
+    required_identity_fields_present: bool
+    no_identity_conflict: bool
+    no_protected_manual_decision: bool
+    comparison_current: bool
+    no_active_link_replacement: bool
+    undo_supported: bool
+    permissions_granted: bool
+    unique_target: bool
+    corroborating_identity_evidence: bool
 
     def failures(self) -> tuple[str, ...]:
         """Return stable names for failed checks."""
@@ -79,7 +79,7 @@ def evaluate_link(
     *,
     target_family: str,
     score: float | None,
-    checks: SafetyChecks = SafetyChecks(),
+    checks: SafetyChecks,
     next_best_score: float | None = None,
     thresholds: Thresholds | None = None,
 ) -> PolicyEvaluation:
