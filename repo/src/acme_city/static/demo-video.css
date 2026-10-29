@@ -1,0 +1,4 @@
+/* The demonstration video on the persona selector: full width, never wider than the page. */
+.demo-video { margin: 1rem 0 1.25rem; max-width: 960px; }
+.demo-video-caption { margin: 0 0 0.5rem; color: var(--ink-soft); font-size: 0.95rem; }
+.demo-video video { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border-radius: var(--radius); }
