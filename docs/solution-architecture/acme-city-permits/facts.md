@@ -162,7 +162,7 @@ Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. 
 Source: `../acme-permits-parity-notes/VIDEO-SCRIPT-r7.md`. Review record: `VIDEO-SCRIPT-REVIEW.md` (private; it never goes on the page).
 
 - Length 2:00, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
-- Presenter: an AI version of Randall rendered with MiniMax H3 from Randall's own face reference and voice sample. Slides, app recordings, captions and assembly are done in Kinetograph 0.2.0, a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
+- Presenter: the VollenData sunflower character, lip-synced with MiniMax H3 to Kokoro narration (DemoVideo session, draft 7, 2026-10-29). Slides, app recordings, captions and assembly are done in Kinetograph 0.2.0, a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
 - Workflow: H3 pilot clip of scene 1 (on hold until the GPU is free); seven presenter clips; app recordings on a separate copy of the app with live Muse Spark for the Muse moments; Kinetograph assembly; review; final render; Randall's sign-off. Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without Randall's go.
 - Script text for the page: the seven narration paragraphs of `VIDEO-SCRIPT-r7.md`, verbatim, under a "Planned explainer video" heading.
 - Never on the page: the private review record, voice or face reference file paths, or the identity name.

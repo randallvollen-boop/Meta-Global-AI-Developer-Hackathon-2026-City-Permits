@@ -686,28 +686,32 @@
 
 <section id="video" class="alt"><div class="wrap">
   <h2>Explainer video</h2>
-  <p class="lede"><span class="chip ex">In progress</span> A first draft cut of 2 minutes 14 seconds exists, under the 3 minute limit. Nothing is published or submitted without the project owner's go.</p>
+  <p class="lede"><span class="chip ex">In progress</span> Draft 7 runs 2 minutes 44 seconds at 1080p, under the 3 minute limit. Nothing is published or submitted without the project owner's go.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>State</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>Draft cut 1</td><td><span class="chip ga">Done</span></td><td>2:14, made on 2026-10-28 from narration revision 9, with screen recordings, captions and three title cards that hold the place of the diagrams.</td></tr>
-      <tr><td>Opening line</td><td><span class="chip ex">Proposed</span></td><td>The video opens by saying that everything shown was built during the hackathon week, as the organisers ask. The wording waits on a check of the code against the earlier reference package.</td></tr>
-      <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>An AI version of the project owner, rendered with MiniMax H3 from the owner's face reference and voice sample, in a charcoal blazer and light blue shirt chosen by the owner. Thirteen clips, each under 15 seconds. The presenter is full frame at the opening and close and in the bottom left corner over the screens.</td></tr>
-      <tr><td>Screens</td><td><span class="chip ex">In progress</span></td><td>A scripted browser steps through a separate copy of the application and records each path, with a visible cursor. The Muse help answer and the Muse briefing merged after the draft was recorded, so the next cut shows them.</td></tr>
-      <tr><td>Diagrams</td><td><span class="chip ex">Planned</span></td><td>Animated diagrams show how the agents hand work to people, how one shared record serves each department and how a what-if run reaches a draft.</td></tr>
-      <tr><td>Assembly</td><td><span class="chip ex">In progress</span></td><td>The draft was joined with FFmpeg. The final cut is planned in Kinetograph 0.2.0, a TypeScript video engine that runs on the local graphics processing unit (GPU).</td></tr>
+      <tr><td>Draft cut 7</td><td><span class="chip ga">Done</span></td><td>2:44 at 1080p, with a phone copy. It uses narration revision 12, sharp screen footage, animated title cards and captions at the top.</td></tr>
+      <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>The VollenData sunflower, an animated character, sits in the bottom left corner over the screens. MiniMax H3 renders each clip from the sunflower image and the approved narration, so the mouth follows the spoken words. All 18 clips have matched mouths.</td></tr>
+      <tr><td>Voice</td><td><span class="chip ga">Done</span></td><td>Kokoro text to speech reads every line exactly as written. A wording change regenerates one line and rebuilds the cut.</td></tr>
+      <tr><td>Screens</td><td><span class="chip ga">Done</span></td><td>A scripted browser steps through a separate copy of the application and captures timed screenshots for crisp footage. The Muse help answer and the council briefing were recorded from live Muse Spark calls the project owner approved.</td></tr>
+      <tr><td>Final pass</td><td><span class="chip ex">In progress</span></td><td>Clips where the sunflower's face drifts get rendered again. Then the cut is locked, the draft badges come off and the final file is exported, with no music.</td></tr>
     </tbody>
   </table></div>
   <h3>Narration script</h3>
-  <p><span class="chip ga">Approved</span> Revision 9, rewritten in plain spoken language and approved by the project owner on 2026-10-28. Captions show the written form, such as §14-305 and 6 ft.</p>
+  <p><span class="chip ga">Approved</span> Revision 12, 35 lines in plain spoken language. Captions show the written form, such as §14-305 and 6 ft.</p>
   <div class="stack" data-narration>
-    <div class="card"><h4>Scene 1: the problem</h4><p>ACME City has one small permit office for the whole town. A homeowner is waiting on a fence permit. A new café can't open yet. And the city council can't see where permits get stuck.</p></div>
-    <div class="card"><h4>Scene 2: three groups, one app</h4><p>The app is built for three groups: residents who apply, city staff who review, and city leaders.</p></div>
-    <div class="card"><h4>Scene 3: residents</h4><p>Residents can ask the permit assistant anything. Say you want a six foot fence in your front yard. Muse Spark points you to section fourteen three oh five, explains that the limit there is four feet, and tells you what to do next. So you apply already knowing the rule.</p></div>
-    <div class="card"><h4>Scene 4: city staff</h4><p>For city staff, agents take a first pass. The intake agent sorts each application, Muse Spark fills in the details from the documents, and a data steward links the applicant, property, and contractor to their master records. The adjudication agent checks the zoning rules and recommends a decision and cites the rule. The permit reviewer makes the final decision.</p></div>
-    <div class="card"><h4>Scene 5: city leaders</h4><p>For city leaders, the permit map shows where new restaurants and bars are opening and where the city keeps granting exceptions. The what-if agent tries raising the fence limit from six feet to seven on a year of sample cases. Muse Spark writes the council briefing as a draft for approval.</p></div>
-    <div class="card"><h4>Scene 6: one shared record</h4><p>Every resident, property, contractor and permit has one shared record. Fire, police, sanitation and code enforcement all work from it. And on the city's website, residents can look up any permit in their neighbourhood.</p></div>
-    <div class="card"><h4>Scene 7: close</h4><p>Muse Spark, Muse Wonder, and Muse Image helped build this app. I'm (presenter's name), and the code is linked below.</p></div>
+    <div class="card"><h4>Opening</h4><p>Before this week there were ideas and a toy prototype. No app existed. This week we built all of this: the portals, the agents, the shared records, the finance chain, and the city's own website.</p></div>
+    <div class="card"><h4>Scene 1: the problem</h4><p>Acme City has one small permit office for the whole town. A homeowner is waiting on a fence permit. A new café can't open yet. And the city council can't see where permits get stuck.</p></div>
+    <div class="card"><h4>Scene 2: three groups, one app</h4><p>The app serves three groups. Residents apply, city staff review, and city leaders set the rules.</p></div>
+    <div class="card"><h4>Scene 3: residents</h4><p>Residents can ask the permit assistant anything. Say you want a six foot fence in your front yard. Muse Spark points you to section fourteen, three oh five, and explains that the limit there is four feet. So you apply already knowing the rule.</p></div>
+    <div class="card"><h4>Title card</h4><p>Agents do the first pass. People make every decision.</p></div>
+    <div class="card"><h4>Scene 4: city staff</h4><p>For city staff, agents take a first pass. The intake agent sorts each application. Muse Spark fills in the details from the documents. A data steward links the applicant, property, and contractor to their master records. The adjudication agent checks the zoning rules. It recommends a decision and cites the rule. The permit reviewer makes the final decision.</p></div>
+    <div class="card"><h4>Scene 5: city leaders</h4><p>For city leaders, the permit map shows where new restaurants and bars are opening. It also shows where the city keeps granting exceptions.</p></div>
+    <div class="card"><h4>Title card</h4><p>A what-if run tests a rule change on last year's cases before anyone changes the rule.</p></div>
+    <div class="card"><h4>Scene 5: city leaders</h4><p>The what-if agent tries a seven foot fence limit on a year of sample cases. Muse Spark writes the council briefing as a draft for approval.</p></div>
+    <div class="card"><h4>Title card</h4><p>And underneath it all, one record for the whole city.</p></div>
+    <div class="card"><h4>Scene 6: one shared record</h4><p>Every resident, property, contractor and permit has one shared record. Fire, police, sanitation and code enforcement all work from it. And on the city's website, residents can look up any permit in their neighborhood. Muse Wonder wrote the application code. Muse Image drew the permit icons. And Muse Spark runs inside the app: the help desk, the document reader, and the council briefing.</p></div>
+    <div class="card"><h4>Scene 7: close</h4><p>Randall Vollen built this with Muse Spark, Muse Wonder, and Muse Image. The code is linked below.</p></div>
   </div>
 </div></section>
 
