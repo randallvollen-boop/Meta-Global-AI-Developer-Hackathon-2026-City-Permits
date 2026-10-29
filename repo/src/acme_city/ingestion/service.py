@@ -38,6 +38,7 @@ from acme_city.ingestion.validation import (
     intake_rules_for,
 )
 from acme_city.persistence.models import change, governance, source
+from acme_city.registry.automation import enqueue_accepted_snapshot
 
 #: The metric names the intake reports, one per denominator.
 OBSERVATION_METRICS: tuple[str, ...] = (
@@ -103,12 +104,19 @@ def _is_older(
 class IngestionService:
     """Ingests source records into the registry's raw and trusted layers."""
 
-    def __init__(self, session: Session, *, now: datetime | None = None) -> None:
+    def __init__(
+        self,
+        session: Session,
+        *,
+        now: datetime | None = None,
+        registry_automation_mode: str = "paused",
+    ) -> None:
         self._session = session
         self._now = now or utc_now()
         self._audit = AuditService(session, now=self._now)
         self._permissions = PermissionResolver(session, now=self._now)
         self._governance = GovernanceService(session, now=self._now)
+        self._registry_automation_mode = registry_automation_mode
 
     # ------------------------------------------------------------------ helpers
 
@@ -495,6 +503,13 @@ class IngestionService:
         )
         if status == "accepted":
             accepted_ids.add(f"{command.dataset_key}:{record.source_record_id}")
+            enqueue_accepted_snapshot(
+                self._session,
+                snapshot,
+                dataset_key=command.dataset_key,
+                automation_mode=self._registry_automation_mode,
+                now=self._now,
+            )
         return (
             RecordOutcomeView(
                 source_record_id=record.source_record_id,

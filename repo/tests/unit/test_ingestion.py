@@ -14,7 +14,7 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
 from acme_city.ingestion.service import IngestionService
-from acme_city.persistence.models import change, source
+from acme_city.persistence.models import change, registry_automation, source
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
     SessionFactory,
@@ -152,6 +152,7 @@ def test_a_changed_version_creates_a_new_immutable_snapshot(seeded: Settings) ->
             assert [row.source_record_version for row in snapshots] == ["3", "4"]
             assert snapshots[0].raw_payload["contact_email"] == "t.aldous@example.invalid"
             assert snapshots[1].raw_payload["contact_email"] == "t.aldous+updated@example.invalid"
+            assert session.execute(select(registry_automation.RegistryAutomationJob)).scalars().all() == []
     finally:
         factory.dispose()
 
