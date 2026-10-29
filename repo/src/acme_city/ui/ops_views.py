@@ -14,16 +14,18 @@ from __future__ import annotations
 
 from typing import Any
 
+from acme_city.ops.dashboard import PROCESSING_GROUP, WORKLOAD_GROUP
+
 #: The two groups of the operations dashboard, in the order they are shown.
 FIGURE_GROUPS: tuple[tuple[str, str], ...] = (
-    ("workload", "Current workload"),
-    ("processing", "Recorded processing"),
+    (WORKLOAD_GROUP, "Current workload"),
+    (PROCESSING_GROUP, "Recorded processing"),
 )
 
 #: The plain label of every dashboard figure, by its key.
 FIGURE_LABELS: dict[str, str] = {
     "active": "Active cases",
-    "average_age": "Average age",
+    "average_age": "Average age of active cases",
     "needs_a_person": "Items needing attention",
     "early_incomplete": "Incomplete at first intake",
     "agent_processed": "Applications processed by intake",
@@ -32,12 +34,12 @@ FIGURE_LABELS: dict[str, str] = {
 
 #: The group every figure belongs to.
 FIGURE_GROUP_OF: dict[str, str] = {
-    "active": "workload",
-    "average_age": "workload",
-    "needs_a_person": "workload",
-    "early_incomplete": "processing",
-    "agent_processed": "processing",
-    "decisions": "processing",
+    "active": WORKLOAD_GROUP,
+    "average_age": WORKLOAD_GROUP,
+    "needs_a_person": WORKLOAD_GROUP,
+    "early_incomplete": PROCESSING_GROUP,
+    "agent_processed": PROCESSING_GROUP,
+    "decisions": PROCESSING_GROUP,
 }
 
 #: The word the screens use for the moment the figures were read at.
@@ -136,19 +138,37 @@ def figure_groups(figures: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return the figures in their two groups, in the order they are shown.
 
     A figure keeps its own value and its own definition; only the label and
-    the group are added here.  A figure whose key is unknown is kept in the
-    first group, so nothing is dropped from the screen.
+    the group are added here.  A figure names its own group when the service
+    gave it one, and a figure whose key is unknown is kept in the first
+    group, so nothing is dropped from the screen.
     """
     groups: list[dict[str, Any]] = [
         {"key": key, "label": label, "figures": []} for key, label in FIGURE_GROUPS
     ]
     by_key = {group["key"]: group for group in groups}
     for figure in figures:
-        target = by_key[group_of(str(figure.get("key", "")))]
+        named = str(figure.get("group") or "")
+        key = named if named in by_key else group_of(str(figure.get("key", "")))
+        target = by_key[key]
         target["figures"].append(
             {**figure, "label": label_for(str(figure.get("key", "")))}
         )
     return groups
+
+
+def dashboard_presentation(view: dict[str, Any]) -> dict[str, Any]:
+    """Return the presentation of the operations dashboard.
+
+    The figures keep their own values and definitions; this function only
+    groups them and names the scope of the numbers, so the screen says what
+    the figures count and whether the sample history is part of them.
+    """
+    synthetic = dict(view.get("synthetic") or {})
+    return {
+        **view,
+        "figure_groups": figure_groups(list(view.get("figures") or [])),
+        "scope_statement": scope_statement(synthetic.get("mode") == "include"),
+    }
 
 
 def scope_statement(include_history: bool) -> str:
@@ -166,6 +186,7 @@ __all__ = [
     "FIGURE_LABELS",
     "check_status_label",
     "checks_presentation",
+    "dashboard_presentation",
     "figure_groups",
     "group_of",
     "label_for",

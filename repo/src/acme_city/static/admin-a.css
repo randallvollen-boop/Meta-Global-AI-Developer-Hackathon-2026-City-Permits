@@ -454,3 +454,109 @@
   }
 }
 
+/* The operations dashboard: the scope of the numbers, then the figures in
+   two groups, then the breakdowns. */
+
+.adm-scope-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  margin: 0 0 1rem;
+  padding: 10px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.adm-scope-bar p {
+  margin: 0;
+}
+
+.adm-scope-bar-action {
+  margin-left: auto;
+}
+
+.adm-figure-group {
+  margin: 0 0 18px;
+}
+
+.adm-figure-group h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.adm-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adm-metric {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.adm-metric-label {
+  color: var(--fg);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.adm-metric-value {
+  font: 600 1.6rem/1.1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-metric-definition {
+  color: var(--fg-2);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.adm-metric-components {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
+}
+
+.adm-metric-components li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--fg-2);
+  font-size: 0.78rem;
+}
+
+.adm-metric-component-value {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1080px) {
+  .adm-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-scope-bar-action {
+    margin-left: 0;
+  }
+}
+

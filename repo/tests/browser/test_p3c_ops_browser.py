@@ -70,6 +70,28 @@ def test_the_dashboard_prints_six_figures_with_definitions_and_three_charts(page
     assert page.locator('[data-testid="chart-status-table"]').count() == 1
 
 
+def test_the_dashboard_fits_a_phone_and_keeps_the_figures_readable(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+
+    # The scope of the numbers comes first, then the two groups.
+    assert page.locator('[data-testid="ops-scope-statement"]').is_visible()
+    assert page.locator('[data-testid="ops-figure-group"]').count() == 2
+    assert page.locator('[data-testid="ops-figure"]').count() == 6
+    # The figures keep their definitions on a phone.
+    for definition in page.locator('[data-testid="ops-figure-definition"]').all_inner_texts():
+        assert len(definition) > 20
+
+    # Neither the mobile bar nor the demo switch covers the scope.
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="ops-scope-statement"]'))
+    assert page.recorded_errors == []
+
+
 def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserServer, login) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/ops/checks", wait_until="domcontentloaded")

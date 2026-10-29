@@ -1,43 +1,69 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% import "components/admin_patterns.html" as adm with context %}
+
+{# The operations dashboard.
+
+   The scope of the numbers comes first, then the figures in two groups: the
+   work that is open now and the work the services recorded.  Every figure
+   keeps its own value and its own definition. #}
 
 {% block content %}
 {% set v = view %}
 <div class="page-head">
   <div>
     <h1>Operations dashboard</h1>
-    <p class="sub">A read-only view of how permit work is going. Every figure is a count or a mean over stored rows, and its definition is printed beside it. Read at <span class="mono" data-testid="ops-as-of">{{ v.as_of }}</span>.</p>
+    <p class="sub">
+      How permit work is moving through the City. Every figure is a count or a
+      mean over the stored records, and its definition is printed beside it.
+    </p>
   </div>
   <div class="actions">{{ ui.help_button('ops_dashboard') }}</div>
 </div>
 
-<section class="card" aria-labelledby="synthetic-heading" data-testid="ops-synthetic">
-  <div class="card-b">
-  <h2 id="synthetic-heading">Synthetic data</h2>
-  <p data-testid="ops-synthetic-note">{{ v.synthetic.note }}{% if v.synthetic.mode == 'include' and v.synthetic.available %} <span class="ops-badge" data-testid="ops-synthetic-badge">synthetic data included</span>{% endif %}</p>
+<div class="adm-scope-bar" data-testid="ops-synthetic">
+  <p class="adm-scope-note" data-testid="ops-scope-statement">{{ v.scope_statement }}</p>
+  <p class="adm-scope-note">
+    As of <span class="mono" data-testid="ops-as-of">{{ v.as_of }}</span>
+  </p>
+  <p class="adm-scope-note" data-testid="ops-synthetic-note">{{ v.synthetic.note }}{% if v.synthetic.mode == 'include' and v.synthetic.available %} <span class="ops-badge" data-testid="ops-synthetic-badge">synthetic data included</span>{% endif %}</p>
   {% if v.synthetic.available %}
-  <p>
+  <p class="adm-scope-bar-action">
     {% if v.synthetic.mode == 'include' %}
-    <a href="/ops/dashboard" data-testid="ops-synthetic-toggle">Leave the synthetic history out</a>
+    <a href="/ops/dashboard" data-testid="ops-synthetic-toggle">Leave the sample history out</a>
     {% else %}
-    <a href="/ops/dashboard?synthetic=include" data-testid="ops-synthetic-toggle">Include the synthetic history (labelled)</a>
+    <a href="/ops/dashboard?synthetic=include" data-testid="ops-synthetic-toggle">Include the sample history</a>
     {% endif %}
   </p>
   {% endif %}
-  </div>
-</section>
+</div>
 
 <section aria-labelledby="figures-heading" data-testid="ops-figures">
   <h2 id="figures-heading" class="visually-hidden">Figures</h2>
-  <div class="ops-figures">
-    {% for f in v.figures %}
-    <div class="card ops-figure" data-testid="ops-figure" data-figure="{{ f.key }}">
-      <span class="k">{{ f.label }}</span>
-      <span class="v" data-testid="ops-figure-value">{{ f.display }}</span>
-      <span class="d" data-testid="ops-figure-definition">{{ f.definition }}</span>
+  {% for group in v.figure_groups %}
+  <section class="adm-figure-group" data-testid="ops-figure-group" data-group="{{ group.key }}" aria-labelledby="figures-{{ group.key }}-heading">
+    <h3 id="figures-{{ group.key }}-heading">{{ group.label }}</h3>
+    <div class="adm-metrics">
+      {% for f in group.figures %}
+      <div class="adm-metric" data-testid="ops-figure" data-figure="{{ f.key }}">
+        <span class="adm-metric-label">{{ f.label }}</span>
+        <span class="adm-metric-value" data-testid="ops-figure-value">{{ f.display }}</span>
+        <span class="adm-metric-definition" data-testid="ops-figure-definition">{{ f.definition }}</span>
+        {% if f.components %}
+        <ul class="adm-metric-components">
+          {% for component in f.components %}
+          <li>
+            <span class="adm-metric-component-label">{{ component.label }}</span>
+            <span class="adm-metric-component-value">{{ component.value }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
+  </section>
+  {% endfor %}
 </section>
 
 <section class="card" aria-labelledby="decisions-heading" data-testid="ops-decisions">

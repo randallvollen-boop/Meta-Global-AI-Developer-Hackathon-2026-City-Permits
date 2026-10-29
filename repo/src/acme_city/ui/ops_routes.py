@@ -84,7 +84,9 @@ def ui_ops_dashboard(
         resolved,
         screen="ops_dashboard",
         title="Operations dashboard",
-        view=dashboard_module.dashboard(session, synthetic=synthetic),
+        view=ops_views.dashboard_presentation(
+            dashboard_module.dashboard(session, synthetic=synthetic)
+        ),
         model_runs=[],
         evidence=_evidence(
             "Stored applications, decisions and agent runs",

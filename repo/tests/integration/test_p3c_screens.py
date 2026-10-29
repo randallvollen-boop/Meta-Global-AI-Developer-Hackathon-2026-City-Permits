@@ -100,6 +100,41 @@ def test_every_screen_has_a_help_button_and_prints_its_definitions(client) -> No
         assert f'data-testid="{testid}-section"' in dash
 
 
+def test_the_dashboard_groups_the_figures_and_names_the_scope(client) -> None:
+    choose(client, ADMIN)
+    dash = client.get("/ops/dashboard").text
+    # The scope of the numbers is named before the figures.
+    assert "Fictional demo records. Sample history excluded." in dash
+    assert dash.index("Sample history excluded.") < dash.index('data-figure="active"')
+    # The figures sit in two groups: the work that is open now and the work
+    # the services recorded.
+    assert "Current workload" in dash
+    assert "Recorded processing" in dash
+    assert 'data-testid="ops-figure-group" data-group="workload"' in dash
+    assert 'data-testid="ops-figure-group" data-group="processing"' in dash
+    # The plain labels of the figures are on the screen.
+    for label in (
+        "Active cases",
+        "Average age of active cases",
+        "Items needing attention",
+        "Incomplete at first intake",
+        "Applications processed by intake",
+        "Decisions recorded",
+    ):
+        assert label in dash, label
+    # The items that need attention name their two components.
+    assert "Applications in needs information" in dash
+    assert "Recommendations held for a person" in dash
+
+
+def test_the_dashboard_scope_follows_the_history_switch(client) -> None:
+    choose(client, ADMIN)
+    included = client.get("/ops/dashboard?synthetic=include").text
+    assert "Sample history included." in included
+    excluded = client.get("/ops/dashboard").text
+    assert "Sample history excluded." in excluded
+
+
 # --------------------------------------------------------------- audit log
 
 
