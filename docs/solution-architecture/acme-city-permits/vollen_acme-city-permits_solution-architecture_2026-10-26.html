@@ -535,7 +535,12 @@ footer{border-top:1px solid var(--hi)}
           <p class="secsel-g">Reference</p>
           <a href="#artifacts" role="menuitem">Artifacts</a>
           <a href="#build" role="menuitem">How it was built</a>
-          <a href="#roadmap" role="menuitem">Planned: phase 3</a>
+          <a href="#help" role="menuitem">In-app help</a>
+          <a href="#readiness" role="menuitem">Production readiness</a>
+          <a href="#hosting" role="menuitem">Hosting on Render</a>
+          <a href="#security-review" role="menuitem">Security review</a>
+          <a href="#licence" role="menuitem">Licence and data</a>
+          <a href="#roadmap" role="menuitem">Phase 3</a>
           <a href="#video" role="menuitem">Planned explainer video</a>
           <a href="#decisions" role="menuitem">Open decisions</a>
       </div>
@@ -650,7 +655,7 @@ footer{border-top:1px solid var(--hi)}
       <tr><td>Implemented requirements</td><td><span class="chip pv">57 of 57</span></td><td>0 requirement identifiers remain for later phases.</td></tr>
       <tr><td>Acceptance and scenario evidence</td><td><span class="chip ex">In progress</span></td><td>20 of 20 acceptance tests, 8 of 8 supplementary checks and 11 of 11 scenarios are recorded in the integrated manifest.</td></tr>
       <tr><td>Live model evidence</td><td><span class="chip ex">Succeeded</span></td><td>Replay never counts as a completed live primary-chain run.</td></tr>
-      <tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand, delivery owner and security review remain open, so the internal banner stays.</td></tr>
+      <tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand and delivery owner remain open, so the internal banner stays. The security review has run, and its High and Medium findings are fixed.</td></tr>
     </tbody>
     <!-- ARCH_COMPONENT_STATUS_END -->
   </table></div>
@@ -677,7 +682,7 @@ footer{border-top:1px solid var(--hi)}
     <thead><tr><th>Part</th><th>State</th><th>Detail</th><th>Evidence</th></tr></thead>
     <tbody>
       <tr><td>Applicant help assistant</td><td><span class="chip ga">Built</span></td><td>Answers from a cited source bundle on <code>/apply</code>, the form and the tracker. Muse Spark answers in labelled replay by default, and "Ask the City" sends the question to the support desk.</td><td>Build log, 2026-10-28, P3chat chats 1 and 2</td></tr>
-      <tr><td>What-if policy agent</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/policy/scenarios</code>. Immutable runs on a synthetic year, Muse Spark explanations and proposals, and conversion of a change into a draft that needs independent approval.</td><td>Build log, 2026-10-28, P3policy runs 1 to 4</td></tr>
+      <tr><td>What-if policy agent</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/policy/scenarios</code>. Immutable runs on a synthetic year, Muse Spark explanations and proposals, and conversion of a change into a draft rule version that goes through the approval policy.</td><td>Build log, 2026-10-28, P3policy runs 1 to 4</td></tr>
       <tr><td>Council briefing</td><td><span class="chip ga">Built</span></td><td>A cited briefing on a run, written by Muse Spark through the <code>policy_brief</code> task, with whole-response rejection of any uncited figure.</td><td>Build log, 2026-10-28, P3policy run 3</td></tr>
       <tr><td>Permit insight map</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/insight/city</code>. A district-shaded map with filters, trend and a definition beside every figure.</td><td>Build log, 2026-10-28, P3insight</td></tr>
       <tr><td>City of Acme website</td><td><span class="chip ga">Built</span></td><td>The public site at <code>/city/</code>, including "Permits in my community" at <code>/city/community</code>, which reads a dedicated allowlist model.</td><td>Build log, 2026-10-27, City of Acme website; 2026-10-28, P3insight</td></tr>
@@ -1047,16 +1052,86 @@ footer{border-top:1px solid var(--hi)}
   </div>
 </div></section>
 
+<section id="help"><div class="wrap">
+  <h2>In-app help</h2>
+  <p class="lede">The application has its own help pages. They explain the demonstration and link to the technical documents.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Page</th><th>What it holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>/help</code></td><td>The help hub. It links to the tutorial, the how-to guides, the technical documentation and the glossary.</td></tr>
+      <tr><td><code>/help/tutorial</code></td><td>A guided walk through one fence permit, one person at a time: Applicant, Permit Reviewer, Data Steward and City Administrator. Each step uses the labels on the screens.</td></tr>
+      <tr><td><code>/help/how-to</code></td><td>Short guides with one task each, such as applying for a fence or deck permit or recording a decision.</td></tr>
+      <tr><td><code>/help/technical</code></td><td>The technical documents, read only. The solution architecture page opens in a sandbox that blocks every script, so its theme switch and other controls do not work there.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The tutorial and the guides state no fee, limit or rule. Those values come from the rules and fees catalogue.</p>
+</div></section>
+
+<section id="readiness" class="alt"><div class="wrap">
+  <h2>Production readiness</h2>
+  <p class="lede">The application runs in one of two deployment modes. Production mode is a hardened core. It is not yet a finished product.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Mode</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td>Demo (default)</td><td>The fictional demonstration. The persona selector, the switch user panel, the intake simulator and the simulated GIS service are available.</td></tr>
+      <tr><td>Production</td><td>Set with <code>ACME_DEPLOYMENT_MODE=production</code>. It removes the persona selector, the simulators, the recorded replay and the API documentation. It refuses to start without <code>ACME_SECRET_KEY</code> or with a demo database.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Controls in both modes</h3>
+  <ul>
+    <li>A Content Security Policy with <code>default-src 'self'</code>, no inline script and <code>frame-ancestors 'none'</code>.</li>
+    <li>Frame denial, no content sniffing, a same-origin referrer policy, and a permissions policy that turns off camera, microphone and location.</li>
+    <li>Strict transport security, in production only.</li>
+    <li><code>/readyz</code> returns 503 when the stored schema revision is not the head of the running build. <code>/healthz</code> stays a liveness probe.</li>
+    <li>Per-client rate limits and a request size limit on the public demonstration. Production error responses use a fixed message for each status, with a stable code.</li>
+  </ul>
+  <p>The repository has a Dockerfile with demo and production build targets. The continuous integration workflow runs the ten local gates on every pull request and on each push to main.</p>
+  <p>Real sign-in, a server database, backups, monitoring and malware scanning are still open. The production deployment decision stays on hold until they close.</p>
+</div></section>
+
+<section id="hosting"><div class="wrap">
+  <h2>Hosting on Render</h2>
+  <p class="lede">The public demonstration is set up from a Render Blueprint. The live deployment is being prepared, and this page gives no public address for it.</p>
+  <ul>
+    <li>The Blueprint is <code>render.yaml</code> at the repository root. It defines one web service, built from <code>repo/Dockerfile-demo</code>, and one nightly cron job.</li>
+    <li>The service runs in demo mode with fictional data only. It has no disk, so each start rebuilds the database.</li>
+    <li>With demo seeding on start, each start resets the data, runs the recorded walkthrough and loads 600 synthetic permit applications and the steward demonstration data. Live model calls stay off until someone turns them on.</li>
+    <li>The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. Render keeps the old instance running until the new one passes <code>/readyz</code>.</li>
+    <li>Rate limits count requests per client address: 300 a minute for all requests, 60 for writes, 20 for persona switches and 10 for uploads. The request size limit is 25 MB.</li>
+  </ul>
+  <p>The steps, settings and rollback are in <code>docs/operations/DEPLOY_RENDER.md</code>.</p>
+</div></section>
+
+<section id="security-review" class="alt"><div class="wrap">
+  <h2>Security review</h2>
+  <p class="lede">An independent security review ran against written playbooks. Its findings are fixed in the code and covered by tests.</p>
+  <ul>
+    <li>Both High findings and all Medium findings are fixed and covered by tests.</li>
+    <li>The fixes cover access checks on internal reads and submissions, version checks on permit decisions, the change dispatcher, rule visibility, input size limits, document download caching and the safe redirect check.</li>
+    <li>Remaining Low items are tracked.</li>
+  </ul>
+</div></section>
+
+<section id="licence"><div class="wrap">
+  <h2>Licence and data</h2>
+  <p class="lede">The code is licensed under the Apache License, Version 2.0. All data in the demonstration is fictional.</p>
+  <ul>
+    <li>The licence text is in <code>LICENSE</code>. The notice file is <code>NOTICE</code>.</li>
+    <li>Every person, business, parcel, permit, fee and rule in the product is fictional.</li>
+    <li>The fonts are system font stacks, and the icons are the project's own.</li>
+  </ul>
+</div></section>
+
 <section id="roadmap"><div class="wrap">
-  <h2>Phase 3: built and in progress</h2>
-  <p class="lede"><span class="chip ex">Planned</span> Each item in this section is marked Built, In progress or Planned. The page claims no result, metric or benefit for planned work.</p>
+  <h2>Phase 3: built</h2>
+  <p class="lede"><span class="chip ga">Built</span> Every phase 3 step is built and merged to main. The applicant help answer runs in labelled replay by default.</p>
   <h3>Build order</h3>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Step</th><th>State</th><th>Scope</th></tr></thead>
     <tbody>
       <tr><td>P3a</td><td><span class="chip ga">Built</span></td><td>Lifecycle, comments, findings and archive. Merged to main; see Verification.</td></tr>
       <tr><td>P3b</td><td><span class="chip ga">Built</span></td><td>Queue views, bulk intake, a review queue and conditions. Merged to main.</td></tr>
-      <tr><td>P3chat</td><td><span class="chip ex">In progress</span></td><td>Applicant help chat. All three runs are merged. They cover the help panel, its sources, "Ask the City", the Muse Spark answer with its checks, and the escalation to the support desk. The answer runs in labelled replay by default.</td></tr>
+      <tr><td>P3chat</td><td><span class="chip ga">Built</span></td><td>Applicant help chat. All three runs are merged. They cover the help panel, its sources, "Ask the City", the Muse Spark answer with its checks, and the escalation to the support desk. The answer runs in labelled replay by default.</td></tr>
       <tr><td>P3c</td><td><span class="chip ga">Built</span></td><td>Operations dashboard, audit log, support and checks. Merged to main.</td></tr>
       <tr><td>P3insight</td><td><span class="chip ga">Built</span></td><td>The City view for administrators, "Permits in my community" for residents, a synthetic year of cases, and Sanitation and Police as subscriber departments. Merged to main.</td></tr>
       <tr><td>P3policy</td><td><span class="chip ga">Built</span></td><td>What-if analysis for administrators. All four runs are merged: scenarios, saved runs and results, the Muse Spark briefing and explanation, and conversion of a change into draft rules.</td></tr>
@@ -1116,7 +1191,7 @@ footer{border-top:1px solid var(--hi)}
     </ul></div>
   </div>
   <p><span class="chip ga">Built</span> Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure.</p>
-  <p><span class="chip ga">Built</span> "Save as a draft rule change" turns a change into draft rule or fee versions. Another administrator must approve them before they take effect, and nothing published changes.</p>
+  <p><span class="chip ga">Built</span> "Save as a draft rule change" turns a change into draft rule or fee versions. Approval follows the approval policy setting. With the default single setting, one City Administrator can approve and publish them. With the independent setting, a different administrator must approve them. Nothing changes in the published rules until then.</p>
   <p><span class="chip ga">Built</span> Demo scenario: the fence height limit rises from 6 feet to 7 feet.</p>
 </div></section>
 
@@ -1156,12 +1231,12 @@ footer{border-top:1px solid var(--hi)}
       <tr><td>2</td><td>Provider account</td><td>The credit balance, the expiry, the eligible products and the no cash path are unverified.</td></tr>
       <tr><td>3</td><td>Repository</td><td>Work is committed to a local repository. Remote creation and pushes wait on authentication to the required personal owner.</td></tr>
       <tr><td>4</td><td>Competition</td><td>The final candidate, the event terms, the submission format, the deployment and the submission remain held.</td></tr>
-      <tr><td>5</td><td>Review gates</td><td>Brand, delivery owner and security review are open, so the internal review banner stays in place.</td></tr>
+      <tr><td>5</td><td>Review gates</td><td>The brand and delivery owner gates are open, so the internal review banner stays in place. Both High findings and all Medium findings of the security review are fixed and covered by tests. Remaining Low items are tracked.</td></tr>
       <tr><td>6</td><td>Architecture status</td><td>AS BUILT for the local candidate. Deployment and any change after this evidence need a new gate.</td></tr>
       <tr><td>7</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
-      <tr><td>8</td><td>Fonts</td><td>The kit still embeds an unused Aptos face. Embedding rights outside the kit owner stay unverified.</td></tr>
+      <tr><td>8</td><td>Fonts</td><td>Closed. The app and this page use system font stacks only, with no embedded fonts. The 38 icons are the project's own.</td></tr>
       <tr><td>9</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
-      <tr><td>10</td><td>Phase 3 and explainer video</td><td>Phase 3 is mostly built, with P3c and help chat run 3 still to come. A draft video exists, and nothing is published or submitted without the project owner's go.</td></tr>
+      <tr><td>10</td><td>Phase 3 and explainer video</td><td>Phase 3 is built and merged to main. A draft video exists, and nothing is published or submitted without the project owner's go.</td></tr>
     </tbody>
   </table></div>
   <p class="mock-note">Sources: the fact sheet, the status record, the alignment note and the decision log, all read on 2026-10-26.</p>

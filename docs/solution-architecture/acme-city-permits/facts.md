@@ -118,12 +118,12 @@ No implementation or verification figure is shown as complete until the correspo
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
 - GitHub authentication to the required personal owner remains pending; remote creation, commits and pushes are not part of this build.
 - Final competition candidate, event terms, submission format, deployment and submission remain held.
-- Brand, delivery-owner and security review are open. Keep the internal-review banner.
+- Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. Keep the internal-review banner.
 - Architecture status remains PLANNED until the integrated evidence gate passes.
 
 ## Kit provenance
 
-Build with the installed Solution Architecture Kit and Vollen Linux brand layer. No shared kit edits are planned. The page uses the kit's `vds` brand, which renders no logo, and a private denylist file outside the repository keeps wrong-brand words off the page. Record kit hashes, Linux wrapper use and the known unused Aptos embedding-rights limitation in `BUILD_REPORT.md`.
+Build with the installed Solution Architecture Kit and Vollen Linux brand layer. No shared kit edits are planned. The page uses the kit's `vds` brand, which renders no logo, and a private denylist file outside the repository keeps wrong-brand words off the page. Record kit hashes and Linux wrapper use in `BUILD_REPORT.md`. The app and page use system font stacks only, with no embedded fonts.
 
 ## How it was built (2026-10-27)
 
@@ -148,11 +148,11 @@ Source: `BUILD_LOG.md` sections "Parity phase 1" and "Parity phase 2"; merges `0
 - The applicant portal at `/apply` has a chooser for the 17 types, a form per type with a completeness banner, uploads, drafts, certification, confirmation and tracking.
 - Verification at the phase 2 merge, lead review on merged main: 10 of 10 gates pass; pytest 762 passed; acceptance 37 passed, 0 failed, 2 blocked. AT15 and AT19 need a live provider.
 
-## Phase 3, planned (not built)
+## Phase 3, built
 
-Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. Every item here is planned. The page labels them planned and claims no result for them.
+Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. The items here were built and merged to main by 2026-10-28, per `BUILD_LOG.md`. The page labels them built.
 
-- Build order: P3a (lifecycle, comments, findings, archive; in progress), P3b (queue views, early resolution, review queue, service targets), P3chat in three runs, P3c (operations dashboard, audit log, support, checks), P3insight, P3policy in four runs. The applicant side moves onto a fictional City of Acme website at `/city/`.
+- Build order: P3a (lifecycle, comments, findings, archive), P3b (queue views, early resolution, review queue, service targets), P3chat in three runs, P3c (operations dashboard, audit log, support, checks), P3insight, P3policy in four runs. The applicant side moves onto a fictional City of Acme website at `/city/`.
 - P3chat, applicant help chat. Muse Spark answers only from a server-built set of sources: published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case. Code checks that every citation exists and every quote is verbatim, and that any fee, dimension or timing comes from a server-computed fact. It blocks outcome promises and legal-advice claims. If a check fails, the applicant sees the matching rule text labelled "not an AI answer". "Ask the City" sends the question to a person. Tests and the default demo use labelled replay.
 - P3insight, community permit insight. The City Administrator gets permit activity on the town map by district, with filters for type, outcome, period and exceptions (variances, waivers, denials, conditions), business activity by category, and trends. Residents get "Permits in my community" on the City of Acme website: the same map and totals, plus public lookup by address, street or permit number. The public record shows the permit number, type, parcel and address, work description, status, dates, outcome, conditions, an exception marker and the contractor business name. It never shows homeowner names, documents, internal notes, comments, contact details or fees, and district totals under 3 show as "fewer than 3". Business categories (restaurant, bar, retail, office) are added. Sanitation and police join the simulated subscriber departments. Everything displayed comes from seeded synthetic data with a synthetic label.
 - P3policy, what-if for administrators. A scenario applies proposed rule, document, process-category, service-target or fee changes in memory only. A deterministic engine reruns the rule evaluator, intake checks and fee calculation over current cases, decided cases or a seeded synthetic year. It reports cases whose outcome changes, cases no longer held for a reviewer, needs-information changes, service-target changes and hypothetical assessed fees. It makes no staff-time or revenue claim, and every case that moves from fail to pass is listed. Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure. "Propose as draft" creates draft rule versions that still need independent approval. Demo scenario: fence height limit raised from 6 ft to 7 ft.
