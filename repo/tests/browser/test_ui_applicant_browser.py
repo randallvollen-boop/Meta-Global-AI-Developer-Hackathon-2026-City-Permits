@@ -8,6 +8,11 @@ from conftest import BrowserServer
 SCREENS = (
     "/city/",
     "/city/permits",
+    # The public community pages a resident reaches from the City website.
+    # ACME-2026-000731 is the permit number of a public fictional record.
+    "/city/community",
+    "/city/community?q=Acme",
+    "/city/community/permit/ACME-2026-000731",
     "/apply",
     "/apply/deck_fence",
     "/apply/track",
