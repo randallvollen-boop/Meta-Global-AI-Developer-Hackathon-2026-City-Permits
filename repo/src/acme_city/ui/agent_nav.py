@@ -15,14 +15,15 @@ OPERATOR_ACTOR_ID = "persona_agent_operator"
 #: The operational home of the Agent Operator.
 OPERATOR_HOME = "/agents"
 
-_OPERATOR_SCREENS = frozenset(
-    {"agents_home", "agent_intake", "agent_adjudication", "agent_runs"}
+_OPERATOR_SCREENS: tuple[str, ...] = (
+    "agents_home", "agent_intake", "agent_adjudication", "agent_runs",
 )
 
 
 def _operator_navigation(items: list[dict]) -> list[dict]:
     """Limit the operator to the four operational destinations."""
-    return [item for item in items if item["key"] in _OPERATOR_SCREENS]
+    by_key = {item["key"]: item for item in items}
+    return [by_key[key] for key in _OPERATOR_SCREENS if key in by_key]
 
 
 def register() -> None:

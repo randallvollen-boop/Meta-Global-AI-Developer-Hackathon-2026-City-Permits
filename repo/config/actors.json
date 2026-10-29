@@ -199,6 +199,7 @@
       "label": "Agent Operator",
       "boundary": "Wakes and runs the intake and adjudication agents and processes a selection of waiting cases; no permit decision.",
       "permission_ids": [
+        "agent.ops.read",
         "agent.run.adjudication",
         "agent.run.intake",
         "agent.toggle",

@@ -30,5 +30,18 @@ PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
 }
 
+#: A persona may deliberately order its agent-only navigation differently from
+#: the global screen catalogue.  OPR-16 makes the operational summary its home.
+ORDER: dict[str, tuple[str, ...]] = {
+    "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
+}
+
 #: The agent screens under More tools, by actor id.
 SECONDARY: dict[str, tuple[str, ...]] = {}
+
+#: Screens a persona may open for an authorized action but which are not menu
+#: destinations.  Processing a selected intake batch is available from a case,
+#: not from the Agent Operator's four-destination navigation.
+UNLISTED_OPEN_SCREENS: dict[str, frozenset[str]] = {
+    "persona_agent_operator": frozenset({"intake_queue"}),
+}

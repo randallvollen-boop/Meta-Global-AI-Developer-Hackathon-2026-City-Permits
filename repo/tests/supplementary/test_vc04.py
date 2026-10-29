@@ -33,7 +33,7 @@ from acme_city.ui.router import router as ui_router
 # The screens each persona may open (same table as the view-model tests),
 # aggregated in tests/support/nav_expectations, one module per persona.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
+from support.nav_expectations import EXPECTED_NAVIGATION, UNLISTED_OPEN_SCREENS  # noqa: E402
 
 #: The screens that have to use the same controls, swept as the City
 #: Administrator.
@@ -261,7 +261,11 @@ def test_listed_screens_open_and_hidden_screens_refuse(
         # Master records.  Its address still opens (it renders that tab), so it is
         # open for a persona whose navigation lists the parent screen, though it
         # is not listed a second time.
-        if key in listed or (key == "applicants" and "masters" in listed):
+        if (
+            key in listed
+            or key in UNLISTED_OPEN_SCREENS[actor_id]
+            or (key == "applicants" and "masters" in listed)
+        ):
             assert response.status_code == 200, (actor_id, key, path)
         else:
             assert response.status_code == 403, (actor_id, key, path)

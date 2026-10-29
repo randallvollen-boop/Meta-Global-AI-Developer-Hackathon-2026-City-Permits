@@ -227,3 +227,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The reconciliation screen is proven to keep the receipt register apart from the selected assessment, to show the readable reference SYN-APP-007, to mark the euro receipt apart from the dollar receipts, and to label the exception measure ("Assessments with a recorded exception") without an attention badge when there is nothing to review.
 - The demo moment is proven in a real browser: the Administrator lands on the overview, opens the draft CT-2@2 from the "Proposed changes" card, reads the diff and the applicability, submits it for review and sees the recorded result in the feedback region (`tests/browser/test_admin_ui_browser.py`).
 - No live provider call was made; the Muse Image generation and the replay labels are unchanged.
+
+## 2026-10-29 — Agent Operator lane repair evidence
+
+- Focused operator/navigation checks: 63 passed in 22.44s. Reset, session and migration checks: 32 passed in 10.85s.
+- Fixture guard, outcome snapshot and acceptance suite: 106 passed in 20.60s. Chromium operator navigation at 390px: 1 passed in 7.43s.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2118 passed in 569.69s (9:29).

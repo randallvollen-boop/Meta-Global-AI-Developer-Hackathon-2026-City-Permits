@@ -1,7 +1,7 @@
 """The Agent Operator is the fifth selectable persona.
 
-W0-3 adds ``persona_agent_operator`` with the agent operations bundle and a
-temporary home on the intake agent screen.  The four original personas keep
+W0-3 adds ``persona_agent_operator`` with the agent operations bundle.  OPR-16
+makes its home the agent operations screen.  The four original personas keep
 their grants: they equal ``persona_grants_snapshot.json`` with the changes
 in ``persona_grant_deltas.json`` applied, and only OPR-3 and STW-18 add to
 that whitelist.
@@ -153,7 +153,7 @@ def test_the_original_four_keep_their_grants(bundle: FixtureBundle) -> None:
 def test_the_operator_holds_exactly_the_agent_operations_bundle(bundle: FixtureBundle) -> None:
     operator = next(p for p in bundle.actors.personas if p.actor_id == OPERATOR)
     assert sorted(grant.permission_id for grant in operator.grants) == sorted(AGENT_OPERATIONS)
-    assert "agent.ops.read" not in AGENT_OPERATIONS
+    assert "agent.ops.read" in AGENT_OPERATIONS
     role = next(role for role in bundle.actors.roles if role.role_id == "agent_operator")
     assert operator.source_role_ids == ["agent_operator"]
     assert sorted(role.permission_ids) == sorted(AGENT_OPERATIONS)
@@ -178,7 +178,7 @@ def test_each_persona_has_a_home_that_opens(client: TestClient, session: Session
         response = client.get(home["href"])
         assert response.status_code == 200, (actor_id, home["href"])
     operator_home = view_models.home_for(session, actor_for(session, OPERATOR))
-    assert operator_home == {"label": "Intake agent", "href": "/agent/intake", "key": "agent_intake"}
+    assert operator_home == {"label": "Agents", "href": "/agents", "key": "agents_home"}
 
 
 def test_switching_to_the_operator_redirects_to_its_home(client: TestClient) -> None:  # noqa: F811
@@ -189,7 +189,7 @@ def test_switching_to_the_operator_redirects_to_its_home(client: TestClient) -> 
     )
     assert response.status_code == 303
     # The operator may not open the work queue, so it lands on its own home.
-    assert response.headers["location"] == "/agent/intake?moved_from=queue"
+    assert response.headers["location"] == "/agents?moved_from=queue"
 
 
 def test_the_select_screen_shows_five_cards_with_the_operator_icon(

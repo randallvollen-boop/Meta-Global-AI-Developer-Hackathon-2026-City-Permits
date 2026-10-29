@@ -11,6 +11,7 @@ from __future__ import annotations
 
 #: The grants of the agent operations bundle, in catalogue order.
 AGENT_OPERATIONS: tuple[str, ...] = (
+    "agent.ops.read",
     "agent.toggle",
     "agent.run.intake",
     "agent.run.adjudication",
