@@ -27,7 +27,7 @@ PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_data_steward": (),
     "persona_permit_reviewer": (),
     "persona_city_administrator": (),
-    "persona_agent_operator": ("agent_intake", "agent_adjudication"),
+    "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
 }
 
 #: The agent screens under More tools, by actor id.

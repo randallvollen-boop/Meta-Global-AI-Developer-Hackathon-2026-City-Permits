@@ -36,15 +36,18 @@ def upgrade() -> None:
         sa.Column("correlation_id", sa.String(length=64), nullable=False),
         sa.Column("created_at", acme_city.persistence.types.UTCDateTime(), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_agent_role_entitlements")),
-        sa.UniqueConstraint("role_id", name=op.f("uq_agent_role_entitlements_role_id")),
     )
     with op.batch_alter_table("agent_role_entitlements", schema=None) as batch_op:
         batch_op.create_index(
-            op.f("ix_agent_role_entitlements_role_id"), ["role_id"], unique=False
+            op.f("ix_agent_role_entitlements_role_id"), ["role_id"], unique=True
+        )
+        batch_op.create_index(
+            op.f("ix_agent_role_entitlements_correlation_id"), ["correlation_id"], unique=False
         )
 
 
 def downgrade() -> None:
     with op.batch_alter_table("agent_role_entitlements", schema=None) as batch_op:
+        batch_op.drop_index(op.f("ix_agent_role_entitlements_correlation_id"))
         batch_op.drop_index(op.f("ix_agent_role_entitlements_role_id"))
     op.drop_table("agent_role_entitlements")

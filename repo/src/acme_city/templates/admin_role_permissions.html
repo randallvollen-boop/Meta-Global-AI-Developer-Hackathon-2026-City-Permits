@@ -1,0 +1,22 @@
+<section class="opr-role-permissions" aria-labelledby="opr-role-permissions-heading" data-testid="admin-role-permissions">
+  <h3 id="opr-role-permissions-heading">Role permissions</h3>
+  <p class="muted">City worker access applies to existing and future reviewers and stewards.</p>
+  <table class="data-table" data-testid="agent-role-permissions-table">
+    <caption class="visually-hidden">Roles that can wake and run agents</caption>
+    <thead><tr><th scope="col">Role</th><th scope="col">Can wake and run agents</th></tr></thead>
+    <tbody>
+      {% for role in agent_role_permissions %}
+      <tr><th scope="row">{{ role.label }}</th><td>{{ 'yes' if role.enabled else 'no' }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/ui/actions/admin.role.permissions" class="action-form" data-testid="admin-role-permissions-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action_id" value="admin.role.permissions">
+    <input type="hidden" name="next" value="/admin?tab=users">
+    <label class="opr-checkbox"><input type="checkbox" name="city_worker_enabled" value="true" {% if agent_role_permissions[1].enabled and agent_role_permissions[2].enabled %}checked{% endif %}> City worker can wake and run agents</label>
+    <label for="opr-role-reason">Reason</label>
+    <input id="opr-role-reason" name="reason" required>
+    <button type="submit" class="btn sm primary" data-testid="admin-role-permissions-save">Save role permissions</button>
+  </form>
+</section>

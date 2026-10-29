@@ -11,7 +11,12 @@ from __future__ import annotations
 ACTOR_ID = "persona_agent_operator"
 
 #: The screens of the side navigation, in the order they are listed.
-PRIMARY: tuple[str, ...] = ("intake_queue",)
+PRIMARY: tuple[str, ...] = (
+    "agents_home",
+    "agent_intake",
+    "agent_adjudication",
+    "agent_runs",
+)
 
 #: The screens under More tools.
 SECONDARY: tuple[str, ...] = ()

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, CheckConstraint, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from acme_city.persistence.base import (
@@ -41,4 +41,21 @@ class AgentRoleEntitlement(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMix
     changed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
 
 
-__all__ = ["AgentRoleEntitlement"]
+class AgentProcessingPolicy(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Base):
+    """The persisted manual or automatic processing policy."""
+
+    __tablename__ = "agent_processing_policies"
+
+    mode: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
+    runs_per_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
+    max_batch_size: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
+    changed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    changed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    __table_args__ = (
+        CheckConstraint("mode IN ('manual', 'automatic')", name="mode_allowed"),
+        CheckConstraint("runs_per_hour BETWEEN 1 AND 120", name="runs_per_hour_range"),
+        CheckConstraint("max_batch_size BETWEEN 1 AND 20", name="max_batch_size_range"),
+    )
+
+
+__all__ = ["AgentProcessingPolicy", "AgentRoleEntitlement"]

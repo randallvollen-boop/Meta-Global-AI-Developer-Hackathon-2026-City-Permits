@@ -1181,6 +1181,12 @@
       "responsibility": "Runs the City's helper agents and the processing batches; the agents propose and recommend, a person decides.",
       "grants": [
         {
+          "permission_id": "agent.ops.read",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "agent.toggle",
           "domains": [],
           "record_scope": [],
