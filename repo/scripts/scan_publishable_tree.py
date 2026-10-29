@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
 import re
 import subprocess
@@ -43,41 +45,61 @@ for _index, _term in enumerate(t for t in os.environ.get("ACME_SCAN_PRIVATE_TERM
     DENY_PATTERNS[f"private term {_index + 1}"] = re.compile(re.escape(_term.strip()), re.IGNORECASE)
 
 
-#: The only binary files the tree may carry: bundled permit-type icons.
-ALLOWED_IMAGE_DIR = Path("src/acme_city/static/permit-type-icons")
+#: The only binary files the tree may carry, each with its sha256 and provenance.
+BINARY_MANIFEST = Path("config/publishable_binaries.json")
+#: The header every allowed binary type must start with.
+BINARY_HEADERS = {
+    ".webp": lambda header: header[:4] == b"RIFF" and header[8:12] == b"WEBP",
+    ".png": lambda header: header[:8] == b"\x89PNG\r\n\x1a\n",
+}
 
 
-def is_allowed_image(relative: Path, path: Path) -> bool:
-    """Return whether a binary file is a genuine WebP permit-type icon."""
-    if relative.parent != ALLOWED_IMAGE_DIR or path.suffix.lower() != ".webp":
-        return False
-    header = path.read_bytes()[:12]
-    return header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+def load_binary_manifest() -> dict[Path, str]:
+    """Return every listed binary file with its expected sha256."""
+    data = json.loads((REPO_ROOT / BINARY_MANIFEST).read_text(encoding="utf-8"))
+    return {
+        Path(entry["directory"]) / name: digest
+        for entry in data["sets"]
+        for name, digest in entry["files"].items()
+    }
 
 
-def is_ignored(path: Path) -> bool:
-    relative = path.relative_to(REPO_ROOT)
-    result = subprocess.run(
-        ["git", "check-ignore", "--quiet", "--no-index", "--", str(relative)],
-        cwd=REPO_ROOT,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    return result.returncode == 0
+def binary_finding(relative: Path, path: Path, manifest: dict[Path, str]) -> str | None:
+    """Return why a binary file may not be published, or None when it is listed and genuine."""
+    expected = manifest.get(relative)
+    if expected is None:
+        return "unexpected binary or file type"
+    check = BINARY_HEADERS.get(path.suffix.lower())
+    content = path.read_bytes()
+    if check is None or not check(content[:12]):
+        return "content does not match its file type"
+    if hashlib.sha256(content).hexdigest() != expected:
+        return f"sha256 differs from {BINARY_MANIFEST}"
+    return None
 
 
 def candidate_files() -> list[Path]:
+    """Return every file git would publish: tracked or untracked, never ignored."""
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=True,
+    ).stdout.decode("utf-8")
     return sorted(
         path
-        for path in REPO_ROOT.rglob("*")
-        if path.is_file() and ".git" not in path.parts and not is_ignored(path)
+        for path in (REPO_ROOT / name for name in listed.split("\0") if name)
+        if path.is_file() or path.is_symlink()
     )
 
 
 def scan() -> list[str]:
     findings: list[str] = []
-    for path in candidate_files():
+    manifest = load_binary_manifest()
+    files = candidate_files()
+    for missing in sorted(set(manifest) - {path.relative_to(REPO_ROOT) for path in files}):
+        findings.append(f"{missing}: listed in {BINARY_MANIFEST} but not in the tree")
+    for path in files:
         relative = path.relative_to(REPO_ROOT)
         if "intake" in relative.parts:
             findings.append(f"{relative}: intake content must remain outside the publishable tree")
@@ -89,9 +111,9 @@ def scan() -> list[str]:
             findings.append(f"{relative}: file exceeds the 5 MiB source-tree limit")
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES:
-            if is_allowed_image(relative, path):
-                continue
-            findings.append(f"{relative}: unexpected binary or file type")
+            problem = binary_finding(relative, path, manifest)
+            if problem is not None:
+                findings.append(f"{relative}: {problem}")
             continue
         try:
             text = path.read_text(encoding="utf-8")
