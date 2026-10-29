@@ -28,6 +28,7 @@ PREFIXES = {
     "admin-b.css": (".admin-b",),
     "operator.css": (".opr-", "body[data-screen="),
     "nav-more.css": (".nav-more",),
+    "demo-video.css": (".demo-video",),
     "city-community.css": (".community-page", ".community-record-page"),
 }
 
@@ -122,7 +123,7 @@ def test_base_and_city_layout_link_the_new_files_in_order() -> None:
     links = re.findall(r'href="/ui/static/([\w-]+\.css)"', base)
     assert links[links.index("reviewer.css") + 1:] == [
         "insight.css", "nav-more.css", "steward.css", "steward-auto.css",
-        "admin-a.css", "admin-b.css", "operator.css",
+        "admin-a.css", "admin-b.css", "operator.css", "demo-video.css",
     ]
     assert base.index("{% block extra_css %}") > base.index("operator.css")
     assert base.index("{% block extra_js %}") < base.index("</body>")
