@@ -1,7 +1,8 @@
 """The shared patterns in a real browser: popover, help and the detail drawer."""
 # REQUIRES: UX-01, UX-02, UX-03, SEC-01
 # The drawer opens in place, traps and returns focus, closes on Esc, can be
-# deep-linked, and never covers the toast corner or the Demo controls button.
+# deep-linked, and never covers the toast corner or the Demo controls button
+# (the Demo controls button).
 
 from __future__ import annotations
 
