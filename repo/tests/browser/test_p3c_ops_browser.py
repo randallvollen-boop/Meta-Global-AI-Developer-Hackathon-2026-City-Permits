@@ -70,6 +70,35 @@ def test_the_dashboard_prints_six_figures_with_definitions_and_three_charts(page
     assert page.locator('[data-testid="chart-status-table"]').count() == 1
 
 
+def test_the_breakdowns_show_a_chart_on_a_desktop_and_a_table_on_a_phone(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    # A wide screen shows the chart and keeps the table behind its summary.
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert page.locator('[data-testid="chart-status-chart"] svg').is_visible()
+    assert not page.locator('[data-testid="chart-status-table"]').is_visible()
+    assert page.locator('[data-testid="chart-channel-chart"]').count() == 1
+    assert page.locator('[data-testid="chart-channel-table"]').count() == 1
+
+    # A phone shows the readable table and keeps the chart in its disclosure.
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    assert page.locator('[data-testid="chart-status-table"]').is_visible()
+    assert not page.locator('[data-testid="chart-status-chart"] svg').is_visible()
+
+    # The chart keeps its own size on a phone, so no label of it is shrunk.
+    page.locator('[data-testid="chart-status-chart"] summary').click()
+    chart = page.locator('[data-testid="chart-status-chart"] svg')
+    assert chart.is_visible()
+    box = chart.bounding_box()
+    assert box is not None and box["width"] == 480, box
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
 def test_the_dashboard_fits_a_phone_and_keeps_the_figures_readable(
     page, server: BrowserServer, login
 ) -> None:

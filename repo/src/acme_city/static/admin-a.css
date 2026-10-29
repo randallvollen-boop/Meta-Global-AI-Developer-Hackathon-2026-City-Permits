@@ -560,3 +560,82 @@
   }
 }
 
+/* The breakdowns of the dashboard: the chart on a wide screen, the readable
+   table on a phone.  Both sit in the page, so every hook stays reachable. */
+
+.adm-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.adm-breakdown {
+  margin-bottom: 16px;
+}
+
+.adm-breakdown h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.adm-chart-summary,
+.adm-table-summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.84rem;
+  padding: 6px 0;
+}
+
+.adm-chart-figure {
+  margin: 6px 0 0;
+}
+
+.adm-table-details {
+  margin-top: 4px;
+}
+
+@media (max-width: 1080px) {
+  .adm-breakdowns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A wide screen shows the chart and keeps the table behind a summary.  The
+   details content is revealed with the pseudo element of the disclosure, so
+   one copy of every record serves both screens. */
+@media (min-width: 900px) {
+  @supports selector(::details-content) {
+    .adm-chart-details::details-content {
+      content-visibility: visible;
+    }
+
+    .adm-chart-details > summary {
+      display: none;
+    }
+  }
+}
+
+/* A phone shows the table and keeps the chart in its disclosure.  The chart
+   keeps its own size, so no label of it is shrunk. */
+@media (max-width: 900px) {
+  @supports selector(::details-content) {
+    .adm-table-details::details-content {
+      content-visibility: visible;
+    }
+
+    .adm-table-details > summary {
+      display: none;
+    }
+  }
+
+  .adm-chart-figure {
+    overflow-x: auto;
+  }
+
+  .adm-chart-figure .ops-chart {
+    width: 480px;
+    max-width: none;
+  }
+}
+

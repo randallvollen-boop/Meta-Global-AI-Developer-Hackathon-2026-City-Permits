@@ -66,8 +66,7 @@
   {% endfor %}
 </section>
 
-<section class="card" aria-labelledby="decisions-heading" data-testid="ops-decisions">
-  <div class="card-b">
+<section class="panel adm-breakdown" aria-labelledby="decisions-heading" data-testid="ops-decisions">
   <h2 id="decisions-heading">Decisions recorded, by outcome</h2>
   <p class="muted">Decision rows, all time, grouped by outcome.</p>
   <div class="tbl-wrap"><table class="data-table">
@@ -75,27 +74,30 @@
     <thead><tr><th scope="col">Outcome</th><th scope="col">Decisions</th></tr></thead>
     <tbody>{% for row in v.decision_rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}</tbody>
   </table></div>
-  </div>
 </section>
 
-<div class="ops-charts">
+<div class="adm-breakdowns">
 {% for chart in v.charts %}
-<section class="card" aria-labelledby="{{ chart.testid }}-h" data-testid="{{ chart.testid }}-section">
-  <div class="card-b">
+<section class="panel adm-breakdown" aria-labelledby="{{ chart.testid }}-h" data-testid="{{ chart.testid }}-section">
   <h2 id="{{ chart.testid }}-h">{{ chart.title }}</h2>
   <p class="muted">{{ chart.definition }}</p>
   {% if chart.rows %}
-  {{ chart.svg|safe }}
-  <div class="tbl-wrap"><table class="data-table" data-testid="{{ chart.testid }}-table">
-    <caption class="visually-hidden">{{ chart.title }}</caption>
-    <thead><tr><th scope="col">Group</th><th scope="col">Applications</th></tr></thead>
-    <tbody>{% for row in chart.rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}
-    <tr><th scope="row">Total</th><td>{{ chart.total }}</td></tr></tbody>
-  </table></div>
+  <details class="adm-chart-details" data-testid="{{ chart.testid }}-chart">
+    <summary class="adm-chart-summary">Show the chart</summary>
+    <div class="adm-chart-figure">{{ chart.svg|safe }}</div>
+  </details>
+  <details class="adm-table-details" data-testid="{{ chart.testid }}-data">
+    <summary class="adm-table-summary">Show the data table</summary>
+    <div class="tbl-wrap"><table class="data-table" data-testid="{{ chart.testid }}-table">
+      <caption class="visually-hidden">{{ chart.title }}</caption>
+      <thead><tr><th scope="col">Group</th><th scope="col">Applications</th></tr></thead>
+      <tbody>{% for row in chart.rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}
+      <tr><th scope="row">Total</th><td>{{ chart.total }}</td></tr></tbody>
+    </table></div>
+  </details>
   {% else %}
   <p class="muted" data-testid="{{ chart.testid }}-empty">Nothing to show: no application matches this definition yet.</p>
   {% endif %}
-  </div>
 </section>
 {% endfor %}
 </div>

@@ -135,6 +135,21 @@ def test_the_dashboard_scope_follows_the_history_switch(client) -> None:
     assert "Sample history excluded." in excluded
 
 
+def test_the_dashboard_breakdowns_keep_their_charts_and_their_tables(client) -> None:
+    choose(client, ADMIN)
+    dash = client.get("/ops/dashboard").text
+    # Every breakdown with rows keeps its chart and its table in the page.
+    for testid in ("chart-status", "chart-channel"):
+        assert f'data-testid="{testid}-chart"' in dash, testid
+        assert f'data-testid="{testid}-data"' in dash, testid
+        assert f'data-testid="{testid}-table"' in dash, testid
+    # The breakdown without rows says so instead of drawing an empty chart.
+    assert 'data-testid="chart-backlog-empty"' in dash
+    # The table of a breakdown keeps its rows and its total.
+    assert "Total" in dash
+    assert dash.count('class="ops-chart"') >= 2
+
+
 # --------------------------------------------------------------- audit log
 
 
