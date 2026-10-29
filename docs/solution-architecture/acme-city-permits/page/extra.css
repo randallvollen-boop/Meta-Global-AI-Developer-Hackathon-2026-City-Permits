@@ -1,4 +1,4 @@
-/* Vollen Data Ledger brand layer over the STD-29 kit. System font stacks only, no embedded fonts. */
+/* VollenData brand layer over the STD-29 kit. System font stacks only, no embedded fonts. */
 :root{
   --bg:#f7f4ee; --bg-alt:#f1ece2; --surface:#fbf9f5; --surface-2:#f1ece2;
   --ink:#1b2333; --muted:#5a6372; --line:#dcd4c4;
@@ -55,7 +55,7 @@ h1,h2,.sec-h h2,.hero h1,.panel h3,section h3,.sub h3{font-family:var(--serif);f
 .hero .client,.secsel-k,.hop .k,.fstep .n{font-family:var(--mono);letter-spacing:.14em}
 .hero{border-bottom:2px solid var(--hi)}
 .hero .standfirst{font-family:var(--serif)}
-/* Co-brand header: MouseGroom leads, then "by Vollen Data" (name only, no VDS logo) */
+/* Co-brand header: ACME City Permits leads, then "by VollenData" (name only, no VDS logo) */
 .cobrand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--display)}
 .cobrand img{width:34px;height:34px;border-radius:7px;flex:none}
 .cobrand .pn{font:600 1.15rem/1 var(--serif);color:var(--display)}

@@ -18,7 +18,7 @@ Run from the solution workspace root, in this order:
 
 ```
 python3 -I ~/.claude/skills/solution-architecture-page/scripts/inline_assets.py page
-python3 -I "~/Documents/Vollen Data Analytics/Solution_Architecture_Kit/build_page.py" page
+python3 -I "~/Documents/VollenData Analytics/Solution_Architecture_Kit/build_page.py" page
 ~/.claude/skills/solution-architecture-page/scripts/check_linux.sh \
   "$PWD/vollen_acme-city-permits_solution-architecture_2026-10-26.html" "$PWD/check"
 python3 -I check/verify_page.py \
@@ -75,7 +75,7 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 ## Boundaries
 
 - Fictional ACME City data only. No real applicant, contractor, parcel, payment or permit record appears on the page.
-- Text only Vollen Data Services branding. No wrong brand word, logo or client mark reaches the output, and the builder denylist enforces that.
+- Text only VollenData branding. No wrong brand word, logo or client mark reaches the output, and the builder denylist enforces that.
 - Every mockup frame says "Example with fictional data".
 - The page states no measured benefit, accuracy, savings, performance, compliance or production readiness claim, and no tamper-proof claim.
 - The page embeds no fonts and uses no kit icons. `page/extra.css` sets system font stacks, and `page/icons.json` holds our own 38 line icons, which the kit builder uses in place of its set. The kit's Aptos font data was removed (2026-10-28).
