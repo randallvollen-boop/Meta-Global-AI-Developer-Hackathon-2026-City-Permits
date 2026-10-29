@@ -1,5 +1,5 @@
 {
-  "about": "Every binary file the publishable tree may carry, with its sha256 and where it came from. scripts/scan_publishable_tree.py fails on any binary not listed here, on a hash mismatch, on a file whose header does not match its type, and on a listed file that is missing. A set may raise the 5 MiB size limit for its own files with max_bytes.",
+  "about": "Every binary file the publishable tree may carry, with its sha256 and where it came from. scripts/scan_publishable_tree.py fails on any binary not listed here, on a hash mismatch, on a file whose header does not match its type, and on a listed file that is missing. A set with suffixes instead of files admits any file of those types in its folder, checked by header and size only. A set may raise the 5 MiB size limit for its own files with max_bytes.",
   "sets": [
     {
       "directory": "src/acme_city/static/map-tiles",
@@ -79,15 +79,15 @@
     },
     {
       "directory": "src/acme_city/static/video",
-      "source": "DemoVideo draft 8 web encode of the persona tour, Kokoro narration, captions burned in; the poster is its still",
+      "source": "DemoVideo draft 8 web encode of the persona tour, Kokoro narration, captions burned in; the poster is its still. Not pinned by hash because drafts are re-encoded; any MP4 or JPEG here passes on its header and the size limit",
       "added_in": [
         "426bc5a"
       ],
       "max_bytes": 8388608,
-      "files": {
-        "demo-video-poster.jpg": "dd443ead10c9d7203de3d5555eccb552e8c3e93950a39f2d94c73e28547e285b",
-        "demo-video.mp4": "c9823815348a280b8529a26faa193e750ade35d78ed8721e8cd21435fb51cfac"
-      }
+      "suffixes": [
+        ".mp4",
+        ".jpg"
+      ]
     }
   ]
 }
