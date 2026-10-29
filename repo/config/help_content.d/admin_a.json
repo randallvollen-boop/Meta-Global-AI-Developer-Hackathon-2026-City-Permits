@@ -1,1 +1,13 @@
-{}
+{
+  "note": "The help text of the admin_a lane.  Every entry replaces one step of the shared help content; no step is deleted.",
+  "howto": {
+    "guides": [
+      {
+        "slug": "read-the-operations-dashboard-and-audit-log",
+        "steps": {
+          "2": "Beside the scope statement, click \"Include the sample history\" to count the sample year as well, or \"Leave the sample history out\" to leave it out."
+        }
+      }
+    ]
+  }
+}
