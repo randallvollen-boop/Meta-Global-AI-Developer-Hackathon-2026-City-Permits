@@ -563,7 +563,7 @@
     <thead><tr><th>Mode</th><th>What it means</th></tr></thead>
     <tbody>
       <tr><td>Demo (default)</td><td>The fictional demonstration. The persona selector, the switch user panel, the intake simulator and the simulated GIS service are available.</td></tr>
-      <tr><td>Production</td><td>Set with <code>ACME_DEPLOYMENT_MODE=production</code>. It removes the persona selector, the simulators, the recorded replay and the API documentation. It refuses to start without <code>ACME_SECRET_KEY</code> or with a demo database.</td></tr>
+      <tr><td>Production</td><td>Set with <code>ACME_DEPLOYMENT_MODE=production</code>. It removes the persona selector, the simulators, the recorded replay and the API documentation. It refuses to start without a generated signing value or with a demo database.</td></tr>
     </tbody>
   </table></div>
   <h3>Controls in both modes</h3>
@@ -574,17 +574,19 @@
     <li><code>/readyz</code> returns 503 when the stored schema revision is not the head of the running build. <code>/healthz</code> stays a liveness probe.</li>
     <li>Per-client rate limits and a request size limit on the public demonstration. Production error responses use a fixed message for each status, with a stable code.</li>
   </ul>
-  <p>The repository has a Dockerfile with demo and production build targets. The continuous integration workflow runs the ten local gates on every pull request and on each push to main.</p>
-  <p>Real sign-in, a server database, backups, monitoring and malware scanning are still open. The production deployment decision stays on hold until they close.</p>
+  <p>The repository has a Dockerfile with demo and production build targets. The live Render service uses the separate demonstration image at <code>repo/Dockerfile-demo</code>, not production mode. The continuous integration workflow runs the ten local gates on every pull request and on each push to main.</p>
+  <p>Real sign-in, a server database, backups, monitoring and malware scanning are still open. Production mode remains a hardened core rather than a finished product.</p>
 </div></section>
 
 <section id="hosting"><div class="wrap">
   <h2>Hosting on Render</h2>
-  <p class="lede">The public demonstration is set up from a Render Blueprint. The live deployment is being prepared, and this page gives no public address for it.</p>
+  <p class="lede">The live public demonstration is at <code>https://acme-city-permits.onrender.com</code> on a paid Render web service. It uses SQLite and fictional data only.</p>
   <ul>
     <li>The Blueprint is <code>render.yaml</code> at the repository root. It defines one web service, built from <code>repo/Dockerfile-demo</code>, and one nightly cron job.</li>
+    <li>Automatic deploys are off. A person starts each release deploy manually.</li>
     <li>The service runs in demo mode with fictional data only. It has no disk, so each start rebuilds the database.</li>
-    <li>With demo seeding on start, each start resets the data, runs the recorded walkthrough and loads 600 synthetic permit applications and the steward demonstration data. Live model calls stay off until someone turns them on.</li>
+    <li>With demo seeding on start, each start resets the data, runs the recorded walkthrough and loads 600 synthetic permit applications and the steward demonstration data.</li>
+    <li>The <code>ACME_PUBLIC_DEMO</code> lock is on. The live Muse provider is disabled, and no provider key is configured.</li>
     <li>The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. Render keeps the old instance running until the new one passes <code>/readyz</code>.</li>
     <li>Rate limits count requests per client address: 300 a minute for all requests, 60 for writes, 20 for persona switches and 10 for uploads. The request size limit is 25 MB.</li>
   </ul>
@@ -711,7 +713,7 @@
     <div class="card"><h4>Scene 5: city leaders</h4><p>The what-if agent tries a seven foot fence limit on a year of sample cases. Muse Spark writes the council briefing as a draft for approval.</p></div>
     <div class="card"><h4>Title card</h4><p>And underneath it all, one record for the whole city.</p></div>
     <div class="card"><h4>Scene 6: one shared record</h4><p>Every resident, property, contractor and permit has one shared record. Fire, police, sanitation and code enforcement all work from it. And on the city's website, residents can look up any permit in their neighborhood. Muse Wonder wrote the application code. Muse Image drew the permit icons. And Muse Spark runs inside the app: the help desk, the document reader, and the council briefing.</p></div>
-    <div class="card"><h4>Scene 7: close</h4><p>Randall Vollen built this with Muse Spark, Muse Wonder, and Muse Image. The code is linked below.</p></div>
+    <div class="card"><h4>Scene 7: close</h4><p>This demonstration was built with Muse Spark, Muse Wonder and Muse Image. The code is linked below.</p></div>
   </div>
 </div></section>
 

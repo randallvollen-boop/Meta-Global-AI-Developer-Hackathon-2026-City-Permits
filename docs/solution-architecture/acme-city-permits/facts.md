@@ -52,7 +52,7 @@ System custodians, source adapters, outbox workers and Muse are service identiti
 
 ## Planned application architecture
 
-One Python 3.12 FastAPI service binds loopback only. SQLAlchemy and Alembic manage one SQLite database. Jinja pages and small vanilla JavaScript enhancements provide eight screens. Three persisted in-process source adapters simulate Permitting, GIS and ERP/Finance. A database outbox carries durable publication and acknowledgements. An append-only application audit trail records accepted and denied sensitive actions without claiming tamper-proof storage.
+One Python 3.12 FastAPI service binds loopback for local use and runs as a paid Render web service for the hosted demonstration. SQLAlchemy and Alembic manage one SQLite database. Jinja pages and small vanilla JavaScript enhancements provide eight screens. Three persisted in-process source adapters simulate Permitting, GIS and ERP/Finance. A database outbox carries durable publication and acknowledgements. An append-only application audit trail records accepted and denied sensitive actions without claiming tamper-proof storage.
 
 Modules:
 
@@ -112,12 +112,19 @@ Example with fictional data: fixed review fee 100.00 USD plus 0.001 times declar
 
 No implementation or verification figure is shown as complete until the corresponding stored evidence exists.
 
+## Hosting and production
+
+- The live public demonstration is at `https://acme-city-permits.onrender.com` on a paid Render web service. It runs the demo image from `repo/Dockerfile-demo`, uses SQLite and contains fictional data only.
+- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC.
+- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock, `ACME_MUSE_PROVIDER_ENABLED=0` disables the live Muse provider and no provider key is configured.
+- The production mode remains a hardened core rather than a finished product. Real sign-in, a server database, backups, monitoring and malware scanning remain open.
+
 ## Open decisions and release gates
 
 - External click-through prototype source remains absent; the new app is built independently from the specification.
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
 - The repository is on GitHub under the personal owner, private until submission.
-- Final competition candidate, event terms, submission format, deployment and submission remain held.
+- Final competition candidate, event terms, submission format and submission remain held. The public demonstration is deployed separately in demo mode.
 - Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. Keep the internal-review banner.
 - Architecture status is AS BUILT; the integrated evidence gate passed.
 
