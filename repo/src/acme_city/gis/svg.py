@@ -36,6 +36,8 @@ TILE_URL = "/ui/static/map-tiles/"
 
 #: The margin between the lot line and the building picture, in map units.
 TILE_INSET = 2.0
+# How strongly a district shade covers the buildings on the City view map.
+TINT_OPACITY = 0.55
 
 
 def _zoning_tiles() -> dict[str, tuple[str, ...]]:
@@ -343,16 +345,16 @@ def district_map_svg(
     never the only signal.  ``dots`` mark parcels with exceptions: each has a
     ``parcel`` number, a ``count`` and a ``title``; the dot grows with the
     count, which makes a cluster visible.
+
+    The base is the same aerial town as ``town_map_svg``: lawn, named
+    streets and a building on every lot, in the same viewBox, so the two
+    maps line up.  The district shade lies over each lot as a translucent
+    tint, so the buildings show through it.
     """
     xmin, ymin, xmax, ymax = EXTENT
     flip = ymax
     width, height = xmax - xmin, ymax - ymin
-    street_svg = []
-    for street in streets:
-        d = "M" + " L".join(f"{x:.1f},{flip - y:.1f}" for x, y in street["path"])
-        street_svg.append(
-            f'<g class="gis-street"><title>{escape(street["name"])}</title><path d="{d}"/></g>'
-        )
+    street_svg = [_street_svg(street, flip, named=True) for street in streets]
     parcel_svg = []
     boxes: dict[str, list[float]] = {}
     centres: dict[str, tuple[float, float]] = {}
@@ -368,7 +370,8 @@ def district_map_svg(
         parcel_svg.append(
             f'<g class="insight-parcel {css}" data-parcel="{escape(parcel.number)}" '
             f'data-district="{escape(parcel.zoning)}"><title>{escape(title)}</title>'
-            f'<path d="{_path(parcel.rings, flip)}"/></g>'
+            f'{_building_svg(parcel, flip, streets)}'
+            f'<path class="insight-tint" fill-opacity="{TINT_OPACITY}" d="{_path(parcel.rings, flip)}"/></g>'
         )
     label_svg = []
     for code, box in sorted(boxes.items()):
@@ -398,6 +401,7 @@ def district_map_svg(
         '<path d="M0 0 L0 8" class="insight-hatch-line"/></pattern></defs>'
     )
     body = (
+        f'<rect class="gis-ground" x="{xmin:.0f}" y="0" width="{width:.0f}" height="{height:.0f}"/>'
         f'<g class="gis-layer-streets">{"".join(street_svg)}</g>'
         f'<g class="insight-layer-parcels">{"".join(parcel_svg)}</g>'
         f'<g class="insight-layer-labels">{"".join(label_svg)}</g>'
