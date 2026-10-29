@@ -1,6 +1,6 @@
 # ACME City Permits architecture facts — as built (local candidate)
 
-Date: 2026-10-26. Audience: internal AVA Library. No client. Architecture status is PLANNED while implementation is active; it becomes AS BUILT only after the integrated verification gate passes. Canonical status: `STATUS.json` in this workspace.
+Date: 2026-10-26, updated 2026-10-29. Audience: internal AVA Library. No client. Architecture status is AS BUILT: the integrated verification gate passed. Canonical status: `STATUS.json` in this workspace.
 
 ## Handling and never-on-page list
 
@@ -116,10 +116,10 @@ No implementation or verification figure is shown as complete until the correspo
 
 - External click-through prototype source remains absent; the new app is built independently from the specification.
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
-- GitHub authentication to the required personal owner remains pending; remote creation, commits and pushes are not part of this build.
+- The repository is on GitHub under the personal owner, private until submission.
 - Final competition candidate, event terms, submission format, deployment and submission remain held.
 - Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. Keep the internal-review banner.
-- Architecture status remains PLANNED until the integrated evidence gate passes.
+- Architecture status is AS BUILT; the integrated evidence gate passed.
 
 ## Kit provenance
 

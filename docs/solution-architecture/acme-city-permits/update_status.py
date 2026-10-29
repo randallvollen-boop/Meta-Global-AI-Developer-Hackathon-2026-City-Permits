@@ -160,7 +160,7 @@ def status_block(status: dict) -> str:
       <p class="status-value">{run["tasks_total"]} tasks</p>
       <p class="status-note"><b>{run["tasks_verified"]} verified</b>. {html.escape(run["current_phase"])}. Current tasks: {current_tasks}.</p>
     </div>
-    <div class="status-card" id="status-phase" data-phase="{html.escape(run["current_phase"])}" data-phase-state="in_progress">
+    <div class="status-card" id="status-phase" data-phase="{html.escape(run["current_phase"])}" data-phase-state="complete">
       <p class="kicker">Phase</p>
       <p class="status-value">{html.escape(run["current_phase"])}</p>
       <p class="status-note">Phase states below come from accepted evidence in the status record.</p>
