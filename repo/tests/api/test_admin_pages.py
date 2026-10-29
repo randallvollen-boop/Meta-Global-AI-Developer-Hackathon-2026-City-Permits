@@ -310,3 +310,144 @@ def test_a_tab_another_lane_registered_renders_with_aria_current(
     assert "Probe tab" not in response.text
     # An unknown tab falls back to the first one.
     assert 'aria-current="page" aria-selected="true" data-testid="admin-tab" data-tab="permit-types"' in response.text
+
+
+# ----------------------------------------------------------- the permit types
+
+
+def test_the_permit_type_register_is_compact_and_keeps_its_settings(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=permit-types")
+    assert response.status_code == 200
+    text = response.text
+    assert text.count('data-testid="admin-permit-type-row"') == 17
+    for heading in ("Name", "Review area", "Requirements", "Settings"):
+        assert f'<th scope="col">{heading}</th>' in text, heading
+    # The settings of every type hold the stored values and the document forms.
+    assert text.count('data-testid="admin-permit-type-settings"') == 17
+    assert "Permit type key" in text
+    assert "Fee schedule" in text
+    assert "Requires a person or board" in text
+    # The explanation of the document changes stays beside the forms.
+    assert "Changes apply to new applications." in text
+    assert "Submitted applications keep their existing requirements." in text
+    # The old eight column register is gone.
+    assert "Discretionary" not in text
+
+
+def test_the_add_permit_type_form_is_behind_its_own_heading(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=permit-types")
+    assert 'data-testid="admin-add-permit-type"' in response.text
+    assert 'data-testid="admin-add-permit-type-submit"' in response.text
+    # The form is in a disclosure, so it is opened on purpose.
+    assert 'data-testid="admin-add-permit-type-panel"' in response.text
+    assert response.text.index('data-testid="admin-add-permit-type-panel"') < response.text.index(
+        'data-testid="admin-permit-types"'
+    )
+
+
+# ---------------------------------------------------------------- governance
+
+
+def test_the_governance_screen_has_the_five_tabs(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/governance")
+    assert response.status_code == 200
+    for tab in ("sources", "responsibilities", "authority", "access", "history"):
+        assert f'data-testid="governance-tab" data-tab="{tab}"' in response.text
+
+
+def test_the_source_overview_names_the_freshness_and_the_open_issues(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/governance?tab=sources")
+    assert response.status_code == 200
+    assert response.text.count('data-testid="source-card"') == 3
+    assert "Source last changed" in response.text
+    assert "Last received or checked" in response.text
+    assert "Open recorded issues" in response.text
+    assert "Responsible team" in response.text
+    assert "Change this in" in response.text
+
+
+def test_the_access_tab_shows_the_grants_of_every_persona(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/governance?tab=access")
+    assert response.status_code == 200
+    assert response.text.count('data-testid="access-row"') == 5
+    assert "admin.overview.view" in response.text
+
+
+# ------------------------------------------------------------- reconciliation
+
+
+def test_the_reconciliation_screen_has_the_three_scopes(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/reconciliation")
+    assert response.status_code == 200
+    for tab in ("assessments", "receipts", "accounts"):
+        assert f'data-testid="reconciliation-tab" data-tab="{tab}"' in response.text
+
+
+def test_the_assessment_list_shows_the_readable_reference(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/reconciliation")
+    assert response.status_code == 200
+    assert "SYN-APP-007" in response.text
+    assert 'data-testid="assessment-view-details"' in response.text
+
+
+def test_the_receipt_register_is_a_tab_of_its_own(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/reconciliation?tab=receipts")
+    assert response.status_code == 200
+    assert 'data-testid="payment-table"' in response.text
+    assert 'data-testid="assessment-table"' not in response.text
+    # The euro receipt is visibly apart from the dollar receipts.
+    assert "EUR" in response.text
+    assert "different currency" in response.text  # editorial pass (vollencoms): no "not X"
+
+
+def test_the_exception_measure_is_not_styled_when_there_is_nothing_to_review(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/reconciliation")
+    assert response.status_code == 200
+    assert 'data-testid="recon-exceptions-tile" data-exception-count="0"' in response.text
+    assert "needs review" not in response.text
+    assert "none recorded" in response.text
+
+
+def test_the_selected_assessment_shows_its_receipts_and_its_finance_actions(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/reconciliation?tab=assessments&assessment=assess_d07_v1")
+    assert response.status_code == 200
+    assert 'data-testid="selected-assessment"' in response.text
+    assert 'data-testid="assessment-receipt-row"' in response.text
+    for action_id in (
+        "finance.assess",
+        "finance.reassess",
+        "finance.import",
+        "finance.allocate",
+        "finance.reconcile",
+    ):
+        assert f'data-action-id="{action_id}"' in response.text, action_id

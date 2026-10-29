@@ -13,9 +13,22 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 from jinja2 import Environment, FileSystemLoader
+from sqlalchemy.orm import Session
 
-from acme_city.ui import ops_views
+from acme_city.auth.context import ActorContext
+from acme_city.auth.permissions import PermissionResolver
+from acme_city.core.config import Settings
+from acme_city.fixtures.loader import FixtureBundle
+from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.persistence.models.governance import DemoEnvironment
+from acme_city.persistence.session import (
+    SessionFactory,
+    initialize_database,
+    transaction,
+)
+from acme_city.ui import admin_config_views, ops_views
 
 TEMPLATES = Path(__file__).resolve().parents[2] / "src" / "acme_city" / "templates"
 
@@ -31,6 +44,59 @@ def _render(source: str) -> str:
         "{% import 'components/admin_patterns.html' as adm %}" + source
     )
     return template.render()
+
+
+@pytest.fixture()
+def environment(tmp_path: Path) -> tuple[Settings, FixtureBundle]:
+    settings = Settings.load(
+        environ={
+            "ACME_DATABASE_URL": f"sqlite:///{tmp_path / 'admin-presentation.db'}",
+            "ACME_SECRET_KEY": "admin-presentation-secret-value",
+        },
+        key_file=tmp_path / "missing.env",
+    )
+    initialize_database(settings)
+    bundle = FixtureBundle.load()
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                DemoEnvironment(
+                    id="demo_environment_local",
+                    environment_id=ENVIRONMENT_ID,
+                    fictional_demo=True,
+                    fixture_version=bundle.fixture_version,
+                    label="local fictional demonstration",
+                )
+            )
+        with transaction(factory) as session:
+            reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+    finally:
+        factory.dispose()
+    return settings, bundle
+
+
+@pytest.fixture()
+def session(environment: tuple[Settings, FixtureBundle]) -> Session:
+    settings, _ = environment
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as open_session:
+            yield open_session
+    finally:
+        factory.dispose()
+
+
+def _actor_for(session: Session, actor_id: str) -> ActorContext:
+    grants = PermissionResolver(session).grants_for(actor_id)
+    return ActorContext(
+        actor_id=actor_id,
+        role_ids=frozenset(),
+        domain_scope=frozenset(grant.domain_id for grant in grants if grant.domain_id),
+        record_scope=frozenset(
+            record_id for grant in grants for record_id in grant.record_scope
+        ),
+    )
 
 
 # ------------------------------------------------------------- the macros
@@ -148,3 +214,49 @@ def test_the_scope_of_the_figures_is_always_named() -> None:
     assert "Fictional" in excluded and "ACME" not in excluded
     assert excluded.endswith("Sample history excluded.")
     assert included.endswith("Sample history included.")
+
+
+# ------------------------------------------------------ the permit type register
+
+
+def test_every_permit_type_says_what_it_asks_for(session: Session) -> None:
+    actor = _actor_for(session, "persona_city_administrator")
+    view = admin_config_views.administration(session, actor)
+    types = view["permit_types"]
+    assert types
+    for row in types:
+        assert row["requirements_summary"]
+        assert row["review_area_label"]
+        assert row["required_fields_label"]
+        assert row["required_documents_label"]
+        assert row["process_label"]
+        assert row["fee_schedule_label"] != "-"
+        if row["required_documents"]:
+            for document in row["required_documents"]:
+                assert document.replace("_", " ") in row["requirements_summary"]
+        else:
+            assert row["requirements_summary"] == "No required document"
+
+
+def test_a_discretionary_type_says_that_it_needs_a_person_or_a_board(
+    session: Session,
+) -> None:
+    actor = _actor_for(session, "persona_city_administrator")
+    view = admin_config_views.administration(session, actor)
+    discretionary = [row for row in view["permit_types"] if row["discretionary"]]
+    assert discretionary
+    for row in discretionary:
+        assert row["discretionary_label"] == "Requires a person or board"
+    for row in view["permit_types"]:
+        if not row["discretionary"]:
+            assert row["discretionary_label"] == "Does not require a person or board"
+
+
+def test_a_value_that_was_never_recorded_says_so(session: Session) -> None:
+    actor = _actor_for(session, "persona_city_administrator")
+    view = admin_config_views.administration(session, actor)
+    # The old register showed a dash for an empty value; it now names it.
+    assert admin_config_views.NOT_RECORDED == "Not recorded"
+    for row in view["permit_types"]:
+        assert row["fee_schedule_label"] in {row["fee_schedule_key"], "Not recorded"}
+        assert row["fee_schedule_label"] != "-"

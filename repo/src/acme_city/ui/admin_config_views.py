@@ -49,6 +49,32 @@ def _permit_type_rows(session: Session) -> list[permit.PermitType]:
     )
 
 
+#: The label of a permit type that is always held for a person or a board.
+REQUIRES_A_PERSON = "Requires a person or board"
+
+#: The label of a permit type that is not always held for a person or a board.
+NO_PERSON_REQUIRED = "Does not require a person or board"
+
+#: The label of a value that was never recorded.
+NOT_RECORDED = "Not recorded"
+
+
+def _names(values: list[str] | None) -> str:
+    """Return the names of a list of stored values, in plain words."""
+    names = [str(value).replace("_", " ") for value in values or []]
+    return ", ".join(names) if names else NOT_RECORDED
+
+
+def _requirements_summary(row: permit.PermitType) -> str:
+    """Return the short summary of what a permit type asks for."""
+    documents = [str(value).replace("_", " ") for value in row.required_documents or []]
+    if not documents:
+        return "No required document"
+    if len(documents) == 1:
+        return documents[0]
+    return ", ".join(documents[:-1]) + " and " + documents[-1]
+
+
 def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
     """Return the view model of the administration screen."""
     types = _permit_type_rows(session)
@@ -62,11 +88,20 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
             "label": row.label,
             "description": row.description or "",
             "review_area": row.review_area or row.review_route,
+            "review_area_label": (row.review_area or row.review_route) or NOT_RECORDED,
             "process_category": row.process_category or "",
+            "process_label": (row.process_category or "").replace("_", " ") or NOT_RECORDED,
             "discretionary": bool(row.discretionary),
+            "discretionary_label": (
+                REQUIRES_A_PERSON if row.discretionary else NO_PERSON_REQUIRED
+            ),
             "required_fields": list(row.required_fields or []),
+            "required_fields_label": _names(row.required_fields),
             "required_documents": list(row.required_documents or []),
+            "required_documents_label": _names(row.required_documents),
+            "requirements_summary": _requirements_summary(row),
             "fee_schedule_key": row.fee_schedule_key or "",
+            "fee_schedule_label": row.fee_schedule_key or NOT_RECORDED,
             "version": row.version,
             "active": row.active,
         }
@@ -247,4 +282,9 @@ def _configuration_log(session: Session) -> list[dict[str, Any]]:
     return entries
 
 
-__all__ = ["administration"]
+__all__ = [
+    "NO_PERSON_REQUIRED",
+    "NOT_RECORDED",
+    "REQUIRES_A_PERSON",
+    "administration",
+]

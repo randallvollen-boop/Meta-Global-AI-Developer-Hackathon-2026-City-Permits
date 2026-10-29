@@ -149,6 +149,7 @@ def test_the_administrator_screens_do_not_overflow(
         "/governance?tab=sources",
         "/reconciliation?tab=assessments",
         "/admin?tab=appearance",
+        "/admin?tab=permit-types",
     ):
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         overflow = page.evaluate(
@@ -202,4 +203,24 @@ def test_every_section_fits_a_phone(page, server: BrowserServer, login, section:
     # Neither the mobile bar nor the demo switch covers the navigation.
     assert_not_covered(page, page.locator(".demo-switch > summary"))
     assert_not_covered(page, page.locator('[data-testid="admin-tab"][aria-current="page"]'))
+    assert page.recorded_errors == []
+
+
+def test_the_permit_type_register_fits_a_phone_and_opens_its_settings(
+    page, server: BrowserServer, login
+) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab=permit-types", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    rows = page.locator('[data-testid="admin-permit-type-row"]')
+    assert rows.count() == 17
+    # The settings of a type open in place, with the governed document forms.
+    settings = rows.first.locator('[data-testid="admin-permit-type-settings"]')
+    assert settings.count() == 1
+    settings.locator("summary").click()
+    assert settings.locator('[data-testid="admin-document-toggle"]').count() > 0
+    assert "Changes apply to new applications." in settings.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
     assert page.recorded_errors == []
