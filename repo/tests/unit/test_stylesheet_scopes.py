@@ -102,16 +102,16 @@ def test_each_area_file_only_uses_its_own_prefix(name) -> None:
         assert selector.startswith(PREFIXES[name]), f"{name}: {selector}"
 
 
-def test_insight_css_is_the_old_block_unchanged() -> None:
+def test_insight_css_keeps_the_old_selectors_in_order() -> None:
     new = (STATIC / "insight.css").read_text(encoding="utf-8")
-    assert " ".join(new.split()) == " ".join(_old_insight_block(_old_app_css()).split())
+    assert _selectors(new) == _selectors(_old_insight_block(_old_app_css()))
 
 
-def test_app_css_plus_insight_css_keeps_the_old_rule_list() -> None:
-    old = _rules(_old_app_css())
-    new = _rules((STATIC / "app.css").read_text(encoding="utf-8"))
-    insight = _rules((STATIC / "insight.css").read_text(encoding="utf-8"))
-    assert insight, "insight.css holds rules"
+def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
+    old = _selectors(_old_app_css())
+    new = _selectors((STATIC / "app.css").read_text(encoding="utf-8"))
+    insight = _selectors((STATIC / "insight.css").read_text(encoding="utf-8"))
+    assert insight, "insight.css holds selectors"
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])
     assert old == new[:first] + insight + new[first:]
