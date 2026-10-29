@@ -14,7 +14,9 @@
 .nav-more > ul { margin-top: 2px; }
 
 /* The mobile navigation: the last entry of the bar opens a panel above it.
-   The panel is fixed to the viewport so the scrolling bar does not clip it. */
+   The panel is fixed to the viewport so the scrolling bar does not clip it,
+   and it sits above the demo switch (bottom 78px, about 33px tall) so the
+   switch does not cover its first entries. */
 .nav-more-mobile { flex: 1 0 auto; margin-top: 0; }
 .nav-more-mobile > .nav-more-summary {
   display: grid; justify-items: center; gap: 2px; padding: 5px 8px;
@@ -24,7 +26,7 @@
 .nav-more-mobile > .nav-more-summary svg { width: 18px; height: 18px; }
 .nav-more-mobile[open] > .nav-more-summary { color: var(--accent); background: var(--accent-soft); }
 .nav-more-panel {
-  position: fixed; left: 16px; right: 16px; bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  position: fixed; left: 16px; right: 16px; bottom: calc(120px + env(safe-area-inset-bottom, 0px));
   max-height: 60vh; overflow-y: auto; z-index: 26;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px;
   padding: 8px; border: 1px solid var(--line); border-radius: 12px;

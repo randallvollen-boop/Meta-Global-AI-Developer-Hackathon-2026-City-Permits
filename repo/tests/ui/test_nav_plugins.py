@@ -4,11 +4,16 @@ A lane changes the navigation only through ``NAV_PROFILES``,
 ``HOME_OVERRIDES`` and ``register_screen``, from a module that
 ``nav_plugins.load_plugins`` imports.  With nothing registered the
 navigation of every persona is unchanged.  The reserved screens exist in the
-tables but are gated on permissions no persona holds yet.
+tables and a persona reaches one only once its slice has built the route.
+
+The tests compare against what the navigation computes, not against literal
+lists, so a lane that registers a profile or grants a reserved permission
+does not have to edit this file.  Grant changes of the original personas are
+checked by the grant snapshot of W0-3.
 """
 # REQUIRES: UX-01, SEC-02
 # The navigation lists only the screens a persona holds a grant for, and a
-# reserved permission is granted to nobody until its slice builds the route.
+# reserved screen is reachable only once its slice builds the route.
 
 from __future__ import annotations
 
@@ -38,7 +43,7 @@ from acme_city.ui.router import router as ui_router
 
 REPO = Path(__file__).resolve().parents[2]
 
-#: The permission ids W0-2 reserves.  None of them is granted yet.
+#: The permission ids W0-2 reserves for the later slices.
 RESERVED_PERMISSIONS = (
     "agent.ops.read",
     "permit.intake.queue.view",
@@ -148,16 +153,12 @@ def _secondary_last_two(items: list[dict]) -> list[dict]:
 # ------------------------------------------------------------- permissions
 
 
-def test_the_reserved_permissions_exist_and_nobody_holds_them() -> None:
+def test_the_reserved_permissions_are_in_the_catalog() -> None:
     catalog = json.loads((REPO / "config" / "permissions.json").read_text(encoding="utf-8"))
     ids = [entry["permission_id"] for entry in catalog["permissions"]]
     assert len(ids) == len(set(ids))
-    actors_text = (REPO / "config" / "actors.json").read_text(encoding="utf-8")
     for permission in RESERVED_PERMISSIONS:
         assert permission in ids, permission
-        for role_id, grants in catalog["role_grants"].items():
-            assert permission not in grants, (role_id, permission)
-        assert f'"{permission}"' not in actors_text, permission
 
 
 def test_every_screen_grant_is_in_the_catalog() -> None:
@@ -168,13 +169,21 @@ def test_every_screen_grant_is_in_the_catalog() -> None:
             assert permission in ids, (key, permission)
 
 
-def test_no_persona_holds_a_grant_for_a_reserved_screen(session: Session) -> None:
+def _has_route(client: TestClient, href: str) -> bool:
+    """Whether the application serves ``href`` or a path below it."""
+    paths = [getattr(route, "path", "") for route in client.app.routes]
+    return any(path == href or path.startswith(href + "/") for path in paths)
+
+
+def test_a_reserved_screen_is_reachable_only_once_its_route_exists(
+    session: Session, client: TestClient
+) -> None:
     for actor_id in PERSONAS:
         actor = actor_for(session, actor_id)
         keys = {item["key"] for item in view_models.navigation(session, actor)}
-        assert not keys & set(RESERVED_SCREENS), actor_id
-        for key in RESERVED_SCREENS:
-            assert not view_models.may_open_screen(session, actor, key), (actor_id, key)
+        for key, href in RESERVED_SCREENS.items():
+            if key in keys or view_models.may_open_screen(session, actor, key):
+                assert _has_route(client, href), (actor_id, key)
 
 
 # ----------------------------------------------------------------- screens
@@ -204,18 +213,26 @@ def test_the_longest_href_wins() -> None:
 def test_register_screen_adds_a_screen_and_refuses_a_known_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(view_models, "SCREENS", view_models.SCREENS)
+    from acme_city.city import router as city_router
+
     monkeypatch.setattr(view_models, "SCREEN_PERMISSIONS", dict(view_models.SCREEN_PERMISSIONS))
     monkeypatch.setattr(view_models, "SCREEN_DOMAIN", dict(view_models.SCREEN_DOMAIN))
-    view_models.register_screen(
-        "probe_screen", "Probe", "/probe", (("agent.ops.read", None),), "permits"
-    )
-    assert view_models.SCREENS[-1] == {"key": "probe_screen", "label": "Probe", "href": "/probe"}
-    assert view_models.SCREEN_PERMISSIONS["probe_screen"] == (("agent.ops.read", None),)
-    assert view_models.SCREEN_DOMAIN["probe_screen"] == "permits"
-    assert view_models.screen_for_path("/probe") == "probe_screen"
-    with pytest.raises(ValueError):
-        view_models.register_screen("queue", "Again", "/again", (), "permits")
+    saved = list(view_models.SCREENS)
+    try:
+        view_models.register_screen(
+            "probe_screen", "Probe", "/probe", (("agent.ops.read", None),), "permits"
+        )
+        probe = {"key": "probe_screen", "label": "Probe", "href": "/probe"}
+        assert view_models.SCREENS[-1] == probe
+        # A module that imported SCREENS by name sees the added screen too.
+        assert city_router.SCREENS[-1] == probe
+        assert view_models.SCREEN_PERMISSIONS["probe_screen"] == (("agent.ops.read", None),)
+        assert view_models.SCREEN_DOMAIN["probe_screen"] == "permits"
+        assert view_models.screen_for_path("/probe") == "probe_screen"
+        with pytest.raises(ValueError):
+            view_models.register_screen("queue", "Again", "/again", (), "permits")
+    finally:
+        view_models.SCREENS[:] = saved
 
 
 # ---------------------------------------------------------------- profiles
@@ -223,40 +240,53 @@ def test_register_screen_adds_a_screen_and_refuses_a_known_key(
 
 def test_a_nav_profile_is_applied_and_then_unregistered(session: Session) -> None:
     actor = actor_for(session, "persona_data_steward")
-    before = view_models.navigation(session, actor)
+    other = actor_for(session, "persona_permit_reviewer")
+    registered = view_models.navigation(session, actor)
+    other_before = view_models.navigation(session, other)
+    # A profile a lane registered is set aside for the test and put back.
+    saved = view_models.NAV_PROFILES.pop(actor.actor_id, None)
     seen: list[list[str]] = []
 
     def profile(items: list[dict]) -> list[dict]:
         seen.append([item["key"] for item in items])
         return list(reversed(items))
 
-    view_models.NAV_PROFILES[actor.actor_id] = profile
     try:
+        before = view_models.navigation(session, actor)
+        view_models.NAV_PROFILES[actor.actor_id] = profile
         applied = view_models.navigation(session, actor)
         assert seen == [[item["key"] for item in before]]
         assert applied == list(reversed(before))
         # The home is the first screen of the navigation the profile returns.
-        assert view_models.home_for(session, actor)["key"] == applied[0]["key"]
-        other = actor_for(session, "persona_permit_reviewer")
-        assert [item["key"] for item in view_models.navigation(session, other)] == [
-            "queue", "applicants", "permit", "agent_adjudication", "review_queue",
-        ]
+        if actor.actor_id not in view_models.HOME_OVERRIDES:
+            assert view_models.home_for(session, actor)["key"] == applied[0]["key"]
+        # The profile of one persona leaves the navigation of another alone.
+        assert view_models.navigation(session, other) == other_before
     finally:
-        view_models.NAV_PROFILES.pop(actor.actor_id)
-    assert view_models.navigation(session, actor) == before
+        view_models.NAV_PROFILES.pop(actor.actor_id, None)
+        if saved is not None:
+            view_models.NAV_PROFILES[actor.actor_id] = saved
+    assert view_models.navigation(session, actor) == registered
 
 
 def test_a_home_override_replaces_the_first_screen(session: Session) -> None:
     actor = actor_for(session, "persona_data_steward")
-    assert view_models.home_for(session, actor)["href"] == "/queue"
+    registered = view_models.home_for(session, actor)
+    saved = view_models.HOME_OVERRIDES.get(actor.actor_id)
     view_models.HOME_OVERRIDES[actor.actor_id] = "/steward"
     try:
         home = view_models.home_for(session, actor)
         assert home == {"label": "Data issues", "href": "/steward", "key": "steward"}
         assert view_models.home_href({"actor_id": actor.actor_id}, []) == "/steward"
-    finally:
         view_models.HOME_OVERRIDES.pop(actor.actor_id)
-    assert view_models.home_for(session, actor)["href"] == "/queue"
+        # Without an override the home is the first screen of the navigation.
+        first = view_models.navigation(session, actor)[0]
+        assert view_models.home_for(session, actor)["href"] == first["href"]
+    finally:
+        view_models.HOME_OVERRIDES.pop(actor.actor_id, None)
+        if saved is not None:
+            view_models.HOME_OVERRIDES[actor.actor_id] = saved
+    assert view_models.home_for(session, actor) == registered
     assert view_models.home_href(None, None) == "/queue"
 
 
@@ -269,8 +299,13 @@ def test_load_plugins_imports_the_three_lane_modules() -> None:
         assert name in loaded
         assert name in sys.modules
         assert callable(sys.modules[name].register)
-    assert not view_models.NAV_PROFILES
-    assert not view_models.HOME_OVERRIDES
+    # A lane registers only for actors that exist.
+    actors = json.loads((REPO / "config" / "actors.json").read_text(encoding="utf-8"))
+    actor_ids = {
+        actor["actor_id"] for actor in actors["personas"] + actors["service_identities"]
+    }
+    assert set(view_models.NAV_PROFILES) <= actor_ids
+    assert set(view_models.HOME_OVERRIDES) <= actor_ids
 
 
 def test_load_plugins_skips_only_a_missing_lane_module(
@@ -292,19 +327,35 @@ def test_load_plugins_skips_only_a_missing_lane_module(
 # ------------------------------------------------------------------ render
 
 
-def test_the_brand_links_to_the_persona_home(client: TestClient) -> None:
-    for actor_id, home in (
-        ("persona_data_steward", "/queue"),
-        ("persona_permit_reviewer", "/queue"),
-        ("persona_city_administrator", "/overview"),
+def _brand_hrefs(html: str) -> list[str]:
+    """The brand links and the hidden app-title link of one page."""
+    brand = re.search(r'<div class="brand">.*?</div></div>', html, re.S)
+    assert brand is not None
+    title = re.search(r'<p class="app-title visually-hidden"><a href="([^"]+)"', html)
+    assert title is not None
+    return [*re.findall(r'href="([^"]+)"', brand.group(0)), title.group(1)]
+
+
+def test_the_brand_links_to_the_persona_home(client: TestClient, session: Session) -> None:
+    homes = {
+        actor_id: view_models.home_for(session, actor_for(session, actor_id))["href"]
+        for actor_id in PERSONAS
+    }
+    for actor_id in ("persona_data_steward", "persona_permit_reviewer", "persona_city_administrator"):
+        select_persona(client, actor_id)
+        response = client.get("/queue")
+        assert response.status_code == 200, actor_id
+        assert _brand_hrefs(response.text) == [homes[actor_id]] * 3, actor_id
+    # A refused screen links the brand to the home of the persona too: the
+    # applicant's home is /queue, which sends it on to the City website.
+    for actor_id, refused in (
+        ("persona_applicant", "/steward"),
+        ("persona_city_administrator", "/queue/review"),
     ):
         select_persona(client, actor_id)
-        html = client.get("/queue").text
-        brand = re.search(r'<div class="brand">.*?</div></div>', html, re.S)
-        assert brand is not None
-        assert re.findall(r'href="([^"]+)"', brand.group(0)) == [home, home], actor_id
-        title = re.search(r'<p class="app-title visually-hidden"><a href="([^"]+)"', html)
-        assert title is not None and title.group(1) == home, actor_id
+        response = client.get(refused)
+        assert response.status_code == 403, (actor_id, refused)
+        assert _brand_hrefs(response.text) == [homes[actor_id]] * 3, actor_id
 
 
 def test_a_secondary_item_renders_the_more_tools_group(client: TestClient) -> None:

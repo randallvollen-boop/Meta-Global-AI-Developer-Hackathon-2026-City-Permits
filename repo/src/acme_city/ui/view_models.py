@@ -50,7 +50,7 @@ from acme_city.rules.service import RuleCatalogService
 from acme_city.ui import agent_views, property_views, reviewer_views
 
 #: The required screens, in the order the navigation shows them.
-SCREENS: tuple[dict[str, str], ...] = (
+SCREENS: list[dict[str, str]] = [
     # The planning overview is the City Administrator's home.  It carries its
     # own grant, so it appears for that persona only and the home of every
     # other persona is unchanged.
@@ -114,7 +114,7 @@ SCREENS: tuple[dict[str, str], ...] = (
     {"key": "agent_case", "label": "Agent cases", "href": "/agents/cases"},
     {"key": "steward_automation", "label": "Steward automation", "href": "/steward/automation"},
     {"key": "steward_new_master", "label": "New master record", "href": "/steward/new-master"},
-)
+]
 
 #: The labels of the four selectable personas, in selector order.
 PERSONA_ORDER: tuple[str, ...] = (
@@ -371,12 +371,12 @@ def register_screen(
     """Add one screen after the canonical screens, with its grants and its domain.
 
     A lane adds a screen here instead of editing the frozen tables.  A key that
-    is already a screen is refused.
+    is already a screen is refused.  The screen is appended to ``SCREENS`` in
+    place, so a module that imported ``SCREENS`` by name sees it too.
     """
-    global SCREENS
     if any(screen["key"] == key for screen in SCREENS):
         raise ValueError(f"screen {key!r} is already registered")
-    SCREENS = SCREENS + ({"key": key, "label": label, "href": href},)
+    SCREENS.append({"key": key, "label": label, "href": href})
     SCREEN_PERMISSIONS[key] = tuple(grants)
     SCREEN_DOMAIN[key] = domain
 

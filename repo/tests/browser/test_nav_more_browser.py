@@ -19,6 +19,15 @@ from conftest import BrowserServer
 
 OVERFLOW = "() => document.documentElement.scrollWidth - window.innerWidth"
 
+#: Whether the centre of an element is the element itself or inside it, so no
+#: fixed layer such as the demo switch or the mobile bar covers it.
+#: Replace with the shared not-covered helper once tests/browser has one.
+NOT_COVERED = """(element) => {
+  const box = element.getBoundingClientRect();
+  const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+  return hit !== null && (hit === element || element.contains(hit));
+}"""
+
 
 def _secondary_last_two(items: list[dict]) -> list[dict]:
     items = [dict(item) for item in items]
@@ -62,13 +71,18 @@ def test_the_more_tools_group_fits_at_390_pixels(page, server: BrowserServer) ->
     assert page.evaluate(OVERFLOW) <= 1
     mobile = page.locator('.mobile-nav [data-testid="nav-more-mobile"]')
     assert mobile.is_visible()
-    mobile.locator("summary").click()
+    summary = mobile.locator("summary")
+    # The bar scrolls sideways, so the last entry is brought into view first.
+    summary.scroll_into_view_if_needed()
+    assert summary.evaluate(NOT_COVERED), "the More tools summary is covered"
+    summary.click()
     links = mobile.locator(".nav-more-panel a")
     assert links.count() == 2
     for index in range(links.count()):
         box = links.nth(index).bounding_box()
         assert box is not None
         assert box["x"] >= 0 and box["x"] + box["width"] <= 390, box
+        assert links.nth(index).evaluate(NOT_COVERED), f"More tools link {index} is covered"
     panel = mobile.locator(".nav-more-panel").bounding_box()
     assert panel is not None
     assert panel["x"] >= 0 and panel["x"] + panel["width"] <= 390, panel
