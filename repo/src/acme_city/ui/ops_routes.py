@@ -44,7 +44,7 @@ from acme_city.ops.support import (
 )
 from acme_city.persistence.models import audit
 from acme_city.persistence.models.support import SUPPORT_CHANNELS
-from acme_city.ui import patterns
+from acme_city.ui import ops_views, patterns
 from acme_city.ui.patterns import DetailContext, DetailView, Row, Section
 from acme_city.ui.router import (
     ActionContext,
@@ -261,6 +261,7 @@ def ui_ops_checks(
         screen="ops_checks",
         title="Checks",
         recorded=recorded,
+        checks=ops_views.checks_presentation(recorded, selected=bool(run)),
         runs_version=version,
         model_runs=[],
         evidence=_evidence(

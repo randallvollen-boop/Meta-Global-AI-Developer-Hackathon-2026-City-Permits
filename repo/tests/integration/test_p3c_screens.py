@@ -159,6 +159,37 @@ def test_run_checks_refusals(client, environment) -> None:
     assert len(events(environment, "checks.run")) == 1
 
 
+def test_the_checks_screen_leads_with_the_recorded_result(client) -> None:
+    choose(client, ADMIN)
+    post_action(client, "ops.checks.run", {"expected_version": "0"})
+    page = client.get("/ops/checks").text
+    # The screen says what the checks do before it offers the action.
+    assert "Check the stored records for consistency." in page
+    assert "permits or fees." in page
+    # The recorded result comes before the results themselves.
+    assert page.index('data-testid="checks-result"') < page.index('data-testid="checks-counts"')
+    assert page.index('data-testid="checks-counts"') < page.index('data-testid="checks-table"')
+    assert page.index('data-testid="checks-table"') < page.index('data-testid="checks-details"')
+    # The three counts are named.
+    for label in ("Passed", "Failed", "Not applicable"):
+        assert label in page, label
+    # The technical identifier sits in the run details.
+    assert 'data-testid="checks-run-id"' in page
+    assert page.count('data-testid="check-row"') == 8
+    # The run is recorded, and the screen says so without counting the rows.
+    assert "is recorded in the audit log" in page
+
+
+def test_the_checks_screen_keeps_the_reason_of_every_result(client) -> None:
+    choose(client, ADMIN)
+    post_action(client, "ops.checks.run", {"expected_version": "0"})
+    page = client.get("/ops/checks").text
+    assert page.count('data-testid="check-reason"') == 8
+    assert "not applicable (historical seed)" in page
+    # The reason of a check is never shortened to a count.
+    assert "not applicable (historical seed)" in page.split('data-testid="check-row"', 1)[1]
+
+
 def test_a_run_changes_no_business_row(client, environment) -> None:
     def snapshot():
         factory = SessionFactory(environment.database_url)

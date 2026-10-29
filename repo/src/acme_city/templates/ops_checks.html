@@ -1,50 +1,91 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% import "components/admin_patterns.html" as adm with context %}
+
+{# The checks screen: the recorded result first, the run action beside it.
+
+   The result of the last run is what a reader came for.  The eight results
+   and their reasons are the ones the service recorded; a failure is read
+   first, and the technical run identifier sits in the run details. #}
 
 {% block content %}
 <div class="page-head">
   <div>
     <h1>Checks</h1>
-    <p class="sub">A fixed list of read-only invariant checks, run inside the application: no subprocess, no test runner and no network. A run changes no permit, decision, fee or comment, and records one audit event.</p>
+    <p class="sub">
+      Check the stored records for consistency. Running checks does not change
+      permits or fees.
+    </p>
   </div>
   <div class="actions">{{ ui.help_button('ops_checks') }}</div>
 </div>
 
-<section class="card" aria-labelledby="run-h" data-testid="checks-run-panel">
-  <div class="card-b">
+<section class="panel adm-checks" aria-labelledby="run-h" data-testid="checks-run-panel">
   <h2 id="run-h">Run the checks</h2>
   <form method="post" action="/ui/actions/ops.checks.run" data-testid="checks-run-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="next" value="/ops/checks">
     <input type="hidden" name="expected_version" value="{{ runs_version }}">
-    <p><button type="submit" class="btn primary" data-testid="checks-run">Run checks</button>
-    <span class="muted">{% if runs_version %}{{ runs_version }} earlier run(s) are recorded.{% else %}No run is recorded yet.{% endif %}</span></p>
+    <p>
+      <button type="submit" class="btn primary" data-testid="checks-run">Run checks</button>
+      <span class="muted">{% if runs_version %}{{ runs_version }} earlier run(s) are recorded.{% else %}No run is recorded yet.{% endif %}</span>
+    </p>
   </form>
-  </div>
+  <p class="adm-scope-note">
+    A run is recorded in the audit log: one record of the run itself with its
+    counts, and one record of the action that started it.
+  </p>
 </section>
 
-{% if recorded %}
-<section class="card" aria-labelledby="result-h" data-testid="checks-result" data-run-id="{{ recorded.run_id }}">
-  <div class="card-b">
-  <h2 id="result-h">Result of the run {{ ui.info('ops_not_applicable') }}</h2>
-  <p>Run <span class="mono" data-testid="checks-run-id">{{ recorded.run_id }}</span> at <span class="mono">{{ recorded.ran_at }}</span>:
-    <strong data-testid="checks-count-pass">{{ recorded.counts.pass or 0 }}</strong> passed,
-    <strong data-testid="checks-count-fail">{{ recorded.counts.fail or 0 }}</strong> failed,
-    <strong data-testid="checks-count-na">{{ recorded.counts.not_applicable or 0 }}</strong> not applicable.</p>
-  <div class="tbl-wrap"><table class="data-table" data-testid="checks-table">
+{% if checks.has_run %}
+<section class="panel adm-checks" aria-labelledby="result-h" data-testid="checks-result" data-run-id="{{ checks.run_id }}">
+  <h2 id="result-h">{{ checks.title }}</h2>
+  {% if checks.headline %}
+  <p class="adm-checks-headline" data-testid="checks-headline">{{ checks.headline }}</p>
+  {% endif %}
+  <ul class="adm-status-summary" data-testid="checks-counts">
+    <li class="adm-status adm-status--ok">
+      <span class="adm-status-label">Passed</span>
+      <span class="adm-status-value" data-testid="checks-count-pass">{{ checks.counts.pass }}</span>
+    </li>
+    <li class="adm-status adm-status--bad">
+      <span class="adm-status-label">Failed</span>
+      <span class="adm-status-value" data-testid="checks-count-fail">{{ checks.counts.fail }}</span>
+    </li>
+    <li class="adm-status adm-status--warn">
+      <span class="adm-status-label">Not applicable</span>
+      <span class="adm-status-value" data-testid="checks-count-na">{{ checks.counts.not_applicable }}</span>
+    </li>
+  </ul>
+  <div class="tbl-wrap">
+  <table class="data-table adm-checks-table" data-testid="checks-table">
     <caption class="visually-hidden">Result of each check</caption>
-    <thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Why</th></tr></thead>
+    <thead>
+      <tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Why</th></tr>
+    </thead>
     <tbody>
-      {% for item in recorded.results %}
+      {% for item in checks.results %}
       <tr data-testid="check-row" data-check="{{ item.check_id }}" data-status="{{ item.status }}">
-        <th scope="row">{{ item.title }}</th>
-        <td><span class="ops-badge {{ item.status }}" data-testid="check-status">{% if item.status == 'pass' %}Pass{% elif item.status == 'fail' %}Fail{% else %}Not applicable{% endif %}</span></td>
-        <td data-testid="check-reason">{{ item.reason }}</td>
+        <th scope="row">{{ adm.field_label('Check') }}{{ item.title }}</th>
+        <td>{{ adm.field_label('Result') }}<span class="ops-badge {{ item.status }}" data-testid="check-status">{{ item.status_label }}</span></td>
+        <td data-testid="check-reason">{{ adm.field_label('Why') }}{{ item.reason }}</td>
       </tr>
       {% endfor %}
     </tbody>
-  </table></div>
+  </table>
   </div>
+  {% set run_details %}
+  <dl class="adm-facts">
+    {% for item in checks.details %}
+    <div><dt>{{ item.label }}</dt><dd class="mono"{% if item.testid %} data-testid="{{ item.testid }}"{% endif %}>{{ item.value }}</dd></div>
+    {% endfor %}
+  </dl>
+  <p class="adm-scope-note">
+    The run identifier is the name of the recorded run. Open the audit log to
+    read the record of the run itself.
+  </p>
+  {% endset %}
+  {{ adm.disclosure('Run details', run_details, 'checks-details') }}
 </section>
 {% else %}
 <p class="muted" data-testid="checks-empty">No run has been recorded yet. Press "Run checks" to run them.</p>

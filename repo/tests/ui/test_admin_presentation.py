@@ -216,6 +216,82 @@ def test_the_scope_of_the_figures_is_always_named() -> None:
     assert included.endswith("Sample history included.")
 
 
+# ---------------------------------------------------------- the checks screen
+
+
+def _recorded_run(**overrides) -> dict:
+    """Return a recorded run of the checks for the presentation checks."""
+    recorded = {
+        "run_id": "checkrun_demo",
+        "ran_at": "2026-10-29T12:00:00+00:00",
+        "ran_by": "persona_city_administrator",
+        "counts": {"pass": 2, "fail": 1, "not_applicable": 5},
+        "results": [
+            {"check_id": "one", "title": "One", "status": "pass", "reason": "holds"},
+            {"check_id": "two", "title": "Two", "status": "fail", "reason": "broke"},
+            {
+                "check_id": "three",
+                "title": "Three",
+                "status": "not_applicable",
+                "reason": "nothing to check",
+            },
+        ],
+    }
+    recorded.update(overrides)
+    return recorded
+
+
+def test_the_checks_presenter_names_the_counts_and_the_run() -> None:
+    view = ops_views.checks_presentation(_recorded_run())
+    assert view["has_run"] is True
+    assert view["is_latest"] is True
+    assert view["title"].startswith("Recorded result at ")
+    assert view["counts"] == {"pass": 2, "fail": 1, "not_applicable": 5}
+    assert view["headline"] == ""
+    # The technical identifier is in the run details, not in the headline.
+    assert view["details"][0]["value"] == "checkrun_demo"
+    assert view["details"][0]["testid"] == "checks-run-id"
+
+
+def test_a_failure_of_the_checks_is_read_first() -> None:
+    view = ops_views.checks_presentation(_recorded_run())
+    statuses = [item["status"] for item in view["results"]]
+    assert statuses == ["fail", "pass", "not_applicable"]
+    assert view["results"][0]["status_label"] == "Failed"
+    # The results that are not failures keep the recorded order.
+    assert [item["check_id"] for item in view["results"][1:]] == ["one", "three"]
+
+
+def test_a_run_without_an_applicable_check_does_not_say_it_passed() -> None:
+    recorded = _recorded_run(
+        counts={"pass": 0, "fail": 0, "not_applicable": 8},
+        results=[
+            {
+                "check_id": "one",
+                "title": "One",
+                "status": "not_applicable",
+                "reason": "not applicable (historical seed)",
+            }
+        ],
+    )
+    view = ops_views.checks_presentation(recorded)
+    assert view["headline"] == "No checks were applicable."
+    assert "passed" not in view["headline"].lower()
+
+
+def test_a_selected_run_is_named_as_a_selected_run() -> None:
+    view = ops_views.checks_presentation(_recorded_run(), selected=True)
+    assert view["is_latest"] is False
+    assert view["title"].startswith("Selected run at ")
+
+
+def test_no_recorded_run_is_an_empty_presentation() -> None:
+    view = ops_views.checks_presentation(None)
+    assert view["has_run"] is False
+    assert view["results"] == []
+    assert view["counts"] == {"pass": 0, "fail": 0, "not_applicable": 0}
+
+
 # ------------------------------------------------------ the permit type register
 
 
