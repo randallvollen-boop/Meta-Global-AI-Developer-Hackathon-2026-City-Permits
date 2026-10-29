@@ -15,7 +15,8 @@ def identifier_label(value: str | None, *, missing: str = "Not recorded") -> str
     """Return a sentence-case fallback while preserving the exact id elsewhere."""
     if not value:
         return missing
-    return value.replace("_", " ").replace("-", " ").strip().capitalize()
+    label = value.replace("_", " ").replace("-", " ").strip()
+    return label[:1].upper() + label[1:]
 
 
 def permission_label(permission_id: str) -> str:

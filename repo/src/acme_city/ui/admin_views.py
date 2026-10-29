@@ -1731,15 +1731,25 @@ def governance_screen(
 
     tab = tab if tab in dict(_GOVERNANCE_TABS) else "sources"
     service = GovernanceService(session)
+    sources = _source_overview(session)
+    source_labels = {item["source_system_id"]: item["label"] for item in sources}
     registrations = []
     for view in service.list_registrations():
         item = view.model_dump(mode="json")
         item["dataset_label"] = admin_b_labels.identifier_label(item["dataset_key"])
-        item["source_label"] = admin_b_labels.identifier_label(item["source_system_id"])
+        item["source_label"] = source_labels.get(
+            item["source_system_id"], admin_b_labels.identifier_label(item["source_system_id"])
+        )
         item["domain_label"] = admin_b_labels.identifier_label(item.get("domain_id"), missing="No domain assigned")
-        item["owner_label"] = _actor_label(session, item.get("accountable_owner_actor_id"))
+        item["owner_label"] = (
+            _actor_label(session, item.get("accountable_owner_actor_id"))
+            if item.get("accountable_owner_actor_id") else "No owner assigned"
+        )
         item["queue_label"] = admin_b_labels.identifier_label(item.get("steward_queue_id"), missing="No queue assigned")
-        item["custodian_label"] = _actor_label(session, item.get("system_custodian_actor_id"))
+        item["custodian_label"] = (
+            _actor_label(session, item.get("system_custodian_actor_id"))
+            if item.get("system_custodian_actor_id") else "No custodian assigned"
+        )
         registrations.append(item)
     domains = [
         {
@@ -1845,7 +1855,6 @@ def governance_screen(
     ]
     subscriber_rows = property_views.subscribers_for(session, None)
 
-    sources = _source_overview(session)
     history = _governance_history(session)
     access = _access_map(session)
     for entry in access:
