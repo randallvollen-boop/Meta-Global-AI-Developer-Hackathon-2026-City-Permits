@@ -52,7 +52,7 @@ def conflict_response(result: ConflictResult) -> JSONResponse:
 @router.post("/proposals", operation_id="propose_source_link")
 def propose_source_link(
     command: MatchProposalCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Propose the candidate links of one source record."""
@@ -64,7 +64,7 @@ def propose_source_link(
 @router.post("/decisions", operation_id="decide_source_link")
 def decide_source_link(
     command: MatchDecisionCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ):
     """Record a steward decision on a source-to-canonical link."""
@@ -80,7 +80,7 @@ def list_source_links(
     source_system_id: str | None = None,
     source_record_id: str | None = None,
     entity_id: str | None = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List the source links, optionally for one source record or entity."""
@@ -103,7 +103,7 @@ def list_source_links(
 def list_source_link_history(
     source_system_id: str,
     source_record_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return every decision of one source record, oldest first."""
@@ -115,7 +115,7 @@ def list_source_link_history(
 @router.get("/entities/{entity_id}/trusted-view", operation_id="get_trusted_view")
 def get_trusted_view(
     entity_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return the trusted view of one canonical entity."""

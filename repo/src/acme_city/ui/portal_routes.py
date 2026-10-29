@@ -259,7 +259,7 @@ def ui_portal_chooser(
     saved: str = "",
     help_conversation: str = Query("", alias="help"),
     help_question: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show "What are you trying to do?"."""
@@ -302,7 +302,7 @@ def ui_portal_chooser(
 def ui_portal_locate(
     request: Request,
     text: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Return "Did you mean" for typed address text."""
@@ -316,7 +316,7 @@ def ui_portal_locate(
 def ui_portal_suggest(
     request: Request,
     text: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Return address suggestions as the applicant types."""
@@ -344,7 +344,7 @@ def ui_portal_track(
     tab: str = "",
     help_conversation: str = Query("", alias="help"),
     help_question: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show "My permits"; with a reference, show that application in full."""
@@ -396,7 +396,7 @@ def ui_portal_track(
 async def ui_portal_revise(
     application_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -447,7 +447,7 @@ async def ui_portal_revise(
 async def ui_portal_resubmit(
     application_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -507,7 +507,7 @@ async def ui_portal_resubmit(
 def ui_portal_submitted(
     reference: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Confirm a submitted application."""
@@ -543,7 +543,7 @@ def ui_portal_submitted(
 def ui_portal_copy(
     reference: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Download a printable copy of what the applicant submitted.
@@ -585,7 +585,7 @@ def ui_portal_copy(
 def ui_portal_permit_download(
     reference: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Download the printable permit of an issued application the applicant owns."""
@@ -623,7 +623,7 @@ def ui_portal_form(
     draft: str = "",
     help_conversation: str = Query("", alias="help"),
     help_question: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the application form of one permit type."""
@@ -664,7 +664,7 @@ def ui_portal_form(
 async def ui_portal_check(
     type_key: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -693,7 +693,7 @@ async def ui_portal_check(
 async def ui_portal_post(
     type_key: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:

@@ -157,7 +157,7 @@ def _collections_page(
 @router.get("/masters", operation_id="ui_masters")
 def ui_masters(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "people",
     kind: str = "all",
@@ -176,7 +176,7 @@ def ui_masters(
 @router.get("/applicants", operation_id="ui_applicants")
 def ui_applicants(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     kind: str = "all",
     q: str = "",
@@ -270,7 +270,7 @@ def _profile_page(
 def ui_applicant_detail(
     party_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     view: str = "overview",
 ) -> Any:
@@ -282,7 +282,7 @@ def ui_applicant_detail(
 def ui_master_detail(
     party_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     view: str = "overview",
 ) -> Any:
@@ -293,7 +293,7 @@ def ui_master_detail(
 @router.get("/steward", operation_id="ui_steward_review")
 def ui_steward_review(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     filter: str = "needs_review",
     q: str = "",
@@ -354,7 +354,7 @@ def ui_steward_case(
     kind: str,
     item_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     back: str = "",
 ) -> Any:
@@ -402,7 +402,7 @@ def ui_steward_case(
 @router.get("/source-records", operation_id="ui_source_records")
 def ui_source_records(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     system: str = "",
     q: str = "",
@@ -429,7 +429,7 @@ def ui_source_records(
 @router.get("/activity", operation_id="ui_activity")
 def ui_activity(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     page: int = 1,
 ) -> Any:
@@ -453,7 +453,7 @@ def ui_activity(
 @router.get("/queue/intake", operation_id="ui_intake_queue")
 def ui_intake_queue(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     tab: str = "active",
     q: str = "",
@@ -496,7 +496,7 @@ def ui_intake_queue(
 @router.get("/queue/early-resolution", operation_id="ui_early_resolution")
 def ui_early_resolution(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the early-resolution board of the Data Steward."""
