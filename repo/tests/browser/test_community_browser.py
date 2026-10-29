@@ -11,8 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from acme_city.ui.view_models import PERSONA_PROFILES
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+#: The source directory of this worktree.  The persona list is resolved from
+#: it, so the checks below cover this branch and not the copy of the package
+#: that the test process happens to import.
+REPO_SRC = Path(__file__).resolve().parents[2] / "src"
 
 #: The link that opens one public record from a result card.
 CARD_LINK = '[data-testid="community-result-table"] .community-card-link'
@@ -311,14 +315,111 @@ def test_a_long_search_wraps_instead_of_widening_the_page(
         context.close()
 
 
-#: The five personas the demo switch offers, with the actor id of each.
-DEMO_PERSONAS = (
-    ("persona_applicant", "Applicant"),
-    ("persona_data_steward", "Data Steward"),
-    ("persona_permit_reviewer", "Permit Reviewer"),
-    ("persona_city_administrator", "City Administrator"),
-    ("persona_agent_operator", "Agent Operator"),
+#: A probe that asks this worktree which personas the demo switch offers.
+#: It runs in its own process with the source of this worktree first on the
+#: path, and it seeds a throwaway database, so the answer comes from the
+#: same ``persona_options`` the application uses.  The probe refuses to
+#: answer when it imports any other tree.
+PERSONA_PROBE = """
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+source = Path(os.environ["ACME_SOURCE"]).resolve()
+sys.path.insert(0, str(source))
+
+import acme_city
+from acme_city.core.config import Settings
+from acme_city.fixtures.loader import FixtureBundle
+from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.persistence.models.governance import DemoEnvironment
+from acme_city.persistence.session import (
+    SessionFactory,
+    initialize_database,
+    transaction,
 )
+from acme_city.ui.view_models import PERSONA_PROFILES, persona_options
+
+if not Path(acme_city.__file__).resolve().is_relative_to(source):
+    raise SystemExit(f"the probe imported {acme_city.__file__} instead of {source}")
+
+with tempfile.TemporaryDirectory() as folder:
+    root = Path(folder)
+    settings = Settings.load(
+        environ={
+            "ACME_DATABASE_URL": f"sqlite:///{root / 'personas.db'}",
+            "ACME_SECRET_KEY": "browser-acceptance-secret-value",
+        },
+        key_file=root / "missing.env",
+    )
+    initialize_database(settings)
+    bundle = FixtureBundle.load()
+    factory = SessionFactory(settings.database_url)
+    with transaction(factory) as session:
+        session.add(
+            DemoEnvironment(
+                id="demo_environment_local",
+                environment_id=ENVIRONMENT_ID,
+                fictional_demo=True,
+                fixture_version=bundle.fixture_version,
+                label="local fictional demonstration",
+            )
+        )
+    with transaction(factory) as session:
+        reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+    with transaction(factory) as session:
+        options = persona_options(session)
+
+print(
+    "PERSONAS "
+    + json.dumps(
+        {
+            "options": [
+                {"actor_id": option["actor_id"], "label": option["label"]}
+                for option in options
+            ],
+            "profile_labels": sorted(PERSONA_PROFILES),
+        }
+    )
+)
+"""
+
+
+def _worktree_personas() -> tuple[tuple[tuple[str, str], ...], tuple[str, ...]]:
+    """Return the personas this worktree offers and its persona profile labels.
+
+    The list comes from the source of this worktree, so the parametrization
+    follows the code that renders the demo switch instead of a copy of it.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    result = subprocess.run(
+        [sys.executable, "-c", PERSONA_PROBE],
+        cwd=str(repo_root),
+        env={
+            **os.environ,
+            "PYTHONPATH": str(REPO_SRC),
+            "ACME_SOURCE": str(REPO_SRC),
+        },
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    marked = [
+        line for line in result.stdout.splitlines() if line.startswith("PERSONAS ")
+    ]
+    assert len(marked) == 1, result.stdout
+    payload = json.loads(marked[0][len("PERSONAS ") :])
+    personas = tuple(
+        (option["actor_id"], option["label"]) for option in payload["options"]
+    )
+    return personas, tuple(payload["profile_labels"])
+
+
+#: The personas the demo switch of this worktree offers, in selector order.
+DEMO_PERSONAS, PERSONA_PROFILE_LABELS = _worktree_personas()
 
 #: The community pages the provider probe renders.
 COMMUNITY_PAGES = (
@@ -418,12 +519,13 @@ def test_the_demo_switch_offers_the_five_personas(browser, server: BrowserServer
         assert summary.inner_text().strip() == "Demo controls"
         assert "switch user" in (summary.get_attribute("aria-label") or "")
         buttons = switch.locator("button[data-demo-persona]")
+        assert len(DEMO_PERSONAS) == 5
         assert buttons.count() == len(DEMO_PERSONAS)
         labels = buttons.evaluate_all(
             "buttons => buttons.map(b => b.childNodes[0].textContent.trim())"
         )
         assert labels == [label for _, label in DEMO_PERSONAS]
-        assert sorted(labels) == sorted(PERSONA_PROFILES)
+        assert sorted(labels) == sorted(PERSONA_PROFILE_LABELS)
         # the closed switch covers nothing of the resident page
         assert_not_covered(page, page.locator('[data-testid="community-q"]'))
     finally:
