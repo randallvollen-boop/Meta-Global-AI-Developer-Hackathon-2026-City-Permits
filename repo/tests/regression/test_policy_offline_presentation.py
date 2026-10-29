@@ -161,3 +161,69 @@ def test_a_refused_proposal_keeps_the_question_it_was_given(client: TestClient) 
     assert question in body
     assert "no recorded demonstration answer matches this request" in body
     assert "Nothing was saved." in body
+
+
+# ------------------------------------------------------------- the editor
+
+
+def _editor(client: TestClient) -> str:
+    """Save a what-if from the first example and return its editor page."""
+    page = client.get("/policy/scenarios")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    response = client.post(
+        "/policy/scenarios",
+        data={"csrf_token": token, "expected_version": "0",
+              "suggestion": "fence_height_7ft", "name": "An editor probe"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    editor = client.get(response.headers["location"].split("?")[0])
+    assert editor.status_code == 200
+    return editor.text
+
+
+def test_the_editor_leads_with_the_changes_and_the_run_settings(client: TestClient) -> None:
+    body = _editor(client)
+    assert body.index('id="changes-heading"') < body.index('id="run-comparison"')
+    assert body.index('id="run-comparison"') < body.index('id="add-a-change"')
+    assert "Your changes" in body
+    assert "Run comparison" in body
+    assert 'href="#run-comparison"' in body
+    assert 'data-testid="policy-run-anchor"' in body
+    assert 'data-testid="policy-add-anchor"' in body
+
+
+def test_the_editor_keeps_the_seven_change_forms(client: TestClient) -> None:
+    body = _editor(client)
+    for kind in ("threshold", "retirement", "requirement", "category",
+                 "discretionary", "target", "fee"):
+        assert f'data-testid="policy-add-{kind}"' in body, kind
+        assert f'data-testid="policy-add-{kind}-submit"' in body, kind
+    assert 'data-testid="policy-unsupported-kinds"' in body
+
+
+def test_the_technical_values_are_explained_without_changing_them(client: TestClient) -> None:
+    body = _editor(client)
+    assert "Fence height, side and rear yard (ACME Code §14-306)" in body
+    assert "at most 6" in body
+    assert '<option value="max">At most</option>' in body
+    assert "Review with plans" in body
+
+
+def test_the_revisions_table_names_the_change_type(client: TestClient) -> None:
+    body = _editor(client)
+    assert "Change type" in body
+    assert "Made by" not in body
+
+
+def test_the_deletion_sits_in_its_own_disclosure(client: TestClient) -> None:
+    body = _editor(client)
+    assert 'id="delete-whatif"' in body
+    assert "<summary>Delete this what-if</summary>" in body
+
+
+def test_the_fee_change_keeps_cents_as_cents(client: TestClient) -> None:
+    body = _editor(client)
+    assert "New fixed charge in cents" in body
+    assert "100 cents equals 1 dollar" in body
+    assert 'name="fixed_review_charge_cents"' in body

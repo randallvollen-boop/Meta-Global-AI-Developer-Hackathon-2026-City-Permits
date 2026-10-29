@@ -1,1 +1,29 @@
-{}
+{
+  "tutorial": {
+    "sections": [
+      {
+        "persona_id": "persona_city_administrator",
+        "steps": {
+          "2": {
+            "do": "Under \"Start from an example\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\"."
+          },
+          "3": {
+            "do": "Click \"Run comparison\"."
+          }
+        }
+      }
+    ]
+  },
+  "howto": {
+    "guides": [
+      {
+        "slug": "run-a-what-if-and-write-the-briefing",
+        "steps": {
+          "1": "Under \"Start from an example\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\", or build your own under \"Build a what-if\".",
+          "2": "In \"Run comparison\" check the Population, the Seed and the Number of cases.",
+          "3": "Click \"Run comparison\"."
+        }
+      }
+    ]
+  }
+}

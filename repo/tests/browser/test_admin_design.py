@@ -125,6 +125,54 @@ def test_a_refused_proposal_offers_the_way_back(
     assert page.recorded_errors == []
 
 
+# ------------------------------------------------------------- the editor
+
+
+def test_the_editor_fits_a_phone_and_keeps_its_forms(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The editor fits a phone: the changes, the run settings and the forms."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    anchor = page.locator('[data-testid="policy-run-anchor"]')
+    assert anchor.is_visible()
+    assert_not_covered(page, anchor)
+    assert page.locator('[data-testid="policy-run-submit"]').is_visible()
+    # The change catalogue is a disclosure, so it is opened before it is used.
+    page.locator('details:has([data-testid="policy-add-fee"]) > summary').click()
+    assert page.locator('[data-testid="policy-add-fee"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_editor_saves_a_change_from_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A change can still be added on a phone, and the run button stays honest."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    page.locator('details:has([data-testid="policy-add-requirement"]) > summary').click()
+    form = page.locator('[data-testid="policy-add-requirement"]')
+    form.locator('select[name="permit_type_key"]').select_option("shed")
+    form.locator('select[name="item_kind"]').select_option("document")
+    form.locator('select[name="action"]').select_option("add")
+    form.locator('input[name="item"]').fill("site_plan")
+    form.locator('button[type="submit"]').click()
+    page.wait_for_load_state("domcontentloaded")
+    assert page.locator('[data-testid="policy-change"]').count() == 2
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
 # ------------------------------------------------------- the scenarios list
 
 
