@@ -123,3 +123,25 @@ def test_the_record_page_returns_to_the_same_search(browser, server: BrowserServ
         assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
     finally:
         context.close()
+
+
+def test_the_search_and_return_sequence_works_on_a_phone(viewport_390, server: BrowserServer) -> None:
+    page = viewport_390
+    page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+    page.fill('[data-testid="community-q"]', "Acme")
+    page.locator('[data-testid="community-search"]').click()
+    page.wait_for_load_state("networkidle")
+    assert_no_horizontal_overflow(page)
+    assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
+    link = page.locator('[data-testid="community-result-table"] .community-card-link').first
+    href = link.get_attribute("href")
+    assert "q=Acme" in href
+    link.click()
+    page.wait_for_load_state("networkidle")
+    assert_no_horizontal_overflow(page)
+    page.locator('[data-testid="community-back"]').click()
+    page.wait_for_load_state("networkidle")
+    assert_no_horizontal_overflow(page)
+    assert "q=Acme" in page.url
+    assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
+    assert_not_covered(page, page.locator('[data-testid="community-search"]'))
