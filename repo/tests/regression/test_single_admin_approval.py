@@ -6,8 +6,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from acme_city.app import create_app
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
@@ -19,6 +21,7 @@ from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.rules.schemas import DraftRuleCommand, RuleLifecycleCommand
 from acme_city.rules.service import RuleCatalogService
+from acme_city.ui.router import router as ui_router
 
 
 @pytest.fixture()
@@ -146,3 +149,70 @@ def test_single_admin_approval_state_and_audit_snapshot(seeded: Settings) -> Non
             )
     finally:
         factory.dispose()
+
+
+def test_single_admin_approval_http_authorization_and_redirect(seeded: Settings) -> None:
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            service = RuleCatalogService(session)
+            admin = context_for(session, "persona_city_administrator")
+            drafted = service.draft(
+                DraftRuleCommand(
+                    rule_id="REG-HTTP", permit_type_key="com_ti",
+                    title="Fictional HTTP approval", citation="ACME Code 14 419",
+                    field_path="occupancy_load", operator="max", limit_value="61",
+                    on_violate="condition",
+                    effective_from=datetime(2026, 10, 30, tzinfo=UTC),
+                    reason="HTTP regression snapshot.",
+                ),
+                admin,
+            )
+            reviewed = service.submit_for_review(
+                RuleLifecycleCommand(
+                    rule_version_id=drafted.value.row_id, expected_version=drafted.version,
+                    reason="Ready for the HTTP approval check.",
+                ),
+                admin,
+            )
+            version_id = drafted.value.row_id
+            expected_version = reviewed.version
+    finally:
+        factory.dispose()
+
+    app = create_app(seeded)
+    app.include_router(ui_router)
+    homes = {
+        "persona_city_administrator": "/rules?tab=rules&view=drafts",
+        "persona_applicant": "/apply",
+        "persona_data_steward": "/steward",
+        "persona_permit_reviewer": "/permits/app_synth_001",
+        "persona_agent_operator": "/agent/intake",
+    }
+    with TestClient(app) as client:
+        def post_as(actor_id: str, version: int):
+            assert client.post("/api/session/select", json={"actor_id": actor_id}).status_code == 200
+            home = client.get(homes[actor_id])
+            marker = 'name="csrf_token" value="'
+            assert marker in home.text
+            token = home.text.split(marker, 1)[1].split('"', 1)[0]
+            return client.post(
+                "/ui/actions/rule.approve",
+                data={
+                    "csrf_token": token, "action_id": "rule.approve",
+                    "next": "/rules?tab=rules&view=drafts",
+                    "rule_version_id": version_id, "expected_version": str(version),
+                    "reason": "HTTP authorization regression.",
+                    "confirm_author_approval": "on",
+                },
+                follow_redirects=False,
+            )
+
+        approved = post_as("persona_city_administrator", expected_version)
+        assert approved.status_code == 303
+        assert approved.headers["location"].startswith("/rules?tab=rules&view=drafts")
+        for actor_id in (
+            "persona_applicant", "persona_data_steward",
+            "persona_permit_reviewer", "persona_agent_operator",
+        ):
+            assert post_as(actor_id, expected_version + 1).status_code == 403
