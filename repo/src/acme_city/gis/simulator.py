@@ -177,7 +177,7 @@ def address_points_info(request: Request) -> Any:
 @router.get("/AddressLocator/GeocodeServer/findAddressCandidates", name="gis_find_candidates")
 def find_address_candidates(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> Any:
     """Return candidates for one line of address text, scored deterministically."""
     params = request.query_params
@@ -212,7 +212,7 @@ def find_address_candidates(
 
 
 @router.get("/AddressLocator/GeocodeServer/suggest", name="gis_suggest")
-def suggest(request: Request, session: Session = Depends(get_session)) -> Any:
+def suggest(request: Request, session: Session = Depends(get_session, scope="function")) -> Any:
     """Return suggestions for a partly typed address."""
     text = (request.query_params.get("text") or "").strip()
     try:
@@ -224,7 +224,7 @@ def suggest(request: Request, session: Session = Depends(get_session)) -> Any:
 
 
 @router.get("/AddressLocator/GeocodeServer/reverseGeocode", name="gis_reverse")
-def reverse_geocode(request: Request, session: Session = Depends(get_session)) -> Any:
+def reverse_geocode(request: Request, session: Session = Depends(get_session, scope="function")) -> Any:
     """Return the nearest official address to a point."""
     point = _point(request.query_params.get("location"))
     if point is None:
@@ -258,7 +258,7 @@ def reverse_geocode(request: Request, session: Session = Depends(get_session)) -
 
 
 @router.get("/Parcels/FeatureServer/0/query", name="gis_parcels_query")
-def query_parcels(request: Request, session: Session = Depends(get_session)) -> Any:
+def query_parcels(request: Request, session: Session = Depends(get_session, scope="function")) -> Any:
     """Query the parcel layer by ``where`` or by a point or envelope."""
     params = request.query_params
     catalog = PropertyCatalog(session)
@@ -328,7 +328,7 @@ def query_parcels(request: Request, session: Session = Depends(get_session)) -> 
 
 
 @router.get("/AddressPoints/FeatureServer/0/query", name="gis_address_points_query")
-def query_address_points(request: Request, session: Session = Depends(get_session)) -> Any:
+def query_address_points(request: Request, session: Session = Depends(get_session, scope="function")) -> Any:
     """Query the address-point layer by ``where`` or by a point."""
     params = request.query_params
     catalog = PropertyCatalog(session)

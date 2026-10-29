@@ -44,7 +44,7 @@ def _respond(result: object) -> object:
 @router.post("/assessments", operation_id="assess_application")
 def assess_application(
     command: AssessmentCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Assess the declared valuation of an application."""
@@ -55,7 +55,7 @@ def assess_application(
 @router.post("/assessments/reassess", operation_id="reassess_application")
 def reassess_application(
     command: ReassessmentCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Assess an application again at a new valuation."""
@@ -66,7 +66,7 @@ def reassess_application(
 @router.post("/payments", operation_id="import_payment_event")
 def import_payment_event(
     command: PaymentEventCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Import one simulated ERP payment event."""
@@ -80,7 +80,7 @@ def import_payment_event(
 @router.post("/allocations", operation_id="confirm_allocation")
 def confirm_allocation(
     command: AllocationCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Confirm an allocation of settled funds to an assessment version."""
@@ -94,7 +94,7 @@ def confirm_allocation(
 @router.post("/reconciliations", operation_id="reconcile_assessment")
 def reconcile_assessment(
     command: ReconciliationCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Reconcile an assessment version against its receipts."""

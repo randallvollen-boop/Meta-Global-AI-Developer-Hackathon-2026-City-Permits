@@ -172,7 +172,7 @@ def _muse_state(muse: PolicyMuseService, actor: ActorContext, permission: str) -
 @router.get("/policy/scenarios", operation_id="ui_policy_scenarios")
 def ui_policy_scenarios(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     type: str = "",
     district: str = "",
@@ -279,7 +279,7 @@ def _starting_text(starting: dict[str, str]) -> str:
 @router.post("/policy/scenarios", operation_id="ui_policy_scenario_create")
 async def ui_policy_scenario_create(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -327,7 +327,7 @@ def _audit(name: str) -> str:
 def ui_policy_scenario(
     scenario_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     notice: str = "",
 ) -> Any:
@@ -406,7 +406,7 @@ def ui_policy_scenario(
 async def ui_policy_scenario_save(
     scenario_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -439,7 +439,7 @@ async def ui_policy_scenario_save(
 async def ui_policy_scenario_delete(
     scenario_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -463,7 +463,7 @@ async def ui_policy_scenario_delete(
 async def ui_policy_scenario_run(
     scenario_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -494,7 +494,7 @@ async def ui_policy_scenario_run(
 def ui_policy_run(
     run_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     notice: str = "",
 ) -> Any:
@@ -563,7 +563,7 @@ def _draft_panel(session: Session, actor: ActorContext, run: Any) -> dict[str, A
 async def ui_policy_run_draft(
     run_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -603,7 +603,7 @@ def _briefing_for(
 def ui_policy_briefing(
     run_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     notice: str = "",
 ) -> Any:
@@ -645,7 +645,7 @@ def ui_policy_briefing_download(
     run_id: str,
     request: Request,
     format: str = "html",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     resolved, refused, service, run = _briefing_for(request, session, actor, run_id, "policy.brief.download")
@@ -740,7 +740,7 @@ def _explain_panel(
 async def ui_policy_briefing_muse(
     run_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -753,7 +753,7 @@ async def ui_policy_briefing_muse(
 async def ui_policy_run_explain(
     run_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -786,7 +786,7 @@ def _muse_run_post(
 @router.post("/policy/propose", operation_id="ui_policy_propose")
 async def ui_policy_propose(
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
@@ -810,7 +810,7 @@ async def ui_policy_propose(
 def ui_policy_proposal(
     proposal_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     resolved, refused = _read_guard(request, session, actor)

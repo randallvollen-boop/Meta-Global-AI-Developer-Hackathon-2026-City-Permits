@@ -51,7 +51,7 @@ def get_session(request: Request) -> Iterator[Session]:
 
 
 def get_actor(
-    request: Request, session: Session = Depends(get_session)
+    request: Request, session: Session = Depends(get_session, scope="function")
 ) -> ActorContext:
     """Resolve the acting actor from the server-held session."""
     settings = request.app.state.settings
@@ -88,7 +88,7 @@ def holds_internal_view(session: Session, actor: ActorContext) -> bool:
 
 
 def get_internal_reader(
-    request: Request, session: Session = Depends(get_session)
+    request: Request, session: Session = Depends(get_session, scope="function")
 ) -> ActorContext:
     """Resolve the actor and require an internal-view permission.
 
@@ -110,7 +110,7 @@ def session_service(request: Request, session: Session) -> SessionService:
 
 
 @selector_router.get("/actors", operation_id="list_demo_actors")
-def list_demo_actors(session: Session = Depends(get_session)) -> dict:
+def list_demo_actors(session: Session = Depends(get_session, scope="function")) -> dict:
     """List the four fictional personas a demonstration session may select.
 
     Service identities and source role templates are never offered here.
@@ -133,7 +133,7 @@ def select_demo_actor(
     payload: SelectActorRequest,
     request: Request,
     response: Response,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> dict:
     """Establish a server-held session for the selected fictional actor."""
     service = session_service(request, session)
@@ -168,7 +168,7 @@ def get_current_session(
 def end_current_session(
     request: Request,
     response: Response,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Revoke the current server-held session."""

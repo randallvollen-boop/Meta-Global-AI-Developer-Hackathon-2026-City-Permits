@@ -65,7 +65,7 @@ def _respond(result: object) -> object:
 def list_rule_versions(
     permit_type: str | None = None,
     status: str | None = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """List the stored rule versions."""
@@ -82,7 +82,7 @@ def resolve_rule_set(
     kind: str = Query(default="executable"),
     permit_type: str | None = None,
     basis_at: datetime | None = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return the catalogue versions in force at a basis date."""
@@ -95,7 +95,7 @@ def resolve_rule_set(
 @router.post("/fee-schedules", operation_id="draft_fee_schedule_version")
 def draft_fee_schedule_version(
     command: DraftFeeScheduleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Create a new draft fee schedule version."""
@@ -111,7 +111,7 @@ def draft_fee_schedule_version(
 def submit_fee_schedule_version(
     fee_schedule_version_id: str,
     command: FeeScheduleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Move a draft fee schedule version into review."""
@@ -134,7 +134,7 @@ def submit_fee_schedule_version(
 def approve_fee_schedule_version(
     fee_schedule_version_id: str,
     command: FeeScheduleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Approve a fee schedule version that somebody else authored."""
@@ -157,7 +157,7 @@ def approve_fee_schedule_version(
 def publish_fee_schedule_version(
     fee_schedule_version_id: str,
     command: FeeScheduleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Publish an approved fee schedule version."""
@@ -181,7 +181,7 @@ def publish_fee_schedule_version(
 def retire_fee_schedule_version(
     fee_schedule_version_id: str,
     command: FeeScheduleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Retire a published fee schedule version."""
@@ -200,7 +200,7 @@ def retire_fee_schedule_version(
 @router.get("/{rule_version_id}", operation_id="get_rule_version")
 def get_rule_version(
     rule_version_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return one stored rule version."""
@@ -214,7 +214,7 @@ def get_rule_version(
 @router.post("", operation_id="draft_rule_version")
 def draft_rule_version(
     command: DraftRuleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Create a new draft rule version."""
@@ -227,7 +227,7 @@ def draft_rule_version(
 def submit_rule_version(
     rule_version_id: str,
     command: RuleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Move a draft rule version into review."""
@@ -247,7 +247,7 @@ def submit_rule_version(
 def approve_rule_version(
     rule_version_id: str,
     command: RuleLifecycleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Approve a rule version that somebody else authored."""
@@ -267,7 +267,7 @@ def approve_rule_version(
 def publish_rule_version(
     rule_version_id: str,
     command: PublishRuleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Publish an approved rule version."""
@@ -288,7 +288,7 @@ def publish_rule_version(
 def retire_rule_version(
     rule_version_id: str,
     command: RetireRuleCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> object:
     """Retire a published rule version."""
