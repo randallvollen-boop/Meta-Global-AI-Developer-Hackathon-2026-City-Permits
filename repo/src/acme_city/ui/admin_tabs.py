@@ -124,15 +124,15 @@ def visible_tabs(session: Session, actor: ActorContext) -> list[AdminTab]:
     ]
 
 
-#: The five tabs of the screen.  The labels are what ``|title`` made of the
-#: keys before the registry existed.
+#: The five tabs of the screen.  The labels are the plain names of the five
+#: sections, in sentence case.
 for _order, (_key, _label) in enumerate(
     (
-        ("permit-types", "Permit Types"),
+        ("permit-types", "Permit types"),
         ("appearance", "Appearance"),
-        ("users", "Users"),
-        ("reason-codes", "Reason Codes"),
-        ("log", "Log"),
+        ("users", "Users and roles"),
+        ("reason-codes", "Reason codes"),
+        ("log", "Configuration log"),
     )
 ):
     register_admin_tab(_key, _label, f"admin/_{_key.replace('-', '_')}.html", order=_order * 10)

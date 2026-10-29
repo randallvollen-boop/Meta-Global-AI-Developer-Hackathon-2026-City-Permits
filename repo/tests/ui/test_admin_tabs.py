@@ -51,12 +51,14 @@ ACTION_IDS_BEFORE_W0_5 = frozenset({
 
 def test_the_five_tabs_keep_their_order_and_labels() -> None:
     tabs = sorted(admin_tabs.ADMIN_TABS.values(), key=lambda tab: tab.order)
+    # Changed deliberately (admin-a ADA-4): the labels are the plain names of
+    # the five sections, in sentence case.
     assert [(tab.key, tab.label) for tab in tabs[:5]] == [
-        ("permit-types", "Permit Types"),
+        ("permit-types", "Permit types"),
         ("appearance", "Appearance"),
-        ("users", "Users"),
-        ("reason-codes", "Reason Codes"),
-        ("log", "Log"),
+        ("users", "Users and roles"),
+        ("reason-codes", "Reason codes"),
+        ("log", "Configuration log"),
     ]
     for tab in tabs[:5]:
         assert (REPO_ROOT / "src" / "acme_city" / "templates" / tab.template).is_file()
@@ -90,10 +92,15 @@ def test_a_registered_tab_and_users_extra_render_and_unregister(client) -> None:
         body = choose(client, ADMIN).get("/admin?tab=dummy").text
         assert 'data-tab="dummy">Dummy Tab</a>' in body
         assert f"tab for {ADMIN}" in body
-        assert '<p data-testid="dummy-users-extra">users extra</p>' in body
+        # Changed deliberately (admin-a ADA-4): one section renders at a time,
+        # so the part of the Users tab is asked for on the Users tab.
+        users_body = choose(client, ADMIN).get("/admin?tab=users").text
+        assert '<p data-testid="dummy-users-extra">users extra</p>' in users_body
         # The extra sits inside the Users tab.
-        users = body.split('data-section="users"', 1)[1].split("</details>", 1)[0]
+        users = users_body.split('data-section="users"', 1)[1].split("</details>", 1)[0]
         assert "dummy-users-extra" in users
+        # The section that is not selected is not rendered at all.
+        assert 'data-section="permit-types"' not in body
     finally:
         admin_tabs.unregister_admin_tab("dummy")
         admin_tabs.unregister_users_extra("test/_dummy_users_extra.html")
