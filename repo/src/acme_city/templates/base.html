@@ -13,6 +13,14 @@
   <link rel="stylesheet" href="/ui/static/demo-switch.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
   <link rel="stylesheet" href="/ui/static/reviewer.css">
+  <link rel="stylesheet" href="/ui/static/insight.css">
+  <link rel="stylesheet" href="/ui/static/nav-more.css">
+  <link rel="stylesheet" href="/ui/static/steward.css">
+  <link rel="stylesheet" href="/ui/static/steward-auto.css">
+  <link rel="stylesheet" href="/ui/static/admin-a.css">
+  <link rel="stylesheet" href="/ui/static/admin-b.css">
+  <link rel="stylesheet" href="/ui/static/operator.css">
+  {% block extra_css %}{% endblock %}
 </head>
 <body data-screen="{{ screen }}">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -200,5 +208,6 @@
 <script src="/ui/static/app.js" defer></script>
 <script src="/ui/static/property.js" defer></script>
 <script src="/ui/static/ui-patterns.js" defer></script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>
