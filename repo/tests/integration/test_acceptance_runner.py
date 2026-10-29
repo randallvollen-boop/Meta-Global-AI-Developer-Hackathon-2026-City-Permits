@@ -13,13 +13,26 @@ import json
 import shutil
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = REPO_ROOT / "scripts" / "run_acceptance.py"
-SAMPLE_DIRECTORY = REPO_ROOT / "var" / "runner_acceptance"
+SAMPLE_ROOT = REPO_ROOT / "var" / "runner_acceptance"
+
+
+def private_directory(root: Path) -> Path:
+    """Return a new directory of the repository that no other test, or worker, shares."""
+    directory = root / uuid.uuid4().hex
+    directory.mkdir(parents=True)
+    return directory
+
+
+def relative(path: Path) -> str:
+    """Return a path as the runner and pytest name it, relative to the repository."""
+    return path.relative_to(REPO_ROOT).as_posix()
 
 
 def load_runner():
@@ -34,9 +47,8 @@ def load_runner():
 
 @pytest.fixture()
 def sample_family() -> Path:
-    """Create a small family of tests inside the repository."""
-    directory = SAMPLE_DIRECTORY
-    directory.mkdir(parents=True, exist_ok=True)
+    """Create a small family of tests inside the repository, private to this test."""
+    directory = private_directory(SAMPLE_ROOT)
     (directory / "test_sample_pass.py").write_text(
         "def test_the_sample_passes() -> None:\n"
         "    assert True\n",
@@ -177,7 +189,7 @@ def test_the_runner_writes_a_manifest_and_keeps_the_child_exit_code(
             "kind": "acceptance",
             "title": "the sample passes",
             "expected": "the sample passes",
-            "node_ids": ["var/runner_acceptance/test_sample_pass.py::test_the_sample_passes"],
+            "node_ids": [f"{relative(sample_family)}/test_sample_pass.py::test_the_sample_passes"],
             "evidence_refs": ["sample"],
             "live_required": False,
             "pending": False,
@@ -188,14 +200,14 @@ def test_the_runner_writes_a_manifest_and_keeps_the_child_exit_code(
             "title": "the sample is skipped",
             "expected": "the sample is skipped",
             "node_ids": [
-                "var/runner_acceptance/test_sample_skip.py::test_the_sample_is_skipped"
+                f"{relative(sample_family)}/test_sample_skip.py::test_the_sample_is_skipped"
             ],
             "evidence_refs": ["sample"],
             "live_required": False,
             "pending": False,
         },
     ]
-    families = {"sample": {"paths": ["var/runner_acceptance"], "mode": "deterministic"}}
+    families = {"sample": {"paths": [relative(sample_family)], "mode": "deterministic"}}
     inventory = write_inventory(tmp_path / "inventory.json", checks, families)
     evidence = tmp_path / "evidence"
 
@@ -258,7 +270,7 @@ def test_the_runner_fails_when_a_child_fails(tmp_path: Path, sample_family: Path
                 "title": "the sample fails",
                 "expected": "the sample passes",
                 "node_ids": [
-                    "var/runner_acceptance/test_sample_fail.py::test_the_sample_fails"
+                    f"{relative(sample_family)}/test_sample_fail.py::test_the_sample_fails"
                 ],
                 "evidence_refs": ["sample"],
                 "live_required": False,
@@ -266,7 +278,7 @@ def test_the_runner_fails_when_a_child_fails(tmp_path: Path, sample_family: Path
             }
         ]
         families = {
-            "sample": {"paths": ["var/runner_acceptance"], "mode": "deterministic"}
+            "sample": {"paths": [relative(sample_family)], "mode": "deterministic"}
         }
         inventory = write_inventory(tmp_path / "inventory.json", checks, families)
         evidence = tmp_path / "evidence"
@@ -298,8 +310,7 @@ def test_the_runner_fails_when_a_child_fails(tmp_path: Path, sample_family: Path
 
 
 def test_the_runner_rejects_an_empty_family(tmp_path: Path) -> None:
-    empty = REPO_ROOT / "var" / "runner_empty"
-    empty.mkdir(parents=True, exist_ok=True)
+    empty = private_directory(REPO_ROOT / "var" / "runner_empty")
     try:
         checks = [
             {
@@ -313,7 +324,7 @@ def test_the_runner_rejects_an_empty_family(tmp_path: Path) -> None:
                 "pending": True,
             }
         ]
-        families = {"empty": {"paths": ["var/runner_empty"], "mode": "deterministic"}}
+        families = {"empty": {"paths": [relative(empty)], "mode": "deterministic"}}
         inventory = write_inventory(tmp_path / "inventory.json", checks, families)
         evidence = tmp_path / "evidence"
         completed = subprocess.run(
@@ -496,13 +507,13 @@ def test_the_runner_fails_when_pytest_exits_nonzero_without_a_failing_test(
             "kind": "acceptance",
             "title": "the sample passes",
             "expected": "the sample passes",
-            "node_ids": ["var/runner_acceptance/test_sample_pass.py::test_the_sample_passes"],
+            "node_ids": [f"{relative(sample_family)}/test_sample_pass.py::test_the_sample_passes"],
             "evidence_refs": ["sample"],
             "live_required": False,
             "pending": False,
         },
     ]
-    families = {"sample": {"paths": ["var/runner_acceptance"], "mode": "deterministic"}}
+    families = {"sample": {"paths": [relative(sample_family)], "mode": "deterministic"}}
     inventory = write_inventory(tmp_path / "inventory.json", checks, families)
     evidence = tmp_path / "evidence"
 

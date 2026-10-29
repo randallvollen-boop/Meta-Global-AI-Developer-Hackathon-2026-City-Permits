@@ -1,0 +1,93 @@
+{
+  "about": "Every binary file the publishable tree may carry, with its sha256 and where it came from. scripts/scan_publishable_tree.py fails on any binary not listed here, on a hash mismatch, on a file whose header does not match its type, and on a listed file that is missing. A set may raise the 5 MiB size limit for its own files with max_bytes.",
+  "sets": [
+    {
+      "directory": "src/acme_city/static/map-tiles",
+      "source": "Krea 2 renders for the town map, one recipe and one colour grade, seeds 9301 to 9341; c2a re-rolled with seed 9325 and all 17 regraded together",
+      "added_in": [
+        "5eddb89",
+        "6e96c36"
+      ],
+      "files": {
+        "c1a.webp": "dab983351ac175ff130d52964eff5dc5b9a17ec104013f7fca3a4b118c0ebfa4",
+        "c2a.webp": "fc0128e7976064c8c93841a09847b500e04dceead394f445de256adf99bfc469",
+        "c2b.webp": "5b918ce5aeb0f12b61c54514d3b630ed132d4019e5a462946576a4343d603493",
+        "c2c.webp": "1ef27d918659d2f113195844bd505946d6fb90e779db75d0d10ceb49b8e34c02",
+        "c2d.webp": "39b3b76ad71b6a467ff76253154a49e6a8731d59d1876470faf936fb84daccc2",
+        "pfa.webp": "e494638bd627439a50eaae0686f2657604cbd054bfc6217c5ba9b1a6a1bf055c",
+        "r1a.webp": "c0e94355db48322c769af14a375c96b2fb7f1299899d3dd80e98ff52da4ab959",
+        "r1b.webp": "56f8077dcaf2869bd517838d8f1b5eda979112b654499d5e742b7496e6ce6bf3",
+        "r1c.webp": "d3f88e306f8b0b32ab036fa798cec5ab38ed95bd46fc751353d9a3b9c01e97d8",
+        "r1d.webp": "a63df5caf59688e59790d469c4301d5ef56bd32b37a9de18f67edc64de7b260e",
+        "r1e.webp": "2eb339380e6fd9f555543d75445b4692c5fba8eb78c38ba6f98903478878d84a",
+        "r1f.webp": "3aedbff34762fc8bfb8aa57ee139d2051c4d91114e539125819ff9189544d774",
+        "r2a.webp": "6b9efb6b09ac5604096f29d1ae5678181394d8c6fd53f87bc98d1b22311de25b",
+        "r2b.webp": "737af7bd0f802bb5e0f866f572bf3387370dca9accafa8e1f8506d00c1950b1c",
+        "r2c.webp": "429c415b64117db53ff253ff3918e00768df80afc6f2e2e859c779ea57701e31",
+        "r2d.webp": "23e44d531a5da8b52a309fa3e82c482f799de8f4636f0547985a1747fded174f",
+        "r2e.webp": "36e45c6cdd880adb05c37144021ed2b366ecf92715933e8a86a03734842e4a5d"
+      }
+    },
+    {
+      "directory": "src/acme_city/static/persona-icons",
+      "source": "Krea 2 renders for the persona selector, seeds 9201 to 9205",
+      "added_in": [
+        "2f070af"
+      ],
+      "files": {
+        "admin.png": "9f6a69ae63c46255d63e39fb37c7a3ea1302494b710a1435981f60cc187abaae",
+        "applicant.png": "cd067e9e1011a2f954b94062b00539493d24099d0484085a8eefacc61b13cc36",
+        "operator.png": "3c997f7e8fcc9b9a08f31cee6592bbe00b63b227409b8c7474d63b74e286d9dd",
+        "reviewer.png": "6898152661b66aad71dcb347aeb0b622bf3b03169a9684f8e7e1f1cc92bbaf74",
+        "steward.png": "cea373e448d053630913db23e43c713df95b69eb45cb3ea48b883ceed4766b3f"
+      }
+    },
+    {
+      "directory": "src/acme_city/static/permit-type-icons",
+      "source": "Muse Image (muse-image-1.0) icons bundled with the UI redesign built by Muse Wonder",
+      "added_in": [
+        "9a4aaef"
+      ],
+      "files": {
+        "commercial-alteration.webp": "992b11ac66c93b8f1d20f6922eee95d5f7e0f1120e4f32aa75a5950007a2e3c6",
+        "new-building.webp": "11822c4767196236f646b82e338ea4427518768d64212ccd298e77ece2b58616",
+        "sign.webp": "9ebc624f1d96df0e4322a15254a56e6838ec1e512ea9a1c3c1a4d8c2255c3019"
+      }
+    },
+    {
+      "directory": "src/acme_city/static/permit-type-icons",
+      "source": "Muse Image (muse-image-1.0) seed icons generated 2026-10-28, downscaled to 192 by 192; prompts and sha256 prefixes in docs/operations/permit-type-icons-manifest.json",
+      "added_in": [
+        "858bc24"
+      ],
+      "files": {
+        "certificate-appropriateness.webp": "9328ce56ebd66c086c1748fa29aa6d6e1a033b807b272ff066bc7169d151b529",
+        "change-occupancy.webp": "d5ddaf89198b271b1e018dd672bd82f173ac7ab71b520c5d7ab2c215069e794f",
+        "deck-fence.webp": "445f391cac19004605380d1069cb17b0d3085aaf0512d92202f5a9a8a1a0a256",
+        "fire-alarm.webp": "79d010e3288596e872483fbd07255175daef4fc3ec1e7f074cd21396ffe5b885",
+        "hvac.webp": "333dfeb64fbec1dc7ad920656d9594a471d478678d8237963af3a72e43026632",
+        "patio.webp": "1f65dd51827622a5e458b8b46a5557bd69af55074c90519cc710a805fee5e331",
+        "pod.webp": "c1057f3ce5c077f4cb5f39ba069de4eb514dd23eebef7dbf67b4d0fbfffbf8ff",
+        "residential-electric.webp": "3229408b569065ad925b2934d9ad9daa7fea7429c09dc0fca36a5ae9e5b1ed5f",
+        "rezoning.webp": "fad20ce388cf68a1f499fc314545d71ada121561532d5aaea9e0b3a386641421",
+        "row-encroachment.webp": "fdb44b80fbd7fe98a08e0739ab0a92aea8e9d9f250b44ce5797b24496124ecdf",
+        "shed.webp": "7288a4c156c8ed464dc94eec8492b0d314d3d0e46b6296ee101f38553a051e1e",
+        "site-plan-review.webp": "cfe3054cf6a315d0142d53c4e5eacfeb445423c9be22f6e85c094085a8cd71e2",
+        "water-heater.webp": "ba406729aa6cca5ee9553565fd48296cd2ba37e062285b054cb0fe3ddbee0bea",
+        "zoning-variance.webp": "9de3334b682c80c3b089f60f160d32a7688f7a8da102354589066d0f940db863"
+      }
+    },
+    {
+      "directory": "src/acme_city/static/video",
+      "source": "DemoVideo draft 8 web encode of the persona tour, Kokoro narration, captions burned in; the poster is its still",
+      "added_in": [
+        "426bc5a"
+      ],
+      "max_bytes": 8388608,
+      "files": {
+        "demo-video-poster.jpg": "dd443ead10c9d7203de3d5555eccb552e8c3e93950a39f2d94c73e28547e285b",
+        "demo-video.mp4": "c9823815348a280b8529a26faa193e750ade35d78ed8721e8cd21435fb51cfac"
+      }
+    }
+  ]
+}
