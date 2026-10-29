@@ -197,3 +197,53 @@ def test_the_comparison_fits_a_phone(
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1").first)
     assert page.recorded_errors == []
+
+
+def test_the_source_catalogue_fits_a_phone(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """The catalogue of the source records fits a 390 pixel screen."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/source-records", wait_until="load")
+    table = page.locator('[data-testid="source-record-table"]')
+    assert table.count() == 1
+    assert not table.locator("thead").is_visible()
+    rows = table.locator("tbody tr")
+    assert rows.count() >= 1
+    for index in range(rows.count()):
+        box = rows.nth(index).bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_source_catalogue_names_the_record_and_its_action(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """A source record names the record, its state and the action that state asks for."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/source-records?system=erp_finance", wait_until="load")
+    body = page.locator('[data-testid="source-record-table"]')
+    assert "Cedarline Coffee Works" in body.inner_text()
+    assert "ERP-BL-00413" in body.inner_text()
+    states = body.locator('[data-testid="source-link-state"]')
+    assert states.count() >= 1
+    assert "Match proposed" in states.first.inner_text()
+    # The row offers the review of the match.
+    action = body.locator('[data-testid="source-action"]').first
+    assert action.inner_text().strip() == "Review match"
+    assert "/steward/issues/link/" in (action.get_attribute("href") or "")
+    # The link state filter narrows the catalogue.
+    page.goto(f"{server.base_url}/source-records?link_state=proposed", wait_until="load")
+    proposed = page.locator('[data-testid="source-record-table"]')
+    assert "Match proposed" in proposed.inner_text()
+    assert "Cedarline Coffee Works" in proposed.inner_text()
+    page.goto(f"{server.base_url}/source-records?link_state=linked", wait_until="load")
+    assert "No source record matches" in page.locator(
+        '[data-testid="source-record-table"]'
+    ).inner_text()
+    assert page.recorded_errors == []

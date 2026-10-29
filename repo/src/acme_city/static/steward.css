@@ -50,6 +50,13 @@ body[data-screen="masters"] .data-table thead th {
   text-transform: none; letter-spacing: normal; font-size: .74rem;
 }
 
+/* The source-record catalogue.  One row is one accepted record: the name a
+   person recognizes, the source, the state of its link and the one action
+   that state asks for. */
+.stw-source-table { width: 100%; }
+.stw-source-table .stw-reference { display: block; }
+.stw-state-detail { display: block; font-size: .74rem; }
+
 /* The search and the filters of the queue. */
 .stw-search {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
@@ -113,8 +120,7 @@ body[data-screen="masters"] .data-table thead th {
   }
   body[data-screen="steward"] .stw-cell::before {
     content: attr(data-label); display: inline-block; min-width: 9.5em;
-    color: var(--fg-3); font-size: .68rem; text-transform: uppercase;
-    letter-spacing: .06em;
+    color: var(--fg-3); font-size: .72rem;
   }
   body[data-screen="steward"] .stw-cell-task { margin-bottom: 2px; font-size: .92rem; }
   body[data-screen="steward"] .stw-cell-task::before { content: none; }
@@ -123,4 +129,29 @@ body[data-screen="masters"] .data-table thead th {
   body[data-screen="steward"] .stw-cell-action::before { content: none; }
   body[data-screen="steward"] .stw-filter-form { display: grid; gap: 8px; }
   body[data-screen="steward"] .stw-filter-form select { width: 100%; }
+
+  /* The catalogue of the source records reads as one card per record. */
+  body[data-screen="source_records"] .stw-source-table thead { display: none; }
+  body[data-screen="source_records"] .stw-source-table,
+  body[data-screen="source_records"] .stw-source-table tbody,
+  body[data-screen="source_records"] .stw-source-table tr,
+  body[data-screen="source_records"] .stw-source-table th,
+  body[data-screen="source_records"] .stw-source-table td { display: block; width: 100%; }
+  body[data-screen="source_records"] .stw-source-table tr {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-record::before { content: none; }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-action { margin-top: 8px; }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-action::before { content: none; }
+  body[data-screen="source_records"] .stw-search { display: grid; gap: 8px; }
+  body[data-screen="source_records"] .stw-search select,
+  body[data-screen="source_records"] .stw-search input[type="search"] { width: 100%; }
 }

@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Source records</h1>
-    <p class="sub">The accepted records each source system has sent, and the master record each one is linked to.</p>
+    <p class="sub">The records each source system has sent, the master record each one is linked to, and the one action each record asks for.</p>
   </div>
   <div class="actions">{{ ui.help_button('source_records') }}</div>
 </div>
@@ -18,28 +18,41 @@
 
 <section class="panel" aria-labelledby="source-records-heading">
   <h2 id="source-records-heading" class="visually-hidden">Source records</h2>
-  <form class="filters toolbar" method="get" action="/source-records">
+  <form class="source-search stw-search stw-filter-form" method="get" action="/source-records" role="search" data-testid="source-search">
+    <p class="field">
+      <label for="source-query">Search records</label>
+      <input id="source-query" type="search" name="q" value="{{ catalogue.query }}" placeholder="Name, address, or reference" data-testid="source-search-input">
+    </p>
+    <div class="field">
+      <label for="source-link-state">Link state</label>
+      <select id="source-link-state" name="link_state" data-testid="source-link-state-select">
+        <option value="">Every link state</option>
+        {% for s in catalogue.states %}<option value="{{ s.key }}"{% if s.active %} selected{% endif %}>{{ s.label }} ({{ s.count }})</option>{% endfor %}
+      </select>
+    </div>
     {% if catalogue.system %}<input type="hidden" name="system" value="{{ catalogue.system }}">{% endif %}
-    <p class="field"><label for="source-query">Search by record or source</label><input id="source-query" type="search" name="q" value="{{ catalogue.query }}"></p>
-    <p><button type="submit" class="button">Search</button></p>
+    <p class="stw-filter-actions"><button type="submit" class="button btn" data-testid="source-search-submit">Search</button></p>
   </form>
-  <table class="data-table" data-testid="source-record-table">
+  <table class="data-table source-table stw-source-table" data-testid="source-record-table">
     <caption class="visually-hidden">Accepted source records</caption>
     <thead>
-      <tr><th scope="col">Source</th><th scope="col">Record</th><th scope="col">Version</th><th scope="col">Source last changed {{ ui.info('source_last_changed') }}</th><th scope="col">Last received</th><th scope="col">Linked to</th></tr>
+      <tr><th scope="col">Record</th><th scope="col">Source</th><th scope="col">Link state</th><th scope="col">Source last changed {{ ui.info('source_last_changed') }}</th><th scope="col">Last received</th><th scope="col">Next action</th></tr>
     </thead>
     <tbody>
       {% for row in catalogue.rows %}
       <tr data-link-state="{{ row.state }}">
-        <td>{{ row.source }}</td>
-        <th scope="row">{{ ui.detail_link('source', row.detail_id, row.record_id, 'mono') }}</th>
-        <td class="nowrap">{{ row.version }}</td>
-        <td class="nowrap">{{ ui_time(row.changed) }}</td>
-        <td class="nowrap">{{ ui_time(row.received) }}</td>
-        <td>{{ row.linked }}</td>
+        <th scope="row" class="stw-cell stw-cell-record" data-label="Record">
+          {{ row.name }}
+          <span class="stw-reference" data-testid="source-reference">{{ row.record_id }}</span>
+        </th>
+        <td class="stw-cell" data-label="Source">{{ row.source }}</td>
+        <td class="stw-cell" data-label="Link state">{{ st.source_state(row) }}</td>
+        <td class="stw-cell nowrap" data-label="Source last changed">{{ ui_time(row.changed) }}</td>
+        <td class="stw-cell nowrap" data-label="Last received">{{ ui_time(row.received) }}</td>
+        <td class="stw-cell stw-cell-action" data-label="Next action">{{ st.source_action(row, csrf_token) }} {{ ui.detail_link('source', row.detail_id, 'Source values') }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted">No source record matches.</td></tr>
+      <tr><td colspan="6" class="muted" data-testid="source-empty">No source record matches.</td></tr>
       {% endfor %}
     </tbody>
   </table>

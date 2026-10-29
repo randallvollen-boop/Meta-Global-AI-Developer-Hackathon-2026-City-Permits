@@ -799,6 +799,57 @@ def test_source_records_catalogue_filters_and_links(client: TestClient, environm
     assert 'data-testid="source-record-table"' in body
 
 
+def test_the_catalogue_names_the_record_the_state_and_the_action(
+    client: TestClient, environment: Settings
+) -> None:
+    """A source record leads with its name, carries its state and offers one action."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records?system=erp_finance").text
+    # The name a person recognizes leads; the reference is the secondary text.
+    assert "Cedarline Coffee Works" in body
+    assert 'data-testid="source-reference">ERP-BL-00413' in body
+    # The state of the link is named, and the row offers the review of it.
+    assert 'data-testid="source-link-state"' in body
+    assert "Match proposed" in body
+    assert re.search(
+        r'href="(/steward/issues/link/[^"]+)"[^>]*data-testid="source-action"', body
+    )
+    # A record that was never compared offers the comparison of the records.
+    assert 'data-action-id="registry.propose"' in body
+
+
+def test_the_link_state_filter_narrows_the_catalogue(
+    client: TestClient, environment: Settings
+) -> None:
+    """The link state filter is read from the address and keeps the search."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records?link_state=proposed&q=cedarline").text
+    assert "ERP-BL-00413" in body
+    assert "ERP-BL-00412" not in body
+    assert 'name="link_state"' in body
+    assert 'value="proposed" selected' in body
+    # A state with no records says so.
+    empty = client.get("/source-records?link_state=linked").text
+    assert 'data-testid="source-empty"' in empty
+
+
+def test_the_source_details_show_the_accepted_values(
+    client: TestClient, environment: Settings
+) -> None:
+    """The source details show the values the registry accepted."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    html = client.get(
+        "/source-records?detail=source:erp_finance:business_licensing_register:ERP-BL-00413"
+    ).text
+    assert "Accepted values" in html
+    assert "License number" in html
+    assert "BL-2026-00413" in html
+    assert "Cedarline Coffee Works" in html
+
+
 def test_activity_lists_decisions_not_the_audit_log(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     assert 'data-testid="activity-empty"' in client.get("/activity").text

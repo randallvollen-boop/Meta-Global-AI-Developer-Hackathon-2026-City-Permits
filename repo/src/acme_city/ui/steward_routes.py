@@ -413,12 +413,19 @@ def ui_source_records(
     system: str = "",
     q: str = "",
     page: int = 1,
+    link_state: str = "",
 ) -> Any:
-    """Show the source-record catalogue."""
+    """Show the source-record catalogue.
+
+    The search, the source filter and the link state filter are read from the
+    address of the request, so the catalogue can be bookmarked and shared.
+    """
     resolved, refused = _guard(request, session, actor, "source_records")
     if refused is not None:
         return refused
-    catalogue = steward_views.source_records(session, resolved, system=system, query=q, page=page)
+    catalogue = steward_views.source_records(
+        session, resolved, system=system, query=q, page=page, link_state=link_state
+    )
     context = page_context(
         request,
         session,

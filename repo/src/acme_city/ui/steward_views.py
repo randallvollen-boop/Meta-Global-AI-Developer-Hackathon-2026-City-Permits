@@ -124,6 +124,16 @@ COMPARISON_FAMILIES: tuple[str, ...] = ("party", "parcel", "address")
 #: then what is missing on one side, and only then what agrees.
 COMPARISON_ORDER: tuple[str, ...] = ("conflicts", "no_comparison", "agrees")
 
+#: The link states of the source-record catalogue, and the label each one
+#: carries.  The action a record asks for follows from its state.
+SOURCE_LINK_STATES: dict[str, tuple[str, str]] = {
+    "not_compared": ("Not compared", "Find matches"),
+    "proposed": ("Match proposed", "Review match"),
+    "linked": ("Linked", "View master record"),
+    "decided": ("No suitable match", "Review next step"),
+    "not_linkable": ("Not a master record", ""),
+}
+
 #: Grants that open the drawer kinds (the same predicate as the screens).
 RECORD_GRANTS: tuple[tuple[str, str | None], ...] = view_models.SCREEN_PERMISSIONS["applicants"]
 MASTER_GRANTS: tuple[tuple[str, str | None], ...] = view_models.SCREEN_PERMISSIONS["masters"]
@@ -837,6 +847,24 @@ def _split_source_id(item_id: str) -> tuple[str, str, str]:
     return parts[0], parts[1], ":".join(parts[2:])
 
 
+def _accepted_values(payload: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return the accepted values of a source record, in a readable order.
+
+    These are the values the source sent and the registry accepted.  A value
+    that holds a document rather than a field is left out.
+    """
+    rows: list[tuple[str, str]] = []
+    for key in sorted(payload):
+        value = payload[key]
+        if isinstance(value, (dict, list)):
+            continue
+        text = str(value)
+        if len(text) > 240:
+            text = text[:237] + "..."
+        rows.append((display.pretty(key), text))
+    return rows
+
+
 def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
     system_id, dataset_key, record_id = _split_source_id(item_id)
     system = ctx.session.execute(
@@ -898,6 +926,37 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
                 ),
             ),
         )
+    if snapshot is not None:
+        values = _accepted_values(dict(snapshot.raw_payload or {}))
+        if values:
+            sections.insert(
+                1,
+                Section(
+                    "Accepted values",
+                    tuple(Row(label, value) for label, value in values),
+                ),
+            )
+        crosswalk = ctx.session.execute(
+            select(registry.Crosswalk)
+            .where(
+                registry.Crosswalk.source_system_id == system_id,
+                registry.Crosswalk.source_record_id == record_id,
+            )
+            .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
+        ).scalars().all()
+        if crosswalk:
+            latest = crosswalk[-1]
+            sections.append(
+                Section(
+                    "Current link",
+                    (
+                        Row("State", display.pretty(latest.link_status)),
+                        Row("Master record", _party_label(ctx.session, latest.entity_id)),
+                        Row("Decided by", view_models.actor_label(ctx.session, latest.decision_actor_id)),
+                        Row("Decided at", display.readable_date(latest.decided_at) or "not decided"),
+                    ),
+                )
+            )
     if summary["warning"]:
         sections.append(Section("Freshness", lines=(summary["warning"],)))
     technical = [
@@ -2846,10 +2905,64 @@ def _resolve_evidence(ctx: DetailContext, proposal_id: str) -> DetailView | None
 # ---------------------------------------------------------- source records page
 
 
-def source_records(
-    session: Session, actor: ActorContext, *, system: str = "", query: str = "", page: int = 1
+def _source_domain(session: Session, system_id: str, dataset: str) -> str:
+    """Return the domain the source contract of a dataset belongs to."""
+    contract = session.execute(
+        select(governance.SourceContract).where(
+            governance.SourceContract.source_system_id == system_id,
+            governance.SourceContract.dataset_key == dataset,
+        )
+    ).scalars().first()
+    return contract.domain_id if contract is not None else "applicants"
+
+
+def _find_matches_action(
+    session: Session,
+    actor: ActorContext,
+    *,
+    system_id: str,
+    dataset: str,
+    record_id: str,
+    domain_id: str,
 ) -> dict[str, Any]:
-    """Return the source-record catalogue: accepted records with the master record each links to."""
+    """Return the action that compares one source record with the master records."""
+    return view_models.action(
+        session,
+        actor,
+        action_id="registry.propose",
+        label="Find matches",
+        path="/ui/actions/registry.propose",
+        permission="registry.crosswalk.propose",
+        domain_id=domain_id,
+        destination="Registry candidate comparison",
+        description=(
+            "Compare this source record with the master records and record the "
+            "evidence. A steward still has to decide."
+        ),
+        fields=(
+            view_models._field("source_system_id", "Source system", value=system_id, field_type="hidden"),
+            view_models._field("dataset_key", "Dataset", value=dataset, field_type="hidden"),
+            view_models._field("source_record_id", "Source record", value=record_id, field_type="hidden"),
+        ),
+    )
+
+
+def source_records(
+    session: Session,
+    actor: ActorContext,
+    *,
+    system: str = "",
+    query: str = "",
+    page: int = 1,
+    link_state: str = "",
+) -> dict[str, Any]:
+    """Return the source-record catalogue: accepted records with the master record each links to.
+
+    Every row names the record a person recognizes, the source it came from,
+    the state of its link and the one action that state asks for.  The search
+    and the filters are read from the address of the request, so a steward can
+    come back to the same catalogue.
+    """
     latest: dict[tuple[str, str, str], source.SourceSnapshot] = {}
     for row in session.execute(
         select(source.SourceSnapshot).where(source.SourceSnapshot.record_status == "accepted")
@@ -2869,45 +2982,103 @@ def source_records(
             existing.link_status not in ("approved", "proposed") and crosswalk.link_status == "proposed"
         ):
             links[key] = crosswalk
+    proposals: dict[tuple[str, str], registry.MatchProposal] = {}
+    for proposal in session.execute(
+        select(registry.MatchProposal).order_by(registry.MatchProposal.created_at, registry.MatchProposal.id)
+    ).scalars():
+        snapshot = session.get(source.SourceSnapshot, proposal.source_snapshot_id)
+        if snapshot is None:
+            continue
+        proposals[(snapshot.source_system_id, snapshot.source_record_id)] = proposal
     needle = query.strip().lower()
     by_system: dict[str, int] = defaultdict(int)
+    by_state: dict[str, int] = defaultdict(int)
     rows: list[dict[str, Any]] = []
     for (system_id, dataset, record_id), snapshot in sorted(latest.items()):
-        text = f"{record_id} {display.source_name(session, system_id, dataset)}".lower()
+        payload = dict(snapshot.raw_payload or {})
+        name = _payload_values(
+            payload,
+            (
+                "organization_name",
+                "holder_name",
+                "display_name",
+                "full_name",
+                "applicant_name",
+                "name",
+            ),
+        )
+        text = f"{record_id} {name} {display.source_name(session, system_id, dataset)}".lower()
         if needle and needle not in text:
             continue
         by_system[system_id] += 1
         if system and system != system_id:
             continue
         crosswalk = links.get((system_id, record_id))
+        proposal = proposals.get((system_id, record_id))
+        action = None
         if dataset not in LINKABLE_DATASETS:
             linked = "Not a record that links to a master record"
-            state = "none"
+            state = "not_linkable"
+            detail = ""
+            action_label = ""
+            action_href = ""
         elif crosswalk is None:
             linked = "Not linked"
-            state = "unlinked"
+            state = "not_compared"
+            detail = "Not linked"
+            action_label = "Find matches"
+            action_href = ""
+            action = _find_matches_action(
+                session,
+                actor,
+                system_id=system_id,
+                dataset=dataset,
+                record_id=record_id,
+                domain_id=_source_domain(session, system_id, dataset),
+            )
         elif crosswalk.link_status == "proposed":
             linked = "Match waiting for a decision"
-            state = "waiting"
+            state = "proposed"
+            detail = "Match waiting for a decision"
+            action_label = "Review match"
+            action_href = (
+                f"/steward/issues/link/{proposal.id}" if proposal is not None else ""
+            )
         elif crosswalk.link_status == "approved":
             linked = _party_label(session, crosswalk.entity_id)
             state = "linked"
+            detail = ""
+            action_label = "View master record"
+            action_href = f"/masters/{crosswalk.entity_id}"
         else:
             linked = display.pretty(crosswalk.link_status)
             state = "decided"
+            detail = display.pretty(crosswalk.link_status)
+            action_label = "Review next step"
+            action_href = f"/steward/issues/linked/{crosswalk.id}"
+        by_state[state] += 1
         rows.append(
             {
                 "source": display.source_name(session, system_id, dataset),
+                "name": name or record_id,
                 "record_id": record_id,
                 "version": snapshot.source_record_version or "",
                 "changed": _iso(snapshot.source_updated_at),
                 "received": _iso(snapshot.ingested_at),
                 "linked": linked,
+                "linked_ref": _ref("record", crosswalk.entity_id) if state == "linked" else "",
                 "state": state,
+                "state_label": SOURCE_LINK_STATES.get(state, ("", ""))[0],
+                "detail": detail,
+                "action_label": action_label,
+                "action_href": action_href,
+                "action": action,
                 "detail_id": f"{system_id}:{dataset}:{record_id}",
                 "scenario": snapshot.scenario_id or "",
             }
         )
+    if link_state:
+        rows = [row for row in rows if row["state"] == link_state]
     window, paging = _page(rows, page)
     systems = [
         {
@@ -2915,18 +3086,30 @@ def source_records(
             "label": display.source_name(session, system_id),
             "count": count,
             "active": system == system_id,
-            "href": _href("/source-records", system=system_id, q=query),
+            "href": _href("/source-records", system=system_id, q=query, link_state=link_state),
         }
         for system_id, count in sorted(by_system.items())
+    ]
+    states = [
+        {
+            "key": key,
+            "label": label,
+            "count": by_state.get(key, 0),
+            "active": link_state == key,
+            "href": _href("/source-records", system=system or None, q=query, link_state=key),
+        }
+        for key, label in SOURCE_LINK_STATES.items()
     ]
     return {
         "rows": window,
         "paging": paging,
         "systems": systems,
+        "states": states,
         "all_count": sum(by_system.values()),
-        "all_href": _href("/source-records", q=query),
+        "all_href": _href("/source-records", q=query, link_state=link_state),
         "system": system,
         "query": query,
+        "link_state": link_state,
     }
 
 
