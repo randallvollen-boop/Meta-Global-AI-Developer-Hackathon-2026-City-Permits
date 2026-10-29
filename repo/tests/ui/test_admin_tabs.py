@@ -15,6 +15,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 from jinja2 import ChoiceLoader, DictLoader
 
 from acme_city.ui import admin_tabs
@@ -111,6 +112,84 @@ def test_a_tab_with_a_required_grant_is_hidden_without_it(client) -> None:  # no
         assert "Granted Tab" not in choose(client, ADMIN).get("/admin").text
     finally:
         admin_tabs.unregister_admin_tab("granted")
+
+
+def _twice_context(session, actor):
+    return {"twice_text": "twice"}
+
+
+def test_loading_the_lane_modules_twice_registers_once(monkeypatch) -> None:
+    from acme_city.ui import agent_admin_views, nav_plugins
+
+    def register() -> None:
+        admin_tabs.register_admin_tab(
+            "twice", "Twice", "admin/_log.html", context_fn=_twice_context, order=999
+        )
+        admin_tabs.register_users_extra("test/_twice.html", context_fn=_twice_context)
+
+    monkeypatch.setattr(agent_admin_views, "register", register)
+    try:
+        nav_plugins.load_plugins()
+        nav_plugins.load_plugins()
+        assert [key for key in admin_tabs.ADMIN_TABS if key == "twice"] == ["twice"]
+        assert [
+            extra.template
+            for extra in admin_tabs.ADMIN_USERS_EXTRAS_PROVIDERS
+            if extra.template == "test/_twice.html"
+        ] == ["test/_twice.html"]
+        # A different definition under the same key or template is refused.
+        with pytest.raises(ValueError):
+            admin_tabs.register_admin_tab("twice", "Other", "admin/_log.html")
+        with pytest.raises(ValueError):
+            admin_tabs.register_users_extra("test/_twice.html")
+    finally:
+        admin_tabs.unregister_admin_tab("twice")
+        admin_tabs.unregister_users_extra("test/_twice.html")
+
+
+def test_a_provider_may_not_replace_a_page_variable(client) -> None:  # noqa: F811
+    admin_tabs.register_admin_tab(
+        "clash", "Clash", "admin/_log.html",
+        context_fn=lambda session, actor: {"admin_tabs": []}, order=999,
+    )
+    try:
+        with pytest.raises(ValueError, match="admin_tabs"):
+            choose(client, ADMIN).get("/admin")
+    finally:
+        admin_tabs.unregister_admin_tab("clash")
+
+
+def test_a_required_grant_is_checked_against_its_domain(monkeypatch) -> None:
+    from acme_city.auth.context import ActorContext
+    from acme_city.auth.permissions import Grant
+    from acme_city.ui import view_models
+
+    grant = Grant("p1", "agent.run", "domain_a", frozenset(), False)
+
+    class Resolver:
+        def __init__(self, session) -> None:
+            pass
+
+        def grants_for(self, actor_id):
+            return [grant]
+
+    monkeypatch.setattr(view_models, "PermissionResolver", Resolver)
+    actor = ActorContext(actor_id="someone")
+    for key, required in (
+        ("in_domain", ("agent.run", "domain_a")),
+        ("other_domain", ("agent.run", "domain_b")),
+        ("any_domain", "agent.run"),
+    ):
+        admin_tabs.register_admin_tab(key, key, "admin/_log.html", required_grant=required)
+    try:
+        keys = {tab.key for tab in admin_tabs.visible_tabs(None, actor)}
+        assert "in_domain" in keys
+        # A grant in one domain does not open a tab scoped to another, nor a
+        # tab whose grant names no domain.
+        assert "other_domain" not in keys and "any_domain" not in keys
+    finally:
+        for key in ("in_domain", "other_domain", "any_domain"):
+            admin_tabs.unregister_admin_tab(key)
 
 
 def test_every_earlier_action_id_is_still_handled() -> None:

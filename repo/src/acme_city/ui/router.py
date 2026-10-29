@@ -1102,9 +1102,18 @@ def ui_administration(
         ],
         admin_icon_generation={"available": False, "reason": ""},
     )
+    # A provider may add variables but never replace one: a clash with the
+    # page or with another lane is refused rather than silently overwritten.
     for provider in [*tabs, *_admin_tabs.ADMIN_USERS_EXTRAS_PROVIDERS]:
         if provider.context_fn is not None:
-            context.update(provider.context_fn(session, resolved))
+            extra = provider.context_fn(session, resolved)
+            clash = sorted(set(extra) & set(context))
+            if clash:
+                raise ValueError(
+                    f"the administration part {provider.template!r} "
+                    f"would replace {', '.join(clash)}"
+                )
+            context.update(extra)
     return render(request, "admin.html", context)
 
 
