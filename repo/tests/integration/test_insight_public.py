@@ -160,11 +160,161 @@ FORBIDDEN_TEXT = (
     "Quillfeather",
 )
 
+#: The selector contract of "Permits in my community".  The two public pages
+#: keep every one of these test ids: a redesign may change the markup around
+#: them, never the ids themselves.
+LIST_SELECTORS: tuple[str, ...] = (
+    "community-synthetic-note",
+    "community-lookup",
+    "community-q",
+    "community-search",
+    "community-results",
+    "community-too-short",
+    "community-result-total",
+    "community-result-table",
+    "community-no-results",
+    "community-map-section",
+    "community-type",
+    "community-total",
+    "community-district-table",
+    "community-recent",
+    "synthetic-badge",
+    "insight-map",
+)
+
+#: The selectors every list page carries, whatever the search state is.
+LIST_ALWAYS: frozenset[str] = frozenset(
+    {
+        "community-synthetic-note",
+        "community-lookup",
+        "community-q",
+        "community-search",
+        "community-map-section",
+        "community-type",
+        "community-total",
+        "community-district-table",
+        "community-recent",
+        "insight-map",
+    }
+)
+
+#: The selector contract of one public permit record.
+DETAIL_SELECTORS: tuple[str, ...] = (
+    "community-record",
+    "record-synthetic-note",
+    "synthetic-badge",
+)
+
+#: The public facts one permit record shows.  Every one keeps its data-field.
+DETAIL_FIELDS: tuple[str, ...] = (
+    "reference",
+    "permit_type",
+    "parcel",
+    "address",
+    "district",
+    "work_description",
+    "status",
+    "submitted_on",
+    "decided_on",
+    "issued_on",
+    "outcome",
+    "conditions",
+    "exception",
+    "contractor_business",
+)
+
 
 def assert_clean(text: str) -> None:
     lowered = text.lower()
     for marker in FORBIDDEN_TEXT:
         assert marker.lower() not in lowered, marker
+
+
+def page_testids(body: str) -> set[str]:
+    """Return every test id the page carries."""
+    return set(re.findall(r'data-testid="([^"]+)"', body))
+
+
+def test_the_list_page_keeps_its_selector_contract(client, sensitive_case) -> None:
+    """Every selector of the contract survives, in at least one search state."""
+    reference = sensitive_case["reference"]
+    pages = (
+        client.get("/city/community").text,
+        client.get(f"/city/community?q={reference}").text,
+        client.get("/city/community?q=ab").text,
+        client.get("/city/community?q=zzqqq").text,
+    )
+    found: set[str] = set()
+    for page in pages:
+        found |= page_testids(page)
+    missing = sorted(set(LIST_SELECTORS) - found)
+    assert not missing, missing
+    assert LIST_ALWAYS <= page_testids(pages[0])
+
+
+def test_the_list_page_states_keep_their_own_contract(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    results = client.get(f"/city/community?q={reference}").text
+    too_short = client.get("/city/community?q=ab").text
+    empty = client.get("/city/community?q=zzqqq").text
+    assert {"community-results", "community-result-total", "community-result-table"} <= page_testids(results)
+    assert "community-too-short" not in page_testids(results)
+    assert "community-no-results" not in page_testids(results)
+    assert "community-too-short" in page_testids(too_short)
+    assert "community-result-total" not in page_testids(too_short)
+    assert "community-no-results" in page_testids(empty)
+    assert "community-too-short" not in page_testids(empty)
+
+
+def test_the_detail_page_keeps_its_selector_and_field_contract(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    found = page_testids(body)
+    assert set(DETAIL_SELECTORS) <= found, sorted(set(DETAIL_SELECTORS) - found)
+    for name in DETAIL_FIELDS:
+        assert f'data-field="{name}"' in body, name
+
+
+def test_the_two_public_pages_carry_no_private_marker(client, sensitive_case) -> None:
+    for url in ("/city/community", f"/city/community/permit/{sensitive_case['reference']}"):
+        assert_clean(client.get(url).text)
+
+
+def test_the_district_table_keeps_its_markup(client) -> None:
+    body = client.get("/city/community").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table, "the district table is there"
+    assert 'data-district="' in table.group(0)
+    assert '<th scope="row">' in table.group(0)
+
+
+def test_the_district_table_prints_no_exact_total_under_three(client, settings) -> None:
+    summary = with_session(settings, lambda s: community_summary(s, type="rezoning"))
+    codes = [district["code"] for district in summary["districts"]]
+    raw = with_session(
+        settings,
+        lambda s: {
+            code: sum(
+                1 for p in public_permits(s) if p.district == code and p.permit_type == "Rezoning"
+            )
+            for code in codes
+        },
+    )
+    body = client.get("/city/community?type=rezoning").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table
+    for code, count in raw.items():
+        if count < 3:
+            assert f"<td>{count}</td>" not in table.group(0), code
+
+
+def test_every_result_item_carries_its_reference(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(f"/city/community?q={reference}").text
+    assert f'data-reference="{reference}"' in body
 
 
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:
