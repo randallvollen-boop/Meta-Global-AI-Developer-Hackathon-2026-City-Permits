@@ -15,13 +15,15 @@
 /* One bordered section holds the content.  A section never holds another
    bordered section: rows inside it are separated by a thin rule. */
 .admin-b section.card,
-.admin-b article.card { margin: 0; padding: 1rem 1.1rem; }
+.admin-b article.card,
+.admin-b details.card { margin: 0; padding: 1rem 1.1rem; }
 .admin-b section.card > h2,
 .admin-b article.card > h2 { margin: 0 0 .45rem; font-size: 1.05rem; }
 .admin-b section.card > h3,
 .admin-b article.card > h3 { margin: .95rem 0 .3rem; font-size: .95rem; }
 .admin-b section.card > :first-child,
 .admin-b article.card > :first-child { margin-top: 0; }
+.admin-b details.card > summary { margin: 0 0 .3rem; }
 
 /* The links that move inside one screen. */
 .admin-b .admin-b-nav { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .1rem 0 0; }
@@ -68,6 +70,32 @@
 /* Two columns on a wide screen, one column on a phone. */
 .admin-b .admin-b-split { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
 
+/* The lead of a screen: the part a person reads first and the part they act
+   on.  On a wide screen they sit side by side; on a phone they follow each
+   other. */
+.admin-b .admin-b-lead { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+
+/* The result of a run: the one line that answers the question. */
+.admin-b .admin-b-headline {
+  margin: .1rem 0 .5rem; font-size: 1.3rem; font-weight: 600; line-height: 1.35;
+}
+.admin-b .admin-b-summary-line { margin: .25rem 0; }
+
+/* A briefing is a document before it is a model-control screen. Keep its
+   reading measure comfortable while allowing its evidence tables to scroll
+   inside their own region. */
+.admin-b .briefing { max-width: 68ch; }
+.admin-b .briefing-head { margin-bottom: 1.25rem; }
+.admin-b .briefing-head > :last-child { margin-bottom: 0; }
+.admin-b .briefing > section + section { margin-top: 1.35rem; }
+.admin-b .briefing > section > h2 { font-size: 1.05rem; }
+
+@media print {
+  .admin-b .briefing { max-width: none; }
+  .admin-b .policy-screen > .page-head .actions,
+  .admin-b [data-testid="policy-writer"] { display: none; }
+}
+
 /* Tables.  The page never scrolls sideways: a table that is wider than the
    screen scrolls inside its own labelled region. */
 .admin-b .tbl-wrap { max-width: 100%; overflow-x: auto; }
@@ -110,6 +138,9 @@
 .admin-b details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .admin-b details.card > summary { font-weight: 600; }
 .admin-b details.card > summary::marker { color: var(--fg-2); }
+/* The glossary popover is a control of its own, not a disclosure of the page. */
+.admin-b .ui-info-fallback { margin: 0; }
+.admin-b .ui-info-fallback > summary { min-height: 0; padding: 0; }
 
 /* Words never break the line in the middle of an identifier. */
 .admin-b h1,
@@ -155,7 +186,9 @@
   .admin-b .admin-b-stack tbody th { display: block; }
 }
 
-/* On a wide screen the run settings sit beside the changes. */
+/* On a wide screen the run settings sit beside the changes, and the result of
+   a run sits beside the handoff of a draft. */
 @media (min-width: 900px) {
   .admin-b .admin-b-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .admin-b .admin-b-lead { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
 }

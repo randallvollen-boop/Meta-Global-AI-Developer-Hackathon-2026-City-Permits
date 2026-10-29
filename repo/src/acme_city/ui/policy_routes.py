@@ -619,6 +619,7 @@ def ui_policy_briefing(
     context = page_context(
         request, session, resolved, screen=SCREEN, title=briefing.title,
         briefing=briefing,
+        run=run,
         run_id=run.id,
         muse=muse_panel,
         notice=_notice_text(notice),
@@ -690,7 +691,7 @@ def _briefing_and_panel(
     muse = _muse(request, session)
     panel = _muse_state(muse, actor, PERMISSION_MUSE_BRIEF)
     panel.update({"version": 0, "latest": None, "source": None, "fallback": "", "rejected": False,
-                  "issues": [], "cites": []})
+                  "issues": [], "cites": [], "display_source_label": "Built from saved results"})
     if not panel["can"]:
         return briefing_module.build_briefing(run), panel
     briefing, latest = muse.briefing_for(actor, run)
@@ -700,6 +701,7 @@ def _briefing_and_panel(
         panel["source"] = latest.source
         if latest.accepted:
             panel["cites"] = list(latest.cited_facts)
+            panel["display_source_label"] = "Recorded Muse briefing"
         else:
             panel["rejected"] = True
             panel["fallback"] = FALLBACK_NOTICE

@@ -3,10 +3,10 @@
 {% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
-<div class="policy-screen">
+<div class="policy-screen admin-b">
 <div class="page-head">
   <div>
-    <h1>{{ briefing.title }}</h1>
+    <h1>Policy briefing</h1>
     <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a> · <a href="/policy/scenarios">All what-ifs</a></p>
   </div>
   <div class="actions">
@@ -18,41 +18,13 @@
 
 {% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
 
-<section class="card" aria-labelledby="writer-heading" data-testid="policy-writer">
-  <h2 id="writer-heading">Who wrote this briefing</h2>
-  {% if briefing.writer == 'muse' %}
-  <p data-testid="policy-writer-muse">Written by Muse from the typed facts of this run and checked claim by claim. {{ muse_source(muse.source) }}</p>
-  {% else %}
-  <p data-testid="policy-writer-deterministic">{{ briefing.source_label }}</p>
-  {% endif %}
-  {% if muse.rejected %}
-  <div class="callout" data-testid="policy-writer-fallback">
-    <p><strong>The Muse briefing was not used.</strong> {{ muse.fallback }}</p>
-    <p class="muted" data-testid="policy-writer-source">{{ muse_source(muse.source) }}</p>
-    {% if muse.issues %}
-    <details><summary>Why it was rejected ({{ muse.issues|length }} shown)</summary>
-      <ul data-testid="policy-writer-issues">{% for i in muse.issues %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
-    </details>
-    {% endif %}
-  </div>
-  {% endif %}
-  <p class="muted" data-testid="policy-writer-mode">{{ muse.mode_note }}</p>
-  {% if muse.can %}
-  <form method="post" action="/policy/runs/{{ run_id }}/briefing/muse" data-testid="policy-writer-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="expected_version" value="{{ muse.version }}">
-    <button type="submit" class="button btn primary button-primary" data-testid="policy-write-with-muse">{% if muse.latest %}Ask Muse again{% else %}Write the briefing with Muse{% endif %}</button>
-    <span class="muted">Muse describes the impact; it recommends nothing. A rejected answer leaves the deterministic briefing in place.</span>
-  </form>
-  {% else %}
-  <p class="muted" data-testid="policy-writer-guard">Your role cannot ask Muse to write the briefing.</p>
-  {% endif %}
-</section>
-
 <article class="card briefing" data-testid="policy-briefing">
-  {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples. None of them is a real application.</p>{% endif %}
-  <p data-testid="policy-briefing-population">Population: <strong>{{ briefing.population_label }}</strong></p>
-  <p class="muted" data-testid="policy-briefing-source">Source: {{ briefing.source_label }}</p>
+  <header class="briefing-head">
+    <h2>{{ briefing.scenario_name }}</h2>
+    <p data-testid="policy-briefing-population">{{ briefing.population_label }} · Revision {{ run.scenario_revision_number }}</p>
+    <p class="muted" data-testid="policy-briefing-source">{{ muse.display_source_label }}</p>
+    {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples. None of them is a real application.</p>{% endif %}
+  </header>
   {% for section in briefing.sections %}
   <section data-testid="policy-briefing-section">
     <h2>{{ section.heading }}</h2>
@@ -71,18 +43,48 @@
   <p class="muted" data-testid="policy-briefing-footer">{{ briefing.footer }}</p>
 </article>
 
-<section class="card" aria-labelledby="facts-heading" data-testid="policy-facts">
-  <h2 id="facts-heading">The facts behind this briefing</h2>
-  <p class="muted">Every figure above comes from one of these typed facts of the run. Each has a value, a unit, a direction, the population and the baseline and scenario it compares.</p>
-  <details>
-    <summary>Show the {{ briefing.facts|length }} facts</summary>
-    <div class="tbl-wrap"><table class="data-table">
-      <caption class="visually-hidden">Typed facts</caption>
-      <thead><tr><th scope="col">Fact</th><th scope="col">Value</th><th scope="col">Unit</th><th scope="col">Direction</th><th scope="col">Compares</th></tr></thead>
-      <tbody>{% for f in briefing.facts %}<tr><th scope="row">{{ f.label }}</th><td>{{ f.value }}</td><td>{{ f.unit }}</td><td>{{ f.direction }}</td><td class="mono">{{ f.baseline_id }} / {{ f.scenario_id }}</td></tr>{% endfor %}</tbody>
-    </table></div>
-  </details>
-</section>
+<details class="card" data-testid="policy-facts">
+  <summary>The facts behind this briefing</summary>
+  <p class="muted">Each figure comes from the saved results for this run.</p>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Facts behind this briefing</caption>
+    <thead><tr><th scope="col">Fact</th><th scope="col">Value</th><th scope="col">Unit</th><th scope="col">Direction</th><th scope="col">Compares</th></tr></thead>
+    <tbody>{% for f in briefing.facts %}<tr><th scope="row">{{ f.label }}</th><td>{{ f.value }}</td><td>{{ f.unit }}</td><td>{{ f.direction }}</td><td class="mono">{{ f.baseline_id }} / {{ f.scenario_id }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</details>
+
+<details class="card" data-testid="policy-writer"{% if briefing.writer == 'muse' or muse.rejected %} open{% endif %}>
+  <summary>Muse and validation details</summary>
+  {% if briefing.writer == 'muse' %}
+  <p data-testid="policy-writer-muse">This recorded Muse briefing passed its checks. {{ muse_source(muse.source) }}</p>
+  {% else %}
+  <p data-testid="policy-writer-deterministic">Built from saved results. No model was used.</p>
+  {% endif %}
+  <p class="muted" data-testid="policy-writer-source">{{ briefing.source_label }}</p>
+  {% if muse.rejected %}
+  <div class="callout" data-testid="policy-writer-fallback">
+    <p><strong>The Muse briefing was not used.</strong> It was a recorded Muse briefing. {{ muse.fallback }}</p>
+    <p class="muted">{{ muse_source(muse.source) }}</p>
+    {% if muse.issues %}
+    <details><summary>Why it was rejected ({{ muse.issues|length }} shown)</summary>
+      <ul data-testid="policy-writer-issues">{% for i in muse.issues %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+  <p class="muted" data-testid="policy-writer-mode">{{ muse.mode_note }}</p>
+</details>
+
+{% if muse.can %}
+<form method="post" action="/policy/runs/{{ run_id }}/briefing/muse" data-testid="policy-writer-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="expected_version" value="{{ muse.version }}">
+  <button type="submit" class="button btn" data-testid="policy-write-with-muse">{% if muse.live %}{% if muse.latest %}Ask Muse again{% else %}Write the briefing with Muse{% endif %}{% else %}{% if muse.latest %}Try recorded Muse briefing again{% else %}Try recorded Muse briefing{% endif %}{% endif %}</button>
+  <span class="muted">Muse describes the impact and recommends nothing. A rejected answer keeps this briefing.</span>
+</form>
+{% else %}
+<p class="muted" data-testid="policy-writer-guard">Your role cannot ask Muse to write the briefing.</p>
+{% endif %}
 {% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

@@ -3,135 +3,45 @@
 {% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
-<div class="policy-screen">
+<div class="policy-screen admin-b">
 {% set r = run %}
+{% set s = summary %}
 <div class="page-head">
   <div>
-    <h1>What-if results: {{ r.scenario.name }}</h1>
-    <p class="sub">Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open the what-if</a>{% endif %} · <a href="/policy/scenarios">All what-ifs</a></p>
+    <h1>Scenario results</h1>
+    <p class="sub">{{ r.scenario.name }} · Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open the what-if</a>{% endif %} · <a href="/policy/scenarios">All what-ifs</a></p>
   </div>
   <div class="actions">
     {{ ui.help_button('policy_run') }}
-    {% if can_brief %}<a class="button btn primary button-primary" href="/policy/runs/{{ r.id }}/briefing" data-testid="policy-open-briefing">Legislator briefing</a>{% else %}<span class="muted" data-testid="policy-briefing-guard">Your role cannot open the briefing.</span>{% endif %}
+    {% if can_brief %}<a class="button btn primary button-primary" href="/policy/runs/{{ r.id }}/briefing" data-testid="policy-open-briefing">Read briefing</a>{% else %}<span class="muted" data-testid="policy-briefing-guard">Your role cannot open the briefing.</span>{% endif %}
   </div>
 </div>
 
 {% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
 
-<section class="card" aria-labelledby="pop-heading" data-testid="policy-population">
-  <h2 id="pop-heading">Population {{ ui.info('policy_population') }}</h2>
-  <p data-testid="policy-population-label"><strong>{{ r.population.label }}</strong>{% if r.population.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %} · {{ r.population.size }} cases</p>
-  <p class="muted" data-testid="policy-population-note">{{ r.population.note }}</p>
-  <p class="muted">{{ ui.detail_link('policy-run', r.id, 'Run identity, versions and hashes') }} · analysis moment <span class="mono">{{ r.analysis_at }}</span></p>
-  <h3>Changes tested</h3>
-  <ol data-testid="policy-run-changes">{% for c in r.changes %}<li>{{ c }}</li>{% endfor %}</ol>
-  {% if r.retire_note %}<p class="callout" data-testid="policy-retire-note">{{ r.retire_note }}</p>{% endif %}
-</section>
+<div class="admin-b-lead">
+  <section class="card" aria-labelledby="result-heading" data-testid="policy-population">
+    <h2 id="result-heading">The result</h2>
+    <p class="admin-b-headline" data-testid="policy-summary">{{ s.headline }}</p>
+    {% for sentence in s.sentences %}<p class="admin-b-summary-line" data-testid="policy-summary-line">{{ sentence }}</p>{% endfor %}
+    <h3>Cases included {{ ui.info('policy_population') }}</h3>
+    <p data-testid="policy-population-label"><strong>{{ r.population.label }}</strong>{% if r.population.synthetic %} <span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %} · {{ r.population.size }} cases</p>
+    <p class="muted" data-testid="policy-population-note">{{ r.population.note }}</p>
+    <p class="muted">The baseline is the published rules and fees as they stood when the run was made. The run keeps them, so this comparison stays the same when the published rules change.</p>
+    <p class="muted">{{ ui.detail_link('policy-run', r.id, 'Run identity, versions and hashes') }} · analysis moment <span class="mono">{{ r.analysis_at }}</span></p>
+    <h3>Changes tested</h3>
+    <ol data-testid="policy-run-changes">{% for c in r.changes %}<li>{{ c }}</li>{% endfor %}</ol>
+  </section>
 
-<section class="card" aria-labelledby="outcomes-heading" data-testid="policy-outcomes">
-  <h2 id="outcomes-heading">Recommendation by outcome, baseline and scenario {{ ui.info('policy_outcome_counts') }}</h2>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Cases by recommended outcome</caption>
-    <thead><tr><th scope="col">Outcome</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Difference</th></tr></thead>
-    <tbody>{% for row in r.outcomes %}<tr data-outcome="{{ row.key }}"><th scope="row">{{ row.label }}</th><td>{{ row.baseline }}</td><td>{{ row.scenario }}</td><td>{{ row.delta }}</td></tr>{% endfor %}</tbody>
-  </table></div>
-  <p class="muted">A person decides every case; these are what the agent would recommend.</p>
-</section>
-
-<section class="card" aria-labelledby="flipped-heading" data-testid="policy-flipped">
-  <h2 id="flipped-heading">Cases that change, and which way {{ ui.info('policy_flipped') }}</h2>
-  <p data-testid="policy-flipped-total"><strong>{{ r.flipped.total }}</strong> of {{ r.population.size }} cases get a different result.</p>
-  <ul data-testid="policy-directions">
-    {% for d in r.flipped.directions %}<li data-direction="{{ d.key }}">{{ d.label }}: <strong>{{ d.count }}</strong> {{ ui.info('policy_direction') }}</li>
-    {% else %}<li class="muted">No case changes direction.</li>{% endfor %}
-  </ul>
-  {% if r.flipped.cases %}
-  <div class="tbl-wrap"><table class="data-table" data-testid="policy-flipped-table">
-    <caption>Cases that change</caption>
-    <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Direction</th><th scope="col">Recommendation</th><th scope="col">Rule result</th><th scope="col">Intake route</th></tr></thead>
-    <tbody>{% for c in r.flipped.cases %}<tr><th scope="row" class="mono">{{ c.case_ref }}</th><td>{{ c.type }}</td><td>{{ c.direction_label }}</td><td>{{ c.recommendation }}</td><td>{{ c.rule }}</td><td>{{ c.route }}</td></tr>{% endfor %}</tbody>
-  </table></div>
-  {% if r.flipped.truncated %}<p class="muted">The first {{ r.flipped.listed }} of {{ r.flipped.total }} cases are listed; the counts above are complete.</p>{% endif %}
-  {% endif %}
-</section>
-
-<section class="card" aria-labelledby="safety-heading" data-testid="policy-safety">
-  <h2 id="safety-heading">Safety signals {{ ui.info('policy_safety_signals') }}</h2>
-  <p><strong>{{ r.safety.count }}</strong> cases stop failing a rule. Each is listed with the rule so a person can judge the risk.</p>
-  {% if r.safety.signals %}
-  <div class="tbl-wrap"><table class="data-table" data-testid="policy-safety-table">
-    <caption class="visually-hidden">Cases that stop failing a rule</caption>
-    <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Rule</th><th scope="col">Observed</th><th scope="col">What changed</th></tr></thead>
-    <tbody>{% for s in r.safety.signals %}<tr><th scope="row" class="mono">{{ s.case_ref }}</th><td>{{ s.type }}</td><td>{{ s.citation }} ({{ s.rule_id }})</td><td>{{ s.observed_value }}</td><td>{{ s.what }}</td></tr>{% endfor %}</tbody>
-  </table></div>
-  {% endif %}
-</section>
-
-<section class="card" aria-labelledby="holds-heading" data-testid="policy-holds">
-  <h2 id="holds-heading">Recommendation holds {{ ui.info('policy_holds') }}</h2>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Recommendation holds</caption>
-    <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
-    <tbody><tr><td>{{ r.holds.baseline }}</td><td>{{ r.holds.scenario }}</td><td>{{ r.holds.cleared }}</td><td>{{ r.holds.added }}</td></tr></tbody>
-  </table></div>
-  {% if r.holds.cleared_but_still_blocked_by_safeguards %}<p class="muted">{{ r.holds.cleared_but_still_blocked_by_safeguards }} cleared holds still carry a safeguard or a missing input, so a person still has to act.</p>{% endif %}
-  {% if r.holds.added %}
-  <p data-testid="policy-added-holds">{{ r.holds.added }} cases are newly held for a person:
-    {% for h in r.hold_reasons %}{{ h.count }} because of {{ h.reason }}{% if not loop.last %}; {% endif %}{% endfor %}.</p>
-  {% if r.retire_note %}<p class="callout" data-testid="policy-retire-holds">{{ r.retire_note }}</p>{% endif %}
-  {% endif %}
-</section>
-
-<section class="card" aria-labelledby="needs-heading" data-testid="policy-needs">
-  <h2 id="needs-heading">Cases that need information {{ ui.info('policy_needs_information') }}</h2>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Needs information at intake</caption>
-    <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
-    <tbody><tr><td>{{ r.needs.baseline }}</td><td>{{ r.needs.scenario }}</td><td>{{ r.needs.cleared }}</td><td>{{ r.needs.added }}</td></tr></tbody>
-  </table></div>
-</section>
-
-<section class="card" aria-labelledby="targets-heading" data-testid="policy-targets">
-  <h2 id="targets-heading">Service targets {{ ui.info('policy_service_targets') }}</h2>
-  {% if r.targets %}
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Service targets before and after</caption>
-    <thead><tr><th scope="col">Permit type</th><th scope="col">Baseline, days</th><th scope="col">Scenario, days</th><th scope="col">Cases in the population</th></tr></thead>
-    <tbody>{% for t in r.targets %}<tr><th scope="row">{{ t.type }}</th><td>{{ t.before }}</td><td>{{ t.after }}</td><td>{{ t.cases }}</td></tr>{% endfor %}</tbody>
-  </table></div>
-  <p class="muted">The targets are the configured figures. No processing time is worked out from them.</p>
-  {% else %}<p class="muted">This what-if changes no service target.</p>{% endif %}
-</section>
-
-<section class="card" aria-labelledby="fees-heading" data-testid="policy-fees">
-  <h2 id="fees-heading">Hypothetical assessed fees {{ ui.info('policy_hypothetical_fees') }}</h2>
-  {% if r.fees %}
-  <p>{{ r.fees.note }}</p>
-  <div class="tbl-wrap"><table class="data-table">
-    <caption class="visually-hidden">Hypothetical assessed fees</caption>
-    <thead><tr><th scope="col">Baseline, USD</th><th scope="col">Scenario, USD</th><th scope="col">Difference, USD</th><th scope="col">Cases priced</th></tr></thead>
-    <tbody><tr data-testid="policy-fee-totals"><td>{{ r.fees.baseline }}</td><td>{{ r.fees.scenario }}</td><td>{{ r.fees.delta }}</td><td>{{ r.fees.priced }}</td></tr></tbody>
-  </table></div>
-  <p class="muted">Types that share the changed schedule: {{ r.fees.sharing_types|join(', ') or 'none' }}.</p>
-  <h3>Cases that cannot be priced {{ ui.info('policy_unpriceable') }}</h3>
-  {% if r.fees.unpriceable %}
-  <div class="tbl-wrap"><table class="data-table" data-testid="policy-unpriceable">
-    <caption class="visually-hidden">Cases that cannot be priced</caption>
-    <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Why</th></tr></thead>
-    <tbody>{% for u in r.fees.unpriceable %}<tr><th scope="row" class="mono">{{ u.case_ref }}</th><td>{{ u.type }}</td><td>{{ u.reason }}</td></tr>{% endfor %}</tbody>
-  </table></div>
-  {% else %}<p class="muted">Every case in the population has a usable valuation.</p>{% endif %}
-  {% else %}<p class="muted" data-testid="policy-fees-none">This what-if changes no fee, so there is no fee comparison.</p>{% endif %}
-</section>
-<section class="card" aria-labelledby="draft-heading" id="draft" data-testid="policy-draft">
-  <h2 id="draft-heading">Path to a real change</h2>
-  {% set d = draft_panel %}
-  {% if d.conversion %}
-  <p data-testid="policy-draft-status"><span class="badge badge-draft">{{ d.status_text }}</span> Saved from this run as draft versions. Nothing published has changed: a draft is not in force.</p>
-  <div class="tbl-wrap"><table class="data-table" data-testid="policy-draft-table">
-    <caption class="visually-hidden">Draft versions made from this run</caption>
-    <thead><tr><th scope="col">Draft</th><th scope="col">What it changes</th><th scope="col">Status</th><th scope="col">Author</th><th scope="col">Who can approve</th><th scope="col">Approve or publish</th></tr></thead>
-    <tbody>
+  <section class="card" aria-labelledby="draft-heading" id="draft" data-testid="policy-draft">
+    <h2 id="draft-heading">Draft handoff</h2>
+    {% set d = draft_panel %}
+    {% if d.conversion %}
+    <p data-testid="policy-draft-status"><span class="badge badge-draft">{{ d.status_text }}</span> Saved from this run as draft versions. Nothing published has changed: a draft is not in force.</p>
+    <div class="tbl-wrap"><table class="data-table" data-testid="policy-draft-table">
+      <caption class="visually-hidden">Draft versions made from this run</caption>
+      <thead><tr><th scope="col">Draft</th><th scope="col">What it changes</th><th scope="col">Status</th><th scope="col">Author</th><th scope="col">Who can approve</th><th scope="col">Approve or publish</th></tr></thead>
+      <tbody>
     {% for x in d.conversion.drafts %}
     <tr data-testid="policy-draft-row" data-kind="{{ x.kind }}" data-draft-id="{{ x.id }}" data-status="{{ x.status }}">
       <th scope="row" class="mono">{{ x.label }}</th>
@@ -158,8 +68,8 @@
   {% else %}
   <p class="muted">Needs independent approval: the City Administrator who saved these drafts is recorded as their author and cannot approve or publish them. Another administrator reviews them on <a href="/rules?tab=rules&view=drafts">Rules and fees</a>.</p>
   {% endif %}
-  {% elif d.convertible %}
-  <p>Every change in this what-if can become a draft rule or fee change. {% if d.single %}It is saved as a draft that is ready for your approval; nothing published changes.{% else %}It is saved as a draft that needs independent approval; nothing published changes.{% endif %}</p>
+    {% elif d.convertible %}
+    <p>Every change in this what-if can become a draft rule or fee change. {% if d.single %}It is saved as a draft that is ready for your approval; nothing published changes.{% else %}It is saved as a draft that needs independent approval; nothing published changes.{% endif %}</p>
   <ul data-testid="policy-draft-plan">{% for i in d.steps %}<li>{{ i.summary }}</li>{% endfor %}</ul>
   {% if d.can %}
   <form method="post" action="/policy/runs/{{ r.id }}/draft" data-testid="policy-draft-form">
@@ -171,15 +81,119 @@
   <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-submit">Save as a draft rule change</button>
   <span class="muted" data-testid="policy-draft-guard">Your role cannot do this.</span>
   {% endif %}
-  {% else %}
-  <p>This what-if cannot be saved as a draft. It can still be run, read and briefed.</p>
+    {% else %}
+    <p>This what-if cannot be saved as a draft. It can still be run, read and briefed.</p>
   <button type="button" class="button btn" disabled aria-disabled="true" data-testid="policy-draft-submit">Save as a draft rule change</button>
   <span class="muted" data-testid="policy-draft-guard">Not available: these changes stay simulation-only, because a draft can only hold a rule limit or operator change or a fee change.</span>
   <ul data-testid="policy-draft-blockers">{% for b in d.blockers %}<li>{{ b }}</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" aria-labelledby="safety-heading" data-testid="policy-safety">
+  <h2 id="safety-heading">Review these rule changes {{ ui.info('policy_safety_signals') }}</h2>
+  {% set safety_cases = r.safety.signals | map(attribute='case_ref') | unique | list | length %}
+  <p>{% if safety_cases %}<strong>{{ safety_cases }}</strong> {{ 'case stops' if safety_cases == 1 else 'cases stop' }} failing a rule.{% else %}No case stops failing a rule.{% endif %} Each one is listed with the rule, so a person can judge the risk.</p>
+  {% if r.safety.signals %}
+  <details data-testid="policy-safety-details">
+    <summary>Cases that stop failing a rule ({{ r.safety.count }} safety signal{{ '' if r.safety.count == 1 else 's' }})</summary>
+    <div class="tbl-wrap"><table class="data-table" data-testid="policy-safety-table">
+      <caption class="visually-hidden">Cases that stop failing a rule</caption>
+      <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Rule</th><th scope="col">Observed</th><th scope="col">What changed</th></tr></thead>
+      <tbody>{% for s in r.safety.signals %}<tr><th scope="row" class="mono">{{ s.case_ref }}</th><td>{{ s.type }}</td><td>{{ s.citation }} ({{ s.rule_id }})</td><td>{{ s.observed_value }}</td><td>{{ s.what }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </details>
   {% endif %}
+  {% if r.retire_note %}<p class="callout" data-testid="policy-retire-note">{{ r.retire_note }}</p>{% endif %}
+  {% if r.holds.cleared_but_still_blocked_by_safeguards %}<p class="muted" data-testid="policy-safeguards">{{ r.holds.cleared_but_still_blocked_by_safeguards }} cleared holds still carry a safeguard or a missing input, so a person still has to act.</p>{% endif %}
 </section>
+
+<section class="card" aria-labelledby="outcomes-heading" data-testid="policy-outcomes">
+  <h2 id="outcomes-heading">Recommended outcomes {{ ui.info('policy_outcome_counts') }}</h2>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Cases by recommended outcome</caption>
+    <thead><tr><th scope="col">Outcome</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Difference</th></tr></thead>
+    <tbody>{% for row in r.outcomes %}<tr data-outcome="{{ row.key }}"><th scope="row">{{ row.label }}</th><td>{{ row.baseline }}</td><td>{{ row.scenario }}</td><td>{{ row.delta }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="muted">A person decides every case; these are what the agent would recommend. The baseline is the one this run captured.</p>
+</section>
+
+<details class="card" data-testid="policy-flipped">
+  <summary>Cases that change ({{ r.flipped.total }}) {{ ui.info('policy_flipped') }}</summary>
+  <p data-testid="policy-flipped-total"><strong>{{ r.flipped.total }}</strong> of {{ r.population.size }} cases get a different result.</p>
+  <ul data-testid="policy-directions">
+    {% for d in r.flipped.directions %}<li data-direction="{{ d.key }}">{{ d.label }}: <strong>{{ d.count }}</strong> {{ ui.info('policy_direction') }}</li>
+    {% else %}<li class="muted">No case changes direction.</li>{% endfor %}
+  </ul>
+  {% if r.flipped.cases %}
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-flipped-table">
+    <caption>Cases that change</caption>
+    <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Direction</th><th scope="col">Recommendation</th><th scope="col">Rule result</th><th scope="col">Intake route</th></tr></thead>
+    <tbody>{% for c in r.flipped.cases %}<tr><th scope="row" class="mono">{{ c.case_ref }}</th><td>{{ c.type }}</td><td>{{ c.direction_label }}</td><td>{{ c.recommendation }}</td><td>{{ c.rule }}</td><td>{{ c.route }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if r.flipped.truncated %}<p class="muted">The first {{ r.flipped.listed }} of {{ r.flipped.total }} cases are listed; the counts above are complete.</p>{% endif %}
+  {% endif %}
+</details>
+
+<details class="card" data-testid="policy-holds">
+  <summary>Holds and missing information {{ ui.info('policy_holds') }}</summary>
+  <h3>Recommendation holds</h3>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Recommendation holds</caption>
+    <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
+    <tbody><tr><td>{{ r.holds.baseline }}</td><td>{{ r.holds.scenario }}</td><td>{{ r.holds.cleared }}</td><td>{{ r.holds.added }}</td></tr></tbody>
+  </table></div>
+  {% if r.holds.cleared_but_still_blocked_by_safeguards %}<p class="muted">{{ r.holds.cleared_but_still_blocked_by_safeguards }} cleared holds still carry a safeguard or a missing input, so a person still has to act.</p>{% endif %}
+  {% if r.holds.added %}
+  <p data-testid="policy-added-holds">{{ r.holds.added }} cases are newly held for a person:
+    {% for h in r.hold_reasons %}{{ h.count }} because of {{ h.reason }}{% if not loop.last %}; {% endif %}{% endfor %}.</p>
+  {% if r.retire_note %}<p class="callout" data-testid="policy-retire-holds">{{ r.retire_note }}</p>{% endif %}
+  {% endif %}
+  <h3>Cases that need information {{ ui.info('policy_needs_information') }}</h3>
+  <div data-testid="policy-needs">
+    <div class="tbl-wrap"><table class="data-table">
+      <caption class="visually-hidden">Needs information at intake</caption>
+      <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
+      <tbody><tr><td>{{ r.needs.baseline }}</td><td>{{ r.needs.scenario }}</td><td>{{ r.needs.cleared }}</td><td>{{ r.needs.added }}</td></tr></tbody>
+    </table></div>
+  </div>
+</details>
+
+<details class="card" data-testid="policy-fees">
+  <summary>Hypothetical assessed fees {{ ui.info('policy_hypothetical_fees') }}</summary>
+  {% if r.fees %}
+  <p>{{ r.fees.note }}</p>
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Hypothetical assessed fees</caption>
+    <thead><tr><th scope="col">Baseline, USD</th><th scope="col">Scenario, USD</th><th scope="col">Difference, USD</th><th scope="col">Cases priced</th></tr></thead>
+    <tbody><tr data-testid="policy-fee-totals"><td>{{ r.fees.baseline }}</td><td>{{ r.fees.scenario }}</td><td>{{ r.fees.delta }}</td><td>{{ r.fees.priced }}</td></tr></tbody>
+  </table></div>
+  <p class="muted">Types that share the changed schedule: {{ r.fees.sharing_types|join(', ') or 'none' }}.</p>
+  <h3>Cases that cannot be priced {{ ui.info('policy_unpriceable') }}</h3>
+  {% if r.fees.unpriceable %}
+  <div class="tbl-wrap"><table class="data-table" data-testid="policy-unpriceable">
+    <caption class="visually-hidden">Cases that cannot be priced</caption>
+    <thead><tr><th scope="col">Case</th><th scope="col">Permit type</th><th scope="col">Why</th></tr></thead>
+    <tbody>{% for u in r.fees.unpriceable %}<tr><th scope="row" class="mono">{{ u.case_ref }}</th><td>{{ u.type }}</td><td>{{ u.reason }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Every case in the population has a usable valuation.</p>{% endif %}
+  {% else %}<p class="muted" data-testid="policy-fees-none">This what-if changes no fee, so there is no fee comparison.</p>{% endif %}
+</details>
+
+<details class="card" data-testid="policy-targets">
+  <summary>Service targets {{ ui.info('policy_service_targets') }}</summary>
+  {% if r.targets %}
+  <div class="tbl-wrap"><table class="data-table">
+    <caption class="visually-hidden">Service targets before and after</caption>
+    <thead><tr><th scope="col">Permit type</th><th scope="col">Baseline, days</th><th scope="col">Scenario, days</th><th scope="col">Cases in the population</th></tr></thead>
+    <tbody>{% for t in r.targets %}<tr><th scope="row">{{ t.type }}</th><td>{{ t.before }}</td><td>{{ t.after }}</td><td>{{ t.cases }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="muted">The targets are the configured figures. No processing time is worked out from them.</p>
+  {% else %}<p class="muted">This what-if changes no service target.</p>{% endif %}
+</details>
+
 <section class="card" aria-labelledby="explain-heading" data-testid="policy-explain">
-  <h2 id="explain-heading">Explain with Muse</h2>
+  <h2 id="explain-heading">Recorded Muse explanation</h2>
   <p class="muted" data-testid="policy-explain-mode">{{ explain.mode_note }}</p>
   {% if explain.can %}
     {% if explain.result and explain.result.accepted %}
@@ -192,14 +206,17 @@
       <p class="muted">Muse explains figures the engine counted; it computes nothing and recommends nothing.</p>
     </div>
     {% elif explain.result %}
-    <p class="callout" data-testid="policy-explain-fallback">{{ explain.fallback }}</p>
+    <div class="callout" data-testid="policy-explain-fallback">
+      <p>{{ explain.fallback }}</p>
+      <p class="muted">The summary at the top of this page is built from the counted figures, so the run is explained either way.</p>
+    </div>
     {% else %}
-    <p class="muted">Muse can explain these results in plain words. Every figure it states is checked against the counted figures above before you see it; if any claim fails, nothing of the explanation is shown.</p>
+    <p class="muted">A recorded answer can explain these results in plain words. Every figure it states is checked against the counted figures above before you see it; if any claim fails, nothing of the explanation is shown.</p>
     {% endif %}
     <form method="post" action="/policy/runs/{{ r.id }}/explain" data-testid="policy-explain-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="expected_version" value="{{ explain.version }}">
-      <button type="submit" class="button btn" data-testid="policy-explain-submit">{% if explain.result %}Ask again{% else %}Explain with Muse{% endif %}</button>
+      <button type="submit" class="button btn" data-testid="policy-explain-submit">{% if explain.result %}{% if explain.live %}Ask Muse again{% else %}Try the recorded explanation again{% endif %}{% elif explain.live %}Explain with Muse{% else %}Try the recorded explanation{% endif %}</button>
     </form>
   {% else %}
   <p class="muted" data-testid="policy-explain-guard">Your role cannot do this.</p>

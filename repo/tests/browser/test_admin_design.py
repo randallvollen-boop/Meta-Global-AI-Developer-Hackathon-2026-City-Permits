@@ -211,6 +211,81 @@ def test_the_run_settings_fit_a_phone(
     assert page.recorded_errors == []
 
 
+# ---------------------------------------------------------- the results
+
+
+def run_a_scenario(page, server: BrowserServer) -> str:
+    """Save the fence example, run it and return the address of the results."""
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    page.locator('[data-testid="policy-run-count"], #run-count').first.fill("120")
+    page.locator('[data-testid="policy-run-submit"]').click()
+    page.wait_for_url("**/policy/runs/polrun_*")
+    return page.url.split("?")[0].replace(server.base_url, "")
+
+
+def test_the_results_lead_with_the_result_and_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The result comes first, the safety block stays visible, nothing overflows."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, results)
+    headline = page.locator('[data-testid="policy-summary"]')
+    assert headline.is_visible()
+    assert "have a different result" in headline.inner_text()
+    assert_not_covered(page, headline)
+    safety = page.locator('[data-testid="policy-safety"]')
+    assert safety.is_visible()
+    assert_not_covered(page, safety)
+    assert page.locator('[data-testid="policy-outcomes"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_collapsed_details_open_and_keep_their_definition(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A collapsed section opens, and its definition is reachable without it."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, results)
+    changed = page.locator('[data-testid="policy-flipped"]')
+    assert changed.evaluate("element => element.open") is False
+    changed.locator("summary").first.click()
+    assert changed.evaluate("element => element.open") is True
+    assert page.locator('[data-testid="policy-flipped-table"]').is_visible()
+    # The definition of a collapsed figure sits in the summary, so it opens
+    # without opening the section.
+    info = changed.locator("summary .ui-info-btn").first
+    assert info.is_visible()
+    info.click()
+    assert changed.locator('[data-testid="ui-info-pop"]').first.is_visible()
+    assert changed.evaluate("element => element.open") is True
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_briefing_leads_with_the_document_and_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The document and export remain reachable before optional details."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, f"{results}/briefing")
+    briefing = page.locator('[data-testid="policy-briefing"]')
+    assert briefing.is_visible()
+    assert "Built from saved results" in briefing.inner_text()
+    assert_not_covered(page, briefing.locator("h2").first)
+    download = page.locator('[data-testid="policy-download-html"]')
+    assert download.is_visible()
+    assert_not_covered(page, download)
+    assert page.locator('[data-testid="policy-writer"]').evaluate("element => element.open") is False
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
 # ------------------------------------------------------- the scenarios list
 
 

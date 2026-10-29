@@ -291,3 +291,128 @@ def test_the_run_settings_send_the_same_fields_as_before(client: TestClient) -> 
     for field in ("kind", "seed", "count", "range_start", "range_end",
                   "permit_type", "district", "category"):
         assert f'name="{field}"' in form, field
+
+
+# -------------------------------------------------------------- the results
+
+
+def _results(client: TestClient) -> str:
+    """Save the fence example, run it and return the page of the results."""
+    page = client.get("/policy/scenarios")
+    created = client.post(
+        "/policy/scenarios",
+        data={"csrf_token": _token(page.text), "expected_version": "0",
+              "suggestion": "fence_height_7ft", "name": "A results probe"},
+        follow_redirects=False,
+    )
+    assert created.status_code == 303, created.text
+    editor = created.headers["location"].split("?")[0]
+    page = client.get(editor)
+    ran = client.post(
+        f"{editor}/run",
+        data={"csrf_token": _token(page.text),
+              "expected_version": _token(page.text, "expected_version"),
+              "kind": "synthetic_year", "seed": "20261028", "count": "120"},
+        follow_redirects=False,
+    )
+    assert ran.status_code == 303, ran.text
+    results = client.get(ran.headers["location"])
+    assert results.status_code == 200
+    return results.text
+
+
+def _token(body: str, name: str = "csrf_token") -> str:
+    """Return the value of a hidden form field."""
+    match = re.search(rf'name="{name}" value="([^"]*)"', body)
+    assert match, f"the page carries a {name}"
+    return match.group(1)
+
+
+def test_the_results_lead_with_the_count_and_the_explanation(client: TestClient) -> None:
+    """The screen answers the question first: how many cases change, and why."""
+    body = _results(client)
+    assert "<h1>Scenario results</h1>" in body
+    summary = body.split('data-testid="policy-summary"')[1].split("</p>")[0]
+    assert re.search(r"\d+ of \d+ cases have a different result\.", summary)
+    assert body.index('data-testid="policy-summary"') < body.index(
+        'data-testid="policy-population-label"'
+    )
+    assert body.index('data-testid="policy-population-label"') < body.index(
+        'data-testid="policy-safety"'
+    )
+    assert body.index('data-testid="policy-safety"') < body.index(
+        'data-testid="policy-outcomes"'
+    )
+
+
+def test_the_baseline_is_the_one_the_run_captured(client: TestClient) -> None:
+    """The screen says what the baseline is, so the comparison cannot drift."""
+    body = _results(client)
+    assert "The baseline is the published rules and fees as they stood when the run was made" in body
+    assert "Retrospective re-scoring" not in body  # a synthetic year, not a stored one
+
+
+def test_the_safety_block_is_always_visible(client: TestClient) -> None:
+    """The safety summary and the safeguards stay outside every disclosure."""
+    body = _results(client)
+    safety = body.split('data-testid="policy-safety"')[1].split("</section>")[0]
+    assert "stop failing a rule" in safety
+    assert safety.index("stop failing a rule") < safety.index('<details data-testid=')
+    assert 'data-testid="policy-safety-table"' in safety
+
+
+def test_the_safety_count_names_the_cases_and_not_the_signals(client: TestClient) -> None:
+    """One case may raise more than one signal, so the count names the cases."""
+    body = _results(client)
+    safety = body.split('data-testid="policy-safety"')[1].split("</section>")[0]
+    match = re.search(r"<strong>(\d+)</strong> (case stops|cases stop) failing a rule", safety)
+    assert match, safety
+    assert int(match.group(1)) >= 1
+    assert "safety signal" in safety
+
+
+def test_the_detail_sections_are_disclosures(client: TestClient) -> None:
+    """The four detail groups open when they are needed."""
+    body = _results(client)
+    for section in ("policy-flipped", "policy-holds", "policy-fees", "policy-targets"):
+        assert f'<details class="card" data-testid="{section}"' in body, section
+
+
+def test_the_draft_handoff_stays_outside_the_disclosures(client: TestClient) -> None:
+    """The next permitted action and its reason are never hidden."""
+    body = _results(client)
+    assert body.index('data-testid="policy-draft"') < body.index('data-testid="policy-flipped"')
+    assert 'data-testid="policy-draft-submit"' in body
+    assert '<details class="card" data-testid="policy-draft"' not in body
+
+
+# ------------------------------------------------------------- the briefing
+
+
+def test_the_briefing_leads_with_the_saved_results(client: TestClient) -> None:
+    """The document appears before optional facts and Muse controls."""
+    results = _results(client)
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    body = client.get(f"/policy/runs/{run_id}/briefing").text
+    assert "<h1>Policy briefing</h1>" in body
+    assert "Built from saved results" in body
+    assert body.index('data-testid="policy-briefing"') < body.index(
+        'data-testid="policy-facts"'
+    )
+    assert body.index('data-testid="policy-facts"') < body.index(
+        'data-testid="policy-writer"'
+    )
+    assert 'data-testid="policy-briefing-synthetic"' in body
+    assert "Live Muse calls are off" in body
+    assert "Try recorded Muse briefing" in body
+
+
+def test_the_briefing_keeps_its_full_source_for_exports(client: TestClient) -> None:
+    """The concise page label does not obscure the export provenance."""
+    results = _results(client)
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing").text
+    exported = client.get(f"/policy/runs/{run_id}/briefing/download?format=html").text
+    source = "Deterministic briefing built from the typed facts of this run. No model was used."
+    assert source in page
+    assert source in exported
