@@ -44,7 +44,7 @@ def _service(request: Request, session: Session) -> IntakeService:
 def submit_intake_record(
     record: IntakeRecordCommand,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Submit one outside intake record and run triage for it."""
@@ -56,7 +56,7 @@ def submit_intake_record(
 def simulate_intake(
     command: SimulateCommand,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Simulate a batch of incoming permits from one named scenario."""
@@ -81,7 +81,7 @@ def simulate_intake(
 
 @simulator_router.get("/scenarios", operation_id="list_intake_scenarios")
 def list_intake_scenarios(
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """List the deterministic intake scenarios."""

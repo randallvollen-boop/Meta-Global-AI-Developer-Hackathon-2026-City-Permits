@@ -30,7 +30,7 @@ def muse_service(request: Request, session: Session) -> MuseService:
 def run_muse_task(
     command: MuseRunCommand,
     request: Request,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Run one bounded model task and return the recorded run.
@@ -47,7 +47,7 @@ def run_muse_task(
 def list_muse_runs(
     request: Request,
     application_id: str | None = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return the recorded model runs the actor may read."""

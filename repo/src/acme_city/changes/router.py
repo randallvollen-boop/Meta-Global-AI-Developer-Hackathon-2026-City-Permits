@@ -65,7 +65,7 @@ def conflict_response(result: ConflictResult) -> JSONResponse:
 @router.post("", operation_id="request_change")
 def request_change(
     command: ChangeRequestCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Request a correction of a source fact or an identity link."""
@@ -78,7 +78,7 @@ def request_change(
 def list_change_cases(
     status: str | None = None,
     target_id: str | None = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """List the change cases, optionally by state or target."""
@@ -102,7 +102,7 @@ def list_change_cases(
 @router.get("/{change_case_id}", operation_id="get_change_case")
 def get_change_case(
     change_case_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Return one change case with its commands, dependencies and tasks."""
@@ -119,7 +119,7 @@ def get_change_case(
 def transition_change_case(
     change_case_id: str,
     command: ChangeTransitionCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ):
     """Move a change case to the next permitted state."""
@@ -134,7 +134,7 @@ def transition_change_case(
 @router.get("/{change_case_id}/impact", operation_id="preview_change_case_impact")
 def preview_change_case_impact(
     change_case_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show the records that a change case would affect."""
@@ -156,7 +156,7 @@ def preview_change_case_impact(
 @router.post("/impact/preview", operation_id="preview_change_impact")
 def preview_change_impact(
     command: ImpactPreviewCommand,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show which records a change would affect before it is approved."""
@@ -168,7 +168,7 @@ def preview_change_impact(
 @router.post("/dispatch", operation_id="dispatch_pending_changes")
 def dispatch_pending_changes(
     limit: int = Query(default=25, ge=1, le=MAX_DISPATCH_BATCH),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Send the pending source commands and deliver the pending publications."""

@@ -71,7 +71,7 @@ def _evidence(label: str, detail: str) -> list[dict[str, Any]]:
 def ui_ops_dashboard(
     request: Request,
     synthetic: str = "exclude",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the operations dashboard."""
@@ -104,7 +104,7 @@ def ui_ops_audit(
     action: str = "",
     search: str = "",
     page: int = 1,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show one page of the read-only audit log."""
@@ -176,7 +176,7 @@ def ui_ops_support(
     ref: str = "",
     request_id: str = Query("", alias="request"),
     request_status: str = "open",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the support screen."""
@@ -238,7 +238,7 @@ def ui_ops_support(
 def ui_ops_checks(
     request: Request,
     run: str = "",
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the checks screen and the latest recorded run."""
