@@ -7,6 +7,7 @@ confirmation phrase.  Every other target is refused.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -32,6 +33,38 @@ from acme_city.persistence.models import (  # noqa: F401  (registers every table
 )
 
 ENVIRONMENT_ID = "local"
+
+#: A seed hook adds rows after the base population and may return the counts it seeded.
+SeedHook = Callable[[Session, FixtureBundle], Mapping[str, int] | None]
+
+#: The registered seed hooks by name.  Lanes register theirs from their own seed
+#: module (see :mod:`acme_city.fixtures.seed_plugins`), so this file stays frozen.
+_SEED_HOOKS: dict[str, SeedHook] = {}
+
+
+def register_seed(fn: SeedHook, *, name: str | None = None) -> SeedHook:
+    """Register ``fn`` to run at the end of every reset, ordered by ``name``.
+
+    The name defaults to the hook's module and qualified name.  Registering the
+    same function again is a no-op; a different function under a taken name is
+    refused.  Returns ``fn`` so that the call also works as a decorator.
+    """
+    key = name or f"{fn.__module__}.{fn.__qualname__}"
+    existing = _SEED_HOOKS.get(key)
+    if existing is not None and existing is not fn:
+        raise ValueError(f"a different seed hook is already registered as {key!r}")
+    _SEED_HOOKS[key] = fn
+    return fn
+
+
+def unregister_seed(name: str) -> None:
+    """Remove the seed hook registered under ``name``, if there is one."""
+    _SEED_HOOKS.pop(name, None)
+
+
+def registered_seeds() -> tuple[str, ...]:
+    """Return the names of the registered seed hooks, in the order they run."""
+    return tuple(sorted(_SEED_HOOKS))
 
 
 @dataclass(frozen=True)
@@ -874,6 +907,20 @@ def reset_demo(
         select(func.count()).select_from(permit.PermitTypeIcon)
     ).scalar_one()
 
+    # Lane seed hooks, sorted by name.  Importing the plugin module registers them.
+    from acme_city.fixtures import seed_plugins  # noqa: F401
+
+    for hook_name in registered_seeds():
+        session.flush()
+        seeded = _SEED_HOOKS[hook_name](session, bundle)
+        if seeded:
+            overlap = sorted(set(seeded) & set(counts))
+            if overlap:
+                raise ValueError(
+                    f"seed hook {hook_name!r} reports counts already reported: {overlap}"
+                )
+            counts.update(seeded)
+
     session.flush()
     return ResetResult(
         fixture_version=bundle.fixture_version, counts=counts, reset_at=utc_now()
@@ -892,4 +939,13 @@ def seeded_row_counts(session: Session) -> dict[str, int]:
     return counts
 
 
-__all__ = ["ENVIRONMENT_ID", "ResetResult", "reset_demo", "seeded_row_counts"]
+__all__ = [
+    "ENVIRONMENT_ID",
+    "ResetResult",
+    "SeedHook",
+    "register_seed",
+    "registered_seeds",
+    "reset_demo",
+    "seeded_row_counts",
+    "unregister_seed",
+]

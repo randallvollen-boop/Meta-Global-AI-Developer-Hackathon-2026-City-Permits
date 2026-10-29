@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import importlib.util
 from datetime import datetime
 from pathlib import Path
 
 import pytest
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError, StatementError
 
@@ -25,6 +27,7 @@ from acme_city.persistence.models import (  # noqa: F401  (registers every table
 )
 from acme_city.persistence.session import (
     SessionFactory,
+    alembic_config,
     database_health,
     initialize_database,
     transaction,
@@ -138,6 +141,28 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
     # to the required groups deliberately: the table is new schema.
     "support": ("support_cases",),
 }
+
+#: Per-lane extensions of :data:`REQUIRED_OBJECT_GROUPS`.  A lane adds its groups
+#: to its own ``tests/support/schema_groups_<lane>.py``; this file stays frozen.
+LANE_SCHEMA_GROUP_FILES: tuple[str, ...] = (
+    "schema_groups_operator.py",
+    "schema_groups_autolink.py",
+)
+
+
+def _lane_schema_groups(file_name: str) -> dict[str, tuple[str, ...]]:
+    path = Path(__file__).resolve().parents[1] / "support" / file_name
+    spec = importlib.util.spec_from_file_location(f"_acme_{path.stem}", path)
+    assert spec is not None and spec.loader is not None, path
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return dict(module.SCHEMA_GROUPS)
+
+
+for _file_name in LANE_SCHEMA_GROUP_FILES:
+    for _group, _tables in _lane_schema_groups(_file_name).items():
+        assert _group not in REQUIRED_OBJECT_GROUPS, f"{_file_name} redefines group {_group!r}"
+        REQUIRED_OBJECT_GROUPS[_group] = tuple(_tables)
 
 
 @pytest.fixture()
@@ -324,8 +349,9 @@ def test_database_health_reports_state_without_a_path(database: Settings) -> Non
     health = database_health(database)
     assert health.reachable is True
     assert health.state == "current"
-    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
-    assert health.revision == "0013"
+    head = ScriptDirectory.from_config(alembic_config(database)).get_current_head()
+    assert head is not None
+    assert health.revision == head
     assert database.database_url not in str(health.to_dict())
 
 
