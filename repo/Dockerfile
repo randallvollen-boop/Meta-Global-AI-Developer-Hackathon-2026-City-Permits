@@ -42,8 +42,9 @@ COPY docker/entrypoint.py /app/entrypoint.py
 COPY fixtures ./fixtures
 VOLUME ["/app/var"]
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD ["python", "-c", "import sys,urllib.request as u; sys.exit(0 if u.urlopen('http://127.0.0.1:8000/readyz', timeout=4).status == 200 else 1)"]
+# The start period covers demo seeding (ACME_DEMO_SEED_ON_START) before the port opens.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
+    CMD ["python", "-c", "import os,sys,urllib.request as u; p=os.environ.get('PORT') or os.environ.get('ACME_BIND_PORT') or '8000'; sys.exit(0 if u.urlopen('http://127.0.0.1:'+p+'/readyz', timeout=4).status == 200 else 1)"]
 
 # ----------------------------------------------------------------- demo
 FROM runtime-base AS demo
