@@ -293,3 +293,26 @@ def test_governance_access_lists_five_personas_without_page_overflow(
     fits_a_phone(page)
     assert_not_covered(page, rows.last)
     assert page.recorded_errors == []
+
+
+# ------------------------------------------------------------ City permit view
+
+
+def test_city_permit_activity_hierarchy_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """City activity puts scope first and names filters not copied to a scenario."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/insight/city?type=shed&outcome=approved&period=30d&exceptions=1",
+    )
+    assert page.locator("h1").inner_text() == "City permit activity"
+    assert page.locator('[data-testid="insight-filter-summary"]').count() == 1
+    note = page.locator('[data-testid="scenario-scope-note"]')
+    assert "not copied" in note.inner_text()
+    assert page.locator("th", has_text="Approved or issued").count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="filter-apply"]'))
+    assert page.recorded_errors == []

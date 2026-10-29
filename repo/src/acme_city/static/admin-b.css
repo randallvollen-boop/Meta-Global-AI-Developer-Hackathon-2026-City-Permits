@@ -193,3 +193,23 @@
 .admin-b .admin-b-permissions li {
   margin: .15rem 0;
 }
+.admin-b .insight-filters {
+  align-items: end;
+}
+.admin-b [data-testid="synthetic-panel"] {
+  padding-block: .75rem;
+}
+.admin-b [data-testid="insight-filter-summary"] {
+  margin-block: .75rem;
+  font-size: 1rem;
+}
+@media (max-width: 640px) {
+  .admin-b .insight-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .admin-b .insight-filters label,
+  .admin-b .insight-filters select {
+    width: 100%;
+  }
+}

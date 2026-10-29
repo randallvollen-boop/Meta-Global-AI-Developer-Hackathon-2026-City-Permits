@@ -6,13 +6,13 @@
 {% set v = view %}
 <div class="page-head">
   <div>
-    <h1>City view</h1>
-    <p class="sub">Permit activity across ACME City by district, type, outcome and business category. Every figure is a count over the stored applications; its definition is printed beside it.</p>
+    <h1>City permit activity</h1>
+    <p class="sub">Counts of fictional ACME City permit records by district, type, outcome and business category.</p>
   </div>
 </div>
 
 <section class="card" aria-labelledby="synthetic-heading" data-testid="synthetic-panel">
-  <h2 id="synthetic-heading">Synthetic data</h2>
+  <h2 id="synthetic-heading">Fictional data</h2>
   <p data-testid="synthetic-note">{{ v.synthetic.note }}{% if v.synthetic.available %} {{ synth_badge() }}{% endif %}</p>
   {% if v.synthetic.available %}
   <p>{{ v.synthetic.included }} of the {{ v.total }} permits in this view are synthetic.
@@ -56,10 +56,11 @@
   <button type="submit" class="btn" data-testid="filter-apply">Apply filters</button>
   <a href="/insight/city" data-testid="filter-clear">Clear filters</a>
 </form>
+<p class="insight-def" data-testid="insight-filter-summary"><strong>{{ v.total }} permits match.</strong> {{ v.filter_summary }}.</p>
 {% if can_start_whatif %}
 <p class="insight-def" data-testid="insight-start-whatif">
-  <a class="button btn" href="/policy/scenarios{% if whatif_query %}?{{ whatif_query }}{% endif %}" data-testid="start-whatif">Start a what-if from this view</a>
-  {% if whatif_query %}<span class="muted">The current type and business category become the starting population.</span>{% else %}<span class="muted">No filter is set, so the starting population is every type.</span>{% endif %}
+  <a class="button btn" href="/policy/scenarios{% if whatif_query %}?{{ whatif_query }}{% endif %}" data-testid="start-whatif">Create a scenario from this view</a>
+  <span class="muted" data-testid="scenario-scope-note">{{ whatif_scope_note }}</span>
 </p>
 {% endif %}
 <p class="insight-def" data-testid="insight-quick-links">
@@ -114,14 +115,14 @@
   <p data-testid="dining-total"><strong>{{ v.categories.dining_total }}</strong> permits in this view are for restaurants and bars. {{ v.categories.linked_to_business }} permits are linked to a business.</p>
   <table class="data-table" data-testid="category-table">
     <caption>Permits linked to a business, by category</caption>
-    <thead><tr><th scope="col">Category</th><th scope="col">Permits</th><th scope="col">Approved</th><th scope="col">By district</th></tr></thead>
+    <thead><tr><th scope="col">Category</th><th scope="col">Permits</th><th scope="col">Approved or issued</th><th scope="col">By district</th></tr></thead>
     <tbody>
       {% for c in v.categories.rows %}
       <tr data-category="{{ c.key }}"><th scope="row">{{ c.label }}</th><td>{{ c.permits }}</td><td>{{ c.approved_or_issued }}</td><td>{% for code, n in c.by_district.items() %}{{ code }} {{ n }}{% if not loop.last %}, {% endif %}{% else %}none{% endfor %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
-  <h3>Where restaurants and bars are opening</h3>
+  <h3 data-legacy-heading="Where restaurants and bars are opening">Restaurant and bar permit locations</h3>
   <table class="data-table" data-testid="dining-sites">
     <caption>Addresses with the most restaurant and bar permits in this view</caption>
     <thead><tr><th scope="col">Address</th><th scope="col">District</th><th scope="col">Permits</th></tr></thead>
@@ -133,7 +134,7 @@
 </section>
 
 <section class="card" aria-labelledby="trend-heading" data-testid="insight-trend">
-  <h2 id="trend-heading">Trend over time</h2>
+  <h2 id="trend-heading">Submissions over time</h2>
   <p class="insight-def">{{ v.definitions.trend }}</p>
   {{ v.trend.svg|safe }}
   <table class="data-table" data-testid="trend-table">

@@ -654,6 +654,14 @@ def ui_insight_city(
                 if value
             }
         ),
+        whatif_scope_note=(
+            "Copies permit type and business category only. " + (
+                "Outcome, period, exceptions, and generated sample filters are not copied."
+                if any((view["filters"]["outcome"], view["filters"]["period"] != "all", view["filters"]["exceptions"], view["filters"]["synthetic"] == "exclude"))
+                else "No other active filter needs to be omitted."
+            )
+        ),
+        quiet_feedback=True,
         model_runs=[],
         evidence=[
             {
