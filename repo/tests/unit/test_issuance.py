@@ -33,6 +33,13 @@ from acme_city.permits.service import PermitService
 DECIDED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
     """Return settings for a freshly reset fictional demonstration database."""
@@ -126,6 +133,7 @@ def prepare_the_chain(session) -> tuple[PermitService, FinanceService, ActorCont
     permits.decide(
         PermitDecisionCommand(
             application_id="app_synth_001",
+            expected_application_version=_current_version(session, "app_synth_001"),
             outcome="approved",
             reason="Fictional demonstration approval.",
             expected_evaluation_version=evaluation.version,
@@ -270,6 +278,7 @@ def test_an_unpaid_case_may_not_be_issued(seeded: Settings) -> None:
             permits.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional demonstration approval.",
                     expected_evaluation_version=evaluation.version,
@@ -299,6 +308,7 @@ def test_an_unapproved_identity_may_not_be_issued(seeded: Settings) -> None:
                 permits.decide(
                     PermitDecisionCommand(
                         application_id="app_synth_001",
+                        expected_application_version=_current_version(session, "app_synth_001"),
                         outcome="approved",
                         reason="Approval attempt.",
                         expected_evaluation_version=evaluation.version,

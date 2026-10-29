@@ -107,6 +107,17 @@ def confirm(
     application = permits.load_application(application_id)
     # An archived case is closed: its recommendation is not confirmed.
     require_mutable(application, action="confirming the recommendation")
+    # The decision is bound to the evaluation the recommendation was made on; a
+    # newer evaluation makes the decision refuse with a version conflict.
+    bound_evaluation = (
+        session.get(permit.Evaluation, recommendation.evaluation_id)
+        if recommendation.evaluation_id
+        else None
+    )
+    current_evaluation = PermitService(session, now=moment).current_evaluation(application_id)
+    evaluation_version = (bound_evaluation or current_evaluation).version if (
+        bound_evaluation or current_evaluation
+    ) else None
     result = PermitDecisionService(session, now=moment).decide(
         PermitDecisionCommand(
             application_id=application_id,
@@ -114,6 +125,7 @@ def confirm(
             reason=reason or f"Confirmed the agent recommendation ({outcome}).",
             reason_code=reason_code,
             expected_application_version=expected_application_version,
+            expected_evaluation_version=evaluation_version,
             conditions=conditions,
         ),
         actor,

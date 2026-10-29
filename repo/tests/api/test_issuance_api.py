@@ -135,6 +135,9 @@ def run_the_chain(client: TestClient, environment: Settings) -> dict:
         json={
             "outcome": "approved",
             "reason": "Fictional demonstration approval.",
+            "expected_application_version": client.get(
+                "/api/permits/applications/app_synth_001"
+            ).json()["application_version"],
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
