@@ -50,7 +50,7 @@ from acme_city.registry.candidates import (
     entity_target_for,
 )
 from acme_city.registry.provenance import affected_dependents, current_accepted_snapshot
-from acme_city.ui import display, patterns, property_views, view_models
+from acme_city.ui import display, patterns, property_views, steward_queue_views, view_models
 from acme_city.ui.patterns import DetailContext, DetailForbidden, DetailView, Row, Section
 
 PAGE_SIZE = 50
@@ -76,18 +76,12 @@ CASE_NEEDS_REVIEW = ("requested", "in_review", "awaiting_approval")
 CASE_AWAITING_SOURCE = ("approved", "sent_to_source", "source_acknowledged", "synchronization_failed")
 CASE_RESOLVED = ("registry_committed", "published", "closed", "rejected")
 
-#: The four filters of the Data issues queue, in order.
-QUEUE_FILTERS: tuple[tuple[str, str], ...] = (
-    ("needs_review", "Needs review"),
-    ("assigned_to_me", "Assigned to me"),
-    ("awaiting_source", "Awaiting source"),
-    ("resolved", "Resolved"),
-)
-STATUS_LABELS = {
-    "needs_review": "Needs review",
-    "awaiting_source": "Awaiting source",
-    "resolved": "Resolved",
-}
+#: The four filters of the Data issues queue, in order.  The queue module
+#: owns them; the names stay here for the screens that already read them.
+QUEUE_FILTERS: tuple[tuple[str, str], ...] = steward_queue_views.QUEUE_FILTERS
+
+#: The label of each state of a task.
+STATUS_LABELS: dict[str, str] = steward_queue_views.STATUS_LABELS
 
 #: The four collections of Master records, in tab order.
 MASTER_TABS: tuple[tuple[str, str], ...] = (
@@ -168,13 +162,16 @@ def _party_label(session: Session, party_id: str | None, cache: dict[str, str] |
     return label
 
 
-def _age_label(since: datetime | None) -> str:
-    days = view_models._age_days(since)
-    if days is None:
+def _party_type(session: Session, party_id: str | None) -> str:
+    """Return the type of a party, so the queue can name the task it asks for."""
+    if not party_id:
         return ""
-    if days == 0:
-        return "Today"
-    return f"{days} day" + ("" if days == 1 else "s")
+    party = session.get(registry.Party, party_id)
+    return party.party_type if party is not None else ""
+
+
+def _age_label(since: datetime | None) -> str:
+    return steward_queue_views.age_label(since)
 
 
 def _page(rows: list[Any], page: int) -> tuple[list[Any], dict[str, Any]]:
@@ -1228,29 +1225,8 @@ def _score_parts(supporting: tuple[Any, ...], conflicting: tuple[Any, ...]) -> l
 # -------------------------------------------------------------- Data issues
 
 
-@dataclass
-class Issue:
-    """One row of the Data issues queue."""
-
-    kind: str
-    item_id: str
-    title: str
-    record: str
-    record_ref: str
-    applications: list[dict[str, str]]
-    source: str
-    status: str
-    assignee_id: str | None = None
-    created_at: datetime | None = None
-    priority: str = ""
-    legacy_testid: str = ""
-    link_status: str = ""
-    synthetic: bool = False
-    sort_key: tuple[Any, ...] = ()
-
-    @property
-    def href(self) -> str:
-        return f"/steward/issues/{self.kind}/{self.item_id}"
+#: One task of the Data Steward's queue.  The queue module owns the type.
+Issue = steward_queue_views.Issue
 
 
 def _applications_of(session: Session, party_ids: list[str], synthetic: set[str]) -> list[dict[str, str]]:
@@ -1320,6 +1296,8 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 legacy_testid=("crosswalk-row" if decided is not None else "match-proposal"),
                 link_status=decided.link_status if decided is not None else "proposed",
                 sort_key=(proposal.created_at,),
+                record_type=_party_type(session, lead_id),
+                source_reference=record_id,
             )
         )
     # Decided links nobody proposed through the queue (for example an API decision).
@@ -1345,6 +1323,8 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 legacy_testid="crosswalk-row",
                 link_status=crosswalk.link_status,
                 sort_key=(crosswalk.created_at,),
+                record_type=_party_type(session, crosswalk.entity_id),
+                source_reference=crosswalk.source_record_id,
             )
         )
 
@@ -1368,6 +1348,8 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 created_at=None,
                 legacy_testid="parcel-proposal",
                 sort_key=(application.created_at,),
+                record_type="parcel",
+                source_reference=proposal["submitted_text"],
             )
         )
     for match in session.execute(
@@ -1397,6 +1379,8 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 created_at=match.decided_at,
                 legacy_testid="parcel-decided",
                 sort_key=(match.created_at,),
+                record_type="parcel",
+                source_reference=match.submitted_text,
             )
         )
 
@@ -1451,6 +1435,7 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 legacy_testid="case-row",
                 link_status=case.status,
                 sort_key=(case.created_at,),
+                record_type=case.change_kind,
             )
         )
 
@@ -1476,6 +1461,7 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 priority="Blocking" if row.blocking and row.status == "open" else "",
                 legacy_testid="issue-row",
                 sort_key=(row.created_at,),
+                record_type=row.issue_type,
             )
         )
     return issues
@@ -1487,59 +1473,25 @@ def _ref(kind: str, item_id: str | None) -> str:
 
 
 def data_issues(session: Session, actor: ActorContext, *, filter_key: str = "needs_review") -> dict[str, Any]:
-    """Return the Data issues queue with the real count behind each filter."""
-    keys = [key for key, _ in QUEUE_FILTERS]
-    if filter_key not in keys:
-        filter_key = "needs_review"
-    issues = collect_issues(session, actor)
+    """Return the work queue with the real count behind every view.
 
-    def matches(issue: Issue, key: str) -> bool:
-        if key == "assigned_to_me":
-            return issue.assignee_id == actor.actor_id and issue.status != "resolved"
-        return issue.status == key
-
-    counts = {key: sum(1 for issue in issues if matches(issue, key)) for key in keys}
-    chosen = [issue for issue in issues if matches(issue, filter_key)]
-    chosen.sort(key=lambda issue: issue.sort_key, reverse=filter_key == "resolved")
-    rows = [
-        {
-            "kind": issue.kind,
-            "id": issue.item_id,
-            "href": issue.href,
-            "title": issue.title,
-            "record": issue.record,
-            "record_ref": issue.record_ref,
-            "applications": issue.applications,
-            "source": issue.source,
-            "status_key": issue.status,
-            "status": STATUS_LABELS[issue.status],
-            "assignee": view_models.actor_label(session, issue.assignee_id) if issue.assignee_id else "",
-            "age": _age_label(issue.created_at) if issue.status != "resolved" else "",
-            "when": _iso(issue.created_at),
-            "priority": issue.priority,
-            "legacy_testid": issue.legacy_testid,
-            "link_status": issue.link_status,
-        }
-        for issue in chosen
-    ]
-    return {
-        "filter": filter_key,
-        "filters": [
-            {
-                "key": key,
-                "label": label,
-                "count": counts[key],
-                "active": key == filter_key,
-                "href": "/steward" if key == "needs_review" else f"/steward?filter={key}",
-            }
-            for key, label in QUEUE_FILTERS
-        ],
-        "rows": rows,
-        "show_assignment": any(row["assignee"] for row in rows),
-        "show_age": any(row["age"] for row in rows),
-        "show_priority": any(row["priority"] for row in rows),
-        "total": len(issues),
+    The projection lives in ``steward_queue_views``: it turns the collected
+    tasks into the rows of one view, the count of every view and the totals.
+    The counts use the same tasks as the rows, so they never describe work
+    the persona may not see.
+    """
+    tasks = collect_issues(session, actor)
+    labels = {
+        issue.assignee_id: view_models.actor_label(session, issue.assignee_id)
+        for issue in tasks
+        if issue.assignee_id
     }
+    return steward_queue_views.project(
+        tasks,
+        view_key=filter_key,
+        actor_id=actor.actor_id,
+        labels=labels,
+    )
 
 
 # ----------------------------------------------------------------- focused case

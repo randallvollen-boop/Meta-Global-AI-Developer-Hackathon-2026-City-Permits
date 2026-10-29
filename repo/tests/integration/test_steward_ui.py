@@ -24,8 +24,11 @@ from acme_city.fixtures.steward_demo import seed_cedarline
 from acme_city.persistence.models import change, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
-from acme_city.ui import display, steward_views
+# The router is imported before the view models on purpose: the detail kinds
+# are registered in import order, and the shared router registers its kinds
+# first, exactly as the application does.
 from acme_city.ui.router import router as ui_router
+from acme_city.ui import display, steward_views
 
 
 @pytest.fixture()
