@@ -1,5 +1,5 @@
 {
-  "about": "Every binary file the publishable tree may carry, with its sha256 and where it came from. scripts/scan_publishable_tree.py fails on any binary not listed here, on a hash mismatch, on a file whose header does not match its type, and on a listed file that is missing.",
+  "about": "Every binary file the publishable tree may carry, with its sha256 and where it came from. scripts/scan_publishable_tree.py fails on any binary not listed here, on a hash mismatch, on a file whose header does not match its type, and on a listed file that is missing. A set may raise the 5 MiB size limit for its own files with max_bytes.",
   "sets": [
     {
       "directory": "src/acme_city/static/map-tiles",
@@ -75,6 +75,18 @@
         "site-plan-review.webp": "cfe3054cf6a315d0142d53c4e5eacfeb445423c9be22f6e85c094085a8cd71e2",
         "water-heater.webp": "ba406729aa6cca5ee9553565fd48296cd2ba37e062285b054cb0fe3ddbee0bea",
         "zoning-variance.webp": "9de3334b682c80c3b089f60f160d32a7688f7a8da102354589066d0f940db863"
+      }
+    },
+    {
+      "directory": "src/acme_city/static/video",
+      "source": "DemoVideo draft 8 web encode of the persona tour, Kokoro narration, captions burned in; the poster is its still",
+      "added_in": [
+        "426bc5a"
+      ],
+      "max_bytes": 8388608,
+      "files": {
+        "demo-video-poster.jpg": "dd443ead10c9d7203de3d5555eccb552e8c3e93950a39f2d94c73e28547e285b",
+        "demo-video.mp4": "c9823815348a280b8529a26faa193e750ade35d78ed8721e8cd21435fb51cfac"
       }
     }
   ]

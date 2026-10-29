@@ -83,3 +83,19 @@ def test_ignored_files_are_not_scanned(scanner, tmp_path: Path) -> None:
     write(tmp_path, "var/local.bin", b"\x00\x01")
     write_manifest(tmp_path, {})
     assert scanner.scan() == []
+
+
+def test_a_listed_set_may_raise_the_size_limit_for_its_own_files(
+    scanner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Low enough for the sample image, high enough for the manifest itself.
+    monkeypatch.setattr(scanner, "SIZE_LIMIT", 1024)
+    large = WEBP + b"x" * 2048
+    write(tmp_path, "static/large.webp", large)
+    write_manifest(tmp_path, {"large.webp": large})
+    assert scanner.scan() == ["static/large.webp: file exceeds its 1024 byte source-tree limit"]
+
+    manifest = json.loads((tmp_path / "config/publishable_binaries.json").read_text())
+    manifest["sets"][0]["max_bytes"] = len(large)
+    write(tmp_path, "config/publishable_binaries.json", json.dumps(manifest).encode())
+    assert scanner.scan() == []

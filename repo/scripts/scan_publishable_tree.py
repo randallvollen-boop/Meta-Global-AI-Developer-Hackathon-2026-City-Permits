@@ -51,24 +51,30 @@ BINARY_MANIFEST = Path("config/publishable_binaries.json")
 BINARY_HEADERS = {
     ".webp": lambda header: header[:4] == b"RIFF" and header[8:12] == b"WEBP",
     ".png": lambda header: header[:8] == b"\x89PNG\r\n\x1a\n",
+    ".jpg": lambda header: header[:3] == b"\xff\xd8\xff",
+    ".mp4": lambda header: header[4:8] == b"ftyp",
 }
+#: The size limit for any file, unless its manifest set raises it with ``max_bytes``.
+SIZE_LIMIT = 5 * 1024 * 1024
 
 
-def load_binary_manifest() -> dict[Path, str]:
-    """Return every listed binary file with its expected sha256."""
+def load_binary_manifest() -> dict[Path, tuple[str, int]]:
+    """Return every listed binary file with its expected sha256 and its size limit."""
     data = json.loads((REPO_ROOT / BINARY_MANIFEST).read_text(encoding="utf-8"))
     return {
-        Path(entry["directory"]) / name: digest
+        Path(entry["directory"]) / name: (digest, int(entry.get("max_bytes", SIZE_LIMIT)))
         for entry in data["sets"]
         for name, digest in entry["files"].items()
     }
 
 
-def binary_finding(relative: Path, path: Path, manifest: dict[Path, str]) -> str | None:
+def binary_finding(
+    relative: Path, path: Path, manifest: dict[Path, tuple[str, int]]
+) -> str | None:
     """Return why a binary file may not be published, or None when it is listed and genuine."""
-    expected = manifest.get(relative)
-    if expected is None:
+    if relative not in manifest:
         return "unexpected binary or file type"
+    expected, _limit = manifest[relative]
     check = BINARY_HEADERS.get(path.suffix.lower())
     content = path.read_bytes()
     if check is None or not check(content[:12]):
@@ -107,8 +113,9 @@ def scan() -> list[str]:
         if path.is_symlink():
             findings.append(f"{relative}: symbolic links are not expected")
             continue
-        if path.stat().st_size > 5 * 1024 * 1024:
-            findings.append(f"{relative}: file exceeds the 5 MiB source-tree limit")
+        limit = manifest[relative][1] if relative in manifest else SIZE_LIMIT
+        if path.stat().st_size > limit:
+            findings.append(f"{relative}: file exceeds its {limit} byte source-tree limit")
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES:
             problem = binary_finding(relative, path, manifest)
