@@ -9,6 +9,9 @@
           },
           "3": {
             "do": "Click \"Run comparison\"."
+          },
+          "4": {
+            "do": "Click \"Read briefing\", then \"Write the briefing with Muse\"."
           }
         }
       }
@@ -21,7 +24,15 @@
         "steps": {
           "1": "Under \"Start from an example\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\", or build your own under \"Build a what-if\".",
           "2": "In \"Run comparison\" check the Population, the Seed and the Number of cases.",
-          "3": "Click \"Run comparison\"."
+          "3": "Click \"Run comparison\".",
+          "4": "Read \"Recommended outcomes\" and \"Cases that change\".",
+          "5": "Click \"Read briefing\"."
+        }
+      },
+      {
+        "slug": "propose-and-approve-a-rule-change",
+        "steps": {
+          "1": "On the results page, under \"Draft handoff\", click \"Save as a draft rule change\"."
         }
       }
     ]

@@ -5,6 +5,11 @@ The lane renamed three labels of the what-if screens: the examples are now
 "Run comparison".  The help text quotes the labels of the screens, so it has
 to follow them.  The words live in the overlay of the lane, because the shared
 help file is frozen.
+
+The results page was reorganised next: the screen is called "Scenario
+results", the briefing is opened with "Read briefing", the outcome table is
+"Recommended outcomes", the changed cases are "Cases that change" and the
+draft handoff is "Draft handoff".  The help text quotes those labels too.
 """
 # REQUIRES: UX-01
 
@@ -24,6 +29,8 @@ def test_the_tutorial_names_the_labels_the_screens_show() -> None:
     assert "Run comparison" in steps
     assert "Start from an example" in steps
     assert "Run what-if" not in steps
+    assert "Read briefing" in steps
+    assert "Legislator briefing" not in steps
 
 
 def test_the_what_if_guide_names_the_labels_the_screens_show() -> None:
@@ -34,3 +41,15 @@ def test_the_what_if_guide_names_the_labels_the_screens_show() -> None:
     assert "Build a what-if" in steps
     assert "Run what-if" not in steps
     assert "Or start empty" not in steps
+    assert "Read briefing" in steps
+    assert "Legislator briefing" not in steps
+    assert "Recommended outcomes" in steps
+    assert "Recommendation by outcome, baseline and scenario" not in steps
+
+
+def test_the_approve_guide_names_the_draft_handoff_the_results_page_shows() -> None:
+    guide = content.guide("propose-and-approve-a-rule-change")
+    assert guide is not None
+    steps = " ".join(guide["steps"])
+    assert "Draft handoff" in steps
+    assert "Path to a real change" not in steps
