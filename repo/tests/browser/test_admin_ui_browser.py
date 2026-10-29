@@ -224,3 +224,20 @@ def test_the_permit_type_register_fits_a_phone_and_opens_its_settings(
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator(".demo-switch > summary"))
     assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("section", ("users", "reason-codes"))
+def test_users_and_reason_codes_fit_a_phone(page, server: BrowserServer, login, section: str) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab={section}", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    if section == "users":
+        assert page.locator('[data-testid="admin-demo-persona"]').count() == 5
+        page.locator('[data-testid="admin-service-identities-disclosure"] > summary').click()
+    else:
+        page.locator(".adm-retire-confirm > summary").first.click()
+        assert "Existing records keep this code." in page.locator(".adm-retire-confirm").first.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []

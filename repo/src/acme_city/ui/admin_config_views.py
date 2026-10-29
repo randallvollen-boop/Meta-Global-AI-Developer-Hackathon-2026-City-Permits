@@ -59,6 +59,14 @@ NO_PERSON_REQUIRED = "Does not require a person or board"
 #: The label of a value that was never recorded.
 NOT_RECORDED = "Not recorded"
 
+CONFIGURATION_ACTION_LABELS: dict[str, str] = {
+    "config.permit_type.add": "Added permit type",
+    "config.permit_type.document": "Changed required document",
+    "config.reason_code.add": "Added reason code",
+    "config.reason_code.retire": "Retired reason code",
+    "config.user.add": "Added user",
+}
+
 
 def _names(values: list[str] | None) -> str:
     """Return the names of a list of stored values, in plain words."""
@@ -230,6 +238,7 @@ def _people(session: Session) -> list[dict[str, Any]]:
                     "role_label": row.persona_role or _persona_label(row.actor_id),
                     "department": row.department or "",
                     "selectable": bool(row.selectable),
+                    "is_demo_persona": bool(row.selectable),
                 }
             )
     return people
@@ -276,10 +285,33 @@ def _reason_codes(session: Session) -> list[dict[str, Any]]:
             "label": row.label,
             "description": row.description or "",
             "code_type": row.code_type,
+            "code_type_label": row.code_type.replace("_", " ").capitalize(),
             "active": bool(row.active),
             "version": row.version,
         }
         for row in rows
+    ]
+
+
+def _readable_words(value: str) -> str:
+    """Return stored identifiers as short reader-facing words."""
+    return " ".join(word.capitalize() for word in value.replace("_", " ").replace(".", " ").split())
+
+
+def configuration_log_presentation(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add readable configuration-log fields without changing recorded values."""
+    return [
+        {
+            **entry,
+            "action_label": CONFIGURATION_ACTION_LABELS.get(
+                str(entry.get("action", "")), _readable_words(str(entry.get("action", ""))) or "Recorded configuration change"
+            ),
+            "target_label": _readable_words(str(entry.get("target_type", ""))) or NOT_RECORDED,
+            "actor_label": str(entry.get("actor_label", "")) or str(entry.get("actor", "")) or NOT_RECORDED,
+            "before_display": entry.get("before") if entry.get("before") not in (None, "") else NOT_RECORDED,
+            "after_display": entry.get("after") if entry.get("after") not in (None, "") else NOT_RECORDED,
+        }
+        for entry in entries
     ]
 
 
@@ -317,7 +349,7 @@ def _configuration_log(session: Session) -> list[dict[str, Any]]:
                 "after": metadata.get("after", ""),
             }
         )
-    return entries
+    return configuration_log_presentation(entries)
 
 
 __all__ = [
@@ -325,4 +357,5 @@ __all__ = [
     "NOT_RECORDED",
     "REQUIRES_A_PERSON",
     "administration",
+    "configuration_log_presentation",
 ]

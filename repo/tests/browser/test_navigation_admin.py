@@ -88,9 +88,16 @@ def test_the_demo_notice_is_visible_on_every_persona_home(
     assert notice.count() == 1
     assert notice.is_visible()
     text = notice.inner_text()
-    assert "Fictional" in text, text
     if actor_id != "persona_applicant":
-        assert "ACME" in text, text
+        assert "Fictional ACME City demonstration. Synthetic records only." in text, text
+        about = notice.locator('[data-testid="demo-about"]')
+        assert about.count() == 1
+        assert not about.evaluate("element => element.open")
+        about.locator("summary").click()
+        assert about.evaluate("element => element.open")
+        assert "not a municipal system" in about.inner_text()
+    else:
+        assert "Fictional" in text, text
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
 

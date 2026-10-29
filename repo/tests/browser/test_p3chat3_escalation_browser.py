@@ -153,3 +153,15 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
     finally:
         applicant_context.close()
         admin_context.close()
+
+
+def test_support_leads_with_requests_and_names_the_reply_destination(page, server: BrowserServer, login) -> None:
+    login("persona_city_administrator")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
+    requests = page.locator('[data-testid="support-requests"]')
+    lookup = page.locator('[data-testid="support-lookup"]')
+    assert requests.bounding_box()["y"] < lookup.bounding_box()["y"]
+    assert page.locator('[data-testid="support-filter-open"]').get_attribute("aria-current") == "page"
+    assert page.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.recorded_errors == []

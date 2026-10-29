@@ -328,6 +328,25 @@ def test_a_discretionary_type_says_that_it_needs_a_person_or_a_board(
             assert row["discretionary_label"] == "Does not require a person or board"
 
 
+def test_configuration_log_presentation_keeps_raw_values_in_expanded_details() -> None:
+    view = admin_config_views.configuration_log_presentation(
+        [
+            {
+                "action": "config.reason_code.retire",
+                "target_type": "reason_code",
+                "target_id": "missing_plan",
+                "actor": "persona_city_administrator",
+                "before": {"active": True},
+                "after": {"active": False},
+            }
+        ]
+    )
+    entry = view[0]
+    assert entry["action"] == "config.reason_code.retire"
+    assert entry["action_label"] == "Retired reason code"
+    assert entry["target_label"] == "Reason Code"
+    assert entry["before_display"] == {"active": True}
+    assert entry["after_display"] == {"active": False}
 def test_a_value_that_was_never_recorded_says_so(session: Session) -> None:
     actor = _actor_for(session, "persona_city_administrator")
     view = admin_config_views.administration(session, actor)

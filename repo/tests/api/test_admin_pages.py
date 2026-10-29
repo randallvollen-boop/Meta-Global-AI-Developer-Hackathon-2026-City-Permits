@@ -161,6 +161,32 @@ def test_the_planning_overview_links_the_city_view_and_the_what_if(
     assert 'href="/ops/dashboard"' in response.text
 
 
+def test_users_and_reason_codes_keep_people_and_readable_labels_first(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    users = client.get("/admin?tab=users").text
+    assert 'data-testid="admin-demo-persona"' in users
+    assert 'data-testid="admin-service-identities-disclosure"' in users
+    assert users.index('data-testid="admin-people"') < users.index('data-testid="admin-service-identities"')
+    reasons = client.get("/admin?tab=reason-codes").text
+    assert "Technical code" in reasons
+    assert 'data-testid="admin-reason-code-retire"' in reasons
+    assert "Existing records keep this code." in reasons
+
+
+def test_the_configuration_log_leads_with_readable_changes(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=log")
+    assert response.status_code == 200
+    body = response.text
+    assert 'data-testid="admin-configuration-log"' in body
+    if 'data-testid="admin-log-row"' in body:
+        assert 'data-testid="admin-log-change"' in body
+        assert "View values" in body
+        assert "Raw action" in body
+
+
 def test_the_planning_overview_is_refused_to_the_other_personas(
     client: TestClient,
 ) -> None:

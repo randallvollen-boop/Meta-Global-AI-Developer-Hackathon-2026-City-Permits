@@ -55,6 +55,64 @@ CHECK_STATUS_LABELS: dict[str, str] = {
 #: The order the results of a run are shown in: a failure is read first.
 CHECK_STATUS_ORDER: tuple[str, ...] = ("fail", "pass", "not_applicable")
 
+#: Readable labels for the audit events that people encounter in the demo.
+#: The audit service keeps the stored action key; this map only changes how a
+#: row is read on screen.
+AUDIT_ACTION_LABELS: dict[str, str] = {
+    "checks.run": "Ran consistency checks",
+    "config.permit_type.document": "Changed permit type documents",
+    "config.reason_code.add": "Added reason code",
+    "config.reason_code.retire": "Retired reason code",
+    "config.user.add": "Added user",
+    "permit.decide": "Recorded permit decision",
+    "support.case.record": "Recorded support case",
+    "support.help_request.answer": "Answered help request",
+}
+
+AUDIT_OUTCOME_LABELS: dict[str, str] = {
+    "accepted": "Recorded",
+    "approved": "Approved",
+    "denied": "Denied",
+    "rejected": "Rejected",
+    "recorded": "Recorded",
+}
+
+
+def audit_action_label(action: str) -> str:
+    """Return a readable audit-event label without changing its stored key."""
+    if action in AUDIT_ACTION_LABELS:
+        return AUDIT_ACTION_LABELS[action]
+    words = str(action or "").replace("_", " ").replace(".", " ").split()
+    return " ".join(word.capitalize() for word in words) or "Recorded event"
+
+
+def audit_outcome_label(outcome: str) -> str:
+    """Return the reader-facing form of a recorded outcome."""
+    return AUDIT_OUTCOME_LABELS.get(
+        outcome, str(outcome or "recorded").replace("_", " ").capitalize()
+    )
+
+
+def audit_presentation(view: dict[str, Any]) -> dict[str, Any]:
+    """Add display fields to audit data without changing records or filters."""
+    rows = [
+        {
+            **row,
+            "action_label": audit_action_label(str(row.get("action", ""))),
+            "outcome_label": audit_outcome_label(str(row.get("outcome", ""))),
+            "actor_type_label": str(row.get("actor_type", "system")),
+            "target_label": " ".join(
+                part for part in (str(row.get("target_type", "")), str(row.get("target_id", ""))) if part
+            ) or "No record",
+        }
+        for row in list(view.get("rows") or [])
+    ]
+    actions = [
+        {"key": str(action), "label": audit_action_label(str(action))}
+        for action in list(view.get("actions") or [])
+    ]
+    return {**view, "rows": rows, "actions": actions}
+
 
 def check_status_label(status: str) -> str:
     """Return the plain label of one result of a check."""
@@ -179,6 +237,11 @@ def scope_statement(include_history: bool) -> str:
 
 __all__ = [
     "AS_OF_LABEL",
+    "AUDIT_ACTION_LABELS",
+    "AUDIT_OUTCOME_LABELS",
+    "audit_action_label",
+    "audit_outcome_label",
+    "audit_presentation",
     "CHECK_STATUS_LABELS",
     "CHECK_STATUS_ORDER",
     "FIGURE_GROUPS",

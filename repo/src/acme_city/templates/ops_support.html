@@ -5,13 +5,60 @@
 <div class="page-head">
   <div>
     <h1>Support</h1>
-    <p class="sub">Look up a case, answer the questions applicants sent through Ask the City, and record help given outside the application. Support reads and answers; it cannot decide, issue, return or waive anything.</p>
+    <p class="sub">Answer questions from applicants. Support reads and answers. It cannot decide, issue, return or waive anything.</p>
   </div>
   <div class="actions">{{ ui.help_button('ops_support') }}</div>
 </div>
 
 <p class="muted">* Required</p>
 
+<div class="adm-support-layout">
+{% if can_answer %}
+<section class="card adm-support-requests" aria-labelledby="requests-h" data-testid="support-requests">
+  <div class="card-b">
+  <h2 id="requests-h">Requests</h2>
+  <p class="muted">Each request shows the question and the conversation at the time the applicant asked. Later private conversation is not shown here.</p>
+  <p class="adm-support-status-links">
+    <a href="{{ support_open_href }}" data-testid="support-filter-open"{% if request_status == 'open' %} aria-current="page"{% endif %}>Open</a>
+    <a href="{{ support_answered_href }}" data-testid="support-filter-answered"{% if request_status == 'answered' %} aria-current="page"{% endif %}>Answered</a>
+  </p>
+  {% for r in help_requests %}
+  <article class="ops-request adm-support-request{% if focus_request == r.request_id %} is-focus{% endif %}" id="request-{{ r.request_id }}" data-testid="help-request-card" data-status="{{ r.status }}">
+    <h3 data-testid="help-request-question">{{ r.question }}</h3>
+    <p>{{ r.applicant }}{% if r.reference %} <span class="muted">|</span> <span class="mono">{{ r.reference }}</span>{% endif %}<br><span class="muted">Sent {{ r.created_at }}</span></p>
+    {% if r.snapshot %}
+    <details><summary>Conversation at time of request ({{ r.snapshot|length }})</summary>
+      <ol data-testid="help-request-snapshot">{% for t in r.snapshot %}<li>{{ t.question }} <span class="muted">({{ t.outcome }}{% if t.label %}; {{ t.label }}{% endif %})</span></li>{% endfor %}</ol>
+    </details>
+    {% endif %}
+    {% if r.status == 'open' %}
+    <form method="post" action="/ui/actions/support.help_request.answer" data-testid="help-answer-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="/ops/support">
+      <input type="hidden" name="help_request_id" value="{{ r.request_id }}">
+      <input type="hidden" name="expected_version" value="{{ r.version }}">
+      <p class="field">
+        <label for="reply-{{ r.request_id }}">Your reply <span aria-hidden="true">*</span></label>
+        <textarea id="reply-{{ r.request_id }}" name="reply" rows="3" maxlength="2000" required aria-required="true" data-testid="help-reply"></textarea>
+      </p>
+      {% if r.reference and not r.archived %}<p class="adm-support-destination">The applicant can read this reply. It will also appear on the case.</p>{% endif %}
+      {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change. It is archived and cannot change.</p>{% endif %}
+      {% if not r.reference %}<p class="adm-support-destination">This reply appears in the applicant’s help history.</p>{% endif %}
+      <p><button type="submit" class="btn primary" data-testid="help-answer">Send reply</button></p>
+    </form>
+    {% else %}
+    <p data-testid="help-request-reply"><strong>Reply:</strong> {{ r.reply }} <span class="muted">(answered {{ r.answered_at }})</span></p>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="muted" data-testid="support-requests-empty">No {{ request_status }} help request.</p>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="adm-support-secondary">
+{% if can_lookup %}
 <section class="card" aria-labelledby="lookup-h" data-testid="support-lookup">
   <div class="card-b">
   <h2 id="lookup-h">Look up an application</h2>
@@ -39,51 +86,6 @@
   <p data-testid="support-lookup-none">No application has the reference "{{ reference }}".</p>
   {% endif %}
   </div>
-</section>
-
-{% if can_answer %}
-<section class="card" aria-labelledby="requests-h" data-testid="support-requests">
-  <div class="card-b">
-  <h2 id="requests-h">Help requests from applicants</h2>
-  <p class="muted">Each request is a question an applicant sent with Ask the City. You see the question and the part of the conversation that led to it, and nothing the applicant asked afterwards.</p>
-  <p>
-    <a href="/ops/support?request_status=open" data-testid="support-filter-open"{% if request_status == 'open' %} aria-current="true"{% endif %}>Open</a> |
-    <a href="/ops/support?request_status=answered" data-testid="support-filter-answered"{% if request_status == 'answered' %} aria-current="true"{% endif %}>Answered</a>
-  </p>
-  {% for r in help_requests %}
-  <article class="ops-request{% if focus_request == r.request_id %} is-focus{% endif %}" id="request-{{ r.request_id }}" data-testid="help-request-card" data-status="{{ r.status }}">
-    <h3 class="mono">{{ r.request_id }}</h3>
-    <p>From {{ r.applicant }}{% if r.reference %}, about <span class="mono">{{ r.reference }}</span>{% endif %}, sent <span class="mono">{{ r.created_at }}</span>.</p>
-    <p data-testid="help-request-question"><strong>Question:</strong> {{ r.question }}</p>
-    {% if r.snapshot %}
-    <details><summary>The conversation up to the request ({{ r.snapshot|length }})</summary>
-      <ol data-testid="help-request-snapshot">{% for t in r.snapshot %}<li>{{ t.question }} <span class="muted">({{ t.outcome }}{% if t.label %}; {{ t.label }}{% endif %})</span></li>{% endfor %}</ol>
-    </details>
-    {% endif %}
-    {% if r.status == 'open' %}
-    <form method="post" action="/ui/actions/support.help_request.answer" data-testid="help-answer-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="next" value="/ops/support">
-      <input type="hidden" name="help_request_id" value="{{ r.request_id }}">
-      <input type="hidden" name="expected_version" value="{{ r.version }}">
-      <p class="field">
-        <label for="reply-{{ r.request_id }}">Your reply <span aria-hidden="true">*</span></label>
-        <textarea id="reply-{{ r.request_id }}" name="reply" rows="3" maxlength="2000" required aria-required="true" data-testid="help-reply"></textarea>
-      </p>
-      {% if r.reference and not r.archived %}<p class="muted">Because this request is about {{ r.reference }}, your reply is also written on the case as a comment the applicant reads.</p>{% endif %}
-      {% if r.archived %}<p class="muted" data-testid="help-archived-note">{{ r.reference }} is archived and cannot change, so your reply is kept on the help request only.</p>{% endif %}
-      {% if not r.reference %}<p class="muted">This request is not about a case, so your reply is shown in the applicant's help history.</p>{% endif %}
-      <p><button type="submit" class="btn primary" data-testid="help-answer">Answer</button></p>
-    </form>
-    {% else %}
-    <p data-testid="help-request-reply"><strong>Reply:</strong> {{ r.reply }} <span class="muted">(answered {{ r.answered_at }})</span></p>
-    {% endif %}
-  </article>
-  {% else %}
-  <p class="muted" data-testid="support-requests-empty">No {{ request_status }} help request.</p>
-  {% endfor %}
-  </div>
-</section>
 {% endif %}
 
 {% if can_record %}
@@ -116,6 +118,8 @@
   </div>
 </section>
 {% endif %}
+</div>
+</div>
 
 <section class="card" aria-labelledby="faq-h" data-testid="support-faq">
   <div class="card-b">
