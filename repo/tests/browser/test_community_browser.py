@@ -331,6 +331,13 @@ COMMUNITY_PAGES = (
 #: call.  It runs in its own process, with the source of this worktree on the
 #: path, so the check covers the code that is shipped and not the copy the
 #: test process happens to import.
+#:
+#: The probe closes both dispatch methods of the provider clients, so an
+#: attempted call raises instead of returning quietly.  Without that, a
+#: missing credential would let the check pass without a call ever reaching
+#: the transport.  The probe then checks that its own guards really raise,
+#: so a guard that no longer covers the dispatch fails the probe instead of
+#: passing it.
 PROVIDER_PROBE = """
 import json
 import os
@@ -349,6 +356,28 @@ def refuse(self, request):
 
 httpx.HTTPTransport.handle_request = refuse
 
+from acme_city.muse.client import MuseClient
+from acme_city.muse.image_client import MuseImageClient
+
+
+def refuse_dispatch(self, *args, **kwargs):
+    raise AssertionError("the community pages must never call the model provider")
+
+
+MuseClient.create_response = refuse_dispatch
+MuseImageClient.generate = refuse_dispatch
+
+# The guards have to be able to fail, otherwise the probe says nothing.
+for owner, name in ((MuseClient, "create_response"), (MuseImageClient, "generate")):
+    guard = getattr(owner, name)
+    if guard is not refuse_dispatch:
+        raise SystemExit(f"the {name} guard is not in place, so the probe is vacuous")
+    try:
+        guard(None, "payload")
+    except AssertionError:
+        continue
+    raise SystemExit(f"the {name} guard does not raise, so the probe is vacuous")
+
 from acme_city.app import create_app
 from acme_city.core.config import Settings
 
@@ -356,6 +385,11 @@ settings = Settings.load(
     environ={
         "ACME_DATABASE_URL": os.environ["ACME_DATABASE_URL"],
         "ACME_SECRET_KEY": os.environ["ACME_SECRET_KEY"],
+        # The provider is enabled and carries an inert test only credential,
+        # so a call that reached the client would reach the raising transport
+        # as well.  The value is not a secret and never leaves this process.
+        "META_API_KEY": "probe-only-not-a-real-credential",
+        "ACME_MUSE_PROVIDER_ENABLED": "true",
     },
     key_file=Path(os.environ["ACME_KEY_FILE"]),
 )
@@ -433,7 +467,13 @@ def test_the_demo_switch_works_at_390_pixels(
 def test_the_community_pages_never_call_the_model_provider(
     server: BrowserServer, tmp_path: Path
 ) -> None:
-    """A raising transport stub proves the community pages make no model call."""
+    """A closed dispatch and a raising transport prove the pages make no model call.
+
+    The probe closes both dispatch methods of the provider clients and
+    carries an enabled provider with an inert test only credential, so a
+    call on a community page raises instead of failing quietly.  The
+    transport stub catches anything that reaches the network.
+    """
     repo_root = Path(__file__).resolve().parents[2]
     environment = {
         **os.environ,
