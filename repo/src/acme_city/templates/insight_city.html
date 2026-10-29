@@ -4,6 +4,7 @@
 
 {% block content %}
 {% set v = view %}
+<div class="admin-b">
 <div class="page-head">
   <div>
     <h1>City permit activity</h1>
@@ -122,7 +123,7 @@
       {% endfor %}
     </tbody>
   </table>
-  <h3 data-legacy-heading="Where restaurants and bars are opening">Restaurant and bar permit locations</h3>
+  <h3>Restaurant and bar permit locations</h3>
   <table class="data-table" data-testid="dining-sites">
     <caption>Addresses with the most restaurant and bar permits in this view</caption>
     <thead><tr><th scope="col">Address</th><th scope="col">District</th><th scope="col">Permits</th></tr></thead>
@@ -182,4 +183,5 @@
   </div>
 </section>
 {% include "components/evidence_panel.html" %}
+</div>
 {% endblock %}

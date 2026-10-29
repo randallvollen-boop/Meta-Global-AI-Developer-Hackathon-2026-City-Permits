@@ -141,7 +141,7 @@ def test_the_restaurants_and_bars_view_filters_by_business_category(client, sett
     categories = re.findall(r"<td>(Restaurant|Bar|Retail|Office|Other)</td><td>[^<]*</td>\s*</tr>", table)
     assert categories and set(categories) <= {"Restaurant", "Bar"}
     assert 'data-testid="dining-sites"' in body
-    assert "Where restaurants and bars are opening" in body
+    assert "Restaurant and bar permit locations" in body
     assert f"<strong>{len(wanted)}</strong> permits in this view are for restaurants and bars" in body
     # the quick link and the select option for the combined view exist
     assert 'data-testid="quick-restaurants-bars"' in body

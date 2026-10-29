@@ -234,6 +234,8 @@ def test_governance_source_overview_fits_a_phone(
     assert page.locator("h1").inner_text() == "Data sources and ownership"
     assert page.locator('[data-testid="governance-attention"]').count() == 1
     assert page.locator('[data-testid="source-card"]').count() == 3
+    source_grid = page.locator('[data-testid="source-overview"]')
+    assert source_grid.evaluate("element => getComputedStyle(element).display") == "grid"
     fits_a_phone(page)
     assert_not_covered(page, page.locator('[data-testid="source-card"]').last)
     assert page.recorded_errors == []
@@ -252,6 +254,9 @@ def test_rules_and_fees_registers_fit_a_phone(
     open_screen(page, server, f"/rules?tab={tab}&view={view}")
     assert page.locator('[data-testid="rules-tab"]').count() == 2
     assert page.locator('[data-testid="rules-view"]').count() == 3
+    if view != "history":
+        cell = page.locator('[data-testid="rule-table"] tbody td').first
+        assert cell.evaluate("element => getComputedStyle(element).display") == "flex"
     fits_a_phone(page)
     assert page.recorded_errors == []
 
@@ -310,6 +315,8 @@ def test_city_permit_activity_hierarchy_fits_a_phone(
     )
     assert page.locator("h1").inner_text() == "City permit activity"
     assert page.locator('[data-testid="insight-filter-summary"]').count() == 1
+    filters = page.locator('[data-testid="insight-filters"]')
+    assert filters.evaluate("element => getComputedStyle(element).display") == "grid"
     note = page.locator('[data-testid="scenario-scope-note"]')
     assert "not copied" in note.inner_text()
     assert page.locator("th", has_text="Approved or issued").count() == 1
