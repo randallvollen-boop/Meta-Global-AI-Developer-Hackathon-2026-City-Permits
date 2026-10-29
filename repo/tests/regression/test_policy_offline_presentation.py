@@ -227,3 +227,67 @@ def test_the_fee_change_keeps_cents_as_cents(client: TestClient) -> None:
     assert "New fixed charge in cents" in body
     assert "100 cents equals 1 dollar" in body
     assert 'name="fixed_review_charge_cents"' in body
+
+
+# ---------------------------------------------------------- the run settings
+
+
+def test_the_run_settings_lead_with_the_population_and_the_case_count(
+    client: TestClient,
+) -> None:
+    """The population and the number of cases come first, the rest follows."""
+    body = _editor(client)
+    assert body.index('data-testid="policy-run-kind"') < body.index(
+        'data-testid="policy-run-count"'
+    )
+    assert body.index('data-testid="policy-run-count"') < body.index(
+        'data-testid="policy-run-more"'
+    )
+    assert body.index('data-testid="policy-run-more"') < body.index(
+        'data-testid="policy-run-dates"'
+    )
+    assert body.index('data-testid="policy-run-dates"') < body.index(
+        'data-testid="policy-run-submit"'
+    )
+
+
+def test_the_seed_and_the_narrowing_sit_in_the_more_settings_disclosure(
+    client: TestClient,
+) -> None:
+    """The seed and the narrowing are one disclosure, the dates another."""
+    body = _editor(client)
+    more = body.split('data-testid="policy-run-more"')[1].split("</details>")[0]
+    for field in ('name="seed"', 'name="permit_type"', 'name="district"', 'name="category"'):
+        assert field in more, field
+    dates = body.split('data-testid="policy-run-dates"')[1].split("</details>")[0]
+    assert 'name="range_start"' in dates
+    assert 'name="range_end"' in dates
+    assert "<summary>More run settings</summary>" in body
+    assert "<summary>Dates for decided applications</summary>" in body
+
+
+def test_the_run_says_which_settings_apply_to_each_population(client: TestClient) -> None:
+    """A person can tell which inputs the run reads for the population."""
+    body = _editor(client)
+    applies = body.split('data-testid="policy-run-applies-list"')[1].split("</ul>")[0]
+    assert "Synthetic year (sample data)</strong>: the seed, the number of cases" in applies
+    assert "Current applications</strong>: the narrowing by permit type and district" in applies
+    assert "Applications decided in a date range</strong>: the dates" in applies
+    assert "The seed and the number of cases do not apply." in applies
+
+
+def test_the_run_settings_keep_their_defaults(client: TestClient) -> None:
+    """The default seed and the default number of cases are unchanged."""
+    body = _editor(client)
+    assert 'name="count" inputmode="numeric" value="600"' in body
+    assert 'name="seed" inputmode="numeric" value="20261028"' in body
+    assert '<option value="synthetic_year" selected>' in body
+
+
+def test_the_run_settings_send_the_same_fields_as_before(client: TestClient) -> None:
+    """Every field the run reads is still in the form, with its own name."""
+    body = _editor(client)
+    form = body.split('data-testid="policy-run-form"')[1].split("</form>")[0]
+    for field in ("kind", "seed", "count", "range_start", "range_end",
+                  "permit_type", "district", "category"):
+        assert f'name="{field}"' in form, field

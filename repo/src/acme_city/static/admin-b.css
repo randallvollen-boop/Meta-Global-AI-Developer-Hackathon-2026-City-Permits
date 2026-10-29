@@ -90,6 +90,20 @@
 .admin-b .lock { flex-direction: column; align-items: flex-start; font-size: .82rem; color: var(--fg-2); margin-top: .4rem; }
 .admin-b .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: .6rem .8rem; border-radius: 6px; }
 
+/* The run settings.  The population and the number of cases come first, the
+   rest sits in a disclosure, and a short list says which settings the run
+   reads for each population. */
+.admin-b .admin-b-run-main { margin: .3rem 0 .1rem; }
+.admin-b .admin-b-run-main .field { margin: .45rem 0; }
+.admin-b .admin-b-run-main input,
+.admin-b .admin-b-run-main select { width: 100%; }
+.admin-b .admin-b-applies {
+  margin: .3rem 0 .2rem; padding-left: 1.15rem;
+  font-size: .84rem; color: var(--fg-2);
+}
+.admin-b .admin-b-applies > li { margin: .25rem 0; }
+.admin-b .admin-b-applies strong { color: var(--fg); }
+
 /* A disclosure.  The summary is a control, so it is tall enough to press. */
 .admin-b details { margin: .45rem 0; }
 .admin-b details > summary { min-height: 44px; padding: .55rem 0; cursor: pointer; }

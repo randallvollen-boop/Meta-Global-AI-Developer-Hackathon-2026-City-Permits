@@ -187,6 +187,30 @@ def test_the_editor_saves_a_change_from_a_phone(
     assert page.recorded_errors == []
 
 
+def test_the_run_settings_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The run settings fit a phone: the case count stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    count = page.locator('[data-testid="policy-run-count"]')
+    assert count.is_visible()
+    assert_not_covered(page, count)
+    submit = page.locator('[data-testid="policy-run-submit"]')
+    assert submit.is_visible()
+    assert_not_covered(page, submit)
+    # The other settings sit in a disclosure, so it is opened before it is used.
+    page.locator('details[data-testid="policy-run-more"] > summary').click()
+    assert page.locator("#run-seed").is_visible()
+    assert page.locator("#run-category").is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
 # ------------------------------------------------------- the scenarios list
 
 

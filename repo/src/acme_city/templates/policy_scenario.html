@@ -56,26 +56,35 @@
     <p class="muted">The run scores the same frozen cases twice: under today's published rules and under this what-if. {% if starting_text %}Starting population from the City view: {{ starting_text }}.{% endif %}</p>
     <form method="post" action="/policy/scenarios/{{ scenario.id }}/run" data-testid="policy-run-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
-      <p class="field"><label for="run-kind">Population {{ ui.info('policy_population') }}</label>
-        <select id="run-kind" name="kind" data-testid="policy-run-kind">
-          <option value="synthetic_year" selected>Synthetic year (sample data)</option>
-          <option value="current_applications">Retrospective re-scoring: current applications</option>
-          <option value="decided_range">Retrospective re-scoring: applications decided in a date range</option>
-        </select></p>
-      <fieldset><legend>Synthetic year settings</legend>
-        <p class="field"><label for="run-seed">Seed</label><input id="run-seed" name="seed" inputmode="numeric" value="{{ run_defaults.seed }}"></p>
+      <div class="admin-b-run-main">
+        <p class="field"><label for="run-kind">Population {{ ui.info('policy_population') }}</label>
+          <select id="run-kind" name="kind" data-testid="policy-run-kind">
+            <option value="synthetic_year" selected>Synthetic year (sample data)</option>
+            <option value="current_applications">Retrospective re-scoring: current applications</option>
+            <option value="decided_range">Retrospective re-scoring: applications decided in a date range</option>
+          </select></p>
         <p class="field"><label for="run-count">Number of cases, 1 to 2000</label><input id="run-count" data-testid="policy-run-count" name="count" inputmode="numeric" value="{{ run_defaults.count }}"></p>
-      </fieldset>
-      <fieldset><legend>Date range (decided applications only)</legend>
-        <p class="field"><label for="run-start">Decided from, for example 2026-01-01 (optional)</label><input id="run-start" name="range_start"></p>
-        <p class="field"><label for="run-end">Decided before, for example 2026-12-31 (optional)</label><input id="run-end" name="range_end"></p>
-      </fieldset>
-      <fieldset><legend>Narrow the population (optional)</legend>
+      </div>
+      <details data-testid="policy-run-more">
+        <summary>More run settings</summary>
+        <p class="field"><label for="run-seed">Seed</label><input id="run-seed" name="seed" inputmode="numeric" value="{{ run_defaults.seed }}"></p>
         <p class="field"><label for="run-type">Permit type</label>
           <select id="run-type" name="permit_type"><option value="">Every type</option>{% for t in options.types %}<option value="{{ t.key }}"{% if run_defaults.permit_type == t.key %} selected{% endif %}>{{ t.label }}</option>{% endfor %}</select></p>
         <p class="field"><label for="run-district">District, for example R-1 (optional)</label><input id="run-district" name="district" value="{{ run_defaults.district }}"></p>
         <p class="field"><label for="run-category">Business category, synthetic year only (optional)</label><input id="run-category" name="category" value="{{ run_defaults.category }}"></p>
-      </fieldset>
+      </details>
+      <details data-testid="policy-run-dates">
+        <summary>Dates for decided applications</summary>
+        <p class="muted">Only the retrospective re-scoring of applications decided in a date range reads these two dates.</p>
+        <p class="field"><label for="run-start">Decided from, for example 2026-01-01 (optional)</label><input id="run-start" name="range_start"></p>
+        <p class="field"><label for="run-end">Decided before, for example 2026-12-31 (optional)</label><input id="run-end" name="range_end"></p>
+      </details>
+      <p class="muted" data-testid="policy-run-applies">Which settings the run reads depends on the cases you include.</p>
+      <ul class="admin-b-applies" data-testid="policy-run-applies-list">
+        <li><strong>Synthetic year (sample data)</strong>: the seed, the number of cases, and the narrowing by permit type, district and business category.</li>
+        <li><strong>Current applications</strong>: the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
+        <li><strong>Applications decided in a date range</strong>: the dates, and the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
+      </ul>
       {% set blocked = (not can_run) or (not changes) or (check.unsupported) or (check.issues) %}
       <p><button type="submit" class="button btn primary button-primary" data-testid="policy-run-submit"{% if blocked %} disabled aria-describedby="policy-run-reason"{% endif %}>Run comparison</button></p>
       {% if blocked %}
