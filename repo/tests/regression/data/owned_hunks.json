@@ -1,0 +1,41 @@
+{
+  "note": "Function ownership of the shared files and the actor-only acceptance tests. scripts/check_owned_hunks.py enforces it on every merge; a lane changes only the functions listed for it, and a function that is not listed belongs to no lane.",
+  "lanes": [
+    "community",
+    "steward-queue-guide",
+    "steward-autolink",
+    "admin-a",
+    "admin-b",
+    "agent-operator"
+  ],
+  "functions": {
+    "src/acme_city/ui/router.py": {
+      "_registry_decide": "steward-queue-guide",
+      "_agent_toggle": "agent-operator",
+      "_agent_run": "agent-operator",
+      "_render_agent": "agent-operator",
+      "ui_governance_sources": "admin-b",
+      "ui_rules_fees": "admin-b",
+      "ui_insight_city": "admin-b"
+    },
+    "src/acme_city/ui/admin_views.py": {
+      "planning_overview": "admin-a",
+      "governance_screen": "admin-b",
+      "rules_register": "admin-b",
+      "_version_row": "admin-b",
+      "_selected_version": "admin-b",
+      "_selected_rule": "admin-b",
+      "_selected_fee": "admin-b"
+    }
+  },
+  "actor_only": [
+    "tests/acceptance/test_at*.py"
+  ],
+  "moved_note": "Functions moved out of a shared file in Wave 0, with the file that now holds them. That file has a single owner lane, so the moved functions are no longer listed under functions.",
+  "moved": {
+    "src/acme_city/ui/router.py": {
+      "ui_intake_queue": "src/acme_city/ui/steward_routes.py",
+      "ui_early_resolution": "src/acme_city/ui/steward_routes.py"
+    }
+  }
+}

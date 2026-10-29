@@ -6,6 +6,7 @@ which is what the Alembic migration and the schema tests compare against.
 
 from acme_city.persistence.models import (
     agent,
+    agent_ops,
     audit,
     change,
     finance,
@@ -16,12 +17,14 @@ from acme_city.persistence.models import (
     permit,
     policy,
     registry,
+    registry_automation,
     source,
     support,
 )
 
 __all__ = [
     "agent",
+    "agent_ops",
     "audit",
     "change",
     "finance",
@@ -32,6 +35,7 @@ __all__ = [
     "permit",
     "policy",
     "registry",
+    "registry_automation",
     "source",
     "support",
 ]

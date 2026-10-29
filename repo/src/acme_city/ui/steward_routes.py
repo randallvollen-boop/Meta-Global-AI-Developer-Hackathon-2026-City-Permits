@@ -10,16 +10,20 @@ Routes:
 * ``GET /applicants/{party_id}``              one record profile
 * ``GET /source-records``                     the source-record catalogue
 * ``GET /activity``                           recorded steward decisions
+* ``GET /queue/intake``                       the intake queue
+* ``GET /queue/early-resolution``             the early-resolution board
 
 ``/applicants`` is rendered as the People & organizations tab, so its address,
 its test ids and ``/applicants/{id}`` keep working.  Every screen is guarded by
 the grants in ``view_models.SCREEN_PERMISSIONS``, the same predicate the
-navigation uses.
+navigation uses.  ``HANDLERS`` holds the lane's interface actions, which
+``ui/router.py`` merges into ``ACTION_HANDLERS``.
 """
 # REQUIRES: UX-01, UX-02, UX-03, MDM-02, SEC-01
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -30,8 +34,11 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.persistence.models import registry
-from acme_city.ui import steward_views, view_models
+from acme_city.permits import queues
+from acme_city.ui import agent_views, steward_views, view_models
 from acme_city.ui.router import (
+    ActionContext,
+    Outcome,
     _guard,
     error_response,
     page_context,
@@ -412,3 +419,72 @@ def ui_activity(
         quiet_feedback=True,
     )
     return render(request, "activity.html", context)
+
+
+@router.get("/queue/intake", operation_id="ui_intake_queue")
+def ui_intake_queue(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+    tab: str = "active",
+    q: str = "",
+    channel: str = "",
+    permit_type: str = "",
+    priority: str = "",
+    owner: str = "",
+    sort: str = "age",
+) -> Any:
+    """Show the intake queue of the Data Steward."""
+    resolved, refused = _guard(request, session, actor, "intake_queue")
+    if refused is not None:
+        return refused
+    queue = queues.intake_queue(
+        session,
+        resolved,
+        tab=tab,
+        query=q,
+        channel=channel,
+        permit_type=permit_type,
+        priority=priority,
+        owner=owner,
+        sort=sort,
+    )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="intake_queue",
+        title="Intake queue",
+        queue=queue,
+        agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
+        can_process=view_models.holds_grant(
+            session, resolved, "permit.intake.process_selected", "permits"
+        ),
+    )
+    return render(request, "intake_queue.html", context)
+
+
+@router.get("/queue/early-resolution", operation_id="ui_early_resolution")
+def ui_early_resolution(
+    request: Request,
+    session: Session = Depends(get_session),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the early-resolution board of the Data Steward."""
+    resolved, refused = _guard(request, session, actor, "early_resolution")
+    if refused is not None:
+        return refused
+    board = queues.early_resolution(session, resolved)
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="early_resolution",
+        title="Early resolution",
+        board=board,
+    )
+    return render(request, "early_resolution.html", context)
+
+
+#: The interface actions of the steward lane, merged into ``ACTION_HANDLERS``.
+HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {}

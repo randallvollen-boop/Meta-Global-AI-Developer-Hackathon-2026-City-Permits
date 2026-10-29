@@ -2,7 +2,7 @@
 
 The pages are rendered from the domain services, every write names its
 destination and its expected version, and the persona selector offers exactly
-the four selectable personas.
+the five selectable personas.
 """
 # REQUIRES: UX-01, UX-02, UX-03, UX-04, GOV-04, EDIT-01, EDIT-02, SEC-01, SEC-02
 # The pages render the resolved responsibility, keep the value bands apart,
@@ -112,7 +112,7 @@ def csrf_of(html: str) -> str:
     return match.group(1)
 
 
-def test_the_selector_offers_exactly_the_four_personas(client: TestClient) -> None:
+def test_the_selector_offers_exactly_the_five_personas(client: TestClient) -> None:
     response = client.get("/select")
     assert response.status_code == 200
     labels = re.findall(r'data-persona="([^"]+)"', response.text)
@@ -121,6 +121,7 @@ def test_the_selector_offers_exactly_the_four_personas(client: TestClient) -> No
         "persona_data_steward",
         "persona_permit_reviewer",
         "persona_city_administrator",
+        "persona_agent_operator",
     ]
     assert "service_" not in response.text
     assert "Intake Clerk" not in response.text

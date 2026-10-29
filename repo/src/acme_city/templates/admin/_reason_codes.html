@@ -1,0 +1,65 @@
+{# The Reason codes tab of the administration screen. #}
+<details class="panel card" data-testid="admin-section" data-section="reason-codes" {% if tab == 'reason-codes' %}open{% endif %}>
+  <summary><strong>Reason codes</strong></summary>
+  <div class="card-b" style="display:grid;gap:16px">
+    <table class="data-table" data-testid="admin-reason-codes">
+      <caption class="visually-hidden">Reason codes</caption>
+      <thead><tr><th scope="col">Code</th><th scope="col">Label</th><th scope="col">Type</th><th scope="col">State</th><th scope="col">Action</th></tr></thead>
+      <tbody>
+        {% for code in admin.reason_codes %}
+        <tr data-testid="admin-reason-code-row" data-code="{{ code.code }}">
+          <th scope="row">{{ code.code }}</th>
+          <td>{{ code.label }}</td>
+          <td><span class="badge">{{ code.code_type }}</span></td>
+          <td><span class="badge badge-{{ 'current' if code.active else 'superseded' }}">{{ 'active' if code.active else 'retired' }}</span></td>
+          <td>
+            {% if admin.can_manage and code.active %}
+            <form method="post" action="/ui/actions/config.reason_code.retire" class="action-form" data-testid="admin-reason-code-retire">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="config.reason_code.retire">
+              <input type="hidden" name="next" value="/admin?tab=reason-codes">
+              <input type="hidden" name="code" value="{{ code.code }}">
+              <button type="submit" class="btn sm">Retire</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3>Add reason code</h3>
+    {% if admin.can_manage %}
+    <form method="post" action="/ui/actions/config.reason_code.add" class="action-form" data-testid="admin-add-reason-code">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="config.reason_code.add">
+      <input type="hidden" name="next" value="/admin?tab=reason-codes">
+      <div class="fieldset">
+        <label for="rc-code">Code</label>
+        <input id="rc-code" name="code" required>
+      </div>
+      <div class="fieldset">
+        <label for="rc-label">Label</label>
+        <input id="rc-label" name="label" required>
+      </div>
+      <div class="fieldset">
+        <label for="rc-description">Description</label>
+        <input id="rc-description" name="description">
+      </div>
+      <div class="fieldset">
+        <label for="rc-code-type">Type</label>
+        <select id="rc-code-type" name="code_type" required>
+          <option value="return">Return</option>
+          <option value="denial">Denial</option>
+          <option value="waiver">Waiver</option>
+          <option value="revision">Revision</option>
+          <option value="archive">Archive</option>
+        </select>
+      </div>
+      <p><button type="submit" class="btn sm primary" data-testid="admin-add-reason-code-submit">Add reason code</button></p>
+    </form>
+    {% else %}
+    <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change the reason codes.</p>
+    {% endif %}
+  </div>
+</details>

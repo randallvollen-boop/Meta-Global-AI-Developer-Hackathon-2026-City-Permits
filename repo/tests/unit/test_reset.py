@@ -95,8 +95,8 @@ def test_reset_seeds_the_declared_fixture_version(database: Settings, bundle: Fi
         with transaction(factory) as session:
             result = reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
         assert result.fixture_version == bundle.fixture_version
-        assert result.counts["roles"] == 14
-        assert result.counts["actors"] == 19
+        assert result.counts["roles"] == 15
+        assert result.counts["actors"] == 20
         assert result.counts["domains"] == 11
         assert result.counts["steward_queues"] == 10
         assert result.counts["authority_policies"] == 19

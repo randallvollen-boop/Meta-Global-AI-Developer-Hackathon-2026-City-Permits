@@ -260,7 +260,7 @@
       "permission_id": "agent.toggle",
       "action": "agent.toggle",
       "category": "agent",
-      "description": "Wake an agent or put it back to sleep. Only the City Administrator holds this grant.",
+      "description": "Wake an agent or put it back to sleep. The City Administrator and the Agent Operator hold this grant.",
       "sensitive": false
     },
     {
@@ -493,6 +493,90 @@
       "category": "applicant",
       "description": "Receive an answer the applicant help assistant wrote from the City's published sources. The answer is validated against the source bundle it was given, and an answer that fails the validation is never shown.",
       "sensitive": false
+    },
+    {
+      "permission_id": "agent.ops.read",
+      "action": "agent.ops.read",
+      "category": "agent",
+      "description": "Reserved. Read the agent operations screens: the agents home, the agent runs and the agent cases.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "permit.intake.queue.view",
+      "action": "permit.intake.queue.view",
+      "category": "permit",
+      "description": "Reserved. Open the intake queue without processing the selected cases.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "agent.policy.manage",
+      "action": "agent.policy.manage",
+      "category": "agent",
+      "description": "Reserved. Decide which agents may stay awake and what each agent may do.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "admin.role.permissions.manage",
+      "action": "admin.role.permissions.manage",
+      "category": "admin",
+      "description": "Reserved. Change the permissions a role grants.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "agent.run.linking",
+      "action": "agent.run.linking",
+      "category": "agent",
+      "description": "Reserved. Run the linking agent on the source records that wait for a master record.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.automation.preview",
+      "action": "registry.automation.preview",
+      "category": "registry",
+      "description": "Reserved. Preview what the steward automation would link, before anything changes.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.automation.activate",
+      "action": "registry.automation.activate",
+      "category": "registry",
+      "description": "Reserved. Turn the steward automation on.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "registry.automation.pause",
+      "action": "registry.automation.pause",
+      "category": "registry",
+      "description": "Reserved. Pause the steward automation.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.automation.enqueue",
+      "action": "registry.automation.enqueue",
+      "category": "registry",
+      "description": "Reserved. Queue source records for the steward automation.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.automation.review",
+      "action": "registry.automation.review",
+      "category": "registry",
+      "description": "Reserved. Review a link the steward automation made.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "registry.automation.undo",
+      "action": "registry.automation.undo",
+      "category": "registry",
+      "description": "Reserved. Undo a link the steward automation made.",
+      "sensitive": true
+    },
+    {
+      "permission_id": "registry.master.create",
+      "action": "registry.master.create",
+      "category": "registry",
+      "description": "Reserved. Create a new master record from a source record that matches none.",
+      "sensitive": true
     }
   ],
   "role_grants": {

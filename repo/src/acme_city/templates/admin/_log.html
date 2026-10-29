@@ -1,0 +1,23 @@
+{# The Log tab: the configuration changes, newest first. #}
+<details class="panel card" data-testid="admin-section" data-section="log" {% if tab == 'log' %}open{% endif %}>
+  <summary><strong>Configuration log</strong></summary>
+  <div class="card-b">
+    <table class="data-table" data-testid="admin-configuration-log">
+      <caption class="visually-hidden">Configuration changes, newest first</caption>
+      <thead><tr><th scope="col">When</th><th scope="col">Change</th><th scope="col">Target</th><th scope="col">Before → after</th><th scope="col">Actor</th></tr></thead>
+      <tbody>
+        {% for entry in admin.configuration_log %}
+        <tr data-testid="admin-log-row" data-action="{{ entry.action }}">
+          <td>{{ entry.occurred_at }}</td>
+          <th scope="row">{{ entry.action }}</th>
+          <td>{{ entry.target_type }}{% if entry.target_id %} {{ entry.target_id }}{% endif %}</td>
+          <td>{{ entry.before }} → {{ entry.after }}</td>
+          <td>{{ entry.actor }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">No configuration change has been recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>

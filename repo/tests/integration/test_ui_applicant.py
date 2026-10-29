@@ -630,7 +630,7 @@ def test_internal_comments_findings_and_staff_never_appear_on_my_permits(client,
         "chooser": client.get("/apply").text,
     }
     for name, text in pages.items():
-        # the Demo controls list the four personas by design; they are not part of the content
+        # the Demo controls list the five personas by design; they are not part of the content
         text = re.sub(r'<details class="demo-switch.*?</details>', "", text, flags=re.S)
         for secret in secrets:
             assert secret not in text, (name, secret)

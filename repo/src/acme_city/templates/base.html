@@ -13,6 +13,14 @@
   <link rel="stylesheet" href="/ui/static/demo-switch.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
   <link rel="stylesheet" href="/ui/static/reviewer.css">
+  <link rel="stylesheet" href="/ui/static/insight.css">
+  <link rel="stylesheet" href="/ui/static/nav-more.css">
+  <link rel="stylesheet" href="/ui/static/steward.css">
+  <link rel="stylesheet" href="/ui/static/steward-auto.css">
+  <link rel="stylesheet" href="/ui/static/admin-a.css">
+  <link rel="stylesheet" href="/ui/static/admin-b.css">
+  <link rel="stylesheet" href="/ui/static/operator.css">
+  {% block extra_css %}{% endblock %}
 </head>
 <body data-screen="{{ screen }}">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -50,22 +58,33 @@
   through the City's front door and their role would come from that sign-in.
 </div>
 
-{% set screen_icons = {"overview": "building", "queue": "inbox", "applicants": "users", "masters": "building", "permit": "file", "steward": "link", "rules": "scale", "reconciliation": "coins", "governance": "shield", "agent_intake": "spark", "agent_adjudication": "stamp", "admin": "db", "intake_queue": "inbox", "early_resolution": "alert", "review_queue": "stamp", "policy_scenarios": "scale", "source_records": "db", "activity": "clock", "ops_dashboard": "spark", "ops_audit": "shield", "ops_support": "users", "ops_checks": "stamp"} %}
-{% set screen_short = {"queue": "Queue", "applicants": "People", "masters": "Masters", "permit": "Permit", "steward": "Issues", "rules": "Rules", "reconciliation": "Reconcile", "governance": "Governance", "agent_intake": "Intake", "agent_adjudication": "Adjudicate", "admin": "Admin", "intake_queue": "Intake queue", "early_resolution": "Early resolution", "review_queue": "Review queue", "policy_scenarios": "What-if", "source_records": "Sources", "activity": "Activity", "ops_dashboard": "Operations", "ops_audit": "Audit log", "ops_support": "Support", "ops_checks": "Checks"} %}
-{% set persona_dots = {"Applicant": "var(--warn)", "Data Steward": "var(--muse)", "Permit Reviewer": "var(--accent)", "City Administrator": "var(--ok)"} %}
+{# The screen icons, the short mobile labels and the persona dots are the Jinja globals of ui/screen_meta.py. #}
+{# A navigation item whose group is "secondary" is listed under More tools. #}
+{% set brand_href = home.href if home else ui_home_href(actor, navigation) %}
 {% set current_label = (navigation | selectattr("key", "equalto", screen) | map(attribute="label") | first) if navigation else title %}
 
 <div class="shell">
   <aside class="side" aria-label="Main">
-    <div class="brand"><div class="brand-mark"><a href="/queue">AC</a></div><div><b><a href="/queue">ACME City</a></b><span>Permit workspace</span></div></div>
+    <div class="brand"><div class="brand-mark"><a href="{{ brand_href }}">AC</a></div><div><b><a href="{{ brand_href }}">ACME City</a></b><span>Permit workspace</span></div></div>
     {% if navigation %}
     <nav class="nav app-nav" aria-label="Screens">
       <div class="nav-label">Workspace</div>
       <ul>
-        {% for item in navigation %}
+        {% for item in navigation if item.group != "secondary" %}
         <li>{% if item.href %}<a href="{{ item.href }}" data-screen-key="{{ item.key }}"{% if item.key == screen %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span>{% if item.count %}<span class="count">{{ item.count }}</span>{% endif %}</a>{% else %}<span class="nav-disabled" data-screen-key="{{ item.key }}" aria-disabled="true" title="Open a case from the work queue first"><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span></span>{% endif %}</li>
         {% endfor %}
       </ul>
+      {%- set more_items = navigation | selectattr("group", "equalto", "secondary") | list %}
+      {%- if more_items %}
+      <details class="nav-more" data-testid="nav-more"{% if more_items | selectattr("key", "equalto", screen) | first %} open{% endif %}>
+        <summary class="nav-more-summary">More tools</summary>
+        <ul>
+          {% for item in more_items %}
+          <li>{% if item.href %}<a href="{{ item.href }}" data-screen-key="{{ item.key }}"{% if item.key == screen %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span>{% if item.count %}<span class="count">{{ item.count }}</span>{% endif %}</a>{% else %}<span class="nav-disabled" data-screen-key="{{ item.key }}" aria-disabled="true" title="Open a case from the work queue first"><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span></span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </details>
+      {%- endif %}
     </nav>
     {% endif %}
     {% if agent_status %}
@@ -80,7 +99,7 @@
   <div class="main">
     <header class="top app-header">
       <div class="crumbs" aria-label="Breadcrumb">ACME City <span>/</span> <b>{{ current_label or title }}</b>{% if screen == 'permit' and detail and detail.application %}<span>/</span> <span class="mono">{{ detail.application.source_application_number }}</span>{% endif %}</div>
-      <p class="app-title visually-hidden"><a href="/queue">ACME City permit workspace</a></p>
+      <p class="app-title visually-hidden"><a href="{{ brand_href }}">ACME City permit workspace</a></p>
       <div class="top-right persona">
         <a class="top-help-link" href="/help" data-testid="help-link"{% if screen == 'help' %} aria-current="page"{% endif %}>Help</a>
         {% set demo_clock = scenario_clock() %}{% if demo_clock %}<span class="demo-date" data-testid="demo-date">{{ demo_clock.label }} <span class="info-tip" tabindex="0" role="note" aria-label="{{ demo_clock.help }}" title="{{ demo_clock.help }}">&#9432;</span></span>{% endif %}
@@ -188,9 +207,20 @@
 
 {% if navigation %}
 <nav class="mobile-nav" aria-label="Screens">
-  {% for item in navigation %}
+  {% for item in navigation if item.group != "secondary" %}
   {% if item.href %}<a href="{{ item.href }}"{% if item.key == screen %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ screen_short.get(item.key, item.label) }}</span></a>{% else %}<span class="nav-disabled" aria-disabled="true"><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ screen_short.get(item.key, item.label) }}</span></span>{% endif %}
   {% endfor %}
+  {%- set more_items = navigation | selectattr("group", "equalto", "secondary") | list %}
+  {%- if more_items %}
+  <details class="nav-more nav-more-mobile" data-testid="nav-more-mobile">
+    <summary class="nav-more-summary"><svg aria-hidden="true"><use href="#i-file"/></svg><span>More tools</span></summary>
+    <div class="nav-more-panel">
+      {% for item in more_items %}
+      {% if item.href %}<a href="{{ item.href }}"{% if item.key == screen %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ screen_short.get(item.key, item.label) }}</span></a>{% else %}<span class="nav-disabled" aria-disabled="true"><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ screen_short.get(item.key, item.label) }}</span></span>{% endif %}
+      {% endfor %}
+    </div>
+  </details>
+  {%- endif %}
 </nav>
 {% endif %}
 {% if screen != 'select' %}{% include "_demo_switch.html" %}{% endif %}
@@ -200,5 +230,6 @@
 <script src="/ui/static/app.js" defer></script>
 <script src="/ui/static/property.js" defer></script>
 <script src="/ui/static/ui-patterns.js" defer></script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

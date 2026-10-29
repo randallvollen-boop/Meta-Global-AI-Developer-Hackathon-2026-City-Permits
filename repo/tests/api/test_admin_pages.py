@@ -288,7 +288,7 @@ def test_the_access_tab_shows_the_grants_of_every_persona(
     select_persona(client, "persona_city_administrator")
     response = client.get("/governance?tab=access")
     assert response.status_code == 200
-    assert response.text.count('data-testid="access-row"') == 4
+    assert response.text.count('data-testid="access-row"') == 5
     assert "admin.overview.view" in response.text
 
 

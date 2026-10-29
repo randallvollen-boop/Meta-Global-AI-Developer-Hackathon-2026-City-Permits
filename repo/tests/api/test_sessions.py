@@ -14,7 +14,13 @@ from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 
-EXPECTED_PERSONAS = {"Applicant", "Data Steward", "Permit Reviewer", "City Administrator"}
+EXPECTED_PERSONAS = {
+    "Applicant",
+    "Data Steward",
+    "Permit Reviewer",
+    "City Administrator",
+    "Agent Operator",
+}
 
 
 @pytest.fixture()
@@ -48,13 +54,13 @@ def client(tmp_path: Path) -> TestClient:
         yield test_client
 
 
-def test_persona_selector_returns_exactly_four_personas(client: TestClient) -> None:
+def test_persona_selector_returns_exactly_five_personas(client: TestClient) -> None:
     response = client.get("/api/session/actors")
     assert response.status_code == 200
     payload = response.json()
     labels = {entry["label"] for entry in payload["actors"]}
     assert labels == EXPECTED_PERSONAS
-    assert len(payload["actors"]) == 4
+    assert len(payload["actors"]) == 5
     identifiers = {entry["actor_id"] for entry in payload["actors"]}
     assert "service_owner_building_safety" not in identifiers
     assert "service_delegate_steward" not in identifiers

@@ -12,6 +12,7 @@ label, and the interface depends on no external script, font or image.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,11 @@ from acme_city.persistence.session import (
     transaction,
 )
 from acme_city.ui.router import router as ui_router
+
+# The screens each persona may open (same table as the view-model tests),
+# aggregated in tests/support/nav_expectations, one module per persona.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
 
 #: The screens that have to use the same controls, swept as the City
 #: Administrator.
@@ -220,65 +226,6 @@ SCREEN_PATHS = {
     "ops_checks": "/ops/checks",
 }
 
-#: The screens each persona may open (same table as the view-model tests).
-#:
-#: The Data Steward gains the intake queue and the early-resolution board
-#: and the Permit Reviewer gains the review queue; no other persona gains a
-#: screen.
-EXPECTED_NAVIGATION = {
-    "persona_applicant": ["queue", "applicants", "permit"],
-    "persona_data_steward": [
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "agent_intake",
-        "intake_queue",
-        "early_resolution",
-    ],
-    "persona_permit_reviewer": [
-        "queue",
-        "applicants",
-        "permit",
-        "agent_adjudication",
-        "review_queue",
-    ],
-    "persona_city_administrator": [
-        # Changed deliberately (the City Administrator restyle): the planning
-        # overview is the Administrator's home, behind the grant
-        # admin.overview.view that only the Administrator holds.  No other
-        # persona's list changes.
-        "overview",
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "reconciliation",
-        "governance",
-        "agent_intake",
-        "agent_adjudication",
-        "admin",
-        "insight_city",
-        # Changed deliberately (policy 2): the City Administrator gains the
-        # What-if screen, behind the grant policy.scenario.manage that only the
-        # Administrator holds.  No other persona's list changes.
-        "policy_scenarios",
-        # Changed deliberately (P3c): the City Administrator gains the four
-        # operations screens, each behind its own grant that only the
-        # Administrator holds.  No other persona's list changes.
-        "ops_dashboard",
-        "ops_audit",
-        "ops_support",
-        "ops_checks",
-    ],
-}
-
 
 @pytest.mark.parametrize("actor_id", sorted(EXPECTED_NAVIGATION))
 def test_listed_screens_open_and_hidden_screens_refuse(
@@ -375,4 +322,4 @@ def test_the_persona_selector_never_offers_a_service_identity(
     assert "service_delegate" not in body
     assert "Intake Clerk" not in body
     assert "Accountable Data Owner" not in body
-    assert body.count('data-persona=') == 4
+    assert body.count('data-persona=') == 5

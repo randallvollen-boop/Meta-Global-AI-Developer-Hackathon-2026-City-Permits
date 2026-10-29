@@ -1,0 +1,42 @@
+/* More-menu navigation. Every selector starts with .nav-more. Filled by W0-2, then owned by ADA-3. */
+
+/* The side navigation: a disclosure under the Workspace list. */
+.nav-more { margin-top: 4px; }
+.nav-more-summary {
+  display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px;
+  color: var(--fg-3); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
+  cursor: pointer; list-style: none;
+}
+.nav-more-summary::-webkit-details-marker { display: none; }
+.nav-more-summary::after { content: "+"; margin-left: auto; font-size: .86rem; }
+.nav-more[open] > .nav-more-summary::after { content: "\2212"; }
+.nav-more-summary:hover { background: var(--surface-2); color: var(--fg); }
+.nav-more > ul { margin-top: 2px; }
+
+/* The mobile navigation: the last entry of the bar opens a panel above it.
+   The panel is fixed to the viewport so the scrolling bar does not clip it,
+   and it sits above the demo switch (bottom 78px, about 33px tall) so the
+   switch does not cover its first entries. */
+.nav-more-mobile { flex: 1 0 auto; margin-top: 0; }
+.nav-more-mobile > .nav-more-summary {
+  display: grid; justify-items: center; gap: 2px; padding: 5px 8px;
+  font-size: .64rem; text-transform: none; letter-spacing: 0; color: var(--fg-3);
+}
+.nav-more-mobile > .nav-more-summary::after { content: none; }
+.nav-more-mobile > .nav-more-summary svg { width: 18px; height: 18px; }
+.nav-more-mobile[open] > .nav-more-summary { color: var(--accent); background: var(--accent-soft); }
+.nav-more-panel {
+  position: fixed; left: 16px; right: 16px; bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  max-height: 60vh; overflow-y: auto; z-index: 26;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px;
+  padding: 8px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.nav-more-panel a, .nav-more-panel .nav-disabled {
+  display: grid; justify-items: center; gap: 2px; padding: 6px 8px; min-width: 0;
+  border-radius: 8px; font-size: .64rem; color: var(--fg-3); text-decoration: none; text-align: center;
+  overflow-wrap: anywhere;
+}
+.nav-more-panel svg { width: 18px; height: 18px; }
+.nav-more-panel a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.nav-more-panel .nav-disabled { opacity: .45; }

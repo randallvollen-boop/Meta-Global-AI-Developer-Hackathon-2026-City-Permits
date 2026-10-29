@@ -16,6 +16,9 @@ from typing import Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, SecretStr, field_validator, model_validator
 
+from acme_city.core.config_autolink import AutolinkSettings, autolink_env_overrides
+from acme_city.core.config_operator import OperatorSettings, operator_env_overrides
+
 DEFAULT_DATABASE_URL: Final = "sqlite:///var/acme_city.db"
 DEFAULT_KEY_FILE: Final = Path("~/.config/ai-keys.env")
 DEFAULT_DEMO_TIMEZONE: Final = "America/New_York"
@@ -135,7 +138,7 @@ def read_key_file(path: Path) -> dict[str, str]:
     return parse_key_file(text)
 
 
-class Settings(BaseModel):
+class Settings(OperatorSettings, AutolinkSettings, BaseModel):
     """Immutable application settings.
 
     ``secret_key`` signs server-held session cookies.  ``meta_api_key`` is the
@@ -457,6 +460,8 @@ class Settings(BaseModel):
             trusted_proxy_hops=pick_int(ENV_TRUSTED_PROXY_HOPS, 0),
             max_request_bytes=pick_int(ENV_MAX_REQUEST_BYTES, DEFAULT_MAX_REQUEST_BYTES),
             public_demo=bool(_optional_bool(pick(ENV_PUBLIC_DEMO), ENV_PUBLIC_DEMO)),
+            **operator_env_overrides(env),
+            **autolink_env_overrides(env),
         )
 
 

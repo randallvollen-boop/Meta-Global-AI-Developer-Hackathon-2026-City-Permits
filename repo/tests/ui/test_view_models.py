@@ -11,6 +11,7 @@ never decide anything themselves.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,13 @@ from acme_city.persistence.session import (
     transaction,
 )
 from acme_city.ui import view_models
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from support.nav_expectations import (  # noqa: E402
+    EXPECTED_NAVIGATION,
+    EXPECTED_SCREENS,
+    GROUPING,
+)
 
 
 @pytest.fixture()
@@ -85,13 +93,14 @@ def actor_for(session: Session, actor_id: str) -> ActorContext:
     )
 
 
-def test_the_selector_offers_exactly_the_four_personas(session: Session) -> None:
+def test_the_selector_offers_exactly_the_five_personas(session: Session) -> None:
     options = view_models.persona_options(session)
     assert [option["label"] for option in options] == [
         "Applicant",
         "Data Steward",
         "Permit Reviewer",
         "City Administrator",
+        "Agent Operator",
     ]
     assert all(option["actor_id"].startswith("persona_") for option in options)
     labels = " ".join(option["actor_id"] for option in options)
@@ -275,75 +284,10 @@ def test_the_model_runs_carry_an_explicit_mode(session: Session) -> None:
 
 
 #: The screens each persona may open, in canonical navigation order. Derived
-#: from the seeded grants through SCREEN_PERMISSIONS; hidden screens 403.
-#:
-#: Parity phase 3b added three screens after the existing entries, so the
-#: order of the existing screens is unchanged and the new ones come last:
-#: the Data Steward opens the intake queue and the early-resolution board
-#: (both behind a grant only that persona holds) and the Permit Reviewer
-#: opens the review queue.  No other persona gains a screen.
-#:
-#: P3insight adds the City view after those entries, behind its own grant
-#: (``insight.city.view``), which only the City Administrator holds.
-#:
-#: Policy 2 adds the What-if screen after the City view, behind its own grant
-#: (``policy.scenario.manage``), which only the City Administrator holds.
-#:
-#: P3c adds the dashboard, the audit log, support and the checks after it, each
-#: behind its own grant that only the City Administrator holds.
-#:
-#: Steward restyle (changed deliberately): the Data Steward and the City
-#: Administrator hold Master records, where People & organizations is a tab, so
-#: "applicants" is no longer listed for them (the Applicant and the Permit
-#: Reviewer keep it).  Source records and Activity follow Data issues; both are
-#: read-only screens behind the steward's own read grants.
-EXPECTED_NAVIGATION: dict[str, list[str]] = {
-    "persona_applicant": ["queue", "applicants", "permit"],
-    "persona_data_steward": [
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "agent_intake",
-        "intake_queue",
-        "early_resolution",
-    ],
-    "persona_permit_reviewer": [
-        "queue",
-        "applicants",
-        "permit",
-        "agent_adjudication",
-        "review_queue",
-    ],
-    "persona_city_administrator": [
-        # Changed deliberately (the City Administrator planning overview): the
-        # Administrator lands on the overview, so it is the first entry of the
-        # navigation.  No other persona gains a screen.
-        "overview",
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "reconciliation",
-        "governance",
-        "agent_intake",
-        "agent_adjudication",
-        "admin",
-        "insight_city",
-        "policy_scenarios",
-        # P3c: the four operations screens follow the What-if screen.
-        "ops_dashboard",
-        "ops_audit",
-        "ops_support",
-        "ops_checks",
-    ],
-}
+#: from the seeded grants through SCREEN_PERMISSIONS; hidden screens 403.  The
+#: table is aggregated in tests/support/nav_expectations, one module per
+#: persona, where the history of each persona's list is recorded; the agent
+#: screens of every persona are in its agent_grants module.
 
 
 @pytest.mark.parametrize("actor_id", sorted(EXPECTED_NAVIGATION))
@@ -353,8 +297,36 @@ def test_the_navigation_is_scoped_to_the_persona_grants(
     actor = actor_for(session, actor_id)
     items = view_models.navigation(session, actor)
     assert [item["key"] for item in items] == EXPECTED_NAVIGATION[actor_id]
-    permit_item = next(item for item in items if item["key"] == "permit")
-    assert permit_item["href"].startswith("/permits/")
+    # The Agent Operator holds no grant of the permit workspace.
+    if actor_id != "persona_agent_operator":
+        permit_item = next(item for item in items if item["key"] == "permit")
+        assert permit_item["href"].startswith("/permits/")
+
+
+@pytest.mark.parametrize("actor_id", sorted(EXPECTED_SCREENS))
+def test_the_navigation_lists_exactly_the_screens_the_persona_may_open(
+    session: Session, actor_id: str
+) -> None:
+    # Authorization: which screens are listed, whatever their group or order.
+    actor = actor_for(session, actor_id)
+    keys = [item["key"] for item in view_models.navigation(session, actor)]
+    assert len(keys) == len(set(keys)), keys
+    assert set(keys) == EXPECTED_SCREENS[actor_id]
+    for key in keys:
+        assert view_models.may_open_screen(session, actor, key), (actor_id, key)
+
+
+@pytest.mark.parametrize("actor_id", sorted(GROUPING))
+def test_the_navigation_groups_match_the_persona_expectations(
+    session: Session, actor_id: str
+) -> None:
+    # Grouping: the order of the side navigation and of More tools.
+    actor = actor_for(session, actor_id)
+    items = view_models.navigation(session, actor)
+    primary = [item["key"] for item in items if item.get("group") != "secondary"]
+    secondary = [item["key"] for item in items if item.get("group") == "secondary"]
+    assert primary == GROUPING[actor_id]["primary"]
+    assert secondary == GROUPING[actor_id]["secondary"]
 
 
 def test_model_runs_match_an_application_stored_in_an_input_refs_object(

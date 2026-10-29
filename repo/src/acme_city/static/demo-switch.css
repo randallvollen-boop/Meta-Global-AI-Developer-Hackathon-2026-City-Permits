@@ -38,8 +38,15 @@ body[data-screen] .demo-switch { bottom: 12px; }
 .demo-switch button[aria-current="true"] { border-color: #1a5fa0; background: #e3eef8; }
 .demo-switch a { color: #1a5fa0; font-size: 12px; }
 @media (max-width: 760px) {
-  /* Clear the staff app's bottom navigation bar. */
+  /* Clear the staff app's bottom navigation bar: 78px here (and in max-height below)
+     must stay in step with --ui-clear-bottom. */
   body[data-screen] .demo-switch { bottom: 78px; }
   .demo-switch > summary span { font-size: 12px; }
+  /* Five choices fit between the button and the top of a 390px screen: the panel
+     is as wide as the screen allows, scrolls when short, and its buttons are compact. */
+  .demo-switch-panel { width: min(320px, calc(100vw - 24px)); max-height: calc(100vh - 78px - 72px); overflow-y: auto; }
+  .demo-switch-note { display: none; }
+  .demo-switch ul { gap: 4px; }
+  .demo-switch button { padding: 6px 10px; min-height: 44px; }
 }
 @media print { .demo-switch { display: none; } }

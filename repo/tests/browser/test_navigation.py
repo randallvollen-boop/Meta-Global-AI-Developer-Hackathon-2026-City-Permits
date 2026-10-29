@@ -10,7 +10,13 @@ error.
 
 from __future__ import annotations
 
-from conftest import BrowserServer
+import sys
+from pathlib import Path
+
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
 
 #: The screens of the demonstration and the path of their detail.
 #:
@@ -52,64 +58,10 @@ PERSONA_SCREENS: tuple[tuple[str, str, str], ...] = (
     ("persona_permit_reviewer", "/queue/review", "Review queue"),
 )
 
-#: The screens each persona may open.  The order is the canonical order of
-#: the navigation.
-#:
-#: Parity phase 3b added three screens after the existing entries, so the
-#: order of the existing screens is unchanged.  The Data Steward gains the
-#: intake queue and the early-resolution board; the Permit Reviewer gains
-#: the review queue.  No other persona gains a screen.
-NAVIGATION_BY_PERSONA = {
-    "persona_applicant": ["queue", "applicants", "permit"],
-    # Changed deliberately (steward restyle): People & organizations is a tab of
-    # Master records, so "applicants" leaves the Data Steward's and the City
-    # Administrator's lists; Source records and Activity follow Data issues.
-    "persona_data_steward": [
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "agent_intake",
-        "intake_queue",
-        "early_resolution",
-    ],
-    "persona_permit_reviewer": [
-        "queue",
-        "applicants",
-        "permit",
-        "agent_adjudication",
-        "review_queue",
-    ],
-    "persona_city_administrator": [
-        # Changed deliberately (the City Administrator planning overview): the
-        # Administrator lands on the overview, so it comes first.  The order of
-        # the other screens is unchanged.
-        "overview",
-        "queue",
-        "masters",
-        "permit",
-        "steward",
-        "source_records",
-        "activity",
-        "rules",
-        "reconciliation",
-        "governance",
-        "agent_intake",
-        "agent_adjudication",
-        "admin",
-        "insight_city",
-        # Changed deliberately (policy 2): the What-if screen follows the City view.
-        "policy_scenarios",
-        # Changed deliberately (P3c): the operations screens follow the What-if screen.
-        "ops_dashboard",
-        "ops_audit",
-        "ops_support",
-        "ops_checks",
-    ],
-}
+#: The screens each persona may open, primary group first, then More tools.
+#: Aggregated in tests/support/nav_expectations, one module per persona, so
+#: a lane changes its persona's list there and this file stays frozen.
+NAVIGATION_BY_PERSONA = EXPECTED_NAVIGATION
 
 #: The screens a persona may not open; each one answers 403.
 HIDDEN_SCREENS = {
@@ -316,3 +268,19 @@ def test_the_banner_states_that_the_data_is_fictional(
     banner = page.locator('[data-testid="demo-banner"]').inner_text()
     assert "Fictional ACME City demonstration" in banner
     assert "Westerville" not in banner
+
+
+def test_the_queue_fits_a_phone_and_no_fixed_layer_covers_it(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """Smoke test of the shared 390 pixel helpers on the work queue."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue", wait_until="load")
+    assert page.viewport_size == {"width": 390, "height": 844}
+    assert_no_horizontal_overflow(page)
+    assert page.locator(".mobile-nav").is_visible()
+    assert page.locator('[data-testid="demo-switch"]').is_visible()
+    assert_not_covered(page, page.locator("main h1").first)
+    assert_not_covered(page, page.locator('.mobile-nav a[href="/queue"]'))
+    assert page.recorded_errors == []

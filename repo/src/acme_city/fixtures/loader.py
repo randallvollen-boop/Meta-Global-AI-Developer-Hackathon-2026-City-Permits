@@ -135,9 +135,9 @@ class FixtureBundle:
             if unknown:
                 problems.append(f"role {role_id} grants unknown permissions: {sorted(unknown)}")
 
-        if len(self.actors.personas) != 4:
+        if len(self.actors.personas) != 5:
             problems.append(
-                f"expected exactly four selectable personas, found {len(self.actors.personas)}"
+                f"expected exactly five selectable personas, found {len(self.actors.personas)}"
             )
         for persona in self.actors.personas:
             if not persona.selectable:
