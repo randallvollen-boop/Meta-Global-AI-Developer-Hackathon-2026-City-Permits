@@ -16,6 +16,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INVENTORY_PATH = REPO_ROOT / "config" / "check_inventory.json"
+PYTEST_WORKERS = ["-n", "auto"]
 
 
 def pytest_only_paths() -> list[str]:
@@ -155,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
             [sys.executable, "scripts/scan_publishable_tree.py"],
             None,
         ),
-        ("pytest", [sys.executable, "-m", "pytest", "-q", *pytest_only_paths()], None),
+        ("pytest", [sys.executable, "-m", "pytest", "-q", *PYTEST_WORKERS, *pytest_only_paths()], None),
         (
             "deterministic-acceptance",
             [
