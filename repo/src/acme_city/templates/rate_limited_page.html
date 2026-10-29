@@ -1,0 +1,20 @@
+{# The 429 page.  It stands alone (no session, no database) because it is
+   rendered by the rate-limit middleware before any route runs. #}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Too many requests | City of Acme</title>
+  <link rel="stylesheet" href="/ui/static/app.css">
+  <link rel="stylesheet" href="/ui/static/city.css">
+</head>
+<body class="city" data-city-site="true">
+<div class="city-demo" role="note">Fictional demonstration. All people, addresses and permit records are synthetic.</div>
+<main id="main" class="city-wrap city-page" data-testid="rate-limited">
+  <h1>Too many requests</h1>
+  <p class="city-lede">This address has sent more {{ what }} than the demonstration allows in one minute. Wait {{ retry_after }} second{{ '' if retry_after == 1 else 's' }}, then try again. Nothing you entered was saved by this request.</p>
+  <p><a href="/city/">Return to the City home page</a></p>
+</main>
+</body>
+</html>
