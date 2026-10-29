@@ -244,6 +244,10 @@ def safe_next(value: str | None, fallback: str = "/queue") -> str:
         return fallback
     if not value.startswith("/") or value.startswith("//"):
         return fallback
+    # A browser reads a backslash as a slash, so "/\\host" would leave the site;
+    # control characters (CR, LF, tab) are stripped by URL parsers the same way.
+    if "\\" in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        return fallback
     return value
 
 
