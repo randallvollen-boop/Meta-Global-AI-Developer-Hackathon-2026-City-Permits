@@ -104,6 +104,10 @@ button { font: inherit; color: inherit; }
   background: var(--accent-soft); border-bottom: 1px solid var(--line);
   padding: 0.55rem 0.9rem; font-size: 0.86rem; color: var(--fg);
 }
+.public-demo-notice {
+  margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--accent-soft); color: var(--fg); font-size: 0.92rem;
+}
 .shell { display: grid; grid-template-columns: 232px minmax(0,1fr); min-height: 100%; }
 .side {
   position: sticky; top: 0; height: 100vh; background: var(--surface);
