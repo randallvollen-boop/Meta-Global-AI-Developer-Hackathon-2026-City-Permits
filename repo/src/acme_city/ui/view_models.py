@@ -14,6 +14,7 @@ here so that every governed view shows the same eight facts.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from datetime import datetime
 from typing import Any
@@ -115,6 +116,47 @@ PERSONA_ORDER: tuple[str, ...] = (
     "Permit Reviewer",
     "City Administrator",
 )
+
+#: What the persona selector says about each persona, keyed by label.
+#:
+#: ``who`` names the person the demo plays, ``does`` is their job in plain
+#: words, ``start`` is what to try first and ``icon`` is the file under
+#: ``static/persona-icons``.  The icon shows only when the file exists.
+PERSONA_PROFILES: dict[str, dict[str, str]] = {
+    "Applicant": {
+        "who": "A resident or contractor who needs a permit from ACME City.",
+        "does": "Starts an application, answers the questions, uploads plans, pays the fee and tracks the permit until it is issued.",
+        "start": "Apply for a permit, then follow it on the tracking page.",
+        "icon": "applicant",
+    },
+    "Data Steward": {
+        "who": "The city records specialist who keeps parcel, address, owner and contractor data trustworthy.",
+        "does": "Links new source records to the right master record, resolves duplicates and fixes conflicts so every permit points at the right property and people.",
+        "start": "Open the steward queue and work the first case.",
+        "icon": "steward",
+    },
+    "Permit Reviewer": {
+        "who": "A city plan reviewer in the permit office.",
+        "does": "Checks each application against the city rules, asks the applicant for missing information, and approves, denies or issues the permit with a recorded reason.",
+        "start": "Open the work queue and review the top application.",
+        "icon": "reviewer",
+    },
+    "City Administrator": {
+        "who": "The manager who runs the permit program for the city.",
+        "does": "Sets the rules, fees and policies, manages users and roles, and watches operations, audit and community insight.",
+        "start": "Open the overview, then try a what if policy scenario.",
+        "icon": "admin",
+    },
+    "Agent Operator": {
+        "who": "The operations specialist who runs the city's automated helper agents.",
+        "does": "Wakes the agents, runs processing batches, watches results and retries failures. The city administrator decides whether agents stay awake.",
+        "start": "Wake the agents and run the next batch.",
+        "icon": "operator",
+    },
+}
+
+#: The folder that holds the persona icons.
+PERSONA_ICON_DIR = Path(__file__).resolve().parent.parent / "static" / "persona-icons"
 
 #: The domain that owns each screen.
 SCREEN_DOMAIN: dict[str, str] = {
@@ -461,7 +503,18 @@ def persona_options(session: Session) -> list[dict[str, str]]:
         .where(governance.Actor.active.is_(True), governance.Actor.selectable.is_(True))
         .order_by(governance.Actor.actor_id)
     ).scalars().all()
-    options = [{"actor_id": row.actor_id, "label": row.label} for row in rows]
+    options = []
+    for row in rows:
+        option = {"actor_id": row.actor_id, "label": row.label}
+        profile = PERSONA_PROFILES.get(row.label, {})
+        option.update({key: profile.get(key, "") for key in ("who", "does", "start")})
+        icon = profile.get("icon", "")
+        option["icon"] = (
+            f"/ui/static/persona-icons/{icon}.png"
+            if icon and (PERSONA_ICON_DIR / f"{icon}.png").is_file()
+            else ""
+        )
+        options.append(option)
     options.sort(key=lambda option: _persona_rank(option["label"]))
     return options
 

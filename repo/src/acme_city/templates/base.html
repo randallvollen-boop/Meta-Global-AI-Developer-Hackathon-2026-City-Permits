@@ -146,18 +146,26 @@
     <h1 id="select-heading">Choose a persona</h1>
     {% include "_public_demo_notice.html" %}
     <p>
-      The selector offers exactly the four human personas of the demonstration.
-      A service identity is never selectable, and the browser never sends a
-      role: the server resolves the acting persona and its grants.
+      Each persona is a fictional person who plays one job in the city permit
+      process. Pick one to see the app as they see it. Switch at any time with
+      Demo: switch user. A service identity is never selectable, and the browser
+      never sends a role: the server resolves the acting persona and its grants.
     </p>
-    <ul class="persona-list" data-testid="persona-list">
+    <ul class="persona-list persona-cards" data-testid="persona-list">
       {% for persona in personas %}
-      <li>
-        <form method="post" action="/ui/actor">
-          <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-          <input type="hidden" name="next" value="/queue">
-          <button type="submit" class="button btn" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}">{{ persona.label }}</button>
-        </form>
+      <li class="persona-card" data-testid="persona-card">
+        {% if persona.icon %}<img class="persona-icon" src="{{ persona.icon }}" alt="" width="64" height="64" loading="lazy">{% endif %}
+        <div class="persona-text">
+          <h2 class="persona-name">{{ persona.label }}</h2>
+          {% if persona.who %}<p class="persona-who"><span class="persona-k">Who</span> {{ persona.who }}</p>{% endif %}
+          {% if persona.does %}<p class="persona-does"><span class="persona-k">What they do</span> {{ persona.does }}</p>{% endif %}
+          {% if persona.start %}<p class="persona-start"><span class="persona-k">Try first</span> {{ persona.start }}</p>{% endif %}
+          <form method="post" action="/ui/actor">
+            <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
+            <input type="hidden" name="next" value="/queue">
+            <button type="submit" class="button btn" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}">Continue as {{ persona.label }}</button>
+          </form>
+        </div>
       </li>
       {% endfor %}
     </ul>
