@@ -12,6 +12,8 @@ stylesheet away from the screens of the other lanes.
 
 from __future__ import annotations
 
+import pytest
+
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 #: The screens of the other lanes, with the address that opens each of them.
@@ -28,6 +30,18 @@ STAFF_SCREENS = (
     ("persona_permit_reviewer", "/queue"),
     ("persona_city_administrator", "/queue"),
 )
+
+
+@pytest.fixture(autouse=True)
+def patient_browser(page):
+    """Give the page time to answer when the whole suite runs on one machine.
+
+    The checks of this lane are about the layout of a screen, not about how
+    fast a server answers.  A loaded machine must not turn a layout check into
+    a timeout.
+    """
+    page.set_default_timeout(60_000)
+    return page
 
 
 def open_screen(page, server: BrowserServer, path: str) -> None:
