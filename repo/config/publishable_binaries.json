@@ -44,15 +44,12 @@
     },
     {
       "directory": "src/acme_city/static/permit-type-icons",
-      "source": "Muse Image (muse-image-1.0) icons bundled with the UI redesign built by Muse Wonder; demolition, electrical and mechanical are not mapped in PERMIT_TYPE_SEED_ICONS",
+      "source": "Muse Image (muse-image-1.0) icons bundled with the UI redesign built by Muse Wonder",
       "added_in": [
         "9a4aaef"
       ],
       "files": {
         "commercial-alteration.webp": "992b11ac66c93b8f1d20f6922eee95d5f7e0f1120e4f32aa75a5950007a2e3c6",
-        "demolition.webp": "386dcb0d11ad659cdb5629dadb0369e5319b1e31965dafee4f3e85d973aa2f1a",
-        "electrical.webp": "627df268447086f0791789a8ea8e3b66607557cb8a1027732d1dfc2907767e9b",
-        "mechanical.webp": "7fdef69ce552149f759681f83c5ace860d37e3ce09eb32acf17de062b23cd097",
         "new-building.webp": "11822c4767196236f646b82e338ea4427518768d64212ccd298e77ece2b58616",
         "sign.webp": "9ebc624f1d96df0e4322a15254a56e6838ec1e512ea9a1c3c1a4d8c2255c3019"
       }
