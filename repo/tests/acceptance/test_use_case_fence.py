@@ -121,6 +121,20 @@ def application_row(settings, application_id: str):
         factory.dispose()
 
 
+def evaluation_version(settings, application_id: str) -> int:
+    """Return the version of the current evaluation, which a decision is made against."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            return session.execute(
+                select(permit.Evaluation.version)
+                .where(permit.Evaluation.application_id == application_id)
+                .order_by(permit.Evaluation.version.desc())
+            ).scalars().first()
+    finally:
+        factory.dispose()
+
+
 def proposed_links(settings) -> list[dict]:
     """Return the proposed identity links of the demonstration."""
     factory = SessionFactory(settings.database_url)
@@ -349,6 +363,7 @@ def test_use_case_fence(client: TestClient, environment) -> None:
             "csrf_token": csrf(client, f"/permits/{rear_id}"),
             "application_id": rear_id,
             "expected_application_version": str(rear_version),
+            "expected_evaluation_version": str(evaluation_version(environment, rear_id)),
             "outcome": "approved",
             "reason": "premature",
         },
@@ -390,6 +405,7 @@ def test_use_case_fence(client: TestClient, environment) -> None:
         {
             "application_id": rear_id,
             "expected_application_version": str(rear_version),
+            "expected_evaluation_version": str(evaluation_version(environment, rear_id)),
             "outcome": "approved_with_conditions",
             "conditions": "The gate must open inward.",
             "reason": "the rear fence complies with DF-2",

@@ -31,6 +31,13 @@ from acme_city.permits.service import PermitService
 DECIDED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
     """Return settings for a freshly reset fictional demonstration database."""
@@ -172,6 +179,7 @@ def test_an_approval_becomes_stale_and_needs_a_reconfirmation(
             decided = service.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional demonstration approval.",
                     expected_evaluation_version=evaluation.version,
@@ -224,6 +232,7 @@ def test_an_approval_becomes_stale_and_needs_a_reconfirmation(
             confirmed = service.reconfirm(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional reconfirmation against the current versions.",
                     expected_evaluation_version=revalidated.version,

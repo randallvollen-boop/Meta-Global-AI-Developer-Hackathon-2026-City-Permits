@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
-from acme_city.auth.router import get_actor, get_session
+from acme_city.auth.router import get_actor, get_internal_reader, get_session
 from acme_city.governance.schemas import (
     DeactivateStewardCommand,
     EscalateIssueCommand,
@@ -32,7 +32,7 @@ def governance_service(session: Session) -> GovernanceService:
 @router.get("/datasets", operation_id="list_registered_datasets")
 def list_registered_datasets(
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """List every registered source dataset and whether it may publish."""
     service = governance_service(session)
@@ -68,7 +68,7 @@ def publish_source_dataset(
 def list_effective_assignments(
     domain_id: str | None = None,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return the assignments that are effective now."""
     service = governance_service(session)
@@ -150,7 +150,7 @@ def escalate_governance_issue(
 def get_domain_responsibility(
     domain_id: str,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Return the resolved responsibility panel of a domain."""
     service = governance_service(session)

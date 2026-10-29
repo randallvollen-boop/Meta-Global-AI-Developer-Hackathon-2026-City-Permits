@@ -316,7 +316,12 @@ def download_document_version(
     _load_visible_application(permit_service(session), row.application_id, actor)
     service = document_service(session)
     content = service.read_bytes(document_id)
-    return Response(content=content, media_type="application/octet-stream")
+    return Response(
+        content=content,
+        media_type="application/octet-stream",
+        # A stored applicant document must not be kept by a shared or local cache.
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get(

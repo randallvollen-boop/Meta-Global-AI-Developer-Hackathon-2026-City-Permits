@@ -38,6 +38,13 @@ FACTS = {
 }
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
     """Return settings for a freshly reset fictional demonstration database."""
@@ -301,6 +308,7 @@ def test_a_decision_snapshots_the_waivers_that_applied(seeded: Settings) -> None
             result = service.decide(
                 PermitDecisionCommand(
                     application_id=application.id,
+                    expected_application_version=_current_version(session, application.id),
                     outcome="denied",
                     reason="A fictional denial.",
                     reason_code="DOES_NOT_MEET_CODE",

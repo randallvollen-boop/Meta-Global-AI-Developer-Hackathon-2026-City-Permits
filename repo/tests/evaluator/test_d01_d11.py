@@ -70,6 +70,13 @@ CORRECTION = {
 }
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @dataclass(frozen=True)
 class LinkOutcome:
     """What the runtime decided about one source-to-canonical link."""
@@ -321,6 +328,7 @@ def observe_d03(session: Session) -> ScenarioObservation:
         PermitService(session).decide(
             PermitDecisionCommand(
                 application_id="app_d03",
+                expected_application_version=_current_version(session, "app_d03"),
                 outcome="approved",
                 reason="A fictional approval attempt.",
                 expected_evaluation_version=evaluation.version,

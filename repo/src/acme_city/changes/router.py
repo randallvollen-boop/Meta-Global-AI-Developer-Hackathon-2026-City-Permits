@@ -10,15 +10,15 @@ it is allowed.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
-from acme_city.auth.router import get_actor, get_session
-from acme_city.changes.dispatcher import ChangeDispatcher
+from acme_city.auth.router import get_actor, get_internal_reader, get_session, holds_internal_view
+from acme_city.changes.dispatcher import MAX_DISPATCH_BATCH, ChangeDispatcher
 from acme_city.changes.schemas import (
     ChangeRequestCommand,
     ChangeTransitionCommand,
@@ -35,6 +35,17 @@ router = APIRouter(prefix="/api/changes", tags=["changes"])
 def change_service(session: Session) -> ChangeService:
     """Return a change service bound to the request session."""
     return ChangeService(session)
+
+
+def require_dispatch_grant(session: Session, actor: ActorContext) -> None:
+    """Refuse an actor that does not hold the ``change.case.transition`` grant."""
+    grants = PermissionResolver(session).grants_for(actor.actor_id)
+    if not any(grant.action == "change.case.transition" for grant in grants):
+        raise PermissionDeniedError(
+            f"actor {actor.actor_id} may not dispatch pending changes",
+            actor_id=actor.actor_id,
+            action="change.case.transition",
+        )
 
 
 def conflict_response(result: ConflictResult) -> JSONResponse:
@@ -72,6 +83,9 @@ def list_change_cases(
 ) -> dict:
     """List the change cases, optionally by state or target."""
     statement = select(change.ChangeCase)
+    if not holds_internal_view(session, actor):
+        # Without an internal-view grant a caller sees only the changes it requested.
+        statement = statement.where(change.ChangeCase.requester_actor_id == actor.actor_id)
     if status:
         statement = statement.where(change.ChangeCase.status == status)
     if target_id:
@@ -93,7 +107,9 @@ def get_change_case(
 ) -> dict:
     """Return one change case with its commands, dependencies and tasks."""
     case = session.get(change.ChangeCase, change_case_id)
-    if case is None:
+    if case is None or (
+        case.requester_actor_id != actor.actor_id and not holds_internal_view(session, actor)
+    ):
         raise NotFoundError(f"no change case {change_case_id!r} exists")
     service = change_service(session)
     return service.case_view(case).model_dump(mode="json")
@@ -119,7 +135,7 @@ def transition_change_case(
 def preview_change_case_impact(
     change_case_id: str,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show the records that a change case would affect."""
     case = session.get(change.ChangeCase, change_case_id)
@@ -141,7 +157,7 @@ def preview_change_case_impact(
 def preview_change_impact(
     command: ImpactPreviewCommand,
     session: Session = Depends(get_session),
-    actor: ActorContext = Depends(get_actor),
+    actor: ActorContext = Depends(get_internal_reader),
 ) -> dict:
     """Show which records a change would affect before it is approved."""
     service = change_service(session)
@@ -151,21 +167,15 @@ def preview_change_impact(
 
 @router.post("/dispatch", operation_id="dispatch_pending_changes")
 def dispatch_pending_changes(
-    limit: int = 25,
+    limit: int = Query(default=25, ge=1, le=MAX_DISPATCH_BATCH),
     session: Session = Depends(get_session),
     actor: ActorContext = Depends(get_actor),
 ) -> dict:
     """Send the pending source commands and deliver the pending publications."""
-    grants = PermissionResolver(session).grants_for(actor.actor_id)
-    if not any(grant.action == "change.case.transition" for grant in grants):
-        raise PermissionDeniedError(
-            f"actor {actor.actor_id} may not dispatch pending changes",
-            actor_id=actor.actor_id,
-            action="change.case.transition",
-        )
+    require_dispatch_grant(session, actor)
     dispatcher = ChangeDispatcher(session)
     summary = dispatcher.dispatch_pending(limit=limit)
     return summary.model_dump(mode="json")
 
 
-__all__ = ["change_service", "conflict_response", "router"]
+__all__ = ["change_service", "conflict_response", "require_dispatch_grant", "router"]

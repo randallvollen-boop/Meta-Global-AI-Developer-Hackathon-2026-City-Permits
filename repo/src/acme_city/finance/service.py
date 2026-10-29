@@ -23,14 +23,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import NotFoundError, ValidationError
+from acme_city.core.errors import ConflictError, NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult
 from acme_city.finance.calculator import (
@@ -139,6 +139,7 @@ class FinanceService:
             action="finance.assessment.create",
             reason=command.reason,
             carry_forward=None,
+            expected_application_version=command.expected_application_version,
         )
 
     def reassess(
@@ -177,6 +178,7 @@ class FinanceService:
             action="finance.assessment.reassess",
             reason=command.reason,
             carry_forward=bool(command.carry_forward),
+            expected_application_version=command.expected_application_version,
         )
 
     def _write_assessment(
@@ -191,8 +193,29 @@ class FinanceService:
         action: str,
         reason: str,
         carry_forward: bool | None,
+        expected_application_version: int | None = None,
     ) -> AssessmentView:
         """Write one assessment version and carry the funds forward."""
+        # Serialize on the application: the guarded write takes the database
+        # write lock before the current assessment and the version count are
+        # read, so two assessments cannot both build on the same previous one.
+        self._session.execute(
+            update(permit.Application)
+            .where(permit.Application.id == application.id)
+            .values(version=permit.Application.version)
+            .execution_options(synchronize_session=False)
+        )
+        self._session.refresh(application)
+        if (
+            expected_application_version is not None
+            and application.version != expected_application_version
+        ):
+            raise ConflictError(
+                "the application changed since it was read; read it again and retry",
+                code="version_conflict",
+                expected_version=expected_application_version,
+                current_version=application.version,
+            )
         previous = self.current_assessment(application.id)
         existing_versions = self._session.execute(
             select(func.count()).select_from(finance.Assessment).where(
@@ -355,6 +378,7 @@ class FinanceService:
             )
             .order_by(finance.Assessment.version.desc())
             .limit(1)
+            .execution_options(populate_existing=True)
         ).scalar_one_or_none()
 
     def assessment_view(self, assessment: finance.Assessment) -> AssessmentView:

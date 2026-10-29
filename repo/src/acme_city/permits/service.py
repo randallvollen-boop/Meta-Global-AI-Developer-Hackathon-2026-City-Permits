@@ -26,7 +26,7 @@ from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import NotFoundError, ValidationError
+from acme_city.core.errors import NotFoundError, PermissionDeniedError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult
 from acme_city.permits.guard import require_mutable, require_not_returned
@@ -167,6 +167,22 @@ class PermitService:
                 ),
             ),
         )
+        if actor.record_scope:
+            # A record-scoped actor (an applicant) may only submit for records
+            # inside that scope: every identity the request names must be in it,
+            # not just one of them.
+            outside = [
+                part
+                for part in (command.applicant_party_id, command.source_application_number)
+                if part and part not in actor.record_scope
+            ]
+            if outside:
+                raise PermissionDeniedError(
+                    "that submission names a record outside the actor's record scope",
+                    actor_id=actor.actor_id,
+                    action="application.submit",
+                    target_type="application",
+                )
         permit_type = self._session.execute(
             select(permit.PermitType).where(permit.PermitType.key == command.permit_type_key)
         ).scalar_one_or_none()

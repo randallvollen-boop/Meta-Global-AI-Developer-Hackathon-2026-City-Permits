@@ -31,6 +31,13 @@ from acme_city.permits.service import PermitService
 DECIDED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
     """Return settings for a freshly reset fictional demonstration database."""
@@ -125,6 +132,7 @@ def test_a_decision_records_the_actor_the_time_the_reason_and_the_versions(
             result = service.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional demonstration approval.",
                     expected_evaluation_version=evaluation.version,
@@ -160,6 +168,7 @@ def test_a_request_that_only_supplies_a_ruling_is_refused(seeded: Settings) -> N
             with pytest.raises(PydanticValidationError):
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     final_ruling="approved",  # type: ignore[call-arg]
                 )
@@ -182,6 +191,7 @@ def test_the_city_administrator_may_not_decide(seeded: Settings) -> None:
                 service.decide(
                     PermitDecisionCommand(
                         application_id="app_synth_001",
+                        expected_application_version=_current_version(session, "app_synth_001"),
                         outcome="approved",
                         reason="Administrator attempt.",
                     ),
@@ -204,6 +214,7 @@ def test_an_unresolved_blocker_refuses_an_approval(seeded: Settings) -> None:
                 service.decide(
                     PermitDecisionCommand(
                         application_id="app_d03",
+                        expected_application_version=_current_version(session, "app_d03"),
                         outcome="approved",
                         reason="Approval attempt.",
                         expected_evaluation_version=evaluation.version,
@@ -227,6 +238,7 @@ def test_a_denial_is_allowed_even_with_an_unresolved_blocker(seeded: Settings) -
             result = service.decide(
                 PermitDecisionCommand(
                     application_id="app_d03",
+                    expected_application_version=_current_version(session, "app_d03"),
                     outcome="denied",
                     reason="The contractor registration has to be renewed.",
                     # A denial names an active denial reason code; the code is
@@ -257,6 +269,7 @@ def test_a_denial_without_a_denial_reason_code_is_refused(seeded: Settings) -> N
                 service.decide(
                     PermitDecisionCommand(
                         application_id="app_d03",
+                        expected_application_version=_current_version(session, "app_d03"),
                         outcome="denied",
                         reason="No reason code was named.",
                         expected_evaluation_version=evaluation.version,
@@ -268,6 +281,7 @@ def test_a_denial_without_a_denial_reason_code_is_refused(seeded: Settings) -> N
                 service.decide(
                     PermitDecisionCommand(
                         application_id="app_d03",
+                        expected_application_version=_current_version(session, "app_d03"),
                         outcome="denied",
                         reason="The wrong kind of code was named.",
                         reason_code="INCOMPLETE_APPLICATION",
@@ -314,6 +328,7 @@ def test_a_reconfirmation_is_a_new_decision_version(seeded: Settings) -> None:
             first = service.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional demonstration approval.",
                     expected_evaluation_version=evaluation.version,
@@ -332,6 +347,7 @@ def test_a_reconfirmation_is_a_new_decision_version(seeded: Settings) -> None:
             confirmed = service.reconfirm(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved",
                     reason="Fictional reconfirmation.",
                     expected_evaluation_version=second_evaluation.version,

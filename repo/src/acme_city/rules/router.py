@@ -17,8 +17,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
+from acme_city.auth.permissions import PermissionResolver
 from acme_city.auth.router import get_actor, get_session
 from acme_city.core.clock import utc_now
+from acme_city.core.errors import NotFoundError
 from acme_city.core.results import ConflictResult
 from acme_city.rules.schemas import (
     DraftFeeScheduleCommand,
@@ -38,6 +40,20 @@ def catalog_service(session: Session) -> RuleCatalogService:
     return RuleCatalogService(session)
 
 
+#: Grants that let an actor see rule versions before they are published.
+_AUTHORING_ACTIONS = frozenset(
+    {"rule.version.draft", "rule.version.approve", "rule.version.publish"}
+)
+#: The statuses a rule version holds once it can apply to an applicant.
+_IN_FORCE_STATUSES = frozenset({"published", "retired"})
+
+
+def _sees_unpublished(session: Session, actor: ActorContext) -> bool:
+    """Return whether the actor's grants include rule authoring."""
+    grants = PermissionResolver(session).grants_for(actor.actor_id)
+    return any(grant.action in _AUTHORING_ACTIONS for grant in grants)
+
+
 def _respond(result: object) -> object:
     """Return a conflict as a 409 and an accepted change as a 200."""
     if isinstance(result, ConflictResult):
@@ -55,6 +71,9 @@ def list_rule_versions(
     """List the stored rule versions."""
     service = catalog_service(session)
     versions = service.list_versions(permit_type, status=status)
+    if not _sees_unpublished(session, actor):
+        # A draft, in-review or approved version never reaches a non-author.
+        versions = [item for item in versions if item.status in _IN_FORCE_STATUSES]
     return {"versions": [item.model_dump(mode="json") for item in versions]}
 
 
@@ -186,7 +205,10 @@ def get_rule_version(
 ) -> dict:
     """Return one stored rule version."""
     service = catalog_service(session)
-    return service.get_version(rule_version_id).model_dump(mode="json")
+    view = service.get_version(rule_version_id)
+    if view.status not in _IN_FORCE_STATUSES and not _sees_unpublished(session, actor):
+        raise NotFoundError("that rule version does not exist")
+    return view.model_dump(mode="json")
 
 
 @router.post("", operation_id="draft_rule_version")

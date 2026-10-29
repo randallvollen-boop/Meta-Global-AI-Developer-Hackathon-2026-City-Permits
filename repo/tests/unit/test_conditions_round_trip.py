@@ -46,6 +46,13 @@ CONDITIONS = [
 ]
 
 
+def _current_version(session, application_id: str) -> int:
+    """Return the application version a decision is made against."""
+    from acme_city.permits.service import PermitService
+
+    return PermitService(session).load_application(application_id).version
+
+
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
     """Return settings for a freshly reset fictional demonstration database."""
@@ -140,6 +147,7 @@ def test_an_approval_with_conditions_is_an_approved_decision(
             result = permits.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved_with_conditions",
                     reason="Fictional demonstration approval with conditions.",
                     conditions=list(CONDITIONS),
@@ -171,6 +179,7 @@ def test_an_approval_with_conditions_needs_a_condition(seeded: Settings) -> None
                 permits.decide(
                     PermitDecisionCommand(
                         application_id="app_synth_001",
+                        expected_application_version=_current_version(session, "app_synth_001"),
                         outcome="approved_with_conditions",
                         reason="Fictional demonstration approval with conditions.",
                         conditions=[],
@@ -195,6 +204,7 @@ def test_every_outcome_needs_a_rationale(seeded: Settings) -> None:
                 permits.decide(
                     PermitDecisionCommand(
                         application_id="app_synth_001",
+                        expected_application_version=_current_version(session, "app_synth_001"),
                         outcome="approved",
                         reason="   ",
                         expected_evaluation_version=evaluation.version,
@@ -224,6 +234,7 @@ def test_the_conditions_survive_the_reconfirmation_and_the_artifact(
             first = permits.decide(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved_with_conditions",
                     reason="Fictional demonstration approval with conditions.",
                     conditions=list(CONDITIONS),
@@ -253,6 +264,7 @@ def test_the_conditions_survive_the_reconfirmation_and_the_artifact(
             confirmed = permits.reconfirm(
                 PermitDecisionCommand(
                     application_id="app_synth_001",
+                    expected_application_version=_current_version(session, "app_synth_001"),
                     outcome="approved_with_conditions",
                     reason="Fictional reconfirmation against the current versions.",
                     conditions=list(CONDITIONS),

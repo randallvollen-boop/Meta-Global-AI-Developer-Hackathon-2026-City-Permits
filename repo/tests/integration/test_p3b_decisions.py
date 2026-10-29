@@ -162,6 +162,7 @@ def test_the_api_records_the_conditions_of_an_approval(
             "outcome": "approved_with_conditions",
             "reason": "Fictional demonstration approval with conditions.",
             "conditions": list(CONDITIONS),
+            "expected_application_version": application_version(environment, "app_synth_001"),
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
@@ -186,6 +187,7 @@ def test_the_api_refuses_an_approval_with_conditions_and_no_condition(
             "outcome": "approved_with_conditions",
             "reason": "Fictional demonstration approval with conditions.",
             "conditions": [],
+            "expected_application_version": application_version(environment, "app_synth_001"),
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
@@ -205,6 +207,7 @@ def test_the_api_refuses_a_decision_without_a_rationale(
         json={
             "outcome": "approved",
             "reason": "   ",
+            "expected_application_version": application_version(environment, "app_synth_001"),
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
@@ -224,6 +227,7 @@ def test_the_api_refuses_a_denial_without_a_denial_reason_code(
         json={
             "outcome": "denied",
             "reason": "The contractor registration has to be renewed.",
+            "expected_application_version": application_version(environment, "app_synth_001"),
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
@@ -252,6 +256,7 @@ def test_the_decision_form_records_the_conditions(
             "outcome": "approved_with_conditions",
             "conditions": "\n".join(CONDITIONS),
             "reason": "Fictional demonstration approval with conditions.",
+            "expected_application_version": str(application_version(environment, "app_synth_001")),
             "expected_application_version": str(application_version(environment, "app_synth_001")),
             "expected_evaluation_version": str(evaluation.json()["version"]),
         },
@@ -282,6 +287,7 @@ def test_the_decision_form_refuses_an_approval_with_conditions_and_no_condition(
             "outcome": "approved_with_conditions",
             "conditions": "   ",
             "reason": "Fictional demonstration approval with conditions.",
+            "expected_application_version": str(application_version(environment, "app_synth_001")),
             "expected_application_version": str(application_version(environment, "app_synth_001")),
             "expected_evaluation_version": str(evaluation.json()["version"]),
         },

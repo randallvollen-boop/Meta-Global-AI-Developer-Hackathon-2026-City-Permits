@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import ConfigDict
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from acme_city.audit.service import AuditService
@@ -27,7 +28,7 @@ from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.configuration.reasons import ReasonCodeSnapshot, reason_code_snapshot
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import ValidationError
+from acme_city.core.errors import ConflictError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult, VersionedResult
 from acme_city.permits.guard import require_mutable
@@ -194,10 +195,12 @@ class PermitDecisionService:
             raise ValidationError("the application has no current evaluation to decide against")
         if evaluation.stale:
             raise ValidationError("the current evaluation is stale; it must be evaluated again")
-        if (
-            command.expected_evaluation_version is not None
-            and evaluation.version != command.expected_evaluation_version
-        ):
+        if command.expected_evaluation_version is None:
+            raise ValidationError(
+                "a decision names the evaluation version it was made against "
+                "(expected_evaluation_version)"
+            )
+        if evaluation.version != command.expected_evaluation_version:
             return ConflictResult(
                 code="version_conflict",
                 expected_version=command.expected_evaluation_version,
@@ -304,10 +307,12 @@ class PermitDecisionService:
             raise ValidationError("the application has no current evaluation to decide against")
         if evaluation.stale:
             raise ValidationError("the current evaluation is stale; it must be evaluated again")
-        if (
-            command.expected_evaluation_version is not None
-            and evaluation.version != command.expected_evaluation_version
-        ):
+        if command.expected_evaluation_version is None:
+            raise ValidationError(
+                "a decision names the evaluation version it was made against "
+                "(expected_evaluation_version)"
+            )
+        if evaluation.version != command.expected_evaluation_version:
             return ConflictResult(
                 code="version_conflict",
                 expected_version=command.expected_evaluation_version,
@@ -376,11 +381,17 @@ class PermitDecisionService:
     def _version_conflict(
         self, command: PermitDecisionCommand, application: permit.Application
     ) -> ConflictResult | None:
-        """Return the conflict of a stale expected application version."""
-        if (
-            command.expected_application_version is not None
-            and application.version != command.expected_application_version
-        ):
+        """Return the conflict of a stale expected application version.
+
+        The expected application version is mandatory: a decision is always made
+        against the version the person read.
+        """
+        if command.expected_application_version is None:
+            raise ValidationError(
+                "a decision names the application version it was made against "
+                "(expected_application_version)"
+            )
+        if application.version != command.expected_application_version:
             return ConflictResult(
                 code="version_conflict",
                 expected_version=command.expected_application_version,
@@ -486,15 +497,32 @@ class PermitDecisionService:
             reason_code_version=None if reason_code is None else reason_code.version,
             waivers=waiver_snapshot(self._session, application.id),
         )
-        self._session.add(decision)
-        application.status = {
+        # Claim the application version first with a compare-and-swap, so two
+        # decisions made against the same version cannot both commit.
+        new_status = {
             "approved": "approved",
             "modified": "approved",
             "denied": "denied",
             "information_requested": "needs_information",
         }[outcome]
-        application.version += 1
+        claimed = self._session.execute(
+            update(permit.Application)
+            .where(
+                permit.Application.id == application.id,
+                permit.Application.version == application.version,
+            )
+            .values(status=new_status, version=permit.Application.version + 1)
+            .execution_options(synchronize_session=False)
+        )
+        if claimed.rowcount != 1:
+            raise ConflictError(
+                "the application changed since it was read; read it again and retry",
+                code="version_conflict",
+                expected_version=application.version,
+            )
+        self._session.add(decision)
         self._session.flush()
+        self._session.refresh(application)
         return decision
 
     def view(self, decision: permit.Decision) -> DecisionView:

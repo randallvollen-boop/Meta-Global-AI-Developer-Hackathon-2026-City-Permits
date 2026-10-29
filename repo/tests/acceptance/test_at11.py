@@ -138,6 +138,9 @@ def test_a_reviewer_records_an_actual_decision(
         json={
             "outcome": "approved",
             "reason": "Fictional demonstration approval.",
+            "expected_application_version": client.get(
+                "/api/permits/applications/app_synth_001"
+            ).json()["application_version"],
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )
@@ -196,6 +199,9 @@ def test_a_reviewer_may_change_the_recommendation(
         json={
             "outcome": "information_requested",
             "reason": "The occupancy load needs to be confirmed.",
+            "expected_application_version": client.get(
+                "/api/permits/applications/app_synth_001"
+            ).json()["application_version"],
             "expected_evaluation_version": evaluation.json()["version"],
         },
     )

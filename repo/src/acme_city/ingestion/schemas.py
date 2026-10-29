@@ -12,6 +12,12 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
+#: The most records one intake request may carry.
+MAX_INGEST_RECORDS = 500
+#: The largest serialized payload of one source record, in bytes.
+MAX_RECORD_PAYLOAD_BYTES = 32_768
+
+
 class IngestionModel(BaseModel):
     """A model that ignores unknown request fields.
 
