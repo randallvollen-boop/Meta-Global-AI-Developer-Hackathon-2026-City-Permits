@@ -36,7 +36,7 @@ from acme_city.persistence.models import (
     source,
 )
 from acme_city.rules import approval_policy, catalog
-from acme_city.ui import admin_b_labels, property_views, view_models
+from acme_city.ui import property_views, view_models
 from acme_city.ui.view_models import action as build_action
 from acme_city.ui.view_models import _field
 
@@ -1727,6 +1727,8 @@ def governance_screen(
     The screen opens with the sources; the tabs below it hold the
     responsibilities, the authority rules, the access map and the history.
     """
+    from acme_city.ui import admin_b_labels  # lane-owned labels
+
     tab = tab if tab in dict(_GOVERNANCE_TABS) else "sources"
     service = GovernanceService(session)
     registrations = []
