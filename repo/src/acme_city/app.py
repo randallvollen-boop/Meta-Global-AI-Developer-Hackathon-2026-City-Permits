@@ -233,6 +233,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Added last so they wrap every route: headers apply to all responses.
     from acme_city.core.security import SecurityHeadersMiddleware, TrustedProxyMiddleware
 
+    from acme_city.core.protection import MaxBodyMiddleware, RateLimitConfig, RateLimitMiddleware
+
+    rate_config = RateLimitConfig(
+        all_per_minute=resolved.rate_limit_all_per_minute,
+        write_per_minute=resolved.rate_limit_write_per_minute,
+        session_per_minute=resolved.rate_limit_session_per_minute,
+        upload_per_minute=resolved.rate_limit_upload_per_minute,
+        trust_proxy_headers=resolved.trust_proxy_headers,
+        trusted_hops=resolved.trusted_proxy_hops,
+    )
+    app.add_middleware(RateLimitMiddleware, config=rate_config)
+    app.add_middleware(MaxBodyMiddleware, max_bytes=resolved.max_request_bytes)
     app.add_middleware(SecurityHeadersMiddleware, production=production)
     if resolved.trust_proxy_headers:
         app.add_middleware(TrustedProxyMiddleware)

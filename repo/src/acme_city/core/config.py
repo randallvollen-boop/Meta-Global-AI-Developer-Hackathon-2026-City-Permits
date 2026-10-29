@@ -55,6 +55,21 @@ ENV_TRUST_PROXY_HEADERS: Final = "ACME_TRUST_PROXY_HEADERS"
 #: allowed in demo and denied in production.
 ENV_MUSE_PROVIDER_ENABLED: Final = "ACME_MUSE_PROVIDER_ENABLED"
 
+#: Public-demo protection.  Each limit is requests per minute per client address;
+#: ``0`` switches that limit off (the default, so tests and the local demo are
+#: unaffected).  ``render.yaml`` turns them on.
+ENV_RATE_LIMIT_ALL: Final = "ACME_RATE_LIMIT_ALL_PER_MINUTE"
+ENV_RATE_LIMIT_WRITE: Final = "ACME_RATE_LIMIT_WRITE_PER_MINUTE"
+ENV_RATE_LIMIT_SESSION: Final = "ACME_RATE_LIMIT_SESSION_PER_MINUTE"
+ENV_RATE_LIMIT_UPLOAD: Final = "ACME_RATE_LIMIT_UPLOAD_PER_MINUTE"
+#: Extra trusted proxy hops on the right of ``X-Forwarded-For`` (see core/ratelimit.py).
+ENV_TRUSTED_PROXY_HOPS: Final = "ACME_TRUSTED_PROXY_HOPS"
+#: Largest accepted request body in bytes; ``0`` switches the check off.
+ENV_MAX_REQUEST_BYTES: Final = "ACME_MAX_REQUEST_BYTES"
+DEFAULT_MAX_REQUEST_BYTES: Final = 32 * 1024 * 1024
+#: Show the public-demonstration notice on the persona chooser and the City home.
+ENV_PUBLIC_DEMO: Final = "ACME_PUBLIC_DEMO"
+
 DEPLOYMENT_MODES: Final = ("demo", "production")
 _TRUE_VALUES: Final = frozenset({"1", "true", "yes", "on"})
 _FALSE_VALUES: Final = frozenset({"0", "false", "no", "off"})
@@ -171,6 +186,29 @@ class Settings(BaseModel):
     trust_proxy_headers: bool = False
     #: Explicit global AI provider switch; ``None`` follows the deployment mode.
     muse_provider_enabled: bool | None = None
+    #: Requests per minute per client address; ``0`` is off.
+    rate_limit_all_per_minute: int = 0
+    rate_limit_write_per_minute: int = 0
+    rate_limit_session_per_minute: int = 0
+    rate_limit_upload_per_minute: int = 0
+    #: Trusted proxy addresses to skip, counted from the right of ``X-Forwarded-For``.
+    trusted_proxy_hops: int = 0
+    max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES
+    public_demo: bool = False
+
+    @field_validator(
+        "rate_limit_all_per_minute",
+        "rate_limit_write_per_minute",
+        "rate_limit_session_per_minute",
+        "rate_limit_upload_per_minute",
+        "trusted_proxy_hops",
+        "max_request_bytes",
+    )
+    @classmethod
+    def _not_negative(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("rate limit, proxy hop and request size settings must not be negative")
+        return value
 
     @model_validator(mode="after")
     def _production_requires_stable_secret(self) -> Settings:
@@ -285,6 +323,11 @@ class Settings(BaseModel):
             "deployment_mode": self.deployment_mode,
             "cookie_secure": self.effective_cookie_secure,
             "trust_proxy_headers": self.trust_proxy_headers,
+            "rate_limit_all_per_minute": self.rate_limit_all_per_minute,
+            "rate_limit_write_per_minute": self.rate_limit_write_per_minute,
+            "rate_limit_session_per_minute": self.rate_limit_session_per_minute,
+            "rate_limit_upload_per_minute": self.rate_limit_upload_per_minute,
+            "max_request_bytes": self.max_request_bytes,
             "muse_provider_enabled": self.provider_enabled,
         }
 
@@ -372,6 +415,10 @@ class Settings(BaseModel):
             pick(ENV_MUSE_PROVIDER_ENABLED), ENV_MUSE_PROVIDER_ENABLED
         )
 
+        def pick_int(name: str, default: int) -> int:
+            raw = pick(name)
+            return default if raw is None or not raw.strip() else int(raw)
+
         meta_api_key_raw = pick(ENV_META_API_KEY)
         meta_api_key = SecretStr(meta_api_key_raw) if meta_api_key_raw else None
 
@@ -403,6 +450,13 @@ class Settings(BaseModel):
             cookie_secure=cookie_secure,
             trust_proxy_headers=trust_proxy_headers,
             muse_provider_enabled=muse_provider_enabled,
+            rate_limit_all_per_minute=pick_int(ENV_RATE_LIMIT_ALL, 0),
+            rate_limit_write_per_minute=pick_int(ENV_RATE_LIMIT_WRITE, 0),
+            rate_limit_session_per_minute=pick_int(ENV_RATE_LIMIT_SESSION, 0),
+            rate_limit_upload_per_minute=pick_int(ENV_RATE_LIMIT_UPLOAD, 0),
+            trusted_proxy_hops=pick_int(ENV_TRUSTED_PROXY_HOPS, 0),
+            max_request_bytes=pick_int(ENV_MAX_REQUEST_BYTES, DEFAULT_MAX_REQUEST_BYTES),
+            public_demo=bool(_optional_bool(pick(ENV_PUBLIC_DEMO), ENV_PUBLIC_DEMO)),
         )
 
 

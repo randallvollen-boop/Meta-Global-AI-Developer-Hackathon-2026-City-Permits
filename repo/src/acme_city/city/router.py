@@ -240,7 +240,9 @@ def _community_gate(
     request: Request, session: Session, actor: ActorContext | None, as_json: bool
 ):
     """Return a 429 response when the caller is over the rate limit, else ``None``."""
-    client = request.client.host if request.client else "unknown"
+    client = request.scope.get("acme_client_ip") or (
+        request.client.host if request.client else "unknown"
+    )
     if community.COMMUNITY_LIMITER.allow(client):
         return None
     headers = {"Retry-After": "60"}

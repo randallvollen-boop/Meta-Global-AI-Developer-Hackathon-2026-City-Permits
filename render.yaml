@@ -1,0 +1,89 @@
+# Render Blueprint for the public ACME City permits demonstration.
+#
+# Fictional data only.  The service runs in `demo` mode and rebuilds its
+# database from nothing on every start (no disk).  The setup steps are in
+# docs/operations/DEPLOY_RENDER.md.
+#
+# Not set here on purpose, so a person chooses them in Render:
+#   * `plan` (instance type) of both services.  Use the paid instance type
+#     already on the account.  A free instance sleeps when idle, which would
+#     make the first judge wait through the data rebuild.
+#   * META_API_KEY (live Muse credential) and ACME_DEPLOY_HOOK_URL.  Both are
+#     `sync: false`: Render asks for them at creation and the file never holds
+#     a value.
+#
+# This file could not be validated against Render offline.  Render reports any
+# field error when the Blueprint is created.
+
+services:
+  - type: web
+    name: acme-city-permits
+    runtime: docker
+    # `Dockerfile-demo` builds the same image as `docker build --target demo`
+    # of `Dockerfile`.  Render builds a file's last stage and has no target field.
+    dockerfilePath: ./repo/Dockerfile-demo
+    dockerContext: ./repo
+    healthCheckPath: /readyz
+    # A push does not redeploy the live demonstration by itself.  Deploy by hand,
+    # or through the deploy hook (the nightly cron job below).
+    autoDeploy: false
+    # plan: <set the instance type in Render; see the note at the top>
+    envVars:
+      # Render sets PORT; the entrypoint listens on it.
+      - key: ACME_DEPLOYMENT_MODE
+        value: demo
+      - key: ACME_SECRET_KEY
+        generateValue: true
+      - key: ACME_COOKIE_SECURE
+        value: "1"
+      # Render terminates TLS and appends the caller's address to
+      # X-Forwarded-For.  The app then trusts X-Forwarded-Proto and reads the
+      # client address for rate limits from the right of X-Forwarded-For.  Safe
+      # only because Render is the sole way in; see DEPLOY_RENDER.md.
+      - key: ACME_TRUST_PROXY_HEADERS
+        value: "1"
+      - key: ACME_SCENARIO_CLOCK
+        value: auto
+      - key: ACME_DEMO_SEED_ON_START
+        value: "1"
+      - key: ACME_PUBLIC_DEMO
+        value: "1"
+      # Live Muse is off unless a person turns it on (DEPLOY_RENDER.md).
+      - key: ACME_MUSE_PROVIDER_ENABLED
+        value: "0"
+      - key: META_API_KEY
+        sync: false
+      - key: ACME_MUSE_LIVE_CALL_CAP
+        value: "2"
+      - key: ACME_MUSE_IMAGE_DAILY_CAP
+        value: "10"
+      - key: ACME_APPLICANT_ASSIST_LIVE_ENABLED
+        value: "0"
+      - key: ACME_POLICY_ASSIST_LIVE_ENABLED
+        value: "0"
+      # Requests per minute per client address; 0 switches a limit off.
+      - key: ACME_RATE_LIMIT_ALL_PER_MINUTE
+        value: "300"
+      - key: ACME_RATE_LIMIT_WRITE_PER_MINUTE
+        value: "60"
+      - key: ACME_RATE_LIMIT_SESSION_PER_MINUTE
+        value: "20"
+      - key: ACME_RATE_LIMIT_UPLOAD_PER_MINUTE
+        value: "10"
+      # Largest request body, in bytes (25 MB).
+      - key: ACME_MAX_REQUEST_BYTES
+        value: "26214400"
+
+  # Nightly reset: asks Render to redeploy the web service, which rebuilds the
+  # fictional data.  The deploy hook URL is a secret (anyone who has it can
+  # trigger a deploy), so only its name is here.
+  - type: cron
+    name: acme-city-permits-nightly-reset
+    runtime: python
+    schedule: "0 2 * * *"
+    buildCommand: echo "nothing to build"
+    startCommand: python -c "import os,sys,urllib.request as u; r=u.urlopen(os.environ['ACME_DEPLOY_HOOK_URL'], timeout=30); print('deploy hook answered', r.status); sys.exit(0 if r.status < 300 else 1)"
+    # plan: <set the instance type in Render; see the note at the top>
+    envVars:
+      - key: ACME_DEPLOY_HOOK_URL
+        sync: false

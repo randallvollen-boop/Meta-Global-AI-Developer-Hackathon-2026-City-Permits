@@ -319,6 +319,7 @@ def render(
     status_code: int = 200,
 ) -> Any:
     """Render one template."""
+    context = {"public_demo": request.app.state.settings.public_demo, **context}
     if request.app.state.settings.is_production:
         # No persona switch and no simulator action is shown in production mode.
         context = {**context, "personas": []}
