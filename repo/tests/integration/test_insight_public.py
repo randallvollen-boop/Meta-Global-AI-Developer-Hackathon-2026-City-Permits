@@ -27,6 +27,7 @@ from acme_city.insight.public import (
 )
 from acme_city.persistence.models import audit, finance, gis, permit, registry
 from acme_city.persistence.session import transaction
+from acme_city.ui.community_view_models import status_explanation
 from acme_city.ui.router import router as ui_router
 
 #: Distinct markers planted in the data a public record must never show.
@@ -160,11 +161,450 @@ FORBIDDEN_TEXT = (
     "Quillfeather",
 )
 
+#: The selector contract of "Permits in my community".  The two public pages
+#: keep every one of these test ids: a redesign may change the markup around
+#: them, never the ids themselves.
+LIST_SELECTORS: tuple[str, ...] = (
+    "community-synthetic-note",
+    "community-lookup",
+    "community-q",
+    "community-search",
+    "community-results",
+    "community-too-short",
+    "community-result-total",
+    "community-result-table",
+    "community-no-results",
+    "community-map-section",
+    "community-type",
+    "community-total",
+    "community-district-table",
+    "community-recent",
+    "synthetic-badge",
+    "insight-map",
+)
+
+#: The selectors every list page carries, whatever the search state is.
+LIST_ALWAYS: frozenset[str] = frozenset(
+    {
+        "community-synthetic-note",
+        "community-lookup",
+        "community-q",
+        "community-search",
+        "community-map-section",
+        "community-type",
+        "community-total",
+        "community-district-table",
+        "community-recent",
+        "insight-map",
+    }
+)
+
+#: The selector contract of one public permit record.
+DETAIL_SELECTORS: tuple[str, ...] = (
+    "community-record",
+    "record-synthetic-note",
+    "synthetic-badge",
+)
+
+#: The public facts one permit record shows.  Every one keeps its data-field.
+DETAIL_FIELDS: tuple[str, ...] = (
+    "reference",
+    "permit_type",
+    "parcel",
+    "address",
+    "district",
+    "work_description",
+    "status",
+    "submitted_on",
+    "decided_on",
+    "issued_on",
+    "outcome",
+    "conditions",
+    "exception",
+    "contractor_business",
+)
+
 
 def assert_clean(text: str) -> None:
     lowered = text.lower()
     for marker in FORBIDDEN_TEXT:
         assert marker.lower() not in lowered, marker
+
+
+def page_testids(body: str) -> set[str]:
+    """Return every test id the page carries."""
+    return set(re.findall(r'data-testid="([^"]+)"', body))
+
+
+def test_the_list_page_keeps_its_selector_contract(client, sensitive_case) -> None:
+    """Every selector of the contract survives, in at least one search state."""
+    reference = sensitive_case["reference"]
+    pages = (
+        client.get("/city/community").text,
+        client.get(f"/city/community?q={reference}").text,
+        client.get("/city/community?q=ab").text,
+        client.get("/city/community?q=zzqqq").text,
+    )
+    found: set[str] = set()
+    for page in pages:
+        found |= page_testids(page)
+    missing = sorted(set(LIST_SELECTORS) - found)
+    assert not missing, missing
+    assert LIST_ALWAYS <= page_testids(pages[0])
+
+
+def test_the_list_page_states_keep_their_own_contract(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    results = client.get(f"/city/community?q={reference}").text
+    too_short = client.get("/city/community?q=ab").text
+    empty = client.get("/city/community?q=zzqqq").text
+    assert {"community-results", "community-result-total", "community-result-table"} <= page_testids(results)
+    assert "community-too-short" not in page_testids(results)
+    assert "community-no-results" not in page_testids(results)
+    assert "community-too-short" in page_testids(too_short)
+    assert "community-result-total" not in page_testids(too_short)
+    assert "community-no-results" in page_testids(empty)
+    assert "community-too-short" not in page_testids(empty)
+
+
+def test_the_detail_page_keeps_its_selector_and_field_contract(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    found = page_testids(body)
+    assert set(DETAIL_SELECTORS) <= found, sorted(set(DETAIL_SELECTORS) - found)
+    for name in DETAIL_FIELDS:
+        assert f'data-field="{name}"' in body, name
+
+
+def test_the_two_public_pages_carry_no_private_marker(client, sensitive_case) -> None:
+    for url in ("/city/community", f"/city/community/permit/{sensitive_case['reference']}"):
+        assert_clean(client.get(url).text)
+
+
+def test_the_district_table_keeps_its_markup(client) -> None:
+    body = client.get("/city/community").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table, "the district table is there"
+    assert 'data-district="' in table.group(0)
+    assert '<th scope="row">' in table.group(0)
+
+
+def test_the_district_table_prints_no_exact_total_under_three(client, settings) -> None:
+    summary = with_session(settings, lambda s: community_summary(s, type="rezoning"))
+    codes = [district["code"] for district in summary["districts"]]
+    raw = with_session(
+        settings,
+        lambda s: {
+            code: sum(
+                1 for p in public_permits(s) if p.district == code and p.permit_type == "Rezoning"
+            )
+            for code in codes
+        },
+    )
+    body = client.get("/city/community?type=rezoning").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table
+    for code, count in raw.items():
+        if count < 3:
+            assert f"<td>{count}</td>" not in table.group(0), code
+
+
+def test_every_result_item_carries_its_reference(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(f"/city/community?q={reference}").text
+    assert f'data-reference="{reference}"' in body
+
+
+def test_the_results_are_cards_and_not_a_table(client, sensitive_case) -> None:
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    results = re.search(r'<ul[^>]*data-testid="community-result-table".*?</ul>', body, re.S)
+    assert results, "the results are a list of cards"
+    assert "<table" not in results.group(0)
+    assert "<tr" not in results.group(0)
+    assert '<table class="data-table" data-testid="community-district-table">' in body
+
+
+def test_a_result_card_leads_with_the_address_and_carries_one_link(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(f"/city/community?q={reference}").text
+    card = re.search(r'<li class="community-card"[^>]*>.*?</li>', body, re.S)
+    assert card, "the card is there"
+    text = card.group(0)
+    assert text.count("<a ") == 1
+    assert f'href="/city/community/permit/{reference}' in text
+    assert "View public record" in text
+    assert 'aria-label="View the public record for' in text
+    assert '<p class="community-card-address">' in text
+    assert '<p class="community-card-type">' in text
+    assert "<time datetime=" in text
+
+
+def test_the_recent_records_show_only_without_a_query(client, sensitive_case) -> None:
+    assert 'data-testid="community-recent"' in client.get("/city/community").text
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    assert 'data-testid="community-recent"' not in body
+
+
+def test_a_long_search_explains_the_limit(client, settings) -> None:
+    result = with_session(settings, lambda s: lookup(s, "Acme"))
+    assert result["truncated"] is True
+    assert len(result["records"]) == 40
+    body = client.get("/city/community?q=Acme").text
+    assert 'data-testid="community-truncated"' in body
+    assert "Showing the first 40 matching records." in body
+
+
+def test_a_short_search_marks_the_field(client) -> None:
+    body = client.get("/city/community?q=ab").text
+    field = re.search(r'<input[^>]*data-testid="community-q"[^>]*>', body).group(0)
+    assert 'aria-invalid="true"' in field
+    assert "community-q-too-short" in field
+    assert 'data-testid="community-too-short"' in body
+    assert "Type at least three characters." in body
+
+
+def test_a_valid_search_does_not_mark_the_field(client, sensitive_case) -> None:
+    body = client.get(f"/city/community?q={sensitive_case['reference']}").text
+    field = re.search(r'<input[^>]*data-testid="community-q"[^>]*>', body).group(0)
+    assert "aria-invalid" not in field
+
+
+def test_the_privacy_explanation_is_in_a_disclosure(client) -> None:
+    body = client.get("/city/community").text
+    details = re.search(
+        r'<details[^>]*data-testid="community-privacy".*?</details>', body, re.S
+    )
+    assert details, "the explanation is in a disclosure"
+    assert "names and contact details" in details.group(0)
+    assert "documents, notes, fees and findings" in details.group(0)
+
+
+def test_the_json_contract_of_the_community_pages_is_unchanged(client, sensitive_case) -> None:
+    body = client.get("/city/community?format=json").json()
+    assert list(body) == ["fields", "total", "districts", "synthetic_present"]
+    assert body["fields"] == list(PUBLIC_FIELDS)
+    assert list(body["total"]) == ["value", "display", "suppressed"]
+    assert list(body["districts"][0]) == ["code", "total"]
+    query = client.get("/city/community?q=Acme&format=json").json()
+    assert list(query) == [
+        "fields", "total", "districts", "synthetic_present",
+        "query", "result_total", "permits",
+    ]
+    assert list(query["permits"][0]) == list(PUBLIC_FIELDS)
+    record = client.get(f"/city/community/permit/{sensitive_case['reference']}?format=json").json()
+    assert list(record) == list(PUBLIC_FIELDS)
+
+
+def test_the_forms_keep_each_others_state(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    assert f'name="q" value="{reference}"' in body
+    assert 'name="type" value="rezoning"' in body
+    search = re.search(r'<form[^>]*data-testid="community-lookup".*?</form>', body, re.S)
+    assert search and 'name="type" value="rezoning"' in search.group(0)
+    overview = re.search(
+        r'<form[^>]*action="/city/community"[^>]*class="[^"]*insight-filters[^"]*".*?</form>',
+        body,
+        re.S,
+    )
+    assert overview and f'name="q" value="{reference}"' in overview.group(0)
+
+
+def test_an_unknown_type_is_not_carried(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "not-a-type"}).text
+    assert 'name="type" value="not-a-type"' not in body
+    assert 'name="type" value=""' in body
+
+
+def test_the_clear_link_clears_the_search_and_keeps_the_type(client) -> None:
+    body = client.get("/city/community", params={"q": "Acme", "type": "rezoning"}).text
+    clear = re.search(r'<a[^>]*data-testid="community-clear-search"[^>]*>', body)
+    assert clear
+    assert 'href="/city/community?type=rezoning"' in clear.group(0)
+
+
+def test_a_record_link_carries_the_search_and_the_type(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    card = re.search(r'<li class="community-card"[^>]*>.*?</li>', body, re.S)
+    assert card
+    href = re.search(r'href="([^"]+)"', card.group(0)).group(1)
+    assert href.startswith(f"/city/community/permit/{reference}")
+    assert "q=" in href
+    assert "type=rezoning" in href
+
+
+def test_the_record_page_returns_to_the_same_search(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(
+        f"/city/community/permit/{reference}", params={"q": "Acme", "type": "rezoning"}
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community?q=Acme&amp;type=rezoning#community-results"' in back.group(0)
+    assert "Back to search results" in body
+
+
+def test_a_direct_record_link_offers_the_plain_way_back(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community#community-recent"' in back.group(0)
+    assert "Back to community permits" in body
+
+
+def test_a_record_link_with_only_a_type_returns_to_the_recent_list(client, sensitive_case) -> None:
+    body = client.get(
+        f"/city/community/permit/{sensitive_case['reference']}", params={"type": "rezoning"}
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    assert 'href="/city/community?type=rezoning#community-recent"' in back.group(0)
+    assert "Back to community permits" in body
+
+
+def test_the_return_link_is_always_local(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get(
+        f"/city/community/permit/{reference}",
+        params={"q": "https://example.invalid/evil", "type": "not-a-type"},
+    ).text
+    back = re.search(r'<a[^>]*data-testid="community-back"[^>]*>', body)
+    assert back
+    href = re.search(r'href="([^"]+)"', back.group(0)).group(1)
+    assert href.startswith("/city/community")
+    assert href.split("?")[0] == "/city/community"
+    assert "://" not in href
+
+
+def test_the_overview_explains_its_own_scope(client) -> None:
+    body = client.get("/city/community").text
+    scope = re.search(r'<p[^>]*data-testid="community-overview-scope"[^>]*>(.*?)</p>', body, re.S)
+    assert scope
+    assert "Counts by zoning district." in scope.group(1)
+    assert "It does not use the address search." in scope.group(1)
+
+
+def test_the_overview_has_a_visible_legend_and_an_update_button(client) -> None:
+    body = client.get("/city/community").text
+    legend = re.search(r'<ul[^>]*data-testid="community-legend"[^>]*>(.*?)</ul>', body, re.S)
+    assert legend, "the legend is rendered"
+    assert "fewer than 3 (hatched)" in legend.group(1)
+    assert "fewest" in legend.group(1)
+    assert "most" in legend.group(1)
+    note = re.search(r'<p[^>]*data-testid="community-legend-note"[^>]*>(.*?)</p>', body, re.S)
+    assert note
+    assert "Darker areas have more permits." in note.group(1)
+    assert "Hatched areas have fewer than 3." in note.group(1)
+    button = re.search(r'<button[^>]*data-testid="community-overview-submit"[^>]*>', body)
+    assert button
+    assert "Update overview" in body
+
+
+def test_the_overview_keeps_the_district_table_and_the_hatching(client) -> None:
+    body = client.get("/city/community").text
+    table = re.search(
+        r'<table[^>]*data-testid="community-district-table".*?</table>', body, re.S
+    )
+    assert table
+    assert table.group(0).count('data-district="') == table.group(0).count('<th scope="row">')
+    assert '<td>' in table.group(0)
+    assert "insight-hatch" in body          # a suppressed district is hatched, not shaded
+    assert 'data-testid="insight-map"' in body
+    assert "Counts below 3 appear as “fewer than 3”. This includes zero." in body
+
+
+def test_the_overview_form_keeps_the_search(client, sensitive_case) -> None:
+    reference = sensitive_case["reference"]
+    body = client.get("/city/community", params={"q": reference, "type": "rezoning"}).text
+    form = re.search(
+        r'<form[^>]*action="/city/community"[^>]*class="[^"]*community-overview-form[^"]*".*?</form>',
+        body,
+        re.S,
+    )
+    assert form
+    assert f'name="q" value="{reference}"' in form.group(0)
+    assert 'name="type"' in form.group(0)
+    assert "<option value=\"rezoning\" selected>" in form.group(0)
+
+
+def test_the_record_page_leads_with_the_address_and_keeps_every_field(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    heading = re.search(r'<h1[^>]*class="community-record-address"[^>]*>(.*?)</h1>', body, re.S)
+    assert heading
+    assert heading.group(1).strip()
+    assert heading.group(1).strip() != sensitive_case["reference"]
+    for name in DETAIL_FIELDS:
+        assert f'data-field="{name}"' in body, name
+
+
+def test_the_record_page_explains_the_public_status(client, settings) -> None:
+    def pick(session):
+        seen: dict[str, object] = {}
+        for record in public_permits(session):
+            seen.setdefault(record.status, record)
+        return seen
+
+    seen = with_session(settings, pick)
+    assert seen
+    for status, record in seen.items():
+        body = client.get(f"/city/community/permit/{record.reference}").text
+        explanation = re.search(
+            r'<p[^>]*data-testid="community-status-explanation"[^>]*>(.*?)</p>', body, re.S
+        )
+        assert explanation, status
+        assert status_explanation(status) in explanation.group(1)
+
+
+def test_the_record_page_spells_out_the_missing_values(client, settings) -> None:
+    def pick(session):
+        for record in public_permits(session):
+            if (
+                not record.contractor_business
+                and not record.decided_on
+                and not record.issued_on
+                and not record.conditions
+                and not record.outcome
+            ):
+                return record
+        return None
+
+    record = with_session(settings, pick)
+    assert record is not None, "the fixtures hold a record without a decision"
+    body = client.get(f"/city/community/permit/{record.reference}").text
+    assert "Not listed" in body
+    assert "Not recorded" in body
+    assert "No decision recorded" in body
+    assert "No conditions recorded" in body
+    assert "None recorded" in body
+    assert "not yet" not in body
+
+
+def test_the_record_page_shows_the_dates_as_readable_time(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    submitted = re.search(r'<dd data-field="submitted_on">(.*?)</dd>', body, re.S)
+    assert submitted
+    assert "<time datetime=" in submitted.group(1)
+    assert re.search(r'datetime="\d{4}-\d{2}-\d{2}"', submitted.group(1))
+
+
+def test_the_record_page_links_back_at_the_top_and_the_bottom(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    assert 'data-testid="community-back"' in body
+    assert 'data-testid="community-back-bottom"' in body
+    assert body.index('data-testid="community-back"') < body.index("<h1")
+    assert body.index('data-testid="community-back-bottom"') > body.index(
+        'data-testid="community-record"'
+    )
+
+
+def test_the_record_page_says_what_it_does_not_show(client, sensitive_case) -> None:
+    body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
+    assert "This record does not show whether work has started or finished." in body
 
 
 def test_the_public_record_is_an_allowlist_pinned_by_a_test() -> None:

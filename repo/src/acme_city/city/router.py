@@ -267,6 +267,13 @@ def city_community(
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """Permits in my community: public lookup and district totals (read-only)."""
+    from acme_city.ui.community_view_models import (
+        community_url,
+        display_date,
+        public_record_url,
+        status_badge_class,
+    )
+
     as_json = _wants_json(request, format)
     limited = _community_gate(request, session, actor, as_json)
     if limited is not None:
@@ -294,6 +301,10 @@ def city_community(
         permits_crumb="/city/permits",
         summary=summary,
         lookup=result,
+        display_date=display_date,
+        status_badge_class=status_badge_class,
+        public_record_url=public_record_url,
+        community_url=community_url,
     )
     return render(request, "city/community.html", context)
 
@@ -305,10 +316,20 @@ def city_community_permit(
     reference: str,
     request: Request,
     format: str = "",
+    q: str = "",
+    type: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
     """One public permit record.  A non-public case answers exactly like a missing one."""
+    from acme_city.ui.community_view_models import (
+        community_return_url,
+        display_date,
+        normalize_query,
+        status_badge_class,
+        status_explanation,
+    )
+
     as_json = _wants_json(request, format)
     limited = _community_gate(request, session, actor, as_json)
     if limited is not None:
@@ -332,6 +353,11 @@ def city_community_permit(
         active_nav="permits",
         permits_crumb="/city/permits",
         record=record,
+        back_url=community_return_url(q, type),
+        has_return_context=bool(normalize_query(q)),
+        display_date=display_date,
+        status_explanation=status_explanation,
+        status_badge_class=status_badge_class,
     )
     return render(request, "city/community_permit.html", context)
 

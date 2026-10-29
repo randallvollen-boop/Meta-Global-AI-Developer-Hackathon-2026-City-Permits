@@ -13,6 +13,7 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
+from tests.support.migration_head import migration_head
 
 EXPECTED_PERSONAS = {
     "Applicant",
@@ -165,6 +166,5 @@ def test_healthz_reports_the_migration_state_without_a_path(client: TestClient) 
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["database"] == "current"
-    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
-    assert payload["schema_revision"] == "0013"
+    assert payload["schema_revision"] == migration_head()
     assert "sqlite" not in response.text
