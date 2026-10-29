@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
+from acme_city.core.config import Settings
 from acme_city.persistence.models import audit, governance, permit
 
 
@@ -75,8 +76,43 @@ def _requirements_summary(row: permit.PermitType) -> str:
     return ", ".join(documents[:-1]) + " and " + documents[-1]
 
 
-def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the view model of the administration screen."""
+def _generation_availability(settings: Settings | None) -> dict[str, Any]:
+    """Return whether an icon generation may be attempted on this deployment.
+
+    The screen asks the settings of the running process, because the answer
+    decides what the appearance tab offers.  Settings that cannot be read are
+    treated as no generation at all: the tab then says so instead of offering
+    a generation the server would refuse.
+    """
+    from acme_city.permits import icons as icon_service
+
+    resolved = settings
+    if resolved is None:
+        try:
+            resolved = Settings.load()
+        except Exception:  # pragma: no cover - a broken environment
+            return {
+                "available": False,
+                "reason": (
+                    "Icon generation is off: the settings of this deployment could "
+                    "not be read."
+                ),
+            }
+    return icon_service.generation_availability(resolved)
+
+
+def administration(
+    session: Session,
+    actor: ActorContext,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
+    """Return the view model of the administration screen.
+
+    The settings are the ones of the running process.  They decide what the
+    appearance tab may offer, so the screen never offers an icon generation
+    the server would refuse.
+    """
     types = _permit_type_rows(session)
     known_documents: set[str] = set()
     for row in types:
@@ -113,6 +149,8 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
     log = _configuration_log(session)
     from acme_city.ui.view_models import permit_type_icons
 
+    icons = permit_type_icons(session, actor)
+    icons["generation"] = _generation_availability(settings)
     return {
         "permit_types": type_rows,
         "known_documents": sorted(known_documents),
@@ -124,7 +162,7 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
         "service_identities": service_identities,
         "reason_codes": reason_codes,
         "configuration_log": log,
-        "permit_type_icons": permit_type_icons(session, actor),
+        "permit_type_icons": icons,
         "fee_schedules": _fee_schedules(session),
         "evidence": [
             {

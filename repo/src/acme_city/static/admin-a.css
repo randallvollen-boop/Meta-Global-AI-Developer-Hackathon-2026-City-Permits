@@ -159,3 +159,71 @@
     text-align: left;
   }
 }
+
+/* The appearance section: the icon the City shows, the saved choices and
+   the generation, in that order. */
+
+.adm-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.adm-icon-type {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.adm-icon-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adm-icon-current {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.adm-icon-current .type-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.adm-icon-current .adm-facts {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.adm-limits {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+
+.adm-limits h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .adm-icon-current {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+

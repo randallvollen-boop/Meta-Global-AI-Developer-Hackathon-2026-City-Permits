@@ -1,0 +1,50 @@
+"""The redesigned administration screens in a browser.
+
+Every screen of the redesign has to fit a 390 pixel phone, the controls a
+person needs must stay clear of the mobile navigation and the demo switch, and
+the appearance section must keep the saved icons usable while it says plainly
+that a generation is not available.
+"""
+# REQUIRES: UX-01, UX-02, AI-03
+# The redesigned screens are checked at the size of a phone: no horizontal
+# overflow, no covered control and no hidden action.
+
+from __future__ import annotations
+
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+ADMINISTRATOR = "persona_city_administrator"
+
+
+def test_the_appearance_section_fits_a_phone_and_keeps_the_saved_icons(
+    page, server: BrowserServer, login
+) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab=appearance", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+
+    # Every permit type shows the icon the City uses and its own settings.
+    assert page.locator('[data-testid="permit-type-icon-row"]').count() == 17
+    assert page.locator('[data-testid="permit-type-current-icon"]').count() == 17
+    # The saved icons of a type stay reachable.
+    editor = page.locator('[data-testid="icon-editor"]').first
+    editor.locator("summary").click()
+    assert editor.locator('[data-testid="icon-save-form"]').count() == 1
+    assert editor.locator('[data-testid="icon-thumb"]').count() >= 1
+    assert_no_horizontal_overflow(page)
+
+    # The generation is offered only when the deployment may make one, and the
+    # screen says why when it may not.
+    disabled = page.locator('[data-testid="icon-generate"][disabled]').count()
+    notice = page.locator('[data-testid="icon-generation-unavailable"]')
+    if notice.count() == 1:
+        assert disabled == 17
+        assert "Live Muse generation is off." in notice.inner_text()
+    else:
+        assert disabled == 0
+
+    # Neither the mobile bar nor the demo switch covers the icons.
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="permit-type-current-icon"]').first)
+    assert page.recorded_errors == []
