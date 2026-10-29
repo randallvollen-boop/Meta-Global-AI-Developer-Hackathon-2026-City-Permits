@@ -21,9 +21,12 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
+# Dependencies first, so a code change reuses the installed packages.
 COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev \
+    && python -m compileall -q --invalidation-mode unchecked-hash src
 
 FROM python:${PYTHON_VERSION}-slim AS runtime-base
 ENV PATH="/opt/venv/bin:$PATH" \
@@ -49,7 +52,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
 # ----------------------------------------------------------------- demo
 FROM runtime-base AS demo
 COPY scripts ./scripts
-RUN chown -R acme:acme /app
+# Seeding writes its walkthrough evidence here; data and uploads go to /app/var.
+RUN mkdir -p /app/evidence && chown acme:acme /app/evidence
 USER acme
 ENV ACME_DEPLOYMENT_MODE=demo
 ENTRYPOINT ["python", "/app/entrypoint.py"]
