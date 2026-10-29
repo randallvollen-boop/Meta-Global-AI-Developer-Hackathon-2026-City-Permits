@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from acme_city.adapters.sources.base import SourceCommand, adapter_for
@@ -102,6 +102,10 @@ def _version_is_older(left: str | None, right: str | None) -> bool:
     return str(left) < str(right)
 
 
+#: The most commands or publications one dispatch run handles.
+MAX_DISPATCH_BATCH = 100
+
+
 class ChangeDispatcher:
     """Sends source commands and delivers the accepted values."""
 
@@ -117,6 +121,7 @@ class ChangeDispatcher:
         again, and a delivery that was already acknowledged is not delivered
         again.
         """
+        limit = max(1, min(int(limit), MAX_DISPATCH_BATCH))
         summary = DispatchSummary()
         self._dispatch_source_commands(summary, limit=limit)
         self._dispatch_publications(summary, limit=limit)
@@ -133,7 +138,15 @@ class ChangeDispatcher:
             .limit(limit)
         ).scalars().all()
         for command in commands:
+            # Claim the command before sending it: the guarded write takes the
+            # database write lock, and it matches only while the command is still
+            # pending, so a concurrent dispatcher that already answered it wins.
+            if not self._claim(change.SourceCommand, command.id):
+                continue
+            self._session.refresh(command)
             case = self._session.get(change.ChangeCase, command.change_case_id)
+            if case is not None:
+                self._session.refresh(case)
             if case is None:
                 command.status = "conflict"
                 command.response = {"reason": "the change case of this command is missing"}
@@ -274,6 +287,9 @@ class ChangeDispatcher:
             .limit(limit)
         ).scalars().all()
         for delivery in deliveries:
+            if not self._claim(change.OutboxDelivery, delivery.id):
+                continue
+            self._session.refresh(delivery)
             case = (
                 self._session.get(change.ChangeCase, delivery.change_case_id)
                 if delivery.change_case_id
@@ -314,6 +330,16 @@ class ChangeDispatcher:
         self._session.flush()
 
     # ------------------------------------------------------------------ helpers
+
+    def _claim(self, model: type, row_id: str) -> bool:
+        """Claim one pending row; return False when another dispatcher already took it."""
+        claimed = self._session.execute(
+            update(model)
+            .where(model.id == row_id, model.status == "pending")
+            .values(status="pending")
+            .execution_options(synchronize_session=False)
+        )
+        return claimed.rowcount == 1
 
     def _target_parts(self, case: change.ChangeCase) -> tuple[str | None, str | None]:
         """Return the dataset and record of the target of a case."""
