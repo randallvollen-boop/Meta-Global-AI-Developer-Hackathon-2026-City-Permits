@@ -27,8 +27,8 @@
 .community-page .community-card-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
 .community-page .community-card-link:focus-visible { outline: 3px solid var(--city-navy); outline-offset: 2px; }
 
-.community-page .community-note { margin: 0; color: var(--fg-2); max-width: 62ch; }
-.community-page .community-overview-scope { margin: 0 0 .75rem; color: var(--fg-2); max-width: 62ch; }
+.community-page .community-note { margin-bottom: 0; color: var(--fg-2); max-width: 62ch; }
+.community-page .community-overview-scope { margin-bottom: .75rem; color: var(--fg-2); max-width: 62ch; }
 .community-page .community-overview .insight-filters { margin: 0 0 .75rem; }
 .community-page .community-overview .insight-filters select { min-height: 44px; font-size: 1rem; }
 .community-page .community-overview .insight-filters button[type="submit"] { min-height: 44px; }
@@ -41,7 +41,6 @@
 .community-page .community-privacy p { margin: .6rem 0 0; max-width: 62ch; }
 
 @media (max-width: 640px) {
-  .community-page .community-card { padding: 12px; }
   .community-page .community-search-form label { flex: 1 1 100%; }
 }
 
@@ -50,9 +49,9 @@
 .community-record-page .community-back-link { margin: 0; }
 .community-record-page .community-record-address { font-size: 1.9rem; margin: 0; overflow-wrap: anywhere; }
 .community-record-page .community-record-type { margin: 0; font-weight: 600; }
-.community-record-page .community-record-reference { margin: 0; color: var(--fg-2); overflow-wrap: anywhere; }
-.community-record-page .community-record-status { margin: 0; }
-.community-record-page .community-record-explanation { margin: 0; max-width: 60ch; }
+.community-record-page .community-record-reference { margin: .35rem 0 0; color: var(--fg-2); overflow-wrap: anywhere; }
+.community-record-page .community-record-status { margin: .75rem 0 0; }
+.community-record-page .community-record-explanation { margin: .35rem 0 0; max-width: 60ch; }
 .community-record-page .community-record-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .community-record-page .community-record-main h2,
 .community-record-page .community-record-side h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
@@ -61,7 +60,7 @@
 .community-record-page .community-record-facts dt { font-weight: 600; }
 .community-record-page .community-record-facts dd { margin: 0; overflow-wrap: anywhere; }
 .community-record-page .community-record-facts ul { margin: 0; padding-left: 1.1rem; }
-.community-record-page .community-note { margin: 0; }
+.community-record-page .community-note { margin-bottom: 0; }
 
 @media (max-width: 900px) {
   .community-record-page .community-record-columns { grid-template-columns: minmax(0, 1fr); }
