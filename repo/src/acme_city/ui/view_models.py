@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -107,6 +107,13 @@ SCREENS: tuple[dict[str, str], ...] = (
     {"key": "ops_audit", "label": "Audit log", "href": "/ops/audit"},
     {"key": "ops_support", "label": "Support", "href": "/ops/support"},
     {"key": "ops_checks", "label": "Checks", "href": "/ops/checks"},
+    # Reserved screens.  Each is gated on a permission no persona holds until
+    # the slice that builds its route grants it.
+    {"key": "agents_home", "label": "Agents", "href": "/agents"},
+    {"key": "agent_runs", "label": "Agent runs", "href": "/agents/runs"},
+    {"key": "agent_case", "label": "Agent cases", "href": "/agents/cases"},
+    {"key": "steward_automation", "label": "Steward automation", "href": "/steward/automation"},
+    {"key": "steward_new_master", "label": "New master record", "href": "/steward/new-master"},
 )
 
 #: The labels of the four selectable personas, in selector order.
@@ -183,6 +190,11 @@ SCREEN_DOMAIN: dict[str, str] = {
     "ops_audit": "records",
     "ops_support": "permits",
     "ops_checks": "records",
+    "agents_home": "permits",
+    "agent_runs": "permits",
+    "agent_case": "permits",
+    "steward_automation": "applicants",
+    "steward_new_master": "applicants",
 }
 
 #: The actions a screen may offer, with the grant and the domain each one needs.
@@ -298,6 +310,12 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "ops_checks": (("ops.checks.run", None),),
     "policy_run": (("policy.run.view", None),),
     "policy_briefing": (("policy.brief.view", None),),
+    # The reserved screens.  No persona holds these grants yet.
+    "agents_home": (("agent.ops.read", None),),
+    "agent_runs": (("agent.ops.read", None),),
+    "agent_case": (("agent.ops.read", None),),
+    "steward_automation": (("registry.automation.preview", "applicants"),),
+    "steward_new_master": (("registry.master.create", "applicants"),),
 }
 
 
@@ -329,6 +347,38 @@ QUEUE_LINKS: tuple[dict[str, Any], ...] = (
         "note": "the cases that are with the Permit Reviewer",
     },
 )
+
+
+#: The navigation profiles of the lanes, keyed by actor id.  A profile takes
+#: the navigation items of that actor and returns the items to show; it may
+#: reorder them or mark one ``"group": "secondary"`` for the More tools group.
+#: The profiles are registered from ``steward_nav``, ``admin_nav`` and
+#: ``agent_nav``; with none registered the navigation is unchanged.
+NAV_PROFILES: dict[str, Callable[[list[dict[str, Any]]], list[dict[str, Any]]]] = {}
+
+#: The home link of an actor, keyed by actor id, in place of the first screen
+#: of its navigation.
+HOME_OVERRIDES: dict[str, str] = {}
+
+
+def register_screen(
+    key: str,
+    label: str,
+    href: str,
+    grants: tuple[tuple[str, str | None], ...],
+    domain: str,
+) -> None:
+    """Add one screen after the canonical screens, with its grants and its domain.
+
+    A lane adds a screen here instead of editing the frozen tables.  A key that
+    is already a screen is refused.
+    """
+    global SCREENS
+    if any(screen["key"] == key for screen in SCREENS):
+        raise ValueError(f"screen {key!r} is already registered")
+    SCREENS = SCREENS + ({"key": key, "label": label, "href": href},)
+    SCREEN_PERMISSIONS[key] = tuple(grants)
+    SCREEN_DOMAIN[key] = domain
 
 
 # --------------------------------------------------------------------- helpers
@@ -604,6 +654,9 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     for item in items:
         if item["key"] == "queue" and total:
             item["count"] = total
+    profile = NAV_PROFILES.get(actor.actor_id)
+    if profile is not None:
+        items = profile(items)
     return items
 
 
@@ -641,11 +694,31 @@ def home_for(session: Session, actor: ActorContext) -> dict[str, str]:
     """Return the first screen of the persona's own navigation.
 
     A persona with no staff screen (the Applicant) lands on the City website.
+    An entry in ``HOME_OVERRIDES`` replaces the first screen.
     """
+    override = HOME_OVERRIDES.get(actor.actor_id)
+    if override:
+        key = screen_for_path(override) or ""
+        return {"label": screen_label(key) if key else override, "href": override, "key": key}
     for item in navigation(session, actor):
         if item.get("href"):
             return {"label": item["label"], "href": item["href"], "key": item["key"]}
     return {"label": "the City website", "href": "/city/", "key": "city"}
+
+
+def home_href(actor: dict[str, Any] | None, items: list[dict[str, Any]] | None) -> str:
+    """Return the href of the brand link from the rendered actor and navigation.
+
+    It follows ``home_for``: the override of the actor, then the first screen
+    of the navigation.  A page without navigation links to ``/queue``.
+    """
+    actor_id = (actor or {}).get("actor_id")
+    if actor_id and HOME_OVERRIDES.get(actor_id):
+        return HOME_OVERRIDES[actor_id]
+    for item in items or ():
+        if item.get("href"):
+            return item["href"]
+    return "/queue"
 
 
 def queue_links(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
@@ -4229,13 +4302,17 @@ def feedback(session: Session, actor: ActorContext) -> dict[str, Any] | None:
 
 
 __all__ = [
+    "HOME_OVERRIDES",
+    "NAV_PROFILES",
     "PERSONA_ORDER",
     "SCREEN_DOMAIN",
     "SCREEN_PERMISSIONS",
     "SCREENS",
     "actor_department",
     "home_for",
+    "home_href",
     "may_open_screen",
+    "register_screen",
     "screen_for_path",
     "screen_label",
     "action",

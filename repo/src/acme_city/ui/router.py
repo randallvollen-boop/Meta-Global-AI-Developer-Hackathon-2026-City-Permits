@@ -2857,8 +2857,13 @@ from acme_city.ui import ops_routes as _ops_routes  # noqa: E402
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 from acme_city.ui import steward_routes as _steward_routes  # noqa: E402
 
+from acme_city.ui import nav_plugins as _nav_plugins  # noqa: E402
+from acme_city.ui import screen_meta as _screen_meta  # noqa: E402
+
 patterns.install(templates)
 display.install(templates)
+_screen_meta.install(templates)
+_nav_plugins.load_plugins()
 router.include_router(_detail_routes.router)
 router.include_router(_policy_routes.router)
 router.include_router(_ops_routes.router)
