@@ -314,8 +314,8 @@
     decides with. A service identity is never selectable and no role label
     authorizes an action.
   </p>
-  <div class="tbl-wrap">
-  <table class="data-table" data-testid="access-table">
+  <div class="tbl-wrap admin-b-access-region" role="region" aria-label="Persona access register" tabindex="0">
+  <table class="data-table admin-b-stack" data-testid="access-table">
     <caption class="visually-hidden">The permission each persona holds</caption>
     <thead>
       <tr><th scope="col">Persona</th><th scope="col">Selectable</th><th scope="col">Permissions held</th><th scope="col">Count</th></tr>
@@ -324,9 +324,9 @@
       {% for entry in governance.access %}
       <tr data-testid="access-row" data-actor-id="{{ entry.actor_id }}">
         <th scope="row">{{ entry.label }}</th>
-        <td>{{ 'yes' if entry.selectable else 'no' }}</td>
-        <td class="mono">{{ entry.permissions|join(', ') }}</td>
-        <td class="num">{{ entry.count }}</td>
+        <td data-label="Selectable">{{ 'Yes' if entry.selectable else 'No' }}</td>
+        <td data-label="Permissions"><ul class="admin-b-permissions">{% for permission in entry.permission_rows %}<li>{{ permission.label }}</li>{% endfor %}</ul><details><summary>Exact permission keys</summary><span class="mono">{{ entry.permissions|join(', ') }}</span></details></td>
+        <td class="num" data-label="Count">{{ entry.count }}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -182,3 +182,14 @@
 .admin-b [data-testid="selected-version-diff"] {
   min-width: 34rem;
 }
+.admin-b .admin-b-access-region:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.admin-b .admin-b-permissions {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.admin-b .admin-b-permissions li {
+  margin: .15rem 0;
+}

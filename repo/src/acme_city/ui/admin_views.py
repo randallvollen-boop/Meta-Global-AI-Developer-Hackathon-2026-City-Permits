@@ -1846,6 +1846,11 @@ def governance_screen(
     sources = _source_overview(session)
     history = _governance_history(session)
     access = _access_map(session)
+    for entry in access:
+        entry["permission_rows"] = [
+            {"id": permission_id, "label": admin_b_labels.permission_label(permission_id)}
+            for permission_id in entry["permissions"]
+        ]
 
     return {
         "tab": tab,

@@ -276,3 +276,20 @@ def test_selected_rule_version_review_fits_a_phone(
     fits_a_phone(page)
     assert_not_covered(page, page.locator("#selected-version-heading"))
     assert page.recorded_errors == []
+
+
+# -------------------------------------------------------- governance registers
+
+
+def test_governance_access_lists_five_personas_without_page_overflow(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The access register stays readable and includes all selectable personas."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=access")
+    rows = page.locator('[data-testid="access-row"]')
+    assert rows.count() == 5
+    assert page.locator("summary", has_text="Exact permission keys").count() == 5
+    fits_a_phone(page)
+    assert_not_covered(page, rows.last)
+    assert page.recorded_errors == []
