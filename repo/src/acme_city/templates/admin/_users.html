@@ -1,0 +1,64 @@
+{# The Users tab.  Lanes append parts with admin_tabs.register_users_extra. #}
+<details class="panel card" data-testid="admin-section" data-section="users" {% if tab == 'users' %}open{% endif %}>
+  <summary><strong>Users and roles</strong></summary>
+  <div class="card-b" style="display:grid;gap:16px">
+    <table class="data-table" data-testid="admin-people">
+      <caption class="visually-hidden">People</caption>
+      <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Department</th><th scope="col">Persona</th></tr></thead>
+      <tbody>
+        {% for person in admin.people %}
+        <tr data-testid="admin-person-row">
+          <th scope="row">{{ person.label }}</th>
+          <td>{{ person.role_label }}</td>
+          <td>{{ person.department or '-' }}</td>
+          <td>{{ 'yes' if person.selectable else 'no' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="data-table" data-testid="admin-service-identities">
+      <caption class="visually-hidden">Service identities</caption>
+      <thead><tr><th scope="col">Identity</th><th scope="col">Agent</th></tr></thead>
+      <tbody>
+        {% for identity in admin.service_identities %}
+        <tr data-testid="admin-service-identity-row" data-actor-id="{{ identity.actor_id }}">
+          <th scope="row">{{ identity.label }}</th>
+          <td>{{ 'yes' if identity.is_agent else 'no' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3>Add user</h3>
+    {% if admin.can_manage_users %}
+    <form method="post" action="/ui/actions/config.user.add" class="action-form" data-testid="admin-add-user">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="config.user.add">
+      <input type="hidden" name="next" value="/admin?tab=users">
+      <div class="fieldset">
+        <label for="user-name">Name</label>
+        <input id="user-name" name="name" required>
+      </div>
+      <div class="fieldset">
+        <label for="user-department">Department</label>
+        <input id="user-department" name="department">
+      </div>
+      <div class="fieldset">
+        <label for="user-role">Role</label>
+        <select id="user-role" name="persona_role">
+          <option value="Applicant">Applicant</option>
+          <option value="Data Steward">Data Steward</option>
+          <option value="Permit Reviewer">Permit Reviewer</option>
+          <option value="City Administrator">City Administrator</option>
+        </select>
+        <span class="hint">The user receives the grant template of that role. Added users do not appear in the persona switcher.</span>
+      </div>
+      <p><button type="submit" class="btn sm primary" data-testid="admin-add-user-submit">Add user</button></p>
+    </form>
+    {% else %}
+    <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can add a user.</p>
+    {% endif %}
+    {% for part in admin_users_extras %}{% include part %}{% endfor %}
+  </div>
+</details>

@@ -75,10 +75,8 @@ FORBIDDEN_REQUEST_KEYS: Final = frozenset(
 
 def live_call_block_reason(settings: Settings) -> str | None:
     """Return why a live provider call is locked out, or ``None`` when it may go."""
-    if settings.public_demo or settings.is_production:
-        return "live Muse calls are locked on the hosted deployment"
-    if not settings.muse_live_calls_allowed:
-        return "live Muse calls are not allowed (ACME_MUSE_LIVE_CALLS_ALLOWED)"
+    if settings.public_demo and not settings.muse_live_calls_allowed:
+        return "live Muse calls are locked on the hosted demo (ACME_MUSE_LIVE_CALLS_ALLOWED)"
     return None
 
 

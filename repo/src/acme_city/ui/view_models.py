@@ -116,12 +116,13 @@ SCREENS: list[dict[str, str]] = [
     {"key": "steward_new_master", "label": "New master record", "href": "/steward/new-master"},
 ]
 
-#: The labels of the four selectable personas, in selector order.
+#: The labels of the five selectable personas, in selector order.
 PERSONA_ORDER: tuple[str, ...] = (
     "Applicant",
     "Data Steward",
     "Permit Reviewer",
     "City Administrator",
+    "Agent Operator",
 )
 
 #: What the persona selector says about each persona, keyed by label.
@@ -543,7 +544,7 @@ def _lifecycle_panel(
 
 
 def persona_options(session: Session) -> list[dict[str, str]]:
-    """Return the four selectable personas of the demonstration.
+    """Return the five selectable personas of the demonstration.
 
     Only an active, selectable actor is offered.  A service identity is never
     selectable and never appears in the selector.

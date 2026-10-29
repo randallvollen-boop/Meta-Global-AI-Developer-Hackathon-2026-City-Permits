@@ -79,7 +79,6 @@ def seeded(tmp_path: Path):
             "ACME_DATABASE_URL": f"sqlite:///{tmp_path / 'replay.db'}",
             "ACME_SECRET_KEY": "muse-replay-secret-value",
             "META_API_KEY": "test-provider-key-not-a-real-credential",
-            "ACME_MUSE_LIVE_CALLS_ALLOWED": "true",
         },
         key_file=tmp_path / "missing.env",
     )

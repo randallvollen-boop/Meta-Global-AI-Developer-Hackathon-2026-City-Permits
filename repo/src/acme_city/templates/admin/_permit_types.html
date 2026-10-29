@@ -1,0 +1,155 @@
+{# The Permit types tab of the administration screen. #}
+<details class="panel card" data-testid="admin-section" data-section="permit-types" {% if tab == 'permit-types' %}open{% endif %}>
+  <summary><strong>Permit types</strong></summary>
+  <div class="card-b" style="display:grid;gap:16px">
+    <table class="data-table" data-testid="admin-permit-types">
+      <caption class="visually-hidden">Permit type configuration</caption>
+      <thead>
+        <tr>
+          <th scope="col">Type</th><th scope="col">Review area</th><th scope="col">Process</th>
+          <th scope="col">Discretionary</th><th scope="col">Required fields</th>
+          <th scope="col">Required documents</th><th scope="col">Fee schedule</th>
+          <th scope="col">Icon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for type in admin.permit_types %}
+        <tr data-testid="admin-permit-type-row" data-permit-type="{{ type.permit_type_key }}">
+          <th scope="row">
+            <span class="item" style="gap:8px;align-items:center">
+              {% set icon = admin.permit_type_icons.types | selectattr("permit_type_key", "equalto", type.permit_type_key) | first %}
+              {% if icon and icon.current_icon %}
+              <img class="type-ic" src="{{ icon.current_icon.url }}" alt="" style="width:28px;height:28px;border-radius:8px">
+              {% else %}
+              <span class="type-ic line" style="width:28px;height:28px;border-radius:8px"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
+              {% endif %}
+              <span>
+                {{ type.label }}
+                <span class="ref">{{ type.permit_type_key }}</span>
+                {% if type.description %}<span class="t2">{{ type.description }}</span>{% endif %}
+              </span>
+            </span>
+          </th>
+          <td>{{ type.review_area }}</td>
+          <td>{{ type.process_category|replace('_', ' ') }}</td>
+          <td>{{ 'yes' if type.discretionary else 'no' }}</td>
+          <td>{{ type.required_fields|join(', ') or '-' }}</td>
+          <td>{{ type.required_documents|join(', ') or '-' }}</td>
+          <td>{{ type.fee_schedule_key or '-' }}</td>
+          <td><a href="/admin?tab=appearance#icon-{{ type.permit_type_key }}">Create an icon for this type</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if admin.can_manage %}
+    <h3>Required documents</h3>
+    <p class="muted">
+      Requiring a document takes effect for new intake. A case that was already
+      received keeps the requirements it was measured against.
+    </p>
+    <div class="card-b" style="display:grid;gap:10px">
+      {% for type in admin.permit_types %}
+      <details class="action act-card" data-testid="admin-required-documents" data-permit-type="{{ type.permit_type_key }}">
+        <summary class="act-summary">
+          <span class="act-main">
+            <span class="action-label act-title">{{ type.label }}</span>
+            <span class="action-destination act-sub">{{ type.required_documents|join(', ') or 'no required document' }}</span>
+          </span>
+        </summary>
+        <div class="card-b" style="display:grid;gap:8px">
+          {% for document in admin.known_documents %}
+          <form method="post" action="/ui/actions/config.permit_type.document" class="action-form" data-testid="admin-document-toggle">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action_id" value="config.permit_type.document">
+            <input type="hidden" name="next" value="/admin?tab=permit-types">
+            <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
+            <input type="hidden" name="document_type" value="{{ document }}">
+            <input type="hidden" name="expected_version" value="{{ type.version }}">
+            <input type="hidden" name="required" value="{{ 'no' if document in type.required_documents else 'yes' }}">
+            <p class="field">
+              <span class="muted">{{ document|replace('_', ' ') }}: {{ 'required' if document in type.required_documents else 'not required' }}</span>
+            </p>
+            <p>
+              <button type="submit" class="btn sm" data-testid="admin-document-toggle-button"
+                      aria-label="{{ 'Stop requiring' if document in type.required_documents else 'Require document' }} {{ document|replace('_', ' ') }} for {{ type.label }}">
+                {{ 'Stop requiring' if document in type.required_documents else 'Require document' }}
+              </button>
+            </p>
+          </form>
+          {% endfor %}
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change the permit type configuration.</p>
+    {% endif %}
+
+    <h3>Add permit type</h3>
+    {% if admin.can_manage %}
+    <form method="post" action="/ui/actions/config.permit_type.create" class="action-form" data-testid="admin-add-permit-type">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="config.permit_type.create">
+      <input type="hidden" name="next" value="/admin?tab=permit-types">
+      <div class="fieldset">
+        <label for="pt-key">Key</label>
+        <input id="pt-key" name="key" required>
+        <span class="hint">Lower case, no spaces, for example <code>patio</code>.</span>
+      </div>
+      <div class="fieldset">
+        <label for="pt-label">Label</label>
+        <input id="pt-label" name="label" required>
+      </div>
+      <div class="fieldset">
+        <label for="pt-description">Description</label>
+        <textarea id="pt-description" name="description" rows="2"></textarea>
+      </div>
+      <div class="fieldset">
+        <label for="pt-review-area">Review area</label>
+        <input id="pt-review-area" name="review_area" list="admin-review-areas" required>
+        <datalist id="admin-review-areas">
+          {% for area in admin.review_areas %}<option value="{{ area }}"></option>{% endfor %}
+        </datalist>
+      </div>
+      <div class="fieldset">
+        <label for="pt-process">Process category</label>
+        <select id="pt-process" name="process_category">
+          {% for category in admin.process_categories %}<option value="{{ category }}">{{ category|replace('_', ' ') }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="fieldset">
+        <label for="pt-discretionary">Discretionary</label>
+        <select id="pt-discretionary" name="discretionary">
+          <option value="no">no</option>
+          <option value="yes">yes</option>
+        </select>
+        <span class="hint">A discretionary type is always held for a person or a board.</span>
+      </div>
+      <div class="fieldset">
+        <label for="pt-fields">Required fields</label>
+        <input id="pt-fields" name="required_fields" placeholder="parcel_number project_description">
+        <span class="hint">Separate the field names with spaces or commas.</span>
+      </div>
+      <div class="fieldset">
+        <label for="pt-documents">Required documents</label>
+        <input id="pt-documents" name="required_documents" placeholder="site_plan material_spec">
+        <span class="hint">Separate the document names with spaces or commas.</span>
+      </div>
+      <div class="fieldset">
+        <label for="pt-fee">Fee schedule</label>
+        <select id="pt-fee" name="fee_schedule_key">
+          {% for schedule in admin.fee_schedules %}<option value="{{ schedule.fee_schedule_id }}">{{ schedule.fee_schedule_id }} {{ schedule.version_label }}</option>{% endfor %}
+        </select>
+      </div>
+      <p class="hint">
+        A new permit type has no published rule. The adjudication agent holds
+        every case of that type for a person, as expected.
+      </p>
+      <p><button type="submit" class="btn sm primary" data-testid="admin-add-permit-type-submit">Add permit type</button></p>
+    </form>
+    {% else %}
+    <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can add a permit type.</p>
+    {% endif %}
+  </div>
+</details>

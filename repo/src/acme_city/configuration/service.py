@@ -39,6 +39,7 @@ PERSONA_ROLES: dict[str, str] = {
     "Data Steward": "persona_data_steward",
     "Permit Reviewer": "persona_permit_reviewer",
     "City Administrator": "persona_city_administrator",
+    "Agent Operator": "persona_agent_operator",
 }
 
 #: The process categories a permit type may declare.
@@ -316,7 +317,7 @@ class ConfigurationService:
         """Add one user and copy the grant template of the persona role.
 
         The new user is not selectable: the persona switcher still holds
-        exactly the four personas of the demonstration.
+        exactly the five personas of the demonstration.
         """
         self._permissions.authorize(
             actor,
@@ -325,7 +326,7 @@ class ConfigurationService:
         )
         if persona_role not in PERSONA_ROLES:
             raise ValidationError(
-                "a user needs one of the four persona roles: "
+                "a user needs one of the five persona roles: "
                 + ", ".join(sorted(PERSONA_ROLES))
             )
         if not str(name or "").strip():

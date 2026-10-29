@@ -459,6 +459,7 @@ def test_the_access_tab_reads_the_persisted_grants(
         "persona_data_steward",
         "persona_permit_reviewer",
         "persona_city_administrator",
+        "persona_agent_operator",
     }
     administrator = entries["persona_city_administrator"]
     assert "admin.overview.view" in administrator["permissions"]

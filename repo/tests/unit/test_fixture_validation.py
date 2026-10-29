@@ -60,8 +60,8 @@ def test_bundle_loads_and_validates(bundle: FixtureBundle) -> None:
 
 
 def test_expected_configuration_inventory(bundle: FixtureBundle) -> None:
-    assert len(bundle.actors.roles) == 14
-    assert len(bundle.actors.personas) == 4
+    assert len(bundle.actors.roles) == 15
+    assert len(bundle.actors.personas) == 5
     assert len(bundle.actors.service_identities) == 15
     assert len(bundle.domains.domains) == 11
     assert len(bundle.domains.steward_queues) == 10
@@ -70,9 +70,15 @@ def test_expected_configuration_inventory(bundle: FixtureBundle) -> None:
     assert len(bundle.demo.reason_codes) == 12
 
 
-def test_exactly_four_selectable_personas(bundle: FixtureBundle) -> None:
+def test_exactly_five_selectable_personas(bundle: FixtureBundle) -> None:
     labels = [persona.label for persona in bundle.actors.personas]
-    assert labels == ["Applicant", "Data Steward", "Permit Reviewer", "City Administrator"]
+    assert labels == [
+        "Applicant",
+        "Data Steward",
+        "Permit Reviewer",
+        "City Administrator",
+        "Agent Operator",
+    ]
     assert all(persona.selectable for persona in bundle.actors.personas)
     assert all(not identity.selectable for identity in bundle.actors.service_identities)
 

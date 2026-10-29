@@ -93,13 +93,14 @@ def actor_for(session: Session, actor_id: str) -> ActorContext:
     )
 
 
-def test_the_selector_offers_exactly_the_four_personas(session: Session) -> None:
+def test_the_selector_offers_exactly_the_five_personas(session: Session) -> None:
     options = view_models.persona_options(session)
     assert [option["label"] for option in options] == [
         "Applicant",
         "Data Steward",
         "Permit Reviewer",
         "City Administrator",
+        "Agent Operator",
     ]
     assert all(option["actor_id"].startswith("persona_") for option in options)
     labels = " ".join(option["actor_id"] for option in options)
@@ -296,8 +297,10 @@ def test_the_navigation_is_scoped_to_the_persona_grants(
     actor = actor_for(session, actor_id)
     items = view_models.navigation(session, actor)
     assert [item["key"] for item in items] == EXPECTED_NAVIGATION[actor_id]
-    permit_item = next(item for item in items if item["key"] == "permit")
-    assert permit_item["href"].startswith("/permits/")
+    # The Agent Operator holds no grant of the permit workspace.
+    if actor_id != "persona_agent_operator":
+        permit_item = next(item for item in items if item["key"] == "permit")
+        assert permit_item["href"].startswith("/permits/")
 
 
 @pytest.mark.parametrize("actor_id", sorted(EXPECTED_SCREENS))

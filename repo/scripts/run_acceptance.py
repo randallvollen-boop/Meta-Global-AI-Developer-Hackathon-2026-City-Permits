@@ -58,6 +58,8 @@ TRUTH_PATH = REPO_ROOT / "fixtures" / "evaluator_truth.json"
 #: The families the deterministic run executes.  The browser family needs a
 #: running service and is part of the full run, not of the deterministic one.
 BROWSER_FAMILY = "browser"
+# Each family runs on every core; tests/conftest.py keeps each test's database separate.
+PYTEST_WORKERS = ["-n", "auto"]
 
 
 @dataclass
@@ -170,6 +172,7 @@ def run_family(
         "-o",
         "junit_family=xunit1",
         f"--junitxml={junit_path}",
+        *PYTEST_WORKERS,
         *paths,
     ]
     completed = subprocess.run(
@@ -648,7 +651,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run_family(name, paths, artifacts)
         outcomes.update(result.outcomes)
         recorder.record_command(
-            command=f"python -m pytest -q {' '.join(paths)}",
+            command=f"python -m pytest -q {' '.join(PYTEST_WORKERS + paths)}",
             exit_code=result.exit_code,
             collected=result.collected,
             passed=result.passed,

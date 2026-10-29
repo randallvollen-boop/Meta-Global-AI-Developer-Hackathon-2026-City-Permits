@@ -30,5 +30,12 @@
   },
   "actor_only": [
     "tests/acceptance/test_at*.py"
-  ]
+  ],
+  "moved_note": "Functions moved out of a shared file in Wave 0, with the file that now holds them. That file has a single owner lane, so the moved functions are no longer listed under functions.",
+  "moved": {
+    "src/acme_city/ui/router.py": {
+      "ui_intake_queue": "src/acme_city/ui/steward_routes.py",
+      "ui_early_resolution": "src/acme_city/ui/steward_routes.py"
+    }
+  }
 }
