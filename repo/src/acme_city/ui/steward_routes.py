@@ -357,12 +357,18 @@ def ui_steward_case(
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     back: str = "",
+    candidate: str = "",
 ) -> Any:
-    """Show one focused case: the problem, why it matters, the comparison, the evidence, the preview and the result."""
+    """Show one focused case: the problem, why it matters, the comparison, the evidence, the preview and the result.
+
+    The ``candidate`` value names the master record the steward chose in the
+    chooser of the case.  Choosing a record only changes what the page shows;
+    it never changes a link.
+    """
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    case = steward_views.focused_case(session, resolved, kind, item_id)
+    case = steward_views.focused_case(session, resolved, kind, item_id, selected_id=candidate)
     if not case:
         return error_response(
             request,

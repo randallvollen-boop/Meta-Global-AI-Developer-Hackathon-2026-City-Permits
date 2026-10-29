@@ -68,9 +68,27 @@
   <h2 id="q3">3. What are we comparing?</h2>
   {% if c.kind == 'link' %}
   <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to. A missing value reads “No comparison”; nothing is filled in.</p>
+  {% if c.candidates|length > 1 %}
+  <form class="stw-chooser stw-filter-form" method="get" action="{{ request.url.path }}" data-testid="candidate-chooser">
+    {% if back_href %}<input type="hidden" name="back" value="{{ back_href }}">{% endif %}
+    <p class="field">
+      <label for="candidate-choice">Compare with</label>
+      <select id="candidate-choice" name="candidate" data-testid="candidate-select">
+        <option value="">No record chosen</option>
+        {% for cand in c.candidates %}
+        <option value="{{ cand.entity_id }}"{% if cand.selected %} selected{% endif %}>{{ cand.name }}{% if cand.recommended and not cand.selected %} (recommended for review){% endif %}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p><button type="submit" class="button btn" data-testid="candidate-choose">Show this record</button></p>
+  </form>
+  <p class="muted">Choosing a record only changes what the page shows. The link changes when you decide.</p>
+  {% endif %}
   {% for cand in c.candidates %}
-  <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}">
-    <h3>{{ ui.detail_link('record', cand.entity_id, cand.name) }} <span class="muted">{{ cand.type }}</span>{% if cand.credentials %} <span class="muted">· {{ cand.credentials|join(', ') }}</span>{% endif %}</h3>
+  <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}"{% if cand.selected %} data-selected="true"{% endif %}>
+    <h3>{{ ui.detail_link('record', cand.entity_id, cand.name) }} <span class="muted">{{ cand.type }}</span>{% if cand.credentials %} <span class="muted">· {{ cand.credentials|join(', ') }}</span>{% endif %}
+      {% if cand.selected %}<span class="pill ok nowrap" data-testid="candidate-selected">Selected</span>{% elif cand.recommended %}<span class="pill plain nowrap" data-testid="candidate-recommended">Recommended for review</span>{% endif %}
+    </h3>
     <table class="data-table compare-table" data-testid="compare-table">
       <caption class="visually-hidden">Source record values against {{ cand.name }}</caption>
       <thead><tr><th scope="col">Field</th><th scope="col">Source record</th><th scope="col">Master record</th><th scope="col">Result</th></tr></thead>

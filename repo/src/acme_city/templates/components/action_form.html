@@ -41,7 +41,13 @@
         <p class="field">
           <label for="{{ item.dom_id or item.action_id }}-{{ field.name }}">{{ field.label }}{% if field.required %} <span class="req-star" aria-hidden="true">*</span>{% else %} <span class="optional-tag">(optional)</span>{% endif %}</label>
           <select id="{{ item.dom_id or item.action_id }}-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-            {% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+            {% for option in field.options %}
+            {%- if option is string or option is number -%}
+            <option value="{{ option }}">{{ option }}</option>
+            {%- else -%}
+            <option value="{{ option[0] }}">{{ option[1] }}</option>
+            {%- endif -%}
+            {% endfor %}
           </select>
         </p>
       {% elif field.type == 'textarea' %}

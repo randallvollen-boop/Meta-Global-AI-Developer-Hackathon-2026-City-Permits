@@ -1208,14 +1208,47 @@ def _registry_propose(ctx: ActionContext) -> Outcome:
 
 
 def _registry_decide(ctx: ActionContext) -> Outcome:
-    """Record a steward decision on a source link."""
+    """Record a steward decision on a source link.
+
+    The page names the master record the steward chose and leaves the
+    decision to the server: choosing the record the proposal already names
+    confirms it, and choosing another one corrects the link.  A form that
+    states the decision itself, such as a rejection or a removal, is used as
+    it arrives.
+    """
+    decision = ctx.text("decision")
+    entity_id = ctx.text("entity_id") or None
+    if not decision and entity_id:
+        from acme_city.persistence.models import registry
+        from sqlalchemy import select
+
+        crosswalk = None
+        crosswalk_id = ctx.text("crosswalk_id")
+        if crosswalk_id:
+            crosswalk = ctx.session.get(registry.Crosswalk, crosswalk_id)
+        if crosswalk is None:
+            rows = ctx.session.execute(
+                select(registry.Crosswalk)
+                .where(
+                    registry.Crosswalk.source_system_id == ctx.text("source_system_id"),
+                    registry.Crosswalk.source_record_id == ctx.text("source_record_id"),
+                    registry.Crosswalk.link_status == "proposed",
+                )
+                .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
+            ).scalars().all()
+            crosswalk = rows[-1] if rows else None
+        decision = (
+            "approve"
+            if crosswalk is not None and crosswalk.entity_id == entity_id
+            else "correct"
+        )
     command = MatchDecisionCommand(
-        decision=ctx.text("decision"),
+        decision=decision,
         reason=ctx.text("reason"),
         source_system_id=ctx.text("source_system_id") or None,
         dataset_key=ctx.text("dataset_key") or None,
         source_record_id=ctx.text("source_record_id") or None,
-        entity_id=ctx.text("entity_id") or None,
+        entity_id=entity_id,
         crosswalk_id=ctx.text("crosswalk_id") or None,
         expected_version=ctx.integer("expected_version"),
     )

@@ -555,7 +555,10 @@ def test_every_action_previews_what_it_will_do(client: TestClient, environment: 
     blocks = html.split('data-testid="action-preview-block"')[1:]
     labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
     assert labels == [
-        "Confirm link to Cedarline Coffee Roasters LLC", "Reject match", "Defer", "Request source correction",
+        "Confirm link to Cedarline Coffee Roasters LLC",
+        "Reject match proposed for Cedarline Coffee Roasters LLC",
+        "Keep for review",
+        "Request source correction",
     ]
     for block in blocks:
         for label in ("Records linked", "Application relationship", "Source values kept", "Issue afterwards"):
@@ -570,6 +573,93 @@ def test_every_action_previews_what_it_will_do(client: TestClient, environment: 
     assert not re.search(r">\s*Approve\s*<", html)
     # Required inputs show a visible * and the legend is present.
     assert 'class="req-star"' in html and "* Required" in html
+
+
+def test_an_ambiguous_case_asks_the_steward_to_choose_a_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """A case with two candidates has no chosen record until the steward chooses one."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    html = client.get(case_path(client, "ERP-BL-00413")).text
+    chooser = html.split('data-testid="candidate-chooser"')[1].split("</form>")[0]
+    assert 'name="candidate"' in chooser
+    options = re.findall(r'<option value="([^"]*)"([^>]*)>', chooser)
+    assert options[0][0] == ""
+    assert len(options) == 3, options
+    assert not any("selected" in flags for _, flags in options)
+    # The leading candidate is recommended for review, and none is selected.
+    assert html.count('data-testid="candidate-recommended"') == 1
+    assert 'data-testid="candidate-selected"' not in html
+    # The decision asks for the record instead of naming one.
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
+    assert "Confirm link to the selected record" in labels
+    # The action offers the choice and asks for it.
+    chooser_action = html.split('data-action-id="registry.decide"')[1].split("</details>")[0]
+    assert '<select' in chooser_action and 'name="entity_id"' in chooser_action
+    assert 'required' in chooser_action
+
+
+def test_choosing_a_record_shows_it_and_leaves_the_link_alone(
+    client: TestClient, environment: Settings
+) -> None:
+    """Choosing a record in the chooser changes the page and nothing else."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    entities = re.findall(r'data-testid="candidate" data-entity="([^"]+)"', html)
+    assert len(entities) == 2
+    chosen = f"{path}&candidate={entities[1]}" if "?" in path else f"{path}?candidate={entities[1]}"
+    page = client.get(chosen).text
+    assert 'data-testid="candidate-selected"' in page
+    assert f'data-entity="{entities[1]}" data-selected="true"' in page
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', page)
+    assert any(
+        label.startswith("Confirm link to ") and label != "Confirm link to the selected record"
+        for label in labels
+    ), labels
+    # The link itself is untouched: the case still waits for a decision.
+    assert 'data-testid="case-status">Needs review' in page
+
+
+def test_the_server_says_what_the_chosen_record_means(
+    client: TestClient, environment: Settings
+) -> None:
+    """The form names the record; the server decides what it means for the link."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "PER-AP-0003")
+    html = client.get(path).text
+    crosswalk = re.search(r'name="crosswalk_id" value="([^"]+)"', html)
+    assert crosswalk is not None
+    response = client.post(
+        "/ui/actions/registry.decide",
+        data={
+            "csrf_token": csrf(client, path), "next": path,
+            "source_system_id": "permitting", "dataset_key": "applicant_profiles",
+            "source_record_id": "PER-AP-0003", "entity_id": "party_cedarline",
+            "crosswalk_id": crosswalk.group(1),
+            "expected_version": str(link_version(environment, "PER-AP-0003")),
+            "reason": "the recorded alias and the declared reference agree",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303, response.text
+    assert "Recorded the approve decision for PER-AP-0003" in client.get(path).text
+
+
+def test_a_rejection_names_the_record_it_rejects(
+    client: TestClient, environment: Settings
+) -> None:
+    """The rejection says which master record it turns down."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "PER-AP-0003")
+    html = client.get(path).text
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
+    assert "Reject match proposed for Cedarline Coffee Roasters LLC" in labels
+    assert "Reject match" not in labels
 
 
 def test_a_decision_is_recorded_and_the_case_confirms_it(client: TestClient, environment: Settings) -> None:

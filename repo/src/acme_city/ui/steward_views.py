@@ -1542,6 +1542,25 @@ def _action(
     return item
 
 
+def _master_choice(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return a form field that names the master record to link to.
+
+    The value is the canonical identifier and the text is the name a person
+    reads.  The first choice is empty, so an ambiguous case has no implicit
+    selection: the steward has to name the record before the link changes.
+    """
+    return {
+        "name": "entity_id",
+        "label": "Master record",
+        "type": "select",
+        "value": "",
+        "options": [("", "Choose a master record")]
+        + [(str(item["entity_id"]), str(item["name"])) for item in candidates],
+        "required": True,
+        "hint": "",
+    }
+
+
 def _preview(
     records: str, application: str, source_values: str, issue_after: str
 ) -> dict[str, str]:
@@ -1614,8 +1633,16 @@ def _events_for(session: Session, target_ids: list[str], prefixes: tuple[str, ..
     return events
 
 
-def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[str, Any]:
-    """Return the focused case of a record match, answering the six questions in order."""
+def link_case(
+    session: Session, actor: ActorContext, proposal_id: str, selected_id: str = ""
+) -> dict[str, Any]:
+    """Return the focused case of a record match, answering the six questions in order.
+
+    ``selected_id`` is the master record the steward chose in the chooser.  A
+    case with one candidate needs no choice, so that candidate is the one the
+    decision acts on; an ambiguous case has no candidate chosen until the
+    steward chooses one.
+    """
     proposal = session.get(registry.MatchProposal, proposal_id)
     if proposal is None:
         return {}
@@ -1675,6 +1702,14 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
             }
         )
     lead = next((c for c in candidates if c["lead"]), candidates[0] if candidates else None)
+    # The record the steward chose, and the one the matcher put first.  An
+    # ambiguous case has no chosen record until the steward chooses one.
+    chosen = next((c for c in candidates if c["entity_id"] == selected_id), None)
+    if chosen is None and len(candidates) == 1:
+        chosen = candidates[0]
+    for candidate in candidates:
+        candidate["selected"] = chosen is not None and candidate["entity_id"] == chosen["entity_id"]
+        candidate["recommended"] = lead is not None and candidate["entity_id"] == lead["entity_id"]
 
     # 1. The problem.
     if decided is not None:
@@ -1732,51 +1767,68 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
             if cand["conflicts"]
             else "No conflicting value remains."
         )
-        for cand in candidates:
-            same = cand["entity_id"] == pending.entity_id
-            actions.append(
-                {
-                    **_action(
-                        session,
-                        actor,
-                        action_id="registry.decide",
-                        label=f"Confirm link to {cand['name']}",
-                        path="/ui/actions/registry.decide",
-                        permission="registry.crosswalk.decide",
-                        domain_id=domain,
-                        destination="Registry crosswalk",
-                        description="Link this source record to the master record. The decision, your name, the time and the note are recorded.",
-                        expected_version=pending.version,
-                        fields=(
-                            *common_fields,
-                            view_models._field("decision", "Decision", value="approve" if same else "correct", field_type="hidden"),
-                            view_models._field("entity_id", "Master record", value=cand["entity_id"], field_type="hidden"),
-                            view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
-                            view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
-                            view_models._field("reason", "Decision note", field_type="textarea", required=True),
-                        ),
-                    ),
-                    "dom_id": f"confirm-{cand['entity_id']}",
-                    "preview": _preview(
-                        f"Links {record_id} ({source_label}) to {cand['name']}.",
-                        (
-                            f"{len(_applications_of(session, [cand['entity_id']], synthetic))} application(s) name {cand['name']}; "
-                            "their applicant is unchanged"
-                            + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
-                        ),
-                        f"The source record is not edited and no master value is overwritten. Source value kept: {name or 'as received'}."
-                        + (" The payer link of the finance account is set to this record." if dataset_key == "finance_accounts" else ""),
-                        conflict_note(cand),
-                    ),
-                }
+        # The steward names the master record.  A chosen record is confirmed;
+        # an ambiguous case has no chosen record, so the action offers the
+        # choice and asks for it.
+        if chosen is not None:
+            entity_field = view_models._field(
+                "entity_id", "Master record", value=chosen["entity_id"], field_type="hidden"
             )
+            confirm_label = f"Confirm link to {chosen['name']}"
+            confirm_records = f"Links {record_id} ({source_label}) to {chosen['name']}."
+            confirm_application = (
+                f"{len(_applications_of(session, [chosen['entity_id']], synthetic))} application(s) "
+                f"name {chosen['name']}; their applicant is unchanged"
+                + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
+            )
+            confirm_conflicts = conflict_note(chosen)
+        else:
+            entity_field = _master_choice(candidates)
+            confirm_label = "Confirm link to the selected record"
+            confirm_records = f"Links {record_id} ({source_label}) to the master record you choose."
+            confirm_application = (
+                "The applications that name the chosen record use it; their applicant is unchanged"
+                + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
+            )
+            confirm_conflicts = "The conflicts of the record you choose stay visible in the history."
         actions.append(
             {
                 **_action(
                     session,
                     actor,
                     action_id="registry.decide",
-                    label="Reject match",
+                    label=confirm_label,
+                    path="/ui/actions/registry.decide",
+                    permission="registry.crosswalk.decide",
+                    domain_id=domain,
+                    destination="Registry crosswalk",
+                    description="Link this source record to the master record. The decision, your name, the time and the note are recorded.",
+                    expected_version=pending.version,
+                    fields=(
+                        *common_fields,
+                        entity_field,
+                        view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
+                        view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
+                        view_models._field("reason", "Decision note", field_type="textarea", required=True),
+                    ),
+                ),
+                "dom_id": f"confirm-{chosen['entity_id'] if chosen else 'choice'}",
+                "preview": _preview(
+                    confirm_records,
+                    confirm_application,
+                    f"The source record is not edited and no master value is overwritten. Source value kept: {name or 'as received'}."
+                    + (" The payer link of the finance account is set to this record." if dataset_key == "finance_accounts" else ""),
+                    confirm_conflicts,
+                ),
+            }
+        )
+        actions.append(
+            {
+                **_action(
+                    session,
+                    actor,
+                    action_id="registry.decide",
+                    label=f"Reject match proposed for {_party_label(session, pending.entity_id)}",
                     path="/ui/actions/registry.decide",
                     permission="registry.crosswalk.decide",
                     domain_id=domain,
@@ -1806,7 +1858,7 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
                     session,
                     actor,
                     action_id="registry.defer",
-                    label="Defer",
+                    label="Keep for review",
                     path="/ui/actions/registry.defer",
                     permission="registry.crosswalk.decide",
                     domain_id=domain,
@@ -1937,6 +1989,8 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
             "name": name,
         },
         "candidates": candidates,
+        "selected_candidate": chosen,
+        "recommended_candidate": lead,
         "similar_note": (
             "A similar name does not make these the same organization. Each candidate stays its own record."
             if len(candidates) > 1
@@ -2221,15 +2275,19 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
     }
 
 
-def focused_case(session: Session, actor: ActorContext, kind: str, item_id: str) -> dict[str, Any]:
+def focused_case(
+    session: Session, actor: ActorContext, kind: str, item_id: str, selected_id: str = ""
+) -> dict[str, Any]:
     """Return the focused case for one queue address, or an empty dict."""
-    case = _focused_case(session, actor, kind, item_id)
+    case = _focused_case(session, actor, kind, item_id, selected_id)
     if case:
         case["summary"] = _case_summary(case)
     return case
 
 
-def _focused_case(session: Session, actor: ActorContext, kind: str, item_id: str) -> dict[str, Any]:
+def _focused_case(
+    session: Session, actor: ActorContext, kind: str, item_id: str, selected_id: str = ""
+) -> dict[str, Any]:
     """Build the focused case of one queue address."""
     if kind == "linked":
         crosswalk = session.get(registry.Crosswalk, item_id)
@@ -2237,7 +2295,11 @@ def _focused_case(session: Session, actor: ActorContext, kind: str, item_id: str
             return {}
         return _linked_case(session, actor, crosswalk)
     builder = {"link": link_case, "parcel": parcel_case, "case": case_case, "issue": governance_case}.get(kind)
-    return builder(session, actor, item_id) if builder else {}
+    if builder is None:
+        return {}
+    if kind == "link":
+        return builder(session, actor, item_id, selected_id=selected_id)
+    return builder(session, actor, item_id)
 
 
 def _case_summary(case: dict[str, Any]) -> dict[str, Any]:
