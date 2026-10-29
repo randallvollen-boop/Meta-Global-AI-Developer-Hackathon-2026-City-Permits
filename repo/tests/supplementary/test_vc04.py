@@ -50,8 +50,9 @@ CONTROL_SCREENS = (
     "/rules",
     "/reconciliation",
     "/governance",
-    "/agent/intake",
-    "/agent/adjudication",
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the run grants, which the City Administrator no longer holds.
+    # They are swept with their own persona below.
     "/admin",
     # P3insight: the City view, behind its own grant of the City Administrator.
     "/insight/city",
@@ -70,6 +71,10 @@ PERSONA_CONTROL_SCREENS = (
     ("persona_data_steward", "/queue/intake"),
     ("persona_data_steward", "/queue/early-resolution"),
     ("persona_permit_reviewer", "/queue/review"),
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the Agent Operator holds.
+    ("persona_agent_operator", "/agent/intake"),
+    ("persona_agent_operator", "/agent/adjudication"),
 )
 
 
@@ -166,12 +171,15 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # home gains one entry),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the City Administrator no longer
+    # holds, so the navigation loses those two entries (seventeen).
     select_persona(client, "persona_city_administrator")
     reference = None
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 19, path
+        assert len(items) == 17, path
         if reference is None:
             reference = items
         assert items == reference

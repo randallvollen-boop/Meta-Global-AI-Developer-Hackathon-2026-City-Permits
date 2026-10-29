@@ -114,6 +114,12 @@ def submit_arrival(client: TestClient) -> dict:
     }
 
 
+def submit_arrival_as_steward(client: TestClient) -> dict:
+    """Submit one case as the persona that may submit it."""
+    choose(client, "persona_data_steward")
+    return submit_arrival(client)
+
+
 def wake_the_agent(environment: Settings) -> None:
     """Wake the intake agent."""
     factory = SessionFactory(environment.database_url)
@@ -234,9 +240,9 @@ def test_the_tabs_of_the_intake_queue_hold_their_cases(
 def test_the_bulk_action_refuses_an_empty_selection(
     client: TestClient, environment: Settings
 ) -> None:
-    choose(client, "persona_data_steward")
+    submit_arrival_as_steward(client)
+    choose(client, "persona_agent_operator")
     wake_the_agent(environment)
-    submit_arrival(client)
     csrf = token(client, "/queue/intake")
     response = client.post(
         "/ui/actions/permit.intake.process_selected",
@@ -257,9 +263,9 @@ def test_the_bulk_action_refuses_an_empty_selection(
 def test_the_bulk_action_is_refused_without_the_csrf_token(
     client: TestClient, environment: Settings
 ) -> None:
-    choose(client, "persona_data_steward")
+    arrival = submit_arrival_as_steward(client)
+    choose(client, "persona_agent_operator")
     wake_the_agent(environment)
-    arrival = submit_arrival(client)
     response = client.post(
         "/ui/actions/permit.intake.process_selected",
         data={
@@ -276,9 +282,9 @@ def test_the_bulk_action_is_refused_without_the_csrf_token(
 def test_the_bulk_action_processes_the_selected_cases(
     client: TestClient, environment: Settings
 ) -> None:
-    choose(client, "persona_data_steward")
+    arrival = submit_arrival_as_steward(client)
+    choose(client, "persona_agent_operator")
     wake_the_agent(environment)
-    arrival = submit_arrival(client)
     csrf = token(client, "/queue/intake")
     response = client.post(
         "/ui/actions/permit.intake.process_selected",
@@ -298,8 +304,8 @@ def test_the_bulk_action_processes_the_selected_cases(
 def test_the_bulk_action_is_refused_while_the_agent_sleeps(
     client: TestClient, environment: Settings
 ) -> None:
-    choose(client, "persona_data_steward")
-    arrival = submit_arrival(client)
+    arrival = submit_arrival_as_steward(client)
+    choose(client, "persona_agent_operator")
     csrf = token(client, "/queue/intake")
     response = client.post(
         "/ui/actions/permit.intake.process_selected",
@@ -337,7 +343,7 @@ def test_the_bulk_action_is_refused_for_a_persona_without_the_grant(
 # ------------------------------------------------------ guarded-button reasons
 
 def test_the_disabled_bulk_button_says_why_while_the_agent_sleeps(client: TestClient) -> None:
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     page = client.get("/queue/intake").text
     flat = page.replace("\n", " ")
     assert re.search(r'data-testid="intake-bulk-submit"\s+disabled aria-describedby="intake-bulk-reason"', flat)
@@ -356,3 +362,44 @@ def test_the_workspace_rerun_buttons_say_why_they_are_off(client: TestClient) ->
     assert re.search(r'data-testid="rerun-intake"\s+disabled aria-describedby="rerun-locked"', flat)
     assert "Re-run intake agent: the intake agent is asleep." in page
     assert "Re-run adjudication: your role cannot do this." in page
+
+
+# --------------------------------------------------- read grant and run grant
+
+def test_the_data_steward_keeps_the_intake_queue_after_the_run_grant_moved(
+    client: TestClient,
+) -> None:
+    """The read grant keeps the queue open to the persona that works it."""
+    choose(client, "persona_data_steward")
+    response = client.get("/queue/intake")
+    assert response.status_code == 200, response.text
+    assert 'data-testid="intake-table"' in response.text
+
+
+def test_the_data_steward_reads_the_queue_but_cannot_process_it(
+    client: TestClient,
+) -> None:
+    """The processing control is locked for a persona that may only read."""
+    choose(client, "persona_data_steward")
+    page = client.get("/queue/intake").text
+    flat = page.replace("\n", " ")
+    assert re.search(
+        r'data-testid="intake-bulk-submit"\s+disabled aria-describedby="intake-bulk-reason"',
+        flat,
+    )
+    assert "Your role cannot run the intake agent." in page
+    # A read only queue offers no selection to process.
+    assert 'data-testid="intake-select"' not in page
+
+
+def test_the_processing_control_is_open_to_the_agent_operator(
+    client: TestClient, environment: Settings
+) -> None:
+    """The persona that may run the intake agent may process the selection."""
+    submit_arrival_as_steward(client)
+    choose(client, "persona_agent_operator")
+    wake_the_agent(environment)
+    page = client.get("/queue/intake").text
+    assert 'data-testid="intake-select"' in page
+    assert "Your role cannot run the intake agent." not in page
+    assert "The intake agent is asleep." not in page

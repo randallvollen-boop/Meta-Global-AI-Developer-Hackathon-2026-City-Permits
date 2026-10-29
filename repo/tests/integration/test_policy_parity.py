@@ -159,7 +159,7 @@ def act(client: TestClient, action_id: str, fields: dict, next_path: str) -> dic
 
 
 def wake(client: TestClient, agent_key: str) -> None:
-    choose(client, "persona_city_administrator")
+    choose(client, "persona_agent_operator")
     result = act(client, "agent.toggle", {"agent_key": agent_key, "mode": "awake"}, f"/agent/{agent_key}")
     assert result["status"] == "accepted", result
 
@@ -301,13 +301,13 @@ def test_the_intake_and_adjudication_agents_agree_with_the_pure_kernel(client, e
     wake(client, "adjudication")
     routed: dict[str, str] = {}
     for app_id in ids:
-        choose(client, "persona_data_steward")
+        choose(client, "persona_agent_operator")
         act(client, "agent.run.intake", {"application_id": app_id}, "/agent/intake")
     for app_id in ids:
         with factory() as session:
             routed[app_id] = session.get(permit.Application, app_id).status
         if routed[app_id] == "ready_for_review":
-            choose(client, "persona_permit_reviewer")
+            choose(client, "persona_agent_operator")
             act(client, "agent.run.adjudication", {"application_id": app_id}, "/agent/adjudication")
 
     seen_blocking = seen_ready = seen_judging = seen_recommendation = 0
@@ -404,9 +404,8 @@ def test_production_calls_the_shared_kernel_functions(client, environment, facto
     app_id = result["application_id"]
     wake(client, "intake")
     wake(client, "adjudication")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": app_id}, "/agent/intake")
-    choose(client, "persona_permit_reviewer")
     act(client, "agent.run.adjudication", {"application_id": app_id}, "/agent/adjudication")
     with transaction(factory) as session:
         admin = context_for(session, "persona_city_administrator")
@@ -457,7 +456,7 @@ def test_a_simulation_run_leaves_every_business_row_unchanged(client, environmen
         pending = [a.id for a in session.execute(select(permit.Application)
                    .where(permit.Application.scenario_id.is_(None))).scalars().all()]
     for app_id in pending:
-        choose(client, "persona_data_steward")
+        choose(client, "persona_agent_operator")
         act(client, "agent.run.intake", {"application_id": app_id}, "/agent/intake")
 
     before = table_snapshot(factory)

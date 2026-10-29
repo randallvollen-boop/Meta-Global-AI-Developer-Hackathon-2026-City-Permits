@@ -95,7 +95,7 @@
         {% for row in queue.rows %}
         <tr class="row" data-testid="intake-row" data-status="{{ row.status }}" data-age-tone="{{ row.age_tone }}">
           <td>
-            {% if row.awaiting_intake %}
+            {% if row.awaiting_intake and can_process %}
             <input type="checkbox" name="selection" value="{{ row.application_id }}:{{ row.version }}"
                    id="select-{{ row.application_id }}" data-testid="intake-select"
                    aria-label="Select {{ row.reference }} for processing">
@@ -138,7 +138,7 @@
       <p style="margin:0">Process selected is unavailable:</p>
       <ul style="margin:0.2rem 0 0 1.1rem">
         {% if not can_process %}<li data-testid="intake-bulk-no-grant">Your role cannot run the intake agent.</li>{% endif %}
-        {% if not agent_awake %}<li data-testid="intake-bulk-locked">The intake agent is asleep. A City Administrator wakes it on the Intake agent screen.</li>{% endif %}
+        {% if not agent_awake %}<li data-testid="intake-bulk-locked">The intake agent is asleep. An Agent Operator wakes it on the Intake agent screen.</li>{% endif %}
         {% if not queue.rows %}<li data-testid="intake-bulk-empty">No case is in this view to process.</li>{% endif %}
       </ul>
     </div>

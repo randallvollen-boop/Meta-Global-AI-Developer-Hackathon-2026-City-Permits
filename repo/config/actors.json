@@ -560,7 +560,7 @@
           "source": "explicit"
         },
         {
-          "permission_id": "agent.run.intake",
+          "permission_id": "permit.intake.queue.view",
           "domains": [
             "permits"
           ],
@@ -697,14 +697,6 @@
         {
           "permission_id": "records.document.view",
           "domains": [],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.run.adjudication",
-          "domains": [
-            "permits"
-          ],
           "record_scope": [],
           "source": "explicit"
         },
@@ -1062,28 +1054,6 @@
             "building_rules",
             "finance",
             "records"
-          ],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.toggle",
-          "domains": [],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.run.adjudication",
-          "domains": [
-            "permits"
-          ],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.run.intake",
-          "domains": [
-            "permits"
           ],
           "record_scope": [],
           "source": "explicit"
