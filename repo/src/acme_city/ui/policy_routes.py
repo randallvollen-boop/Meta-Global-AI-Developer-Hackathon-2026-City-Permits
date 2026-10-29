@@ -42,6 +42,7 @@ from acme_city.auth.router import get_session
 from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
 from acme_city.policy import briefing as briefing_module
 from acme_city.policy import runs as runs_module
+from acme_city.policy import summary as summary_module
 from acme_city.policy import views
 from acme_city.policy.drafts import (
     OWN_VERSION_REASON,
@@ -511,9 +512,13 @@ def ui_policy_run(
     except AcmeError as error:
         return _refusal(request, session, resolved, error, action="policy.run.read",
                         target_type="policy_run", target_id=run_id, back="/policy/scenarios")
+    display = views.run_view(run, scenario_deleted=bool(state and state[0]))
     context = page_context(
         request, session, resolved, screen=SCREEN, title=f"What-if results: {run.scenario_name}",
-        run=views.run_view(run, scenario_deleted=bool(state and state[0])),
+        run=display,
+        # The summary is worked out from the stored run, so it is the same
+        # whether or not a model is available to explain it.
+        summary=summary_module.run_summary(display),
         can_brief=can_brief,
         explain=explain,
         draft_panel=draft_panel,
