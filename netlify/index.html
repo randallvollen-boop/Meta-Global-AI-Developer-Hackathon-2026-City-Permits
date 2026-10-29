@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f7fb">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101820">
+  <title>Waking the ACME City Permits demo</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: #f4f7fb;
+      --surface: #ffffff;
+      --text: #17212b;
+      --muted: #52606d;
+      --line: #ccd6e0;
+      --accent: #174f82;
+      --accent-text: #ffffff;
+      --ring: #f0a126;
+      --ready: #236b46;
+      --shadow: 0 20px 55px rgb(33 50 68 / 14%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #101820;
+        --surface: #18232d;
+        --text: #edf3f8;
+        --muted: #b8c5d0;
+        --line: #40505e;
+        --accent: #86bce8;
+        --accent-text: #0d2538;
+        --ring: #ffbe55;
+        --ready: #8fd6b2;
+        --shadow: 0 20px 55px rgb(0 0 0 / 35%);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 34rem),
+        var(--page);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(100%, 660px);
+      padding: clamp(24px, 6vw, 48px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: .78rem;
+      font-weight: 750;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 17ch;
+      font-size: clamp(2rem, 8vw, 3.45rem);
+      line-height: 1.02;
+      letter-spacing: -.035em;
+    }
+
+    .lede {
+      max-width: 48ch;
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.8vw, 1.12rem);
+    }
+
+    .status {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 28px 0 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+    }
+
+    .pulse {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+      margin-top: .35rem;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+      animation: pulse 1.8s ease-out infinite;
+    }
+
+    .status[data-state="ready"] .pulse {
+      background: var(--ready);
+      animation: none;
+    }
+
+    .status[data-state="timeout"] .pulse {
+      background: var(--muted);
+      animation: none;
+    }
+
+    .status p { margin: 0; }
+    .status strong { display: block; margin-bottom: 2px; }
+    .status span { color: var(--muted); }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+      margin-top: 24px;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 18px;
+      border-radius: 9px;
+      color: var(--accent-text);
+      background: var(--accent);
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .button:hover { filter: brightness(1.08); }
+    .button:focus-visible, footer a:focus-visible {
+      outline: 3px solid var(--ring);
+      outline-offset: 3px;
+    }
+
+    .elapsed {
+      margin: 0;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: .9rem;
+    }
+
+    footer {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    footer p { margin: 0; }
+    footer a { color: inherit; }
+
+    @keyframes pulse {
+      70% { box-shadow: 0 0 0 12px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pulse { animation: none; }
+    }
+
+    @media (max-width: 390px) {
+      body { padding: 12px; }
+      main { padding: 24px 18px; border-radius: 14px; }
+      .actions { align-items: stretch; }
+      .button { width: 100%; }
+      .elapsed { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">ACME City Permits</p>
+    <h1>Waking the demo</h1>
+    <p class="lede">The hosted service may need a moment to start. This page checks when it is ready and opens it automatically.</p>
+
+    <div class="status" data-state="waiting" role="status" aria-live="polite" aria-atomic="true">
+      <span class="pulse" aria-hidden="true"></span>
+      <p>
+        <strong id="status-title">Starting the service</strong>
+        <span id="status-detail">Checking readiness now.</span>
+      </p>
+    </div>
+
+    <div class="actions">
+      <a class="button" href="https://acme-city-permits.onrender.com/">Open the demo now</a>
+      <p class="elapsed" id="elapsed">Waiting for less than a minute</p>
+    </div>
+
+    <footer>
+      <p>Prepared by Randy Vollen, host of <a href="https://www.vollendata.com/">www.VollenData.com</a>, for the Muse Hackathon, using the fictional City of Acme.</p>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const demoUrl = "https://acme-city-permits.onrender.com/";
+      const probeUrl = "/demo-ready";
+      const startedAt = Date.now();
+      const timeoutMs = 3 * 60 * 1000;
+      const pollMs = 3000;
+      const requestTimeoutMs = 10000;
+      const status = document.querySelector(".status");
+      const title = document.querySelector("#status-title");
+      const detail = document.querySelector("#status-detail");
+      const elapsed = document.querySelector("#elapsed");
+      let stopped = false;
+
+      const updateElapsed = () => {
+        const seconds = Math.floor((Date.now() - startedAt) / 1000);
+        if (seconds < 60) {
+          elapsed.textContent = "Waiting for less than a minute";
+          return;
+        }
+        const minutes = Math.floor(seconds / 60);
+        elapsed.textContent = `Waiting for ${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+      };
+
+      const showTimeout = () => {
+        stopped = true;
+        status.dataset.state = "timeout";
+        title.textContent = "The demo is taking longer than expected";
+        detail.textContent = "The service did not report ready within three minutes. The direct link remains available.";
+        elapsed.textContent = "Automatic checks have stopped";
+      };
+
+      const checkReady = async () => {
+        if (stopped) return;
+        if (Date.now() - startedAt >= timeoutMs) {
+          showTimeout();
+          return;
+        }
+
+        const controller = new AbortController();
+        const requestTimer = window.setTimeout(() => controller.abort(), requestTimeoutMs);
+        try {
+          const response = await fetch(`${probeUrl}?t=${Date.now()}`, {
+            cache: "no-store",
+            credentials: "omit",
+            signal: controller.signal
+          });
+          const payload = await response.json();
+          if (response.ok && payload.status === "ready") {
+            stopped = true;
+            status.dataset.state = "ready";
+            title.textContent = "The demo is ready";
+            detail.textContent = "Opening ACME City Permits now.";
+            elapsed.textContent = "Ready";
+            window.setTimeout(() => window.location.assign(demoUrl), 650);
+            return;
+          }
+        } catch (_) {
+          // A sleeping or starting service is expected to reject some checks.
+        } finally {
+          window.clearTimeout(requestTimer);
+        }
+
+        updateElapsed();
+        window.setTimeout(checkReady, pollMs);
+      };
+
+      window.setInterval(() => {
+        if (!stopped) updateElapsed();
+      }, 1000);
+      checkReady();
+    })();
+  </script>
+</body>
+</html>

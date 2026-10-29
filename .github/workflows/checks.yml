@@ -39,8 +39,22 @@ jobs:
           cache-dependency-glob: repo/uv.lock
       - name: Install dependencies (frozen lockfile)
         run: uv sync --frozen
+      - name: Find the Playwright version
+        id: playwright
+        run: echo "version=$(uv run python -c 'import importlib.metadata as m; print(m.version("playwright"))')" >> "$GITHUB_OUTPUT"
+      # The browser download is the same for one Playwright version, so it is
+      # cached; the system libraries it needs still install on every run.
+      - name: Cache the test browser
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
       - name: Install the test browser
-        run: uv run playwright install --with-deps chromium
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: uv run playwright install chromium
+      - name: Install the browser's system libraries
+        run: uv run playwright install-deps chromium
       - name: Run the 10 gates
         run: uv run python scripts/run_all_checks.py
       - name: Keep the gate logs
