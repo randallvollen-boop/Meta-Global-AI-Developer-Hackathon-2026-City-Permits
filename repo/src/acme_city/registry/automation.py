@@ -58,6 +58,8 @@ def enqueue_accepted_snapshot(
     policy = active_policy(session)
     if policy is None:
         return None
+    if policy.mode == "paused" or dataset_key not in policy.source_scopes:
+        return None
 
     existing = session.execute(
         select(registry_automation.RegistryAutomationJob).where(
