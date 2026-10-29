@@ -3,7 +3,12 @@
 
 from __future__ import annotations
 
+import pytest
+
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+#: The link that opens one public record from a result card.
+CARD_LINK = '[data-testid="community-result-table"] .community-card-link'
 
 #: The list states a resident can reach from the community page.
 LIST_STATES = (
@@ -160,3 +165,140 @@ def test_the_search_and_return_sequence_works_on_a_phone(viewport_390, server: B
     assert "q=Acme" in page.url
     assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
     assert_not_covered(page, page.locator('[data-testid="community-search"]'))
+
+
+def _tab_to(page, selector: str, limit: int = 60) -> None:
+    """Move the keyboard focus to the first element the selector names."""
+    locator = page.locator(selector).first
+    for _ in range(limit):
+        if locator.evaluate("el => el === document.activeElement"):
+            return
+        page.keyboard.press("Tab")
+    raise AssertionError(f"the keyboard never reached {selector}")
+
+
+def _focus_is_visible(page) -> bool:
+    """Return whether the focused element draws a visible focus ring."""
+    return bool(
+        page.evaluate(
+            "() => {"
+            " const el = document.activeElement;"
+            " if (!el || el === document.body) return false;"
+            " const style = getComputedStyle(el);"
+            " return style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;"
+            "}"
+        )
+    )
+
+
+@pytest.mark.parametrize("viewport", [(390, 844), (1280, 900)])
+def test_the_search_card_and_back_flow_fits_at_both_widths(
+    browser, server: BrowserServer, viewport: tuple[int, int]
+) -> None:
+    """The whole resident flow fits and stays clear at a phone and a desktop width."""
+    width, height = viewport
+    context = browser.new_context(viewport={"width": width, "height": height})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        assert_no_horizontal_overflow(page)
+
+        page.fill('[data-testid="community-q"]', "Acme")
+        page.locator('[data-testid="community-search"]').click()
+        page.wait_for_load_state("networkidle")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-result-total"]').is_visible()
+        assert page.locator(CARD_LINK).count() >= 1
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator('[data-testid="community-search"]'))
+        assert_not_covered(page, page.locator(CARD_LINK).first)
+
+        page.locator(CARD_LINK).first.click()
+        page.wait_for_load_state("networkidle")
+        assert "/city/community/permit/" in page.url
+        assert page.locator('[data-testid="community-record"]').is_visible()
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator('[data-testid="community-back"]'))
+
+        page.locator('[data-testid="community-back"]').click()
+        page.wait_for_load_state("networkidle")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
+        assert_no_horizontal_overflow(page)
+    finally:
+        context.close()
+
+
+def test_the_search_and_the_record_are_reachable_with_the_keyboard(
+    browser, server: BrowserServer
+) -> None:
+    """A resident who never uses the mouse can search, open a record and go back."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        _tab_to(page, '[data-testid="community-q"]')
+        assert _focus_is_visible(page), "the search field shows where the keyboard is"
+        page.keyboard.type("Acme")
+        with page.expect_navigation(wait_until="networkidle"):
+            page.keyboard.press("Enter")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-result-total"]').is_visible()
+
+        _tab_to(page, CARD_LINK)
+        assert _focus_is_visible(page), "the record link shows where the keyboard is"
+        with page.expect_navigation(wait_until="networkidle"):
+            page.keyboard.press("Enter")
+        assert "/city/community/permit/" in page.url
+        assert page.locator('[data-testid="community-record"]').is_visible()
+
+        _tab_to(page, '[data-testid="community-back"]')
+        with page.expect_navigation(wait_until="networkidle"):
+            page.keyboard.press("Enter")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-q"]').input_value() == "Acme"
+    finally:
+        context.close()
+
+
+def test_the_search_works_without_javascript(browser, server: BrowserServer) -> None:
+    """The resident flow is plain HTML: it works with scripting switched off."""
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844}, java_script_enabled=False
+    )
+    page = context.new_page()
+    try:
+        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        page.fill('[data-testid="community-q"]', "Acme")
+        page.locator('[data-testid="community-search"]').click()
+        page.wait_for_load_state("networkidle")
+        assert "q=Acme" in page.url
+        assert page.locator('[data-testid="community-result-total"]').is_visible()
+        assert page.locator(CARD_LINK).count() >= 1
+        assert_no_horizontal_overflow(page)
+    finally:
+        context.close()
+
+
+def test_a_long_search_wraps_instead_of_widening_the_page(
+    browser, server: BrowserServer
+) -> None:
+    """A long search text is echoed in full and wraps instead of widening the page."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    try:
+        long_query = "Acme" * 20
+        page.goto(f"{server.base_url}/city/community?q={long_query}", wait_until="networkidle")
+        count = page.locator('[data-testid="community-result-total"]')
+        assert long_query in count.inner_text()
+        assert_no_horizontal_overflow(page)
+        lines = count.evaluate(
+            "el => {"
+            " const style = getComputedStyle(el);"
+            " const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;"
+            " return el.getBoundingClientRect().height / line;"
+            "}"
+        )
+        assert lines > 1, "the long search text wraps onto more than one line"
+    finally:
+        context.close()
