@@ -13,14 +13,15 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 
 Open <http://127.0.0.1:8266>. The server binds only to the local computer.
 
-The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. The Permits button selects the Applicant persona through the same persona selector and opens the applicant pages inside the city layout. The floating "Demo: switch user" control, on both the website and the staff app, switches between the four personas.
+The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. The Permits button selects the Applicant persona through the same persona selector and opens the applicant pages inside the city layout. The floating "Demo: switch user" control, on both the website and the staff app, switches between the five personas.
 
-The selector offers exactly four personas:
+The selector offers exactly five personas, in the order a permit moves through them:
 
-1. Applicant
-2. Data Steward
-3. Permit Reviewer
-4. City Administrator
+1. Applicant: applies for a permit on the City website and tracks it.
+2. Agent Operator: wakes the intake and adjudication agents and asks them to process waiting cases (Wake agent, then Process next 20 or Process one). The Agent Operator records no permit decision.
+3. Data Steward: approves identity and parcel links and works the Data issues queue.
+4. Permit Reviewer: confirms the parcel, runs the application checks, records the review decision and issues the permit.
+5. City Administrator: assesses fees, reconciles payments, configures the app and reads the audit log.
 
 Service accounts and internal role templates never appear in the selector.
 
@@ -36,8 +37,8 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 
 1. Choose **Permit Reviewer**
 2. Open **Permit workspace** and select `SYN-APP-001`
-3. Run **Validate application** and inspect the deterministic rule results
-4. Record the reviewer decision as **approved**
+3. Run **Run application checks** and inspect the deterministic rule results
+4. Use **Record review decision** to record the outcome **approved**
 5. Switch to **City Administrator**
 6. Open **Reconciliation**
 7. Assess `app_synth_001` at `50000.00`
@@ -45,20 +46,22 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 9. Reconcile the assessment and confirm a `0.00` balance with exact status
 10. Switch to **Permit Reviewer**
 11. Return to the permit workspace and issue the simulated permit with a new command key
-12. Repeat the issuance action with the same command key and confirm that the permit number and artifact remain unchanged
+12. Without reloading the page, submit the same Issue permit form again and confirm that the permit number and artifact remain unchanged. A retry is the same command only while the form still carries the same command key and the same expected versions; a reloaded page carries the new versions.
 
-Each governed detail screen shows Owner, Steward, Source, Change this in, Last source update, Last received, Version and Open issues. Submitted, proposed, current and issued values use separate visual treatments.
+Each governed detail screen shows Owner, Steward, Source, Change this in, Source last changed, Last received or checked, Version and Open recorded issues. Submitted, proposed, current and issued values use separate visual treatments.
 
 ## Full stewardship path from fresh fixtures
 
 Choose **Data Steward**, open **Data issues** and, under "Work from a source record", propose then confirm these four synthetic D01 links (ERP means enterprise resource planning):
 
-| Source | Dataset | Record |
+| Source system | Dataset | Record |
 | --- | --- | --- |
-| ERP Finance | `business_licensing_register` | `ERP-BL-00412` |
-| Permitting | `applicant_profiles` | `PER-AP-0003` |
-| ERP Finance | `finance_accounts` | `ERP-ACC-77120-LEG` |
-| Permitting | `contractor_register` | `PER-CR-00188` |
+| `erp_finance` | `business_licensing_register` | `ERP-BL-00412` |
+| `permitting` | `applicant_profiles` | `PER-AP-0003` |
+| `erp_finance` | `finance_accounts` | `ERP-ACC-77120-LEG` |
+| `permitting` | `contractor_register` | `PER-CR-00188` |
+
+Type the source system value exactly as shown in the table. A display name such as "ERP Finance" is refused with a 403.
 
 The Finance account decision creates the governed payer link used by assessment and allocation. Continue with the reviewer and City Administrator steps above.
 
@@ -77,7 +80,7 @@ Replay evidence is always labelled `replay` and does not satisfy a live-provider
 
 ### D02 false friend
 
-Open **Data issues** as Data Steward (the steward-demo prepare mode below puts the Cedarline comparisons in the queue). Open the issue for `ERP-BL-00413` or `PER-AP-0004` and compare it with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
+Open **Data issues** as Data Steward (the steward-demo prepare mode below puts the Cedarline comparisons in the queue). Open the issue for `ERP-BL-00413` and compare it with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
 
 ### D06 source correction
 
@@ -89,7 +92,15 @@ Open **Reconciliation** as City Administrator. Review the synthetic partial, ove
 
 ### Access control
 
-Choose Applicant and try to open another applicant's direct permit URL. The server returns a permission denial. Switch to City Administrator and try to approve a permit. Configuration access does not provide reviewer authority.
+Choose Applicant and try to open another applicant's case. The page `/permits/app_synth_001` returns 404 ("That application is not available to you"), and the API `/api/permits/applications/app_synth_001` returns 403. The Applicant's own case, `/permits/app_d05`, opens. Switch to City Administrator and try to approve a permit. Configuration access does not provide reviewer authority.
+
+## Synthetic year demonstration
+
+```bash
+uv run python scripts/prepare_user_test.py --mode demo-synthetic
+```
+
+This resets the fictional fixtures and loads the synthetic year of permits (the same loader the hosted demo uses, with its default seed and count unless you pass `--synthetic-seed` and `--synthetic-count`). Steps 8 and 9 of the judge walkthrough (`docs/submission/JUDGE_WALKTHROUGH.md`), the City view at `/insight/city` and the resident search at `/city/community`, need it. The mode is a prepare mode; it does not start the server. Start the app afterwards with `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`.
 
 ## Cedarline steward demonstration
 
@@ -116,6 +127,9 @@ The settings screen says that this deployment runs the automation paused, becaus
 ```bash
 # Reset only; all D01 work remains open
 uv run python scripts/prepare_user_test.py --mode fresh
+
+# Reset plus the synthetic year of permits (judge walkthrough steps 8 and 9)
+uv run python scripts/prepare_user_test.py --mode demo-synthetic
 
 # Replay-labelled Muse evidence and approved identity links
 uv run python scripts/prepare_user_test.py --mode ready-for-review
