@@ -2,8 +2,10 @@
 
 This folder explains how fictional permit data arrives from outside the electronic system, how the agent triage pipeline handles it, where people act, and how to run the demo.
 
-The data, rules, fees, people and permits are synthetic. The application binds
-to loopback only and is not a municipal system.
+The data, rules, fees, people and permits are synthetic. Run locally, the
+application binds to loopback only. The public demo is hosted on Render at
+https://acme-city-permits.onrender.com (see `DEPLOY_RENDER.md`). It is not a
+municipal system.
 
 ## Contents
 

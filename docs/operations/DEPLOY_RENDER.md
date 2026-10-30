@@ -1,6 +1,6 @@
 # Deploying the public demonstration on Render
 
-This document sets up the public ACME City permits demonstration on Render at `permits.vollendata.com`. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the four personas, so the deployment adds rate limits, a request size limit and a visible notice.
+This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. The custom domain `permits.vollendata.com` is the intended address; it did not respond when last checked, so do not rely on it. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
 
 The blueprint is `render.yaml` at the repository root. It was written and tested without calling Render, so Render reports any field it does not accept when the Blueprint is created.
 
@@ -84,7 +84,7 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 
    Seeding never uses a live call, and the seeding step removes `META_API_KEY` from its own environment.
 
-8. **Check readiness.** Open `https://permits.vollendata.com/readyz` (or the `onrender.com` address). A healthy service returns HTTP 200 with `"status":"ready"`, `"mode":"demo"` and `"schema_at_head":true`. Render uses the same path as its health check. Then open `/select` and `/city/`: both show the line "This is a public demonstration with fictional data. It resets every night. Don't enter real personal information." Choose each of the four personas (Applicant, Data Steward, Permit Reviewer, City Administrator) and confirm that the Demo controls button switches between them.
+8. **Check readiness.** Open `https://permits.vollendata.com/readyz` (or the `onrender.com` address). A healthy service returns HTTP 200 with `"status":"ready"`, `"mode":"demo"` and `"schema_at_head":true`. Render uses the same path as its health check. Then open `/select` and `/city/`: both show the line "This is a public demonstration with fictional data. It resets every night. Don't enter real personal information." Choose each of the five personas (Applicant, Agent Operator, Data Steward, Permit Reviewer, City Administrator) and confirm that the Demo controls button switches between them.
 
 9. **Check the limits.** Open the site from two networks (for example a laptop and a phone on mobile data) and confirm that both load normally. Then send more than 300 requests from one of them in a minute and confirm that only that one receives the "Too many requests" page. If both are blocked together, apply the hop setting described above.
 
@@ -96,5 +96,5 @@ Edit it under the web service's Environment tab and save, or change `render.yaml
 
 ## What was and was not verified
 
-- Verified locally: the `demo` image built from both Dockerfiles (identical image), a container run with the blueprint's variables and `ACME_DEMO_SEED_ON_START=1` reached `/readyz` 200, listed the four personas, loaded 600 synthetic permit applications and the three steward links, and showed the notice. The tests are in `repo/tests/security/test_public_demo_protection.py`.
+- Verified locally: the `demo` image built from both Dockerfiles (identical image), a container run with the blueprint's variables and `ACME_DEMO_SEED_ON_START=1` reached `/readyz` 200, listed the four personas that existed at that time, loaded 600 synthetic permit applications and the three steward links, and showed the notice. The tests are in `repo/tests/security/test_public_demo_protection.py`.
 - Not verified: anything that needs Render or Netlify. That covers the Blueprint field names, the cron job runtime, whether Render accepts the build, the exact form of Render's `X-Forwarded-For`, the certificate issue and the rollback screen.

@@ -1,8 +1,10 @@
 # Runbook for outside intake, two people-driven agents, and human decisions
 
 ACME City Permits is a fictional demonstration. Every person, address, rule,
-fee and permit is synthetic, the server binds to loopback only
-(`127.0.0.1:8266`), and no agent or model approves, prices or issues a permit.
+fee and permit is synthetic, and no agent or model approves, prices or issues a permit.
+Run locally, the server binds to loopback only (`127.0.0.1:8266`). The public
+demo is hosted on Render at https://acme-city-permits.onrender.com; see
+`DEPLOY_RENDER.md`.
 
 ## Start, reset and simulate
 
@@ -73,18 +75,18 @@ APIs: `POST /api/intake/records`, `POST /api/intake/simulate`,
 
 ## The two agents and who may run them
 
-There are two agents. Both are **service identities** and neither is a selectable persona:
+There are two agents that people run. Both are **service identities** and neither is a selectable persona. The **Agent Operator** is the only persona that wakes and runs them. The City Administrator sets the processing policy (Administration > Agent processing), and a third service identity, the linking agent, applies steward links under an active steward policy (automatic linking is built and paused on the hosted demo):
 
 | Agent | Identity | Who may run it | Who may wake it |
 |---|---|---|---|
-| Intake agent | `service_agent_intake` | Data Steward, City Administrator (`agent.run.intake`) | City Administrator only (`agent.toggle`) |
-| Adjudication agent | `service_agent_adjudication` | Permit Reviewer, City Administrator (`agent.run.adjudication`) | City Administrator only (`agent.toggle`) |
+| Intake agent | `service_agent_intake` | Agent Operator (`agent.run.intake`) | Agent Operator (`agent.toggle`) |
+| Adjudication agent | `service_agent_adjudication` | Agent Operator (`agent.run.adjudication`) | Agent Operator (`agent.toggle`) |
 
 **An agent is engaged only when it is awake, and only when a person runs
-it.** After a reset both agents sleep. A City Administrator wakes one on its
+it.** After a reset both agents sleep. The Agent Operator wakes one on its
 screen (**Wake agent** / **Put agent to sleep**); until then every run is
-refused. A person then runs it: **Process one** / **Process all waiting** on
-the Intake agent screen, **Run** / **Run all** on the Adjudication agent
+refused. A person then runs it: **Process one** / **Process next 20** on
+the Intake agent screen, **Process one** / **Process next 20** on the Adjudication agent
 screen, or **Re-run intake agent** / **Re-run adjudication** on the permit
 workspace. The same rules apply to a re-run.
 
@@ -148,16 +150,16 @@ the audit trail.
 | Persona | Screen | Action | What happens next |
 |---|---|---|---|
 | City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
-| City Administrator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
-| Data Steward | Intake agent | Process one / Process all waiting | The seven-node intake graph runs; the case is routed |
-| Data Steward | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
+| Agent Operator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
+| Agent Operator | Intake agent | Process one / Process next 20 | The seven-node intake graph runs; the case is routed |
+| Agent Operator | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved or stay unapproved; proposals remain evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
-| Permit Reviewer | Adjudication agent | Run / Run all | The five-node adjudication graph runs and leaves a pending recommendation |
+| Agent Operator | Adjudication agent | Process one / Process next 20 | The five-node adjudication graph runs and leaves a pending recommendation |
 | Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
 | Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
 | Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision with a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
-| City Administrator | Administration | Permit types, users, reason codes | Every change is a governed, audited action and appears in the configuration log |
+| City Administrator | Administration | Permit types, users, reason codes, Agent processing policy | Every change is a governed, audited action and appears in the configuration log |
 | City Administrator | Reconciliation | Assess application, Import ERP payment, Confirm allocation, Reconcile assessment | Fee assessed from the published schedule; reconciliation must be exact (balance 0.00) before issuance |
 | Permit Reviewer | Permit workspace | Issue permit | Separate human action; idempotent on the command key; blocked until decision, links, assessment and exact reconciliation all hold |
 | Applicant | Permit workspace / Work queue | Submit application correction | Creates a new immutable revision; the case returns for another intake run |
@@ -169,10 +171,11 @@ screen is also a 403). Order and labels are canonical for everyone.
 
 | Persona | Screens |
 |---|---|
-| Applicant | Work queue, Applicants, Permit workspace |
-| Data Steward | the six above plus **Intake agent**, **Intake queue** and **Early resolution** |
-| Permit Reviewer | Work queue, Applicants, Permit workspace plus **Adjudication agent** and **Review queue** |
-| City Administrator | the eight original screens plus **Intake agent**, **Adjudication agent** and **Administration** |
+| Applicant | Work queue, People & organizations, Permit workspace, and the City of Acme website |
+| Agent Operator | Agents (home), Intake agent, Adjudication agent, Agent runs |
+| Data Steward | Data issues (home), Master records, Source records and Activity in the bar; Work queue, Permit workspace, Rules and fees, Intake queue, Early resolution and Steward automation under More tools |
+| Permit Reviewer | Work queue, People & organizations, Permit workspace, Intake queue and Review queue |
+| City Administrator | Planning overview (home), Work queue, Master records, Permit workspace, Data issues, Source records, Activity, Rules and fees, Reconciliation, Governance and sources and Administration in the bar; City view, What-if, Operations, Audit log, Support and Checks under More tools |
 
 ## The life of a case
 
@@ -343,7 +346,7 @@ links the queues the acting persona may open.
 
 | Persona | Screen | What it answers |
 |---|---|---|
-| Data Steward | `/queue/intake` | which cases has the City in front of it, and in which saved view |
+| Data Steward, Agent Operator | `/queue/intake` | which cases has the City in front of it, and in which saved view (only the Agent Operator can process selected cases) |
 | Data Steward | `/queue/early-resolution` | which cases wait for a person, and what is in the way |
 | Permit Reviewer | `/queue/review` | which cases are in front of the reviewer, and what was decided recently |
 
@@ -603,7 +606,7 @@ The historical seed is a fixed baseline: the decision and permit the fixture ins
 parcel match from parcel confirmation.  Those are reported as **not applicable (historical
 seed)** or counted as exceptions; they are never counted as passes and no event is made up
 for them.  A record that is not in the fixture and has no audit record fails the check.
-The checks: exactly four selectable personas; no agent identity decided or issued anything;
+The checks: exactly five selectable personas; no agent identity decided or issued anything;
 every post-seed decision and issuance has an accepted audit record; the City Administrator
 holds none of decide, issue, return, waive; every post-seed issuance rests on an approved,
 parcel-confirmed decision; fee totals recompute to the stored amounts; no archived case sits
@@ -698,8 +701,8 @@ has a text label and a parcel table sits beside it). Staff personas only; the
 Applicant sees only the case's own parcel.
 
 **Shared with.** The published dataset "Property master (parcel, address,
-owner, zoning)" has four simulated subscriber departments (Tax / Assessor,
-Fire and life safety, Code enforcement, Utilities), each with a contract
+owner, zoning)" has six simulated subscriber departments (Tax / Assessor,
+Fire and life safety, Code enforcement, Utilities, Sanitation and Police), each with a contract
 listing the fields it consumes (Governance and sources). No such system is
 built; the signals are synthetic and labelled so.
 
@@ -785,7 +788,8 @@ The modes, every setting, the deploy, rollback, restore and key rotation steps, 
 ```mermaid
 sequenceDiagram
     participant P as ACME ePermit Portal (simulated)
-    participant A as City Administrator
+    participant A as Agent Operator
+    participant M as City Administrator
     participant I as Intake agent (service identity)
     participant S as Data Steward
     participant J as Adjudication agent (service identity)
@@ -794,14 +798,14 @@ sequenceDiagram
     P->>I: stage raw, create application + revision + documents
     I->>I: wait as "Awaiting intake agent"
     A->>I: wake the intake agent
-    S->>I: Process all waiting (seven-node graph; the locator corrects the address and proposes the parcel)
+    A->>I: Process next 20 (seven-node graph; the locator corrects the address and proposes the parcel)
     I->>I: route to ready_for_review with the review area
     S->>I: approve identity links, the parcel link and extracted values
     A->>J: wake the adjudication agent
     R->>R: confirm the parcel (Is this the right property?)
-    R->>J: Run all (five-node graph)
+    A->>J: Process next 20 (five-node graph)
     J->>J: recommendation pending (for example deny, DF-1), advisory
     R->>J: Confirm (decision of record) or Revert (reason required)
-    A->>I: assess fee, import payment, allocate, reconcile (exact)
+    M->>I: assess fee, import payment, allocate, reconcile (exact)
     R->>I: issue permit (separate human action)
 ```
