@@ -42,7 +42,7 @@ Every existing test, the start scripts, and the judged deployment run in demo mo
 | `ACME_SCENARIO_CLOCK` | empty (start script uses `auto`) | ignored | Demo date |
 | `META_API_KEY` | none | none | Provider credential. Leave unset until the AI controls below are closed |
 | `ACME_APPLICANT_ASSIST_LIVE_ENABLED`, `ACME_POLICY_ASSIST_LIVE_ENABLED` | off | off | Task switches, checked in addition to the global switch |
-| `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Existing caps, unchanged |
+| `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Live calls in total since the data was last rebuilt (not per visitor; one provider error also stops live calls), image calls per day, allowed model. See the Live Muse section of `DEPLOY_RENDER.md` |
 | `ACME_GIS_BASE_URL`, `ACME_GIS_AUTO_PROPOSE_SCORE`, `ACME_DEMO_TIMEZONE`, `ACME_EVIDENCE_ROOT`, `ACME_KEY_FILE` | as before | as before | Unchanged |
 | `ACME_RUN_MIGRATIONS`, `ACME_BIND_PORT`, `ACME_FORWARDED_ALLOW_IPS` | container entrypoint only | container entrypoint only | Skip the upgrade, listen port, proxy addresses uvicorn trusts. `PORT`, when set, wins over `ACME_BIND_PORT` |
 | `ACME_RATE_LIMIT_ALL_PER_MINUTE`, `_WRITE_`, `_SESSION_`, `_UPLOAD_` (`..._PER_MINUTE`) | 0 (off) | 0 (off) | Requests per minute per client address for all requests, state-changing requests, persona switches and uploads. For the public demonstration only; see `DEPLOY_RENDER.md` |

@@ -1,4 +1,6 @@
-# Deploying the public demonstration on Render
+# Deployment runbook: the public demonstration on Render
+
+This is the single runbook for the hosted demonstration: first setup, every later deploy, the smoke check, live Muse for judging, the nightly reset and rollback. Other documents point here.
 
 This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. The custom domain `permits.vollendata.com` is the intended address; it did not respond when last checked, so do not rely on it. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
 
@@ -29,8 +31,9 @@ All limits count requests per minute for one client address. A setting of `0` sw
 | `ACME_RATE_LIMIT_WRITE_PER_MINUTE` | 60 | Requests that are not GET, HEAD or OPTIONS |
 | `ACME_RATE_LIMIT_SESSION_PER_MINUTE` | 20 | Persona and session switches (`/ui/actor`, `/ui/end`, `/api/session/select`, `DELETE /api/session`) |
 | `ACME_RATE_LIMIT_UPLOAD_PER_MINUTE` | 10 | Multipart (file upload) requests |
-| `ACME_MUSE_LIVE_CALL_CAP` | 2 | Live Muse calls per run (existing cap, unchanged) |
-| `ACME_MUSE_IMAGE_DAILY_CAP` | 10 | Live Muse image calls per day (existing cap, unchanged) |
+| `ACME_MUSE_LIVE_CALL_CAP` | 2 | Live Muse calls in total since the data was last rebuilt, across every visitor and every Muse button (see Live Muse below) |
+| `ACME_MUSE_DAILY_CALL_CAP` | not set (code default 10) | Provider calls per day, shared by every path that can reach the provider |
+| `ACME_MUSE_IMAGE_DAILY_CAP` | 10 | Live Muse image calls per day |
 | `ACME_MAX_REQUEST_BYTES` | 26214400 | Largest request body (25 MB). The code default is 32 MB, `0` switches it off |
 
 A request counts against every limit that applies to it. A persona switch, for example, counts against the first three. A refused request spends nothing. Each limit is a token bucket: the full allowance is available at once, and tokens return at an even rate. An address that goes over receives a 429 page in the application's style (a JSON body for API callers) with a `Retry-After` header. A body over the size limit receives 413.
@@ -78,17 +81,104 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 
    The URL is a secret: anyone who holds it can start a deploy. Keep it out of the repository, chat and tickets. If it leaks, use the Regenerate button beside the hook in Render and update the cron job variable. If the cron job cannot be used, the manual alternative is to press Manual Deploy, then Deploy latest commit, on the web service each time the data should be reset. The schedule is in UTC (`0 2 * * *`).
 
-7. **Turn live Muse on or off.** Live Muse calls are off by default (`ACME_MUSE_PROVIDER_ENABLED=0`), and the recorded replay is what a visitor sees.
-   - To turn it **on**: in the web service Environment, set `META_API_KEY` to the key, set `ACME_MUSE_PROVIDER_ENABLED` to `1`, and set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the assistants should answer live. Save. Render redeploys. The call caps in the table above still apply, and the key is never sent to a browser.
-   - To turn it **off**: set `ACME_MUSE_PROVIDER_ENABLED` back to `0` (and the two assistant flags to `0`) and save. The key may stay in place, because the provider switch blocks every call.
+7. **Live Muse.** Leave it off. Turning it on for judging is a separate step, below.
 
-   Seeding never uses a live call, and the seeding step removes `META_API_KEY` from its own environment.
-
-8. **Check readiness.** Open `https://permits.vollendata.com/readyz` (or the `onrender.com` address). A healthy service returns HTTP 200 with `"status":"ready"`, `"mode":"demo"` and `"schema_at_head":true`. Render uses the same path as its health check. Then open `/select` and `/city/`: both show the line "This is a public demonstration with fictional data. It resets every night. Don't enter real personal information." Choose each of the five personas (Applicant, Agent Operator, Data Steward, Permit Reviewer, City Administrator) and confirm that the Demo controls button switches between them.
+8. **Run the smoke check** (below).
 
 9. **Check the limits.** Open the site from two networks (for example a laptop and a phone on mobile data) and confirm that both load normally. Then send more than 300 requests from one of them in a minute and confirm that only that one receives the "Too many requests" page. If both are blocked together, apply the hop setting described above.
 
-10. **Roll back to a previous deploy.** In Render, open `acme-city-permits`, then Events or Deploys, find the last good deploy, and use Rollback. The previous image starts, seeds fresh data and replaces the current instance when `/readyz` passes. Repeat step 8. The same screen can redeploy the latest commit again afterwards. Because `autoDeploy` is off in `render.yaml`, a push to the repository never changes the live demonstration until someone deploys.
+10. **Roll back to a previous deploy.** See Rollback below.
+
+## Deploy a new version
+
+`autoDeploy` is off, so a push never changes the live demonstration by itself.
+
+1. Randall approves the push, and main is pushed to `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits`.
+2. In Render, open `acme-city-permits` and press Manual Deploy, then Deploy latest commit. The lead may trigger the same deploy through the Render API instead.
+3. Wait until the deploy shows Live. Render keeps the old instance serving until the new one passes `/readyz`.
+4. Run the smoke check.
+
+Every deploy rebuilds the data from nothing, so it is also a reset.
+
+## Smoke check
+
+Run it after every deploy and every rollback. Use the `onrender.com` address.
+
+1. `/readyz` returns HTTP 200 with `"status":"ready"`, `"mode":"demo"` and `"schema_at_head":true`, and `schema_revision` equals `expected_revision`. Today that revision is `stw_registry_automation`. It changes whenever a migration merges.
+2. `/select`, `/lifecycle` and `/walkthrough` return 200. `/select` and `/city/` show the line "This is a public demonstration with fictional data. It resets every night. Don't enter real personal information."
+3. Choose each persona in story order and check where it lands:
+
+   | Persona | Lands on |
+   |---|---|
+   | Applicant | `/city/` |
+   | Agent Operator | `/agents` |
+   | Data Steward | `/steward` |
+   | Permit Reviewer | `/queue` |
+   | City Administrator | `/overview` |
+
+4. Press Demo controls at the bottom left and confirm it switches between the personas.
+
+## Live Muse for judging
+
+Live Muse stays off until judging, and Randall turns it on himself. The live service holds:
+
+| Setting | Value now |
+|---|---|
+| `ACME_MUSE_PROVIDER_ENABLED` | 0 |
+| `ACME_APPLICANT_ASSIST_LIVE_ENABLED` | 0 |
+| `ACME_POLICY_ASSIST_LIVE_ENABLED` | 0 |
+| `ACME_MUSE_LIVE_CALL_CAP` | 2 |
+| `ACME_MUSE_IMAGE_DAILY_CAP` | 10 |
+| `META_API_KEY` | not present (Render drops a variable left empty) |
+
+### How the limits really work
+
+- `ACME_MUSE_LIVE_CALL_CAP` is not per visitor and not per session. The service counts every completed live model run in the database. At 2, live Muse stops after two live calls in total, from anyone, until the data is rebuilt.
+- One recorded provider error stops every further live call until the data is rebuilt, whatever the cap says.
+- `ACME_MUSE_DAILY_CALL_CAP` (code default 10, not set in `render.yaml`) caps provider calls per day across every path.
+- Randall chooses the cap for judging. Until he does, it stays at 2.
+
+### Turn it on
+
+1. In Render, open `acme-city-permits`, then Environment, then Add Environment Variable. Add `META_API_KEY` with the key.
+2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1`. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live.
+3. Set `ACME_MUSE_LIVE_CALL_CAP` to the number Randall chose for judging.
+4. Save. Render redeploys by itself, which also resets the live call count. Run the smoke check.
+
+The key is never sent to a browser, and seeding never uses a live call.
+
+### See that live calls stopped
+
+Once a limit is reached, a live attempt is refused before any request leaves the service. It is recorded as a failed live run carrying one of these reasons; the code does not quietly switch that attempt to the replay:
+
+- "the live call budget of this build run is exhausted" (the cap is used up);
+- "a previous live run recorded a provider error; no further live call is sent" (the error stop).
+
+The reason shows wherever the screen lists the run, for example the Muse run panel of the permit workspace.
+
+### Recover
+
+Rebuild the data: press Manual Deploy, then Deploy latest commit, or trigger the deploy hook. The count starts again at zero and the error stop clears. Check the provider first if the stop came from an error.
+
+### Turn it off
+
+Set `ACME_MUSE_PROVIDER_ENABLED` back to `0`, and the two assistant flags to `0`, then save. The key may stay, because the provider switch blocks every call.
+
+### Steward assistant
+
+The Steward assistant lane starts after the current fixes merge. Its Muse button uses the same `ACME_MUSE_PROVIDER_ENABLED` switch and the same limits. Add its own switch here if the lane introduces one.
+
+## Nightly reset
+
+The cron job `acme-city-permits-nightly-reset` calls the web service's deploy hook at 02:00 UTC. It needs `ACME_DEPLOY_HOOK_URL`, a secret Randall sets in the dashboard. Until it is set, every nightly run fails and the data is not reset.
+
+Find the hook under `acme-city-permits`, then Settings, then Deploy Hook. Paste it into the cron job's Environment as `ACME_DEPLOY_HOOK_URL`, save, and press Trigger Run once. The log should say `deploy hook answered 200`. Step 6 above has the details and what to do if the URL leaks.
+
+## Rollback
+
+In Render, open `acme-city-permits`, then Events, find the last good deploy and press Rollback. The previous image starts and replaces the current instance when `/readyz` passes. Then run the smoke check.
+
+The database lives on the container and is rebuilt on every start, so a rollback across a migration needs no separate reset: the older image builds its own schema from nothing. Settings changed in the Environment tab are not rolled back. Check the live Muse settings after a rollback.
 
 ## Changing a setting
 
