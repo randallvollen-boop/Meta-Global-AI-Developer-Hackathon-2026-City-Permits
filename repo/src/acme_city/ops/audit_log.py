@@ -122,6 +122,32 @@ def _record_links(session: Session, events: list[audit.AuditEvent]) -> dict[str,
     return links
 
 
+def application_references(session: Session, application_ids: set[str]) -> dict[str, str]:
+    """Return the reference number of every named application."""
+    if not application_ids:
+        return {}
+    return {
+        row[0]: row[1]
+        for row in session.execute(
+            select(permit.Application.id, permit.Application.source_application_number).where(
+                permit.Application.id.in_(application_ids)
+            )
+        ).all()
+    }
+
+
+def target_reference(session: Session, target_type: str, target_id: str) -> str:
+    """Return the reference number of the record an event is about.
+
+    A case is shown by the reference number the City uses everywhere else
+    (``SYN-APP-001``); the internal identifier stays in the link that opens
+    the case.
+    """
+    if target_type != "application" or not target_id:
+        return ""
+    return application_references(session, {target_id}).get(target_id, "")
+
+
 def audit_log(
     session: Session,
     *,
@@ -181,6 +207,14 @@ def audit_log(
         ).all()
     }
     links = _record_links(session, events)
+    references = application_references(
+        session,
+        {
+            event.target_id
+            for event in events
+            if event.target_type == "application" and event.target_id
+        },
+    )
     rows = [
         {
             "event_id": event.id,
@@ -191,6 +225,7 @@ def audit_log(
             "action": event.action,
             "target_type": event.target_type or "",
             "target_id": event.target_id or "",
+            "target_reference": references.get(event.target_id or "", ""),
             "href": links.get(event.id, ""),
             "outcome": event.outcome,
             "versions": (
@@ -241,7 +276,9 @@ __all__ = [
     "AGENT_ROLE_IDS",
     "PAGE_SIZE",
     "actor_type_of",
+    "application_references",
     "audit_log",
     "event_detail",
     "identity_sets",
+    "target_reference",
 ]

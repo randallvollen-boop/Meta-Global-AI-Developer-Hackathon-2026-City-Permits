@@ -103,9 +103,11 @@ def audit_presentation(view: dict[str, Any]) -> dict[str, Any]:
             "action_label": audit_action_label(str(row.get("action", ""))),
             "outcome_label": audit_outcome_label(str(row.get("outcome", ""))),
             "actor_type_label": str(row.get("actor_type", "system")),
-            "target_label": " ".join(
+            "target_label": str(row.get("target_reference") or "")
+            or " ".join(
                 part for part in (str(row.get("target_type", "")), str(row.get("target_id", ""))) if part
-            ) or "No record",
+            )
+            or "No record",
         }
         for row in list(view.get("rows") or [])
     ]

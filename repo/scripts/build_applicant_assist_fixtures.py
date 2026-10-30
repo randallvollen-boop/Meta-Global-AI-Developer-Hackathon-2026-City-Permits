@@ -208,7 +208,7 @@ def _what_next_paragraphs() -> list[dict[str, Any]]:
         {
             "text": (
                 "Choose the project that matches your work in the list of permit "
-                "types, and have the parcel number and the address of the work ready."
+                "types, and have the address of the work ready."
             ),
             "citations": [
                 {

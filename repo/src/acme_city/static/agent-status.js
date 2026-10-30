@@ -19,11 +19,15 @@
     return true;
   };
 
-  document.querySelectorAll("[data-status-refresh-link]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      void refresh();
-    });
+  // The click is bound on the document, so the link keeps working when the
+  // page is read again after an action.
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest("[data-status-refresh-link]");
+    if (!link) return;
+    event.preventDefault();
+    void refresh();
   });
   window.setInterval(() => { void refresh(); }, 5000);
 })();

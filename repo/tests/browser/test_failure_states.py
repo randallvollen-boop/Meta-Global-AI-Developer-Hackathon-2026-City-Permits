@@ -55,9 +55,14 @@ def test_a_stale_expected_version_is_refused(
 ) -> None:
     login("persona_permit_reviewer")
     page.goto(f"{server.base_url}/permits/app_synth_001", wait_until="domcontentloaded")
-    submit_action("permit.evaluate", {"application_id": "app_synth_001"})
-    # The form still carries the version the screen was rendered with, and the
-    # validation has moved the record on since then.
+    # The validation runs outside this screen, so the form on the screen still
+    # carries the version the screen was rendered with, and the validation has
+    # moved the record on since then.  (The screen reads itself again after an
+    # action it sends itself, so the move has to come from elsewhere.)
+    evaluated = page.request.post(
+        f"{server.base_url}/api/permits/applications/app_synth_001/evaluate"
+    )
+    assert evaluated.ok, evaluated.text()
     message = submit_action(
         "permit.decide",
         {

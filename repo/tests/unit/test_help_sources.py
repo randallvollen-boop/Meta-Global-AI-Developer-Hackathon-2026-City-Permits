@@ -135,6 +135,33 @@ def test_a_rule_is_rendered_with_its_applicability_operator_threshold_and_condit
         factory.dispose()
 
 
+def test_the_applicant_is_asked_for_the_address_and_not_for_a_parcel_number(
+    seeded: Settings,
+) -> None:
+    """The address locator finds the parcel, so the applicant gives the address.
+
+    The application form has no parcel field, so the published passages must
+    not ask for a parcel number either.
+    """
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            applicant = context_for(session, "persona_applicant")
+            bundle = build_bundle(
+                session,
+                applicant,
+                config=load_config(),
+                permit_type_key="com_ti",
+            )
+            texts = "\n".join(source.text for source in bundle.passages)
+            assert "Required fields: Property address" in texts
+            assert "Parcel number" not in texts
+            assert "Have the address of the work ready" in texts
+            assert "parcel number" not in texts
+    finally:
+        factory.dispose()
+
+
 def test_the_bundle_carries_no_truth(seeded: Settings) -> None:
     factory = SessionFactory(seeded.database_url)
     try:

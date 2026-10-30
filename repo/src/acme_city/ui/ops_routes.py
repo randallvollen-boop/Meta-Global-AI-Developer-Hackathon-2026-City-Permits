@@ -147,6 +147,9 @@ def _resolve_audit_event(ctx: DetailContext, event_id: str) -> DetailView | None
     if event is None:
         return None
     meta = dict(event.metadata_json or {})
+    reference = audit_log_module.target_reference(
+        ctx.session, event.target_type or "", event.target_id or ""
+    )
     rows = [
         Row("Event id", event.id, mono=True),
         Row("Correlation id", event.correlation_id, mono=True),
@@ -154,7 +157,13 @@ def _resolve_audit_event(ctx: DetailContext, event_id: str) -> DetailView | None
         Row("Actor", event.actor_id or "none (system)", mono=True),
         Row("Roles held", ", ".join(event.actor_role_ids or []) or "none recorded"),
         Row("Raw action", event.action, mono=True),
-        Row("Target", " ".join(part for part in (event.target_type or "", event.target_id or "") if part) or "none", mono=True),
+        Row(
+            "Target",
+            reference
+            or " ".join(part for part in (event.target_type or "", event.target_id or "") if part)
+            or "none",
+            mono=True,
+        ),
         Row(
             "Versions",
             f"{event.before_version if event.before_version is not None else 'Not recorded'} to {event.after_version if event.after_version is not None else 'Not recorded'}",

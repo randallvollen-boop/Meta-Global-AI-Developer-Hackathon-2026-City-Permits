@@ -120,6 +120,26 @@ def test_a_decision_event_links_to_the_case_it_belongs_to(session) -> None:
     assert row["href"] == f"/permits/{decision.application_id}"
 
 
+def test_a_case_is_named_by_its_reference_and_not_by_its_internal_identifier(
+    session,
+) -> None:
+    """The audit log names a case by the reference the City uses elsewhere."""
+    event(
+        session,
+        "persona_permit_reviewer",
+        "permit.evaluate",
+        "application",
+        "app_synth_001",
+        1,
+    )
+    row = audit_log(session, action="permit.evaluate")["rows"][0]
+    assert row["target_reference"] == "SYN-APP-001"
+    # The internal identifier stays in the link that opens the case.
+    assert row["target_id"] == "app_synth_001"
+    assert row["href"] == "/permits/app_synth_001"
+    assert audit_presentation({"rows": [row]})["rows"][0]["target_label"] == "SYN-APP-001"
+
+
 def test_the_audit_presenter_keeps_raw_values_and_adds_readable_event_fields() -> None:
     view = audit_presentation(
         {

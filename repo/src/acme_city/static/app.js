@@ -159,6 +159,142 @@
     if (outcome.message) toast(outcome.message);
   }
 
+  /* ------------------------------------------- the page after a changed record */
+  function keepOpenDetails(oldRoot, newRoot) {
+    /* The action panels a person had open stay open after the page is read
+       again, so the flow of the screen is not interrupted. */
+    var open = [];
+    oldRoot.querySelectorAll("details").forEach(function (node, index) {
+      if (node.open) open.push(index);
+    });
+    var all = newRoot.querySelectorAll("details");
+    open.forEach(function (index) {
+      if (all[index]) all[index].open = true;
+    });
+  }
+
+  function formValues(root) {
+    /* The values of the action forms of the screen: what a person has typed
+       and the version the server rendered the form with.  The forms are
+       listed per action, in the order they stand on the screen. */
+    var forms = [];
+    root.querySelectorAll("form").forEach(function (form) {
+      var marker = form.querySelector('[name="action_id"]');
+      var typed = {};
+      var version = {};
+      form.querySelectorAll("input, select, textarea").forEach(function (control) {
+        if (!control.name) return;
+        var value =
+          control.type === "checkbox" || control.type === "radio"
+            ? { checked: control.checked }
+            : { value: control.value };
+        if (control.type === "hidden") {
+          if (control.name.indexOf("expected_") === 0) version[control.name] = value;
+        } else {
+          typed[control.name] = value;
+        }
+      });
+      forms.push({
+        action: marker ? marker.value : "",
+        typed: typed,
+        version: version
+      });
+    });
+    return forms;
+  }
+
+  function groupByAction(forms) {
+    /* The forms of the screen, grouped by the action they send. */
+    var groups = {};
+    forms.forEach(function (entry) {
+      if (!groups[entry.action]) groups[entry.action] = [];
+      groups[entry.action].push(entry);
+    });
+    return groups;
+  }
+
+  function keepValues(newRoot, forms, sent) {
+    /* What a person has typed is put back into the fresh form of the same
+       action, so reading the page again does not lose it.  The action that
+       was just sent keeps the version it was made against, so sending it
+       again is the same command. */
+    var fresh = groupByAction(
+      Array.prototype.map.call(newRoot.querySelectorAll("form"), function (form) {
+        var marker = form.querySelector('[name="action_id"]');
+        return { action: marker ? marker.value : "", form: form };
+      })
+    );
+    var old = groupByAction(forms);
+    Object.keys(old).forEach(function (action) {
+      old[action].forEach(function (entry, index) {
+        var candidate = fresh[action] ? fresh[action][index] : null;
+        if (!candidate) return;
+        var values = entry.typed;
+        if (action === sent) {
+          values = Object.assign({}, entry.typed, entry.version);
+        }
+        Object.keys(values).forEach(function (name) {
+          var control = candidate.form.querySelector('[name="' + name + '"]');
+          if (!control) return;
+          if ("checked" in values[name]) {
+            control.checked = values[name].checked;
+          } else {
+            control.value = values[name].value;
+          }
+        });
+      });
+    });
+  }
+
+  function activeTab() {
+    /* The tab of the screen the person is looking at. */
+    var selected = document.querySelector(
+      '[data-testid="workspace-tabs"] [aria-selected="true"]'
+    );
+    return selected ? selected.getAttribute("data-tab") : "";
+  }
+
+  function swapThePage(next, sent) {
+    /* The live parts of the page are replaced by the ones the server just
+       rendered: the content of the screen and the navigation with its
+       counts.  The banner, the feedback region and the theme stay. */
+    var tab = activeTab();
+    var main = document.getElementById("main");
+    var freshMain = next.getElementById("main");
+    if (main && freshMain) {
+      keepOpenDetails(main, freshMain);
+      keepValues(freshMain, formValues(main), sent);
+      main.replaceWith(freshMain);
+    }
+    var side = document.querySelector(".shell > aside");
+    var freshSide = next.querySelector(".shell > aside");
+    if (side && freshSide) side.replaceWith(freshSide);
+    initUi();
+    if (tab) {
+      /* The person keeps the tab of the screen they were working in. */
+      var button = document.querySelector(
+        '[data-testid="workspace-tabs"] [data-tab="' + tab + '"]'
+      );
+      if (button && button.getAttribute("aria-selected") !== "true") button.click();
+    }
+  }
+
+  function rereadThePage(sent) {
+    /* Read the page again and put the fresh parts in place.  The page is
+       never left, so the person keeps their place in the flow. */
+    return fetch(window.location.href, { credentials: "same-origin" })
+      .then(function (response) {
+        return response.ok ? response.text() : "";
+      })
+      .then(function (html) {
+        if (!html) return;
+        swapThePage(new DOMParser().parseFromString(html, "text/html"), sent);
+      })
+      .catch(function () {
+        /* The page stays as it is; the action itself is already recorded. */
+      });
+  }
+
   function submit(form) {
     var button = form.querySelector("button[type=submit]");
     if (button) {
@@ -188,12 +324,14 @@
           button.removeAttribute("aria-busy");
         }
         form.removeAttribute("aria-busy");
-        // Icon save/generate changes what the page shows: reload so the
-        // server-rendered icon, history and caps stay authoritative.
-        if (form.closest("[data-icon-panel]")) {
-          window.setTimeout(function () {
-            window.location.reload();
-          }, 350);
+        // An accepted action changed a record, so the page is read from the
+        // server again.  The panels then show the state in the database and
+        // not the state of the page that was loaded before the action, so a
+        // person never has to reload to see what the action did.  A refused
+        // action changed nothing, so the page stays as it is.
+        if (result.payload.status === "accepted") {
+          var marker = form.querySelector('[name="action_id"]');
+          rereadThePage(marker ? marker.value : "");
         }
       })
       .catch(function () {
@@ -337,16 +475,22 @@
     submit(form);
   });
 
+  function initUi() {
+    /* The parts of the interface that live inside the content of the screen.
+       They are bound again when the page is read again after an action. */
+    initTabs();
+    initReplay();
+    initQueueRows();
+    initIconPicker();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var region = document.querySelector(".feedback");
     if (region && !region.id) {
       region.id = REGION_ID;
     }
     initTheme();
-    initTabs();
-    initReplay();
-    initQueueRows();
-    initIconPicker();
+    initUi();
   });
   // The script is deferred, so DOMContentLoaded may already have fired in
   // some embedding contexts; initTheme is idempotent, run it now as well.

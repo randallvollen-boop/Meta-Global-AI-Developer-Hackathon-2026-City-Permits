@@ -1,5 +1,5 @@
 {
-  "bundle_content_hash": "d850c71dcab0afdd08a63583ac419b9d98eceafa08ab25f18052cc06e3164881",
+  "bundle_content_hash": "2d659903793f9fd0267c8ecd0c65bcc0c7db0fc783e43ad163735200738f16cd",
   "context": {
     "application_reference": "",
     "permit_type_key": ""
@@ -12,11 +12,11 @@
       {
         "citations": [
           {
-            "quote": "Before you apply: choose the project that matches your work in the list of permit types. Have the parcel number and the address of the work ready, and check whether the type you chose asks for plans.",
+            "quote": "Before you apply: choose the project that matches your work in the list of permit types. Have the address of the work ready, and check whether the type you chose asks for plans.",
             "source_id": "steps.before_you_apply"
           }
         ],
-        "text": "Choose the project that matches your work in the list of permit types, and have the parcel number and the address of the work ready."
+        "text": "Choose the project that matches your work in the list of permit types, and have the address of the work ready."
       },
       {
         "citations": [
@@ -35,7 +35,7 @@
   "prompt_version": "acme-assist-prompt-v1",
   "question_key": "what do i do next",
   "recorded_at": "2026-10-28T00:00:00Z",
-  "replay_key": "0c093cb50e52ecb9039fdcc8d5b5f48d195a62a3f6962bde7394c6c95db5e02e",
+  "replay_key": "c922413b76098bf9abb4484ef54fce3f657f88cb650ec83a3548d5277dc7c47b",
   "schema_version": "acme-assist-schema-v1",
   "task": "applicant_assist"
 }

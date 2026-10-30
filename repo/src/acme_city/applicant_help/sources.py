@@ -285,6 +285,20 @@ def _rule_source(
     )
 
 
+def _required_field_labels(fields: list[str]) -> list[str]:
+    """Return the labels of the fields the applicant really fills in.
+
+    The address locator finds the parcel, so the applicant gives the address
+    of the work instead of a parcel number.
+    """
+    labels: list[str] = []
+    for item in fields:
+        label = _field_label("property_address" if item == "parcel_number" else item)
+        if label and label not in labels:
+            labels.append(label)
+    return labels
+
+
 def _type_source(type_row: permit.PermitType) -> Source:
     """Return the passage of the stored configuration of one permit type."""
     category = type_row.process_category or "simple"
@@ -300,10 +314,9 @@ def _type_source(type_row: permit.PermitType) -> Source:
         lines.append("A discretionary type is always held for a person or a board.")
     if type_row.description:
         lines.append(str(type_row.description))
+    required = _required_field_labels(fields)
     lines.append(
-        "Required fields: "
-        + ("; ".join(_field_label(item) for item in fields) if fields else "none")
-        + "."
+        "Required fields: " + ("; ".join(required) if required else "none") + "."
     )
     lines.append(
         "Required documents: "
