@@ -27,10 +27,11 @@ from acme_city.persistence.base import (
 )
 from acme_city.persistence.types import UTCDateTime
 
-#: The two agents of the demonstration.  Agents are service identities, never
-#: selectable personas.
+#: The three agents of the demonstration.  Agents are service identities,
+#: never selectable personas.
 AGENT_INTAKE = "intake"
 AGENT_ADJUDICATION = "adjudication"
+AGENT_STEWARD_ASSIST = "steward_assist"
 
 #: The modes an agent may hold.
 AGENT_ASLEEP = "asleep"
@@ -69,7 +70,7 @@ class AgentRun(IdMixin, CorrelationMixin, CreatedAtMixin, Base):
     inputs: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
-            "agent_key IN ('intake', 'adjudication')",
+            "agent_key IN ('intake', 'adjudication', 'steward_assist')",
             name="agent_key_allowed",
         ),
         CheckConstraint(
@@ -132,6 +133,7 @@ __all__ = [
     "AGENT_AWAKE",
     "AGENT_ASLEEP",
     "AGENT_INTAKE",
+    "AGENT_STEWARD_ASSIST",
     "AgentControl",
     "AgentRun",
     "AgentRunNode",

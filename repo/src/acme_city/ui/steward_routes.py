@@ -38,6 +38,7 @@ from acme_city.persistence.models import registry
 from acme_city.permits import queues
 from acme_city.ui import (
     agent_views,
+    steward_assist_views,
     steward_guide,
     steward_queue_views,
     steward_views,
@@ -367,6 +368,13 @@ def ui_steward_review(
         age = datetime.now(UTC) - datetime.fromisoformat(str(feedback["occurred_at"]))
         if age < timedelta(minutes=10) and str(feedback.get("action", "")).startswith("ui.registry"):
             confirmation = str(feedback.get("reason") or "")
+    # The control of the steward assistant.  The button asks the assistant to
+    # prepare the work of the tasks of this view; it never runs on a timer.
+    assistant = steward_assist_views.assistant_state(session, resolved)
+    assistant["tasks"] = next(
+        (item["count"] for item in queue["filters"] if item["key"] == "needs_review"), 0
+    )
+    assistant["bound"] = steward_assist_views.MAX_TASKS_PER_PRESS
     context = page_context(
         request,
         session,
@@ -376,6 +384,8 @@ def ui_steward_review(
         confirmation=confirmation,
         queue=queue,
         actions=actions,
+        assistant=assistant,
+        queue_path=return_path,
         guide=_guide("queue"),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         quiet_feedback=True,

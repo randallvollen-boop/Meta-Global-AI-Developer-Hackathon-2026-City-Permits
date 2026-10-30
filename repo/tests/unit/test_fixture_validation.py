@@ -60,9 +60,9 @@ def test_bundle_loads_and_validates(bundle: FixtureBundle) -> None:
 
 
 def test_expected_configuration_inventory(bundle: FixtureBundle) -> None:
-    assert len(bundle.actors.roles) == 16
+    assert len(bundle.actors.roles) == 17
     assert len(bundle.actors.personas) == 5
-    assert len(bundle.actors.service_identities) == 16
+    assert len(bundle.actors.service_identities) == 17
     assert len(bundle.domains.domains) == 11
     assert len(bundle.domains.steward_queues) == 10
     assert len(bundle.policies.authority_policies) == 19

@@ -186,6 +186,11 @@ def agent_screen(
                 "testid": "kpi-errors",
             },
         ]
+    elif agent_key == "steward_assist":
+        # The steward assistant works on the tasks of the queue, not on
+        # cases, so its screen counts the recommendations it prepared.
+        waiting = []
+        kpis = _steward_assist_kpis(session)
     else:
         waiting = awaiting
         kpis = [
@@ -282,6 +287,28 @@ def agent_screen(
         "model_runs": _linked_model_runs(session, runs),
         "audit_history": _agent_history(session, agent_key),
     }
+
+
+def _steward_assist_kpis(session: Session) -> list[dict[str, Any]]:
+    """Return the counts of the recommendations of the steward assistant.
+
+    The counts are read from the stored recommendations, so the screen shows
+    what the assistant really prepared.
+    """
+    from acme_city.persistence.models.steward_recommendation import StewardRecommendation
+
+    rows = session.execute(
+        select(StewardRecommendation).where(StewardRecommendation.cleared.is_(False))
+    ).scalars().all()
+    counts = {"high": 0, "review": 0, "held": 0}
+    for row in rows:
+        counts[row.confidence] = counts.get(row.confidence, 0) + 1
+    return [
+        {"label": "Recommendations", "value": len(rows), "testid": "kpi-recommendations"},
+        {"label": "High", "value": counts["high"], "testid": "kpi-high"},
+        {"label": "Review", "value": counts["review"], "testid": "kpi-review"},
+        {"label": "Held", "value": counts["held"], "testid": "kpi-held"},
+    ]
 
 
 def _policy_view(session: Session) -> dict[str, Any]:

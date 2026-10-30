@@ -68,6 +68,10 @@
     "parcel.link.decide": "Parcel link decision",
     "parcel.link.propose": "Parcel link proposed",
     "source.record.update": "Source record updated",
-    "extraction.decide": "Extracted value decided"
+    "extraction.decide": "Extracted value decided",
+    "steward.assist.prepare": "Recommendations prepared",
+    "steward.recommendation.prepare": "Recommendation prepared",
+    "steward.recommendation.accept": "Recommendation accepted",
+    "steward.recommendation.clear": "Recommendation cleared"
   }
 }

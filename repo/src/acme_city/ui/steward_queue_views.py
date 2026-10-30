@@ -108,6 +108,27 @@ INTAKE_NEXT_STEP_UNKNOWN = "Open the case to see what it needs."
 #: The priority that marks recorded blocking work.
 BLOCKING_PRIORITY = "Blocking"
 
+#: The label of each confidence a recommendation may carry.  The row shows the
+#: label, never the key of the machinery.
+RECOMMENDATION_LABELS: dict[str, str] = {
+    "high": "High",
+    "review": "Review",
+    "held": "Held",
+}
+
+#: The pill of each confidence: high is settled, review waits for the
+#: steward and held is a conflict a person resolves.
+RECOMMENDATION_PILLS: dict[str, str] = {
+    "high": "ok",
+    "review": "warn",
+    "held": "bad",
+}
+
+
+def recommendation_label(confidence: str) -> str:
+    """Return the label of the confidence of a recommendation."""
+    return RECOMMENDATION_LABELS.get(confidence, "")
+
 
 @dataclass
 class Issue:
@@ -133,6 +154,11 @@ class Issue:
     record_type: str = ""
     #: The reference of the source record, kept as secondary text.
     source_reference: str = ""
+    #: The confidence of the recommendation the assistant prepared for the
+    #: task, or an empty string when the task holds none.
+    recommendation_confidence: str = ""
+    #: The one line the assistant prepared for the task.
+    recommendation_reason: str = ""
 
     @property
     def href(self) -> str:
@@ -168,6 +194,8 @@ class WorkRow:
     href: str
     legacy_testid: str
     link_status: str
+    recommendation_confidence: str = ""
+    recommendation_reason: str = ""
 
     @property
     def affected_count(self) -> int:
@@ -210,6 +238,12 @@ class WorkRow:
             "link_status": self.link_status,
             "record_type": self.record_type,
             "record_type_label": RECORD_TYPE_LABELS.get(self.record_type, ""),
+            "recommendation_confidence": self.recommendation_confidence,
+            "recommendation_label": recommendation_label(self.recommendation_confidence),
+            "recommendation_pill": RECOMMENDATION_PILLS.get(
+                self.recommendation_confidence, ""
+            ),
+            "recommendation_reason": self.recommendation_reason,
         }
 
 
@@ -362,6 +396,8 @@ def work_row(issue: Issue, *, assignee: str = "") -> WorkRow:
         href=issue.href,
         legacy_testid=issue.legacy_testid,
         link_status=issue.link_status,
+        recommendation_confidence=issue.recommendation_confidence,
+        recommendation_reason=issue.recommendation_reason,
     )
 
 
@@ -500,6 +536,8 @@ __all__ = [
     "IDENTITY_TASKS",
     "INTAKE_NEXT_STEPS",
     "INTAKE_NEXT_STEP_UNKNOWN",
+    "RECOMMENDATION_LABELS",
+    "RECOMMENDATION_PILLS",
     "Issue",
     "PAGE_SIZE",
     "QUEUE_FILTERS",
@@ -518,6 +556,7 @@ __all__ = [
     "order_tasks",
     "project",
     "queue_href",
+    "recommendation_label",
     "task_title",
     "work_row",
 ]

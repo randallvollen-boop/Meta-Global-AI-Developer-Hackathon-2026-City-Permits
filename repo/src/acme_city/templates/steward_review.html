@@ -10,8 +10,37 @@
     <h1>Data issues</h1>
     <p class="sub">Record matches and source problems that need a person to decide. The matcher and Muse propose; you decide.</p>
   </div>
-  <div class="actions">{{ ui.help_button('steward') }}</div>
+  <div class="actions">
+    {% if assistant.may_run %}
+    <form method="post" action="/ui/actions/steward.assist.prepare" class="action-form" data-testid="assistant-prepare-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="steward.assist.prepare">
+      <input type="hidden" name="next" value="{{ queue_path }}">
+      {% if queue.query %}<input type="hidden" name="q" value="{{ queue.query }}">{% endif %}
+      {% if queue.record_type %}<input type="hidden" name="record_type" value="{{ queue.record_type }}">{% endif %}
+      {% if queue.source %}<input type="hidden" name="source" value="{{ queue.source }}">{% endif %}
+      <button type="submit" class="button btn" data-testid="assistant-prepare"
+              {% if not assistant.can_prepare %}disabled aria-describedby="assistant-sleep-note"{% endif %}>
+        Prepare recommendations
+      </button>
+    </form>
+    {% endif %}
+    {{ ui.help_button('steward') }}
+  </div>
 </div>
+
+{% if assistant.may_run %}
+<p class="muted" data-testid="assistant-prepare-note">
+  The steward assistant prepares the evidence and a proposed decision for the
+  {{ assistant.tasks }} task{{ '' if assistant.tasks == 1 else 's' }} that need
+  review, up to {{ assistant.bound }} per press. You decide every one of them.
+  {% if not assistant.awake %}
+  <span class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
+    <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ assistant.sleep_note }}
+  </span>
+  {% endif %}
+</p>
+{% endif %}
 
 {{ guide_ui.panel(guide) }}
 
@@ -84,9 +113,9 @@
     </thead>
     <tbody>
       {% for row in queue.rows %}
-      <tr class="stw-row" data-issue-row data-testid="{{ row.legacy_testid }}" data-kind="{{ row.kind }}" data-status="{{ row.status_key }}" data-link-status="{{ row.link_status }}">
-        <th scope="row" class="stw-cell stw-cell-task" data-label="Task"><a href="{{ row.href }}" data-testid="issue-link">{{ row.task }}</a></th>
-        <td class="stw-cell stw-cell-record" data-label="Record">{% if row.record_ref %}{% set parts = row.record_ref.split(':', 1) %}{{ ui.detail_link(parts[0], parts[1], row.record) }}{% else %}{{ row.record }}{% endif %}{% if row.title %}<span class="stw-reason" data-testid="issue-reason">{{ row.title }}</span>{% endif %}</td>
+      <tr class="stw-row" data-issue-row data-testid="{{ row.legacy_testid }}" data-kind="{{ row.kind }}" data-status="{{ row.status_key }}" data-link-status="{{ row.link_status }}" data-recommendation="{{ row.recommendation_confidence }}">
+        <th scope="row" class="stw-cell stw-cell-task" data-label="Task"><a href="{{ row.href }}" data-testid="issue-link">{{ row.task }}</a>{% if row.recommendation_label %}<span class="pill {{ row.recommendation_pill }} nowrap" data-testid="recommendation-pill">{{ row.recommendation_label }}</span>{% endif %}</th>
+        <td class="stw-cell stw-cell-record" data-label="Record">{% if row.record_ref %}{% set parts = row.record_ref.split(':', 1) %}{{ ui.detail_link(parts[0], parts[1], row.record) }}{% else %}{{ row.record }}{% endif %}{% if row.title %}<span class="stw-reason" data-testid="issue-reason">{{ row.title }}</span>{% endif %}{% if row.recommendation_reason %}<span class="stw-reason" data-testid="recommendation-reason">{{ row.recommendation_reason }}</span>{% endif %}</td>
         <td class="stw-cell" data-label="Affected application">{{ st.affected(row.applications) }}</td>
         <td class="stw-cell" data-label="Source">{{ row.source }}{% if row.source_reference %}<span class="stw-reference" data-testid="issue-reference">{{ row.source_reference }}</span>{% endif %}</td>
         <td class="stw-cell nowrap" data-label="Status"><span class="pill {{ 'ok' if row.status_key == 'resolved' else 'warn' if row.status_key == 'awaiting_source' else 'bad' }}" data-testid="issue-status">{{ row.status }}</span></td>

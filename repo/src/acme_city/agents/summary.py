@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from acme_city.agents.control import AGENT_KEYS, agent_mode
+from acme_city.agents.control import AGENT_KEYS, AGENT_LABELS, agent_mode
 from acme_city.agents.intake import waiting_applications
 from acme_city.agents.policy import processing_label, processing_mode
 from acme_city.agents.runtime import queue_counts
@@ -19,7 +19,7 @@ def operator_summary(session: Session) -> dict[str, object]:
     states = [
         {
             "key": key,
-            "label": "Intake agent" if key == "intake" else "Adjudication agent",
+            "label": AGENT_LABELS.get(key, key),
             "mode": agent_mode(session, key),
         }
         for key in AGENT_KEYS

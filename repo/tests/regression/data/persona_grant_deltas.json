@@ -1,5 +1,5 @@
 {
-  "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. OPR-3 and STW-18 add entries; STW-19 adds the preview permission together with the route it builds, because a reserved screen is gated on a permission no persona holds until its own slice grants it. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
+  "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. OPR-3 and STW-18 add entries; STW-19 adds the preview permission together with the route it builds, because a reserved screen is gated on a permission no persona holds until its own slice grants it. STW-32 adds the run grant of the steward assistant to the Data Steward, which is the only persona that works the queue. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
   "deltas": [
     {
       "actor_id": "persona_data_steward",
@@ -171,6 +171,15 @@
       "record_scope": [],
       "slice": "STW-18",
       "reason": "Only the Data Steward reverses an automatic link, and the reversal needs a reason."
+    },
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "agent.run.steward_assist",
+      "change": "add",
+      "domains": [],
+      "record_scope": [],
+      "slice": "STW-32",
+      "reason": "The Data Steward asks the steward assistant for the evidence and the proposed decision of a task. The assistant decides nothing, and the Agent Operator keeps the wake and sleep switch."
     }
   ]
 }

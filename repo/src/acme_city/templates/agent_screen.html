@@ -19,7 +19,7 @@
   <div class="actions">
     <a class="btn ghost" href="/agents">Back to agents</a>
     <a class="btn ghost" href="/agent/{{ agent.agent_key }}" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
-    {{ ui.help_button('agent_intake' if agent.agent_key == 'intake' else 'agent_adjudication') }}
+    {% if agent.agent_key == 'steward_assist' %}{{ ui.general_help_button() }}{% else %}{{ ui.help_button('agent_intake' if agent.agent_key == 'intake' else 'agent_adjudication') }}{% endif %}
   </div>
 </div>
 
@@ -89,7 +89,7 @@
 <section class="panel card" aria-labelledby="agent-waiting-heading" data-testid="agent-waiting">
   <div class="card-h">
     <h2 id="agent-waiting-heading">
-      {% if agent.agent_key == 'intake' %}Waiting for the intake agent{% else %}In review, not yet adjudicated{% endif %}
+      {% if agent.agent_key == 'intake' %}Waiting for the intake agent{% elif agent.agent_key == 'steward_assist' %}The queue of the Data Steward{% else %}In review, not yet adjudicated{% endif %}
     </h2>
     <span class="right">
       {% if agent.can_run %}
@@ -113,6 +113,13 @@
       {% if agent.can_toggle %}Use Wake agent above to turn them on.{% else %}Your role cannot wake it; ask the Agent Operator.{% endif %}
     </p>
     {% endif %}
+    {% if agent.agent_key == 'steward_assist' %}
+    <p class="muted" data-testid="agent-steward-assist-note">
+      The steward assistant works on the tasks of the Data Steward's queue, and
+      only when the steward asks it to. It never runs on a timer and never on
+      its own.
+    </p>
+    {% else %}
     <table class="data-table opr-table" data-testid="agent-waiting-table">
       <caption class="visually-hidden">Cases waiting for the agent</caption>
       <thead>
@@ -151,6 +158,7 @@
         {% endfor %}
       </tbody>
     </table>
+    {% endif %}
   </div>
 </section>
 

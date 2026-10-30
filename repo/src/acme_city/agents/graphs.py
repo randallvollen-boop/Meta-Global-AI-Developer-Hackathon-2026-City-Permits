@@ -1,4 +1,4 @@
-"""The dependency graphs of the two agents.
+"""The dependency graphs of the three agents.
 
 Each graph is a list of nodes.  A node names its identifier, its label and
 the dependency level it runs at: nodes of the same level run in parallel, and
@@ -29,6 +29,11 @@ ADJUDICATION_RULE_EVALUATOR = "rule_evaluator"
 ADJUDICATION_CONDITION_BUILDER = "condition_builder"
 ADJUDICATION_PRECEDENT_CHECK = "precedent_check"
 ADJUDICATION_DISPOSITION = "disposition"
+
+#: The node identifiers of the steward assistant.
+STEWARD_ASSIST_READER = "reader"
+STEWARD_ASSIST_EVIDENCE = "evidence"
+STEWARD_ASSIST_PROPOSAL = "proposal"
 
 
 @dataclass(frozen=True)
@@ -144,10 +149,36 @@ ADJUDICATION_GRAPH: tuple[GraphNode, ...] = _nodes(
     )
 )
 
+#: The steward assistant graph: it reads the task, gathers the evidence and
+#: proposes a decision.  The steward decides; the assistant never does.
+STEWARD_ASSIST_GRAPH: tuple[GraphNode, ...] = _nodes(
+    (
+        (
+            STEWARD_ASSIST_READER,
+            "Task reader",
+            1,
+            "Reads the task of the queue and the record it is about.",
+        ),
+        (
+            STEWARD_ASSIST_EVIDENCE,
+            "Evidence gatherer",
+            2,
+            "Gathers the evidence the City already holds for that record.",
+        ),
+        (
+            STEWARD_ASSIST_PROPOSAL,
+            "Proposal writer",
+            3,
+            "Proposes a decision, a confidence and the words the steward reads.",
+        ),
+    )
+)
+
 #: The graphs by agent key.
 GRAPHS: dict[str, tuple[GraphNode, ...]] = {
     "intake": INTAKE_GRAPH,
     "adjudication": ADJUDICATION_GRAPH,
+    "steward_assist": STEWARD_ASSIST_GRAPH,
 }
 
 
@@ -187,6 +218,10 @@ __all__ = [
     "INTAKE_FIELD_EXTRACTOR",
     "INTAKE_GRAPH",
     "INTAKE_ROUTER",
+    "STEWARD_ASSIST_EVIDENCE",
+    "STEWARD_ASSIST_GRAPH",
+    "STEWARD_ASSIST_PROPOSAL",
+    "STEWARD_ASSIST_READER",
     "GraphNode",
     "graph_for",
     "levels_of",

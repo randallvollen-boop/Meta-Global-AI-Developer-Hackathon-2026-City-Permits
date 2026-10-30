@@ -19,6 +19,10 @@ _OPERATOR_SCREENS: tuple[str, ...] = (
     "agents_home", "agent_intake", "agent_adjudication", "agent_runs",
 )
 
+#: The screen of the steward assistant.  The Agent Operator wakes and sleeps
+#: the assistant there; the Data Steward never opens it.
+STEWARD_ASSIST_SCREEN = "agent_steward_assist"
+
 
 def _operator_navigation(items: list[dict]) -> list[dict]:
     """Limit the operator to the four operational destinations."""
@@ -30,6 +34,16 @@ def register() -> None:
     """Register the home and four-destination navigation of the operator."""
     view_models.HOME_OVERRIDES[OPERATOR_ACTOR_ID] = OPERATOR_HOME
     view_models.NAV_PROFILES[OPERATOR_ACTOR_ID] = _operator_navigation
+    if not any(
+        screen["key"] == STEWARD_ASSIST_SCREEN for screen in view_models.SCREENS
+    ):
+        view_models.register_screen(
+            STEWARD_ASSIST_SCREEN,
+            "Steward assistant",
+            "/agent/steward_assist",
+            (("agent.toggle", None),),
+            "records",
+        )
 
 
-__all__ = ["OPERATOR_ACTOR_ID", "OPERATOR_HOME", "register"]
+__all__ = ["OPERATOR_ACTOR_ID", "OPERATOR_HOME", "STEWARD_ASSIST_SCREEN", "register"]

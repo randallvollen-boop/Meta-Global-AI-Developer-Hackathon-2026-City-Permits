@@ -278,6 +278,13 @@
       "sensitive": false
     },
     {
+      "permission_id": "agent.run.steward_assist",
+      "action": "agent.run.steward_assist",
+      "category": "agent",
+      "description": "Ask the steward assistant to prepare a recommendation for a task of the Data Steward's queue. The Data Steward holds this grant; the assistant decides nothing.",
+      "sensitive": false
+    },
+    {
       "permission_id": "config.manage",
       "action": "config.manage",
       "category": "configuration",

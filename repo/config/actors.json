@@ -216,6 +216,15 @@
         "registry.crosswalk.propose",
         "registry.provenance.view"
       ]
+    },
+    {
+      "role_id": "steward_assistant",
+      "label": "Steward assistant (service identity)",
+      "boundary": "Prepares the evidence and a proposed decision for the tasks of the Data Steward's queue. It never decides, never links, never issues and never changes a source fact.",
+      "permission_ids": [
+        "records.document.view",
+        "registry.provenance.view"
+      ]
     }
   ],
   "personas": [
@@ -716,6 +725,12 @@
             "parcels",
             "addresses"
           ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.steward_assist",
+          "domains": [],
           "record_scope": [],
           "source": "explicit"
         }
@@ -2515,6 +2530,44 @@
             "permits",
             "contractors",
             "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_steward_assist",
+      "label": "ACME steward assistant (service identity)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "steward_assistant"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "parcels",
+        "addresses"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
             "parcels",
             "addresses"
           ],

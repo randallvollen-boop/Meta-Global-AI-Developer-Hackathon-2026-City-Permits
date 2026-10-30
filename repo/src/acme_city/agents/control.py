@@ -1,4 +1,4 @@
-"""The awake/asleep control of the two agents.
+"""The awake/asleep control of the three agents.
 
 An agent is asleep by default.  Only a persona with the ``agent.toggle``
 grant (the City Administrator, the Agent Operator) may wake it or put it back
@@ -26,8 +26,12 @@ from acme_city.core.errors import ValidationError
 from acme_city.core.ids import new_id
 from acme_city.persistence.models import agent as agent_models
 
-#: The two agents of the demonstration.
-AGENT_KEYS: tuple[str, ...] = (agent_models.AGENT_INTAKE, agent_models.AGENT_ADJUDICATION)
+#: The three agents of the demonstration.
+AGENT_KEYS: tuple[str, ...] = (
+    agent_models.AGENT_INTAKE,
+    agent_models.AGENT_ADJUDICATION,
+    agent_models.AGENT_STEWARD_ASSIST,
+)
 
 #: The grant that wakes an agent and puts it back to sleep.
 PERMISSION_TOGGLE = "agent.toggle"
@@ -40,13 +44,24 @@ PERMISSION_TOGGLE = "agent.toggle"
 PERMISSION_RUN: dict[str, str] = {
     agent_models.AGENT_INTAKE: "agent.run.intake",
     agent_models.AGENT_ADJUDICATION: "agent.run.adjudication",
+    agent_models.AGENT_STEWARD_ASSIST: "agent.run.steward_assist",
     "linking": "agent.run.linking",
+}
+
+#: The domain every run grant of an agent covers.  The steward assistant works
+#: on the records of the steward queue, which is not one domain of a permit,
+#: so its grant is not bound to a domain.
+PERMISSION_RUN_DOMAIN: dict[str, str | None] = {
+    agent_models.AGENT_INTAKE: "permits",
+    agent_models.AGENT_ADJUDICATION: "permits",
+    agent_models.AGENT_STEWARD_ASSIST: None,
 }
 
 #: The label of each agent, for the screen and the audit trail.
 AGENT_LABELS: dict[str, str] = {
     agent_models.AGENT_INTAKE: "Intake agent",
     agent_models.AGENT_ADJUDICATION: "Adjudication agent",
+    agent_models.AGENT_STEWARD_ASSIST: "Steward assistant",
 }
 
 
@@ -167,7 +182,9 @@ class AgentControlService:
         self._permissions.authorize(
             actor,
             permission,
-            ResourceContext(domain_id="permits", record_ids=()),
+            ResourceContext(
+                domain_id=PERMISSION_RUN_DOMAIN.get(agent_key, "permits"), record_ids=()
+            ),
         )
 
     def authorize_manual_run(self, actor: ActorContext, agent_key: str) -> None:
@@ -212,6 +229,7 @@ __all__ = [
     "AGENT_KEYS",
     "AGENT_LABELS",
     "PERMISSION_RUN",
+    "PERMISSION_RUN_DOMAIN",
     "PERMISSION_TOGGLE",
     "AgentControlService",
     "agent_mode",

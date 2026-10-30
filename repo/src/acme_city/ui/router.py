@@ -1036,6 +1036,21 @@ def ui_agent_adjudication(
     return _render_agent(request, session, actor, "agent_adjudication", "adjudication")
 
 
+@router.get("/agent/steward_assist", operation_id="ui_agent_steward_assist")
+def ui_agent_steward_assist(
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the steward assistant screen.
+
+    The screen is the operational home of the assistant: its awake state, the
+    recommendations it prepared and the runs it made.  Only a persona with
+    the wake grant opens it, and the screen wakes no agent by itself.
+    """
+    return _render_agent(request, session, actor, "agent_steward_assist", "steward_assist")
+
+
 def _render_agent(
     request: Request,
     session: Session,
@@ -2850,6 +2865,7 @@ from acme_city.ui import ops_routes as _ops_routes  # noqa: E402
 from acme_city.ui import policy_routes as _policy_routes  # noqa: E402
 from acme_city.ui import steward_routes as _steward_routes  # noqa: E402
 from acme_city.ui import steward_automation_routes as _steward_automation_routes  # noqa: E402
+from acme_city.ui import steward_assist_routes as _steward_assist_routes  # noqa: E402
 from acme_city.ui import agent_routes as _agent_routes  # noqa: E402
 
 from acme_city.ui import nav_plugins as _nav_plugins  # noqa: E402
@@ -2869,6 +2885,7 @@ router.include_router(_steward_automation_routes.router)
 router.include_router(_agent_routes.router)
 ACTION_HANDLERS.update(_steward_routes.HANDLERS)
 ACTION_HANDLERS.update(_steward_automation_routes.HANDLERS)
+ACTION_HANDLERS.update(_steward_assist_routes.HANDLERS)
 ACTION_HANDLERS.update(_agent_routes.ACTIONS)
 
 

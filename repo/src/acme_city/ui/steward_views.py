@@ -65,6 +65,7 @@ from acme_city.ui import (
     patterns,
     property_views,
     steward_automation_views,
+    steward_assist_views,
     steward_queue_views,
     view_models,
 )
@@ -1761,7 +1762,9 @@ def _applications_of(session: Session, party_ids: list[str], synthetic: set[str]
 def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
     """Return every steward issue: waiting matches, parcel links, change cases, governance issues.
 
-    Generated historical records (flagged synthetic) never appear.
+    Generated historical records (flagged synthetic) never appear.  A task
+    that holds a recommendation of the steward assistant carries it, so the
+    queue shows the confidence and the one line of the recommendation.
     """
     synthetic = _synthetic_ids(session)
     issues: list[Issue] = []
@@ -2003,7 +2006,30 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 source_reference=row["record"],
             )
         )
+    _attach_recommendations(session, issues)
     return issues
+
+
+def _attach_recommendations(session: Session, issues: list[Issue]) -> None:
+    """Give every task the recommendation the assistant prepared for it.
+
+    A task holds one recommendation at a time.  A cleared recommendation is
+    history and is never shown again, so it is not attached.
+    """
+    from acme_city.persistence.models.steward_recommendation import StewardRecommendation
+
+    rows = session.execute(
+        select(StewardRecommendation).where(StewardRecommendation.cleared.is_(False))
+    ).scalars().all()
+    if not rows:
+        return
+    by_task = {(row.task_kind, row.task_id): row for row in rows}
+    for issue in issues:
+        row = by_task.get((issue.kind, issue.item_id))
+        if row is None:
+            continue
+        issue.recommendation_confidence = row.confidence
+        issue.recommendation_reason = row.reason
 
 
 def _ref(kind: str, item_id: str | None) -> str:
@@ -2844,6 +2870,12 @@ def focused_case(
     if case:
         case["summary"] = _case_summary(case)
         case["evidence"] = _case_evidence(case)
+        # The panel of the steward assistant: the recommendation it prepared
+        # for this task, the evidence it read and the controls the steward
+        # may press.
+        case["assistant"] = steward_assist_views.case_panel(
+            session, actor, kind, item_id
+        )
     return case
 
 
@@ -3379,7 +3411,15 @@ def source_records(
 # ------------------------------------------------------------------- activity
 
 #: What the Activity screen shows: steward decisions and changes, not the audit log.
-ACTIVITY_PREFIXES = ("registry.crosswalk", "change.case", "change.command", "parcel.", "source.record", "extraction.")
+ACTIVITY_PREFIXES = (
+    "registry.crosswalk",
+    "change.case",
+    "change.command",
+    "parcel.",
+    "source.record",
+    "extraction.",
+    "steward.recommendation",
+)
 
 
 def _activity_outcome(outcome: str) -> tuple[str, str]:
