@@ -53,7 +53,7 @@ As **Permit Reviewer**, open `/queue/review`.
 As **City Administrator**, open `/ops/audit`.
 
 - Do: Choose Recorded permit decision in the Action filter and press Apply filters, then press View details on the top row.
-- Look for: The actor, the time, the decision record and, under References, the application the decision belongs to. A denial also shows its reason code under Recorded detail. The written rationale is on the case page, not in the audit log.
+- Look for: The actor, the time, the decision record and, under References, the case the decision belongs to, named by its reference (SYN-APP-nnn, the number from step 3). A denial also shows its reason code under Recorded detail. The written rationale is on the case page, not in the audit log.
 
 ## 8. See the city at a glance
 
