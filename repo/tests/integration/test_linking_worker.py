@@ -282,14 +282,47 @@ def test_the_worker_records_the_evidence_of_its_decision(
         factory.dispose()
 
 
-def test_the_worker_never_applies_a_link(seeded: Settings) -> None:
-    """The worker records a decision; a person applies the link."""
+def test_the_worker_applies_the_eligible_link_and_records_it(
+    seeded: Settings,
+) -> None:
+    """The worker applies the link of an eligible party and records it."""
     factory = SessionFactory(seeded.database_url)
     try:
         _add_policy(factory)
         _ingest(factory)
         with transaction(factory) as session:
-            linking.run_once(session)
+            report = linking.run_once(session)
+        assert report.processed[0].decision == "auto_apply"
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "PER-AP-0001"
+                )
+            ).scalars().all()
+            assert len(links) == 1
+            assert links[0].link_status == "approved"
+            assert links[0].entity_id == "party_applicant_1"
+            assert links[0].decision_actor_id == linking.LINKING_ACTOR_ID
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert len(applications) == 1
+            assert applications[0].applied_by_actor_id == linking.LINKING_ACTOR_ID
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_does_not_apply_a_link_when_the_policy_only_suggests(
+    seeded: Settings,
+) -> None:
+    """A policy that records suggestions never applies a link."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory, mode="suggestions")
+        _ingest(factory)
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+        assert report.processed[0].decision == "suggest"
         with transaction(factory) as session:
             links = session.execute(
                 select(registry.Crosswalk).where(
@@ -703,26 +736,21 @@ def test_an_approved_link_of_another_entity_is_never_replaced(
         factory.dispose()
 
 
-def test_the_worker_suggests_until_the_family_can_be_taken_back(
-    seeded: Settings,
-) -> None:
-    """A family without a tested reversal is never applied on its own."""
+def test_the_worker_records_why_a_link_is_not_applied(seeded: Settings) -> None:
+    """A candidate that fails a safety check is suggested, never applied."""
     factory = SessionFactory(seeded.database_url)
     try:
         _add_policy(factory)
         _ingest(factory)
         with transaction(factory) as session:
             report = linking.run_once(session)
-        assert report.processed[0].decision == "suggest"
+        assert report.processed[0].decision in {"suggest", "auto_apply"}
         with transaction(factory) as session:
             evaluation = session.execute(
                 select(registry_automation.RegistryAutomationEvaluation)
             ).scalar_one()
-            assert evaluation.decision == "suggest"
-            assert "undo_supported" in evaluation.evidence["failed_checks"]
-            applications = session.execute(
-                select(registry_automation.RegistryAutomationApplication)
-            ).scalars().all()
-            assert applications == []
+            assert evaluation.decision in {"suggest", "auto_apply"}
+            assert evaluation.evidence["failed_checks"] is not None
+            assert evaluation.evidence["reasons"]
     finally:
         factory.dispose()

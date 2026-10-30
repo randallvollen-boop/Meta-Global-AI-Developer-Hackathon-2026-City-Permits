@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import ConflictError, ValidationError
+from acme_city.core.errors import ConflictError, NotFoundError, ValidationError
 from acme_city.core.ids import new_id
+from acme_city.core.results import ConflictResult
 from acme_city.persistence.models import change, registry, registry_automation, source
 from acme_city.registry.automation_policy import DEFAULT_THRESHOLDS
 from acme_city.registry.schemas import (
@@ -35,6 +36,12 @@ ACTIVATE_ACTION = "registry.automation.activate"
 
 #: The permission a steward needs to pause the automation.
 PAUSE_ACTION = "registry.automation.pause"
+
+#: The permission a steward needs to take back an applied link.
+UNDO_ACTION = "registry.automation.undo"
+
+#: The permission a steward needs to record that a link was reviewed.
+REVIEW_ACTION = "registry.automation.review"
 
 #: The domain the policy of the automation governs.
 POLICY_DOMAIN = "applicants"
@@ -143,11 +150,113 @@ def _link_state(session: Session, snapshot: source.SourceSnapshot) -> dict[str, 
     }
 
 
+def application_by_id(
+    session: Session,
+    application_id: str,
+) -> registry_automation.RegistryAutomationApplication | None:
+    """Return one recorded application."""
+    return session.get(registry_automation.RegistryAutomationApplication, application_id)
+
+
+def _close_review_task(
+    session: Session,
+    application: registry_automation.RegistryAutomationApplication,
+) -> None:
+    """Close the review item of an applied link."""
+    task = session.execute(
+        select(change.ReviewTask).where(
+            change.ReviewTask.deduplication_key == f"{REVIEW_TASK_TYPE}:{application.id}"
+        )
+    ).scalars().first()
+    if task is None:
+        return
+    task.status = "resolved"
+    session.flush()
+
+
+def reverse_application(
+    session: Session,
+    *,
+    application_id: str,
+    reason: str,
+    actor: ActorContext,
+    expected_version: int | None = None,
+    now: datetime | None = None,
+) -> registry_automation.RegistryAutomationApplication:
+    """Take back one link the automation applied.
+
+    The application is not deleted: it becomes ``reversed`` and the event that
+    applied it stays.  A link that a person changed since the application is
+    not taken back silently, and a link that was already taken back is not
+    taken back twice.
+    """
+    _authorize(session, actor, UNDO_ACTION)
+    application = application_by_id(session, application_id)
+    if application is None:
+        raise NotFoundError("no applied link was found for this request")
+    if application.status == "reversed":
+        return application
+    if application.crosswalk_id is None:
+        raise ValidationError("this application does not name the link it applied")
+    if not reason.strip():
+        raise ValidationError("a removal states why the link is taken back")
+    from acme_city.registry.service import RegistryService
+
+    result = RegistryService(session, now=now or utc_now()).remove_automatic_link(
+        crosswalk_id=application.crosswalk_id,
+        reason=reason.strip(),
+        actor=actor,
+        expected_version=expected_version,
+    )
+    if isinstance(result, ConflictResult):
+        raise ConflictError(
+            "the link changed since it was applied; read the history and try again"
+        )
+    application.status = "reversed"
+    application.reviewed_by_actor_id = actor.actor_id
+    application.reviewed_at = now or utc_now()
+    application.review_note = reason.strip()
+    application.version = application.version + 1
+    session.add(application)
+    session.flush()
+    _close_review_task(session, application)
+    return application
+
+
+def acknowledge_application(
+    session: Session,
+    *,
+    application_id: str,
+    note: str,
+    actor: ActorContext,
+    now: datetime | None = None,
+) -> registry_automation.RegistryAutomationApplication:
+    """Record that a person reviewed a link the automation applied.
+
+    The link stays as it is.  The review is recorded with the person, the
+    moment and the note, and the review item of the queue is closed.
+    """
+    _authorize(session, actor, REVIEW_ACTION)
+    application = application_by_id(session, application_id)
+    if application is None:
+        raise NotFoundError("no applied link was found for this request")
+    if application.status == "reversed":
+        raise ValidationError("a link that was taken back is not reviewed again")
+    application.status = "acknowledged"
+    application.reviewed_by_actor_id = actor.actor_id
+    application.reviewed_at = now or utc_now()
+    application.review_note = note.strip()
+    application.version = application.version + 1
+    session.add(application)
+    session.flush()
+    _close_review_task(session, application)
+    return application
+
+
 def application_for_evaluation(
     session: Session,
     evaluation_id: str,
 ) -> registry_automation.RegistryAutomationApplication | None:
-    """Return the application of one evaluation, if the link was applied."""
     return session.execute(
         select(registry_automation.RegistryAutomationApplication).where(
             registry_automation.RegistryAutomationApplication.evaluation_id == evaluation_id
@@ -332,6 +441,11 @@ def _authorize(session: Session, actor: ActorContext, permission: str) -> None:
     )
 
 
+def authorize_action(session: Session, actor: ActorContext, permission: str) -> None:
+    """Refuse an actor that does not hold the grant of a governed action."""
+    _authorize(session, actor, permission)
+
+
 def _check_version(session: Session, expected_version: int | None) -> None:
     """Refuse a change that was decided on an older version of the policy."""
     current = newest_policy_version(session)
@@ -440,13 +554,20 @@ __all__ = [
     "PAUSE_ACTION",
     "POLICY_DOMAIN",
     "POLICY_MODES",
+    "REVIEW_ACTION",
+    "REVIEW_TASK_TYPE",
+    "UNDO_ACTION",
     "activate_policy",
     "active_policy",
+    "acknowledge_application",
+    "application_by_id",
     "application_view",
     "applications",
     "apply_evaluation",
+    "authorize_action",
     "enqueue_accepted_snapshot",
     "newest_policy_version",
     "pause_policy",
     "policy_thresholds",
+    "reverse_application",
 ]

@@ -143,10 +143,51 @@ def _automation_pause(ctx: ActionContext) -> Outcome:
     )
 
 
+def _automation_undo(ctx: ActionContext) -> Outcome:
+    """Take back a link the automation applied."""
+    application = automation.reverse_application(
+        ctx.session,
+        application_id=ctx.text("application_id"),
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    view = automation.application_view(ctx.session, application)
+    return Outcome(
+        message=f"The link of {view.source_record_id} was taken back.",
+        destination="Automatic links",
+        state=application.status,
+        target_type="registry_automation_application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
+def _automation_review(ctx: ActionContext) -> Outcome:
+    """Record that a person reviewed a link the automation applied."""
+    application = automation.acknowledge_application(
+        ctx.session,
+        application_id=ctx.text("application_id"),
+        note=ctx.text("note"),
+        actor=ctx.actor,
+    )
+    view = automation.application_view(ctx.session, application)
+    return Outcome(
+        message=f"The link of {view.source_record_id} was reviewed.",
+        destination="Automatic links",
+        state=application.status,
+        target_type="registry_automation_application",
+        target_id=application.id,
+        after_version=application.version,
+    )
+
+
 #: The interface actions of the lane, keyed by their stable identifier.
 HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "registry.automation.activate": _automation_activate,
     "registry.automation.pause": _automation_pause,
+    "registry.automation.review": _automation_review,
+    "registry.automation.undo": _automation_undo,
 }
 
 __all__ = ["HANDLERS", "router"]

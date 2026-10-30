@@ -516,6 +516,84 @@ class RegistryService:
             audit_event_id=event.id,
         )
 
+    def remove_automatic_link(
+        self,
+        *,
+        crosswalk_id: str,
+        reason: str,
+        actor: ActorContext,
+        expected_version: int | None = None,
+    ) -> VersionedResult[CrosswalkView] | ConflictResult:
+        """Take back a link that was applied.
+
+        The link is not deleted: the crosswalk becomes ``removed`` and the
+        event that applied it stays.  A link that a person changed since the
+        application is not taken back silently, so the expected version has
+        to be the version that is current.
+        """
+        crosswalk = self._session.get(registry.Crosswalk, crosswalk_id)
+        if crosswalk is None:
+            raise NotFoundError("no source link was found for this record")
+        domain_id = self._domain_for(
+            crosswalk.source_system_id, crosswalk.source_dataset_key or ""
+        )
+        self._permissions.authorize(
+            actor,
+            DECIDE_ACTION,
+            ResourceContext(
+                domain_id=domain_id,
+                record_type="source_record",
+                record_ids=(crosswalk.source_record_id,),
+            ),
+        )
+        if crosswalk.link_status != "approved":
+            raise ValidationError("only an approved link can be removed")
+        if crosswalk.source_dataset_key == "finance_accounts":
+            raise ValidationError(
+                "a finance account link cannot be removed; correct it by linking the "
+                "right party"
+            )
+        if not reason.strip():
+            raise ValidationError("a removal states why the link is taken back")
+        if expected_version is not None and crosswalk.version != expected_version:
+            return ConflictResult(
+                code="version_conflict",
+                expected_version=expected_version,
+                current_version=crosswalk.version,
+                differences=(
+                    {
+                        "field": "link_status",
+                        "expected": expected_version,
+                        "current": crosswalk.version,
+                    },
+                ),
+            )
+        before_version = crosswalk.version
+        crosswalk.link_status = "removed"
+        crosswalk.decision = reason.strip()
+        crosswalk.decision_actor_id = actor.actor_id
+        crosswalk.decided_at = self._now
+        crosswalk.valid_to = self._now
+        crosswalk.version = before_version + 1
+        self._session.flush()
+        self._register_revalidation(crosswalk, actor)
+        event = self._audit.append(
+            action="registry.crosswalk.remove_automatic",
+            actor=actor,
+            target_type="source_record",
+            target_id=crosswalk.source_record_id,
+            before_version=before_version,
+            after_version=crosswalk.version,
+            reason=crosswalk.decision,
+            references=[crosswalk.id, crosswalk.entity_id],
+            metadata={"link_status": crosswalk.link_status},
+        )
+        return VersionedResult(
+            value=crosswalk_view(crosswalk),
+            version=crosswalk.version,
+            audit_event_id=event.id,
+        )
+
     def defer(
         self,
         *,

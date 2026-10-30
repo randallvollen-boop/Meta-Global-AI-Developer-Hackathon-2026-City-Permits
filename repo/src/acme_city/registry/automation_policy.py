@@ -42,7 +42,9 @@ DEFAULT_THRESHOLDS: dict[str, Thresholds] = {
 #: The record families whose automatic links this release may reverse.  A
 #: family without a tested reversal is only ever suggested to a steward, so a
 #: threshold never enables a link that cannot be taken back.
-UNDO_SUPPORTED_FAMILIES: frozenset[str] = frozenset()
+UNDO_SUPPORTED_FAMILIES: frozenset[str] = frozenset(
+    {"owner_party", "contractor_party"}
+)
 
 
 def thresholds_for(family: str, stored: Any = None) -> Thresholds:
