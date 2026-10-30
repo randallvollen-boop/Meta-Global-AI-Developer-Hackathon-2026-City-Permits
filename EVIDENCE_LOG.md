@@ -227,3 +227,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The reconciliation screen is proven to keep the receipt register apart from the selected assessment, to show the readable reference SYN-APP-007, to mark the euro receipt apart from the dollar receipts, and to label the exception measure ("Assessments with a recorded exception") without an attention badge when there is nothing to review.
 - The demo moment is proven in a real browser: the Administrator lands on the overview, opens the draft CT-2@2 from the "Proposed changes" card, reads the diff and the applicability, submits it for review and sees the recorded result in the feedback region (`tests/browser/test_admin_ui_browser.py`).
 - No live provider call was made; the Muse Image generation and the replay labels are unchanged.
+
+## Permit life cycle and the AVA republish (2026-10-29)
+
+- Branch `feature/permit-lifecycle`. Commit eae39f5 added the life cycle table, `/lifecycle`, `/walkthrough`, the architecture section and the judge walkthrough document. Commit e4c7dc4 listed the future features. The full suite passed with 2094 tests at eae39f5.
+- The architecture page was rebuilt through the solution-architecture-page kit. The checker passed with 10 warnings, all older than this change. `verify_page` still flags 8 older figures. The leak scan was clean.
+- The private AVA Library article `acme-city-permits-architecture` was replaced at 2026-10-30T01:04:47Z with Randall's approval. The copy matches the build: SHA-256 `7b75d4e29ed54f2879de788553249f696f5008a4448956aef1e5ebce0c92a4d0`, 347190 bytes. The AVA service was not restarted.
