@@ -7,9 +7,9 @@ keeps no state of its own beyond the case it is working on.
 
 The worker runs only when the deployment allows it
 (``ACME_AGENT_WORKER_ENABLED``) and it only works when the processing policy
-of the City is automatic.  It never calls the model provider: every run uses
-the built in deterministic logic, so a hosted demonstration sends no request
-at all.
+of the City is automatic and the agent is awake.  It never calls the model
+provider: every run uses the built in deterministic logic, so a hosted
+demonstration sends no request at all.
 
 The loop stops cleanly.  The stop event ends the wait between two cycles,
 the thread joins, and the service leaves nothing behind.
@@ -25,12 +25,19 @@ import threading
 from datetime import datetime
 from typing import Any
 
+from acme_city.agents.control import is_awake
 from acme_city.agents.eligibility import eligible_applications
 from acme_city.agents.policy import automatic_processing
-from acme_city.agents.runtime import AgentRunFailed, AgentRuntime, batch_limit, run_agent
-from acme_city.core.clock import utc_now
+from acme_city.agents.runtime import (
+    AgentRunFailed,
+    AgentRuntime,
+    batch_limit,
+    run_agent,
+    work_key,
+)
+from acme_city.core.errors import ValidationError
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import permit
+from acme_city.persistence.models import agent_ops, permit
 from acme_city.persistence.session import SessionFactory, transaction
 
 logger = logging.getLogger("acme_city")
@@ -66,9 +73,6 @@ class AgentWorker:
         self._now = now
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
-        #: The moment the worker started.  The work that was running before
-        #: this moment belongs to a process that is gone.
-        self.started_at = now or utc_now()
 
     # ------------------------------------------------------------- lifecycle
 
@@ -109,40 +113,65 @@ class AgentWorker:
     def run_cycle(self) -> int:
         """Process the eligible work once and return the number of runs.
 
-        The cycle does three things: it returns the work that an earlier
-        process left running to the waiting state, it records the eligible
-        cases that arrived as work, and it works the cases the hour still
-        allows.
+        The cycle does two things: it records the eligible cases that
+        arrived as work, and it works the cases the hour still allows.
 
-        The policy of the City is read first: while the policy is manual the
-        cycle does nothing at all, so the work waits for a person.
+        Two gates come first.  While the policy of the City is manual the
+        cycle does nothing at all, so the work waits for a person.  A
+        sleeping agent is not worked either: the operator wakes the agent
+        when the City wants the work done on its own.
         """
         with transaction(self._factory) as session:
             if not automatic_processing(session):
                 return 0
-            AgentRuntime(session, now=self._now).recover_running(self.started_at)
+            if not is_awake(session, agent_models.AGENT_INTAKE):
+                return 0
             work = self._schedule(session)
         count = 0
-        for application_id in work:
+        for work_id in work:
             if self._stop.is_set():
                 break
-            count += self._work(application_id)
+            count += self._work(work_id)
         return count
 
     def _schedule(self, session) -> list[str]:
-        """Record the eligible cases as work and return the ids to work."""
+        """Record the eligible cases as work and return the ids of the work.
+
+        Only the work of the current revision of a case is worked.  A case
+        that was answered again after its work was queued has a new piece of
+        work beside the old one, and the old one waits.
+        """
         runtime = AgentRuntime(session, now=self._now)
         for case in eligible_applications(session):
             runtime.enqueue(case, agent_key=agent_models.AGENT_INTAKE)
         limit = batch_limit(session, now=self._now)
         room = min(limit.max_batch_size, limit.remaining_runs)
-        return [row.application_id for row in runtime.pending()[:room]]
+        chosen: list[str] = []
+        for row in runtime.pending():
+            if len(chosen) >= room:
+                break
+            application = session.get(permit.Application, row.application_id)
+            if application is None:
+                continue
+            if row.work_key != work_key(application, agent_models.AGENT_INTAKE):
+                continue
+            chosen.append(row.id)
+        return chosen
 
-    def _work(self, application_id: str) -> int:
-        """Run the intake agent on one case and return 1 when it worked."""
+    def _work(self, work_id: str) -> int:
+        """Run the intake agent on one piece of work and return 1 when it worked.
+
+        The work is only done when it still waits for an attempt.  A person
+        may have worked the case in the meantime, and then the work is
+        finished and the worker leaves it alone: a case is never worked
+        twice.
+        """
         try:
             with transaction(self._factory) as session:
-                application = session.get(permit.Application, application_id)
+                work = session.get(agent_ops.AgentWorkQueue, work_id)
+                if work is None or work.status != agent_ops.WORK_PENDING:
+                    return 0
+                application = session.get(permit.Application, work.application_id)
                 if application is None:
                     return 0
                 try:
@@ -153,15 +182,19 @@ class AgentWorker:
                         triggered_by=WORKER_ACTOR_ID,
                         settings=self._settings,
                         now=self._now,
-                        require_awake=False,
+                        work_id=work.id,
                     )
                 except AgentRunFailed:
                     # The failure is recorded on the queue row of the work, so
                     # the transaction keeps it and a person sees it.
                     return 0
+                except ValidationError:
+                    # The work was taken by a person or by another worker, or
+                    # the hour has no room left.  The work stays as it is.
+                    return 0
         except Exception:  # noqa: BLE001 - the failure is recorded by the runtime
             logger.warning(
-                "the automatic run failed for the case %s", application_id, exc_info=True
+                "the automatic run failed for the work %s", work_id, exc_info=True
             )
             return 0
         return 1

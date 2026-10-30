@@ -22,7 +22,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from acme_city.agents.control import AgentControlService
 from acme_city.agents.intake import INTAKE_AGENT_ID, service_actor
+from acme_city.agents.runtime import run_agent
 from acme_city.agents.worker import WORKER_ACTOR_ID, AgentWorker
 from acme_city.app import create_app
 from acme_city.auth.context import ActorContext
@@ -136,19 +138,35 @@ def _administrator(session) -> ActorContext:
     )
 
 
-def _automatic(session) -> None:
+def _automatic(session, runs_per_hour: int = 60) -> None:
     """Switch the City to automatic processing, the way the tab does."""
     ConfigurationService(session).set_processing_policy(
         automatic=True,
-        runs_per_hour=60,
+        runs_per_hour=runs_per_hour,
         reason="Automatic coverage",
         actor=_administrator(session),
     )
 
 
-def _arrival(session, settings: Settings, scenario: str = "deck-high") -> permit.Application:
+def _wake(session) -> None:
+    """Wake the intake agent, the way the operator does."""
+    service = AgentControlService(session)
+    service.ensure_defaults()
+    row = service.state(agent_models.AGENT_INTAKE)
+    assert row is not None
+    row.mode = agent_models.AGENT_AWAKE
+    session.flush()
+
+
+def _arrival(
+    session,
+    settings: Settings,
+    scenario: str = "deck-high",
+    *,
+    sequence_start: int = 1,
+) -> permit.Application:
     """Return one genuine arrival, submitted through the outside intake."""
-    record = build_scenario(scenario)[0]
+    record = build_scenario(scenario, sequence_start=sequence_start)[0]
     from acme_city.portal_intake.service import IntakeService
 
     result = IntakeService(session, settings=settings).submit_record(
@@ -265,6 +283,7 @@ def test_the_cycle_works_an_arrival_with_the_built_in_logic(
     try:
         with transaction(factory) as session:
             _automatic(session)
+            _wake(session)
             application = _arrival(session, worker_environment)
             application_id = application.id
         with factory() as session:
@@ -307,6 +326,7 @@ def test_the_cycle_never_calls_the_model_provider(
     try:
         with transaction(factory) as session:
             _automatic(session)
+            _wake(session)
             application = _arrival(session, hosted_worker_environment)
             application_id = application.id
         worker = AgentWorker(factory, settings=hosted_worker_environment)
@@ -336,6 +356,7 @@ def test_the_loop_works_an_arrival_without_a_browser(
     try:
         with transaction(factory) as session:
             _automatic(session)
+            _wake(session)
             application = _arrival(session, worker_environment)
             application_id = application.id
         worker = AgentWorker(factory, settings=worker_environment)
@@ -381,5 +402,104 @@ def test_the_worker_does_nothing_while_the_policy_is_manual(
             assert runs == []
             queued = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
             assert queued == []
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_does_nothing_while_the_agent_is_asleep(
+    worker_environment: Settings,
+) -> None:
+    """A sleeping agent is not worked on, even when the policy is automatic."""
+    factory = SessionFactory(worker_environment.database_url)
+    try:
+        with transaction(factory) as session:
+            _automatic(session)
+            application = _arrival(session, worker_environment)
+            application_id = application.id
+        # The seeded agent is asleep, so the worker leaves the arrival alone.
+        worker = AgentWorker(factory, settings=worker_environment)
+        assert worker.run_cycle() == 0
+        with factory() as session:
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().all()
+            assert runs == []
+            queued = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert queued == []
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_never_works_a_case_a_person_already_worked(
+    worker_environment: Settings,
+) -> None:
+    """A case a person worked between the schedule and the work is worked once."""
+    factory = SessionFactory(worker_environment.database_url)
+    try:
+        with transaction(factory) as session:
+            _automatic(session)
+            _wake(session)
+            application = _arrival(session, worker_environment)
+            application_id = application.id
+        worker = AgentWorker(factory, settings=worker_environment)
+        # The worker records the arrival as work and picks it up.
+        with transaction(factory) as session:
+            work_ids = worker._schedule(session)
+        assert len(work_ids) == 1
+        # A person works the case in the meantime.
+        with transaction(factory) as session:
+            application = session.get(permit.Application, application_id)
+            assert application is not None
+            run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=worker_environment,
+            )
+        # The worker leaves the finished work alone.
+        assert worker._work(work_ids[0]) == 0
+        with factory() as session:
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().all()
+            assert len(runs) == 1, "the case was worked twice"
+            work = session.execute(
+                select(agent_ops.AgentWorkQueue).where(
+                    agent_ops.AgentWorkQueue.application_id == application_id
+                )
+            ).scalars().first()
+            assert work is not None
+            assert work.status == agent_ops.WORK_COMPLETED
+            assert work.attempts == 1
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_stops_at_the_hourly_limit(worker_environment: Settings) -> None:
+    """The worker works as many cases as the hour allows, and no more."""
+    factory = SessionFactory(worker_environment.database_url)
+    try:
+        with transaction(factory) as session:
+            _automatic(session, runs_per_hour=1)
+            _wake(session)
+            first = _arrival(session, worker_environment)
+            second = _arrival(session, worker_environment, sequence_start=2)
+            application_ids = [first.id, second.id]
+        worker = AgentWorker(factory, settings=worker_environment)
+        assert worker.run_cycle() == 1
+        # The hour holds one run, so the second cycle works nothing.
+        assert worker.run_cycle() == 0
+        with factory() as session:
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id.in_(application_ids)
+                )
+            ).scalars().all()
+            assert len(runs) == 1
     finally:
         factory.dispose()

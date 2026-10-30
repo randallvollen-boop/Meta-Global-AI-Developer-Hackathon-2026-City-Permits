@@ -6,8 +6,13 @@
   <div>
     <h1>{{ agent.agent_label }}</h1>
     <p class="sub muted">
-      The agent proposes; a person decides. It sleeps until someone with the
-      wake grant wakes it, and it runs only when a person asks it to run.
+      The agent proposes; a person decides.
+      {% if agent.policy.mode == 'automatic' and agent.agent_key == 'intake' %}
+      With automatic processing on, an awake agent works new arrivals as they come in.
+      {% else %}
+      It sleeps until someone with the wake grant wakes it, and it runs only
+      when a person asks it to run.
+      {% endif %}
     </p>
   </div>
   <div class="actions">
@@ -44,8 +49,13 @@
       </p>
     </form>
     <p class="muted" data-testid="agent-toggle-note">
-      A woken agent stays awake until a person puts it back to sleep. It works
-      only on the cases a person asks it to work on.
+      A woken agent stays awake until a person puts it back to sleep.
+      {% if agent.policy.mode == 'automatic' and agent.agent_key == 'intake' %}
+      With automatic processing on, it works the new arrivals as they come in,
+      as long as it is awake.
+      {% else %}
+      It works only on the cases a person asks it to work on.
+      {% endif %}
     </p>
     {% else %}
     <p class="lock" data-testid="agent-toggle-locked">
@@ -146,7 +156,7 @@
   <div class="card-h"><h2 id="agent-attention-heading">Needs attention</h2></div>
   <div class="card-b">
     <table class="data-table opr-table" data-testid="agent-failure-table">
-      <caption class="visually-hidden">The work that failed and the work that waits for another attempt</caption>
+      <caption class="visually-hidden">The work that failed and may be tried again</caption>
       <thead>
         <tr><th scope="col">Case</th><th scope="col">State</th><th scope="col">Attempts</th><th scope="col">What happened</th><th scope="col">Try again</th></tr>
       </thead>
@@ -170,8 +180,6 @@
                 Try again
               </button>
             </form>
-            {% elif not row.can_retry %}
-            <span class="muted" data-testid="agent-retry-exhausted">A person has to look at it.</span>
             {% else %}
             <span class="lock" title="Your persona does not hold the run grant">
               <svg aria-hidden="true"><use href="#i-lock"/></svg> <span data-testid="agent-retry-no-grant">Your role cannot do this.</span>
@@ -180,17 +188,8 @@
           </td>
         </tr>
         {% endfor %}
-        {% for row in agent.retries %}
-        <tr data-testid="agent-retry-row" data-application-id="{{ row.application_id }}">
-          <td data-label="Case"><a href="/agents/cases/{{ row.application_id }}">{{ row.reference or row.application_id }}</a></td>
-          <td data-label="State"><span class="badge badge-held">Waiting for another attempt</span></td>
-          <td data-label="Attempts">{{ row.attempts }}</td>
-          <td data-label="What happened">{{ row.note or 'The work waits for another attempt.' }}</td>
-          <td data-label="Try again"><span class="muted">-</span></td>
-        </tr>
-        {% endfor %}
-        {% if not agent.failures and not agent.retries %}
-        <tr><td colspan="5" class="muted" data-testid="agent-failure-empty">No work has failed and nothing waits for another attempt.</td></tr>
+        {% if not agent.failures %}
+        <tr><td colspan="5" class="muted" data-testid="agent-failure-empty">No work has failed.</td></tr>
         {% endif %}
       </tbody>
     </table>

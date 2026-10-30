@@ -18,6 +18,12 @@ MODE_MANUAL = "manual"
 #: The mode of a policy that processes the work as it arrives.
 MODE_AUTOMATIC = "automatic"
 
+#: The label the screens show for the mode that waits for a person.
+MANUAL_LABEL = "Manual processing"
+
+#: The label the screens show for the mode that processes the work as it arrives.
+AUTOMATIC_LABEL = "Automatic processing"
+
 
 def current_policy(session: Session) -> agent_ops.AgentProcessingPolicy | None:
     """Return the single seeded processing policy, if the demo has been reset."""
@@ -41,10 +47,22 @@ def automatic_processing(session: Session) -> bool:
     return processing_mode(session) == MODE_AUTOMATIC
 
 
+def processing_label(mode: str) -> str:
+    """Return the label the screens show for a mode of the policy.
+
+    The label is the same everywhere: the operator home, the screen of an
+    agent and the administration tab all say the same thing about the mode.
+    """
+    return AUTOMATIC_LABEL if mode == MODE_AUTOMATIC else MANUAL_LABEL
+
+
 __all__ = [
+    "AUTOMATIC_LABEL",
+    "MANUAL_LABEL",
     "MODE_AUTOMATIC",
     "MODE_MANUAL",
     "automatic_processing",
     "current_policy",
+    "processing_label",
     "processing_mode",
 ]

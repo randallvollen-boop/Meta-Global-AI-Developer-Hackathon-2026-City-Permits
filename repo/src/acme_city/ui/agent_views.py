@@ -218,11 +218,6 @@ def agent_screen(
     failures = [
         _queue_row_view(session, row) for row in queue_rows if row.status == agent_ops.WORK_FAILED
     ]
-    retries = [
-        _queue_row_view(session, row)
-        for row in queue_rows
-        if row.status == agent_ops.WORK_PENDING and row.attempts > 0
-    ]
     awaiting_rows = [
         {
             "application_id": row.application_id,
@@ -272,7 +267,6 @@ def agent_screen(
         "graph": _graph_view(agent_key),
         "waiting": waiting_rows,
         "failures": failures,
-        "retries": retries,
         "awaiting": awaiting_rows,
         "history": history,
         "history_total": len(runs),
@@ -292,13 +286,13 @@ def agent_screen(
 
 def _policy_view(session: Session) -> dict[str, Any]:
     """Return the processing policy of the City, as the screens show it."""
-    from acme_city.agents.policy import current_policy
+    from acme_city.agents.policy import MODE_MANUAL, current_policy, processing_label
 
     policy = current_policy(session)
-    mode = policy.mode if policy is not None else "manual"
+    mode = policy.mode if policy is not None else MODE_MANUAL
     return {
         "mode": mode,
-        "label": "Manual processing" if mode == "manual" else "Automatic processing",
+        "label": processing_label(mode),
         "runs_per_hour": policy.runs_per_hour if policy is not None else DEFAULT_RUNS_PER_HOUR,
         "max_batch_size": (
             policy.max_batch_size if policy is not None else DEFAULT_MAX_BATCH_SIZE
@@ -327,8 +321,8 @@ def _queue_row_view(session: Session, row: agent_ops.AgentWorkQueue) -> dict[str
         "attempts": row.attempts,
         "note": row.note or "",
         "finished_at": _iso(row.finished_at),
-        # A technical failure may be tried again while the work has attempts
-        # left.  A work that waits for a person is never retried.
+        # A technical failure may be tried again by a person.  A work that
+        # waits for a person is never retried.
         "can_retry": retry_allowed(row),
     }
 

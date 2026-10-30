@@ -13,7 +13,8 @@ The intake agent is a dependency graph of six nodes:
 4. the router routes the case to early resolution or to review.
 
 The agent only proposes.  It never approves a permit, never sets money and
-never issues anything, and it only runs when a person runs it.
+never issues anything, and it runs when a person asks it to or when the City
+processes the work automatically.
 """
 # REQUIRES: AI-03, AI-04, PER-01, PER-04, REF-01
 # Every node of the graph is recorded with its outcome, the findings it wrote
@@ -194,17 +195,14 @@ class IntakeAgent:
         *,
         triggered_by: str,
         work_id: str | None = None,
-        require_awake: bool = True,
     ) -> agent_models.AgentRun:
         """Run the intake graph on one application.
 
         The ``work_id`` names the row of the work queue this run is the
-        attempt of, so the queue and the run evidence name each other.  The
-        automatic worker passes ``require_awake=False``: the processing
-        policy of the City is the authority of that run.
+        attempt of, so the queue and the run evidence name each other.  A
+        sleeping agent never runs: the operator wakes it first.
         """
-        if require_awake:
-            self._control.require_awake(agent_models.AGENT_INTAKE)
+        self._control.require_awake(agent_models.AGENT_INTAKE)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
         # An archived case is closed: no agent may reopen it.
@@ -242,27 +240,32 @@ class IntakeAgent:
         )
         actor = service_actor(self._session, INTAKE_AGENT_ID)
 
-        self._node_classifier(run, application, findings)
-        self._node_field_extractor(run, application, findings, actor)
-        self._node_document_qc(run, application, findings)
-        self._node_address_locator(run, application, findings, actor)
-        self._node_completeness(run, application, findings)
-        self._node_duplicate_finder(run, application, findings, actor)
-        self._node_router(run, application, findings)
+        # The nodes of the run happen inside a savepoint.  A node that stops
+        # the run saves no business change: the case keeps the revision it
+        # had, and the attempt is recorded as failed, so a person sees what
+        # happened and a retry starts from the same revision.
+        with self._session.begin_nested():
+            self._node_classifier(run, application, findings)
+            self._node_field_extractor(run, application, findings, actor)
+            self._node_document_qc(run, application, findings)
+            self._node_address_locator(run, application, findings, actor)
+            self._node_completeness(run, application, findings)
+            self._node_duplicate_finder(run, application, findings, actor)
+            self._node_router(run, application, findings)
 
-        # A rerun replaces the findings of the same revision: a finding the
-        # run recorded again is superseded by the new one, and a finding the
-        # run did not record again is resolved.
-        resolve_replaced_findings(
-            self._session,
-            application.id,
-            revision_number=application.revision,
-            produced=[(row.finding_type, row.message) for row in findings.findings],
-            exclude_run_id=run.id,
-            at=self._now,
-        )
-        run.finished_at = utc_now()
-        self._session.flush()
+            # A rerun replaces the findings of the same revision: a finding the
+            # run recorded again is superseded by the new one, and a finding the
+            # run did not record again is resolved.
+            resolve_replaced_findings(
+                self._session,
+                application.id,
+                revision_number=application.revision,
+                produced=[(row.finding_type, row.message) for row in findings.findings],
+                exclude_run_id=run.id,
+                at=self._now,
+            )
+            run.finished_at = utc_now()
+            self._session.flush()
         return run
 
     def waiting_applications(self) -> list[permit.Application]:

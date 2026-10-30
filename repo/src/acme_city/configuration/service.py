@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.agents.bundle import AGENT_OPERATIONS
+from acme_city.agents.policy import MODE_AUTOMATIC, MODE_MANUAL
 from acme_city.agents.runtime import DEFAULT_MAX_BATCH_SIZE
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
@@ -39,12 +40,6 @@ PERMISSION_MANAGE_USERS = "admin.actor.manage"
 #: The bounds of the hourly limit the City may set.
 MIN_RUNS_PER_HOUR = 1
 MAX_RUNS_PER_HOUR = 120
-
-#: The mode of a policy that processes the work only when a person asks.
-MODE_MANUAL = "manual"
-
-#: The mode of a policy that processes the work as it arrives.
-MODE_AUTOMATIC = "automatic"
 
 PERMISSION_MANAGE_AGENT_ROLES = "admin.actor.manage"
 MANAGED_AGENT_ROLE_IDS: tuple[str, ...] = (

@@ -24,6 +24,7 @@ from acme_city.agents.policy import current_policy
 from acme_city.agents.runtime import (
     AgentRuntime,
     batch_limit,
+    retry_allowed,
     run_agent,
     run_batch,
     work_key,
@@ -848,8 +849,81 @@ def test_a_failed_run_is_recorded_and_the_work_can_be_tried_again(
         factory.dispose()
 
 
-def test_the_work_is_not_retried_after_three_attempts(environment: Settings) -> None:
-    """Repeated clicking never creates unlimited retries."""
+def test_a_stopped_run_leaves_no_partial_rows(
+    environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that stops after a node wrote saves no business change."""
+    from acme_city.agents.intake import IntakeAgent
+    from acme_city.agents.runtime import AgentRunFailed
+
+    def _stopped(self, *args, **kwargs):
+        raise RuntimeError("the locator stopped")
+
+    # The locator fails after the extractor wrote its observation.
+    monkeypatch.setattr(IntakeAgent, "_node_address_locator", _stopped)
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = _arrival(session, environment)
+            application_id = application.id
+            _wake(session)
+            before_observations = len(
+                session.execute(select(permit.ExtractionObservation)).scalars().all()
+            )
+            before_model_runs = len(
+                session.execute(select(model_run.ModelRun)).scalars().all()
+            )
+            row = session.get(permit.Application, application_id)
+            assert row is not None
+            with pytest.raises(AgentRunFailed):
+                run_agent(
+                    session,
+                    application=row,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+        with factory() as session:
+            # The failure is recorded on the work, so a person sees it.
+            work = _work_of(session, application_id)
+            assert work.status == agent_ops.WORK_FAILED
+            assert "the locator stopped" in (work.note or "")
+            # The observation and the model run of the stopped attempt are
+            # gone: the attempt saved nothing.
+            assert (
+                len(session.execute(select(permit.ExtractionObservation)).scalars().all())
+                == before_observations
+            )
+            assert (
+                len(session.execute(select(model_run.ModelRun)).scalars().all())
+                == before_model_runs
+            )
+            document_ids = session.execute(
+                select(permit.Document.id).where(
+                    permit.Document.application_id == application_id
+                )
+            ).scalars().all()
+            observations = session.execute(
+                select(permit.ExtractionObservation).where(
+                    permit.ExtractionObservation.document_id.in_(document_ids)
+                )
+            ).scalars().all()
+            assert observations == []
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().all()
+            assert len(runs) == 1, "the attempt is not recorded"
+            assert runs[0].outcome == "failed"
+            assert runs[0].finished_at is not None
+    finally:
+        factory.dispose()
+
+
+def test_a_person_may_try_the_failed_work_again(environment: Settings) -> None:
+    """How often a person tries the failed work is the operator's decision."""
     from acme_city.agents.runtime import AgentRunFailed, retry_agent
     from acme_city.permits.guard import ARCHIVED_STATUS
 
@@ -889,10 +963,10 @@ def test_the_work_is_not_retried_after_three_attempts(environment: Settings) -> 
             work = _work_of(session, application_id)
             assert work.status == agent_ops.WORK_FAILED
             assert work.attempts == 3
-        # The work is not tried a fourth time.
+        # A person may try the work a fourth time.
         with transaction(factory) as session:
             row = session.get(permit.Application, application_id)
-            with pytest.raises(ValidationError) as raised:
+            with pytest.raises(AgentRunFailed):
                 retry_agent(
                     session,
                     application=row,
@@ -900,10 +974,11 @@ def test_the_work_is_not_retried_after_three_attempts(environment: Settings) -> 
                     triggered_by="persona_agent_operator",
                     settings=environment,
                 )
-            assert "a person has to look at it" in str(raised.value)
         with factory() as session:
             work = _work_of(session, application_id)
-            assert work.attempts == 3
+            assert work.status == agent_ops.WORK_FAILED
+            assert work.attempts == 4
+            assert retry_allowed(work), "the work may be tried again"
     finally:
         factory.dispose()
 

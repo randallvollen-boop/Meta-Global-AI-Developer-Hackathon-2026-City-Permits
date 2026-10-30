@@ -388,6 +388,36 @@ def test_the_administrator_saves_the_processing_settings(
     assert "City Administrator" in page.text
 
 
+def test_the_agent_screen_copy_follows_the_processing_policy(
+    client: TestClient, admin_client: TestClient
+) -> None:
+    """The screen says what the worker does, in the mode the City chose."""
+    manual = client.get("/agent/intake")
+    assert manual.status_code == 200, manual.text
+    assert "a person asks it to run" in manual.text
+    assert "an awake agent works new arrivals" not in manual.text
+    act(
+        admin_client,
+        "admin.agent.processing",
+        {
+            "keep_awake": "true",
+            "runs_per_hour": "42",
+            "reason": "Evening coverage",
+            "expected_version": "1",
+        },
+        "/admin?tab=agent_processing",
+    )
+    automatic = client.get("/agent/intake")
+    assert automatic.status_code == 200, automatic.text
+    assert "an awake agent works new arrivals" in automatic.text
+    # The adjudication agent is never worked on its own, so its screen keeps
+    # saying that a person runs it.
+    adjudication = client.get("/agent/adjudication")
+    assert adjudication.status_code == 200, adjudication.text
+    assert "a person asks it to run" in adjudication.text
+    assert "an awake agent works new arrivals" not in adjudication.text
+
+
 def test_a_stale_save_of_the_processing_settings_is_refused(
     admin_client: TestClient,
 ) -> None:

@@ -282,6 +282,23 @@ def test_the_agent_screens_fit_at_390_for_the_operator(viewport_390, server, log
         assert_no_horizontal_overflow(page)
         assert_not_covered(page, page.locator("[data-testid='agent-kpis']"))
         assert_not_covered(page, page.locator("[data-testid='agent-waiting']"))
+    # The screen of an agent with automatic processing on reads well as well.
+    login("persona_city_administrator")
+    page.goto(f"{server.base_url}/admin?tab=agent_processing", wait_until="domcontentloaded")
+    page.locator("input[name='keep_awake']").check()
+    page.fill("#opr-runs-per-hour", "42")
+    page.fill("#opr-processing-reason", "Evening coverage")
+    with page.expect_response(
+        lambda response: "/ui/actions/admin.agent.processing" in response.url
+        and response.request.method == "POST"
+    ) as answered:
+        page.click("[data-testid='admin-agent-processing-save']")
+    assert answered.value.json()["status"] == "accepted"
+    login("persona_agent_operator")
+    page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
+    assert "an awake agent works new arrivals" in page.inner_text("body")
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("[data-testid='agent-state']"))
 
 
 def test_the_agent_screens_fit_at_390_for_a_city_worker(viewport_390, server, login) -> None:

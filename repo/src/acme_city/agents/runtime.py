@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from acme_city.agents.policy import current_policy
@@ -45,11 +45,6 @@ from acme_city.persistence.models import agent_ops, permit
 #: The batch size and the hourly limit used when no policy was seeded.
 DEFAULT_MAX_BATCH_SIZE = 20
 DEFAULT_RUNS_PER_HOUR = 60
-
-#: The most attempts one piece of work may have: the first try and two
-#: retries.  A piece of work that was tried that often stays failed and
-#: waits for a person.
-MAX_ATTEMPTS = 3
 
 #: The engine of an attempt: the deterministic logic of the City.  The agents
 #: read the received documents and evaluate the published rules without a
@@ -155,11 +150,11 @@ def retry_allowed(row: agent_ops.AgentWorkQueue) -> bool:
     """Return whether the work may be tried again.
 
     Only a technical failure is retried.  A piece of work that waits for a
-    person is not a failure, and a piece of work that was already tried
-    three times stays failed: repeated clicking never creates unlimited
-    retries.
+    person is not a failure.  A person who asks for the work again gets
+    another attempt: the cap on the number of attempts is the number of
+    attempts the operator makes, not a rule of the City.
     """
-    return row.status == agent_ops.WORK_FAILED and row.attempts < MAX_ATTEMPTS
+    return row.status == agent_ops.WORK_FAILED
 
 
 def require_hour_room(limit: BatchLimit) -> None:
@@ -320,44 +315,13 @@ class AgentRuntime:
             return None
         return self._session.get(agent_ops.AgentWorkQueue, work_id, populate_existing=True)
 
-    def recover_running(self, before: datetime) -> int:
-        """Return the work that was running before this moment to the waiting state.
-
-        A process that ended while a case was being worked leaves its row
-        running.  The next worker returns that work to the waiting state, so
-        the case is worked again instead of waiting for ever.  Only the work
-        that was claimed before the worker started is returned: the work of
-        the worker that is running now is never touched.
-
-        Returns:
-            The number of pieces of work that were returned to the waiting
-            state.
-        """
-        result = self._session.execute(
-            update(agent_ops.AgentWorkQueue)
-            .where(
-                agent_ops.AgentWorkQueue.status == agent_ops.WORK_RUNNING,
-                or_(
-                    agent_ops.AgentWorkQueue.claimed_at.is_(None),
-                    agent_ops.AgentWorkQueue.claimed_at < before,
-                ),
-            )
-            .values(
-                status=agent_ops.WORK_PENDING,
-                claimed_at=None,
-                finished_at=None,
-                note="the attempt was interrupted; the work waits for another attempt",
-                version=agent_ops.AgentWorkQueue.version + 1,
-            )
-        )
-        return int(result.rowcount or 0)
-
     def execute(
         self,
         application: permit.Application,
         *,
         agent_key: str,
         runner: Callable[[str, str], agent_models.AgentRun],
+        work_id: str | None = None,
     ) -> QueuedRun:
         """Run one agent on one case through the queue.
 
@@ -365,23 +329,38 @@ class AgentRuntime:
         row records that the case was tried and how the attempt ended.  A
         case that was worked before is opened for another attempt.  A run
         that raises leaves the work failed and raises the error again.
+
+        The ``work_id`` names the piece of work the run is the attempt of.
+        The automatic worker names the work it picked up, so it never opens
+        work that was already finished: a case a person worked in the
+        meantime is not worked a second time.
+
+        The agent saves its own business change in a savepoint, so a stopped
+        attempt saves nothing and a retry starts from the same revision.
         """
-        queued = self.enqueue(application, agent_key=agent_key)
-        work = self._session.get(
-            agent_ops.AgentWorkQueue, queued.id, populate_existing=True
-        )
-        assert work is not None  # the row was just written or found
-        if work.status in (
-            agent_ops.WORK_COMPLETED,
-            agent_ops.WORK_FAILED,
-            agent_ops.WORK_HELD,
-        ):
-            reopened = self.reopen(work.id)
-            if reopened is not None:
-                work = reopened
+        if work_id is None:
+            queued = self.enqueue(application, agent_key=agent_key)
+            work = self._session.get(
+                agent_ops.AgentWorkQueue, queued.id, populate_existing=True
+            )
+            assert work is not None  # the row was just written or found
+            if work.status in (
+                agent_ops.WORK_COMPLETED,
+                agent_ops.WORK_FAILED,
+                agent_ops.WORK_HELD,
+            ):
+                reopened = self.reopen(work.id)
+                if reopened is not None:
+                    work = reopened
+        else:
+            work = self._session.get(
+                agent_ops.AgentWorkQueue, work_id, populate_existing=True
+            )
+            if work is None:
+                raise ValidationError("there is no recorded work for this case")
         claimed = self.claim(work.id)
         if claimed is None:
-            raise ValidationError("another run is already working this case")
+            raise ValidationError("the work is not waiting for an attempt")
         try:
             run = runner(application.id, claimed.id)
         except Exception as error:  # noqa: BLE001 - the failure is recorded
@@ -477,7 +456,7 @@ def run_agent(
     triggered_by: str,
     settings: Any = None,
     now: datetime | None = None,
-    require_awake: bool = True,
+    work_id: str | None = None,
 ) -> QueuedRun:
     """Run one agent on one case through the durable work queue.
 
@@ -490,9 +469,9 @@ def run_agent(
     worked.  The agent must be awake: a sleeping agent waits for its cases
     instead of leaving a failed piece of work behind.
 
-    The automatic worker passes ``require_awake=False``: the processing
-    policy of the City is the authority of that run, not the manual wake
-    state of the agent.
+    The ``work_id`` names the piece of work the run is the attempt of.  The
+    automatic worker names the work it picked up, so it never opens work
+    that was already finished.
     """
     from acme_city.agents.adjudication import AdjudicationAgent
     from acme_city.agents.control import AgentControlService
@@ -510,20 +489,18 @@ def run_agent(
     else:
         raise ValidationError(f"unknown agent: {agent_key!r}")
 
-    def runner(application_id: str, work_id: str) -> agent_models.AgentRun:
+    def runner(application_id: str, claimed_work_id: str) -> agent_models.AgentRun:
         return agent.run(
             application_id,
             triggered_by=triggered_by,
-            work_id=work_id,
-            require_awake=require_awake,
+            work_id=claimed_work_id,
         )
 
     limit = batch_limit(session, now=now)
     require_hour_room(limit)
-    if require_awake:
-        AgentControlService(session, now=now).require_awake(agent_key)
+    AgentControlService(session, now=now).require_awake(agent_key)
     return AgentRuntime(session, now=now).execute(
-        application, agent_key=agent_key, runner=runner
+        application, agent_key=agent_key, runner=runner, work_id=work_id
     )
 
 
@@ -584,10 +561,10 @@ def retry_agent(
     case, exactly as it did the first time.  The attempt count keeps the
     history, so the operator sees how often the work was tried.
 
-    Only a technical failure is retried, and only while the work has
-    attempts left: a piece of work that was tried three times stays failed
-    and waits for a person.  A work that waits for a person is never a
-    technical failure and is never retried.
+    Only a technical failure is retried.  A work that waits for a person is
+    never a technical failure and is never retried.  A person who asks for
+    the work again gets another attempt: how often a person tries the work
+    is the operator's decision, not a rule of the City.
 
     The retry is a manual run: it needs the grant of the agent and an awake
     agent, and it counts towards the hourly limit like any other run.
@@ -601,11 +578,6 @@ def retry_agent(
     if row.status != agent_ops.WORK_FAILED:
         raise ValidationError(
             "this work did not fail, so there is nothing to try again"
-        )
-    if row.attempts >= MAX_ATTEMPTS:
-        raise ValidationError(
-            f"the work was tried {row.attempts} times already, so a person has to "
-            "look at it"
         )
     return run_agent(
         session,
@@ -622,7 +594,6 @@ __all__ = [
     "BUILTIN_ENGINE_LABEL",
     "DEFAULT_MAX_BATCH_SIZE",
     "DEFAULT_RUNS_PER_HOUR",
-    "MAX_ATTEMPTS",
     "AgentRunFailed",
     "AgentRuntime",
     "BatchLimit",

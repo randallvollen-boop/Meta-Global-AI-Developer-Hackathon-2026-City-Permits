@@ -18,6 +18,7 @@ from typing import Any
 
 from sqlalchemy import select
 
+from acme_city.agents.policy import MODE_AUTOMATIC, MODE_MANUAL, processing_label
 from acme_city.persistence.models import agent_ops, audit, governance
 from acme_city.ui import admin_tabs
 
@@ -35,9 +36,6 @@ PROCESSING_TAB_LABEL = "Agent processing"
 
 #: The grant that opens the Agent processing tab and allows a save.
 PERMISSION_MANAGE = "config.manage"
-
-#: The label the tab shows for the mode of a policy that waits for a person.
-MODE_MANUAL = "manual"
 
 #: The label the tab shows for the engine that reads the received documents.
 ENGINE_BUILTIN = "Built in logic"
@@ -138,7 +136,8 @@ def processing_context(session, actor) -> dict:
     policy = current_policy(session)
     settings = _settings()
     cap, cap_note = muse_capability(settings)
-    automatic = policy is not None and policy.mode != MODE_MANUAL
+    mode = policy.mode if policy is not None else MODE_MANUAL
+    automatic = mode == MODE_AUTOMATIC
     used = 0
     if cap and settings is not None:
         try:
@@ -154,7 +153,7 @@ def processing_context(session, actor) -> dict:
     return {
         "agent_processing": {
             "automatic": automatic,
-            "mode_label": "Automatic processing" if automatic else "Manual processing",
+            "mode_label": processing_label(mode),
             "runs_per_hour": (
                 policy.runs_per_hour if policy is not None else DEFAULT_RUNS_PER_HOUR
             ),

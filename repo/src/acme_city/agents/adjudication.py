@@ -91,17 +91,14 @@ class AdjudicationAgent:
         *,
         triggered_by: str,
         work_id: str | None = None,
-        require_awake: bool = True,
     ) -> agent_models.AgentRun:
         """Run the adjudication graph on one application.
 
         The ``work_id`` names the row of the work queue this run is the
-        attempt of, so the queue and the run evidence name each other.  The
-        automatic worker passes ``require_awake=False``: the processing
-        policy of the City is the authority of that run.
+        attempt of, so the queue and the run evidence name each other.  A
+        sleeping agent never runs: the operator wakes it first.
         """
-        if require_awake:
-            self._control.require_awake(agent_models.AGENT_ADJUDICATION)
+        self._control.require_awake(agent_models.AGENT_ADJUDICATION)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
         # An archived case is closed: no agent may reopen it.
@@ -136,14 +133,19 @@ class AdjudicationAgent:
             run_id=run.id,
         )
 
-        rules = self._node_rule_loader(run, application, findings)
-        results = self._node_rule_evaluator(run, application, actor)
-        conditions = self._node_condition_builder(run, results)
-        precedent = self._node_precedent_check(run, application, findings)
-        self._node_disposition(run, application, rules, results, conditions, precedent)
+        # The nodes of the run happen inside a savepoint.  A node that stops
+        # the run saves no business change: the case keeps the revision it
+        # had, and the attempt is recorded as failed, so a person sees what
+        # happened and a retry starts from the same revision.
+        with self._session.begin_nested():
+            rules = self._node_rule_loader(run, application, findings)
+            results = self._node_rule_evaluator(run, application, actor)
+            conditions = self._node_condition_builder(run, results)
+            precedent = self._node_precedent_check(run, application, findings)
+            self._node_disposition(run, application, rules, results, conditions, precedent)
 
-        run.finished_at = utc_now()
-        self._session.flush()
+            run.finished_at = utc_now()
+            self._session.flush()
         return run
 
     def candidates(self) -> list[permit.Application]:
