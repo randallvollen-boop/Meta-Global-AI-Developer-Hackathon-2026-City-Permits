@@ -330,6 +330,9 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
                     "project_type": type_labels.get(row.permit_type_id, "not recorded"),
                     "reason": reasons[0],
                     "reason_count": len(reasons),
+                    "more_note": (
+                        "More reasons on the case." if len(reasons) > 1 else ""
+                    ),
                     "href": f"/permits/{row.id}",
                 }
             )
@@ -413,10 +416,10 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
             "more": max(0, len(attention) - 8),
         },
         "property": {
-            "label": "Property context",
+            "label": "Applications with property details",
             "definition": (
                 "Sample applications with a stored primary site: the parcel, the "
-                "official address, the documents and the rule versions that apply."
+                "official address and the documents that apply."
             ),
             "count": len(property_items),
             "href": "/property",
@@ -424,10 +427,11 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
             "more": max(0, len(property_items) - 8),
         },
         "changes": {
-            "label": "Proposed changes",
+            "label": "Unpublished rule and fee versions",
             "definition": (
                 "Rule and fee schedule versions that are drafted, in review or "
-                "approved and are not published or retired."
+                "approved and are not published or retired. They are not waiting "
+                "for an approval."
             ),
             "count": len(proposed),
             "href": "/rules?tab=rules&view=drafts",
@@ -436,8 +440,11 @@ def planning_overview(session: Session, actor: ActorContext) -> dict[str, Any]:
             "approval_policy": policy,
         },
         "sources": {
-            "label": "Source information",
-            "definition": "The simulated source systems the demonstration reads from.",
+            "label": "Simulated source systems",
+            "definition": (
+                "The simulated source systems the demonstration reads from. The "
+                "count is the number of configured systems."
+            ),
             "count": len(source_items),
             "href": "/governance?tab=sources",
             "entries": source_items,

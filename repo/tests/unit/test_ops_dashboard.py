@@ -11,7 +11,12 @@ import pytest
 from sqlalchemy import select
 
 from acme_city.core.ids import new_id
-from acme_city.ops.dashboard import ACTIVE_STATUSES, dashboard
+from acme_city.ops.dashboard import (
+    ACTIVE_STATUSES,
+    PROCESSING_GROUP,
+    WORKLOAD_GROUP,
+    dashboard,
+)
 from acme_city.permits.queues import INTAKE_TABS
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
@@ -120,6 +125,47 @@ def test_needs_a_person_adds_needs_information_and_held_recommendations(session)
     view = dashboard(session, now=NOW)
     item = figure(view, "needs_a_person")
     assert item["value"] == 2 and "(1)" in item["definition"]
+
+
+def test_every_figure_names_its_group_and_its_plain_label(session) -> None:
+    view = dashboard(session, now=NOW)
+    groups = {item["key"]: item["group"] for item in view["figures"]}
+    assert groups == {
+        "active": WORKLOAD_GROUP,
+        "average_age": WORKLOAD_GROUP,
+        "needs_a_person": WORKLOAD_GROUP,
+        "early_incomplete": PROCESSING_GROUP,
+        "agent_processed": PROCESSING_GROUP,
+        "decisions": PROCESSING_GROUP,
+    }
+    labels = {item["key"]: item["label"] for item in view["figures"]}
+    assert labels["active"] == "Active cases"
+    assert labels["average_age"] == "Average age of active cases"
+    assert labels["needs_a_person"] == "Items needing attention"
+    assert labels["early_incomplete"] == "Incomplete at first intake"
+    assert labels["agent_processed"] == "Applications processed by intake"
+    assert labels["decisions"] == "Decisions recorded"
+
+
+def test_the_items_needing_attention_name_their_two_components(session) -> None:
+    session.get(permit.Application, "app_d02").status = "needs_information"
+    session.add(
+        permit.Recommendation(
+            id=new_id("rec"),
+            application_id="app_d03",
+            proposed_outcome="hold",
+            status="pending",
+        )
+    )
+    session.flush()
+    item = figure(dashboard(session, now=NOW), "needs_a_person")
+    # The calculation is unchanged: the two components are added together.
+    assert item["value"] == 2
+    assert [part["value"] for part in item["components"]] == [1, 1]
+    assert item["components"][0]["label"] == "Applications in needs information"
+    assert item["components"][1]["label"] == "Recommendations held for a person"
+    # The figure says what it is not: it is not a count of distinct cases.
+    assert "not of distinct cases" in item["definition"]
 
 
 def test_the_charts_have_a_table_and_a_total_that_matches(session) -> None:

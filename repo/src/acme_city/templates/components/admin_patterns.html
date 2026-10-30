@@ -1,0 +1,38 @@
+{# The shared presentation primitives of the administration screens.  Import with context:
+
+     {% import "components/admin_patterns.html" as adm with context %}
+
+   adm.scope_note('Sample history excluded.')                 P1  a note that names the scope of a figure
+   adm.status_summary(items)                                  P2  a short summary of counted states
+   adm.disclosure('Required documents', body, open=True)      P3  a labelled disclosure
+   adm.field_label('Review area')                             P4  the label of a stacked table cell
+
+   Every class is scoped with .adm-, so the stylesheet of this area never
+   reaches another screen.  Nothing here holds data: the values come from
+   the view model of the screen that uses the macro. #}
+
+{% macro scope_note(text, testid='') -%}
+<p class="adm-scope-note"{% if testid %} data-testid="{{ testid }}"{% endif %}>{{ text }}</p>
+{%- endmacro %}
+
+{% macro status_summary(items, testid='') -%}
+<ul class="adm-status-summary"{% if testid %} data-testid="{{ testid }}"{% endif %}>
+  {% for item in items %}
+  <li class="adm-status{% if item.tone %} adm-status--{{ item.tone }}{% endif %}">
+    <span class="adm-status-label">{{ item.label }}</span>
+    <span class="adm-status-value">{{ item.value }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{%- endmacro %}
+
+{% macro disclosure(summary, body, testid='', open=False) -%}
+<details class="adm-disclosure"{% if testid %} data-testid="{{ testid }}"{% endif %}{% if open %} open{% endif %}>
+  <summary class="adm-disclosure-summary">{{ summary }}</summary>
+  <div class="adm-disclosure-body">{{ body }}</div>
+</details>
+{%- endmacro %}
+
+{% macro field_label(text) -%}
+<span class="adm-field-label">{{ text }}</span>
+{%- endmacro %}

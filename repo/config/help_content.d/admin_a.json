@@ -1,1 +1,17 @@
-{}
+{
+  "note": "The help text of the admin_a lane.  Every entry replaces one step of the shared help content; no step is deleted.",
+  "howto": {
+    "guides": [
+      {
+        "slug": "read-the-operations-dashboard-and-audit-log",
+        "title": "Read the operations dashboard, the audit log and the support screen",
+        "steps": {
+          "1": "Read \"Current workload\" and \"Recorded processing\", then \"Decisions recorded, by outcome\". Every figure is a count or a mean over stored rows. No model is used.",
+          "2": "Beside the scope statement, click \"Include the sample history\" to count the sample year as well, or \"Leave the sample history out\" to leave it out.",
+          "5": "Click \"View details\" on a row to open the event in a side panel.",
+          "7": "Open \"Support\" to answer the requests that need a reply. Use \"Open\" and \"Answered\" to change lists, then use \"Send reply\" after checking the reply destination."
+        }
+      }
+    ]
+  }
+}

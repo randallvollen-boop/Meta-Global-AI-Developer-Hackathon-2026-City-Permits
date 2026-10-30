@@ -21,9 +21,10 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
+from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
-from acme_city.persistence.models import finance
+from acme_city.persistence.models import finance, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
     SessionFactory,
@@ -143,6 +144,59 @@ def test_the_overview_reports_the_freshness_of_the_three_sources(
     assert labels == ["GIS", "Permitting", "ERP/Finance"]
     for entry in overview["sources"]["entries"]:
         assert entry["last_changed"] or entry["last_received"]
+
+
+def test_the_overview_names_its_four_counts_in_plain_words(
+    session: Session,
+) -> None:
+    actor = actor_for(session, "persona_city_administrator")
+    overview = admin_views.planning_overview(session, actor)
+    assert overview["attention"]["label"] == "Applications needing attention"
+    assert overview["property"]["label"] == "Applications with property details"
+    assert overview["changes"]["label"] == "Unpublished rule and fee versions"
+    assert overview["sources"]["label"] == "Simulated source systems"
+    # A count is never renamed into a promise it does not make.
+    assert "Awaiting approval" not in overview["changes"]["label"]
+    assert "unique" not in overview["property"]["label"].lower()
+    assert "healthy" not in overview["sources"]["label"].lower()
+    # Every count keeps the set it was measured over.
+    for part in ("attention", "property", "changes", "sources"):
+        assert overview[part]["definition"], part
+
+
+def test_an_attention_row_shows_the_first_reason_and_names_the_others(
+    session: Session,
+) -> None:
+    actor = actor_for(session, "persona_city_administrator")
+    overview = admin_views.planning_overview(session, actor)
+    entries = overview["attention"]["entries"]
+    assert entries
+    for entry in entries:
+        assert entry["reason"]
+        assert entry["more_note"] == (
+            "" if entry["reason_count"] == 1 else "More reasons on the case."
+        )
+    # A case with a second reason says that there are more.
+    first = entries[0]
+    session.add(
+        permit.ApplicationFinding(
+            id=new_id("find"),
+            correlation_id=new_id("corr"),
+            application_id=first["application_id"],
+            finding_type="missing_document",
+            message="The site plan does not cover the fence.",
+            severity="review",
+        )
+    )
+    session.flush()
+    again = admin_views.planning_overview(session, actor)
+    updated = next(
+        item
+        for item in again["attention"]["entries"]
+        if item["application_id"] == first["application_id"]
+    )
+    assert updated["reason_count"] == 2
+    assert updated["more_note"] == "More reasons on the case."
 
 
 # --------------------------------------------------------------- rules, fees

@@ -10,6 +10,7 @@ import pytest
 
 from acme_city.core.ids import new_id
 from acme_city.ops.audit_log import PAGE_SIZE, actor_type_of, audit_log, identity_sets
+from acme_city.ui.ops_views import audit_action_label, audit_presentation
 from acme_city.persistence.models import audit, governance
 from acme_city.persistence.session import SessionFactory, transaction
 
@@ -117,3 +118,23 @@ def test_a_decision_event_links_to_the_case_it_belongs_to(session) -> None:
     event(session, "persona_permit_reviewer", "permit.decide", "decision", decision.id)
     row = audit_log(session, action="permit.decide")["rows"][0]
     assert row["href"] == f"/permits/{decision.application_id}"
+
+
+def test_the_audit_presenter_keeps_raw_values_and_adds_readable_event_fields() -> None:
+    view = audit_presentation(
+        {
+            "rows": [{"action": "support.help_request.answer", "outcome": "accepted", "actor_type": "person", "target_type": "help_request", "target_id": "help_1"}],
+            "actions": ["support.help_request.answer", "made.up_action"],
+        }
+    )
+    row = view["rows"][0]
+    assert row["action"] == "support.help_request.answer"
+    assert row["action_label"] == "Answered help request"
+    assert row["outcome_label"] == "Recorded"
+    assert row["actor_type_label"] == "person"
+    assert row["target_label"] == "help_request help_1"
+    assert view["actions"] == [
+        {"key": "support.help_request.answer", "label": "Answered help request"},
+        {"key": "made.up_action", "label": "Made up action"},
+    ]
+    assert audit_action_label("") == "Recorded event"

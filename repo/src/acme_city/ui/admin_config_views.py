@@ -15,7 +15,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
+from acme_city.core.config import Settings
 from acme_city.persistence.models import audit, governance, permit
+from acme_city.ui.ops_views import audit_action_label, readable_words
 
 
 def _iso(value) -> str:
@@ -49,8 +51,68 @@ def _permit_type_rows(session: Session) -> list[permit.PermitType]:
     )
 
 
-def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the view model of the administration screen."""
+#: The label of a permit type that is always held for a person or a board.
+REQUIRES_A_PERSON = "Requires a person or board"
+
+#: The label of a permit type that is not always held for a person or a board.
+NO_PERSON_REQUIRED = "Does not require a person or board"
+
+#: The label of a value that was never recorded.
+NOT_RECORDED = "Not recorded"
+
+def _names(values: list[str] | None) -> str:
+    """Return the names of a list of stored values, in plain words."""
+    names = [str(value).replace("_", " ") for value in values or []]
+    return ", ".join(names) if names else NOT_RECORDED
+
+
+def _requirements_summary(row: permit.PermitType) -> str:
+    """Return the short summary of what a permit type asks for."""
+    documents = [str(value).replace("_", " ") for value in row.required_documents or []]
+    if not documents:
+        return "No required document"
+    if len(documents) == 1:
+        return documents[0]
+    return ", ".join(documents[:-1]) + " and " + documents[-1]
+
+
+def _generation_availability(settings: Settings | None) -> dict[str, Any]:
+    """Return whether an icon generation may be attempted on this deployment.
+
+    The screen asks the settings of the running process, because the answer
+    decides what the appearance tab offers.  Settings that cannot be read are
+    treated as no generation at all: the tab then says so instead of offering
+    a generation the server would refuse.
+    """
+    from acme_city.permits import icons as icon_service
+
+    resolved = settings
+    if resolved is None:
+        try:
+            resolved = Settings.load()
+        except Exception:  # pragma: no cover - a broken environment
+            return {
+                "available": False,
+                "reason": (
+                    "Icon generation is off: the settings of this deployment could "
+                    "not be read."
+                ),
+            }
+    return icon_service.generation_availability(resolved)
+
+
+def administration(
+    session: Session,
+    actor: ActorContext,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
+    """Return the view model of the administration screen.
+
+    The settings are the ones of the running process.  They decide what the
+    appearance tab may offer, so the screen never offers an icon generation
+    the server would refuse.
+    """
     types = _permit_type_rows(session)
     known_documents: set[str] = set()
     for row in types:
@@ -62,11 +124,20 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
             "label": row.label,
             "description": row.description or "",
             "review_area": row.review_area or row.review_route,
+            "review_area_label": (row.review_area or row.review_route) or NOT_RECORDED,
             "process_category": row.process_category or "",
+            "process_label": (row.process_category or "").replace("_", " ") or NOT_RECORDED,
             "discretionary": bool(row.discretionary),
+            "discretionary_label": (
+                REQUIRES_A_PERSON if row.discretionary else NO_PERSON_REQUIRED
+            ),
             "required_fields": list(row.required_fields or []),
+            "required_fields_label": _names(row.required_fields),
             "required_documents": list(row.required_documents or []),
+            "required_documents_label": _names(row.required_documents),
+            "requirements_summary": _requirements_summary(row),
             "fee_schedule_key": row.fee_schedule_key or "",
+            "fee_schedule_label": row.fee_schedule_key or NOT_RECORDED,
             "version": row.version,
             "active": row.active,
         }
@@ -78,6 +149,8 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
     log = _configuration_log(session)
     from acme_city.ui.view_models import permit_type_icons
 
+    icons = permit_type_icons(session, actor)
+    icons["generation"] = _generation_availability(settings)
     return {
         "permit_types": type_rows,
         "known_documents": sorted(known_documents),
@@ -89,7 +162,7 @@ def administration(session: Session, actor: ActorContext) -> dict[str, Any]:
         "service_identities": service_identities,
         "reason_codes": reason_codes,
         "configuration_log": log,
-        "permit_type_icons": permit_type_icons(session, actor),
+        "permit_type_icons": icons,
         "fee_schedules": _fee_schedules(session),
         "evidence": [
             {
@@ -203,10 +276,26 @@ def _reason_codes(session: Session) -> list[dict[str, Any]]:
             "label": row.label,
             "description": row.description or "",
             "code_type": row.code_type,
+            "code_type_label": row.code_type.replace("_", " ").capitalize(),
             "active": bool(row.active),
             "version": row.version,
         }
         for row in rows
+    ]
+
+
+def configuration_log_presentation(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add readable configuration-log fields without changing recorded values."""
+    return [
+        {
+            **entry,
+            "action_label": audit_action_label(str(entry.get("action", ""))),
+            "target_label": readable_words(str(entry.get("target_type", ""))) or NOT_RECORDED,
+            "actor_label": str(entry.get("actor_label", "")) or str(entry.get("actor", "")) or NOT_RECORDED,
+            "before_display": entry.get("before") if entry.get("before") not in (None, "") else NOT_RECORDED,
+            "after_display": entry.get("after") if entry.get("after") not in (None, "") else NOT_RECORDED,
+        }
+        for entry in entries
     ]
 
 
@@ -244,7 +333,13 @@ def _configuration_log(session: Session) -> list[dict[str, Any]]:
                 "after": metadata.get("after", ""),
             }
         )
-    return entries
+    return configuration_log_presentation(entries)
 
 
-__all__ = ["administration"]
+__all__ = [
+    "NO_PERSON_REQUIRED",
+    "NOT_RECORDED",
+    "REQUIRES_A_PERSON",
+    "administration",
+    "configuration_log_presentation",
+]

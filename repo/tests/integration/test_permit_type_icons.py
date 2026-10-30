@@ -394,6 +394,83 @@ def test_global_cap_refuses_past_the_settings_cap(seeded) -> None:
     assert transport.requests == []
 
 
+def test_the_availability_names_the_reason_a_generation_is_off(seeded) -> None:
+    settings, _factory = seeded
+    # The test settings carry a credential, so a generation may be attempted.
+    assert icon_service.generation_availability(settings) == {
+        "available": True,
+        "reason": "",
+    }
+    disabled = settings.model_copy(update={"muse_provider_enabled": False})
+    refused = icon_service.generation_availability(disabled)
+    assert refused["available"] is False
+    assert "disabled in this deployment" in refused["reason"]
+    locked = settings.model_copy(update={"public_demo": True})
+    refused = icon_service.generation_availability(locked)
+    assert refused["available"] is False
+    assert "locked on the hosted demo" in refused["reason"]
+    without_key = settings.model_copy(update={"meta_api_key": None})
+    refused = icon_service.generation_availability(without_key)
+    assert refused["available"] is False
+    assert "no provider credential" in refused["reason"]
+
+
+def test_a_disabled_provider_is_refused_before_a_client_is_built(seeded) -> None:
+    settings, factory = seeded
+    off = settings.model_copy(update={"muse_provider_enabled": False})
+    transport = RecordingTransport(success_body())
+    image_client = MuseImageClient(off, transport=transport)
+    with factory() as session:
+        ctx = ActionContext(
+            session=session,
+            actor=context_for(session, ADMIN),
+            form={
+                "permit_type_id": "permit_type_deck_fence",
+                "prompt": "a wooden deck with a fence",
+                "expected_version": "1",
+            },
+            settings=off,
+        )
+        with pytest.raises(ValidationError) as raised:
+            icon_service.generate_icon(ctx, client=image_client)
+        assert raised.value.code == "icon_generation_unavailable"
+        session.rollback()
+    # No request left the process, and no attempt was recorded: a disabled
+    # provider is not a generation attempt.
+    assert transport.requests == []
+    with factory() as session:
+        attempts = session.execute(
+            select(audit.AuditEvent).where(
+                audit.AuditEvent.action == icon_service.ATTEMPT_ACTION
+            )
+        ).scalars().all()
+        assert attempts == []
+
+
+def test_the_hosted_lock_refuses_a_generation_before_a_client_is_built(seeded) -> None:
+    settings, factory = seeded
+    hosted = settings.model_copy(update={"public_demo": True})
+    transport = RecordingTransport(success_body())
+    image_client = MuseImageClient(hosted, transport=transport)
+    with factory() as session:
+        ctx = ActionContext(
+            session=session,
+            actor=context_for(session, ADMIN),
+            form={
+                "permit_type_id": "permit_type_deck_fence",
+                "prompt": "a wooden deck with a fence",
+                "expected_version": "1",
+            },
+            settings=hosted,
+        )
+        with pytest.raises(ValidationError) as raised:
+            icon_service.generate_icon(ctx, client=image_client)
+        assert raised.value.code == "icon_generation_unavailable"
+        assert "locked on the hosted demo" in raised.value.message
+        session.rollback()
+    assert transport.requests == []
+
+
 def test_save_sets_icon_and_generate_action_runs_over_http(
     client: TestClient, seeded
 ) -> None:

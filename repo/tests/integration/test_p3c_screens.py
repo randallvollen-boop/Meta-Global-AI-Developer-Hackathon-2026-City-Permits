@@ -100,6 +100,56 @@ def test_every_screen_has_a_help_button_and_prints_its_definitions(client) -> No
         assert f'data-testid="{testid}-section"' in dash
 
 
+def test_the_dashboard_groups_the_figures_and_names_the_scope(client) -> None:
+    choose(client, ADMIN)
+    dash = client.get("/ops/dashboard").text
+    # The scope of the numbers is named before the figures.
+    assert "Fictional demo records. Sample history excluded." in dash
+    assert dash.index("Sample history excluded.") < dash.index('data-figure="active"')
+    # The figures sit in two groups: the work that is open now and the work
+    # the services recorded.
+    assert "Current workload" in dash
+    assert "Recorded processing" in dash
+    assert 'data-testid="ops-figure-group" data-group="workload"' in dash
+    assert 'data-testid="ops-figure-group" data-group="processing"' in dash
+    # The plain labels of the figures are on the screen.
+    for label in (
+        "Active cases",
+        "Average age of active cases",
+        "Items needing attention",
+        "Incomplete at first intake",
+        "Applications processed by intake",
+        "Decisions recorded",
+    ):
+        assert label in dash, label
+    # The items that need attention name their two components.
+    assert "Applications in needs information" in dash
+    assert "Recommendations held for a person" in dash
+
+
+def test_the_dashboard_scope_follows_the_history_switch(client) -> None:
+    choose(client, ADMIN)
+    included = client.get("/ops/dashboard?synthetic=include").text
+    assert "Sample history included." in included
+    excluded = client.get("/ops/dashboard").text
+    assert "Sample history excluded." in excluded
+
+
+def test_the_dashboard_breakdowns_keep_their_charts_and_their_tables(client) -> None:
+    choose(client, ADMIN)
+    dash = client.get("/ops/dashboard").text
+    # Every breakdown with rows keeps its chart and its table in the page.
+    for testid in ("chart-status", "chart-channel"):
+        assert f'data-testid="{testid}-chart"' in dash, testid
+        assert f'data-testid="{testid}-data"' in dash, testid
+        assert f'data-testid="{testid}-table"' in dash, testid
+    # The breakdown without rows says so instead of drawing an empty chart.
+    assert 'data-testid="chart-backlog-empty"' in dash
+    # The table of a breakdown keeps its rows and its total.
+    assert "Total" in dash
+    assert dash.count('class="ops-chart"') >= 2
+
+
 # --------------------------------------------------------------- audit log
 
 
@@ -157,6 +207,37 @@ def test_run_checks_refusals(client, environment) -> None:
     assert post_action(client, "ops.checks.run", {"expected_version": "0"}).status_code == 200
     assert post_action(client, "ops.checks.run", {"expected_version": "0"}).status_code == 422
     assert len(events(environment, "checks.run")) == 1
+
+
+def test_the_checks_screen_leads_with_the_recorded_result(client) -> None:
+    choose(client, ADMIN)
+    post_action(client, "ops.checks.run", {"expected_version": "0"})
+    page = client.get("/ops/checks").text
+    # The screen says what the checks do before it offers the action.
+    assert "Check the stored records for consistency." in page
+    assert "permits or fees." in page
+    # The recorded result comes before the results themselves.
+    assert page.index('data-testid="checks-result"') < page.index('data-testid="checks-counts"')
+    assert page.index('data-testid="checks-counts"') < page.index('data-testid="checks-table"')
+    assert page.index('data-testid="checks-table"') < page.index('data-testid="checks-details"')
+    # The three counts are named.
+    for label in ("Passed", "Failed", "Not applicable"):
+        assert label in page, label
+    # The technical identifier sits in the run details.
+    assert 'data-testid="checks-run-id"' in page
+    assert page.count('data-testid="check-row"') == 8
+    # The run is recorded, and the screen says so without counting the rows.
+    assert "is recorded in the audit log" in page
+
+
+def test_the_checks_screen_keeps_the_reason_of_every_result(client) -> None:
+    choose(client, ADMIN)
+    post_action(client, "ops.checks.run", {"expected_version": "0"})
+    page = client.get("/ops/checks").text
+    assert page.count('data-testid="check-reason"') == 8
+    assert "not applicable (historical seed)" in page
+    # The reason of a check is never shortened to a count.
+    assert "not applicable (historical seed)" in page.split('data-testid="check-row"', 1)[1]
 
 
 def test_a_run_changes_no_business_row(client, environment) -> None:
@@ -287,7 +368,7 @@ def test_a_reply_on_an_archived_case_does_not_touch_the_application(client, envi
         factory.dispose()
     made = seed_help_request(environment, application_id="app_d05")
     choose(client, ADMIN)
-    assert "archived and cannot change" in client.get("/ops/support").text
+    assert "This reply stays on the help request. The archived case will not change." in client.get("/ops/support").text
     before = len(rows(environment, permit.ApplicationComment))
     assert post_action(client, "support.help_request.answer", {
         "help_request_id": made["request_id"], "expected_version": "1", "reply": "We will restore it."}, page="/ops/support").status_code == 200

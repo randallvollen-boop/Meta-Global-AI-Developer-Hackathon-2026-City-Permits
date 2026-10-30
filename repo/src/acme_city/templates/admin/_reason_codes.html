@@ -2,25 +2,29 @@
 <details class="panel card" data-testid="admin-section" data-section="reason-codes" {% if tab == 'reason-codes' %}open{% endif %}>
   <summary><strong>Reason codes</strong></summary>
   <div class="card-b" style="display:grid;gap:16px">
-    <table class="data-table" data-testid="admin-reason-codes">
+    <table class="data-table adm-reason-codes" data-testid="admin-reason-codes">
       <caption class="visually-hidden">Reason codes</caption>
-      <thead><tr><th scope="col">Code</th><th scope="col">Label</th><th scope="col">Type</th><th scope="col">State</th><th scope="col">Action</th></tr></thead>
+      <thead><tr><th scope="col">Reason</th><th scope="col">Technical code</th><th scope="col">Type</th><th scope="col">State</th><th scope="col">Action</th></tr></thead>
       <tbody>
         {% for code in admin.reason_codes %}
         <tr data-testid="admin-reason-code-row" data-code="{{ code.code }}">
-          <th scope="row">{{ code.code }}</th>
-          <td>{{ code.label }}</td>
-          <td><span class="badge">{{ code.code_type }}</span></td>
-          <td><span class="badge badge-{{ 'current' if code.active else 'superseded' }}">{{ 'active' if code.active else 'retired' }}</span></td>
+          <th scope="row"><span class="adm-field-label">Reason</span>{{ code.label }}{% if code.description %}<span class="adm-reason-description">{{ code.description }}</span>{% endif %}</th>
+          <td><span class="adm-field-label">Technical code</span><span class="mono">{{ code.code }}</span></td>
+          <td><span class="adm-field-label">Type</span><span class="badge">{{ code.code_type_label }}</span></td>
+          <td><span class="adm-field-label">State</span><span class="badge badge-{{ 'current' if code.active else 'superseded' }}">{{ 'Active' if code.active else 'Retired' }}</span></td>
           <td>
             {% if admin.can_manage and code.active %}
-            <form method="post" action="/ui/actions/config.reason_code.retire" class="action-form" data-testid="admin-reason-code-retire">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input type="hidden" name="action_id" value="config.reason_code.retire">
-              <input type="hidden" name="next" value="/admin?tab=reason-codes">
-              <input type="hidden" name="code" value="{{ code.code }}">
-              <button type="submit" class="btn sm">Retire</button>
-            </form>
+            <details class="adm-retire-confirm">
+              <summary>Retire</summary>
+              <p>Retiring stops future selection. Existing records keep this code.</p>
+              <form method="post" action="/ui/actions/config.reason_code.retire" class="action-form" data-testid="admin-reason-code-retire">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="config.reason_code.retire">
+                <input type="hidden" name="next" value="/admin?tab=reason-codes">
+                <input type="hidden" name="code" value="{{ code.code }}">
+                <button type="submit" class="btn sm">Confirm retirement</button>
+              </form>
+            </details>
             {% endif %}
           </td>
         </tr>

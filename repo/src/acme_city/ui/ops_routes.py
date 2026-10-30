@@ -23,6 +23,7 @@ dispatcher's feedback record:
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
@@ -44,7 +45,7 @@ from acme_city.ops.support import (
 )
 from acme_city.persistence.models import audit
 from acme_city.persistence.models.support import SUPPORT_CHANNELS
-from acme_city.ui import patterns
+from acme_city.ui import ops_views, patterns
 from acme_city.ui.patterns import DetailContext, DetailView, Row, Section
 from acme_city.ui.router import (
     ActionContext,
@@ -62,6 +63,16 @@ router = APIRouter(tags=["operations"])
 def _evidence(label: str, detail: str) -> list[dict[str, Any]]:
     """Return the evidence list of an operations screen: what its figures read."""
     return [{"label": label, "kind": "database query", "detail": detail, "received_at": None}]
+
+
+def _support_navigation(ref: str, request_id: str, status: str) -> str:
+    """Keep the current lookup and focused request when changing request lists."""
+    query = {"request_status": status}
+    if ref.strip():
+        query["ref"] = ref.strip()
+    if request_id.strip():
+        query["request"] = request_id.strip()
+    return f"/ops/support?{urlencode(query)}"
 
 
 # ------------------------------------------------------------------ dashboard
@@ -84,7 +95,9 @@ def ui_ops_dashboard(
         resolved,
         screen="ops_dashboard",
         title="Operations dashboard",
-        view=dashboard_module.dashboard(session, synthetic=synthetic),
+        view=ops_views.dashboard_presentation(
+            dashboard_module.dashboard(session, synthetic=synthetic)
+        ),
         model_runs=[],
         evidence=_evidence(
             "Stored applications, decisions and agent runs",
@@ -117,8 +130,10 @@ def ui_ops_audit(
         resolved,
         screen="ops_audit",
         title="Audit log",
-        view=audit_log_module.audit_log(
-            session, actor_type=actor_type, action=action, search=search, page=page
+        view=ops_views.audit_presentation(
+            audit_log_module.audit_log(
+                session, actor_type=actor_type, action=action, search=search, page=page
+            )
         ),
         model_runs=[],
         evidence=_evidence("The append-only audit records", "read only; this screen reads the one audit trail"),
@@ -138,8 +153,18 @@ def _resolve_audit_event(ctx: DetailContext, event_id: str) -> DetailView | None
         Row("Occurred", event.occurred_at.isoformat() if event.occurred_at else "", mono=True),
         Row("Actor", event.actor_id or "none (system)", mono=True),
         Row("Roles held", ", ".join(event.actor_role_ids or []) or "none recorded"),
+        Row("Raw action", event.action, mono=True),
+        Row("Target", " ".join(part for part in (event.target_type or "", event.target_id or "") if part) or "none", mono=True),
+        Row(
+            "Versions",
+            f"{event.before_version if event.before_version is not None else 'Not recorded'} to {event.after_version if event.after_version is not None else 'Not recorded'}",
+            mono=True,
+        ),
         Row("Outcome", event.outcome),
     ]
+    basis = str(meta.get("approval_basis_label", ""))
+    if basis:
+        rows.append(Row("Approval basis", basis))
     if event.denial_reason:
         rows.append(Row("Denial reason", event.denial_reason))
     refs = tuple(Row(f"Reference {i}", str(ref), mono=True) for i, ref in enumerate(event.references or [], 1))
@@ -220,8 +245,11 @@ def ui_ops_support(
         channels=[{"key": key, "label": CHANNEL_LABELS[key]} for key in SUPPORT_CHANNELS],
         faq=[{"question": q, "answer": a} for q, a in FAQ],
         contact=CONTACT_NOTICE,
+        can_lookup=service.can(resolved, PERMISSION_LOOKUP),
         can_answer=service.can(resolved, PERMISSION_ANSWER),
         can_record=service.can(resolved, PERMISSION_RECORD),
+        support_open_href=_support_navigation(ref, request_id, "open"),
+        support_answered_href=_support_navigation(ref, request_id, "answered"),
         model_runs=[],
         evidence=_evidence(
             "Help requests, applicant-visible comments and support cases",
@@ -261,6 +289,7 @@ def ui_ops_checks(
         screen="ops_checks",
         title="Checks",
         recorded=recorded,
+        checks=ops_views.checks_presentation(recorded, selected=bool(run)),
         runs_version=version,
         model_runs=[],
         evidence=_evidence(

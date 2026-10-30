@@ -1,9 +1,9 @@
 """The More tools group of the navigation in a browser.
 
-No persona has a secondary navigation item yet, so the page is rendered in
-process with a dummy navigation profile against the database of the isolated
-server, and the browser loads that page from the server's own origin so the
-real stylesheets apply.  The group must fit inside 390 pixels, open or closed.
+The page is rendered in process with a dummy navigation profile against the
+database of the isolated server, and the browser loads that page from the
+server's own origin so the real stylesheets apply.  The group must fit inside
+390 pixels, open or closed.
 """
 # REQUIRES: UX-01, UX-04
 # The navigation stays inside a 390 pixel viewport and every entry is reached.
@@ -40,6 +40,9 @@ def _queue_with_more_tools(server: BrowserServer, actor_id: str) -> str:
     """Return the /queue page of one persona with two entries under More tools."""
     app = create_app(server.settings)
     app.include_router(ui_router)
+    # The profile of the lane is put back afterwards: a lane may register one
+    # for this persona, and the dummy profile is only a probe of the group.
+    saved = view_models.NAV_PROFILES.get(actor_id)
     view_models.NAV_PROFILES[actor_id] = _secondary_last_two
     try:
         with TestClient(app) as client:
@@ -49,7 +52,10 @@ def _queue_with_more_tools(server: BrowserServer, actor_id: str) -> str:
             assert page.status_code == 200
             return page.text
     finally:
-        view_models.NAV_PROFILES.pop(actor_id)
+        if saved is None:
+            view_models.NAV_PROFILES.pop(actor_id, None)
+        else:
+            view_models.NAV_PROFILES[actor_id] = saved
 
 
 def test_the_more_tools_group_fits_at_390_pixels(page, server: BrowserServer) -> None:
