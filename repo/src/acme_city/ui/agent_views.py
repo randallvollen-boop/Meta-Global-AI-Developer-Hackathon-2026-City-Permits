@@ -21,11 +21,17 @@ from sqlalchemy.orm import Session
 from acme_city.agents import graphs
 from acme_city.agents.control import AGENT_KEYS, AGENT_LABELS, AgentControlService
 from acme_city.agents.intake import waiting_applications
-from acme_city.agents.runtime import BUILTIN_ENGINE, BUILTIN_ENGINE_LABEL, batch_limit
+from acme_city.agents.runtime import (
+    BUILTIN_ENGINE,
+    BUILTIN_ENGINE_LABEL,
+    DEFAULT_MAX_BATCH_SIZE,
+    DEFAULT_RUNS_PER_HOUR,
+    batch_limit,
+)
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import agent_ops, audit, permit
+from acme_city.persistence.models import agent_ops, audit, model_run as model_run_models, permit
 
 # The administration view model moved to ``admin_config_views``; it is
 # re-exported so ``from acme_city.ui.agent_views import administration`` works.
@@ -44,6 +50,9 @@ IN_REVIEW_STATUSES: tuple[str, ...] = ("ready_for_review", "under_review")
 
 #: The number of runs one page of the history shows.
 RUN_PAGE_SIZE = 25
+
+#: The number of recent results the agent screen shows.
+RECENT_RESULT_COUNT = 20
 
 #: What a recorded state of a run means for the operator.
 RUN_STATE_LABELS: dict[str, str] = {
@@ -200,6 +209,15 @@ def agent_screen(
         }
         for row in waiting
     ]
+    queue_rows = _queue_rows(session, agent_key)
+    failures = [
+        _queue_row_view(session, row) for row in queue_rows if row.status == agent_ops.WORK_FAILED
+    ]
+    retries = [
+        _queue_row_view(session, row)
+        for row in queue_rows
+        if row.status == agent_ops.WORK_PENDING and row.attempts > 0
+    ]
     awaiting_rows = [
         {
             "application_id": row.application_id,
@@ -222,9 +240,11 @@ def agent_screen(
             "detail": run.outcome_detail or "",
             "target": run.application_id or "",
             "triggered_by": run.triggered_by or "",
+            "duration": _duration(run),
+            "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
             "nodes": nodes_by_run.get(run.id, []),
         }
-        for run in runs
+        for run in runs[:RECENT_RESULT_COUNT]
     ]
 
     return {
@@ -237,11 +257,19 @@ def agent_screen(
         # The most cases one manual batch may name, so the button on the
         # screen says what it will do.
         "batch_limit": batch_limit(session).max_batch_size,
+        # The processing policy of the City and the engine that produces the
+        # runs.  They are separate things: the policy says when work starts,
+        # the engine says what produces it.
+        "policy": _policy_view(session),
+        "engine": BUILTIN_ENGINE_LABEL,
         "kpis": kpis,
         "graph": _graph_view(agent_key),
         "waiting": waiting_rows,
+        "failures": failures,
+        "retries": retries,
         "awaiting": awaiting_rows,
         "history": history,
+        "history_total": len(runs),
         "evidence": [
             {
                 "label": f"{run['reference'] or 'run'} · {run['result']}",
@@ -251,9 +279,94 @@ def agent_screen(
             }
             for run in history
         ],
-        "model_runs": [],
+        "model_runs": _linked_model_runs(session, runs),
         "audit_history": _agent_history(session, agent_key),
     }
+
+
+def _policy_view(session: Session) -> dict[str, Any]:
+    """Return the processing policy of the City, as the screens show it."""
+    from acme_city.agents.policy import current_policy
+
+    policy = current_policy(session)
+    mode = policy.mode if policy is not None else "manual"
+    return {
+        "mode": mode,
+        "label": "Manual processing" if mode == "manual" else "Automatic processing",
+        "runs_per_hour": policy.runs_per_hour if policy is not None else DEFAULT_RUNS_PER_HOUR,
+        "max_batch_size": (
+            policy.max_batch_size if policy is not None else DEFAULT_MAX_BATCH_SIZE
+        ),
+    }
+
+
+def _queue_rows(session: Session, agent_key: str) -> list[agent_ops.AgentWorkQueue]:
+    """Return the queued work of one agent, newest first."""
+    return list(
+        session.execute(
+            select(agent_ops.AgentWorkQueue)
+            .where(agent_ops.AgentWorkQueue.agent_key == agent_key)
+            .order_by(agent_ops.AgentWorkQueue.created_at.desc())
+        ).scalars().all()
+    )
+
+
+def _queue_row_view(session: Session, row: agent_ops.AgentWorkQueue) -> dict[str, Any]:
+    """Return what the operator needs to know about one piece of queued work."""
+    return {
+        "work_id": row.id,
+        "application_id": row.application_id,
+        "reference": _number_of(session, row.application_id),
+        "status": row.status,
+        "attempts": row.attempts,
+        "note": row.note or "",
+        "finished_at": _iso(row.finished_at),
+    }
+
+
+def _linked_model_runs(
+    session: Session, runs: list[agent_models.AgentRun]
+) -> list[dict[str, Any]]:
+    """Return the model runs the recorded runs of the agent produced.
+
+    A built in run names the agent run it belongs to, so the operator reads
+    the evidence of the attempt next to the attempt itself.
+    """
+    from acme_city.ui.view_models import muse_source_label
+
+    run_ids = {run.id for run in runs}
+    if not run_ids:
+        return []
+    rows = session.execute(
+        select(model_run_models.ModelRun).order_by(model_run_models.ModelRun.started_at.desc())
+    ).scalars().all()
+    views: list[dict[str, Any]] = []
+    for row in rows:
+        refs = row.input_refs or {}
+        agent_run_id = refs.get("agent_run_id") if isinstance(refs, dict) else None
+        if agent_run_id not in run_ids:
+            continue
+        validation = dict(row.validation_result or {})
+        views.append(
+            {
+                "run_id": row.id,
+                "mode": row.mode,
+                "mode_label": row.mode.capitalize(),
+                "source_label": muse_source_label(row.model, row.mode),
+                "status": row.status,
+                "provider": row.provider,
+                "model": row.model,
+                "response_id": row.provider_response_id,
+                "latency_ms": row.latency_ms,
+                "error": row.error,
+                "replay_of_run_id": row.replay_of_run_id,
+                "validation_errors": list(validation.get("errors") or []),
+                "usage": dict(row.usage or {}),
+                "started_at": _iso(row.started_at),
+                "completed_at": _iso(row.completed_at),
+            }
+        )
+    return views
 
 
 def _duration(run: agent_models.AgentRun) -> str:

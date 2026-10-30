@@ -152,3 +152,39 @@ def test_the_case_summary_shows_the_work_of_the_agent_at_390(viewport_390, serve
     assert page.locator("[data-testid='agent-case-run']").count() >= 1
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, summary)
+
+
+def test_the_agent_screens_fit_at_390_for_the_operator(viewport_390, server, login) -> None:
+    """Both agent screens read well on a phone."""
+    page = viewport_390
+    login("persona_agent_operator")
+    for path in ("/agent/intake", "/agent/adjudication"):
+        page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert page.locator("[data-testid='agent-state']").is_visible()
+        assert page.locator("[data-testid='agent-policy']").inner_text().strip()
+        assert page.locator("[data-testid='agent-engine']").inner_text().strip()
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator("[data-testid='agent-kpis']"))
+        assert_not_covered(page, page.locator("[data-testid='agent-waiting']"))
+
+
+def test_the_agent_screens_fit_at_390_for_a_city_worker(viewport_390, server, login) -> None:
+    """A reviewer with the City worker option may open the agent screens."""
+    page = viewport_390
+    login("persona_city_administrator")
+    page.goto(f"{server.base_url}/admin?tab=users", wait_until="domcontentloaded")
+    page.locator("input[name='city_worker_enabled']").check()
+    page.fill("#opr-role-reason", "Winter coverage")
+    with page.expect_response(
+        lambda response: "/ui/actions/admin.role.permissions" in response.url
+        and response.request.method == "POST"
+    ) as answered:
+        page.click("[data-testid='admin-role-permissions-save']")
+    assert answered.value.json()["status"] == "accepted"
+    login("persona_permit_reviewer")
+    for path in ("/agent/intake", "/agent/adjudication"):
+        page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert page.locator("[data-testid='agent-state']").is_visible()
+        assert page.locator("[data-testid='agent-run-all']").is_visible()
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator("[data-testid='agent-waiting']"))

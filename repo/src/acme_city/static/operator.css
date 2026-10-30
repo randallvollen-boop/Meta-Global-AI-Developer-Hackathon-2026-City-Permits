@@ -23,6 +23,12 @@
 .opr-facts dt { color: var(--fg-2); font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
 .opr-facts dd { margin: 0; }
 
+/* The collapsed parts of the agent screens. */
+.opr-details { margin: .4rem 0; }
+.opr-details > summary { cursor: pointer; font-weight: 600; }
+.opr-details[open] > summary { margin-bottom: .5rem; }
+.opr-evidence { margin-bottom: 1rem; }
+
 @media (max-width: 520px) {
   .opr-summary .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .opr-role-permissions .data-table { display: block; overflow-x: auto; max-width: 100%; }

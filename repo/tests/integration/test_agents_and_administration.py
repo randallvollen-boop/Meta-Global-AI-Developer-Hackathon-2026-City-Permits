@@ -180,7 +180,9 @@ def test_the_agent_screen_shows_its_kpis_and_graph(client: TestClient) -> None:
         "router",
     ):
         assert f'data-node-id="{node}"' in body
-    assert "Columns run in parallel; arrows are dependencies" in body
+    assert "Each group waits for the group before it." in body
+    # The screen no longer claims that the steps run in parallel.
+    assert "run in parallel" not in body
 
     choose(client, "persona_agent_operator")
     body = client.get("/agent/adjudication").text
