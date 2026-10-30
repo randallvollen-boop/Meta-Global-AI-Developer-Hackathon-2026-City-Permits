@@ -5,7 +5,8 @@ which replays the whole Alembic chain (0001 to head) each time. That replay was
 about 0.7 s per test and roughly 90% of the acceptance run.
 
 This conftest runs the real chain once per test process into a template file and
-gives each fresh SQLite database a copy of it. Each test still owns its own file,
+gives each fresh SQLite database a copy of it. The template lives under pytest's
+base temporary directory, which pytest prunes. Each test still owns its own file,
 so isolation is unchanged. The chain itself stays covered: the template is a real
 upgrade from empty, and ``tests/unit/test_migrations.py`` drives ``command.upgrade``
 and ``command.downgrade`` directly.
@@ -25,12 +26,24 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from acme_city.core.config import Settings
 from acme_city.persistence import session as _session
 
 _SQLITE_FILE_PREFIX = "sqlite:///"
 _original_initialize_database = _session.initialize_database
 _template: Path | None = None
+_template_root: Path | None = None
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_configure(config) -> None:
+    # Keep the template under pytest's own base directory. pytest keeps only the
+    # last few of those, so a worker that is killed mid-run leaves nothing behind
+    # for long.
+    global _template_root
+    _template_root = config._tmp_path_factory.mktemp("schema-template")
 
 
 def _fresh_sqlite_path(settings: Settings) -> Path | None:
@@ -49,8 +62,11 @@ def _fresh_sqlite_path(settings: Settings) -> Path | None:
 def _template_database(settings: Settings) -> Path:
     global _template
     if _template is None:
-        directory = Path(tempfile.mkdtemp(prefix="acme-schema-template-"))
-        atexit.register(shutil.rmtree, directory, ignore_errors=True)
+        if _template_root is not None:
+            directory = _template_root
+        else:
+            directory = Path(tempfile.mkdtemp(prefix="acme-schema-template-"))
+            atexit.register(shutil.rmtree, directory, ignore_errors=True)
         template = directory / "template.db"
         _original_initialize_database(
             settings.model_copy(update={"database_url": f"{_SQLITE_FILE_PREFIX}{template}"})
