@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from acme_city.core.config import Settings
 from acme_city.core.config_autolink import autolink_env_overrides
 
@@ -26,3 +29,9 @@ def test_registry_automation_env_override_takes_effect(tmp_path: Path) -> None:
 
 def test_autolink_overrides_only_contain_set_names() -> None:
     assert autolink_env_overrides({}) == {}
+
+
+def test_registry_automation_mode_is_a_closed_safe_set(tmp_path: Path) -> None:
+    assert _load(tmp_path, ACME_REGISTRY_AUTOMATION_MODE="Suggestions").registry_automation_mode == "suggestions"
+    with pytest.raises(ValidationError, match="paused, suggestions, or active"):
+        _load(tmp_path, ACME_REGISTRY_AUTOMATION_MODE="always")

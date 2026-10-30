@@ -43,6 +43,7 @@ TASK_TITLES: dict[str, str] = {
     "parcel": "Check the property",
     "case": "Check the correction",
     "issue": "Check the data issue",
+    "automatic_link": "Check the automatic link",
 }
 
 #: The identity task of a match, by the type of the party it is about.
@@ -58,6 +59,7 @@ ACTION_LABELS: dict[str, str] = {
     "parcel": "Review property",
     "case": "Review case",
     "issue": "Review issue",
+    "automatic_link": "Review the link",
 }
 
 #: The record types of the queue, in the order they are listed.  The value is
@@ -76,6 +78,7 @@ RECORD_TYPE_BY_KIND: dict[str, str] = {
     "parcel": "property",
     "case": "correction",
     "issue": "issue",
+    "automatic_link": "match",
 }
 
 #: The record type labels, by filter value.

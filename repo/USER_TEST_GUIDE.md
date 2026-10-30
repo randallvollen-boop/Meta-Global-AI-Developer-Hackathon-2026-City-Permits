@@ -99,6 +99,18 @@ uv run python scripts/prepare_user_test.py --mode steward-demo
 
 This adds three *proposed* links to **Data issues** (Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413`) so the queue holds the Cedarline comparison: Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline Coffee Works LLC, a different license number and a different unit. Nothing is decided. Choose **Data Steward**, open **Data issues**, open the `ERP-BL-00413` issue and read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. The mode is a prepare mode; the default reset and every acceptance fixture hold no steward issue.
 
+## Automatic linking demonstration
+
+```bash
+uv run python scripts/prepare_user_test.py --mode steward-automation
+```
+
+This prepares the Cedarline demonstration and one link the automatic linking applied. The policy of the Data Steward is activated for the applicant records, the worker of the City compares the accepted record with the master records and applies the link that passes every check. The link waits in **Data issues** until a person has looked at it.
+
+Choose **Data Steward** and open **Data issues**. The applied link is a row of its own: open it and read the score, the evidence of the comparison and the two controls. Press **Keep this link** to record that the master record is right, or press **Undo this link**, give a reason, and the link is taken back while the event that applied it stays in the trail. Then open **Automatic linking** to read the policy, preview the accepted records and pause the automation.
+
+The settings screen says that this deployment runs the automation paused, because no new record is queued for the worker here. The link in the queue was applied while the mode was prepared, and it waits for your review. The mode is a prepare mode. The default reset, the Cedarline demonstration and every acceptance fixture hold no applied link, and the linking service never calls a model provider.
+
 ## Prepared states
 
 ```bash

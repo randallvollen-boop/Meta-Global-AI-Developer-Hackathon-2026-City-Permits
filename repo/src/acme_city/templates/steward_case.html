@@ -103,6 +103,26 @@
   {% endfor %}
   {% elif c.comparison %}
   {{ comparisons.comparison(c.comparison) }}
+  {% elif c.kind == 'automatic_link' %}
+  <p class="muted">Source record <b class="mono">{{ c.automatic.record }}</b> ({{ c.automatic.source_system }}) was connected to <b>{{ c.automatic.entity_label }}</b> by the automatic linking. A link names the master record of a source record; it decides no permit.</p>
+  <dl class="stwa-facts">
+    <div>
+      <dt>Source dataset</dt>
+      <dd>{{ c.automatic.dataset }}</dd>
+    </div>
+    <div>
+      <dt>Master record</dt>
+      <dd>{{ c.automatic.entity_label }} ({{ c.automatic.entity_type }})</dd>
+    </div>
+    <div>
+      <dt>Match score</dt>
+      <dd>{{ c.automatic.score_text }} out of 1</dd>
+    </div>
+    <div>
+      <dt>Policy version</dt>
+      <dd>{{ c.automatic.policy_version }}</dd>
+    </div>
+  </dl>
   {% else %}
   <p class="muted">There are no values to compare for this issue.</p>
   {% endif %}
@@ -165,6 +185,26 @@
   {% elif c.kind == 'case' %}
   <p>Destination: <b>{{ c.destination }}</b>. State: <b>{{ c.state_label }}</b>.</p>
   {% if c.case_evidence %}<ul class="plain-list">{% for item in c.case_evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No evidence was attached to this request.</p>{% endif %}
+  {% elif c.kind == 'automatic_link' %}
+  <p>The policy applied this link from the recorded score and the identity checks. The score orders the candidates; it is not a probability.</p>
+  <table class="data-table stwa-table" data-testid="automatic-evidence">
+    <caption class="visually-hidden">The comparison evidence of the automatic link</caption>
+    <thead>
+      <tr>
+        <th scope="col">Field</th>
+        <th scope="col">Direction</th>
+        <th scope="col">Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in c.automatic.supporting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Supports the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
+      {% for item in c.automatic.conflicting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Contradicts the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
+      {% if not c.automatic.supporting and not c.automatic.conflicting %}<tr><td colspan="3" class="muted">No comparison evidence was recorded.</td></tr>{% endif %}
+    </tbody>
+  </table>
+  {% if c.automatic.reasons %}<p class="muted" data-testid="automatic-reasons">The decision: {{ c.automatic.reasons|join(', ') }}.</p>{% endif %}
+  {% if c.automatic.failed_checks %}<p class="muted" data-testid="automatic-failed-checks">The checks that did not pass: {{ c.automatic.failed_checks|join(', ') }}.</p>{% endif %}
+  <p class="muted" data-testid="automatic-applied-by">Applied by the linking service on {{ c.automatic.applied_at_text }}. The policy of the Data Steward authorized it.</p>
   {% else %}
   <p class="muted">No further evidence is recorded for this issue.</p>
   {% endif %}

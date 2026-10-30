@@ -28,6 +28,10 @@ MODE_LABELS = {
         "Fresh fixtures plus three proposed Cedarline links in Data issues: Cedarline "
         "Coffee Roasters LLC against Cedarline Coffee Works LLC. Nothing is decided."
     ),
+    "steward-automation": (
+        "Fresh fixtures plus three proposed Cedarline links and one link the automatic "
+        "linking applied. The steward may keep that link or undo it with a reason."
+    ),
     "demo-synthetic": (
         "Fresh fixtures plus a flagged synthetic year of permit history for the City view "
         "and the public community view."
@@ -90,7 +94,7 @@ def assert_server_stopped(record_path: Path) -> None:
 
 
 def prepare(args: argparse.Namespace) -> dict[str, Any]:
-    if args.live_muse and args.mode in {"fresh", "demo-synthetic", "steward-demo"}:
+    if args.live_muse and args.mode in {"fresh", "demo-synthetic", "steward-demo", "steward-automation"}:
         raise RuntimeError("--live-muse requires ready-for-review or completed-reference mode")
     assert_server_stopped(args.record)
     environment = os.environ.copy()
@@ -133,10 +137,23 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
             environment=environment,
         )
 
+    if args.mode == "steward-automation":
+        run_command(
+            [
+                sys.executable,
+                str(LOAD_STEWARD_DEMO),
+                "--database",
+                args.database,
+                "--confirm-fictional-demo",
+                "--automation",
+            ],
+            environment=environment,
+        )
+
     walkthrough_path = None
     started = False
     try:
-        if args.mode not in {"fresh", "demo-synthetic", "steward-demo"}:
+        if args.mode not in {"fresh", "demo-synthetic", "steward-demo", "steward-automation"}:
             run_command(
                 [
                     sys.executable,
@@ -183,7 +200,7 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         "mode": args.mode,
         "label": MODE_LABELS[args.mode],
         "database": args.database,
-        "model_mode": "live" if args.live_muse else ("replay" if args.mode not in {"fresh", "demo-synthetic", "steward-demo"} else "none"),
+        "model_mode": "live" if args.live_muse else ("replay" if args.mode not in {"fresh", "demo-synthetic", "steward-demo", "steward-automation"} else "none"),
         "walkthrough_evidence": walkthrough_path,
         "prepared_at": datetime.now(UTC).isoformat(),
         "server_running": False,

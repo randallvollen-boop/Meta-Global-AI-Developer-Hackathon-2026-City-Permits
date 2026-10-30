@@ -49,6 +49,7 @@ from acme_city.persistence.models import (
     model_run,
     permit,
     registry,
+    registry_automation as registry_automation_models,
     source,
 )
 from acme_city.registry.candidates import (
@@ -58,7 +59,15 @@ from acme_city.registry.candidates import (
     entity_target_for,
 )
 from acme_city.registry.provenance import affected_dependents, current_accepted_snapshot
-from acme_city.ui import display, patterns, property_views, steward_queue_views, view_models
+from acme_city.registry import automation as registry_automation
+from acme_city.ui import (
+    display,
+    patterns,
+    property_views,
+    steward_automation_views,
+    steward_queue_views,
+    view_models,
+)
 from acme_city.ui.patterns import DetailContext, DetailForbidden, DetailView, Row, Section
 
 PAGE_SIZE = 50
@@ -79,6 +88,9 @@ LINKABLE_DATASETS = frozenset(
 #: The statuses of a link that mean a steward has decided it.
 DECIDED_LINKS = ("approved", "rejected", "no_match", "removed")
 
+#: The number of applied links the queue holds at most.
+QUEUE_APPLICATION_LIMIT = 25
+
 #: Change-case states that wait for a person, for the source, or are finished.
 CASE_NEEDS_REVIEW = ("requested", "in_review", "awaiting_approval")
 CASE_AWAITING_SOURCE = ("approved", "sent_to_source", "source_acknowledged", "synchronization_failed")
@@ -98,6 +110,7 @@ OPEN_NEXT_STEPS: dict[str, str] = {
     "parcel": "Compare the submitted address with the parcel, then approve or reject the link.",
     "case": "Move the case to the next state, or wait for the source to answer.",
     "issue": "Resolve the recorded issue so the work it blocks can continue.",
+    "automatic_link": "Read the recorded evidence, then keep the link or undo it with a reason.",
 }
 
 #: What the steward does next in a focused case that is finished.
@@ -107,6 +120,7 @@ CLOSED_NEXT_STEPS: dict[str, str] = {
     "parcel": "The parcel link is decided. The Permit Reviewer still confirms the parcel.",
     "case": "The case is closed. Open the record to see what the source answered.",
     "issue": "The issue is closed. Open the record to see what changed.",
+    "automatic_link": "The link was reviewed. Open the master record to see where each value came from.",
 }
 
 #: The four collections of Master records, in tab order.
@@ -1965,6 +1979,30 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
                 record_type=row.issue_type,
             )
         )
+    # 5. The links the automatic linking applied.  They stay in the queue
+    # until a person has reviewed them.
+    for row in steward_automation_views.application_rows(session, limit=QUEUE_APPLICATION_LIMIT):
+        issues.append(
+            Issue(
+                kind="automatic_link",
+                item_id=row["application_id"],
+                title=(
+                    f"{row['record']} was linked to {row['entity_label']} by the "
+                    "automatic linking"
+                ),
+                record=row["entity_label"],
+                record_ref=_ref("record", row["entity_id"]),
+                applications=_applications_of(session, [row["entity_id"]], synthetic),
+                source=display.source_name(session, row["source_system"], row["dataset"]),
+                status="needs_review" if row["status"] == "applied" else "resolved",
+                created_at=row["applied_at"],
+                legacy_testid="automatic-link",
+                link_status=row["status"],
+                sort_key=(row["applied_at"],),
+                record_type=_party_type(session, row["entity_id"]),
+                source_reference=row["record"],
+            )
+        )
     return issues
 
 
@@ -2844,6 +2882,8 @@ def _focused_case(
             return {}
         return _linked_case(session, actor, crosswalk)
     builder = {"link": link_case, "parcel": parcel_case, "case": case_case, "issue": governance_case}.get(kind)
+    if kind == "automatic_link":
+        return automatic_link_case(session, actor, item_id)
     if builder is None:
         return {}
     if kind == "link":
@@ -2875,6 +2915,177 @@ def _case_summary(case: dict[str, Any]) -> dict[str, Any]:
         "status_label": str(case.get("status_label", "")),
         "application_count": len(applications),
         "next_step": steps.get(kind, OPEN_NEXT_STEPS["issue"]),
+    }
+
+
+def _automatic_actions(
+    session: Session,
+    actor: ActorContext,
+    row: dict[str, Any],
+    domain_id: str | None,
+) -> list[dict[str, Any]]:
+    """Return the two controls of an applied link.
+
+    A steward either keeps the link or takes it back with a reason.  The
+    controls are the grants of the Data Steward, and a persona without the
+    grant sees the reason instead of the form.
+    """
+    application_id = str(row["application_id"])
+    crosswalk = session.get(registry.Crosswalk, str(row["crosswalk_id"]))
+    version = crosswalk.version if crosswalk is not None else None
+    record = str(row["record"])
+    entity = str(row["entity_label"])
+    review = view_models.action(
+        session,
+        actor,
+        action_id="registry.automation.review",
+        label="Keep this link",
+        path="/ui/actions/registry.automation.review",
+        permission=registry_automation.REVIEW_ACTION,
+        domain_id=domain_id,
+        destination="the review of the link",
+        description=(
+            "The link stays as it is and the review is recorded with your name."
+        ),
+        fields=(
+            {
+                "name": "application_id",
+                "label": "Application",
+                "type": "hidden",
+                "value": application_id,
+                "options": [],
+                "required": False,
+                "hint": "",
+            },
+            {
+                "name": "note",
+                "label": "Note",
+                "type": "textarea",
+                "value": "",
+                "options": [],
+                "required": False,
+                "hint": "",
+            },
+        ),
+    )
+    review["preview"] = _preview(
+        f"The link of {record} stays with {entity}.",
+        "The applications that name this record keep the link.",
+        "No source value is changed.",
+        "The link is marked as reviewed and leaves the queue.",
+    )
+    undo = view_models.action(
+        session,
+        actor,
+        action_id="registry.automation.undo",
+        label="Undo this link",
+        path="/ui/actions/registry.automation.undo",
+        permission=registry_automation.UNDO_ACTION,
+        domain_id=domain_id,
+        destination="the link of the source record",
+        description=(
+            "The link is taken back and the dependent records are marked for "
+            "review. The event that applied it stays in the trail."
+        ),
+        expected_version=version,
+        fields=(
+            {
+                "name": "application_id",
+                "label": "Application",
+                "type": "hidden",
+                "value": application_id,
+                "options": [],
+                "required": False,
+                "hint": "",
+            },
+            {
+                "name": "expected_version",
+                "label": "Expected link version",
+                "type": "hidden",
+                "value": "" if version is None else str(version),
+                "options": [],
+                "required": False,
+                "hint": "",
+            },
+            {
+                "name": "reason",
+                "label": "Reason",
+                "type": "textarea",
+                "value": "",
+                "options": [],
+                "required": True,
+                "hint": "",
+            },
+        ),
+    )
+    undo["preview"] = _preview(
+        f"The link of {record} to {entity} is taken back.",
+        "The records that depend on this link are marked for review.",
+        "No source value is changed.",
+        "The link is closed and stays in the trail.",
+    )
+    return [review, undo]
+
+
+def automatic_link_case(
+    session: Session, actor: ActorContext, application_id: str
+) -> dict[str, Any]:
+    """Return the focused case of one link the automatic linking applied.
+
+    The case shows the link the service applied, the evidence the decision
+    was built from, and the two controls of the steward.  A link that was
+    already taken back shows what happened and offers no control.
+    """
+    application = session.get(
+        registry_automation_models.RegistryAutomationApplication, application_id
+    )
+    if application is None:
+        return {}
+    row = steward_automation_views.application_row(session, application)
+    synthetic = _synthetic_ids(session)
+    contract = session.execute(
+        select(governance.SourceContract).where(
+            governance.SourceContract.source_system_id == row["source_system"],
+            governance.SourceContract.dataset_key == row["dataset"],
+        )
+    ).scalar_one_or_none()
+    domain_id = contract.domain_id if contract is not None else None
+    open_link = row["status"] == "applied"
+    return {
+        "kind": "automatic_link",
+        "id": application.id,
+        "record_name": row["entity_label"],
+        "record_reference": row["record"],
+        "source_name": display.source_name(session, row["source_system"], row["dataset"]),
+        "record_type": _party_type(session, row["entity_id"]),
+        "title": f"{row['record']} was linked to {row['entity_label']}",
+        "status": "needs_review" if open_link else "resolved",
+        "status_label": row["status_label"],
+        "problem": (
+            f"The automatic linking linked source record {row['record']} to "
+            f"{row['entity_label']}. A person reviews the link before it is relied on."
+        ),
+        "why": (
+            "Applications that name this record use the link, so the records that "
+            "depend on it have to be read."
+        ),
+        "applications": _outstanding_for(
+            session, _applications_of(session, [row["entity_id"]], synthetic)
+        ),
+        "automatic": row,
+        "actions": _automatic_actions(session, actor, row, domain_id) if open_link else [],
+        "result": {
+            "text": row["status_label"],
+            "who": view_models.actor_label(
+                session, row["reviewed_by"] or row["applied_by"]
+            ),
+            "when": _iso(row["reviewed_at"] or row["applied_at"]),
+            "note": row["review_note"],
+        },
+        "events": _events_for(session, [row["record"]], ("registry.crosswalk",)),
+        "target_ids": {application.id, row["crosswalk_id"]},
+        "separate_note": "Reviewing an automatic link is separate from deciding a permit.",
+        "evidence_detail_id": "",
     }
 
 

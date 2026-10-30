@@ -75,3 +75,19 @@ The old statements that no remote, commit or deployment existed are historical a
 | The words of the early resolution board | GO / built | The row names the finding in sentence case with its severity and the duty of the applicant, and the membership and the order of the board are compared as a list |
 | The steward help copy | GO / built | The steward overlay holds no "you" and no "your". The shared `config/help_content.json` is unchanged, so the two files do not read alike by accident |
 | The labels of the steward help | GO / built | Every quoted label is checked in the element that holds it and not anywhere on the page |
+
+## 2026-10-30 steward autolink lane status
+
+| Item | Decision | Note |
+| --- | --- | --- |
+| Bounded linking worker | GO / built | STW-21 is committed. The worker takes a job with one statement, records the evidence of the comparison, retries a job that stops and returns the job a dead worker left behind |
+| Atomic application of a party link | GO / built | STW-22 is committed. The link, the audit event, the review task and the record of the application are written in one transaction, and a decision of a person is never replaced |
+| Reversible party links | GO / built | STW-23 is committed. Every applied link is reviewable, a reversal keeps the event that applied it, and a stale or repeated request is refused |
+| The automatic links view and its controls | GO / built | STW-24 is committed. The applied link waits in the queue of the Data Steward, the case shows the score and the evidence, and the keep and undo controls are clicked in a browser test |
+| The automation demo preparation | GO / built | STW-31B is committed. A separate prepare mode leaves one applied link in the queue; the Cedarline demonstration still holds three proposals and nothing decided |
+| Lease columns of the linking work table | GO / simplified | The table of the registry follows the runtime contract of the agents: one status column, an attempt count and no lease. The lease of the design proposal is not built |
+| Automatic application of parcels, addresses and permits | HOLD | Only the party families may be applied in this release. A family without a tested reversal is only ever suggested, so the other families wait for their own slices |
+| Live provider calls | OFF | The worker compares with the built in deterministic logic of the City. No model is called and no key is read |
+| The work of one job | GO / built | Every job of the worker runs inside a savepoint, so a job that stops leaves no link, no event, no review item and no record of the application behind, and the next job of the cycle still runs |
+| The take back of an applied link | GO / built | A link that was applied on top of an open proposal of a person is handed back as that proposal, and the take back of the screen needs the version of the link |
+| The mode that only records suggestions | HOLD | The screen does not offer it: a suggestion reaches no steward in this release. The stored value stays, and the delivery of the suggestions is written down as a future feature |

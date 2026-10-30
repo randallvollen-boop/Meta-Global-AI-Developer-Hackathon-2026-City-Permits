@@ -1,1 +1,43 @@
 /* Steward autolink screens. Every selector starts with .stwa-. Used only by steward-autolink. */
+
+.stwa-panel { margin-bottom: 16px; }
+.stwa-status { margin: 0 0 4px; font-size: 1.02rem; font-weight: 600; }
+.stwa-facts {
+  display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px;
+  margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--r-md); background: var(--surface);
+}
+.stwa-facts dt { color: var(--fg-2); font-size: .78rem; }
+.stwa-facts dd { margin: 0; font-size: .85rem; overflow-wrap: anywhere; }
+.stwa-table { width: 100%; }
+.stwa-cell { overflow-wrap: anywhere; }
+.stwa-note {
+  display: block; margin-top: 2px; color: var(--fg-2); font-size: .78rem;
+  line-height: 1.35;
+}
+.stwa-scope {
+  margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.stwa-scope legend { color: var(--fg-2); font-size: .78rem; }
+.stwa-direction { color: var(--fg-2); }
+
+@media (max-width: 640px) {
+  .stwa-table thead { display: none; }
+  .stwa-table,
+  .stwa-table tbody,
+  .stwa-table tr,
+  .stwa-table th,
+  .stwa-table td { display: block; width: 100%; }
+  .stwa-table tr {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  .stwa-cell { padding: 2px 0; border: 0; text-align: left; font-size: .82rem; }
+  .stwa-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 8em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  .stwa-facts { grid-template-columns: 1fr; gap: 2px; }
+  .stwa-facts dt { margin-top: 6px; }
+}

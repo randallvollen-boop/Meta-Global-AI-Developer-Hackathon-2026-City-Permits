@@ -27,4 +27,7 @@ SECONDARY: tuple[str, ...] = (
     "rules",
     "intake_queue",
     "early_resolution",
+    # STW-19 grants the Data Steward the preview of the automation, so the
+    # settings of the automatic linking are reachable under More tools.
+    "steward_automation",
 )

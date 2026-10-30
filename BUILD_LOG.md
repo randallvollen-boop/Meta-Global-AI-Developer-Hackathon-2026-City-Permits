@@ -424,3 +424,21 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The fence test of the OPR-9 slice asserted a rule outcome that did not depend on the runtime cycle it named, so it was replaced by a test that says what the cycle means: a reset leaves the work queue empty.
 - No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. The full suite is green (2153 passed). Nothing pushed, merged or published.
 
+## 2026-10-30 — Steward autolink lane (`lane/steward-autolink`)
+
+- STW-21: the linking worker. `agents/linking.py` takes the queued work with a single statement, so two workers never hold the same job, records the evidence of the comparison and finishes the job with the attempt it holds. The work table of the registry now follows the runtime contract of the agents: one status column, an attempt count and no lease. A job that stops is tried again until it used up three attempts; a job that used them up waits for a person. `scripts/run_linking_worker.py` runs one bounded pass and never calls a model provider.
+- STW-22: the application. The registry service gained a guarded automatic application. The service identity holds the narrow registry grant, the active policy of the City carries the authorization of the steward who activated it, and the link, the audit event, the review task and the record of the application are written in one transaction. A decision of a person is never replaced.
+- STW-23: the reversal. Every applied party link is a reviewable item of the queue. A steward takes it back with a reason: the crosswalk is removed, the event that applied it stays, and a link that changed since the application is not taken back silently. The service identity may not reverse a link.
+- STW-24: the view. A link the automatic linking applied waits in the queue of the Data Steward until a person has looked at it. The case shows the score, the comparison evidence and the two controls, and both controls are clicked in a browser test.
+- STW-31B: the demo preparation. A separate prepare mode activates the policy, runs the worker once and leaves one applied link in the queue for a person to keep or undo. The Cedarline demonstration is unchanged: three proposals and nothing decided.
+- No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
+
+## 2026-10-30 — Steward autolink lane, review 4 fixes (`lane/steward-autolink`)
+
+- The worker works every job inside a savepoint, so a job that stops after it wrote a link leaves nothing of its work behind: no link, no event, no review item and no record of the application. The job is left failed, so it is tried again, and the next job of the cycle is worked as if the failure never happened.
+- The take back hands the proposal back when the automation applied a link on top of an open proposal of a person. The proposal stays open for the steward to decide, instead of being recorded as a decided removal. A link that the automation applied without a proposal is still recorded as removed, and the event that applied it stays.
+- The take back of the screen needs the version of the link. A request without it is refused, so a link that changed since the case was read is never taken back silently.
+- Only a record family whose links this release may take back is applied. A parcel or an address is suggested to a steward, never linked, and an application of such a family is refused by the service.
+- The screen no longer offers the mode that only records suggestions: a suggestion reaches no steward in this release, so the mode is not offered and the activate action refuses it. The stored value of the mode stays, and a policy that holds it is reported as paused with the reason. The future feature is written down in `docs/submission/JUDGE_WALKTHROUGH.md`.
+- The unused count of the applied links and the second limit of the list are gone. The worker comment no longer says it never applies a link.
+- No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
