@@ -7,7 +7,31 @@
 .opr-role-permissions form { display: grid; gap: .5rem; max-width: 44rem; }
 .opr-checkbox { font-weight: 600; }
 
+/* The filters of the run history. */
+.opr-filters { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: flex-end; margin-bottom: 1rem; }
+.opr-filters label { display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; color: var(--fg-2); }
+.opr-filters input, .opr-filters select { max-width: 100%; }
+.opr-count { margin: .4rem 0 1rem; }
+.opr-pager { display: flex; gap: 1rem; margin: 1rem 0; }
+
+/* The tables of the operator screens. */
+.opr-table { width: 100%; }
+.opr-table td { vertical-align: top; }
+
+/* The facts of the case summary. */
+.opr-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .35rem .9rem; margin: 0; }
+.opr-facts dt { color: var(--fg-2); font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+.opr-facts dd { margin: 0; }
+
 @media (max-width: 520px) {
   .opr-summary .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .opr-role-permissions .data-table { display: block; overflow-x: auto; max-width: 100%; }
+  /* A row of a table becomes a labelled card, so nothing has to scroll sideways. */
+  .opr-table thead { display: none; }
+  .opr-table tbody, .opr-table tr, .opr-table td { display: block; width: 100%; }
+  .opr-table tr { border: 1px solid var(--line); border-radius: var(--radius); padding: .4rem .5rem; margin-bottom: .5rem; }
+  .opr-table td { display: flex; justify-content: space-between; gap: .75rem; padding: .2rem 0; }
+  .opr-table td::before { content: attr(data-label); color: var(--fg-2); font-size: .78rem; flex: none; }
+  .opr-facts { grid-template-columns: minmax(0, 1fr); }
+  .opr-facts dt { margin-top: .3rem; }
 }

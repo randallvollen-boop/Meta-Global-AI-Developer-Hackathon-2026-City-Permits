@@ -11,19 +11,21 @@ server checks.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urlencode
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from acme_city.agents import graphs
 from acme_city.agents.control import AGENT_KEYS, AGENT_LABELS, AgentControlService
 from acme_city.agents.intake import waiting_applications
-from acme_city.agents.runtime import batch_limit
+from acme_city.agents.runtime import BUILTIN_ENGINE, BUILTIN_ENGINE_LABEL, batch_limit
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import audit, permit
+from acme_city.persistence.models import agent_ops, audit, permit
 
 # The administration view model moved to ``admin_config_views``; it is
 # re-exported so ``from acme_city.ui.agent_views import administration`` works.
@@ -39,6 +41,23 @@ STATUS_SUBMITTED = "submitted"
 
 #: The statuses a case may hold while it is in review.
 IN_REVIEW_STATUSES: tuple[str, ...] = ("ready_for_review", "under_review")
+
+#: The number of runs one page of the history shows.
+RUN_PAGE_SIZE = 25
+
+#: What a recorded state of a run means for the operator.
+RUN_STATE_LABELS: dict[str, str] = {
+    "completed": "Completed",
+    "needs_information": "Needs information",
+    "recommended": "Recommended",
+    "held": "Waiting for a person",
+    "failed": "Failed",
+    "skipped": "Skipped",
+    "recorded": "Recorded",
+}
+
+#: The engines a recorded run may name.
+ENGINE_LABELS: dict[str, str] = {BUILTIN_ENGINE: BUILTIN_ENGINE_LABEL}
 
 
 def _iso(value) -> str:
@@ -237,6 +256,234 @@ def agent_screen(
     }
 
 
+def _duration(run: agent_models.AgentRun) -> str:
+    """Return how long the run took, in the words of the operator."""
+    if run.finished_at is None:
+        return ""
+    seconds = int((run.finished_at - run.started_at).total_seconds())
+    if seconds < 60:
+        return f"{seconds} s"
+    return f"{seconds // 60} min {seconds % 60} s"
+
+
+def _engine_of(run: agent_models.AgentRun) -> str:
+    """Return the engine the run names."""
+    inputs = run.inputs or {}
+    engine = str(inputs.get("engine") or "") if isinstance(inputs, dict) else ""
+    return engine or BUILTIN_ENGINE
+
+
+def run_history(
+    session: Session,
+    actor: ActorContext,
+    *,
+    agent_key: str = "",
+    state: str = "",
+    engine: str = "",
+    day: str = "",
+    page: int = 1,
+) -> dict[str, Any]:
+    """Return one page of the recorded runs, newest first.
+
+    The filters are the agent, the state, the engine and the day of the run.
+    Every figure is the one the database holds; none of them is estimated.
+    """
+    statement = select(agent_models.AgentRun)
+    wanted_agent = agent_key if agent_key in AGENT_KEYS else ""
+    if wanted_agent:
+        statement = statement.where(agent_models.AgentRun.agent_key == wanted_agent)
+    wanted_state = state if state in RUN_STATE_LABELS else ""
+    if wanted_state:
+        statement = statement.where(agent_models.AgentRun.outcome == wanted_state)
+    wanted_engine = engine if engine in ENGINE_LABELS else ""
+    if wanted_engine:
+        statement = statement.where(
+            agent_models.AgentRun.inputs["engine"].as_string() == wanted_engine
+        )
+    wanted_day = ""
+    if day:
+        try:
+            start = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            start = None
+        if start is not None:
+            wanted_day = day
+            statement = statement.where(
+                agent_models.AgentRun.started_at >= start,
+                agent_models.AgentRun.started_at < start + timedelta(days=1),
+            )
+    total = int(
+        session.execute(select(func.count()).select_from(statement.subquery())).scalar_one()
+        or 0
+    )
+    pages = max((total + RUN_PAGE_SIZE - 1) // RUN_PAGE_SIZE, 1)
+    current = min(max(int(page or 1), 1), pages)
+    runs = list(
+        session.execute(
+            statement.order_by(
+                agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc()
+            )
+            .limit(RUN_PAGE_SIZE)
+            .offset((current - 1) * RUN_PAGE_SIZE)
+        ).scalars().all()
+    )
+    rows = [
+        {
+            "run_id": run.id,
+            "started_at": _iso(run.started_at),
+            "finished_at": _iso(run.finished_at),
+            "application_id": run.application_id or "",
+            "reference": _number_of(session, run.application_id),
+            "agent_key": run.agent_key,
+            "agent_label": AGENT_LABELS.get(run.agent_key, run.agent_key),
+            "state": run.outcome,
+            "state_label": RUN_STATE_LABELS.get(run.outcome, run.outcome),
+            "engine": _engine_of(run),
+            "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
+            "triggered_by": run.triggered_by or "",
+            "triggered_label": _actor_label(session, run.triggered_by),
+            "duration": _duration(run),
+        }
+        for run in runs
+    ]
+    query = urlencode(
+        {
+            name: value
+            for name, value in (
+                ("agent_key", wanted_agent),
+                ("state", wanted_state),
+                ("engine", wanted_engine),
+                ("day", wanted_day),
+            )
+            if value
+        }
+    )
+    return {
+        "rows": rows,
+        "total": total,
+        "page": current,
+        "pages": pages,
+        "page_size": RUN_PAGE_SIZE,
+        "filters": {
+            "agent_key": wanted_agent,
+            "state": wanted_state,
+            "engine": wanted_engine,
+            "day": wanted_day,
+        },
+        "query": query,
+        "agents": [
+            {"key": key, "label": AGENT_LABELS.get(key, key)} for key in AGENT_KEYS
+        ],
+        "states": [
+            {"key": key, "label": label} for key, label in RUN_STATE_LABELS.items()
+        ],
+        "engines": [
+            {"key": key, "label": label} for key, label in ENGINE_LABELS.items()
+        ],
+    }
+
+
+def agent_case(session: Session, actor: ActorContext, application_id: str) -> dict[str, Any]:
+    """Return the operational summary of one case.
+
+    The summary is the work of the operator: the revision, the state of the
+    processing, the findings and the recorded runs.  It asks for no grant
+    beyond the operational one, so an operator never needs the broad grants
+    of the permit workspace to read it.
+    """
+    application = session.get(permit.Application, application_id)
+    if application is None:
+        return {
+            "missing": True,
+            "application_id": application_id,
+            "reference": "",
+            "revision": 0,
+            "status": "",
+            "review_area": "",
+            "permit_type_key": "",
+            "state": "",
+            "state_label": "",
+            "attempts": 0,
+            "note": "",
+            "engine_label": BUILTIN_ENGINE_LABEL,
+            "findings": [],
+            "runs": [],
+        }
+    work = session.execute(
+        select(agent_ops.AgentWorkQueue)
+        .where(agent_ops.AgentWorkQueue.application_id == application_id)
+        .order_by(agent_ops.AgentWorkQueue.created_at.desc())
+    ).scalars().first()
+    findings = list(
+        session.execute(
+            select(permit.ApplicationFinding)
+            .where(
+                permit.ApplicationFinding.application_id == application_id,
+                permit.ApplicationFinding.state == "current",
+            )
+            .order_by(permit.ApplicationFinding.created_at.desc())
+        ).scalars().all()
+    )
+    runs = list(
+        session.execute(
+            select(agent_models.AgentRun)
+            .where(agent_models.AgentRun.application_id == application_id)
+            .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
+        ).scalars().all()
+    )
+    return {
+        "application_id": application.id,
+        "missing": False,
+        "reference": application.source_application_number,
+        "revision": application.revision,
+        "status": application.status,
+        "review_area": application.review_area or "",
+        "permit_type_key": _type_key(session, application.permit_type_id),
+        "state": work.status if work is not None else "",
+        "state_label": _queue_state_label(work.status if work is not None else ""),
+        "attempts": work.attempts if work is not None else 0,
+        "note": work.note or "" if work is not None else "",
+        "engine_label": BUILTIN_ENGINE_LABEL,
+        "findings": [
+            {
+                "finding_id": row.id,
+                "finding_type": row.finding_type,
+                "message": row.message,
+                "rule": row.rule or "",
+                "severity": row.severity,
+                "applicant_must": row.applicant_must or "",
+                "recorded_at": _iso(row.created_at),
+            }
+            for row in findings
+        ],
+        "runs": [
+            {
+                "run_id": run.id,
+                "agent_label": AGENT_LABELS.get(run.agent_key, run.agent_key),
+                "state": run.outcome,
+                "state_label": RUN_STATE_LABELS.get(run.outcome, run.outcome),
+                "started_at": _iso(run.started_at),
+                "duration": _duration(run),
+                "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
+                "triggered_label": _actor_label(session, run.triggered_by),
+                "nodes": _run_nodes(session, run.id),
+            }
+            for run in runs
+        ],
+    }
+
+
+def _queue_state_label(status: str) -> str:
+    """Return what a state of the work queue means for the operator."""
+    return {
+        "pending": "Waiting",
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed",
+        "held": "Waiting for a person",
+    }.get(status, status)
+
+
 def _agent_history(session: Session, agent_key: str) -> list[dict[str, Any]]:
     """Return the recorded audit entries of one agent."""
     rows = session.execute(
@@ -342,13 +589,18 @@ def sidebar_status(session: Session, actor: ActorContext) -> dict[str, Any] | No
 
 
 __all__ = [
+    "ENGINE_LABELS",
     "IN_REVIEW_STATUSES",
+    "RUN_PAGE_SIZE",
+    "RUN_STATE_LABELS",
     "SCREEN_ADMIN",
     "SCREEN_AGENT_ADJUDICATION",
     "SCREEN_AGENT_INTAKE",
     "STATUS_SUBMITTED",
     "administration",
+    "agent_case",
     "agent_screen",
     "agent_state",
+    "run_history",
     "sidebar_status",
 ]

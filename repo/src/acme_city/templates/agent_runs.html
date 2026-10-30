@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% set view = view %}
+
+{% block content %}
+<div class="page-head opr-page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <p class="sub muted">
+      Every recorded attempt of the agents, newest first. The counts are the ones the
+      database holds. A run shows the engine that produced it.
+    </p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/agents">Back to agents</a>
+  </div>
+</div>
+
+<form method="get" action="/agents/runs" class="opr-filters" data-testid="run-filters">
+  <label>Agent
+    <select name="agent_key" data-testid="run-filter-agent">
+      <option value="">Every agent</option>
+      {% for agent in view.agents %}
+      <option value="{{ agent.key }}"{% if view.filters.agent_key == agent.key %} selected{% endif %}>{{ agent.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>State
+    <select name="state" data-testid="run-filter-state">
+      <option value="">Every state</option>
+      {% for state in view.states %}
+      <option value="{{ state.key }}"{% if view.filters.state == state.key %} selected{% endif %}>{{ state.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Processing mode
+    <select name="engine" data-testid="run-filter-engine">
+      <option value="">Every mode</option>
+      {% for engine in view.engines %}
+      <option value="{{ engine.key }}"{% if view.filters.engine == engine.key %} selected{% endif %}>{{ engine.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Date
+    <input type="date" name="day" value="{{ view.filters.day }}" data-testid="run-filter-day">
+  </label>
+  <button type="submit" class="btn" data-testid="run-filter-apply">Apply filters</button>
+  <a href="/agents/runs" data-testid="run-filter-clear">Clear filters</a>
+</form>
+
+<p class="opr-count" data-testid="run-count">
+  <strong>{{ view.total }}</strong> recorded run(s) match. Page {{ view.page }} of {{ view.pages }}.
+</p>
+
+<section class="panel card" aria-labelledby="run-history-heading">
+  <div class="card-h"><h2 id="run-history-heading">Recorded runs</h2></div>
+  <div class="card-b">
+    <table class="data-table opr-table" data-testid="agent-run-history">
+      <caption class="visually-hidden">Recorded runs of the agents, newest first</caption>
+      <thead>
+        <tr>
+          <th scope="col">Started</th>
+          <th scope="col">Case</th>
+          <th scope="col">Agent</th>
+          <th scope="col">State</th>
+          <th scope="col">Processing mode</th>
+          <th scope="col">Requested by</th>
+          <th scope="col">Duration</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in view.rows %}
+        <tr data-testid="agent-run-row" data-run-id="{{ run.run_id }}" data-application-id="{{ run.application_id }}">
+          <td data-label="Started">{{ run.started_at }}</td>
+          <td data-label="Case">{{ run.reference or run.application_id or '-' }}</td>
+          <td data-label="Agent">{{ run.agent_label }}</td>
+          <td data-label="State"><span class="badge badge-{{ run.state }}">{{ run.state_label }}</span></td>
+          <td data-label="Processing mode">{{ run.engine_label }}</td>
+          <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
+          <td data-label="Duration">{{ run.duration or '-' }}</td>
+          <td data-label="Action">
+            {% if run.application_id %}
+            <a href="/agents/cases/{{ run.application_id }}" data-testid="agent-run-case-link">View case</a>
+            {% else %}
+            <span class="muted">No case</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="muted" data-testid="agent-run-empty">No run matches these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<nav class="opr-pager" aria-label="Run history pages">
+  {% if view.page > 1 %}
+  <a href="/agents/runs?{{ view.query }}{% if view.query %}&{% endif %}page={{ view.page - 1 }}" data-testid="run-page-previous">Previous page</a>
+  {% endif %}
+  {% if view.page < view.pages %}
+  <a href="/agents/runs?{{ view.query }}{% if view.query %}&{% endif %}page={{ view.page + 1 }}" data-testid="run-page-next">Next page</a>
+  {% endif %}
+</nav>
+{% endblock %}

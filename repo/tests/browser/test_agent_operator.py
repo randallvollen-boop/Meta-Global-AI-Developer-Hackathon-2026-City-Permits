@@ -9,6 +9,28 @@ from conftest import assert_no_horizontal_overflow, assert_not_covered
 SAVED_MESSAGE = "City worker agent access was saved."
 
 
+def _run_the_intake_agent(page, server) -> None:
+    """Let the intake agent work on a case that arrived from outside."""
+    response = page.request.post(
+        f"{server.base_url}/api/intake/simulate",
+        data=json.dumps({"scenario": "deck-high"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.ok, response.text()
+    page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.toggle" in answer.url
+    ) as answered:
+        page.click("[data-testid='agent-toggle']")
+    assert answered.value.json()["status"] == "accepted"
+    page.reload(wait_until="domcontentloaded")
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.run.intake" in answer.url
+    ) as answered:
+        page.click("[data-testid='agent-run-all']")
+    assert answered.value.json()["status"] == "accepted"
+
+
 def test_role_permissions_fit_at_390(viewport_390, login) -> None:
     page = viewport_390
     login("persona_city_administrator")
@@ -84,3 +106,49 @@ def test_the_operator_wakes_and_runs_the_agent_at_390(viewport_390, server, logi
     assert payload["message"] == "The intake agent ran on 1 waiting case(s)."
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1"))
+
+
+def test_the_run_history_shows_the_recorded_runs_at_390(viewport_390, server, login) -> None:
+    """The history shows the run of the agent and the engine that produced it."""
+    page = viewport_390
+    login("persona_agent_operator")
+    _run_the_intake_agent(page, server)
+    page.goto(f"{server.base_url}/agents/runs", wait_until="domcontentloaded")
+    rows = page.locator("[data-testid='agent-run-row']")
+    assert rows.count() >= 1
+    assert "Built in logic" in rows.first.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("[data-testid='agent-run-history']"))
+    # The filter of the other agent narrows the history to nothing.
+    page.select_option("[data-testid='run-filter-agent']", "adjudication")
+    page.click("[data-testid='run-filter-apply']")
+    page.wait_for_load_state("domcontentloaded")
+    assert page.locator("[data-testid='agent-run-row']").count() == 0
+    assert page.locator("[data-testid='agent-run-empty']").is_visible()
+    assert_no_horizontal_overflow(page)
+    # Clearing the filters brings the run back.
+    page.click("[data-testid='run-filter-clear']")
+    page.wait_for_load_state("domcontentloaded")
+    assert page.locator("[data-testid='agent-run-row']").count() >= 1
+    assert_no_horizontal_overflow(page)
+
+
+def test_the_case_summary_shows_the_work_of_the_agent_at_390(viewport_390, server, login) -> None:
+    """The case summary shows the revision, the state and the recorded runs."""
+    page = viewport_390
+    login("persona_agent_operator")
+    _run_the_intake_agent(page, server)
+    page.goto(f"{server.base_url}/agents/runs", wait_until="domcontentloaded")
+    link = page.locator("[data-testid='agent-run-case-link']").first
+    link.click()
+    page.wait_for_load_state("domcontentloaded")
+    summary = page.locator("[data-testid='agent-case-summary']")
+    assert summary.is_visible()
+    assert page.locator("[data-testid='agent-case-reference']").inner_text().strip()
+    assert page.locator("[data-testid='agent-case-revision']").inner_text().strip()
+    assert page.locator("[data-testid='agent-case-engine']").inner_text().strip() == (
+        "Built in logic"
+    )
+    assert page.locator("[data-testid='agent-case-run']").count() >= 1
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, summary)
