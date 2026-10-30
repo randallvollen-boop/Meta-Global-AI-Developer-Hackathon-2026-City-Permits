@@ -20,9 +20,11 @@ The confidence follows one rule for every kind of task:
   the recommendation was made.  A person decides, never the assistant.
 
 The version the recommendation records is the version of the record the task
-is about: the master record of a match, the applied link of an automatic
+is about: the link a match is decided on, the applied link of an automatic
 link, the parcel match of a property, the change case of a correction and the
-issue of a data issue.  A record that changed since the recommendation was
+issue of a data issue.  The facts the recommendation depends on travel with it
+as evidence: the source version it read, the master record it compared and the
+link it would decide on.  A record that changed since the recommendation was
 made is stale, and the steward prepares the recommendation again.
 """
 # REQUIRES: MDM-02, UX-01
@@ -45,6 +47,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import REPO_ROOT
+from acme_city.gis.matching import ParcelMatchService, approvable, strong_candidates
 from acme_city.persistence.models import (
     change,
     gis,
@@ -59,12 +62,14 @@ from acme_city.registry import automation, candidates
 from acme_city.registry.automation_policy import (
     DEFAULT_THRESHOLDS,
     PolicyDecision,
+    PolicyEvaluation,
     SafetyChecks,
     Thresholds,
     evaluate_link,
     thresholds_for,
 )
 from acme_city.registry.provenance import current_accepted_snapshot
+from acme_city.registry.service import RegistryService
 
 #: The actor the assistant records its work under.  It is a service identity:
 #: it is never offered a session and it holds no grant of a person.
@@ -95,14 +100,17 @@ OUTCOME_ACCEPT = "accept"
 OUTCOME_RESOLVE = "resolve"
 OUTCOME_AWAITING_SOURCE = "awaiting_source"
 
-#: The kinds of task the assistant prepares a recommendation for.
-TASK_KINDS: tuple[str, ...] = (
-    "link",
-    "automatic_link",
-    "parcel",
-    "case",
-    "issue",
-)
+#: The freshness token of a task whose decision is made on a link: the
+#: version of that link is what the recommendation depends on.
+VERSION_TOKEN_CROSSWALK = "crosswalk"
+
+#: The freshness token of a task that has no link to decide: the version of
+#: the source record is what the recommendation depends on.
+VERSION_TOKEN_CURRENT_SOURCE = "current_source"
+
+#: The safety checks whose failure means that the facts disagree with each
+#: other, rather than that the evidence is incomplete.
+CONFLICT_CHECKS: frozenset[str] = frozenset({"no_identity_conflict"})
 
 #: The plain words of every safety check, so a reason never names an
 #: internal key.
@@ -116,8 +124,6 @@ CHECK_WORDS: dict[str, str] = {
     "no_protected_manual_decision": "a person already decided this link",
     "comparison_current": "the source record changed",
     "no_active_link_replacement": "another link is already approved",
-    "undo_supported": "this kind of link cannot be taken back",
-    "permissions_granted": "the service may not propose this link",
     "unique_target": "more than one master record fits",
     "corroborating_identity_evidence": "no second fact confirms the identifier",
     "party_score_gap": "another master record fits almost as well",
@@ -238,6 +244,7 @@ def _safety_checks(
     family: str,
     candidate: candidates.Candidate,
     candidate_count: int,
+    exclude_crosswalk_id: str | None = None,
 ) -> SafetyChecks:
     """Return the safety facts of one candidate, as a person decides them.
 
@@ -245,6 +252,10 @@ def _safety_checks(
     Two of them belong to that automatic application and not to a person: a
     person may take back a decision, and the assistant only prepares the
     evidence, so the grant of the linking service does not decide the case.
+
+    ``exclude_crosswalk_id`` leaves the link the automation applied out of the
+    comparison, so the reader of that link does not mistake it for a decision
+    of a person.
     """
     # The agent layer imports this package, so the import happens here.
     from acme_city.agents import linking
@@ -255,8 +266,26 @@ def _safety_checks(
         family=family,
         candidate=candidate,
         candidate_count=candidate_count,
+        exclude_crosswalk_id=exclude_crosswalk_id,
     )
     return replace(checks, undo_supported=True, permissions_granted=True)
+
+
+def _weakness(evaluation: PolicyEvaluation | None, failures: list[str]) -> str:
+    """Return the plain words of the first reason that holds a recommendation.
+
+    The reasons of the policy carry the facts the checks do not: the score
+    gap between two master records is one of them.  That gap says more than
+    the number of candidates does, so it comes first.
+    """
+    names = list(evaluation.reasons) if evaluation is not None else list(failures)
+    if "party_score_gap" in names:
+        return CHECK_WORDS["party_score_gap"]
+    for name in names:
+        words = CHECK_WORDS.get(name, "")
+        if words:
+            return words
+    return ""
 
 
 def _first_phrase(evidence: tuple[candidates.Evidence, ...]) -> str:
@@ -275,13 +304,18 @@ def _first_phrase(evidence: tuple[candidates.Evidence, ...]) -> str:
 # ------------------------------------------------------------------- the match
 
 
-def _recommend_link(session: Session, task: Task) -> Recommendation:
+def _recommend_link(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of a record match.
 
     The candidates are scored by the comparison of the City, the thresholds
     are the ones of the active policy and the safety facts are the ones the
     City checks before it links a record.  A fact that disagrees holds the
     recommendation for a person.
+
+    The recommendation is made on the link the steward decides on, so it
+    records the version of that link and the facts it read beside it.
     """
     proposal = session.get(registry.MatchProposal, task.item_id)
     if proposal is None:
@@ -329,7 +363,7 @@ def _recommend_link(session: Session, task: Task) -> Recommendation:
         )
         failures = list(checks.failures())
 
-    weakness = CHECK_WORDS.get(failures[0], "") if failures else ""
+    weakness = _weakness(evaluation, failures)
     agreement = _first_phrase(best.supporting) if best is not None else ""
     disagreement = _first_phrase(best.conflicting) if best is not None else ""
 
@@ -359,19 +393,33 @@ def _recommend_link(session: Session, task: Task) -> Recommendation:
         if weakness:
             reason = f"{reason}, and {weakness}"
 
+    # The decision of a record match is made on the link, so the link is the
+    # record the recommendation depends on.  A task without a link depends on
+    # the source record instead.
+    crosswalk = RegistryService(session).open_crosswalk(
+        snapshot.source_system_id, snapshot.source_record_id
+    )
+    record_version = crosswalk.version if crosswalk is not None else 0
+    version_token = (
+        VERSION_TOKEN_CROSSWALK if crosswalk is not None else VERSION_TOKEN_CURRENT_SOURCE
+    )
     return Recommendation(
         task_kind=task.kind,
         task_id=task.item_id,
-        record_version=_entity_version(session, best.entity_id) if best is not None else 0,
+        record_version=record_version,
         outcome=outcome,
         confidence=confidence,
         evidence={
             "source_system": snapshot.source_system_id,
             "source_dataset": snapshot.source_dataset_id,
             "source_record_id": snapshot.source_record_id,
+            "source_snapshot_id": snapshot.source_snapshot_id,
             "source_version": snapshot.source_record_version or "",
             "candidate_entity_id": best.entity_id if best is not None else "",
             "candidate_label": _entity_label(session, best.entity_id) if best is not None else "",
+            "candidate_version": (
+                _entity_version(session, best.entity_id) if best is not None else 0
+            ),
             "score": best.score if best is not None else None,
             "next_best_score": next_best,
             "auto_apply_threshold": thresholds.auto_apply,
@@ -381,6 +429,9 @@ def _recommend_link(session: Session, task: Task) -> Recommendation:
             ),
             "reasons": list(evaluation.reasons) if evaluation is not None else ["no_candidate"],
             "failed_checks": failures,
+            "version_token": version_token,
+            "crosswalk_id": crosswalk.id if crosswalk is not None else "",
+            "crosswalk_version": crosswalk.version if crosswalk is not None else 0,
             "agreements": [item.to_dict() for item in best.supporting] if best is not None else [],
             "disagreements": (
                 [item.to_dict() for item in best.conflicting] if best is not None else []
@@ -393,12 +444,71 @@ def _recommend_link(session: Session, task: Task) -> Recommendation:
 # ------------------------------------------------------------ the applied link
 
 
-def _recommend_automatic_link(session: Session, task: Task) -> Recommendation:
+def _reevaluate_applied_link(
+    session: Session,
+    *,
+    snapshot: source.SourceSnapshot,
+    family: str,
+    entity_id: str,
+    crosswalk_id: str,
+) -> tuple[PolicyEvaluation, candidates.Candidate] | None:
+    """Return what the rule of the City decides about an applied link today.
+
+    The candidates are compared again, and the link the automation applied is
+    left out of the comparison: it is the link under review, not a decision
+    of a person.  ``None`` means the master record of the link is no longer
+    among the candidates, so the rule cannot be applied to it any more.
+    """
+    entity_type = candidates.entity_target_for(snapshot.source_dataset_id)
+    candidate_set = candidates.generate_candidates(
+        session,
+        dict(snapshot.raw_payload or {}),
+        entity_type,
+        snapshot.source_snapshot_id,
+    )
+    candidate = next(
+        (item for item in candidate_set.candidates if item.entity_id == entity_id),
+        None,
+    )
+    if candidate is None:
+        return None
+    checks = _safety_checks(
+        session,
+        snapshot=snapshot,
+        family=family,
+        candidate=candidate,
+        candidate_count=len(candidate_set.candidates),
+        exclude_crosswalk_id=crosswalk_id,
+    )
+    next_best = next(
+        (
+            other.score
+            for other in candidate_set.candidates
+            if other.entity_id != entity_id
+        ),
+        None,
+    )
+    evaluation = evaluate_link(
+        target_family=family,
+        score=candidate.score,
+        checks=checks,
+        next_best_score=next_best,
+        thresholds=_stored_thresholds(session, family),
+    )
+    return evaluation, candidate
+
+
+def _recommend_automatic_link(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of a link the automation applied.
 
     The evidence is the evidence the policy recorded when it applied the
-    link.  A fact that disagrees holds the recommendation, and a link that
-    today's rule would not apply is offered for a decision.
+    link, and the link is checked against the facts of today: the source
+    record has to be the one the policy applied and the link has to be the
+    one the policy wrote.  A fact that disagrees holds the recommendation,
+    evidence that is missing leaves it for a person, and a link today's rule
+    would not apply is offered for a decision.
     """
     application = session.get(
         registry_automation.RegistryAutomationApplication, task.item_id
@@ -414,7 +524,6 @@ def _recommend_automatic_link(session: Session, task: Task) -> Recommendation:
     reasons = list(recorded.get("reasons") or [])
     family = evaluation.target_family if evaluation is not None else ""
     score = evaluation.score if evaluation is not None else None
-    thresholds = _stored_thresholds(session, family)
     applied_policy = (
         session.get(registry_automation.RegistryAutomationPolicy, evaluation.policy_id)
         if evaluation is not None and evaluation.policy_id
@@ -425,30 +534,122 @@ def _recommend_automatic_link(session: Session, task: Task) -> Recommendation:
         if evaluation is not None
         else None
     )
+    after = dict(application.after_state or {})
+    entity_id = str(after.get("entity_id", ""))
+    crosswalk = (
+        session.get(registry.Crosswalk, application.crosswalk_id)
+        if application.crosswalk_id
+        else None
+    )
+
+    # The facts of today: the source record the policy applied and the link
+    # it wrote.
+    current_snapshot = (
+        current_accepted_snapshot(
+            session,
+            snapshot.source_system_id,
+            snapshot.source_dataset_id,
+            snapshot.source_record_id,
+        )
+        if snapshot is not None
+        else None
+    )
+    source_current = (
+        snapshot is not None
+        and current_snapshot is not None
+        and current_snapshot.source_snapshot_id == snapshot.source_snapshot_id
+    )
+    link_current = (
+        crosswalk is not None
+        and crosswalk.link_status == "approved"
+        and crosswalk.entity_id == entity_id
+    )
+    recheck = (
+        _reevaluate_applied_link(
+            session,
+            snapshot=snapshot,
+            family=family,
+            entity_id=entity_id,
+            crosswalk_id=application.crosswalk_id or "",
+        )
+        if snapshot is not None and entity_id
+        else None
+    )
 
     if application.status != "applied":
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_KEEP
         reason = "This link was already reviewed, so there is nothing left to keep or take back."
+    elif evaluation is None or snapshot is None or score is None:
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_KEEP
+        reason = (
+            "The evidence of this applied link is not available, "
+            "so a person reads the link."
+        )
     elif conflicting:
         method = str(conflicting[0].get("method", ""))
         confidence = CONFIDENCE_HELD
         outcome = OUTCOME_UNDO
         reason = f"{_phrase(method)}, so a person decides whether to keep this link."
-    elif score is not None and score < thresholds.auto_apply:
+    elif failed:
+        if CONFLICT_CHECKS.intersection(failed):
+            confidence = CONFIDENCE_HELD
+            outcome = OUTCOME_UNDO
+            reason = (
+                "The facts about this record disagree, "
+                "so a person decides whether to keep this link."
+            )
+        else:
+            confidence = CONFIDENCE_REVIEW
+            outcome = OUTCOME_KEEP
+            reason = (
+                "Not every check passed when this link was applied, "
+                "so a person reads the link."
+            )
+    elif not source_current:
+        confidence = CONFIDENCE_HELD
+        outcome = OUTCOME_UNDO
+        reason = (
+            "The source record changed since this link was applied, "
+            "so a person decides whether to keep this link."
+        )
+    elif not link_current:
+        confidence = CONFIDENCE_HELD
+        outcome = OUTCOME_UNDO
+        reason = (
+            "The link changed since it was applied, "
+            "so a person decides whether to keep this link."
+        )
+    elif recheck is None:
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_KEEP
+        reason = (
+            "The master record of this link is no longer among the candidates, "
+            "so a person reads the link."
+        )
+    elif recheck[1].conflicting:
+        confidence = CONFIDENCE_HELD
+        outcome = OUTCOME_UNDO
+        reason = (
+            "The facts about this record disagree today, "
+            "so a person decides whether to keep this link."
+        )
+    elif recheck[0].decision is PolicyDecision.AUTO_APPLY:
+        confidence = CONFIDENCE_HIGH
+        outcome = OUTCOME_KEEP
+        reason = (
+            "Every check passed before this link was applied and nothing "
+            "changed since, so keeping it needs no new work."
+        )
+    else:
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_UNDO
         reason = (
             "The rule that applies links today would not apply this one, "
             "so a person may take it back."
         )
-    else:
-        confidence = CONFIDENCE_HIGH
-        outcome = OUTCOME_KEEP
-        reason = "Every check passed before this link was applied, so keeping it needs no new work."
 
-    after = dict(application.after_state or {})
-    entity_id = str(after.get("entity_id", ""))
     return Recommendation(
         task_kind=task.kind,
         task_id=task.item_id,
@@ -458,9 +659,13 @@ def _recommend_automatic_link(session: Session, task: Task) -> Recommendation:
         evidence={
             "application_id": application.id,
             "crosswalk_id": application.crosswalk_id or "",
+            "crosswalk_version": crosswalk.version if crosswalk is not None else 0,
             "entity_id": entity_id,
             "entity_label": _entity_label(session, entity_id),
+            "source_system": snapshot.source_system_id if snapshot is not None else "",
+            "source_dataset": snapshot.source_dataset_id if snapshot is not None else "",
             "source_record_id": snapshot.source_record_id if snapshot is not None else "",
+            "source_snapshot_id": snapshot.source_snapshot_id if snapshot is not None else "",
             "score": score,
             "decision": evaluation.decision if evaluation is not None else "",
             "policy_version": applied_policy.version if applied_policy is not None else None,
@@ -484,12 +689,39 @@ def _stated_parcel(application: permit.Application | None) -> str:
     return str(facts.get("parcel_number") or facts.get("submitted_parcel") or "").strip()
 
 
-def _recommend_parcel(session: Session, task: Task) -> Recommendation:
+def _selected_candidate(
+    found: list[dict[str, Any]], match: gis.ApplicationParcelMatch
+) -> dict[str, Any] | None:
+    """Return the candidate the current parcel selection came from.
+
+    A parcel the steward looked up by its number did not come from the
+    locator, so it has no candidate here.  A match without a parcel has no
+    selection either.
+    """
+    parcel_number = str(match.parcel_number or "")
+    if not parcel_number:
+        return None
+    address = str(match.matched_address or "")
+    for item in found:
+        if str(item.get("parcel_number", "")) == parcel_number and str(
+            item.get("address", "")
+        ) == address:
+            return item
+    for item in found:
+        if str(item.get("parcel_number", "")) == parcel_number:
+            return item
+    return None
+
+
+def _recommend_parcel(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of a property link.
 
-    The locator of the City proposes the parcel and the candidates it found.
-    One parcel above the line of the City, no other parcel near it and no
-    contradicting parcel make the recommendation certain.
+    The parcel the City selected and the line the locator applies decide:
+    a parcel may only be proposed for approval when the City itself would
+    approve that link, and the score that counts is the score of the parcel
+    that is proposed, never the score of another candidate.
     """
     match = session.execute(
         select(gis.ApplicationParcelMatch).where(
@@ -500,42 +732,81 @@ def _recommend_parcel(session: Session, task: Task) -> Recommendation:
         raise NotFoundError(f"application {task.item_id!r} has no parcel match")
     application = session.get(permit.Application, task.item_id)
 
-    thresholds = DEFAULT_THRESHOLDS["address_locator"]
+    threshold = ParcelMatchService(session, settings=settings).threshold
     found = [dict(item) for item in (match.candidates or [])]
-    scores = [float(item.get("score") or 0.0) for item in found]
-    best_score = max(scores) if scores else 0.0
-    best_index = scores.index(best_score) if scores else -1
-    others = [score for index, score in enumerate(scores) if index != best_index]
-    near = [score for score in others if score >= thresholds.suggest]
-
-    stated = _stated_parcel(application)
+    selected = _selected_candidate(found, match)
+    score = float(match.score) if match.score is not None else None
     located = str(match.parcel_number or "")
+    stated = _stated_parcel(application)
+    registry_parcel = (
+        session.get(registry.Parcel, match.parcel_id) if match.parcel_id else None
+    )
+
     conflict = ""
     if stated and located and stated.upper() != located.upper():
         conflict = (
             f"The application names parcel {stated}, but the address falls in parcel {located}."
         )
 
-    if not found:
-        confidence = CONFIDENCE_REVIEW
-        outcome = OUTCOME_NONE_FITS
-        reason = "The address was not found in the city locator, so no parcel fits it."
-    elif conflict:
+    # The candidates of the locator search, and the ones that are not the
+    # parcel that is proposed.  A parcel that was looked up by its number did
+    # not come from that search, so the search does not decide against it.
+    strong = strong_candidates(found, threshold)
+    others = [] if selected is None else [item for item in found if item is not selected]
+    strong_others = strong_candidates(others, threshold)
+
+    if conflict:
         confidence = CONFIDENCE_HELD
         outcome = OUTCOME_ASK_SOURCE
         reason = (
             "The application names one parcel and the address falls in another, "
             "so a person resolves the difference."
         )
-    elif best_score >= thresholds.auto_apply and not near:
-        confidence = CONFIDENCE_HIGH
-        outcome = OUTCOME_APPROVE_PARCEL
-        reason = "One parcel fits the submitted address and the point falls inside it."
-    elif near:
+    elif not found and not located:
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_NONE_FITS
+        reason = "The address was not found in the city locator, so no parcel fits it."
+    elif not approvable(match):
+        confidence = CONFIDENCE_REVIEW
+        if len(strong) > 1:
+            outcome = OUTCOME_APPROVE_PARCEL
+            reason = (
+                "Several parcels fit the address almost equally well, "
+                "so a person chooses."
+            )
+        elif located and registry_parcel is None:
+            outcome = OUTCOME_APPROVE_PARCEL
+            reason = (
+                f"Parcel {located} is not in the registry yet, "
+                "so a person records it before the link is approved."
+            )
+        elif strong:
+            outcome = OUTCOME_NONE_FITS
+            reason = (
+                "The address point does not fall inside a parcel of the parcel layer, "
+                "so no parcel fits it."
+            )
+        else:
+            outcome = OUTCOME_NONE_FITS
+            reason = (
+                "No parcel matched the submitted address closely enough, "
+                "so no parcel fits it."
+            )
+    elif strong_others:
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_APPROVE_PARCEL
-        reason = "Several parcels fit the address almost equally well, so a person chooses."
-    elif best_score >= thresholds.suggest:
+        best_other = max(float(item.get("score") or 0.0) for item in strong_others)
+        if score is not None and best_other > score:
+            reason = (
+                "Another parcel fits the submitted address better, "
+                "so a person chooses."
+            )
+        else:
+            reason = (
+                "Several parcels fit the address almost equally well, "
+                "so a person chooses."
+            )
+    elif score is None or score < threshold:
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_APPROVE_PARCEL
         reason = (
@@ -543,9 +814,9 @@ def _recommend_parcel(session: Session, task: Task) -> Recommendation:
             "closely enough to act on alone."
         )
     else:
-        confidence = CONFIDENCE_REVIEW
-        outcome = OUTCOME_NONE_FITS
-        reason = "No parcel matched the submitted address closely enough."
+        confidence = CONFIDENCE_HIGH
+        outcome = OUTCOME_APPROVE_PARCEL
+        reason = "One parcel fits the submitted address and the point falls inside it."
 
     return Recommendation(
         task_kind=task.kind,
@@ -560,18 +831,21 @@ def _recommend_parcel(session: Session, task: Task) -> Recommendation:
             "parcel_id": match.parcel_id or "",
             "parcel_number": located,
             "stated_parcel": stated,
-            "score": best_score if found else None,
+            "score": score,
+            "address_id": str(selected.get("address_id", "")) if selected else "",
             "locator_status": match.locator_status,
             "link_state": match.link_state,
             "note": match.note or "",
             "conflict": conflict,
-            "auto_apply_threshold": thresholds.auto_apply,
-            "suggest_threshold": thresholds.suggest,
+            "auto_apply_threshold": threshold,
+            "suggest_threshold": DEFAULT_THRESHOLDS["address_locator"].suggest,
             "candidates": [
                 {
                     "parcel_number": str(item.get("parcel_number", "")),
                     "address": str(item.get("address", "")),
                     "score": float(item.get("score") or 0.0),
+                    "address_id": str(item.get("address_id", "")),
+                    "selected": item is selected,
                 }
                 for item in found
             ],
@@ -602,7 +876,38 @@ def _source_value(
     return dict(snapshot.raw_payload or {}), snapshot.source_record_version or ""
 
 
-def _recommend_case(session: Session, task: Task) -> Recommendation:
+def _same_value(left: Any, right: Any) -> bool:
+    """Whether two values of a source record are the same, keeping their types.
+
+    A number is not the text of that number, a missing value is not the text
+    "None" and a boolean is not a number.
+    """
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if left is None or right is None:
+        return left is None and right is None
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return float(left) == float(right)
+    return type(left) is type(right) and left == right
+
+
+def _proposal_agrees(current: dict[str, Any], proposed: dict[str, Any]) -> bool:
+    """Whether the source holds every value the correction proposes.
+
+    A field the source does not hold cannot be compared, so the correction
+    stays for a person to read.
+    """
+    if not proposed:
+        return False
+    return all(
+        field in current and _same_value(current[field], value)
+        for field, value in proposed.items()
+    )
+
+
+def _recommend_case(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of a correction.
 
     The proposal is compared with the value the source holds today.  A source
@@ -620,9 +925,7 @@ def _recommend_case(session: Session, task: Task) -> Recommendation:
         and current_version is not None
         and str(case.expected_version) != str(current_version)
     )
-    agrees = current is not None and all(
-        str(current.get(field, "")) == str(value) for field, value in proposed.items()
-    )
+    agrees = current is not None and _proposal_agrees(current, proposed)
 
     if not proposed:
         confidence = CONFIDENCE_REVIEW
@@ -648,6 +951,13 @@ def _recommend_case(session: Session, task: Task) -> Recommendation:
         reason = (
             "The correction cannot be checked against the source, so a person reads it "
             "before it is sent."
+        )
+    elif any(field not in current for field in proposed):
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_ACCEPT
+        reason = (
+            "The source record does not name this field, so a person reads the field "
+            "before the correction is sent."
         )
     else:
         confidence = CONFIDENCE_REVIEW
@@ -699,19 +1009,47 @@ def _owner_label(session: Session, issue: change.GovernanceIssue) -> str:
     return ""
 
 
-def _subject_label(issue: change.GovernanceIssue) -> str:
-    """Return the plain name of the record the issue is about."""
+def _dataset_label(session: Session, dataset_key: str) -> str:
+    """Return the registered name of a dataset."""
+    contract = session.execute(
+        select(governance.SourceContract).where(
+            governance.SourceContract.dataset_key == dataset_key
+        )
+    ).scalars().first()
+    if contract is not None and contract.label:
+        return contract.label
+    return dataset_key.replace("_", " ")
+
+
+def _field_label(attribute_path: str) -> str:
+    """Return the readable name of a field of a master record."""
+    return attribute_path.replace("_", " ").replace(".", " ")
+
+
+def _subject_label(session: Session, issue: change.GovernanceIssue) -> str:
+    """Return the plain name of the record the issue is about.
+
+    The name is the one a person knows: the name of the master record, the
+    readable name of the field and the registered name of the dataset.  The
+    internal identifiers stay in the evidence of the recommendation.
+    """
+    subject = str(issue.subject_id or "")
     if issue.subject_type == "source_dataset":
-        return str(issue.subject_id)
+        return _dataset_label(session, subject)
     if issue.subject_type == "source_record":
-        parts = str(issue.subject_id).split(":")
-        return parts[-1] if parts else str(issue.subject_id)
-    return str(issue.subject_id)
+        parts = subject.split(":")
+        return parts[-1] if parts and parts[-1] else subject
+    if issue.subject_type == "canonical_entity":
+        entity_id, _, attribute_path = subject.partition(":")
+        label = _entity_label(session, entity_id)
+        if not attribute_path:
+            return label
+        return f"{label} ({_field_label(attribute_path)})"
+    return subject
 
 
-def _request_draft(session: Session, issue: change.GovernanceIssue) -> str:
+def _request_draft(issue: change.GovernanceIssue, subject: str) -> str:
     """Return the draft of the request the steward would send."""
-    subject = _subject_label(issue)
     if issue.issue_type == "late_source_version":
         return (
             f"The accepted version of {subject} stands and the late copy is kept as "
@@ -738,7 +1076,9 @@ def _request_draft(session: Session, issue: change.GovernanceIssue) -> str:
     )
 
 
-def _recommend_issue(session: Session, task: Task) -> Recommendation:
+def _recommend_issue(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of a data issue.
 
     The issue is classified, the queue or the person that has to act is
@@ -751,7 +1091,7 @@ def _recommend_issue(session: Session, task: Task) -> Recommendation:
 
     classification = ISSUE_CLASSES.get(issue.issue_type)
     owner = _owner_label(session, issue)
-    draft = _request_draft(session, issue)
+    draft = _request_draft(issue, _subject_label(session, issue))
 
     if issue.issue_type == "source_version_payload_conflict":
         confidence = CONFIDENCE_HELD
@@ -801,8 +1141,14 @@ _BUILDERS = {
     "issue": _recommend_issue,
 }
 
+#: The kinds of task the assistant prepares a recommendation for.  They are
+#: the kinds the builders above prepare.
+TASK_KINDS: tuple[str, ...] = tuple(_BUILDERS)
 
-def recommend(session: Session, task: Task) -> Recommendation:
+
+def recommend(
+    session: Session, task: Task, *, settings: Any = None
+) -> Recommendation:
     """Prepare the recommendation of one task of the Data Steward's queue.
 
     The recommendation is deterministic and it decides nothing: it names what
@@ -812,6 +1158,8 @@ def recommend(session: Session, task: Task) -> Recommendation:
     Args:
         session: The open session.
         task: The task of the queue, with its kind and its identifier.
+        settings: The settings of the City, so a recommendation follows the
+            line the City applies.
 
     Returns:
         The recommendation for the task.
@@ -826,7 +1174,7 @@ def recommend(session: Session, task: Task) -> Recommendation:
         raise ValidationError(
             f"the assistant prepares no recommendation for a {task.kind!r} task"
         )
-    return builder(session, task)
+    return builder(session, task, settings=settings)
 
 
 def store_recommendation(
@@ -885,6 +1233,7 @@ __all__ = [
     "CONFIDENCE_HIGH",
     "CONFIDENCE_HELD",
     "CONFIDENCE_REVIEW",
+    "CONFLICT_CHECKS",
     "ISSUE_CLASSES",
     "OUTCOME_ACCEPT",
     "OUTCOME_APPROVE_PARCEL",
@@ -898,6 +1247,8 @@ __all__ = [
     "OUTCOME_UNDO",
     "STEWARD_ASSIST_ACTOR_ID",
     "TASK_KINDS",
+    "VERSION_TOKEN_CROSSWALK",
+    "VERSION_TOKEN_CURRENT_SOURCE",
     "Recommendation",
     "Task",
     "recommend",

@@ -24,13 +24,16 @@ from acme_city.core.errors import NotFoundError, PermissionDeniedError, Validati
 from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.fixtures.steward_automation_demo import seed_automation
+from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
+from acme_city.ingestion.service import IngestionService
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import registry, source
+from acme_city.persistence.models import registry, registry_automation, source
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.registry import steward_assist as recommenders
-from acme_city.registry.schemas import MatchProposalCommand
+from acme_city.registry.schemas import MatchDecisionCommand, MatchProposalCommand
 from acme_city.registry.service import RegistryService
 
 #: The Data Steward: the only persona that works the queue.
@@ -149,6 +152,84 @@ def many_proposals(settings: Settings, count: int) -> list[str]:
                 )
                 identifiers.append(identifier)
         return identifiers
+    finally:
+        factory.dispose()
+
+
+def deliver_newer_licence(settings: Settings) -> None:
+    """Deliver a newer version of the licence of the demonstration."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            IngestionService(session).ingest(
+                IngestCommand(
+                    source_system_id="erp_finance",
+                    dataset_key="business_licensing_register",
+                    records=[
+                        SourceRecordCommand(
+                            source_record_id=LICENCE,
+                            source_record_version="3",
+                            payload={
+                                "license_number": "BL-2026-00412",
+                                "holder_name": "Cedar Line Coffee Roasters",
+                                "holder_ref": "party_cedarline",
+                                "status": "active",
+                                "valid_from": "2026-01-15",
+                                "valid_to": "2026-12-31",
+                                "business_address": "400 Lantern Row Unit 2",
+                            },
+                            source_updated_at=datetime(2026, 10, 30, 12, 0, tzinfo=UTC),
+                        )
+                    ],
+                ),
+                STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
+def decide_on_the_link(
+    settings: Settings,
+    *,
+    decision: str = "reject",
+    source_system_id: str = "erp_finance",
+    dataset_key: str = "business_licensing_register",
+    source_record_id: str = LICENCE,
+) -> None:
+    """Let the steward decide on the link of a source record."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            crosswalk = RegistryService(session).open_crosswalk(
+                source_system_id, source_record_id
+            )
+            assert crosswalk is not None
+            RegistryService(session).decide(
+                MatchDecisionCommand(
+                    decision=decision,
+                    reason="the fictional steward decides on the link",
+                    source_system_id=source_system_id,
+                    dataset_key=dataset_key,
+                    source_record_id=source_record_id,
+                    crosswalk_id=crosswalk.id,
+                    expected_version=crosswalk.version,
+                ),
+                STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
+def applied_link(settings: Settings) -> str:
+    """Run the automatic linking demonstration and return the applied link."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            seed_automation(session)
+            application = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().one()
+            return application.id
     finally:
         factory.dispose()
 
@@ -406,6 +487,106 @@ def test_a_stale_recommendation_is_refused(seeded: Settings) -> None:
             with pytest.raises(ValidationError) as refusal:
                 assistant.refuse_unless_acceptable(session, row)
             assert str(refusal.value) == assistant.STALE_MESSAGE
+    finally:
+        factory.dispose()
+
+
+def test_a_link_that_was_proposed_again_is_stale(seeded: Settings) -> None:
+    """A link that moved on since the recommendation refuses it."""
+    wake(seeded)
+    proposal_id = propose(seeded)
+    prepare(seeded, [recommenders.Task("link", proposal_id)])
+    # The steward proposes the same source record again: the link moves on.
+    propose(seeded)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "link", proposal_id)
+            assert row is not None
+            assert assistant.is_stale(session, row) is True
+            with pytest.raises(ValidationError) as refusal:
+                assistant.refuse_unless_acceptable(session, row)
+            assert str(refusal.value) == assistant.STALE_MESSAGE
+    finally:
+        factory.dispose()
+
+
+def test_a_link_a_person_decided_is_stale(seeded: Settings) -> None:
+    """A link that was decided since the recommendation refuses it."""
+    wake(seeded)
+    proposal_id = propose(seeded)
+    prepare(seeded, [recommenders.Task("link", proposal_id)])
+    decide_on_the_link(seeded)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "link", proposal_id)
+            assert row is not None
+            assert assistant.is_stale(session, row) is True
+    finally:
+        factory.dispose()
+
+
+def test_a_source_record_that_changed_is_stale(seeded: Settings) -> None:
+    """A source record with a newer version refuses the recommendation."""
+    wake(seeded)
+    proposal_id = propose(seeded)
+    prepare(seeded, [recommenders.Task("link", proposal_id)])
+    deliver_newer_licence(seeded)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "link", proposal_id)
+            assert row is not None
+            assert assistant.is_stale(session, row) is True
+    finally:
+        factory.dispose()
+
+
+def test_an_applied_link_a_person_changed_is_stale(seeded: Settings) -> None:
+    """An applied link that was decided since the recommendation refuses it."""
+    wake(seeded)
+    application_id = applied_link(seeded)
+    prepare(seeded, [recommenders.Task("automatic_link", application_id)])
+    decide_on_the_link(
+        seeded,
+        decision="reject",
+        source_system_id="permitting",
+        dataset_key="applicant_profiles",
+        source_record_id="PER-AP-0001",
+    )
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "automatic_link", application_id)
+            assert row is not None
+            assert assistant.is_stale(session, row) is True
+    finally:
+        factory.dispose()
+
+
+def test_an_applied_link_whose_versions_already_differ_is_not_stale(
+    seeded: Settings,
+) -> None:
+    """The link of an application has its own version, and it is read as it is."""
+    wake(seeded)
+    application_id = applied_link(seeded)
+    prepare(seeded, [recommenders.Task("automatic_link", application_id)])
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "automatic_link", application_id)
+            assert row is not None
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            crosswalk = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert crosswalk is not None
+            # The application and the link carry versions of their own.
+            assert int(row.evidence["crosswalk_version"]) == crosswalk.version
+            assert application.version != crosswalk.version
+            assert assistant.is_stale(session, row) is False
     finally:
         factory.dispose()
 

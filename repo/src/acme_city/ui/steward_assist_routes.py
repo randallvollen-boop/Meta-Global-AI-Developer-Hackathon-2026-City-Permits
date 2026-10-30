@@ -26,14 +26,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import select
-
 from acme_city.agents import steward_assist as assistant
 from acme_city.agents.control import AgentControlService
 from acme_city.audit.service import AuditService
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
-from acme_city.persistence.models import registry
 from acme_city.registry import steward_assist as recommenders
 from acme_city.ui.router import ActionContext, Outcome
 
@@ -83,7 +80,9 @@ def _prepare(ctx: ActionContext) -> Outcome:
             target_type="agent_run",
             target_id="",
         )
-    result = assistant.prepare(ctx.session, tasks=tasks, actor=ctx.actor)
+    result = assistant.prepare(
+        ctx.session, tasks=tasks, actor=ctx.actor, settings=ctx.settings
+    )
     message = (
         f"Prepared {len(result.recommendations)} recommendation"
         f"{'' if len(result.recommendations) == 1 else 's'} for the queue."
@@ -123,6 +122,7 @@ def _recommend(ctx: ActionContext) -> Outcome:
         ctx.session,
         tasks=[recommenders.Task(kind, item_id)],
         actor=ctx.actor,
+        settings=ctx.settings,
     )
     if not result.recommendations:
         detail = result.refused[0][1] if result.refused else "the task could not be prepared"
@@ -159,25 +159,6 @@ def _clear(ctx: ActionContext) -> Outcome:
     )
 
 
-def _crosswalk_for(
-    session: Any, source_system_id: str, source_record_id: str
-) -> Any:
-    """Return the link a decision of a record match applies to."""
-    rows = session.execute(
-        select(registry.Crosswalk)
-        .where(
-            registry.Crosswalk.source_system_id == source_system_id,
-            registry.Crosswalk.source_record_id == source_record_id,
-        )
-        .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
-    ).scalars().all()
-    proposed = [row for row in rows if row.link_status == "proposed"]
-    if proposed:
-        return proposed[-1]
-    approved = [row for row in rows if row.link_status == "approved"]
-    return approved[-1] if approved else None
-
-
 def _accept_target(
     session: Any, recommendation: Any, reason: str
 ) -> tuple[str, dict[str, str]]:
@@ -186,6 +167,10 @@ def _accept_target(
     The recommendation proposes an outcome; the existing action of the task
     kind performs it.  The steward is the actor of that action, so the
     decision of record is the steward's.
+
+    The version that travels with the action is the version the
+    recommendation read, so a link that changed since is refused instead of
+    decided on facts nobody read.
     """
     kind = recommendation.task_kind
     outcome = recommendation.outcome
@@ -194,8 +179,8 @@ def _accept_target(
     if kind == "link":
         source_system_id = str(evidence.get("source_system", ""))
         source_record_id = str(evidence.get("source_record_id", ""))
-        crosswalk = _crosswalk_for(session, source_system_id, source_record_id)
-        if crosswalk is None:
+        crosswalk_id = str(evidence.get("crosswalk_id", ""))
+        if not crosswalk_id:
             raise ValidationError(
                 "this source record holds no link a decision could apply to"
             )
@@ -203,8 +188,8 @@ def _accept_target(
             "source_system_id": source_system_id,
             "dataset_key": str(evidence.get("source_dataset", "")),
             "source_record_id": source_record_id,
-            "crosswalk_id": crosswalk.id,
-            "expected_version": str(crosswalk.version),
+            "crosswalk_id": crosswalk_id,
+            "expected_version": str(int(evidence.get("crosswalk_version") or 0)),
             "reason": reason,
         }
         if outcome == recommenders.OUTCOME_CONFIRM:
@@ -231,16 +216,11 @@ def _accept_target(
             }
         if outcome == recommenders.OUTCOME_UNDO:
             crosswalk_id = str(evidence.get("crosswalk_id", ""))
-            crosswalk = (
-                session.get(registry.Crosswalk, crosswalk_id)
-                if crosswalk_id
-                else None
-            )
-            if crosswalk is None:
+            if not crosswalk_id:
                 raise ValidationError("the applied link could not be read")
             return "registry.automation.undo", {
                 "application_id": application_id,
-                "expected_version": str(crosswalk.version),
+                "expected_version": str(int(evidence.get("crosswalk_version") or 0)),
                 "reason": reason,
             }
         raise ValidationError(

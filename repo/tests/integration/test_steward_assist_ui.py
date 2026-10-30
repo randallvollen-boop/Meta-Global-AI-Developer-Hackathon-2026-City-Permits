@@ -190,6 +190,34 @@ def raise_correction(environment: Settings) -> str:
         factory.dispose()
 
 
+def decide_on_the_link(environment: Settings, record: str = RECORD) -> None:
+    """Let the steward decide on the link of the source record."""
+    from acme_city.auth.context import ActorContext
+    from acme_city.registry.schemas import MatchDecisionCommand
+    from acme_city.registry.service import RegistryService
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            service = RegistryService(session)
+            crosswalk = service.open_crosswalk("permitting", record)
+            assert crosswalk is not None
+            service.decide(
+                MatchDecisionCommand(
+                    decision="reject",
+                    reason="the demonstration steward rejects the link",
+                    source_system_id="permitting",
+                    dataset_key="applicant_profiles",
+                    source_record_id=record,
+                    crosswalk_id=crosswalk.id,
+                    expected_version=crosswalk.version,
+                ),
+                ActorContext(actor_id="persona_data_steward", role_ids=frozenset()),
+            )
+    finally:
+        factory.dispose()
+
+
 # ------------------------------------------------------------------ the queue
 
 
@@ -496,6 +524,33 @@ def test_a_stale_recommendation_is_never_accepted(
             party.version += 1
     finally:
         factory.dispose()
+    response = post(
+        client,
+        "steward.assist.accept",
+        {"recommendation_id": identifier, "reason": "the evidence agrees", "next": path},
+        path,
+    )
+    assert response.status_code == 422, response.text
+    assert response.json()["message"] == "This record changed; refresh the recommendation"
+    assert crosswalk_of(environment)[-1].link_status != "approved"
+
+
+def test_a_link_decided_since_the_recommendation_is_never_accepted(
+    client: TestClient, environment: Settings
+) -> None:
+    """A link that was decided since the recommendation refuses it."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    path = case_path(client)
+    post(
+        client,
+        "steward.assist.recommend",
+        {"task_kind": "link", "task_id": task_id(path), "next": path},
+        path,
+    )
+    identifier = recommendation_of(client, path)
+    # Another steward decides on the link through the ordinary control.
+    decide_on_the_link(environment)
     response = post(
         client,
         "steward.assist.accept",

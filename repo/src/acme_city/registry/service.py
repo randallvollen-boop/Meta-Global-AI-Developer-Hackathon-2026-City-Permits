@@ -667,6 +667,23 @@ class RegistryService:
             value=crosswalk_view(proposed), version=proposed.version, audit_event_id=event.id
         )
 
+    def open_crosswalk(
+        self, source_system_id: str, source_record_id: str
+    ) -> registry.Crosswalk | None:
+        """Return the link a decision about a source record applies to.
+
+        A proposal of the steward is the link a decision applies to; an
+        approved link is the fallback.  Every reader of that link uses this
+        method, so the version a decision is made on is the version the City
+        shows.
+        """
+        rows = self._crosswalk_rows(source_system_id, source_record_id)
+        proposed = next((row for row in rows if row.link_status == "proposed"), None)
+        if proposed is not None:
+            return proposed
+        approved = [row for row in rows if row.link_status == "approved"]
+        return approved[-1] if approved else None
+
     def _resolve_crosswalk(
         self, command: MatchDecisionCommand
     ) -> registry.Crosswalk | None:
@@ -675,12 +692,7 @@ class RegistryService:
             return self._session.get(registry.Crosswalk, command.crosswalk_id)
         if not command.source_system_id or not command.source_record_id:
             return None
-        rows = self._crosswalk_rows(command.source_system_id, command.source_record_id)
-        proposed = next((row for row in rows if row.link_status == "proposed"), None)
-        if proposed is not None:
-            return proposed
-        approved = [row for row in rows if row.link_status == "approved"]
-        return approved[-1] if approved else None
+        return self.open_crosswalk(command.source_system_id, command.source_record_id)
 
     def _apply_decision(
         self,

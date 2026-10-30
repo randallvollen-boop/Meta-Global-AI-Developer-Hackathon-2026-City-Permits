@@ -62,6 +62,30 @@ AMBIGUOUS_MESSAGE = "Address needs a person to choose the property"
 NOT_FOUND_MESSAGE = "Address not found in the city locator"
 
 
+def approvable(match: gis.ApplicationParcelMatch) -> bool:
+    """Whether the steward may approve this parcel link.
+
+    Only a proposed link that names a parcel of the registry may be approved:
+    the point has to fall inside a parcel and the parcel has to exist in the
+    registry.  Every caller of that rule reads it here, so the City never
+    approves a link under a weaker rule than the one it shows.
+    """
+    return match.link_state == MATCH_PROPOSED and bool(match.parcel_id)
+
+
+def strong_candidates(
+    candidates: list[dict[str, Any]], threshold: float
+) -> list[dict[str, Any]]:
+    """Return the candidates that score at or above the line the City applies.
+
+    One strong candidate is a parcel the City proposes; several are a choice
+    for a person.
+    """
+    return [
+        item for item in candidates if float(item.get("score") or 0.0) >= threshold
+    ]
+
+
 @dataclass(frozen=True)
 class LocateOutcome:
     """What the Address locator found for one application."""
@@ -207,7 +231,7 @@ class ParcelMatchService:
         enriched = self._enrich(candidates)
 
         top = candidates[0] if candidates else None
-        strong = [item for item in candidates if item.score >= self.threshold]
+        strong = strong_candidates(enriched, self.threshold)
         parcel: ParcelRecord | None = None
         if top is None:
             state = MATCH_NOT_FOUND
@@ -327,7 +351,7 @@ class ParcelMatchService:
         _application, match = self._load(application_id)
         self._check_version(match, expected_version)
         if decision == "approve":
-            if match.link_state != MATCH_PROPOSED or not match.parcel_id:
+            if not approvable(match):
                 raise ValidationError(
                     "only a proposed parcel link that names a parcel of the registry can be approved"
                 )
@@ -587,4 +611,6 @@ __all__ = [
     "PROPOSE_ACTION",
     "LocateOutcome",
     "ParcelMatchService",
+    "approvable",
+    "strong_candidates",
 ]

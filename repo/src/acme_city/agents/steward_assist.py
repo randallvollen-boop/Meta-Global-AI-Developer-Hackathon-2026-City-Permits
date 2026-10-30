@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -39,7 +39,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import change, gis, registry_automation
+from acme_city.persistence.models import change, gis, registry, registry_automation
 from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.registry import steward_assist as recommenders
 
@@ -131,22 +131,46 @@ def _entity_version(session: Session, entity_id: str) -> int:
     return 0
 
 
+def _open_crosswalk(session: Session, evidence: dict[str, Any]) -> Any:
+    """Return the link a decision about the source record applies to."""
+    from acme_city.registry.service import RegistryService
+
+    source_system_id = str(evidence.get("source_system") or "")
+    source_record_id = str(evidence.get("source_record_id") or "")
+    if not source_system_id or not source_record_id:
+        return None
+    return RegistryService(session).open_crosswalk(source_system_id, source_record_id)
+
+
+def _current_snapshot(session: Session, evidence: dict[str, Any]) -> Any:
+    """Return the accepted version of the source record of the recommendation."""
+    from acme_city.registry.provenance import current_accepted_snapshot
+
+    return current_accepted_snapshot(
+        session,
+        str(evidence.get("source_system") or ""),
+        str(evidence.get("source_dataset") or ""),
+        str(evidence.get("source_record_id") or ""),
+    )
+
+
 def current_record_version(
     session: Session, recommendation: StewardRecommendation
 ) -> int:
     """Return the version of the record a recommendation read.
 
-    The version is the one of the record the task is about: the master record
-    of a match, the applied link of an automatic link, the parcel match of a
-    property, the change case of a correction and the issue of a data issue.
-    A version that differs from the one the recommendation recorded means the
-    record changed since the recommendation was made.
+    The version is the one of the record the task is about: the link a match
+    is decided on, the applied link of an automatic link, the parcel match of
+    a property, the change case of a correction and the issue of a data
+    issue.  A version that differs from the one the recommendation recorded
+    means the record changed since the recommendation was made.
     """
     kind = recommendation.task_kind
     item_id = recommendation.task_id
     evidence = dict(recommendation.evidence or {})
     if kind == "link":
-        return _entity_version(session, str(evidence.get("candidate_entity_id") or ""))
+        row = _open_crosswalk(session, evidence)
+        return int(row.version) if row is not None else 0
     if kind == "automatic_link":
         row = session.get(
             registry_automation.RegistryAutomationApplication, item_id
@@ -168,11 +192,56 @@ def current_record_version(
     return 0
 
 
+def _changed_dependencies(
+    session: Session, recommendation: StewardRecommendation
+) -> bool:
+    """Whether a fact the recommendation depended on changed since it was made.
+
+    A recommendation of a link depends on the link it would decide on, on the
+    source version it read and on the master record it compared.  A
+    recommendation of an applied link depends on the link of the automation
+    and on the source version it read.
+    """
+    kind = recommendation.task_kind
+    evidence = dict(recommendation.evidence or {})
+    if kind == "link":
+        captured_id = str(evidence.get("crosswalk_id") or "")
+        captured_version = int(evidence.get("crosswalk_version") or 0)
+        row = _open_crosswalk(session, evidence)
+        if captured_id:
+            if row is None or row.id != captured_id or int(row.version) != captured_version:
+                return True
+        elif row is not None:
+            return True
+        entity_id = str(evidence.get("candidate_entity_id") or "")
+        if entity_id and _entity_version(session, entity_id) != int(
+            evidence.get("candidate_version") or 0
+        ):
+            return True
+    if kind == "automatic_link":
+        captured_id = str(evidence.get("crosswalk_id") or "")
+        if captured_id:
+            row = session.get(registry.Crosswalk, captured_id)
+            if row is None or int(row.version) != int(
+                evidence.get("crosswalk_version") or 0
+            ):
+                return True
+    if kind in {"link", "automatic_link"}:
+        captured = str(evidence.get("source_snapshot_id") or "")
+        if captured:
+            current = _current_snapshot(session, evidence)
+            if current is None or current.source_snapshot_id != captured:
+                return True
+    return False
+
+
 def is_stale(session: Session, recommendation: StewardRecommendation) -> bool:
     """Whether the record of a recommendation changed since it was made."""
-    return current_record_version(session, recommendation) != int(
+    if current_record_version(session, recommendation) != int(
         recommendation.record_version
-    )
+    ):
+        return True
+    return _changed_dependencies(session, recommendation)
 
 
 def refuse_unless_acceptable(
@@ -198,6 +267,7 @@ def prepare(
     *,
     tasks: Sequence[recommenders.Task],
     actor: ActorContext,
+    settings: Any = None,
     now: datetime | None = None,
 ) -> Prepared:
     """Prepare the recommendations of the tasks of one press.
@@ -211,6 +281,8 @@ def prepare(
         session: The open session.
         tasks: The tasks of the queue to prepare.
         actor: The person who pressed the button.
+        settings: The settings of the City, so a recommendation follows the
+            line the City applies.
         now: The moment of the press.
 
     Returns:
@@ -253,7 +325,7 @@ def prepare(
     refused: list[tuple[str, str]] = []
     for task in chosen:
         try:
-            proposal = recommenders.recommend(session, task)
+            proposal = recommenders.recommend(session, task, settings=settings)
         except (NotFoundError, ValidationError) as error:
             refused.append((f"{task.kind}:{task.item_id}", str(error)))
             continue

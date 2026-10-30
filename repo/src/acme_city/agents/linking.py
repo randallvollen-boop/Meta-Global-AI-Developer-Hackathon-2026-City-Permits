@@ -370,6 +370,7 @@ def safety_checks(
     family: str,
     candidate: candidates.Candidate,
     candidate_count: int,
+    exclude_crosswalk_id: str | None = None,
 ) -> SafetyChecks:
     """Return the safety checks of one candidate.
 
@@ -378,11 +379,17 @@ def safety_checks(
     carry an exact identifier and a corroborating fact, and no decision of a
     person may be replaced.  A family whose links cannot be reversed is only
     ever suggested.
+
+    ``exclude_crosswalk_id`` leaves one link out of the comparison.  It names
+    the link the automation applied itself, so a reader of that link does not
+    mistake it for a decision of a person.
     """
     payload = dict(snapshot.raw_payload or {})
     contract = _contract(session, snapshot)
     current = _current_snapshot(session, snapshot)
     rows = _crosswalk_rows(session, snapshot)
+    if exclude_crosswalk_id:
+        rows = [row for row in rows if row.id != exclude_crosswalk_id]
     approved = [row for row in rows if row.link_status == "approved"]
     rejected = [row for row in rows if row.link_status == "rejected"]
     entity_type = FAMILY_ENTITY_TYPES.get(family, "party")

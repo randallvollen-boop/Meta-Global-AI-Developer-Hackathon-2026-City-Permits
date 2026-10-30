@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import select
@@ -23,14 +24,16 @@ from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_automation_demo import seed_automation
+from acme_city.gis.adapter import LocatorCandidate, ParcelRecord
+from acme_city.gis.matching import ParcelMatchService
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
 from acme_city.ingestion.service import IngestionService
-from acme_city.persistence.models import change, gis, registry, registry_automation
+from acme_city.persistence.models import change, gis, permit, registry, registry_automation
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.registry import automation, steward_assist
-from acme_city.registry.schemas import MatchProposalCommand
+from acme_city.registry.schemas import MatchDecisionCommand, MatchProposalCommand
 from acme_city.registry.service import RegistryService
 
 STEWARD = ActorContext(actor_id="persona_data_steward", role_ids=frozenset({"domain_steward"}))
@@ -40,9 +43,11 @@ LINK_EVIDENCE_KEYS = {
     "source_system",
     "source_dataset",
     "source_record_id",
+    "source_snapshot_id",
     "source_version",
     "candidate_entity_id",
     "candidate_label",
+    "candidate_version",
     "score",
     "next_best_score",
     "auto_apply_threshold",
@@ -50,6 +55,9 @@ LINK_EVIDENCE_KEYS = {
     "policy_decision",
     "reasons",
     "failed_checks",
+    "version_token",
+    "crosswalk_id",
+    "crosswalk_version",
     "agreements",
     "disagreements",
 }
@@ -57,9 +65,13 @@ LINK_EVIDENCE_KEYS = {
 AUTOMATIC_LINK_EVIDENCE_KEYS = {
     "application_id",
     "crosswalk_id",
+    "crosswalk_version",
     "entity_id",
     "entity_label",
+    "source_system",
+    "source_dataset",
     "source_record_id",
+    "source_snapshot_id",
     "score",
     "decision",
     "policy_version",
@@ -77,6 +89,7 @@ PARCEL_EVIDENCE_KEYS = {
     "parcel_number",
     "stated_parcel",
     "score",
+    "address_id",
     "locator_status",
     "link_state",
     "note",
@@ -213,12 +226,179 @@ def propose(settings: Settings, *, record_id: str) -> str:
         factory.dispose()
 
 
-def recommend(settings: Settings, kind: str, item_id: str) -> steward_assist.Recommendation:
+def recommend(
+    settings: Settings,
+    kind: str,
+    item_id: str,
+    *,
+    app_settings: Settings | None = None,
+) -> steward_assist.Recommendation:
     """Return the recommendation of one task of the queue."""
     factory = SessionFactory(settings.database_url)
     try:
         with factory() as session:
-            return steward_assist.recommend(session, steward_assist.Task(kind, item_id))
+            return steward_assist.recommend(
+                session,
+                steward_assist.Task(kind, item_id),
+                settings=app_settings or settings,
+            )
+    finally:
+        factory.dispose()
+
+
+#: The candidates the fictional locator of the tests answers with.
+LANTERN_CANDIDATES: tuple[LocatorCandidate, ...] = (
+    LocatorCandidate(
+        address="400 Lantern Row",
+        x=100.0,
+        y=200.0,
+        score=95.0,
+        status="M",
+        address_id="GIS-AD-0400",
+    ),
+    LocatorCandidate(
+        address="402 Lantern Row",
+        x=300.0,
+        y=400.0,
+        score=70.0,
+        status="M",
+        address_id="GIS-AD-0401",
+    ),
+)
+
+#: The parcels the fictional locator of the tests answers with.
+LANTERN_PARCELS: dict[tuple[float, float], ParcelRecord] = {
+    (100.0, 200.0): ParcelRecord(parcel_number="ACME-P-1001", site_address="400 Lantern Row"),
+    (300.0, 400.0): ParcelRecord(parcel_number="ACME-P-1002", site_address="402 Lantern Row"),
+}
+
+
+class FictionalLocator:
+    """A locator that answers with the fictional parcels of the demonstration."""
+
+    def __init__(
+        self,
+        candidates: tuple[LocatorCandidate, ...],
+        parcels: dict[tuple[float, float], ParcelRecord],
+    ) -> None:
+        self._candidates = candidates
+        self._parcels = parcels
+
+    @property
+    def source_label(self) -> str:
+        return "ACME GIS (fictional locator of the test)"
+
+    def find_candidates(self, text: str, max_locations: int = 5) -> list[LocatorCandidate]:
+        return list(self._candidates[:max_locations])
+
+    def suggest(self, text: str, limit: int = 5) -> list[dict[str, str]]:
+        return []
+
+    def candidate_for_key(self, magic_key: str) -> LocatorCandidate | None:
+        return None
+
+    def reverse_geocode(self, x: float, y: float) -> LocatorCandidate | None:
+        return None
+
+    def parcel_at(self, x: float, y: float) -> ParcelRecord | None:
+        return self._parcels.get((float(x), float(y)))
+
+    def parcel_by_number(self, parcel_number: str) -> ParcelRecord | None:
+        return next(
+            (
+                parcel
+                for parcel in self._parcels.values()
+                if parcel.parcel_number == parcel_number
+            ),
+            None,
+        )
+
+    def addresses_on_parcel(self, parcel_number: str) -> list[object]:
+        return []
+
+
+def locate(
+    settings: Settings,
+    *,
+    application_id: str = "app_synth_001",
+    candidates: tuple[LocatorCandidate, ...] = LANTERN_CANDIDATES,
+    parcels: dict[tuple[float, float], ParcelRecord] | None = None,
+    app_settings: Settings | None = None,
+) -> None:
+    """Run the address locator of the City for one application."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(permit.Application, application_id)
+            assert application is not None
+            service = ParcelMatchService(
+                session,
+                settings=app_settings or settings,
+                locator=FictionalLocator(
+                    candidates, LANTERN_PARCELS if parcels is None else parcels
+                ),
+            )
+            service.locate(application, STEWARD)
+    finally:
+        factory.dispose()
+
+
+def choose_candidate(
+    settings: Settings,
+    *,
+    application_id: str = "app_synth_001",
+    address_id: str,
+    candidates: tuple[LocatorCandidate, ...] = LANTERN_CANDIDATES,
+    parcels: dict[tuple[float, float], ParcelRecord] | None = None,
+) -> None:
+    """Let the steward propose another candidate of the locator."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            service = ParcelMatchService(
+                session,
+                settings=settings,
+                locator=FictionalLocator(
+                    candidates, LANTERN_PARCELS if parcels is None else parcels
+                ),
+            )
+            service.choose_candidate(
+                application_id,
+                address_id=address_id,
+                reason="the fictional steward proposes another candidate",
+                expected_version=None,
+                actor=STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
+def find_by_number(
+    settings: Settings,
+    *,
+    application_id: str = "app_synth_001",
+    parcel_number: str = "ACME-P-1002",
+    candidates: tuple[LocatorCandidate, ...] = LANTERN_CANDIDATES,
+    parcels: dict[tuple[float, float], ParcelRecord] | None = None,
+) -> None:
+    """Let the steward look a parcel up in the parcel layer by its number."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            service = ParcelMatchService(
+                session,
+                settings=settings,
+                locator=FictionalLocator(
+                    candidates, LANTERN_PARCELS if parcels is None else parcels
+                ),
+            )
+            service.find_by_number(
+                application_id,
+                parcel_number=parcel_number,
+                reason="the fictional steward looks the parcel up by its number",
+                expected_version=None,
+                actor=STEWARD,
+            )
     finally:
         factory.dispose()
 
@@ -240,6 +420,40 @@ def raise_case(settings: Settings, *, proposed: dict, old: dict | None = None) -
                 STEWARD,
             )
             return view.change_case_id
+    finally:
+        factory.dispose()
+
+
+def deliver_address_without_a_value(settings: Settings) -> None:
+    """Deliver a newer version of the official address with an empty field."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            IngestionService(session).ingest(
+                IngestCommand(
+                    source_system_id="gis",
+                    dataset_key="address_register",
+                    records=[
+                        SourceRecordCommand(
+                            source_record_id="GIS-AD-0400",
+                            source_record_version="6",
+                            payload={
+                                "address_id": "GIS-AD-0400",
+                                "street_number": "400",
+                                "street_name": "Lantern Row",
+                                "street_type": None,
+                                "municipality": "ACME City",
+                                "region": "AC",
+                                "postcode": "ACM-01401",
+                                "source_string": "400 Lantern Row",
+                                "parcel_number": "ACME-P-1001",
+                            },
+                            source_updated_at=datetime(2026, 10, 30, 13, 0, tzinfo=UTC),
+                        )
+                    ],
+                ),
+                STEWARD,
+            )
     finally:
         factory.dispose()
 
@@ -278,14 +492,21 @@ def add_parcel_match(
         factory.dispose()
 
 
-def add_issue(settings: Settings, *, issue_type: str, subject_id: str, queue_id: str = "") -> str:
+def add_issue(
+    settings: Settings,
+    *,
+    issue_type: str,
+    subject_id: str,
+    queue_id: str = "",
+    subject_type: str = "source_record",
+) -> str:
     """Record a data issue and return its identifier."""
     factory = SessionFactory(settings.database_url)
     try:
         with transaction(factory) as session:
             issue = change.GovernanceIssue(
                 id=new_id("issue"),
-                subject_type="source_record",
+                subject_type=subject_type,
                 subject_id=subject_id,
                 issue_type=issue_type,
                 description="a fictional data issue of the demonstration",
@@ -316,18 +537,59 @@ def test_a_record_match_that_names_the_master_record_is_high_confidence(seeded: 
     assert set(recommendation.evidence) == LINK_EVIDENCE_KEYS
 
 
-def test_a_record_match_stores_the_version_of_the_master_record(seeded: Settings) -> None:
-    """The recommendation records the version of the record it read."""
+def test_a_record_match_stores_the_version_of_the_link(seeded: Settings) -> None:
+    """The recommendation records the version of the link it is decided on.
+
+    The steward decides on the link, and the service of the City compares the
+    version of that link, so the recommendation has to carry it.  The master
+    record has a version of its own, and it is not the one.
+    """
     proposal_id = propose(seeded, record_id="ERP-BL-00412")
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            party = session.get(registry.Party, "party_cedarline")
+            assert party is not None
+            party.version += 1
+            master_version = party.version
+    finally:
+        factory.dispose()
+
     recommendation = recommend(seeded, "link", proposal_id)
 
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
-            party = session.get(registry.Party, "party_cedarline")
+            crosswalk = RegistryService(session).open_crosswalk(
+                "erp_finance", "ERP-BL-00412"
+            )
     finally:
         factory.dispose()
-    assert recommendation.record_version == party.version
+    assert crosswalk is not None
+    assert recommendation.record_version == crosswalk.version
+    assert recommendation.record_version != master_version
+    assert recommendation.evidence["crosswalk_id"] == crosswalk.id
+    assert recommendation.evidence["crosswalk_version"] == crosswalk.version
+    assert recommendation.evidence["version_token"] == steward_assist.VERSION_TOKEN_CROSSWALK
+    # The master record and the source version travel with it as evidence.
+    assert recommendation.evidence["candidate_entity_id"] == "party_cedarline"
+    assert recommendation.evidence["candidate_version"] == master_version
+    assert recommendation.evidence["source_snapshot_id"]
+
+
+def test_a_record_match_without_a_candidate_names_the_source_it_read(
+    seeded: Settings,
+) -> None:
+    """A task without a link depends on the version of the source record."""
+    deliver(seeded, record_id="ERP-BL-00902", payload=UNKNOWN_HOLDER)
+    proposal_id = propose(seeded, record_id="ERP-BL-00902")
+    recommendation = recommend(seeded, "link", proposal_id)
+
+    assert recommendation.evidence["version_token"] == (
+        steward_assist.VERSION_TOKEN_CURRENT_SOURCE
+    )
+    assert recommendation.evidence["crosswalk_id"] == ""
+    assert recommendation.evidence["source_snapshot_id"]
 
 
 def test_a_record_match_that_lacks_a_second_fact_is_for_review(seeded: Settings) -> None:
@@ -376,6 +638,74 @@ def test_the_reason_of_a_match_names_no_identifier(seeded: Settings) -> None:
     assert recommendation.reason.endswith("so a person has to decide.")
 
 
+def add_twin_party(settings: Settings) -> None:
+    """Record a second master record with the name and licence of the other one."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                registry.CanonicalEntity(
+                    id="party_cedarline_twin",
+                    entity_id="party_cedarline_twin",
+                    entity_type="party",
+                    label="Cedarline Coffee Roasters LLC",
+                    status="active",
+                )
+            )
+            session.add(
+                registry.Party(
+                    id="party_cedarline_twin",
+                    entity_id="party_cedarline_twin",
+                    party_type="organization",
+                    display_name="Cedarline Coffee Roasters LLC",
+                    legal_name="Cedarline Coffee Roasters LLC",
+                    status="active",
+                )
+            )
+            session.flush()
+            session.add(
+                registry.Credential(
+                    id="cred_license_cedarline_twin",
+                    credential_id="cred_license_cedarline_twin",
+                    holder_party_id="party_cedarline_twin",
+                    credential_type="business_license",
+                    issuing_authority_id="erp_finance:business_licensing_register",
+                    number="BL-2026-00412",
+                    status="active",
+                    valid_from=datetime(2026, 1, 15, tzinfo=UTC),
+                    valid_to=datetime(2026, 12, 31, tzinfo=UTC),
+                    verified_at=datetime(2026, 9, 2, 9, 0, tzinfo=UTC),
+                    source_system_id="erp_finance",
+                    source_record_id="ERP-BL-00904",
+                )
+            )
+    finally:
+        factory.dispose()
+
+
+def test_a_close_second_master_record_is_explained(seeded: Settings) -> None:
+    """A master record that fits almost as well is named in the reason."""
+    add_twin_party(seeded)
+    deliver(
+        seeded,
+        record_id="ERP-BL-00904",
+        payload={
+            "holder_name": "Cedarline Coffee Roasters",
+            "license_number": "BL-2026-00412",
+            "status": "active",
+            "valid_from": "2026-01-01",
+            "valid_to": "2026-12-31",
+        },
+    )
+    proposal_id = propose(seeded, record_id="ERP-BL-00904")
+    recommendation = recommend(seeded, "link", proposal_id)
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert "another master record fits almost as well" in recommendation.reason
+    assert "party_score_gap" in recommendation.evidence["reasons"]
+    assert recommendation.evidence["next_best_score"] == recommendation.evidence["score"]
+
+
 def test_a_missing_task_has_no_recommendation(seeded: Settings) -> None:
     """A task whose record is gone is refused."""
     with pytest.raises(NotFoundError):
@@ -388,32 +718,193 @@ def test_an_unknown_kind_of_task_has_no_recommendation(seeded: Settings) -> None
         recommend(seeded, "unknown_task", "anything")
 
 
+def test_the_supported_kinds_are_the_kinds_the_assistant_prepares() -> None:
+    """The kinds the screens offer and the dispatch never contradict each other."""
+    # The dispatch of the assistant is the one list of kinds; nothing else
+    # declares them.
+    assert steward_assist.TASK_KINDS == tuple(steward_assist._BUILDERS)
+    assert set(steward_assist.TASK_KINDS) == {
+        "link",
+        "automatic_link",
+        "parcel",
+        "case",
+        "issue",
+    }
+
+
+def test_the_words_of_the_assistant_name_no_check_it_always_passes() -> None:
+    """The assistant never fails these two checks, so it has no words for them."""
+    always_passed = {"undo_supported", "permissions_granted"}
+    assert always_passed.isdisjoint(steward_assist.CHECK_WORDS)
+
+
+def applied_link(settings: Settings) -> str:
+    """Run the automatic linking demonstration and return the applied link."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            seed_automation(session)
+            application = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().one()
+            return application.id
+    finally:
+        factory.dispose()
+
+
+def deliver_newer_applicant(settings: Settings) -> None:
+    """Deliver a newer version of the applicant record of the demonstration."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            IngestionService(session).ingest(
+                IngestCommand(
+                    source_system_id="permitting",
+                    dataset_key="applicant_profiles",
+                    records=[
+                        SourceRecordCommand(
+                            source_record_id="PER-AP-0001",
+                            source_record_version="4",
+                            payload={
+                                "party_ref": "party_cedarline",
+                                "display_name": "Tamsin Aldous",
+                                "contact_email": "t.aldous@example.invalid",
+                                "contact_phone": "+1-555-0141",
+                                "preferred_contact": "email",
+                            },
+                            source_updated_at=datetime(2026, 10, 30, 12, 0, tzinfo=UTC),
+                        )
+                    ],
+                ),
+                STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
+def recorded_evidence(settings: Settings, application_id: str, **changes: Any) -> None:
+    """Change the evidence the policy recorded for an applied link."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            evaluation = session.get(
+                registry_automation.RegistryAutomationEvaluation, application.evaluation_id
+            )
+            assert evaluation is not None
+            evidence = dict(evaluation.evidence or {})
+            evidence.update(changes)
+            evaluation.evidence = evidence
+    finally:
+        factory.dispose()
+
+
+def take_the_link_back(settings: Settings, application_id: str) -> None:
+    """Let a person take the applied link back."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            crosswalk = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert crosswalk is not None
+            RegistryService(session).decide(
+                MatchDecisionCommand(
+                    decision="remove",
+                    reason="the fictional steward takes the link back",
+                    source_system_id=crosswalk.source_system_id,
+                    dataset_key=crosswalk.source_dataset_key,
+                    source_record_id=crosswalk.source_record_id,
+                    crosswalk_id=crosswalk.id,
+                    expected_version=crosswalk.version,
+                ),
+                STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
 # ------------------------------------------------------------- the applied link
 
 
 def test_an_applied_link_is_kept_with_high_confidence(seeded: Settings) -> None:
     """A link the policy applied after every check passed may be kept."""
-    factory = SessionFactory(seeded.database_url)
-    try:
-        with transaction(factory) as session:
-            seed_automation(session)
-    finally:
-        factory.dispose()
+    application_id = applied_link(seeded)
 
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
-            application = session.execute(
-                select(registry_automation.RegistryAutomationApplication)
-            ).scalars().one()
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
     finally:
         factory.dispose()
 
-    recommendation = recommend(seeded, "automatic_link", application.id)
+    recommendation = recommend(seeded, "automatic_link", application_id)
     assert recommendation.confidence == steward_assist.CONFIDENCE_HIGH
     assert recommendation.outcome == steward_assist.OUTCOME_KEEP
     assert recommendation.record_version == application.version
     assert set(recommendation.evidence) == AUTOMATIC_LINK_EVIDENCE_KEYS
+
+
+def test_an_applied_link_with_a_newer_source_version_is_held(seeded: Settings) -> None:
+    """A source record that changed since the link was applied holds the link."""
+    application_id = applied_link(seeded)
+    deliver_newer_applicant(seeded)
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_HELD
+    assert recommendation.outcome == steward_assist.OUTCOME_UNDO
+    assert "source record changed" in recommendation.reason
+
+
+def test_an_applied_link_a_person_changed_is_held(seeded: Settings) -> None:
+    """A link a person took back since it was applied holds the link."""
+    application_id = applied_link(seeded)
+    take_the_link_back(seeded, application_id)
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_HELD
+    assert recommendation.outcome == steward_assist.OUTCOME_UNDO
+    assert "link changed" in recommendation.reason
+
+
+def test_an_applied_link_whose_recorded_check_failed_is_held(seeded: Settings) -> None:
+    """A link the policy applied without every check is held for a person."""
+    application_id = applied_link(seeded)
+    recorded_evidence(seeded, application_id, failed_checks=["no_identity_conflict"])
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_HELD
+    assert recommendation.outcome == steward_assist.OUTCOME_UNDO
+
+
+def test_an_applied_link_without_its_evidence_is_for_review(seeded: Settings) -> None:
+    """A link whose evidence is gone is left to a person."""
+    application_id = applied_link(seeded)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            evaluation = session.get(
+                registry_automation.RegistryAutomationEvaluation, application.evaluation_id
+            )
+            assert evaluation is not None
+            evaluation.score = None
+    finally:
+        factory.dispose()
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_KEEP
 
 
 def test_an_applied_link_with_a_conflicting_fact_is_held(seeded: Settings) -> None:
@@ -477,36 +968,107 @@ def test_a_link_that_was_already_reviewed_is_for_review(seeded: Settings) -> Non
 
 def test_one_parcel_above_the_line_is_high_confidence(seeded: Settings) -> None:
     """One parcel that fits the address and no other is ready to accept."""
-    add_parcel_match(
+    locate(
         seeded,
-        application_id="app_synth_001",
-        candidates=[{"parcel_number": "ACME-P-1001", "address": "400 Lantern Row", "score": 95.0}],
-        parcel_number="ACME-P-1001",
+        candidates=(LANTERN_CANDIDATES[0],),
+        parcels={(100.0, 200.0): LANTERN_PARCELS[(100.0, 200.0)]},
     )
     recommendation = recommend(seeded, "parcel", "app_synth_001")
 
     assert recommendation.confidence == steward_assist.CONFIDENCE_HIGH
     assert recommendation.outcome == steward_assist.OUTCOME_APPROVE_PARCEL
     assert recommendation.evidence["parcel_number"] == "ACME-P-1001"
+    assert recommendation.evidence["parcel_id"] == "parcel_1001"
+    assert recommendation.evidence["score"] == 95.0
+    assert recommendation.evidence["link_state"] == "proposed"
     assert set(recommendation.evidence) == PARCEL_EVIDENCE_KEYS
+
+
+def test_an_address_point_in_no_parcel_is_for_review(seeded: Settings) -> None:
+    """A point that falls in no parcel leaves the parcel to a person."""
+    locate(seeded, candidates=(LANTERN_CANDIDATES[0],), parcels={})
+    recommendation = recommend(seeded, "parcel", "app_synth_001")
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_NONE_FITS
+    assert "does not fall inside" in recommendation.reason
+    assert recommendation.evidence["parcel_id"] == ""
+
+
+def test_the_line_the_city_configures_decides(seeded: Settings) -> None:
+    """A parcel below the line the City configured is not ready to accept."""
+    locate(
+        seeded,
+        candidates=(LANTERN_CANDIDATES[0],),
+        parcels={(100.0, 200.0): LANTERN_PARCELS[(100.0, 200.0)]},
+    )
+    strict = seeded.model_copy(update={"gis_auto_propose_score": 98})
+    recommendation = recommend(seeded, "parcel", "app_synth_001", app_settings=strict)
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.evidence["auto_apply_threshold"] == 98
+
+
+def test_the_score_of_the_selected_parcel_decides(seeded: Settings) -> None:
+    """The score that counts is the score of the parcel that is proposed."""
+    locate(
+        seeded,
+        application_id="app_d05",
+        candidates=LANTERN_CANDIDATES,
+        parcels=LANTERN_PARCELS,
+    )
+    choose_candidate(seeded, application_id="app_d05", address_id="GIS-AD-0401")
+    recommendation = recommend(seeded, "parcel", "app_d05")
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.evidence["score"] == 70.0
+    assert recommendation.evidence["parcel_number"] == "ACME-P-1002"
+    assert recommendation.evidence["address_id"] == "GIS-AD-0401"
+    chosen = [
+        item for item in recommendation.evidence["candidates"] if item["selected"]
+    ]
+    assert len(chosen) == 1
+    assert chosen[0]["parcel_number"] == "ACME-P-1002"
+
+
+def test_a_parcel_found_by_its_number_is_the_one_proposed(seeded: Settings) -> None:
+    """A parcel the steward looked up by number is proposed, not written off."""
+    locate(seeded, application_id="app_d05", candidates=(), parcels=LANTERN_PARCELS)
+    find_by_number(seeded, application_id="app_d05", parcel_number="ACME-P-1002")
+    recommendation = recommend(seeded, "parcel", "app_d05")
+
+    assert recommendation.outcome == steward_assist.OUTCOME_APPROVE_PARCEL
+    assert recommendation.evidence["parcel_number"] == "ACME-P-1002"
+    assert recommendation.evidence["parcel_id"] == "parcel_1002"
+    assert recommendation.evidence["score"] == 100.0
 
 
 def test_several_parcels_that_fit_equally_are_for_review(seeded: Settings) -> None:
     """Two parcels that fit the address equally leave the choice to the steward."""
-    add_parcel_match(
-        seeded,
-        application_id="app_synth_001",
-        candidates=[
-            {"parcel_number": "ACME-P-1001", "address": "400 Lantern Row", "score": 95.0},
-            {"parcel_number": "ACME-P-1002", "address": "402 Lantern Row", "score": 85.0},
-        ],
-        parcel_number="ACME-P-1001",
-        link_state="needs_choice",
+    tied = (
+        LocatorCandidate(
+            address="400 Lantern Row",
+            x=100.0,
+            y=200.0,
+            score=95.0,
+            status="M",
+            address_id="GIS-AD-0400",
+        ),
+        LocatorCandidate(
+            address="402 Lantern Row",
+            x=300.0,
+            y=400.0,
+            score=95.0,
+            status="M",
+            address_id="GIS-AD-0401",
+        ),
     )
+    locate(seeded, candidates=tied, parcels=LANTERN_PARCELS)
     recommendation = recommend(seeded, "parcel", "app_synth_001")
 
     assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
     assert recommendation.outcome == steward_assist.OUTCOME_APPROVE_PARCEL
+    assert "Several parcels fit" in recommendation.reason
     assert len(recommendation.evidence["candidates"]) == 2
 
 
@@ -560,11 +1122,10 @@ def test_an_address_that_is_not_found_fits_no_parcel(seeded: Settings) -> None:
 
 def test_a_parcel_link_stores_the_version_of_the_match(seeded: Settings) -> None:
     """The recommendation records the version of the match it read."""
-    add_parcel_match(
+    locate(
         seeded,
-        application_id="app_synth_001",
-        candidates=[{"parcel_number": "ACME-P-1001", "address": "400 Lantern Row", "score": 95.0}],
-        parcel_number="ACME-P-1001",
+        candidates=(LANTERN_CANDIDATES[0],),
+        parcels={(100.0, 200.0): LANTERN_PARCELS[(100.0, 200.0)]},
     )
     recommendation = recommend(seeded, "parcel", "app_synth_001")
 
@@ -643,6 +1204,40 @@ def test_a_correction_of_a_record_that_changed_is_held(seeded: Settings) -> None
     assert recommendation.outcome == steward_assist.OUTCOME_ASK_SOURCE
     assert recommendation.evidence["current_version"] == "6"
     assert recommendation.evidence["expected_version"] == 5
+
+
+def test_a_correction_of_a_field_the_source_does_not_hold_is_for_review(
+    seeded: Settings,
+) -> None:
+    """A field the source does not hold cannot be certified as matching."""
+    case_id = raise_case(seeded, proposed={"does_not_exist": ""})
+    recommendation = recommend(seeded, "case", case_id)
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_ACCEPT
+    assert "does not name this field" in recommendation.reason
+
+
+def test_a_correction_of_a_number_the_source_holds_as_text_is_for_review(
+    seeded: Settings,
+) -> None:
+    """A number is not the text of that number."""
+    case_id = raise_case(seeded, proposed={"street_number": 400})
+    recommendation = recommend(seeded, "case", case_id)
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_ACCEPT
+
+
+def test_a_correction_of_an_empty_value_is_for_review(seeded: Settings) -> None:
+    """An empty value of the source is not the text of it."""
+    deliver_address_without_a_value(seeded)
+    case_id = raise_case(seeded, proposed={"street_type": "None"})
+    recommendation = recommend(seeded, "case", case_id)
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_ACCEPT
+    assert recommendation.evidence["current_value"]["street_type"] is None
 
 
 def test_a_correction_without_a_value_asks_the_source(seeded: Settings) -> None:
@@ -727,6 +1322,40 @@ def test_an_issue_without_an_owner_is_for_review(seeded: Settings) -> None:
 
     assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
     assert recommendation.evidence["owner"] == ""
+
+
+def test_a_drafted_request_names_no_internal_identifier(seeded: Settings) -> None:
+    """The draft the steward sends names the record, not the machinery."""
+    issue_id = add_issue(
+        seeded,
+        issue_type="unresolved_field_authority",
+        subject_id="party_cedarline:postal_address",
+        subject_type="canonical_entity",
+        queue_id="queue_businesses",
+    )
+    recommendation = recommend(seeded, "issue", issue_id)
+
+    draft = recommendation.evidence["request_draft"]
+    assert "party_cedarline" not in draft
+    assert "postal_address" not in draft
+    assert "Cedarline Coffee Roasters LLC" in draft
+    assert "postal address" in draft
+
+
+def test_a_drafted_request_names_the_registered_dataset(seeded: Settings) -> None:
+    """The draft the steward sends names the dataset the City registered."""
+    issue_id = add_issue(
+        seeded,
+        issue_type="unregistered_dataset",
+        subject_id="business_licensing_register",
+        subject_type="source_dataset",
+        queue_id="queue_businesses",
+    )
+    recommendation = recommend(seeded, "issue", issue_id)
+
+    draft = recommendation.evidence["request_draft"]
+    assert "business_licensing_register" not in draft
+    assert "Business licences" in draft
 
 
 def test_an_issue_stores_the_version_of_the_issue(seeded: Settings) -> None:
