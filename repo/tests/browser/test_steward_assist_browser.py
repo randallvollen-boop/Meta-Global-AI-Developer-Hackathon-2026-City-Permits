@@ -179,6 +179,23 @@ def test_the_batch_button_is_off_when_nothing_is_sure(
     assert page.recorded_errors == []
 
 
+def test_the_button_of_muse_is_off_without_a_credential(
+    page, server: BrowserServer, login
+) -> None:
+    """Without a credential the button of Muse is off and the note says why."""
+    prepare_queue(server)
+    wake_the_assistant(page, server, login)
+    login("persona_data_steward")
+    open_case(page, server)
+    click_action(page, "assistant-recommend", "steward.assist.recommend")
+    page.wait_for_selector('[data-testid="assistant-explain"]')
+    assert page.locator('[data-testid="assistant-explain"]').is_disabled()
+    note = page.locator('[data-testid="assistant-explain-note"]')
+    assert note.count() == 1
+    assert "No provider credential is configured" in note.inner_text()
+    assert page.recorded_errors == []
+
+
 # ----------------------------------------------------------------- the task page
 
 

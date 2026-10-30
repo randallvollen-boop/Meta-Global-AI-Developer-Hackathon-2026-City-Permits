@@ -45,6 +45,12 @@ class StewardRecommendation(IdMixin, VersionMixin, CreatedAtMixin, Base):
     evidence: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     #: The plain words the steward reads.
     reason: Mapped[str] = mapped_column(Text, nullable=False)
+    #: The plain words Muse wrote for the reason, when the steward asked for
+    #: them.  The deterministic reason of the assistant stays the reason of
+    #: the recommendation: Muse rewrites the words, never the decision.
+    muse_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The recorded model run that wrote the plain words.
+    muse_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     #: The actor that made the recommendation.
     made_by_actor_id: Mapped[str] = mapped_column(String(64), nullable=False)
     #: The moment the recommendation was made.

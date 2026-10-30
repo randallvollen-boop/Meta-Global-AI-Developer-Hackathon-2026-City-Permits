@@ -2863,7 +2863,12 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
 
 
 def focused_case(
-    session: Session, actor: ActorContext, kind: str, item_id: str, selected_id: str = ""
+    session: Session,
+    actor: ActorContext,
+    kind: str,
+    item_id: str,
+    selected_id: str = "",
+    settings: Any = None,
 ) -> dict[str, Any]:
     """Return the focused case for one queue address, or an empty dict."""
     case = _focused_case(session, actor, kind, item_id, selected_id)
@@ -2874,7 +2879,7 @@ def focused_case(
         # for this task, the evidence it read and the controls the steward
         # may press.
         case["assistant"] = steward_assist_views.case_panel(
-            session, actor, kind, item_id
+            session, actor, kind, item_id, settings=settings
         )
     return case
 

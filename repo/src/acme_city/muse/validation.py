@@ -257,6 +257,19 @@ def _parse_model(task: str, data: Mapping[str, Any]) -> tuple[MuseOutputModel | 
         return None, _schema_error(task, data, exc)
 
 
+def parse_task_output(
+    task: str, data: Mapping[str, Any]
+) -> tuple[MuseOutputModel | None, ValidationIssue | None]:
+    """Return the parsed output model of one task, or the issue that stopped it.
+
+    The strict schema of the task decides: an output that carries a field the
+    schema does not declare is refused, not ignored.  A task whose output
+    names an outcome or a decision it may not write is refused here, before
+    anything is written.
+    """
+    return _parse_model(task, data)
+
+
 def validate_extraction_output(
     data: Mapping[str, Any],
     *,
@@ -571,6 +584,7 @@ __all__ = [
     "excerpt_matches",
     "find_unsafe_instruction",
     "parse_output_text",
+    "parse_task_output",
     "validate_extraction_output",
     "validate_match_output",
 ]

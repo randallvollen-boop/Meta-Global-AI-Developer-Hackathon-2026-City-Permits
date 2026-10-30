@@ -63,6 +63,47 @@ BATCH_GRANT_NOTE = "Your role cannot accept a batch of recommendations."
 #: The days the agreement figure counts.
 AGREEMENT_DAYS = 7
 
+#: The note beside the button of Muse when a live call may not be sent.
+EXPLAIN_OFF_NOTE = (
+    "Live Muse is off in this deployment, so the assistant's reason stands."
+)
+
+#: The note beside the button of Muse when no credential is configured.
+EXPLAIN_NO_KEY_NOTE = (
+    "No provider credential is configured, so the assistant's reason stands."
+)
+
+#: The note beside the button of Muse when a live call may be sent.
+EXPLAIN_ON_NOTE = (
+    "Muse rewrites the reason in plain words. It never changes the decision or "
+    "the certainty of the recommendation."
+)
+
+
+def explain_state(session: Any, settings: Any) -> dict[str, Any]:
+    """Return whether a live call may be sent, and the note when it may not.
+
+    The button of Muse is off when the deployment forbids a live call, when
+    no credential is configured and when the live-call budget is spent.  The
+    note says which of them it is.
+    """
+    from acme_city.agents import steward_explain
+
+    if settings is None or not getattr(settings, "provider_enabled", False):
+        return {"available": False, "note": EXPLAIN_OFF_NOTE}
+    if getattr(settings, "meta_api_key", None) is None:
+        return {"available": False, "note": EXPLAIN_NO_KEY_NOTE}
+    blocked = steward_explain.gate_error(session, settings)
+    if blocked is not None:
+        return {
+            "available": False,
+            "note": (
+                f"No live call may be sent: {blocked}. "
+                "The assistant's reason stands."
+            ),
+        }
+    return {"available": True, "note": EXPLAIN_ON_NOTE}
+
 #: The note a steward reads when the assistant prepared nothing lately.
 AGREEMENT_EMPTY_NOTE = (
     "The steward assistant prepared no recommendation in the last 7 days, so there "
@@ -348,6 +389,12 @@ def recommendation_view(
         ),
         "outcome": recommendation.outcome,
         "reason": recommendation.reason,
+        # The plain words Muse wrote, when the steward asked for them.  The
+        # deterministic reason of the assistant stays the reason of the
+        # recommendation.
+        "muse_reason": recommendation.muse_reason or "",
+        "muse_run_id": recommendation.muse_run_id or "",
+        "reason_text": recommendation.muse_reason or recommendation.reason,
         "made_at": recommendation.made_at,
         "made_by": recommendation.made_by_actor_id,
         "run_id": str((recommendation.evidence or {}).get("run_id") or ""),
@@ -380,7 +427,7 @@ def assistant_state(session: Any, actor: ActorContext) -> dict[str, Any]:
 
 
 def case_panel(
-    session: Any, actor: ActorContext, kind: str, item_id: str
+    session: Any, actor: ActorContext, kind: str, item_id: str, settings: Any = None
 ) -> dict[str, Any]:
     """Return what the task page shows about the steward assistant.
 
@@ -400,6 +447,9 @@ def case_panel(
     panel["prepare_label"] = (
         "Prepare the recommendation again" if row is not None else "Get recommendation"
     )
+    explain = explain_state(session, settings)
+    panel["explain_note"] = explain["note"]
+    panel["can_explain"] = False
     if row is None or not panel["supported"]:
         return panel
     recommendation = recommendation_view(session, row)
@@ -410,6 +460,9 @@ def case_panel(
         state["may_run"] and not recommendation["held"] and not recommendation["stale"]
     )
     panel["can_clear"] = state["may_run"]
+    # Muse only rewrites the words of the recommendation, so it may be asked
+    # for a recommendation the steward reads but may not accept.
+    panel["can_explain"] = state["may_run"] and explain["available"]
     return panel
 
 
@@ -419,6 +472,9 @@ __all__ = [
     "AWAKE_NOTE",
     "BATCH_EMPTY_NOTE",
     "BATCH_GRANT_NOTE",
+    "EXPLAIN_NO_KEY_NOTE",
+    "EXPLAIN_OFF_NOTE",
+    "EXPLAIN_ON_NOTE",
     "MAX_TASKS_PER_PRESS",
     "RUN_PERMISSION",
     "SLEEP_NOTE",
@@ -427,6 +483,7 @@ __all__ = [
     "batch_state",
     "case_panel",
     "evidence_lines",
+    "explain_state",
     "is_awake",
     "may_run",
     "recommendation_view",

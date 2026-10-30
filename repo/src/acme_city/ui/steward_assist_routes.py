@@ -473,6 +473,92 @@ def _batch_accept(ctx: ActionContext) -> Outcome:
     )
 
 
+def _explain(ctx: ActionContext) -> Outcome:
+    """Ask Muse to rewrite the reason of one recommendation in plain words.
+
+    Muse rewrites the words and nothing else: the outcome and the confidence
+    of the recommendation stay what the City decided.  The attempt is
+    recorded, whether it succeeded or not, and a refused call leaves the
+    deterministic reason of the assistant standing.
+    """
+    from acme_city.agents import steward_explain
+
+    recommendation_id = ctx.text("recommendation_id")
+    if not recommendation_id:
+        raise ValidationError("the request names no recommendation")
+    AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
+    recommendation = assistant.recommendation_by_id(ctx.session, recommendation_id)
+    if recommendation.cleared:
+        raise ValidationError("this recommendation was cleared; prepare it again")
+    result = steward_explain.explain(
+        ctx.session, ctx.settings, recommendation, actor_id=ctx.actor.actor_id
+    )
+    if not result.explained:
+        AuditService(ctx.session).append(
+            action="steward.recommendation.explain",
+            actor=ctx.actor,
+            target_type="steward_recommendation",
+            target_id=recommendation.id,
+            after_version=recommendation.version,
+            reason=f"the explanation was refused: {result.error}",
+            references=[recommendation.id, result.run_id],
+            metadata={
+                "recommendation_id": recommendation.id,
+                "task_kind": recommendation.task_kind,
+                "task_id": recommendation.task_id,
+                "model_run_id": result.run_id,
+                "refused": True,
+                "error": result.error,
+            },
+        )
+        ctx.session.flush()
+        return Outcome(
+            message=(
+                f"Muse could not rewrite the reason: {result.error}. "
+                "The assistant's reason stands."
+            ),
+            destination="Data issues",
+            state="refused",
+            target_type="steward_recommendation",
+            target_id=recommendation.id,
+            after_version=recommendation.version,
+            extra={"detail": result.error, "model_run_id": result.run_id},
+        )
+    recommendation.muse_reason = result.text
+    recommendation.muse_run_id = result.run_id
+    recommendation.version += 1
+    AuditService(ctx.session).append(
+        action="steward.recommendation.explain",
+        actor=ctx.actor,
+        target_type="steward_recommendation",
+        target_id=recommendation.id,
+        after_version=recommendation.version,
+        reason="Muse rewrote the reason in plain words.",
+        references=[recommendation.id, result.run_id],
+        metadata={
+            "recommendation_id": recommendation.id,
+            "task_kind": recommendation.task_kind,
+            "task_id": recommendation.task_id,
+            "model_run_id": result.run_id,
+            "refused": False,
+        },
+    )
+    ctx.session.flush()
+    return Outcome(
+        message=(
+            "Muse rewrote the reason in plain words. The decision and the "
+            "certainty of the recommendation did not change."
+        ),
+        destination="Data issues",
+        state="explained",
+        target_type="steward_recommendation",
+        target_id=recommendation.id,
+        after_version=recommendation.version,
+        affected=(recommendation.id,),
+        extra={"detail": result.text, "model_run_id": result.run_id},
+    )
+
+
 #: The interface actions of the lane, keyed by their stable identifier.
 HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "steward.assist.prepare": _prepare,
@@ -480,6 +566,7 @@ HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "steward.assist.clear": _clear,
     "steward.assist.accept": _accept,
     "steward.assist.batch_accept": _batch_accept,
+    "steward.assist.explain": _explain,
 }
 
 __all__ = ["HANDLERS"]

@@ -459,7 +459,14 @@ def ui_steward_case(
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    case = steward_views.focused_case(session, resolved, kind, item_id, selected_id=candidate)
+    case = steward_views.focused_case(
+        session,
+        resolved,
+        kind,
+        item_id,
+        selected_id=candidate,
+        settings=request.app.state.settings,
+    )
     if not case:
         return error_response(
             request,

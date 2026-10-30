@@ -50,6 +50,12 @@ APPLICANT_ASSIST_PROMPT_VERSION: Final = "acme-assist-prompt-v1"
 POLICY_BRIEF_PROMPT_VERSION: Final = "acme-policy-brief-prompt-v4"
 POLICY_PROPOSE_PROMPT_VERSION: Final = "acme-policy-propose-prompt-v1"
 
+#: The version of the steward-explanation output schema.
+STEWARD_EXPLANATION_SCHEMA_VERSION: Final = "acme-steward-explanation-schema-v1"
+
+#: The version of the steward-explanation prompt.
+STEWARD_EXPLANATION_PROMPT_VERSION: Final = "acme-steward-explanation-prompt-v1"
+
 #: The provider that serves the Standard Muse models.
 MUSE_PROVIDER: Final = "meta"
 
@@ -68,6 +74,9 @@ APPLICANT_ASSIST_SCHEMA_NAME: Final = "acme_city_applicant_assist"
 #: The schema names the provider is asked to enforce for the what-if policy tasks.
 POLICY_BRIEF_SCHEMA_NAME: Final = "acme_city_policy_brief"
 POLICY_PROPOSE_SCHEMA_NAME: Final = "acme_city_policy_propose"
+
+#: The schema name the provider is asked to enforce for the steward explanation.
+STEWARD_EXPLANATION_SCHEMA_NAME: Final = "acme_city_steward_explanation"
 
 #: The JSON Schema keywords that are removed from the generated schema.
 #:
@@ -188,11 +197,19 @@ APPLICANT_ASSIST_TASK: Final = "applicant_assist"
 POLICY_BRIEF_TASK: Final = "policy_brief"
 POLICY_PROPOSE_TASK: Final = "policy_propose"
 
+#: The task name of the steward explanation.
+#:
+#: The steward explanation is a separate, non-proposing path: it writes no
+#: observation, no match proposal and no business row.  It rewrites the words
+#: of one recommendation and nothing else, so it is dispatched by the steward
+#: assistant rather than by :class:`~acme_city.muse.service.MuseService`.
+STEWARD_EXPLANATION_TASK: Final = "steward_explanation"
+
 #: The tasks whose runs belong to the what-if screens, never to a general run list.
 POLICY_TASKS: Final = (POLICY_BRIEF_TASK, POLICY_PROPOSE_TASK)
 
 #: The tasks whose runs no general run list may show.
-PRIVATE_TASKS: Final = (APPLICANT_ASSIST_TASK, *POLICY_TASKS)
+PRIVATE_TASKS: Final = (APPLICANT_ASSIST_TASK, STEWARD_EXPLANATION_TASK, *POLICY_TASKS)
 
 #: The tasks whose output is a proposal the City may act on.
 PROPOSING_TASKS: Final = (EXTRACTION_TASK, MATCH_TASK)
@@ -326,6 +343,19 @@ class PolicyProposeOutput(MuseOutputModel):
     reason: str = Field(max_length=200)
 
 
+class StewardExplanationOutput(MuseOutputModel):
+    """The plain words of one recommendation of the steward assistant.
+
+    The schema carries the rewritten text and nothing else.  The outcome, the
+    confidence and the evidence of a recommendation are decided by the City
+    and never travel back from a model, so a model cannot return them: an
+    output that carries an outcome or a confidence is refused by the strict
+    schema, not ignored.
+    """
+
+    explanation: str = Field(min_length=1, max_length=2000)
+
+
 #: The output model, prompt version and schema version of every task.
 TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
     EXTRACTION_TASK: {
@@ -358,6 +388,12 @@ TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
         "schema_version": POLICY_PROPOSE_SCHEMA_VERSION,
         "schema_name": POLICY_PROPOSE_SCHEMA_NAME,
     },
+    STEWARD_EXPLANATION_TASK: {
+        "output_model": "StewardExplanationOutput",
+        "prompt_version": STEWARD_EXPLANATION_PROMPT_VERSION,
+        "schema_version": STEWARD_EXPLANATION_SCHEMA_VERSION,
+        "schema_name": STEWARD_EXPLANATION_SCHEMA_NAME,
+    },
 }
 
 #: The strict output model of every task.
@@ -367,6 +403,7 @@ TASK_OUTPUT_MODELS: Final[dict[str, type[MuseOutputModel]]] = {
     APPLICANT_ASSIST_TASK: AssistantOutput,
     POLICY_BRIEF_TASK: PolicyBriefOutput,
     POLICY_PROPOSE_TASK: PolicyProposeOutput,
+    STEWARD_EXPLANATION_TASK: StewardExplanationOutput,
 }
 
 
@@ -426,6 +463,10 @@ __all__ = [
     "APPLICANT_ASSIST_SCHEMA_VERSION",
     "APPLICANT_ASSIST_TASK",
     "DEFAULT_MUSE_MODEL",
+    "STEWARD_EXPLANATION_PROMPT_VERSION",
+    "STEWARD_EXPLANATION_SCHEMA_NAME",
+    "STEWARD_EXPLANATION_SCHEMA_VERSION",
+    "STEWARD_EXPLANATION_TASK",
     "EXTRACTION_PROMPT_VERSION",
     "EXTRACTION_SCHEMA_NAME",
     "EXTRACTION_SCHEMA_VERSION",
@@ -448,6 +489,7 @@ __all__ = [
     "PolicyRuleRef",
     "PolicySection",
     "PolicySentence",
+    "StewardExplanationOutput",
     "AssistantCitation",
     "AssistantOutput",
     "AssistantParagraph",

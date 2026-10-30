@@ -60,6 +60,9 @@
       {% if rec.made_while_awake %}<span class="pill plain nowrap" data-testid="assistant-awake-note">{{ rec.awake_note }}</span>{% endif %}
     </p>
     <p data-testid="assistant-reason">{{ rec.reason }}</p>
+    {% if rec.muse_reason %}
+    <p data-testid="assistant-muse-reason"><span class="muted">In plain words:</span> {{ rec.muse_reason }}</p>
+    {% endif %}
     {% if rec.evidence %}
     <dl class="stw-facts" data-testid="assistant-evidence">
       {% for item in rec.evidence %}
@@ -80,7 +83,7 @@
       <input type="hidden" name="recommendation_id" value="{{ rec.id }}">
       <p class="field">
         <label for="assistant-reason-field">Reason <span class="optional-tag">(editable)</span></label>
-        <textarea id="assistant-reason-field" name="reason" rows="3" data-testid="assistant-reason-field">{{ rec.reason }}</textarea>
+        <textarea id="assistant-reason-field" name="reason" rows="3" data-testid="assistant-reason-field">{{ rec.reason_text }}</textarea>
       </p>
       <p>
         <button type="submit" class="button button-primary btn primary" data-testid="assistant-accept"
@@ -101,6 +104,19 @@
       <input type="hidden" name="task_kind" value="{{ case.kind }}">
       <input type="hidden" name="task_id" value="{{ case.id }}">
       <p><button type="submit" class="button button-quiet btn" data-testid="assistant-clear">Clear recommendation</button></p>
+    </form>
+    <form method="post" action="/ui/actions/steward.assist.explain" class="action-form" data-testid="assistant-explain-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="steward.assist.explain">
+      <input type="hidden" name="next" value="{{ case_path }}">
+      <input type="hidden" name="recommendation_id" value="{{ rec.id }}">
+      <p>
+        <button type="submit" class="button btn" data-testid="assistant-explain"
+                {% if not case.assistant.can_explain %}disabled aria-describedby="assistant-explain-note"{% endif %}>
+          Explain with Muse
+        </button>
+      </p>
+      <p class="muted" id="assistant-explain-note" data-testid="assistant-explain-note">{{ case.assistant.explain_note }}</p>
     </form>
     {% else %}
     <p class="muted" data-testid="assistant-empty">No recommendation has been prepared for this task yet.</p>
