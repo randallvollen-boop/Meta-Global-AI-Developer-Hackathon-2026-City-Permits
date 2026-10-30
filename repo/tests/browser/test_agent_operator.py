@@ -382,12 +382,15 @@ def test_the_operator_retries_the_failed_work(page, server, login) -> None:
     payload = answered.value.json()
     assert payload["status"] == "accepted", payload
     assert "stopped on" in payload["message"], payload
-    # The failure is on the screen with a button that works it again.
+    # The failure is on the screen with a link to recorded attempt evidence.
     page.reload(wait_until="domcontentloaded")
     failure = page.locator("[data-testid='agent-failure-row']")
     assert failure.count() == 1
     assert "archived" in failure.first.inner_text()
-    button = page.locator("[data-testid='agent-retry']")
+    page.locator("[data-testid='agent-failure-detail-link']").click()
+    assert page.locator("[data-testid='agent-run-detail']").is_visible()
+    assert "Not started" in page.locator("[data-testid='agent-run-detail-provenance']").inner_text()
+    button = page.locator("[data-testid='agent-run-detail-retry']")
     assert button.is_enabled()
     # The case is restored, so the retry can work on it.
     _set_case_status(server, application_id, "submitted")
@@ -399,7 +402,9 @@ def test_the_operator_retries_the_failed_work(page, server, login) -> None:
     assert payload["status"] == "accepted", payload
     assert payload["message"] == f"The intake agent ran again on {application_id}."
     # The work is done: the failure is gone and the case left the waiting list.
-    page.reload(wait_until="domcontentloaded")
+    page.locator("[data-testid='agent-run-detail-back']").click()
+    assert page.locator("[data-testid='agent-run-history']").is_visible()
+    page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
     assert page.locator("[data-testid='agent-failure-row']").count() == 0
     assert page.locator("[data-testid='agent-waiting-empty']").is_visible()
     assert_no_horizontal_overflow(page)
@@ -429,3 +434,17 @@ def test_the_desktop_history_and_case_links_open_their_destinations(page, server
     assert page.locator("[data-testid='agent-run-history']").is_visible()
     page.get_by_role("link", name="Back to agents").click()
     assert page.locator("h1").inner_text().strip() == "Agents"
+
+
+def test_the_desktop_status_refresh_only_reads_the_operator_status(page, server, login) -> None:
+    """Refresh replaces status fragments and never starts agent processing."""
+    login("persona_agent_operator")
+    page.goto(f"{server.base_url}/agents", wait_until="networkidle")
+    assert page.locator("[data-testid='agent-operator-summary']").is_visible()
+    with page.expect_response(
+        lambda response: response.request.method == "GET" and response.url.endswith("/agents")
+    ) as refreshed:
+        page.locator("[data-testid='agent-status-refresh']").click()
+    assert refreshed.value.status == 200
+    assert page.locator("[data-testid='agent-operator-summary']").is_visible()
+    assert page.recorded_errors == []

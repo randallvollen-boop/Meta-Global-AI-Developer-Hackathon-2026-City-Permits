@@ -2,6 +2,7 @@
 
 .opr-page-head { margin-bottom: 1rem; }
 .opr-summary .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.opr-status-actions { display: flex; justify-content: flex-end; margin: 0 0 .4rem; }
 .opr-agent-list p { display: flex; justify-content: space-between; gap: .5rem; }
 .opr-role-permissions { display: grid; gap: .75rem; }
 .opr-role-permissions form { display: grid; gap: .5rem; max-width: 44rem; }
@@ -19,6 +20,8 @@
 .opr-filters input, .opr-filters select { max-width: 100%; }
 .opr-count { margin: .4rem 0 1rem; }
 .opr-pager { display: flex; gap: 1rem; margin: 1rem 0; }
+.opr-run-links { display: flex; flex-wrap: wrap; gap: .75rem 1rem; margin: 1rem 0; }
+.opr-run-detail .issue-list { margin: 0; }
 
 /* The tables of the operator screens. */
 .opr-table { width: 100%; }

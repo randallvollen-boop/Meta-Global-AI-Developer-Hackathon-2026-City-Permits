@@ -310,6 +310,30 @@ def test_run_history_pagination_links_follow_the_next_and_previous_pages(
     assert "Page 1 of 2" in returned.text
 
 
+def test_run_detail_shows_the_recorded_attempt_and_its_provenance(
+    client: TestClient,
+) -> None:
+    """A history link opens stored run evidence without permit workspace access."""
+    simulated = client.post("/api/intake/simulate", json={"scenario": "deck-high"})
+    assert simulated.status_code == 200, simulated.text
+    application_id = simulated.json()["results"][0]["application_id"]
+    assert act(
+        client, "agent.toggle", {"agent_key": "intake", "mode": "awake"}, "/agent/intake"
+    )["status"] == "accepted"
+    assert act(
+        client, "agent.run.intake", {"application_id": application_id}, "/agent/intake"
+    )["status"] == "accepted"
+    history = client.get("/agents/runs")
+    match = re.search(r'href="/agents/runs/([^"]+)" data-testid="agent-run-detail-link"', history.text)
+    assert match, history.text
+    detail = client.get(f"/agents/runs/{match.group(1)}")
+    assert detail.status_code == 200, detail.text
+    assert 'data-testid="agent-run-detail"' in detail.text
+    assert 'data-testid="agent-run-detail-provenance"' in detail.text
+    assert "Built in logic" in detail.text
+    assert "Only a failed attempt can be retried." in detail.text
+
+
 def test_the_administrator_opens_the_agent_processing_tab(
     admin_client: TestClient,
 ) -> None:

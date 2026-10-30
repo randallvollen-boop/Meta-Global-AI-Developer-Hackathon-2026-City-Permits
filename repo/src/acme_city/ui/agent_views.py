@@ -505,6 +505,145 @@ def run_history(
     }
 
 
+def run_detail(session: Session, actor: ActorContext, run_id: str) -> dict[str, Any]:
+    """Return the stored evidence and guarded retry state of one attempt."""
+    run = session.get(agent_models.AgentRun, run_id)
+    if run is None:
+        work = session.get(agent_ops.AgentWorkQueue, run_id)
+        if work is None:
+            return {"missing": True, "run_id": run_id}
+        return _failed_work_detail(session, actor, work)
+
+    application = session.get(permit.Application, run.application_id) if run.application_id else None
+    inputs = dict(run.inputs or {})
+    runs: list[agent_models.AgentRun] = []
+    if run.application_id:
+        runs = list(
+            session.execute(
+                select(agent_models.AgentRun)
+                .where(
+                    agent_models.AgentRun.application_id == run.application_id,
+                    agent_models.AgentRun.agent_key == run.agent_key,
+                )
+                .order_by(agent_models.AgentRun.started_at, agent_models.AgentRun.id)
+            ).scalars().all()
+        )
+    position = next((index for index, row in enumerate(runs) if row.id == run.id), -1)
+    previous = runs[position - 1] if position > 0 else None
+    subsequent = runs[position + 1] if position >= 0 and position + 1 < len(runs) else None
+    work = None
+    if run.application_id:
+        work = session.execute(
+            select(agent_ops.AgentWorkQueue)
+            .where(
+                agent_ops.AgentWorkQueue.application_id == run.application_id,
+                agent_ops.AgentWorkQueue.agent_key == run.agent_key,
+            )
+            .order_by(agent_ops.AgentWorkQueue.created_at.desc())
+        ).scalars().first()
+    recorded_revision = inputs.get("revision")
+    current_revision = application.revision if application is not None else None
+    current_revision_matches = (
+        recorded_revision is None
+        or current_revision is None
+        or recorded_revision == current_revision
+    )
+    retryable = (
+        run.outcome == "failed"
+        and work is not None
+        and retry_allowed(work)
+        and current_revision_matches
+    )
+    findings = []
+    if run.application_id:
+        findings = list(
+            session.execute(
+                select(permit.ApplicationFinding)
+                .where(permit.ApplicationFinding.agent_run_id == run.id)
+                .order_by(permit.ApplicationFinding.created_at)
+            ).scalars().all()
+        )
+    model_runs = _linked_model_runs(session, [run])
+    return {
+        "missing": False,
+        "run_id": run.id,
+        "agent_key": run.agent_key,
+        "agent_label": AGENT_LABELS.get(run.agent_key, run.agent_key),
+        "application_id": run.application_id or "",
+        "reference": _number_of(session, run.application_id),
+        "recorded_revision": recorded_revision if recorded_revision is not None else "Not recorded",
+        "current_revision": current_revision if current_revision is not None else "Not available",
+        "revision_matches": current_revision_matches,
+        "triggered_by": _actor_label(session, run.triggered_by) or "Automatic policy",
+        "service_identity": _actor_label(session, run.service_identity_id) or run.service_identity_id,
+        "started_at": _iso(run.started_at),
+        "finished_at": _iso(run.finished_at) or "Still running",
+        "duration": _duration(run) or "Still running",
+        "state": run.outcome,
+        "state_label": RUN_STATE_LABELS.get(run.outcome, run.outcome),
+        "detail": run.outcome_detail or "No additional detail was recorded.",
+        "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
+        "nodes": _run_nodes(session, run.id),
+        "model_runs": model_runs,
+        "findings": [
+            {
+                "type": finding.finding_type,
+                "message": finding.message,
+                "severity": finding.severity,
+            }
+            for finding in findings
+        ],
+        "previous": _run_link_view(previous) if previous is not None else None,
+        "subsequent": _run_link_view(subsequent) if subsequent is not None else None,
+        "can_retry": retryable,
+        "can_run": _holds(session, actor, f"agent.run.{run.agent_key}"),
+        "is_awake": agent_state(session, run.agent_key)["mode"] == agent_models.AGENT_AWAKE,
+    }
+
+
+def _failed_work_detail(
+    session: Session, actor: ActorContext, work: agent_ops.AgentWorkQueue
+) -> dict[str, Any]:
+    """Return a truthful detail view when work failed before a run was created."""
+    application = session.get(permit.Application, work.application_id)
+    return {
+        "missing": False,
+        "run_id": work.id,
+        "agent_key": work.agent_key,
+        "agent_label": AGENT_LABELS.get(work.agent_key, work.agent_key),
+        "application_id": work.application_id,
+        "reference": _number_of(session, work.application_id),
+        "recorded_revision": "Not recorded",
+        "current_revision": application.revision if application is not None else "Not available",
+        "revision_matches": True,
+        "triggered_by": "Not recorded",
+        "service_identity": "Not recorded",
+        "started_at": _iso(work.claimed_at) or "Not recorded",
+        "finished_at": _iso(work.finished_at) or "Not recorded",
+        "duration": "Not recorded",
+        "state": "failed",
+        "state_label": "Failed",
+        "detail": work.note or "The work stopped before an agent run was created.",
+        "engine_label": "Not started",
+        "nodes": [],
+        "model_runs": [],
+        "findings": [],
+        "previous": None,
+        "subsequent": None,
+        "can_retry": retry_allowed(work),
+        "can_run": _holds(session, actor, f"agent.run.{work.agent_key}"),
+        "is_awake": agent_state(session, work.agent_key)["mode"] == agent_models.AGENT_AWAKE,
+    }
+
+
+def _run_link_view(run: agent_models.AgentRun) -> dict[str, str]:
+    """Return the concise label and route data for a neighboring attempt."""
+    return {
+        "run_id": run.id,
+        "label": f"{RUN_STATE_LABELS.get(run.outcome, run.outcome)} at {_iso(run.started_at)}",
+    }
+
+
 def agent_case(session: Session, actor: ActorContext, application_id: str) -> dict[str, Any]:
     """Return the operational summary of one case.
 

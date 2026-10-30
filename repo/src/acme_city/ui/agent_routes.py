@@ -19,7 +19,7 @@ from acme_city.auth.router import get_session
 from acme_city.core.errors import ValidationError
 from acme_city.ui.router import ActionContext, Outcome, _guard, page_context, render, ui_actor
 from acme_city.agents.summary import operator_summary
-from acme_city.ui.agent_views import agent_case, run_history
+from acme_city.ui.agent_views import agent_case, run_detail, run_history
 
 router = APIRouter(tags=["agents"])
 
@@ -198,6 +198,27 @@ def agent_runs(
         view=view, summary=operator_summary(session),
     )
     return render(request, "agent_runs.html", context)
+
+
+@router.get("/agents/runs/{run_id}", operation_id="ui_agent_run_detail")
+def agent_run_detail(
+    request: Request,
+    run_id: str,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+):
+    """Show the stored evidence for one agent attempt."""
+    resolved, refused = _guard(request, session, actor, "agent_runs")
+    if refused is not None:
+        return refused
+    view = run_detail(session, resolved, run_id)
+    context = page_context(
+        request, session, resolved, screen="agent_runs", title="Run detail",
+        view=view, summary=operator_summary(session),
+    )
+    if view.get("missing"):
+        return render(request, "agent_run_detail.html", context, status_code=404)
+    return render(request, "agent_run_detail.html", context)
 
 
 @router.get("/agents/cases/{application_id}", operation_id="ui_agent_case")

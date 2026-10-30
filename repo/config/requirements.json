@@ -2,7 +2,7 @@
   "contract_version": "1",
   "scope": "acme_city",
   "fictional_demo": true,
-  "note": "Requirement identifiers, titles and planned verification identifiers only. No requirement text, source path, or implementation claim is recorded here. A planned check identifier is a verification target, never proof that a behavior exists or passed.",
+  "note": "Requirement identifiers, titles and planned verification identifiers only. Operator run detail and read only status refresh remain within the existing consistent controls requirement. No requirement text, source path, or implementation claim is recorded here. A planned check identifier is a verification target, never proof that a behavior exists or passed.",
   "requirement_count": 57,
   "acceptance_test_count": 20,
   "supplementary_check_count": 8,

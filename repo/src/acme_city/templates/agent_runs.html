@@ -79,10 +79,9 @@
           <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
           <td data-label="Duration">{{ run.duration or '-' }}</td>
           <td data-label="Action">
+            <a href="/agents/runs/{{ run.run_id }}" data-testid="agent-run-detail-link">View run</a>
             {% if run.application_id %}
             <a href="/agents/cases/{{ run.application_id }}" data-testid="agent-run-case-link">View case</a>
-            {% else %}
-            <span class="muted">No case</span>
             {% endif %}
           </td>
         </tr>

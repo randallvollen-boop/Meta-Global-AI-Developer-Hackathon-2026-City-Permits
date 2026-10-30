@@ -12,10 +12,11 @@
   </div>
   <div class="actions">
     <a class="btn ghost" href="/agents">Back to agents</a>
+    <a class="btn ghost" href="/agent/{{ agent.agent_key }}" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
   </div>
 </div>
 
-<section class="panel card" aria-labelledby="agent-state-heading" data-testid="agent-state">
+<section class="panel card" aria-labelledby="agent-state-heading" data-testid="agent-state" data-status-refresh>
   <div class="card-h">
     <h2 id="agent-state-heading">{{ agent.agent_label }} state</h2>
     <span class="right">
@@ -61,7 +62,7 @@
   </div>
 </section>
 
-<section class="panel" aria-labelledby="agent-kpi-heading">
+<section class="panel" aria-labelledby="agent-kpi-heading" data-status-refresh>
   <h2 id="agent-kpi-heading">At a glance</h2>
   <div class="kpis" data-testid="agent-kpis">
     {% for kpi in agent.kpis %}
@@ -152,7 +153,7 @@
       <tbody>
         {% for row in agent.failures %}
         <tr data-testid="agent-failure-row" data-application-id="{{ row.application_id }}">
-          <td data-label="Case"><a href="/agents/cases/{{ row.application_id }}">{{ row.reference or row.application_id }}</a></td>
+          <td data-label="Case"><a href="/agents/runs/{{ row.work_id }}" data-testid="agent-failure-detail-link">{{ row.reference or row.application_id }}</a></td>
           <td data-label="State"><span class="badge badge-failed">Failed</span></td>
           <td data-label="Attempts">{{ row.attempts }}</td>
           <td data-label="What happened">{{ row.note or 'The run stopped before it finished.' }}</td>
@@ -211,7 +212,7 @@
         {% for run in agent.history %}
         <tr data-testid="agent-history-row" data-run-id="{{ run.run_id }}">
           <td data-label="When">{{ run.started_at }}</td>
-          <th scope="row" data-label="Reference">{{ run.reference or '-' }}</th>
+          <th scope="row" data-label="Reference"><a href="/agents/runs/{{ run.run_id }}" data-testid="agent-history-detail-link">{{ run.reference or '-' }}</a></th>
           <td data-label="Result"><span class="badge badge-{{ run.result }}">{{ run.result }}</span></td>
           <td data-label="Mode">{{ run.engine_label }}</td>
           <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
@@ -298,3 +299,5 @@
   {% include "components/history_panel.html" %}
 </details>
 {% endblock %}
+
+{% block extra_js %}<script src="/ui/static/agent-status.js" defer></script>{% endblock %}
