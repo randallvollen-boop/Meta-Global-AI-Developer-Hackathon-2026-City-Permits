@@ -878,7 +878,7 @@ def test_the_guide_of_each_case_kind_names_its_own_words(
                     entity_type="party",
                     source_system_id="erp_finance",
                     source_dataset_key="business_licensing_register",
-                    source_record_id="ERP-BL-00413",
+                    source_record_id="ERP-BL-00999",
                     link_status="approved",
                     decision="the license number matches",
                     decision_actor_id="persona_data_steward",
