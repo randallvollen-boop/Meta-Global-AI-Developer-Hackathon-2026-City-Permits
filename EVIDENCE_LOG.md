@@ -248,3 +248,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The City worker bundle is proven to be the operator's bundle: the managed grants of the reviewer and the seeded grants of the operator agree on the domain of every action, the reviewer opens `/agents` and `/agents/runs` while the option is on and is refused with 403 while it is off, and the reviewer is refused on the agent screen itself while the option is off.
 - The refusal of the saving action is proven to be a refusal and not a side effect of the state: the post carries a valid token and is answered 403 for the Data Steward, the Permit Reviewer and the Agent Operator.
 - No live provider call was made, and no rule text, replay fixture, acceptance test, persona or grant of the original four personas changed.
+## Permit life cycle and the AVA republish (2026-10-29)
+
+- Branch `feature/permit-lifecycle`. Commit eae39f5 added the life cycle table, `/lifecycle`, `/walkthrough`, the architecture section and the judge walkthrough document. Commit e4c7dc4 listed the future features. The full suite passed with 2094 tests at eae39f5.
+- The architecture page was rebuilt through the solution-architecture-page kit. The checker passed with 10 warnings, all older than this change. `verify_page` still flags 8 older figures. The leak scan was clean.
+- The private AVA Library article `acme-city-permits-architecture` was replaced at 2026-10-30T01:04:47Z with Randall's approval. The copy matches the build: SHA-256 `7b75d4e29ed54f2879de788553249f696f5008a4448956aef1e5ebce0c92a4d0`, 347190 bytes. The AVA service was not restarted.
+- After review lifecycle-1 (commit e2c413a, 16 moves), the AVA article was replaced again at 2026-10-30T01:30:18Z. The library copy matches the build: SHA-256 `12046a77ac70bdf14448128b0cef6b2fdc1945d0dff99e24056fd48c1e64e136`, 348059 bytes. The same page was republished to Randall's private Claude artifact at his request.
