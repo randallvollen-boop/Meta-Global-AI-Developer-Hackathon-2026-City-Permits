@@ -10,6 +10,10 @@ and it never applies a link on its own.
 
 from __future__ import annotations
 
+import os
+import socket
+import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -37,6 +41,17 @@ PAYLOAD = {
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }
+
+#: The repository root of the demonstration.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def free_port() -> int:
+    """Return a free loopback port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
 
 @pytest.fixture()
 def seeded(tmp_path: Path) -> Settings:
@@ -507,6 +522,87 @@ def test_the_worker_only_covers_the_datasets_of_the_policy(
         _add_policy(factory, source_scopes=["contractor_register"])
         _ingest(factory)
         assert len(_jobs(factory)) == 0
+    finally:
+        factory.dispose()
+
+
+# ------------------------------------------------------- the demo preparation
+
+
+def _prepare_demo(tmp_path: Path, mode: str) -> Path:
+    """Prepare one demonstration state and return its database."""
+    database = tmp_path / f"{mode}.db"
+    environment = os.environ.copy()
+    environment["ACME_SECRET_KEY"] = "automation-demo-test-secret-value"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "prepare_user_test.py"),
+            "--mode",
+            mode,
+            "--database",
+            f"sqlite:///{database}",
+            "--port",
+            str(free_port()),
+            "--record",
+            str(tmp_path / f"{mode}-process.json"),
+            "--state-file",
+            str(tmp_path / f"{mode}-state.json"),
+            "--evidence-dir",
+            str(tmp_path / f"{mode}-evidence"),
+        ],
+        cwd=REPO_ROOT,
+        env=environment,
+        text=True,
+        capture_output=True,
+        timeout=300,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return database
+
+
+def test_the_default_demo_still_proposes_three_links(tmp_path: Path) -> None:
+    """The Cedarline demonstration is unchanged: three proposals, no link."""
+    database = _prepare_demo(tmp_path, "steward-demo")
+    factory = SessionFactory(f"sqlite:///{database}")
+    try:
+        with transaction(factory) as session:
+            proposals = session.execute(select(registry.MatchProposal)).scalars().all()
+            assert len(proposals) == 3
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert applications == []
+    finally:
+        factory.dispose()
+
+
+def test_the_automation_demo_applies_one_link(tmp_path: Path) -> None:
+    """The automation demonstration holds three proposals and one applied link."""
+    database = _prepare_demo(tmp_path, "steward-automation")
+    factory = SessionFactory(f"sqlite:///{database}")
+    try:
+        with transaction(factory) as session:
+            proposals = session.execute(select(registry.MatchProposal)).scalars().all()
+            assert len(proposals) == 3
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert len(applications) == 1
+            assert applications[0].status == "applied"
+            assert applications[0].applied_by_actor_id == linking.LINKING_ACTOR_ID
+            link = session.get(registry.Crosswalk, applications[0].crosswalk_id)
+            assert link is not None
+            assert link.link_status == "approved"
+            policies = session.execute(
+                select(registry_automation.RegistryAutomationPolicy).where(
+                    registry_automation.RegistryAutomationPolicy.status == "active"
+                )
+            ).scalars().all()
+            assert len(policies) == 1
+            assert policies[0].mode == "active"
+            assert policies[0].recorded_by_actor_id == "persona_data_steward"
     finally:
         factory.dispose()
 
