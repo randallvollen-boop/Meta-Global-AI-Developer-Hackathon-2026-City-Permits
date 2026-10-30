@@ -289,3 +289,20 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The label test of the steward help was checked against a wrong element on purpose: the check failed, so it reads the element and not the page.
 - No live provider call was made. No fixture, rule text, replay fixture, acceptance test, persona or grant changed.
 - Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2341 passed in 725.99s (12:05).
+
+## 2026-10-30 - Steward autolink lane evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/integration/test_linking_worker.py` -> 19 passed: the job is taken by one statement, the late finish of an earlier attempt is refused, a job that stops is tried again and then waits for a person, a cycle is bounded, the work of a dead worker is returned, the application writes the link, the audit event and the review task in one transaction, and nothing of an undone application is left behind.
+  - `tests/integration/test_linking_undo.py` -> 10 passed: the worker applies an eligible party link, the steward takes it back with a reason, a repeated request changes nothing, a stale request is refused, the service identity may not reverse a link, and the reviewer is refused at the screen.
+  - `tests/browser/test_steward_automation_browser.py` -> 15 passed: the applied link waits in the queue, the case shows the score and the evidence, the keep and the undo controls are clicked and the result is read, and the screen fits 390 pixels and a desktop window.
+  - `tests/unit/test_migration_stw_registry_automation.py`, `tests/unit/test_linking_policy.py`, `tests/unit/test_config_autolink.py`, `tests/security/test_linking_permissions.py`, `tests/unit/test_migrations.py` and `tests/unit/test_schema.py` -> 54 passed: the migration of the registry automation, the pure policy, the settings of the lane, the grants of the service identity and the migration gates.
+  - `tests/acceptance/test_at06.py`, `tests/acceptance/test_at07.py`, `tests/acceptance/test_at16.py`, `tests/acceptance/test_at20.py`, `tests/unit/test_linking_policy.py` and `tests/security/test_linking_permissions.py` -> 45 passed: the acceptance arithmetic and the outcome snapshot are unchanged.
+  - `tests/unit/test_stylesheet_scopes.py`, `tests/regression/test_steward_selector_contract.py`, `tests/unit/test_steward_queue_views.py` and `tests/unit/test_steward_guide.py` -> 52 passed: the scoped stylesheet and the selector inventory of the steward screens.
+  - `tests/unit/test_reset.py`, `tests/unit/test_fixture_validation.py` and `tests/evaluator` -> 50 passed: the reset, the fixtures and the outcomes of D01 to D11.
+  - `tests/integration`, `tests/unit`, `tests/security`, `tests/acceptance`, `tests/regression`, `tests/scenarios`, `tests/supplementary`, `tests/api` and `tests/ui` with six workers -> 2424 passed.
+  - `tests/browser` with six workers -> 281 passed: every browser walkthrough of the city, the 390 pixel checks included.
+- The demo preparation was run twice: the Cedarline mode still holds three proposals and no applied link, and the automation mode holds the three proposals and one applied link that the service applied.
+- `scripts/check_owned_hunks.py --lane steward-autolink --base main --head HEAD` -> 77 violations, every one of them in `ui/router.py` in `_agent_run`, which the Agent Operator lane owns and which arrived with the merged operator lane. The lane changed no line of that file.
+- No live provider call was made. The worker compares with the built in deterministic logic of the City. No fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2718 passed in 829.27s (13:49).
