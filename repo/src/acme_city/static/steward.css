@@ -1,1 +1,281 @@
-/* Steward screens. Every selector starts with .stw- or body[data-screen=...]. Empty until a steward slice fills it. */
+/* Steward screens. Every selector starts with .stw- or body[data-screen=...].
+   The work queue of the Data Steward reads as one table on a desktop and as
+   one card per task on a phone.  The colours are the tokens of the shared
+   stylesheet, so the screen follows the theme of the application. */
+
+.stw-queue { margin-bottom: 16px; }
+.stw-queue-table { width: 100%; }
+.stw-summary { margin: 0 0 10px; color: var(--fg-2); font-size: .82rem; }
+.stw-row .stw-cell-task a { font-weight: 600; }
+.stw-reason {
+  display: block; margin-top: 2px; color: var(--fg-2); font-size: .8rem;
+  font-weight: 400; line-height: 1.35;
+}
+.stw-reference {
+  display: block; margin-top: 2px; color: var(--fg-3); font-size: .72rem;
+  font-family: var(--f-mono); overflow-wrap: anywhere;
+}
+.stw-cell-action { text-align: right; white-space: nowrap; }
+
+/* The compact summary of a focused case.  It names the task, the record, the
+   source, the status, the affected applications and the next step before the
+   six questions, so the steward reads the situation once. */
+.stw-case-summary { margin-bottom: 14px; }
+.stw-case-facts {
+  display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px;
+  margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--r-md); background: var(--surface);
+}
+.stw-case-facts dt { color: var(--fg-2); font-size: .78rem; }
+.stw-case-facts dd { margin: 0; font-size: .85rem; overflow-wrap: anywhere; }
+
+/* The typed comparison.  The raw value and the value the matcher normalized
+   stay apart, so a reader sees what was recorded and what was compared. */
+.stw-comparison { width: 100%; }
+.stw-comparison-label { margin: 0 0 2px; color: var(--fg-2); font-size: .78rem; }
+.stw-comparison-note { margin: 0 0 8px; font-size: .78rem; }
+.stw-value { display: block; overflow-wrap: anywhere; }
+.stw-normalized {
+  display: block; margin-top: 2px; color: var(--fg-3); font-size: .72rem;
+  font-family: var(--f-mono); overflow-wrap: anywhere;
+}
+.stw-disclosure { margin: 8px 0; }
+.stw-disclosure > summary { color: var(--fg-2); font-size: .82rem; cursor: pointer; }
+
+/* Sentence case in the steward workspace.  The shared stylesheet uppercases
+   the table headers, and the steward screens read better without it. */
+body[data-screen="steward"] .data-table thead th,
+body[data-screen="source_records"] .data-table thead th,
+body[data-screen="activity"] .data-table thead th,
+body[data-screen="masters"] .data-table thead th,
+body[data-screen="intake_queue"] .data-table thead th,
+body[data-screen="early_resolution"] .data-table thead th {
+  text-transform: none; letter-spacing: normal; font-size: .74rem;
+}
+
+/* The incoming work of the steward.  The intake queue and the early
+   resolution board use the shell of the work queue: the search, the compact
+   filter disclosure, the saved views and one row per case.  The next step
+   of a case reads before the detailed signals. */
+.stw-panel { margin-bottom: 16px; }
+.stw-cell-next { font-size: .82rem; }
+.stw-cell-signals { font-size: .78rem; }
+.stw-cell-signals .badge { margin-right: 2px; }
+.stw-cell-select { width: 1%; }
+
+/* The early resolution rows.  The step that follows reads before the
+   findings, and what the applicant must supply stands out from the
+   wording of the finding itself. */
+.stw-applicant-must {
+  margin-top: 3px; padding: 3px 6px; border-left: 2px solid var(--accent);
+  background: var(--surface-2); font-size: .78rem;
+}
+
+/* The activity list.  The readable action and the record it changed lead,
+   the note and the actor follow, and the result says plainly whether the
+   event was recorded or refused. */
+.stw-activity-table { width: 100%; }
+.stw-action { display: block; font-weight: 600; }
+.stw-target { margin-top: 2px; }
+.stw-actor { display: block; }
+.stw-cell-note { color: var(--fg-2); }
+.stw-cell-result { white-space: nowrap; }
+
+/* The source-record catalogue.  One row is one accepted record: the name a
+   person recognizes, the source, the state of its link and the one action
+   that state asks for. */
+.stw-source-table { width: 100%; }
+.stw-source-table .stw-reference { display: block; }
+.stw-state-detail { display: block; font-size: .74rem; }
+
+/* Selected values lead the profile, while record, identity and credential
+   status remain distinct labels rather than one overloaded status. */
+.stw-trusted-overview { margin-bottom: 14px; }
+.stw-trusted-overview .data-table { width: 100%; }
+.stw-status-note { margin: 10px 0 0; color: var(--fg-2); font-size: .84rem; }
+.stw-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.stw-guide > summary { cursor: pointer; font-weight: 600; }
+.stw-guide-mode { margin: 8px 0; color: var(--fg-2); font-size: .82rem; }
+.stw-guide-links a { overflow-wrap: anywhere; }
+.stw-master-tabs { margin-bottom: 12px; }
+
+/* The search and the filters of the queue. */
+.stw-search {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
+}
+.stw-search label { color: var(--fg-2); font-size: .82rem; }
+.stw-search input[type="search"] {
+  flex: 1 1 16rem; min-width: 0; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: var(--r-sm); background: var(--surface); color: var(--fg); font: inherit;
+}
+.stw-filters { margin: 0 0 12px; }
+.stw-filters > summary { color: var(--fg-2); font-size: .82rem; cursor: pointer; }
+.stw-filter-form {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 10px;
+}
+.stw-filter-form .field { display: grid; gap: 4px; }
+.stw-filter-form label { color: var(--fg-2); font-size: .78rem; }
+.stw-filter-form select {
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--fg); font: inherit;
+}
+.stw-filter-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* On a phone one task is one card: the task, the record, the reason, the
+   source, the status and the action.  The column heads become the labels of
+   the card, so nothing is left unnamed. */
+@media (max-width: 760px) {
+  /* One comparison field at a time: the field, then the source value, then
+     the master value, each with its own label. */
+  body[data-screen="steward"] .stw-comparison thead { display: none; }
+  body[data-screen="steward"] .stw-comparison,
+  body[data-screen="steward"] .stw-comparison tbody,
+  body[data-screen="steward"] .stw-comparison tr,
+  body[data-screen="steward"] .stw-comparison th,
+  body[data-screen="steward"] .stw-comparison td { display: block; width: 100%; }
+  body[data-screen="steward"] .stw-comparison tr {
+    margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="steward"] .stw-cell-field { font-weight: 600; }
+  body[data-screen="steward"] .stw-cell-source::before,
+  body[data-screen="steward"] .stw-cell-master::before {
+    content: attr(data-label); display: block; color: var(--fg-3);
+    font-size: .72rem;
+  }
+  body[data-screen="steward"] .stw-cell-result { margin-top: 4px; }
+  body[data-screen="steward"] .stw-case-facts { grid-template-columns: 1fr; gap: 1px; }
+  body[data-screen="steward"] .stw-case-facts dt { margin-top: 7px; font-size: .72rem; }
+  body[data-screen="steward"] .stw-case-facts dd { font-size: .84rem; }
+  body[data-screen="steward"] .stw-queue-table thead { display: none; }
+  body[data-screen="steward"] .stw-queue-table,
+  body[data-screen="steward"] .stw-queue-table tbody,
+  body[data-screen="steward"] .stw-queue-table tr,
+  body[data-screen="steward"] .stw-queue-table th,
+  body[data-screen="steward"] .stw-queue-table td { display: block; width: 100%; }
+  body[data-screen="steward"] .stw-row {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="steward"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="steward"] .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  body[data-screen="steward"] .stw-cell-task { margin-bottom: 2px; font-size: .92rem; }
+  body[data-screen="steward"] .stw-cell-task::before { content: none; }
+  body[data-screen="steward"] .stw-cell-record::before { content: none; }
+  body[data-screen="steward"] .stw-cell-action { margin-top: 8px; text-align: left; }
+  body[data-screen="steward"] .stw-cell-action::before { content: none; }
+  body[data-screen="steward"] .stw-filter-form { display: grid; gap: 8px; }
+  body[data-screen="steward"] .stw-filter-form select { width: 100%; }
+
+  /* The catalogue of the source records reads as one card per record. */
+  body[data-screen="source_records"] .stw-source-table thead { display: none; }
+  body[data-screen="source_records"] .stw-source-table,
+  body[data-screen="source_records"] .stw-source-table tbody,
+  body[data-screen="source_records"] .stw-source-table tr,
+  body[data-screen="source_records"] .stw-source-table th,
+  body[data-screen="source_records"] .stw-source-table td { display: block; width: 100%; }
+  body[data-screen="source_records"] .stw-source-table tr {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-record::before { content: none; }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-action { margin-top: 8px; }
+  body[data-screen="source_records"] .stw-source-table .stw-cell-action::before { content: none; }
+  body[data-screen="source_records"] .stw-search { display: grid; gap: 8px; }
+  body[data-screen="source_records"] .stw-search select,
+  body[data-screen="source_records"] .stw-search input[type="search"] { width: 100%; }
+
+  /* The selected values read as one card per field on every screen that
+     shows them: the master record of the steward and the record of the
+     applicant the reviewer opens. */
+  .stw-trusted-overview .data-table thead { display: none; }
+  .stw-trusted-overview .data-table,
+  .stw-trusted-overview .data-table tbody,
+  .stw-trusted-overview .data-table tr,
+  .stw-trusted-overview .data-table th,
+  .stw-trusted-overview .data-table td { display: block; width: 100%; }
+  .stw-trusted-overview .data-table tr {
+    margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  .stw-trusted-overview .data-table th,
+  .stw-trusted-overview .data-table td {
+    padding: 2px 0; border: 0; overflow-wrap: anywhere;
+  }
+  body[data-screen="masters"] .stw-master-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  body[data-screen="masters"] .stw-master-tabs a { min-width: 0; overflow-wrap: anywhere; }
+
+  /* The incoming work reads as one card per case on a phone: the case, the
+     type, the state, the priority, the owner, the next step, the signals and
+     the age, each with its own label. */
+  body[data-screen="intake_queue"] .stw-queue-table thead,
+  body[data-screen="early_resolution"] .stw-queue-table thead { display: none; }
+  body[data-screen="intake_queue"] .stw-queue-table,
+  body[data-screen="intake_queue"] .stw-queue-table tbody,
+  body[data-screen="intake_queue"] .stw-queue-table tr,
+  body[data-screen="intake_queue"] .stw-queue-table th,
+  body[data-screen="intake_queue"] .stw-queue-table td,
+  body[data-screen="early_resolution"] .stw-queue-table,
+  body[data-screen="early_resolution"] .stw-queue-table tbody,
+  body[data-screen="early_resolution"] .stw-queue-table tr,
+  body[data-screen="early_resolution"] .stw-queue-table th,
+  body[data-screen="early_resolution"] .stw-queue-table td { display: block; width: 100%; }
+  body[data-screen="intake_queue"] .stw-row,
+  body[data-screen="early_resolution"] .stw-row {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="intake_queue"] .stw-cell,
+  body[data-screen="early_resolution"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="intake_queue"] .stw-cell::before,
+  body[data-screen="early_resolution"] .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  body[data-screen="intake_queue"] .stw-cell-record::before,
+  body[data-screen="early_resolution"] .stw-cell-record::before { content: none; }
+  body[data-screen="intake_queue"] .stw-cell-select { width: auto; }
+  body[data-screen="intake_queue"] .stw-cell-select::before { content: none; }
+  body[data-screen="intake_queue"] .stw-search { display: grid; gap: 8px; }
+  body[data-screen="intake_queue"] .stw-search input[type="search"] { width: 100%; }
+  body[data-screen="intake_queue"] .stw-filter-form { display: grid; gap: 8px; }
+  body[data-screen="intake_queue"] .stw-filter-form select { width: 100%; }
+
+  /* The activity list reads as one card per event: the action, the record,
+     the result, the actor with the time, and the note. */
+  body[data-screen="activity"] .stw-activity-table thead { display: none; }
+  body[data-screen="activity"] .stw-activity-table,
+  body[data-screen="activity"] .stw-activity-table tbody,
+  body[data-screen="activity"] .stw-activity-table th,
+  body[data-screen="activity"] .stw-activity-table td { display: block; width: 100%; }
+  body[data-screen="activity"] .stw-activity-table tr {
+    display: flex; flex-direction: column;
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="activity"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .84rem;
+  }
+  body[data-screen="activity"] .stw-cell-change { order: 1; }
+  body[data-screen="activity"] .stw-cell-result { order: 2; margin: 4px 0; }
+  body[data-screen="activity"] .stw-cell-actor { order: 3; }
+  body[data-screen="activity"] .stw-cell-note { order: 4; margin-top: 4px; }
+  body[data-screen="activity"] .stw-target::before {
+    content: attr(data-label) ": "; color: var(--fg-3); font-size: .72rem;
+    font-family: var(--f-body);
+  }
+}

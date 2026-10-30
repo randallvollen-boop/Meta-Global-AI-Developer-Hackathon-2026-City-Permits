@@ -36,7 +36,12 @@ PRIMARY: dict[str, tuple[str, ...]] = {
 }
 
 #: The agent screens under More tools, by actor id.
-SECONDARY: dict[str, tuple[str, ...]] = {}
+#:
+#: None: OPR-3 moved the wake and run grants to the Agent Operator alone, so
+#: no other persona opens an agent screen any more.
+SECONDARY: dict[str, tuple[str, ...]] = {
+    "persona_data_steward": (),
+}
 
 #: Screens a persona may open for an authorized action but which are not menu
 #: destinations.  The intake queue is one of them: the Agent Operator holds

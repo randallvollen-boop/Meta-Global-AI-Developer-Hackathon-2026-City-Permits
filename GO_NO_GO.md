@@ -56,3 +56,22 @@ The old statements that no remote, commit or deployment existed are historical a
 | Commit and push | GO / controlled | The repository and remote exist. New lane work is committed in isolated branches; pushes and integration remain batched |
 | Deployment | GO / live and manual | The Render web service is live per the coordination brief. Auto-deploy is off, so a push alone does not change the hosted demo |
 | Submission | HOLD | Randall submits the entry. The draft and final entry remain separate from the live demo deployment |
+
+## 2026-10-29 steward queue and guide lane status
+
+| Item | Decision | Note |
+| --- | --- | --- |
+| Incoming work and early resolution | GO / built | STW-12 and ADB-16 are committed. The steward reads the intake queue and the early resolution board; the Agent Operator wakes the agent and runs it |
+| Saved guide on the steward screens | GO / built | STW-15 is committed. Seven guide screens answer from saved words and never reach a model |
+| Steward help text | GO / built | STW-31A is committed. Every quoted label is found on its rendered page |
+| Phone, keyboard and regression evidence | GO / built | STW-32 is committed. The steward screens fit 390 pixels and work with the keyboard alone |
+| Automatic review and undo of applied links | PENDING | The steps run only when STW-24 of the steward autolink lane has merged. They are not in this branch and no evidence of them is claimed |
+
+## 2026-10-29 steward queue and guide lane, review 4 status
+
+| Item | Decision | Note |
+| --- | --- | --- |
+| The controls of the new screens | GO / built | The Resolve button, the Search button, a tab, the help link of both new screens and the guide links of both new screens are clicked in a browser test, and the landing page of each is read |
+| The words of the early resolution board | GO / built | The row names the finding in sentence case with its severity and the duty of the applicant, and the membership and the order of the board are compared as a list |
+| The steward help copy | GO / built | The steward overlay holds no "you" and no "your". The shared `config/help_content.json` is unchanged, so the two files do not read alike by accident |
+| The labels of the steward help | GO / built | Every quoted label is checked in the element that holds it and not anywhere on the page |

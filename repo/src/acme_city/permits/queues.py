@@ -114,6 +114,21 @@ INTAKE_SORTS: tuple[tuple[str, str], ...] = (
 #: The signal a case carries when the server holds no fact for it.
 SIGNAL_NONE = "none"
 
+#: The words of a severity, as a person reads them.
+SEVERITY_LABELS = {"block": "Blocking", "review": "Needs a person"}
+
+
+def _sentence_case(value: str) -> str:
+    """Return the words of a recorded value in sentence case.
+
+    The recorded value stays as it is in the database.  Only the words a
+    person reads change, so a group of cases reads as a heading.
+    """
+    text = str(value or "").replace("_", " ").strip()
+    if not text:
+        return ""
+    return text[0].upper() + text[1:]
+
 
 def _age_days(since: datetime | None, now: datetime) -> int | None:
     """Return the age of a record in whole days."""
@@ -612,6 +627,14 @@ def early_resolution(session: Session, actor: ActorContext) -> dict[str, Any]:
         ).append(
             {
                 **row,
+                # The words a person reads for the finding of the case.  The
+                # recorded type and severity stay as they are.
+                "finding_label": _sentence_case(
+                    primary.finding_type if primary is not None else ""
+                ),
+                "severity_label": SEVERITY_LABELS.get(
+                    primary.severity if primary is not None else "", ""
+                ),
                 "current_findings": [
                     {
                         "finding_id": finding.id,
@@ -645,7 +668,7 @@ def early_resolution(session: Session, actor: ActorContext) -> dict[str, Any]:
         groups.append(
             {
                 "finding_type": key,
-                "label": key.replace("_", " "),
+                "label": _sentence_case(key),
                 "count": len(members),
                 "cases": members,
                 "top_findings": [

@@ -24,6 +24,7 @@ navigation uses.  ``HANDLERS`` holds the lane's interface actions, which
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -35,7 +36,13 @@ from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.persistence.models import registry
 from acme_city.permits import queues
-from acme_city.ui import agent_views, steward_views, view_models
+from acme_city.ui import (
+    agent_views,
+    steward_guide,
+    steward_queue_views,
+    steward_views,
+    view_models,
+)
 from acme_city.ui.router import (
     ActionContext,
     Outcome,
@@ -43,6 +50,7 @@ from acme_city.ui.router import (
     error_response,
     page_context,
     render,
+    safe_next,
     ui_actor,
 )
 
@@ -69,6 +77,23 @@ def _may_read_source(session: Session, actor: ActorContext) -> bool:
     return any(
         view_models.holds_grant(session, actor, permission, domain)
         for permission, domain in steward_views.SOURCE_GRANTS
+    )
+
+
+#: The guide screen of each kind of focused case.  A kind with no saved words
+#: of its own reads the plain "no guidance" answer.
+CASE_GUIDE_SCREENS = {
+    "link": "match_case",
+    "parcel": "parcel_case",
+    "case": "source_correction",
+    "linked": "match_case",
+}
+
+
+def _guide(screen: str, *, evidence: tuple[str, ...] = ()) -> Any:
+    """Build saved guidance from facts the screen already shows."""
+    return steward_guide.build(
+        steward_guide.GuideContext(screen=screen, evidence=evidence)
     )
 
 
@@ -148,6 +173,7 @@ def _collections_page(
         collection_path=base_path if tab == "people" else "/masters",
         summary=summary,
         help_screen="masters" if may_masters else "applicants",
+        guide=_guide("master_collection"),
         quiet_feedback=True,
     )
     return render(request, "masters.html", context)
@@ -237,6 +263,13 @@ def _profile_page(
     if view not in ("overview", "sources", "history"):
         view = "overview"
     base = f"/{screen}/{party_id}"
+    guide = _guide(
+        "record_profile", evidence=tuple(item["label"] for item in detail["evidence"]),
+    )
+    if view != "overview":
+        # The identity and the related records are on the overview only, so the
+        # guide holds no link to them on the other views.
+        guide = replace(guide, links=())
     context = page_context(
         request,
         session,
@@ -256,6 +289,7 @@ def _profile_page(
         model_runs=[],
         history=profile["history"],
         actions=actions,
+        guide=guide,
         denied_action_explanations=view_models.denied_action_explanations(actions),
         back_href="/masters" if nav_screen == "masters" else "/applicants",
         may_read_source=_may_read_source(session, resolved),
@@ -295,12 +329,33 @@ def ui_steward_review(
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     filter: str = "needs_review",
+    q: str = "",
+    record_type: str = "",
+    source: str = "",
+    page: int = 1,
 ) -> Any:
-    """Show Data issues, the steward's queue, with the real count behind each filter."""
+    """Show the work queue: the search, the filters, the views and the rows.
+
+    Every value arrives in the address of the request, so a steward can
+    bookmark a queue, send it to a colleague and come back to it from a
+    case with the same search, the same filters and the same page.
+    """
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    queue = steward_views.data_issues(session, resolved, filter_key=filter)
+    return_path = str(request.url.path)
+    if request.url.query:
+        return_path = f"{return_path}?{request.url.query}"
+    queue = steward_views.data_issues(
+        session,
+        resolved,
+        filter_key=filter,
+        query=q,
+        record_type=record_type,
+        source=source,
+        page=page,
+        return_path=return_path,
+    )
     # The parcel decisions are made inside each focused case; the queue page
     # keeps the generic "work from a source record" forms.
     actions = _role_reasons(
@@ -321,6 +376,7 @@ def ui_steward_review(
         confirmation=confirmation,
         queue=queue,
         actions=actions,
+        guide=_guide("queue"),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         quiet_feedback=True,
     )
@@ -334,12 +390,19 @@ def ui_steward_case(
     request: Request,
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
+    back: str = "",
+    candidate: str = "",
 ) -> Any:
-    """Show one focused case: the problem, why it matters, the comparison, the evidence, the preview and the result."""
+    """Show one focused case: the problem, why it matters, the comparison, the evidence, the preview and the result.
+
+    The ``candidate`` value names the master record the steward chose in the
+    chooser of the case.  Choosing a record only changes what the page shows;
+    it never changes a link.
+    """
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    case = steward_views.focused_case(session, resolved, kind, item_id)
+    case = steward_views.focused_case(session, resolved, kind, item_id, selected_id=candidate)
     if not case:
         return error_response(
             request,
@@ -355,6 +418,11 @@ def ui_steward_case(
     confirmation = ""
     if feedback and feedback.get("outcome") == "accepted" and feedback.get("target_id") in case["target_ids"]:
         confirmation = str(feedback.get("reason") or "")
+    # The case keeps the address of the queue it was opened from, so an action
+    # that returns to the case returns to the same search, filters and page.
+    case_path = str(request.url.path)
+    if request.url.query:
+        case_path = f"{case_path}?{request.url.query}"
     context = page_context(
         request,
         session,
@@ -362,8 +430,13 @@ def ui_steward_case(
         screen="steward",
         title=f"Data issue: {case['title']}",
         case=case,
-        case_path=request.url.path,
+        guide=_guide(
+            CASE_GUIDE_SCREENS.get(kind, kind),
+            evidence=tuple(case["evidence"]),
+        ),
+        case_path=case_path,
         confirmation=confirmation,
+        back_href=safe_next(back, "/steward"),
         help_screen="steward",
         quiet_feedback=True,
     )
@@ -378,12 +451,19 @@ def ui_source_records(
     system: str = "",
     q: str = "",
     page: int = 1,
+    link_state: str = "",
 ) -> Any:
-    """Show the source-record catalogue."""
+    """Show the source-record catalogue.
+
+    The search, the source filter and the link state filter are read from the
+    address of the request, so the catalogue can be bookmarked and shared.
+    """
     resolved, refused = _guard(request, session, actor, "source_records")
     if refused is not None:
         return refused
-    catalogue = steward_views.source_records(session, resolved, system=system, query=q, page=page)
+    catalogue = steward_views.source_records(
+        session, resolved, system=system, query=q, page=page, link_state=link_state
+    )
     context = page_context(
         request,
         session,
@@ -392,6 +472,7 @@ def ui_source_records(
         title="Source records",
         catalogue=catalogue,
         help_screen="source_records",
+        guide=_guide("source_record"),
         quiet_feedback=True,
     )
     return render(request, "source_records.html", context)
@@ -416,6 +497,7 @@ def ui_activity(
         title="Activity",
         activity=steward_views.activity(session, resolved, page=page),
         help_screen="activity",
+        guide=_guide("activity"),
         quiet_feedback=True,
     )
     return render(request, "activity.html", context)
@@ -449,6 +531,10 @@ def ui_intake_queue(
         owner=owner,
         sort=sort,
     )
+    # The next step of every case is a short summary of the state the server
+    # recorded, so a reader sees what happens next before the detailed signals.
+    for row in queue["rows"]:
+        row["next_step"] = steward_queue_views.intake_next_step(row)
     context = page_context(
         request,
         session,
@@ -457,6 +543,7 @@ def ui_intake_queue(
         title="Intake queue",
         queue=queue,
         agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
+        guide=_guide("incoming"),
         # The processing control is a gate of two grants: the execution grant
         # that names the action and the run grant of the intake agent.  The
         # person who may run the agent is the person who may process the
@@ -483,6 +570,11 @@ def ui_early_resolution(
     if refused is not None:
         return refused
     board = queues.early_resolution(session, resolved)
+    # Every case of the board names the step that follows, so a reader knows
+    # what the board is waiting for before the findings are read.
+    for group in board["groups"]:
+        for case in group["cases"]:
+            case["next_step"] = steward_queue_views.intake_next_step(case)
     context = page_context(
         request,
         session,
@@ -490,6 +582,7 @@ def ui_early_resolution(
         screen="early_resolution",
         title="Early resolution",
         board=board,
+        guide=_guide("early_resolution"),
     )
     return render(request, "early_resolution.html", context)
 

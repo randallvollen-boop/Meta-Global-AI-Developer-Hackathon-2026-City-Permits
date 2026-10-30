@@ -166,7 +166,9 @@ def test_staff_persona_switch_keeps_its_destination(client: TestClient) -> None:
     )
     assert done.headers["location"] == "/queue/intake"
     bare = client.post("/ui/actor", data={"actor_id": "persona_data_steward"}, follow_redirects=False)
-    assert bare.headers["location"] == "/queue"
+    # Changed deliberately (steward restyle, STW-2): the Data Steward lands on
+    # its own work queue when the switch names no destination.
+    assert bare.headers["location"] == "/steward"
 
 
 def test_the_old_in_app_applicant_landing_redirects_to_the_city_site(client: TestClient) -> None:

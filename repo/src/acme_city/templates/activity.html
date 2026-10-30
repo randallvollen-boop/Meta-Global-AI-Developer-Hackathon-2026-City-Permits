@@ -1,33 +1,42 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
 {% import "components/steward.html" as st with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
   <div>
     <h1>Activity</h1>
-    <p class="sub">Decisions and changes recorded for the records you steward. The administrator's audit log is a separate screen.</p>
+    <p class="sub">Recorded stewardship decisions and changes.</p>
   </div>
   <div class="actions">{{ ui.help_button('activity') }}</div>
 </div>
 
+{{ guide_ui.panel(guide) }}
+
 <section class="panel" aria-labelledby="activity-heading">
   <h2 id="activity-heading" class="visually-hidden">Recorded decisions and changes</h2>
-  <table class="data-table" data-testid="activity-table">
+  <table class="data-table stw-activity-table" data-testid="activity-table">
     <caption class="visually-hidden">Recorded steward decisions and changes, newest first</caption>
-    <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">What</th><th scope="col">Record</th><th scope="col">Note</th><th scope="col">Result</th></tr></thead>
+    <thead><tr><th scope="col">Change and record</th><th scope="col">Note</th><th scope="col">Actor and time</th><th scope="col">Result</th></tr></thead>
     <tbody>
       {% for row in activity.rows %}
       <tr data-testid="activity-row">
-        <td class="nowrap">{{ ui_time(row.when) }}</td>
-        <td>{{ row.who }}</td>
-        <td>{% if row.href %}<a href="{{ row.href }}">{{ row.what }}</a>{% else %}{{ row.what }}{% endif %}</td>
-        <td class="mono">{{ row.target }}</td>
-        <td>{{ row.note }}</td>
-        <td class="nowrap"><span class="pill {{ 'ok' if row.outcome_key == 'accepted' else 'bad' }}">{{ row.outcome }}</span></td>
+        <td class="stw-cell stw-cell-change" data-label="Change and record">
+          <span class="stw-action" data-testid="activity-action">{{ row.what }}</span>
+          {% if row.target %}
+          <span class="stw-reference stw-target" data-label="Record" data-testid="activity-target">{% if row.href %}<a href="{{ row.href }}">{{ row.target }}</a>{% else %}{{ row.target }}{% endif %}</span>
+          {% endif %}
+        </td>
+        <td class="stw-cell stw-cell-note" data-label="Note" data-testid="activity-note">{{ row.note }}</td>
+        <td class="stw-cell stw-cell-actor" data-label="Actor and time">
+          <span class="stw-actor">{{ row.who }}</span>
+          <span class="stw-reference">{{ ui_time(row.when) }}</span>
+        </td>
+        <td class="stw-cell stw-cell-result" data-label="Result"><span class="pill {{ row.outcome_tone }} nowrap" data-testid="activity-result">{{ row.outcome }}</span></td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted" data-testid="activity-empty">No steward decision or change has been recorded yet.</td></tr>
+      <tr><td colspan="4" class="muted" data-testid="activity-empty">No steward decision or change has been recorded yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

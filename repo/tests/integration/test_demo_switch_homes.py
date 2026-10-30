@@ -20,7 +20,8 @@ from acme_city.ui.router import router as ui_router
 #: persona, expected home path, expected H1 of that home
 HOMES = (
     ("persona_applicant", "/city/", "Welcome to the City of Acme"),
-    ("persona_data_steward", "/queue", "Work queue"),
+    # The Data Steward works in its own queue, which is its home (STW-2).
+    ("persona_data_steward", "/steward", "Data issues"),
     ("persona_permit_reviewer", "/queue", "Work queue"),
     ("persona_city_administrator", "/overview", "Planning overview"),
     ("persona_agent_operator", "/agents", "Agents"),

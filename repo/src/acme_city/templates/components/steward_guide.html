@@ -1,0 +1,9 @@
+{% macro panel(guide) -%}
+<details class="stw-guide" data-testid="steward-guide">
+  <summary>Muse guide</summary>
+  <p class="stw-guide-mode" data-testid="steward-guide-mode">{{ guide.mode_label }}</p>
+  <p data-testid="steward-guide-answer">{{ guide.explanation }}</p>
+  {% if guide.evidence_recorded %}<p class="muted"><b>Recorded evidence:</b> {{ guide.evidence|join('; ') }}</p>{% endif %}
+  {% if guide.links %}<p class="stw-guide-links">{% for item in guide.links %}<a href="{{ item.href }}">{{ item.label }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+</details>
+{%- endmacro %}

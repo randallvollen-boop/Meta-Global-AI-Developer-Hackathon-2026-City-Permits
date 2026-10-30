@@ -68,7 +68,8 @@ def test_toast_and_demo_control_never_share_a_corner(browser, server: BrowserSer
         try:
             page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
             page.locator('button[data-persona="persona_data_steward"]').click()
-            page.wait_for_url(f"{server.base_url}/queue")
+            # The Data Steward lands on its own work queue (STW-2).
+            page.wait_for_url(f"{server.base_url}/steward")
             page.evaluate(
                 "() => { const t = document.getElementById('toast');"
                 " t.textContent = 'Saved. A message that is long enough to wrap on a narrow screen.';"
