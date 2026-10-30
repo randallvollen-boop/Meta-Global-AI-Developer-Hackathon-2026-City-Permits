@@ -148,6 +148,17 @@ def target_reference(session: Session, target_type: str, target_id: str) -> str:
     return application_references(session, {target_id}).get(target_id, "")
 
 
+def readable_references(session: Session, references: list[str]) -> list[str]:
+    """Return each reference of an event, a case named by its reference number.
+
+    An event's references are internal identifiers.  A case among them is
+    shown as ``SYN-APP-001``, as everywhere else; any other record keeps its
+    identifier.
+    """
+    numbers = application_references(session, set(references))
+    return [numbers.get(reference, reference) for reference in references]
+
+
 def audit_log(
     session: Session,
     *,
@@ -280,5 +291,6 @@ __all__ = [
     "audit_log",
     "event_detail",
     "identity_sets",
+    "readable_references",
     "target_reference",
 ]
