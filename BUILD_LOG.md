@@ -390,3 +390,11 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The navigation expectations lost the `ORDER` table, which repeated `PRIMARY` word for word: a persona module that lists no screen of its own now takes the order of its agent screens as given, which is the order the operator's navigation renders. The Agents home and the run history carry the 390 pixel overflow and coverage checks.
 - No rule text, replay fixture, acceptance test, persona, grant or live Muse setting changed. Nothing pushed, merged or published.
 
+## 2026-10-29 — Agent Operator lane, OPR-9 the durable work queue (`lane/agent-operator`)
+
+- One table, `agent_work_queue` (migration `opr_work_queue`): one row per piece of work, with the work identity (`work_key`), a status column (`pending`, `running`, `completed`, `failed`, `held`) and an attempt count. The slice was built in the simplified form the lead asked for: no lease and no fencing token. The row is the authority, and a worker takes the work by moving it from `pending` to `running` in one statement, so two workers never hold the same work and only the worker that holds it may finish it.
+- `agents/runtime.py` is the one place where agent work is recorded: enqueue (idempotent on the work key), the waiting work, claim, finish and the queue counts. `agents/eligibility.py` is the one query that decides what may enter the queue on its own: a case that still waits for the intake agent, carries no controlled scenario and was never worked. A person may still run an agent on any named case; this query only governs the work that starts on its own.
+- The operator home reads the same queue: the summary reports the waiting work and the work that waits for another attempt. The Agents screen is unchanged in this slice.
+- The controlled data is never eligible: the D01-D11 cases carry a scenario id, the cases the acceptance tests work on are those same controlled cases, and the DF-1 and DF-2 fence scenarios are data the rule evaluator reads, never a case of the queue. A test enumerates all three groups.
+- No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. Nothing pushed, merged or published.
+
