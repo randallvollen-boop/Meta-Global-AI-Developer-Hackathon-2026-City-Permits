@@ -19,6 +19,7 @@ from acme_city.persistence.models import (
     registry,
     registry_automation,
     source,
+    steward_recommendation,
     support,
 )
 
@@ -37,5 +38,6 @@ __all__ = [
     "registry",
     "registry_automation",
     "source",
+    "steward_recommendation",
     "support",
 ]

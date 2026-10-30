@@ -147,6 +147,7 @@ REQUIRED_OBJECT_GROUPS: dict[str, tuple[str, ...]] = {
 LANE_SCHEMA_GROUP_FILES: tuple[str, ...] = (
     "schema_groups_operator.py",
     "schema_groups_autolink.py",
+    "schema_groups_steward_assist.py",
 )
 
 

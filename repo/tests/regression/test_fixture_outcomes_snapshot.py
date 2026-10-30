@@ -56,6 +56,7 @@ SUPPORT = Path(__file__).resolve().parents[1] / "support"
 LANE_SCHEMA_GROUP_FILES: tuple[str, ...] = (
     "schema_groups_operator.py",
     "schema_groups_autolink.py",
+    "schema_groups_steward_assist.py",
 )
 
 #: The actor, role and grant tables, which lanes change on purpose.
