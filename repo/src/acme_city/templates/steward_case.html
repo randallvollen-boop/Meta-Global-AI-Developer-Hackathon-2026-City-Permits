@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 {% import "components/action_form.html" as forms %}
 {% import "components/steward_comparison.html" as comparisons with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 {% set c = case %}
@@ -26,6 +27,8 @@
     <dd data-testid="case-summary-next">{{ c.summary.next_step }}</dd>
   </dl>
 </section>
+
+{{ guide_ui.panel(guide) }}
 
 {% if confirmation %}
 <p class="case-confirmation" role="status" data-testid="case-confirmation">{{ confirmation }}</p>

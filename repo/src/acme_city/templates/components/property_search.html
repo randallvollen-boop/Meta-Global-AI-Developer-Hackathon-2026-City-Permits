@@ -1,8 +1,8 @@
 <form method="get" action="/property" class="find-property" data-testid="find-property" role="search">
   <p class="field">
-    <label for="find-property-q">Find a property (address)</label>
+    <label for="find-property-q">Find a property by address</label>
     <input id="find-property-q" name="q" value="{{ query or '' }}" autocomplete="off" list="find-property-suggest" data-suggest-url="/property/suggest" placeholder="for example 412 Mapel Rdg Dr">
     <datalist id="find-property-suggest"></datalist>
   </p>
-  <p><button type="submit" class="btn sm primary">Find a property</button> <a href="/map" class="btn sm">Open the town map</a></p>
+  <p><button type="submit" class="btn sm primary">Find a property</button> <a href="/map" class="btn sm">Open the property map</a></p>
 </form>

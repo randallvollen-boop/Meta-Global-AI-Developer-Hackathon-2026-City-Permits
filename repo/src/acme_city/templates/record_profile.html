@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 {% import "components/steward.html" as st with context %}
 {% import "components/action_form.html" as forms %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 {% set p = profile %}
@@ -21,12 +22,43 @@
 </div>
 
 {{ st.source_summary(summary) }}
+{{ guide_ui.panel(guide) }}
 
 <nav class="tabs profile-tabs" aria-label="Views of this record" data-testid="profile-tabs">
   {% for item in profile_tabs %}<a href="{{ item.href }}" data-testid="profile-tab" data-view="{{ item.key }}"{% if item.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ item.label }}</a>{% endfor %}
 </nav>
 
 {% if profile_view == 'overview' %}
+<section class="panel stw-trusted-overview" aria-labelledby="trusted-values-heading" data-testid="trusted-values-overview">
+  <h2 id="trusted-values-heading">Selected values</h2>
+  <p class="muted">These values were selected by the recorded authority policy. They are not a decision about a permit, payment, or source record.</p>
+  {% if p.trusted_values %}
+  <table class="data-table" data-testid="trusted-values-table">
+    <caption class="visually-hidden">Values selected by the authority policy</caption>
+    <thead><tr><th scope="col">Field</th><th scope="col">Selected value</th><th scope="col">Source</th><th scope="col">Selection state</th></tr></thead>
+    <tbody>
+      {% for field in p.trusted_values %}
+      <tr><th scope="row">{{ field.attribute_path|pretty }}</th><td>{{ field.value }}</td><td>{{ field.source_system_id|pretty or 'Not declared' }}</td><td>{{ field.state|pretty }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No selected value is available. Review the source records before making a decision.</p>
+  {% endif %}
+  {% if p.detail.trusted_disagreements %}
+  <p class="stw-status-note" data-testid="trusted-disagreement-status">There {{ 'is' if p.detail.trusted_disagreements|length == 1 else 'are' }} {{ p.detail.trusted_disagreements|length }} unresolved value disagreement{{ '' if p.detail.trusted_disagreements|length == 1 else 's' }}. See Sources for the recorded details.</p>
+  {% endif %}
+</section>
+
+<section class="panel stw-status-overview" aria-labelledby="status-overview-heading" data-testid="profile-status-overview">
+  <h2 id="status-overview-heading">Status at a glance</h2>
+  <dl class="pair-list">
+    <dt>Identity status</dt><dd data-testid="identity-status">{{ p.identity_status }}</dd>
+    <dt>Record status</dt><dd>{{ p.record_status }}</dd>
+    <dt>Credential status</dt><dd data-testid="credential-status-summary">{{ p.credential_status }}</dd>
+  </dl>
+</section>
+
 <section class="panel" aria-labelledby="identity-heading" data-testid="profile-overview">
   <h2 id="identity-heading">Identity</h2>
   <dl class="pair-list">
@@ -143,14 +175,14 @@
       {% endfor %}
     </tbody>
   </table>
-  {% set trusted = p.detail.trusted_fields|selectattr("value", "ne", none)|list %}
-  {% if trusted %}
-  <h3>Values the policy trusts</h3>
+  {% if p.trusted_values %}
+  <h3>How values were selected</h3>
+  <p class="muted">The overview shows the selected values first. This table keeps their source and state beside the source links.</p>
   <table class="data-table" data-testid="trusted-view">
     <caption class="visually-hidden">Values selected by the authority policy</caption>
     <thead><tr><th scope="col">Field</th><th scope="col">Value</th><th scope="col">Source</th><th scope="col">State</th></tr></thead>
     <tbody>
-      {% for field in trusted %}
+      {% for field in p.trusted_values %}
       <tr><th scope="row">{{ field.attribute_path|pretty }}</th><td>{{ field.value }}</td><td>{{ field.source_system_id|pretty or 'Not declared' }}</td><td>{{ field.state|pretty }}</td></tr>
       {% endfor %}
     </tbody>

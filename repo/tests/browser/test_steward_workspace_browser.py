@@ -247,3 +247,60 @@ def test_the_source_catalogue_names_the_record_and_its_action(
         '[data-testid="source-record-table"]'
     ).inner_text()
     assert page.recorded_errors == []
+
+
+def test_the_profile_puts_selected_values_before_statuses_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """A profile leads with selected values and keeps its three statuses separate."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/masters/party_cedarline", wait_until="load")
+    selected = page.locator('[data-testid="trusted-values-overview"]')
+    statuses = page.locator('[data-testid="profile-status-overview"]')
+    identity = page.locator('[data-testid="profile-overview"]')
+    assert selected.count() == statuses.count() == identity.count() == 1
+    body = page.content()
+    assert body.index('data-testid="trusted-values-overview"') < body.index(
+        'data-testid="profile-status-overview"'
+    ) < body.index('data-testid="profile-overview"')
+    assert page.locator('[data-testid="identity-status"]').inner_text().strip()
+    assert page.locator('[data-testid="credential-status-summary"]').inner_text().strip()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, selected)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_master_collections_explain_identities_and_credentials_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """Master records keep identities, properties, and credentials distinct at 390 pixels."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/masters", wait_until="load")
+    assert "canonical identities" in page.locator("main").inner_text()
+    tabs = page.locator('[data-testid="master-tabs"]')
+    assert tabs.locator('[data-tab="people"]').count() == 1
+    assert tabs.locator('[data-tab="properties"]').count() == 1
+    page.goto(f"{server.base_url}/masters?tab=licenses", wait_until="load")
+    assert "A credential belongs to an identity" in page.locator("main").inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_saved_guide_opens_without_overflow_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The queue guide is visibly offline and usable above the fixed controls."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, guide)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []

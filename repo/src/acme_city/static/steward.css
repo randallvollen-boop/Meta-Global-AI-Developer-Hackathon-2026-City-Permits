@@ -57,6 +57,18 @@ body[data-screen="masters"] .data-table thead th {
 .stw-source-table .stw-reference { display: block; }
 .stw-state-detail { display: block; font-size: .74rem; }
 
+/* Selected values lead the profile, while record, identity and credential
+   status remain distinct labels rather than one overloaded status. */
+.stw-trusted-overview { margin-bottom: 14px; }
+.stw-trusted-overview .data-table { width: 100%; }
+.stw-status-overview { margin-bottom: 14px; }
+.stw-status-note { margin: 10px 0 0; color: var(--fg-2); font-size: .84rem; }
+.stw-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.stw-guide > summary { cursor: pointer; font-weight: 600; }
+.stw-guide-mode { margin: 8px 0; color: var(--fg-2); font-size: .82rem; }
+.stw-guide-links a { overflow-wrap: anywhere; }
+.stw-master-tabs { margin-bottom: 12px; }
+
 /* The search and the filters of the queue. */
 .stw-search {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px;
@@ -154,4 +166,21 @@ body[data-screen="masters"] .data-table thead th {
   body[data-screen="source_records"] .stw-search { display: grid; gap: 8px; }
   body[data-screen="source_records"] .stw-search select,
   body[data-screen="source_records"] .stw-search input[type="search"] { width: 100%; }
+
+  body[data-screen="masters"] .stw-trusted-overview .data-table thead { display: none; }
+  body[data-screen="masters"] .stw-trusted-overview .data-table,
+  body[data-screen="masters"] .stw-trusted-overview .data-table tbody,
+  body[data-screen="masters"] .stw-trusted-overview .data-table tr,
+  body[data-screen="masters"] .stw-trusted-overview .data-table th,
+  body[data-screen="masters"] .stw-trusted-overview .data-table td { display: block; width: 100%; }
+  body[data-screen="masters"] .stw-trusted-overview .data-table tr {
+    margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="masters"] .stw-trusted-overview .data-table th,
+  body[data-screen="masters"] .stw-trusted-overview .data-table td {
+    padding: 2px 0; border: 0; overflow-wrap: anywhere;
+  }
+  body[data-screen="masters"] .stw-master-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  body[data-screen="masters"] .stw-master-tabs a { min-width: 0; overflow-wrap: anywhere; }
 }

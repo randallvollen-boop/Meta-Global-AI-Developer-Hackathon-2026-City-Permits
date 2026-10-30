@@ -635,6 +635,11 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
         if linked
         else source_summary(session, "permitting", "applicant_profiles")
     )
+    issues = open_issue_lines(session, party_id)
+    trusted_values = [
+        field for field in detail["trusted_fields"] if field.get("value") is not None
+    ]
+    credential_states = sorted({item["status_label"] for item in credentials})
     return {
         "detail": detail,
         "party": party,
@@ -646,7 +651,10 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
         "contacts": detail["current"]["contacts"],
         "credentials": credentials,
         "applications": applications,
-        "issues": open_issue_lines(session, party_id),
+        "issues": issues,
+        "trusted_values": trusted_values,
+        "identity_status": "Open data issue" if issues else "No open identity issue",
+        "credential_status": ", ".join(credential_states) or "No credential recorded",
         "sources": sources,
         "source_summary": summary,
         "history": history,

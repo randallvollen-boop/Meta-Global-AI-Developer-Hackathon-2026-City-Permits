@@ -35,7 +35,7 @@ from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.persistence.models import registry
 from acme_city.permits import queues
-from acme_city.ui import agent_views, steward_views, view_models
+from acme_city.ui import agent_views, steward_guide, steward_views, view_models
 from acme_city.ui.router import (
     ActionContext,
     Outcome,
@@ -70,6 +70,13 @@ def _may_read_source(session: Session, actor: ActorContext) -> bool:
     return any(
         view_models.holds_grant(session, actor, permission, domain)
         for permission, domain in steward_views.SOURCE_GRANTS
+    )
+
+
+def _guide(screen: str, *, state: str = "", task: str = "", evidence: tuple[str, ...] = ()) -> Any:
+    """Build saved guidance from facts the screen already shows."""
+    return steward_guide.build(
+        steward_guide.GuideContext(screen=screen, state=state, task=task, evidence=evidence)
     )
 
 
@@ -257,6 +264,10 @@ def _profile_page(
         model_runs=[],
         history=profile["history"],
         actions=actions,
+        guide=_guide(
+            "record_profile", state=profile["identity_status"], task=profile["name"],
+            evidence=tuple(item["source"] for item in profile["sources"][:2]),
+        ),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         back_href="/masters" if nav_screen == "masters" else "/applicants",
         may_read_source=_may_read_source(session, resolved),
@@ -343,6 +354,7 @@ def ui_steward_review(
         confirmation=confirmation,
         queue=queue,
         actions=actions,
+        guide=_guide("queue", state=str(queue["filter"]), task=f"{queue['matched']} task(s) match the current view"),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         quiet_feedback=True,
     )
@@ -396,6 +408,10 @@ def ui_steward_case(
         screen="steward",
         title=f"Data issue: {case['title']}",
         case=case,
+        guide=_guide(
+            "match_case" if kind == "link" else "parcel_case" if kind == "parcel" else "source_correction",
+            state=str(case["summary"]["status_label"]), task=str(case["summary"]["task"]),
+        ),
         case_path=case_path,
         confirmation=confirmation,
         back_href=safe_next(back, "/steward"),
