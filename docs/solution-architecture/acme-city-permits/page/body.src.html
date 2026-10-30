@@ -31,7 +31,7 @@
           <a href="#security-review" role="menuitem">Security review</a>
           <a href="#licence" role="menuitem">Licence and data</a>
           <a href="#roadmap" role="menuitem">Phase 3</a>
-          <a href="#video" role="menuitem">Planned explainer video</a>
+          <a href="#video" role="menuitem">Explainer video</a>
           <a href="#decisions" role="menuitem">Open decisions</a>
       </div>
     </nav>
@@ -53,7 +53,7 @@
       <p>One local application holds fictional ACME City records. It stores submissions, decisions, fee versions and evidence in one SQLite database.</p>
       <p>The synthetic case SYN-APP-001 is a commercial tenant improvement. It follows one case from a submission that cannot be changed to a simulated permit, issued as a separate step.</p>
       <p>Refreshing the page, restarting the server or repeating the issuance returns the same record each time, and the build checks for it.</p>
-      <p>Two parity phases are also merged. Phase 1 adds an intake agent and an adjudication agent, a confirm and revert flow for the reviewer, 17 permit types and an Administration area. Phase 2 adds a simulated geographic information system (GIS) service, a shared property master, a town map and an applicant portal. Phase 3 and an explainer video are planned only, in their own sections below.</p>
+      <p>All three parity phases are merged, and later lanes have followed. Phase 1 adds an intake agent and an adjudication agent, a confirm and revert flow for the reviewer, 17 permit types and an Administration area. Phase 2 adds a simulated geographic information system (GIS) service, a shared property master, a town map and an applicant portal. Phase 3 adds the life of a case, queues, the applicant help assistant, operations screens, the City view and what-if analysis. The later lanes add the Agent Operator, optional automatic processing and steward autolink. Draft 8 of the explainer video is bundled on the persona page, and picture lock is still open.</p>
       <p>Every record on this page is invented for the demonstration. No permit, payment, parcel or applicant record comes from a real city or a real person.</p>
     </div>
     <div class="split">
@@ -78,10 +78,10 @@
   <h2>Current status</h2>
   <p class="lede">This panel is generated from the workspace status record. Values change only when stored evidence changes.</p>
   <div class="status-grid">
-    <div class="status-card accent" id="status-overall" data-status="verified" data-architecture="as_built" data-as-of="2026-10-27T10:49:49-04:00">
+    <div class="status-card accent" id="status-overall" data-status="verified" data-architecture="as_built" data-as-of="2026-10-30T06:35:00-04:00">
       <p class="kicker">Overall</p>
       <p class="status-value">VERIFIED</p>
-      <p class="status-note">Architecture status: <b>AS BUILT</b>. The status record was written at 10:49 Eastern on 2026-10-27.</p>
+      <p class="status-note">Architecture status: <b>AS BUILT</b>. The status record was written at 06:35 Eastern on 2026-10-30.</p>
     </div>
     <div class="status-card" id="status-requirements" data-total="57" data-outlined="57" data-implemented="57" data-verified="57">
       <p class="kicker">Requirements</p>
@@ -143,7 +143,7 @@
       <tr><td>Muse and eight-screen interface</td><td><span class="chip ga">Verified</span></td><td>Tasks M1 to M4 are verified.</td></tr>
       <tr><td>Integrated verification and handoff</td><td><span class="chip ga">Verified</span></td><td>Tasks A1 to A5 are verified.</td></tr>
       <tr><td>Implemented requirements</td><td><span class="chip pv">57 of 57</span></td><td>0 requirement identifiers remain for later phases.</td></tr>
-      <tr><td>Acceptance and scenario evidence</td><td><span class="chip ex">In progress</span></td><td>20 of 20 acceptance tests, 8 of 8 supplementary checks and 11 of 11 scenarios are recorded in the integrated manifest.</td></tr>
+      <tr><td>Acceptance and scenario evidence</td><td><span class="chip ga">Verified</span></td><td>20 of 20 acceptance tests, 8 of 8 supplementary checks and 11 of 11 scenarios are recorded in the integrated manifest.</td></tr>
       <tr><td>Live model evidence</td><td><span class="chip ex">Succeeded</span></td><td>Replay never counts as a completed live primary-chain run.</td></tr>
       <tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand and delivery owner remain open, so the internal banner stays. The security review has run, and its High and Medium findings are fixed.</td></tr>
     </tbody>
@@ -154,15 +154,15 @@
   <div class="tbl-wrap"><table>
     <thead><tr><th>Part</th><th>State</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>Intake agent</td><td><span class="chip ga">Built</span></td><td>Seven nodes: classifier; field extractor and document quality check in parallel; address locator; duplicate finder and completeness check in parallel; router. Phase 2 added the address locator before the duplicate finder.</td></tr>
+      <tr><td>Intake agent</td><td><span class="chip ga">Built</span></td><td>Seven nodes: classifier; field extractor and document quality check in parallel; address locator and completeness check in parallel; duplicate finder; router.</td></tr>
       <tr><td>Adjudication agent</td><td><span class="chip ga">Built</span></td><td>Five nodes: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition. Every run of either agent is recorded with a per-node trace.</td></tr>
       <tr><td>Confirm and revert</td><td><span class="chip ga">Built</span></td><td>Confirm records the reviewer's decision through the decision service. Revert needs a reason and returns the case to manual review.</td></tr>
       <tr><td>Permit catalogue</td><td><span class="chip ga">Built</span></td><td>17 permit types. Discretionary types carry no rule and are always held for a person.</td></tr>
-      <tr><td>Administration</td><td><span class="chip ga">Built</span></td><td>City Administrator only. Permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.</td></tr>
+      <tr><td>Administration</td><td><span class="chip ga">Built</span></td><td>City Administrator only. Tabs: Permit types, Appearance (the permit-type icons), Users and roles (including which staff roles may run agents), Agent processing, Reason codes and Configuration log.</td></tr>
       <tr><td>Intake channels</td><td><span class="chip ga">Built</span></td><td>Including mail and fax, with per-document scan-quality flags.</td></tr>
       <tr><td>Simulated GIS service</td><td><span class="chip ga">Built</span></td><td>Runs inside the application with 69 parcels and 71 addresses, and makes no outside calls.</td></tr>
       <tr><td>Property master</td><td><span class="chip ga">Built</span></td><td>One record per parcel at <code>/property/{parcel}</code>, shared with six simulated subscriber departments that read fields and write nothing back.</td></tr>
-      <tr><td>Town map</td><td><span class="chip ga">Built</span></td><td>A server-rendered scalable vector graphics (SVG) map at <code>/map</code> that loads no outside tiles.</td></tr>
+      <tr><td>Town map</td><td><span class="chip ga">Built</span></td><td>A server-rendered scalable vector graphics (SVG) map at <code>/map</code>. It loads no outside tiles and makes no network calls. Parcels are textured with 17 bundled local WebP image tiles.</td></tr>
       <tr><td>Applicant portal</td><td><span class="chip ga">Built</span></td><td>At <code>/apply</code>, with a chooser for the 17 types, a form per type, uploads, drafts, certification, confirmation and tracking.</td></tr>
     </tbody>
   </table></div>
@@ -180,6 +180,21 @@
       <tr><td>Synthetic history generator</td><td><span class="chip ga">Built</span></td><td>One deterministic generator for a dated year of fictional cases, flagged synthetic. The what-if agent adapts the same generator.</td><td>Build log, 2026-10-28, P3insight and P3policy run 2</td></tr>
       <tr><td>Muse Image permit-type icons</td><td><span class="chip ga">Built</span></td><td>Seed icons for all 17 permit types, and in-app icon generation for City Administrators in Administration.</td><td>Build log, 2026-10-28, Permit type icons for all 17 types</td></tr>
       <tr><td>Sanitation and Police subscribers</td><td><span class="chip ga">Built</span></td><td>Two more simulated departments read the property master, which makes six. They write nothing back.</td><td>Build log, 2026-10-28, P3insight</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Added in later lanes</h3>
+  <p>These parts were merged after phase 3. Each row names the code that holds it. The page claims no new verification gate for them.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Part</th><th>State</th><th>Detail</th><th>Code</th></tr></thead>
+    <tbody>
+      <tr><td>Agent Operator persona</td><td><span class="chip ga">Built</span></td><td>The fifth persona. It wakes, sleeps and runs the intake and adjudication agents, processes a bounded selection of waiting cases and reads run history. It cannot decide, issue or configure.</td><td><code>config/actors.json</code>, <code>ui/agent_nav.py</code></td></tr>
+      <tr><td>Optional automatic processing</td><td><span class="chip ga">Built</span></td><td>A durable work queue and one background worker. The City Administrator sets the processing policy in Administration, Agent processing. The worker is off by default (<code>ACME_AGENT_WORKER_ENABLED</code>) and is not enabled on Render.</td><td><code>agents/worker.py</code>, <code>agents/policy.py</code>, <code>agents/runtime.py</code></td></tr>
+      <tr><td>Built-in deterministic logic</td><td><span class="chip ga">Built</span></td><td>Automatic runs use the City's own deterministic extraction and checks. They never call the model provider, so a hosted demonstration sends no request.</td><td><code>agents/extraction.py</code>, <code>agents/runtime.py</code></td></tr>
+      <tr><td>Daily Muse allowance</td><td><span class="chip ga">Built</span></td><td>One count of provider calls for each UTC day, shared by every provider path, default 10. A call is reserved before it is sent.</td><td><code>muse/budget.py</code></td></tr>
+      <tr><td>Steward autolink</td><td><span class="chip ga">Built</span></td><td>A steward activates a policy, and a bounded worker applies only high-confidence party links through a narrow service identity. Each applied link is reviewable and reversible. Parcel and address families only suggest. No model call is made.</td><td><code>registry/automation.py</code>, <code>agents/linking.py</code>, <code>scripts/run_linking_worker.py</code></td></tr>
+      <tr><td>Data issues workspace and steward guide</td><td><span class="chip ga">Built</span></td><td>The steward's four work areas are Data issues, Master records, Source records and Activity. A deterministic guide explains the current screen from saved words and recorded state, labelled "Saved guidance. Live Muse is off."</td><td><code>ui/steward_views.py</code>, <code>ui/steward_guide.py</code></td></tr>
+      <tr><td>Community page redesign</td><td><span class="chip ga">Built</span></td><td>"Permits in my community" at <code>/city/community</code> was redesigned and still reads the dedicated public model.</td><td>City pages in <code>ui/</code></td></tr>
+      <tr><td>Netlify front door</td><td><span class="chip ga">Built</span></td><td>A static page that gives the Render service time to wake, checks readiness every three seconds and then sends the visitor to the demonstration.</td><td><code>netlify/</code></td></tr>
     </tbody>
   </table></div>
 </div></section>
@@ -212,18 +227,18 @@
         <button type="button" id="next" aria-label="Next step">&#8250;</button>
       </div>
     </div>
-    <svg id="arch" viewBox="0 0 1400 890" role="img" aria-label="As-built ACME City Permits architecture. Four signed-in personas and public visitors act in the browser. The FastAPI service governs permit, registry, finance, agent, policy, insight and operations work, and serves the applicant help assistant and the City of Acme website. Meta Muse Spark proposes and Muse Image draws permit-type icons outside the application. Simulated source systems and six simulated subscriber departments sit outside the application, and evidence is collected separately."></svg>
+    <svg id="arch" viewBox="0 0 1400 890" role="img" aria-label="As-built ACME City Permits architecture. Five signed-in personas and public visitors act in the browser. The FastAPI service governs permit, registry, finance, agent, policy, insight and operations work, and serves the applicant help assistant and the City of Acme website. Meta Muse Spark proposes and Muse Image draws permit-type icons outside the application. Simulated source systems and six simulated subscriber departments sit outside the application, and evidence is collected separately."></svg>
   </figure>
   <p class="view-note" id="view-note"></p>
   <p class="mock-note">Every component is built. The original build is verified locally, and the final acceptance manifest records the run results. The parity components are covered by the phase 2 merge review under verification. The diagram also shows the parts merged in parity phase 3, listed in the table below. Their evidence is the build log, and the page records no new verification gate for them.</p>
   <h3>Agents, property master and portal</h3>
-  <p>Agents are woken by a person and run by a person. Only the City Administrator wakes them, and a person with the matching grant runs them. An agent proposes and recommends, and the reviewer decides.</p>
+  <p>Agents are woken by a person and run by a person. Only the Agent Operator holds the grants that wake and run them: <code>agent.toggle</code>, <code>agent.run.intake</code> and <code>agent.run.adjudication</code>. The City Administrator sets the processing policy in Administration, Agent processing. An agent proposes and recommends, and the reviewer decides.</p>
   <div class="split">
     <div class="card"><h4>Intake agent, seven nodes</h4><ul>
       <li>Classifier.</li>
       <li>Field extractor and document quality check, in parallel.</li>
-      <li>Address locator, which proposes a parcel link and never approves it.</li>
-      <li>Duplicate finder and completeness check, in parallel.</li>
+      <li>Address locator and completeness check, in parallel. The locator proposes a parcel link and never approves it.</li>
+      <li>Duplicate finder.</li>
       <li>Router.</li>
     </ul></div>
     <div class="card"><h4>Adjudication agent, five nodes</h4><ul>
@@ -235,7 +250,14 @@
     </ul></div>
   </div>
   <p>A permit decision is blocked until the parcel link is approved and confirmed. The simulated GIS service holds 69 parcels and 71 addresses. Six simulated subscriber departments read the property master: tax and assessor, fire and life safety, code enforcement, utilities, sanitation and police. Their access is set in <code>config/property_subscribers.json</code>.</p>
-  <p>The applicant portal at <code>/apply</code> and the town map at <code>/map</code> are served by the same local application. The map is drawn on the server, so the browser loads no outside tiles.</p>
+  <p>The applicant portal at <code>/apply</code> and the town map at <code>/map</code> are served by the same local application. The map is drawn on the server, so the browser loads no outside tiles and makes no network calls. Parcels are textured with 17 bundled local WebP image tiles in <code>static/map-tiles</code>, and the City view uses them too.</p>
+  <h3>Automatic processing, built-in logic and the daily allowance</h3>
+  <ul>
+    <li>Processing can also run automatically. A durable work queue feeds one background worker (<code>agents/worker.py</code>, <code>agents/policy.py</code>, <code>agents/runtime.py</code>). It is off by default through <code>ACME_AGENT_WORKER_ENABLED</code> and is not enabled on Render.</li>
+    <li>Automatic runs use the City's built-in deterministic logic (<code>agents/extraction.py</code>, <code>agents/runtime.py</code>). That logic never calls the model provider.</li>
+    <li>Provider calls share one daily Muse allowance, counted by UTC day with a default of 10 (<code>muse/budget.py</code>).</li>
+    <li>Steward autolink is a second bounded worker. It applies only high-confidence party links under a policy that a steward activated, through a narrow service identity. Each applied link is reviewable and reversible. Parcel and address families only suggest, and no model is called (<code>registry/automation.py</code>, <code>agents/linking.py</code>, <code>scripts/run_linking_worker.py</code>).</li>
+  </ul>
 </div></section>
 
 <section id="journey"><div class="wrap">
@@ -279,32 +301,33 @@
 
 <section id="personas" class="alt"><div class="wrap">
   <h2>Personas and authority</h2>
-  <p class="lede">The dropdown offers four human personas. A persona label never grants authority by itself.</p>
+  <p class="lede">The dropdown offers five human personas. A persona label never grants authority by itself.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Persona</th><th>Explicit grants</th><th>Can do</th><th>Cannot do</th></tr></thead>
     <tbody>
       <tr><td>Applicant</td><td>Its own authorized profile scope</td><td>Manage drafts, submissions and requested responses.</td><td>View other applicants, match candidates or staff evidence.</td></tr>
+      <tr><td>Agent Operator</td><td>Agent Operator grants</td><td>Wake, sleep and run the intake and adjudication agents, process a bounded selection of waiting cases and read run history.</td><td>Decide, issue or configure.</td></tr>
       <tr><td>Data Steward</td><td>Intake Clerk, Domain Steward and Domain MDM Steward grants for scoped queues</td><td>Review quality issues, propose source corrections and decide permitted identity links.</td><td>Approve or issue permits, or allocate money.</td></tr>
       <tr><td>Permit Reviewer</td><td>Permit Reviewer and Issuing Officer grants</td><td>Record a review approval, then act on a separate Issue permit action.</td><td>Edit credentials, source facts or receipts.</td></tr>
-      <tr><td>City Administrator</td><td>Administrator, Governance Lead, Data Owner, Finance and Auditor grants</td><td>Configure domains, approve governance and confirm allocation.</td><td>Turn configuration rights into business approval rights.</td></tr>
+      <tr><td>City Administrator</td><td>Administrator, Governance Lead, Data Owner, Finance and Auditor grants</td><td>Configure domains, approve governance, confirm allocation and set the agent processing policy.</td><td>Turn configuration rights into business approval rights.</td></tr>
     </tbody>
   </table></div>
-  <p>The City Administrator also owns Administration, and only that persona wakes the agents with <code>agent.toggle</code>. A person with <code>agent.run.intake</code> or <code>agent.run.adjudication</code> runs an agent. An agent holds no decision authority.</p>
+  <p>Only the Agent Operator holds <code>agent.toggle</code>, <code>agent.run.intake</code> and <code>agent.run.adjudication</code>. The Agent Operator home is Agents at <code>/agents</code>, with Intake agent, Adjudication agent and Agent runs. The City Administrator owns Administration and sets the processing policy in Administration, Agent processing. An agent holds no decision authority.</p>
   <p>System custodians, source adapters, outbox workers and the model are service identities. They are not personas, and they are never selectable in the interface.</p>
   <p>Actors from the original blueprint are kept as references only, and nobody can select them.</p>
 </div></section>
 
 <section id="screens"><div class="wrap">
   <h2>Interface map</h2>
-  <p class="lede">Eight screens carry the original workflow, and every one of them is built and covered by browser checks. Parity phases 1 and 2 add the screens in the second table.</p>
+  <p class="lede">Eight screens carry the original workflow, and every one of them is built and covered by browser checks. They are listed here under their current names. Parity phases 1 and 2 and later lanes add the screens in the next tables.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>#</th><th>Screen</th><th>Purpose</th><th>Main persona</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td>Work queue</td><td>Assigned queues, intake items and open issues.</td><td>All four</td></tr>
-      <tr><td>2</td><td>Applicants</td><td>Applicant profiles, drafts, submissions and requested responses.</td><td>Applicant</td></tr>
-      <tr><td>3</td><td>Properties, Businesses and Contractors</td><td>Parcels, official addresses, business records and contractor registration.</td><td>Data Steward</td></tr>
+      <tr><td>1</td><td>Work queue</td><td>Assigned queues, intake items and open issues.</td><td>Data Steward, Permit Reviewer, City Administrator</td></tr>
+      <tr><td>2</td><td>People &amp; organizations</td><td>Applicant profiles, drafts, submissions and requested responses, at <code>/applicants</code>.</td><td>Applicant, Data Steward</td></tr>
+      <tr><td>3</td><td>Master records</td><td>Parcels, official addresses, business records and contractor registration, at <code>/masters</code> plus the property record at <code>/property</code>.</td><td>Data Steward</td></tr>
       <tr><td>4</td><td>Permit workspace</td><td>Submission, documents, evaluation, decision and issuance for one case.</td><td>Permit Reviewer</td></tr>
-      <tr><td>5</td><td>Steward review</td><td>Quality issues, source corrections, crosswalk decisions and link reversals.</td><td>Data Steward</td></tr>
+      <tr><td>5</td><td>Data issues</td><td>At <code>/steward</code>. Quality issues, source corrections, crosswalk decisions and link reversals.</td><td>Data Steward</td></tr>
       <tr><td>6</td><td>Rules and fees</td><td>The approved versioned catalog and the exact assessments it produces.</td><td>City Administrator</td></tr>
       <tr><td>7</td><td>Reconciliation</td><td>Payment events, allocations, exceptions and carried balances.</td><td>City Administrator</td></tr>
       <tr><td>8</td><td>Governance and sources</td><td>Domains, datasets, contracts, assignments, grants and source health.</td><td>City Administrator</td></tr>
@@ -314,12 +337,35 @@
   <div class="tbl-wrap"><table>
     <thead><tr><th>Screen</th><th>Where</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td>Administration</td><td>City Administrator only</td><td>Permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.</td></tr>
+      <tr><td>Administration</td><td>City Administrator only</td><td>Permit types, Appearance (icons), Users and roles, Agent processing, Reason codes and Configuration log.</td></tr>
       <tr><td>Property master</td><td><code>/property/{parcel}</code></td><td>One shared record per parcel, read by six simulated subscriber departments.</td></tr>
-      <tr><td>Town map</td><td><code>/map</code></td><td>A server-rendered SVG map with no outside tiles.</td></tr>
+      <tr><td>Town map</td><td><code>/map</code></td><td>A server-rendered SVG map with no outside tiles and no network calls. Parcels use 17 bundled local image tiles.</td></tr>
       <tr><td>Applicant portal</td><td><code>/apply</code></td><td>Type chooser, a form per type with a completeness banner, uploads, drafts, certification, confirmation and tracking.</td></tr>
     </tbody>
   </table></div>
+  <h3>Added in later lanes</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Screen</th><th>Where</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Intake queue</td><td><code>/queue/intake</code></td><td>Waiting intake cases. Read only for the Data Steward, Permit Reviewer and City Administrator.</td></tr>
+      <tr><td>Early resolution</td><td><code>/queue/early-resolution</code></td><td>Cases the intake router sent to early resolution.</td></tr>
+      <tr><td>Review queue</td><td><code>/queue/review</code></td><td>Cases routed to a reviewer.</td></tr>
+      <tr><td>Source records</td><td><code>/source-records</code></td><td>The catalogue of source records, a steward work area.</td></tr>
+      <tr><td>Activity</td><td><code>/activity</code></td><td>Recorded activity, a steward work area.</td></tr>
+      <tr><td>New master record</td><td><code>/steward/new-master</code></td><td>A steward creates a master record.</td></tr>
+      <tr><td>Steward automation</td><td><code>/steward/automation</code></td><td>The settings for automatic linking.</td></tr>
+      <tr><td>City view</td><td><code>/insight/city</code></td><td>The administrator's permit insight map, textured with the same local tiles as the town map.</td></tr>
+      <tr><td>What-if</td><td><code>/policy/scenarios</code></td><td>What-if policy runs, saved runs and drafts.</td></tr>
+      <tr><td>Operations</td><td><code>/ops/*</code></td><td>Dashboard, audit log, support and checks.</td></tr>
+      <tr><td>Agents</td><td><code>/agents</code></td><td>The Agent Operator home.</td></tr>
+      <tr><td>Agent runs</td><td><code>/agents/runs</code></td><td>Run history with a per-node trace.</td></tr>
+      <tr><td>Agent cases</td><td><code>/agents/cases</code></td><td>The cases that agent runs touched.</td></tr>
+      <tr><td>Life cycle</td><td><code>/lifecycle</code></td><td>The permit life cycle table, in demonstration mode.</td></tr>
+      <tr><td>Walkthrough</td><td><code>/walkthrough</code></td><td>The guided path for judges, in demonstration mode.</td></tr>
+      <tr><td>Help</td><td><code>/help</code></td><td>The help hub, described below.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Data Steward screens also carry a deterministic guide at <code>ui/steward_guide.py</code>. It never calls a model.</p>
   <p>Every governed detail view shows owner, steward, source, the change route, version, last source update, last received and open issues.</p>
   <p>Current master, submitted, proposed and issued values stay visually distinct on every screen.</p>
 </div></section>
@@ -377,6 +423,8 @@
   <h3>Routing and topics</h3>
   <p>Model muse-spark-1.3 in Standard mode does at least one real live task in the main process, preferably field extraction or an identity proposal.</p>
   <p>Requests use a strict JavaScript Object Notation (JSON) Schema, allowlisted identifiers, bounded inputs and outputs, no web search, no tool calls, and concurrency one.</p>
+  <p>The same adapter also carries the applicant help answer, the council briefing and the what-if proposals. Those default to replay (<code>ACME_APPLICANT_ASSIST_LIVE_ENABLED</code> and <code>ACME_POLICY_ASSIST_LIVE_ENABLED</code> are off). They share the live call cap of 2, the daily allowance of 10 and the error stop.</p>
+  <p>Built-in deterministic logic never calls the provider. Automatic agent runs and steward autolink use it.</p>
   <h3>Validation</h3>
   <p>The application validates identifiers, evidence locations, excerpts, categories and citations before it creates a proposal. A proposal that fails a check is rejected and recorded as rejected.</p>
   <h3>Evidence</h3>
@@ -422,7 +470,7 @@
   <h2>Access, security and audit</h2>
   <p class="lede">Authorization is checked per action, in the server, against explicit grants.</p>
   <div class="rules" role="list">
-    <div class="rule" role="listitem">{{icon:lock}}<h4>Identity</h4><p>One signed-in session, four selectable personas, explicit grants per action.</p></div>
+    <div class="rule" role="listitem">{{icon:lock}}<h4>Identity</h4><p>One signed-in session, five selectable personas, explicit grants per action.</p></div>
     <div class="rule" role="listitem">{{icon:user_check}}<h4>Least privilege</h4><p>A persona label grants nothing. Each action checks its own grant and its state rule.</p></div>
     <div class="rule" role="listitem">{{icon:folder}}<h4>Data boundary</h4><p>The service binds loopback only. The browser holds no model credential.</p></div>
     <div class="rule" role="listitem">{{icon:arrows_split}}<h4>Separation of duties</h4><p>Review approval and permit issuance stay different server-enforced actions.</p></div>
@@ -486,7 +534,7 @@
       <thead><tr><th>Measure</th><th>Result</th></tr></thead>
       <tbody>
         <tr><td>Gates</td><td>10 of 10 pass</td></tr>
-        <tr><td>pytest</td><td>762 passed</td></tr>
+        <tr><td>pytest (historical)</td><td>762 passed</td></tr>
         <tr><td>Acceptance</td><td>37 passed, 0 failed, 2 blocked</td></tr>
         <tr><td>Blocked checks</td><td>AT15 and AT19 need a live provider</td></tr>
       </tbody>
@@ -496,14 +544,26 @@
     <h3>Parity phase 3a and the City of Acme website, as built</h3>
     <p>Phase 3a adds the life of a case. A steward can return a case or advance it to review, and an advance is refused while a current, unwaived blocking finding stands. A reviewer can request revisions, and the applicant resubmits a new version that goes back to intake with dependent work marked stale. The City Administrator archives and restores cases, and an archive guard at the service level protects every path that changes an application.</p>
     <p>Reason codes are typed, and every denial records its code, label and version. The <code>wrong_type</code> and <code>fee</code> findings are added. A waiver never clears a decision blocker. Comments are either visible to the applicant or internal, and the server enforces that on every screen. Each case carries a priority and an owner, and the owner is routing information only.</p>
-    <p>The City of Acme website at <code>/city/</code> now holds the applicant pages, with a demo control for switching between the four personas.</p>
+    <p>The City of Acme website at <code>/city/</code> now holds the applicant pages, with a demo control for switching between the five personas.</p>
     <div class="tbl-wrap"><table>
       <thead><tr><th>Measure, merged main with phase 3a and the City of Acme website</th><th>Result</th></tr></thead>
       <tbody>
         <tr><td>Gates</td><td>10 of 10 pass</td></tr>
-        <tr><td>pytest</td><td>879 passed</td></tr>
+        <tr><td>pytest (historical)</td><td>879 passed</td></tr>
         <tr><td>Acceptance</td><td>37 passed, 0 failed, 2 blocked</td></tr>
         <tr><td>Live model calls</td><td>None in this phase; Muse stays in labelled replay</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="sub">
+    <h3>Current test figures, merged main</h3>
+    <p>The two earlier phase tables above are historical counts. These figures are current.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Tests collected</td><td>2741 on merged main</td></tr>
+        <tr><td>Last recorded full run</td><td>2726 passed (the evidence log)</td></tr>
+        <tr><td>Gates</td><td>10, unchanged</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -535,7 +595,7 @@
     <tbody>
       <tr><td>Muse Spark 1.3</td><td>Runtime model inside the application</td><td>Proposes application fields from the received documents for the intake agent, and writes a case summary for the reviewer that explains and never decides. Every output is a proposal that the application validates and a person decides. It also answers applicant questions and writes the council briefing for a what-if run, both in labelled replay by default.</td></tr>
       <tr><td>Muse Wonder 1.0</td><td>Design reviewer and builder</td><td>Wrote a cited review of the original prototype, then built the redesigned interface, the permit-type icon feature, the simulated intake portal and the first automated triage with its recommendation for the reviewer. A lead reviewer ran every gate on its work before merge.</td></tr>
-      <tr><td>Muse Image 1.0</td><td>Image generation</td><td>Made the icons for all 17 permit types on the work queue. City Administrators can describe and generate a new icon for a permit type inside the application.</td></tr>
+      <tr><td>Muse Image 1.0</td><td>Image generation</td><td>Made 14 of the 17 permit-type icons. City Administrators can describe and generate a new icon for a permit type inside the application.</td></tr>
     </tbody>
   </table></div>
   <div class="sub">
@@ -544,6 +604,7 @@
       <li>OpenAI GPT-5.6 Sol, with GPT-6 Astra, led the first build: the requirements outline, the plans, integration of each slice and the first acceptance runs. GPT-6 Astra also reviews changes.</li>
       <li>MiniMax M3 wrote much of the governed foundation, the registry, permits, rules, finance and issuance, and several phase 3 slices, each under review.</li>
       <li>Claude Opus 5.5 and Claude Sonnet lead integration, fixed the live Muse extraction, run the gates and review every merge.</li>
+      <li>Krea 2 made the 17 town map image tiles at build time. It is a build-time asset only and does not run in the application.</li>
       <li>None of these models runs inside the application. Muse Spark is its only runtime model.</li>
     </ul>
   </div>
@@ -605,6 +666,7 @@
     <li>The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. Render keeps the old instance running until the new one passes <code>/readyz</code>.</li>
     <li>Rate limits count requests per client address: 300 a minute for all requests, 60 for writes, 20 for persona switches and 10 for uploads. The request size limit is 25 MB.</li>
   </ul>
+  <p>A Netlify front door in <code>netlify/</code> is a static page. It gives the Render service time to wake, then sends the visitor to the demonstration.</p>
   <p>The steps, settings and rollback are in <code>docs/operations/DEPLOY_RENDER.md</code>.</p>
 </div></section>
 
@@ -620,9 +682,9 @@
 
 <section id="licence"><div class="wrap">
   <h2>Licence and data</h2>
-  <p class="lede">The code is licensed under the Apache License, Version 2.0. All data in the demonstration is fictional.</p>
+  <p class="lede">The code is copyright Randy Vollen and VollenData, all rights reserved. All data in the demonstration is fictional.</p>
   <ul>
-    <li>The licence text is in <code>LICENSE</code>. The notice file is <code>NOTICE</code>.</li>
+    <li>The repository is public for transparency, hackathon evaluation and demonstration only. The licence text is in <code>LICENSE</code> and the notice is in <code>NOTICE</code>.</li>
     <li>Every person, business, parcel, permit, fee and rule in the product is fictional.</li>
     <li>The fonts are system font stacks, and the icons are the project's own.</li>
   </ul>
@@ -644,7 +706,7 @@
     </tbody>
   </table></div>
   <p><span class="chip ga">Built</span> Also merged: buttons that stay disabled until their inputs are complete and say what is missing, shared info popovers and side panels, seeded icons for every permit type, and restyled screens for the applicant, the Permit Reviewer and the Data Steward.</p>
-  <p><span class="chip ga">Built</span> The applicant side lives on a fictional City of Acme website at <code>/city/</code>. Its Permits entry opens the applicant portal inside the city layout, and a "Demo: switch user" control uses the existing persona selector with its four personas.</p>
+  <p><span class="chip ga">Built</span> The applicant side lives on a fictional City of Acme website at <code>/city/</code>. Its Permits entry opens the applicant portal inside the city layout, and a "Demo: switch user" control uses the existing persona selector with its five personas.</p>
 
   <h3>P3chat: applicant help chat</h3>
   <p><span class="chip ga">Built</span> Muse Spark answers only from a set of sources that the server builds. The set holds published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case.</p>
@@ -711,7 +773,8 @@
       <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>The VollenData sunflower, an animated character, sits in the bottom left corner over the screens. MiniMax H3 renders each clip from the sunflower image and the approved narration, so the mouth follows the spoken words. All 18 clips have matched mouths.</td></tr>
       <tr><td>Voice</td><td><span class="chip ga">Done</span></td><td>Kokoro text to speech reads every line exactly as written. A wording change regenerates one line and rebuilds the cut.</td></tr>
       <tr><td>Screens</td><td><span class="chip ga">Done</span></td><td>A scripted browser steps through a separate copy of the application and captures timed screenshots for crisp footage. The Muse help answer and the council briefing were recorded from live Muse Spark calls the project owner approved.</td></tr>
-      <tr><td>Final pass</td><td><span class="chip ex">In progress</span></td><td>Clips where the sunflower's face drifts get rendered again. Then the cut is locked, the draft badges come off and the final file is exported, with no music.</td></tr>
+      <tr><td>Bundled copy</td><td><span class="chip ga">Done</span></td><td>Draft 8 is bundled on the persona page as a 720p copy, 2:44 and about 8 MB. It never plays on its own and loads nothing until play is pressed.</td></tr>
+      <tr><td>Final pass</td><td><span class="chip ex">In progress</span></td><td>Clips where the sunflower's face drifts get rendered again. Picture lock and the final export remain open. Then the draft badges come off and the final file is exported, with no music.</td></tr>
     </tbody>
   </table></div>
   <h3>Narration script</h3>
@@ -755,7 +818,7 @@
 
 <footer>
   <div class="wrap">
-    <span>Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme. Internal draft. &copy; 2026 Randy Vollen.</span>
+    <span>Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme. Internal draft. &copy; 2026 Randy Vollen and VollenData.</span>
     <span class="foot-vds"><span class="vds">VollenData</span><span class="tag">A Brighter Future, Rooted in Data.</span></span>
   </div>
 </footer>

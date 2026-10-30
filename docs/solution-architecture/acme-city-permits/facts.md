@@ -39,14 +39,15 @@ Build one local, persisted, fictional municipal permitting application. The prim
 
 The workflow is inspired by Westerville’s public pattern: route work by project type, validate contractor registration, submit commercial plans, perform completeness and plan review, preserve corrections/resubmittals, separate fees/approval/issuance, track status and hand issued work to inspection. ACME rules, actors, fees and artifacts remain fictional.
 
-## Four selectable personas
+## Five selectable personas
 
-The application dropdown shows exactly four human demo personas. Underlying permissions remain explicit and action-specific; a persona label never grants authority by itself.
+The application dropdown shows exactly five human demo personas, in story order (`repo/config/actors.json`; `loader.py:140`; `ops/checks.py:192`). Underlying permissions remain explicit and action-specific; a persona label never grants authority by itself.
 
 1. **Applicant** — manages its authorized profile, drafts, submissions and requested responses. It cannot view other applicants, match candidates or staff-only evidence.
-2. **Data Steward** — carries explicit Intake Clerk, Domain Steward and Domain MDM Steward grants for scoped queues. It reviews quality issues, proposes source corrections and decides permitted identity links. It cannot approve or issue permits or allocate money.
-3. **Permit Reviewer** — carries explicit Permit Reviewer and Issuing Officer grants. Review approval and the separate Issue permit action remain different server-enforced actions. It cannot edit credentials, source facts or receipts.
-4. **City Administrator** — carries separately declared Administrator, Governance Lead, Data Owner, Finance and Auditor grants needed for the demo. Configuration rights do not create business approval rights; Finance allocation and owner/governance approvals are authorized by their explicit grants and state rules.
+2. **Agent Operator** — carries the `agent_operator` grants: `agent.toggle`, `agent.run.intake`, `agent.run.adjudication`, `permit.intake.process_selected` and `agent.ops.read`. It wakes, sleeps and runs the intake and adjudication agents, processes a bounded selection of waiting cases and reads run history. It cannot decide, issue or configure. Navigation: Agents (`/agents`, its home), Intake agent, Adjudication agent, Agent runs (`ui/agent_nav.py`). Only this persona holds the wake and run grants (`tests/regression/data/persona_grant_deltas.json`, OPR-3).
+3. **Data Steward** — carries explicit Intake Clerk, Domain Steward and Domain MDM Steward grants for scoped queues. It reviews quality issues, proposes source corrections and decides permitted identity links. It cannot approve or issue permits or allocate money.
+4. **Permit Reviewer** — carries explicit Permit Reviewer and Issuing Officer grants. Review approval and the separate Issue permit action remain different server-enforced actions. It cannot edit credentials, source facts or receipts.
+5. **City Administrator** — carries separately declared Administrator, Governance Lead, Data Owner, Finance and Auditor grants needed for the demo. Configuration rights do not create business approval rights. The City Administrator sets the agent processing policy in Administration, Agent processing, and does not wake or run agents; Finance allocation and owner/governance approvals are authorized by their explicit grants and state rules.
 
 System custodians, source adapters, outbox workers and Muse are service identities, not dropdown personas. Historical blueprint actors remain source references only and are not selectable or separately presented in the new UI.
 
@@ -137,15 +138,15 @@ Build with the installed Solution Architecture Kit and Vollen Linux brand layer.
 - OpenAI GPT-5.6 Sol with GPT-6 Astra led the first build: requirements, plans, integration and acceptance.
 - MiniMax M3 executors built the implementation slices; the orchestrator reviewed each.
 - Claude Opus 5.5 fixed the live Muse extraction, ran the gates, designed the redesign mockup and reviewed the Muse build.
-- Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made the permit-type icons.
+- Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made 14 of the 17 permit-type icons.
 - Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.
 
 ## Parity build, as built (2026-10-27)
 
 Source: `BUILD_LOG.md` sections "Parity phase 1" and "Parity phase 2"; merges `07755ae` and `e2528a4` on main.
 
-- Phase 1, merged `07755ae`. Two agents that a person wakes and runs. Only the City Administrator wakes them (`agent.toggle`), and a person with `agent.run.intake` or `agent.run.adjudication` runs them.
-- The intake agent is a dependency graph: classifier; field extractor and document QC in parallel; duplicate finder and completeness in parallel; router. Phase 2 adds an address locator node ahead of the duplicate finder, making seven nodes. The adjudication agent has five nodes: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition. Every run is recorded with a per-node trace.
+- Phase 1, merged `07755ae`. Two agents that a person wakes and runs. Since OPR-3 only the Agent Operator wakes them (`agent.toggle`) and runs them (`agent.run.intake`, `agent.run.adjudication`).
+- The intake agent is a dependency graph: classifier; field extractor and document QC in parallel; address locator and completeness check in parallel; duplicate finder; router. Seven nodes (`agents/graphs.py`). The adjudication agent has five nodes: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition. Every run is recorded with a per-node trace.
 - Confirm records the reviewer's decision through the decision service, and the reviewer is the decider of record. Revert needs a reason and returns the case to manual review. A held recommendation cannot be confirmed.
 - The permit catalogue has 17 types. Discretionary types carry no rule and are always held for a person. A configuration change applies only to new intake; the requirements in force when a case arrived are recorded on the case.
 - Administration (City Administrator only) holds permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons.
@@ -185,7 +186,7 @@ Sources: `EVIDENCE_LOG.md` "Parity phase 3a evidence"; merges `b7ce8bd` (phase 3
 - Comments are either applicant-visible or internal, enforced on the server on every surface. The audit record carries the comment identifier and its visibility, never the text.
 - Each case has a priority (normal or high) and an owner, and the owner is routing metadata only.
 - Verification for phase 3a, run in its worktree: all 10 local gates pass; 866 tests passed with 0 failed and 0 skipped; acceptance 37 passed, 0 failed, 2 blocked (AT15 and AT19 need live evidence). No live provider call was made.
-- City of Acme website, merged `ead8790`: a fictional city website at `/city/` with a Permits entry. The applicant portal pages render inside the city layout, and a "Demo: switch user" control uses the existing persona selector, which still offers exactly four personas.
+- City of Acme website, merged `ead8790`: a fictional city website at `/city/` with a Permits entry. The applicant portal pages render inside the city layout, and a "Demo: switch user" control uses the existing persona selector, which now offers exactly five personas.
 
 ## Merged-main verification (2026-10-28)
 
@@ -204,7 +205,7 @@ Source: `repo/var/check-run-main-p3a/` and `repo/var/check-run-main-city/` (`run
 - Also merged: guarded buttons (`d3bad15`), shared UI patterns (`1590701`), seed icons for the remaining 14 permit types (`6f976e0`; Muse Image `muse-image-1.0`, 14 calls). Source: BUILD_LOG.md line 206.
 - Muse Spark 1.3 runtime uses: intake field extraction (`agents/extraction.py`, model `muse-spark-1.3`), reviewer case summary that explains only (`triage/summary.py`). Replay is the default; live extraction succeeded earlier (see Merged-main verification).
 - Muse Wonder 1.0: cited prototype review; built the UI redesign, the permit-type icon feature, the simulated intake portal and the first automated triage with recommendation. Source: BUILD_LOG.md lines 64 to 100.
-- Muse Image 1.0: icons for all 17 permit types; in-app icon generation for City Administrators (`permits/icons.py`, `muse/image_client.py`).
+- Muse Image 1.0: 14 of the 17 permit-type icons (17 icon files exist; 14 calls are recorded); in-app icon generation for City Administrators (`permits/icons.py`, `muse/image_client.py`).
 - Other models are listed as notes (Randall, 2026-10-28: "Lead with how muse was used, and keep the other models as notes"). None runs inside the application.
 - Video plan: about 2:40 under the organisers' 3 minute limit; narration about 1:31 at the chosen pace (Randall chose 2.75 on the review page; measured 3.08 to 3.35 words per second); presenter bottom left over screens (Randall, 2026-10-28); scripted browser recording test `acme-permits-parity-notes/screen-test-01/screen-test-01b.mp4`; opening "built this week" line proposed, per the organisers' FAQ.
 
@@ -247,3 +248,23 @@ Randall asked for a permit life cycle in the architecture, a route to test it an
 - Known gaps, stated on the page: no code path sets Withdrawn, so only seeded history holds it. Run application checks reopens an approved or denied case (`evaluate` sets ready for review unless the case is issued, returned or archived). Correct the application record reopens any case but a returned or archived one, including an issued one. Revert the agent recommendation reopens a returned case while a recommendation is pending.
 
 Decided by Randall on 2026-10-29: no code change. A withdraw action, checks that leave decided cases decided, and issued permits that stay closed are listed as future features in `docs/submission/JUDGE_WALKTHROUGH.md`.
+
+## Later lanes and corrections (2026-10-30, rebuild on branch docs/accuracy at 07f048b)
+
+Sources are the code on that commit under `repo/`. Every item below was checked against code before the page changed.
+
+- Five personas, Agent Operator included: `config/actors.json`, `ops/checks.py` `check_personas`. Operator grants and navigation as above. Only the Agent Operator holds `agent.toggle`, `agent.run.intake` and `agent.run.adjudication`.
+- Administration tabs (`ui/admin_tabs.py`, `ui/agent_admin_views.py`): Permit types, Appearance, Users and roles (including which staff roles may run agents), Agent processing, Reason codes, Configuration log.
+- Optional automatic processing: durable queue and one worker (`agents/worker.py`, `agents/policy.py`, `agents/runtime.py`). `ACME_AGENT_WORKER_ENABLED` defaults to false (`core/config_operator.py`) and `render.yaml` does not set it, so it is not enabled on Render. Automatic runs use built-in deterministic logic (`agents/extraction.py`, `agents/runtime.py`) and never call the provider.
+- Daily Muse allowance: `muse/budget.py`, `ACME_MUSE_DAILY_CALL_CAP`, default 10 (`core/config_operator.py`). Live call cap default 2.
+- Applicant help answer, council briefing and what-if proposals use the same adapter and default to replay: `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` are 0 in `render.yaml`.
+- Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were made with Krea 2 at build time (commits `5eddb89`, `6e96c36`), a build-time asset only.
+- Demo video: `static/video/demo-video.mp4` is draft 8 at 720p (commit `426bc5a`), 164.2 s (2:44), 7.96 MB, preload none, no autoplay. Picture lock and final export remain open.
+- Tests: 2741 collected on merged main (`python -m pytest --collect-only -q`, 2026-10-30). Last recorded full run 2726 passed in 815.58 s (`EVIDENCE_LOG.md`). Phase counts 762 and 879 are historical. 10 gates unchanged.
+- Licence: all rights reserved, copyright Randy Vollen and VollenData; the repository is public for transparency, hackathon evaluation and demonstration only (`LICENSE`, `NOTICE`). The earlier Apache 2.0 statement is withdrawn.
+- Approval policy: `config/approval_policy.json`, default `single` (one administrator may approve); `independent` requires a different administrator.
+- Steward autolink: `registry/automation.py`, `agents/linking.py`, `scripts/run_linking_worker.py`. A steward-activated policy; a bounded worker applies only high-confidence party links through a narrow service identity (`linking_agent`); each applied link is reviewable and reversible; parcel and address families are suggest-only; no model call.
+- Steward Data issues workspace (four work areas: Data issues, Master records, Source records, Activity) and deterministic steward guide (`ui/steward_guide.py`, "Saved guidance. Live Muse is off."). Community page redesign at `/city/community`. Netlify front door (`netlify/`): static page that waits for `/readyz` through a proxied path, then redirects.
+- Screen names (`ui/view_models.py`): People & organizations, Master records (`/masters`, `/property`), Data issues (`/steward`), Source records, Activity, Intake queue, Early resolution, Review queue, City view, What-if, Operations, Agents, Agent runs, Agent cases, Steward automation, New master record.
+- Six simulated subscriber departments (not four).
+- Diagram: Agent Operator persona box added, persona boxes in story order, edge from the operator to the browser; the Administration to agents edge is now labelled processing policy. A separate worker and queue box was not drawn: the diagram grid has no free slot (the permit edge crosses the only empty cell), so the worker is described in the agents node text.

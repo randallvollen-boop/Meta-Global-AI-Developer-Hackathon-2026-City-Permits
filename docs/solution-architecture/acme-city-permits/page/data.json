@@ -48,7 +48,7 @@
  "nodes": {
   "p_applicant": {
    "x": 34,
-   "y": 80,
+   "y": 70,
    "w": 222,
    "h": 64,
    "t": "Applicant",
@@ -56,9 +56,19 @@
    "i": "users",
    "cls": "plan"
   },
+  "p_operator": {
+   "x": 34,
+   "y": 170,
+   "w": 222,
+   "h": 64,
+   "t": "Agent Operator",
+   "s": "Wakes and runs the agents",
+   "i": "cursor_click",
+   "cls": "plan"
+  },
   "p_steward": {
    "x": 34,
-   "y": 208,
+   "y": 270,
    "w": 222,
    "h": 64,
    "t": "Data Steward",
@@ -68,7 +78,7 @@
   },
   "p_reviewer": {
    "x": 34,
-   "y": 336,
+   "y": 370,
    "w": 222,
    "h": 64,
    "t": "Permit Reviewer",
@@ -78,7 +88,7 @@
   },
   "p_admin": {
    "x": 34,
-   "y": 464,
+   "y": 470,
    "w": 222,
    "h": 64,
    "t": "City Administrator",
@@ -276,7 +286,7 @@
   },
   "p_public": {
    "x": 34,
-   "y": 592,
+   "y": 570,
    "w": 222,
    "h": 64,
    "t": "Public visitor",
@@ -369,19 +379,39 @@
    "p": [
     [
      256,
-     112
+     102
     ],
     [
-     260,
-     112
+     259,
+     102
     ],
     [
-     260,
-     100
+     259,
+     96
     ],
     [
      310,
-     100
+     96
+    ]
+   ]
+  },
+  "e_p_op": {
+   "p": [
+    [
+     256,
+     202
+    ],
+    [
+     266,
+     202
+    ],
+    [
+     266,
+     106
+    ],
+    [
+     310,
+     106
     ]
    ]
   },
@@ -389,19 +419,19 @@
    "p": [
     [
      256,
-     240
+     302
     ],
     [
-     268,
-     240
+     273,
+     302
     ],
     [
-     268,
-     110
+     273,
+     116
     ],
     [
      310,
-     110
+     116
     ]
    ]
   },
@@ -409,19 +439,19 @@
    "p": [
     [
      256,
-     368
+     402
     ],
     [
-     276,
-     368
+     280,
+     402
     ],
     [
-     276,
-     120
+     280,
+     126
     ],
     [
      310,
-     120
+     126
     ]
    ]
   },
@@ -429,19 +459,19 @@
    "p": [
     [
      256,
-     496
+     502
     ],
     [
-     284,
-     496
+     287,
+     502
     ],
     [
-     284,
-     130
+     287,
+     136
     ],
     [
      310,
-     130
+     136
     ]
    ]
   },
@@ -1058,7 +1088,7 @@
    ],
    "lbl": {
     "agents": [
-     "wake and run",
+     "processing policy",
      830,
      626
     ]
@@ -1124,19 +1154,19 @@
    "p": [
     [
      256,
-     624
+     602
     ],
     [
-     292,
-     624
+     294,
+     602
     ],
     [
-     292,
-     140
+     294,
+     146
     ],
     [
      310,
-     140
+     146
     ]
    ]
   },
@@ -1338,6 +1368,7 @@
   "system": {
    "edges": [
     "e_p_app",
+    "e_p_op",
     "e_p_stw",
     "e_p_rev",
     "e_p_adm",
@@ -1377,10 +1408,12 @@
     "e_p_stw",
     "e_p_rev",
     "e_p_adm",
-    "e_p_pub"
+    "e_p_pub",
+    "e_p_op"
    ],
    "nodes": [
     "p_applicant",
+    "p_operator",
     "p_steward",
     "p_reviewer",
     "p_admin",
@@ -1481,7 +1514,8 @@
     "insight",
     "briefing",
     "synth",
-    "museimg"
+    "museimg",
+    "p_operator"
    ],
    "steps": true,
    "legend": [
@@ -1550,7 +1584,8 @@
     "insight",
     "briefing",
     "synth",
-    "museimg"
+    "museimg",
+    "p_operator"
    ],
    "legend": [
     [
@@ -1567,6 +1602,7 @@
   "agents": {
    "edges": [
     "e_p_rev",
+    "e_p_op",
     "e_p_adm",
     "e_browser_api",
     "e_api_permits",
@@ -1578,10 +1614,12 @@
    ],
    "user": [
     "e_p_rev",
-    "e_p_adm"
+    "e_p_adm",
+    "e_p_op"
    ],
    "nodes": [
     "p_reviewer",
+    "p_operator",
     "p_admin",
     "browser",
     "api",
@@ -1626,7 +1664,7 @@
      "Built component link"
     ]
    ],
-   "note": "A person wakes and runs each agent. The agents recommend, the reviewer decides, and four simulated departments only read the property master."
+   "note": "The Agent Operator wakes and runs each agent. The agents recommend, the reviewer decides, and six simulated departments only read the property master."
   },
   "muse": {
    "edges": [
@@ -1674,7 +1712,8 @@
     "ops",
     "city",
     "insight",
-    "synth"
+    "synth",
+    "p_operator"
    ],
    "legend": [
     [
@@ -1687,6 +1726,7 @@
   "verify": {
    "edges": [
     "e_p_app",
+    "e_p_op",
     "e_p_stw",
     "e_p_rev",
     "e_p_adm",
@@ -1700,10 +1740,12 @@
     "e_p_app",
     "e_p_stw",
     "e_p_rev",
-    "e_p_adm"
+    "e_p_adm",
+    "e_p_op"
    ],
    "nodes": [
     "p_applicant",
+    "p_operator",
     "p_steward",
     "p_reviewer",
     "p_admin",
@@ -1753,6 +1795,7 @@
   "status": {
    "edges": [
     "e_p_app",
+    "e_p_op",
     "e_p_stw",
     "e_p_rev",
     "e_p_adm",
@@ -1792,10 +1835,12 @@
     "e_p_stw",
     "e_p_rev",
     "e_p_adm",
-    "e_p_pub"
+    "e_p_pub",
+    "e_p_op"
    ],
    "nodes": [
     "p_applicant",
+    "p_operator",
     "p_steward",
     "p_reviewer",
     "p_admin",
@@ -1973,11 +2018,11 @@
   ],
   [
    34,
-   208
+   270
   ],
   [
    34,
-   336
+   370
   ],
   [
    310,
@@ -2032,7 +2077,8 @@
    "b": "Carries separately declared Administrator, Governance Lead, Data Owner, Finance and Auditor grants.",
    "f": [
     "Configuration rights do not create business approval rights.",
-    "Finance allocation and owner approvals follow their own grants and state rules."
+    "Finance allocation and owner approvals follow their own grants and state rules.",
+    "Sets the agent processing policy in Administration, Agent processing. Does not wake or run the agents."
    ],
    "status": "ex",
    "sl": "Verified"
@@ -2166,7 +2212,7 @@
     "Standard mode only, and never a contributor model.",
     "The live primary-chain run succeeded. Replay never counts as live evidence.",
     "The provider balance and the no-cash path are unverified.",
-    "The same endpoint also writes the applicant help answers and the council briefing. Replay is the default for both, and live use needs an explicit server setting."
+    "The same endpoint also writes the applicant help answers, the council briefing and the what-if proposals. Replay is the default for all of them. They share the live call cap 2, the daily allowance 10 and the error stop."
    ],
    "status": "ex",
    "sl": "Succeeded"
@@ -2225,12 +2271,13 @@
    "k": "Built",
    "t": "Intake and adjudication agents",
    "r": "Intake and adjudication agents",
-   "b": "Two agents that a person wakes and runs. The intake agent has seven nodes and the adjudication agent has five. Every run is recorded with a per-node trace.",
+   "b": "Two agents that the Agent Operator wakes and runs. The intake agent has seven nodes and the adjudication agent has five. Every run is recorded with a per-node trace.",
    "f": [
-    "Intake: classifier; field extractor and document quality check in parallel; address locator; duplicate finder and completeness check in parallel; router.",
+    "Intake: classifier; field extractor and document quality check in parallel; address locator and completeness check in parallel; duplicate finder; router.",
     "Adjudication: rule loader; rule evaluator; condition builder and precedent check in parallel; disposition.",
-    "Confirm records the reviewer's decision, and a held recommendation cannot be confirmed. Revert needs a reason.",
-    "Only the City Administrator wakes an agent."
+    "Only the Agent Operator holds agent.toggle, agent.run.intake and agent.run.adjudication. The City Administrator sets the processing policy in Administration, Agent processing.",
+    "Optional automatic processing uses a durable work queue and one worker that is off by default and not enabled on Render. It uses built-in deterministic logic and never calls the model provider.",
+    "Confirm records the reviewer's decision, and a held recommendation cannot be confirmed. Revert needs a reason."
    ],
    "status": "ga",
    "sl": "Built"
@@ -2239,10 +2286,11 @@
    "k": "Built",
    "t": "Administration",
    "r": "Administration",
-   "b": "City Administrator only. It holds permit-type configuration, users, service identities, reason codes, the configuration log and the permit-type icons, which Muse Image can generate in the Appearance tab.",
+   "b": "City Administrator only. Tabs are Permit types, Appearance and Users and roles. The rest are Agent processing, Reason codes and the Configuration log. Appearance holds the permit-type icons, which Muse Image can generate. Users and roles shows which staff roles may run agents.",
    "f": [
     "The catalogue has 17 permit types.",
-    "A configuration change applies only to new intake."
+    "A configuration change applies only to new intake.",
+    "Agent processing sets the policy: manual, or automatic as work arrives. It decides nothing about a case."
    ],
    "status": "ga",
    "sl": "Built"
@@ -2251,11 +2299,11 @@
    "k": "Built",
    "t": "Property master and map",
    "r": "Property master and town map",
-   "b": "The shared parcel record at /property/{parcel} and a server-rendered SVG town map at /map.",
+   "b": "The shared parcel record at /property/{parcel} and a server-rendered SVG town map at /map. The map loads no outside tiles and makes no network calls.",
    "f": [
     "The address locator proposes a parcel link and never approves it.",
     "A permit decision is blocked until the parcel link is approved and confirmed.",
-    "The map loads no outside tiles."
+    "Parcels are textured with 17 bundled local WebP image tiles, made with Krea 2 at build time. The City view uses them too."
    ],
    "status": "ga",
    "sl": "Built"
@@ -2329,7 +2377,7 @@
    "b": "City Administrator only. A person defines a what-if change, such as raising the side and rear fence limit from 6 ft to 7 ft. The service then scores a synthetic year of cases under the old and new rules.",
    "f": [
     "Runs are immutable and every edit is a revision. Muse Spark can explain a run or propose a change, and a person decides.",
-    "Save as a draft rule change makes an ordinary draft that still needs independent approval from another administrator.",
+    "Save as a draft rule change makes an ordinary draft. Approval follows the approval policy: by default one administrator may approve, and the independent setting requires a different administrator (config/approval_policy.json).",
     "Only rule limit, operator and fee changes convert to drafts. The rest stay simulation only."
    ],
    "status": "ga",
@@ -2376,13 +2424,26 @@
    "k": "External service",
    "t": "Meta Muse Image",
    "r": "Meta Muse Image",
-   "b": "The image model that drew the permit-type icons. The 14 seed icons added on 2026-10-28 came from 14 calls to muse-image-1.0, and a City Administrator can generate more in Administration, Appearance tab.",
+   "b": "The image model that drew most of the permit-type icons: 14 of the 17 came from 14 calls to muse-image-1.0 on 2026-10-28. A City Administrator can generate more in Administration, Appearance tab.",
    "f": [
     "Icons are decorative and carry no record data.",
     "Applicants cannot generate icons."
    ],
    "status": "ex",
    "sl": "Used"
+  },
+  "p_operator": {
+   "k": "Built persona",
+   "t": "Agent Operator",
+   "r": "Agent Operator persona",
+   "b": "Holds the agent_operator grants. It wakes, sleeps and runs the intake and adjudication agents, processes a bounded selection of waiting cases and reads the run history.",
+   "f": [
+    "Home is Agents, with Intake agent, Adjudication agent and Agent runs.",
+    "Cannot decide, issue or configure. The reviewer decides.",
+    "Only this persona holds agent.toggle, agent.run.intake and agent.run.adjudication."
+   ],
+   "status": "ex",
+   "sl": "Verified"
   }
  },
  "explorer": {
