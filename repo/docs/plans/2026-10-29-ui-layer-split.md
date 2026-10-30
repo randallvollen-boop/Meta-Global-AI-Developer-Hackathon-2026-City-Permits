@@ -7,10 +7,35 @@
 > doing, but not at the risk of a working demo.
 
 > **For agentic workers:** Implement this plan task-by-task. Randall chose
-> ultracode with Haiku runners (2026-10-29): run it as a Workflow with one fresh
-> Haiku agent per task, and a parent gate between tasks that runs the task's
-> acceptance checks and the snapshot comparison before the next task starts. A
-> runner never starts the next task itself. Steps use checkbox (`- [ ]`) syntax.
+> ultracode (2026-10-29): run it as a Workflow with one fresh agent per task, and
+> a parent gate between tasks that runs the task's acceptance checks and the
+> snapshot comparison before the next task starts. A runner never starts the
+> next task itself. Steps use checkbox (`- [ ]`) syntax.
+
+## Models
+
+Randall: "If a better model is needed, we need to allow that" (2026-10-29).
+Haiku is the default, and each task steps up when the work needs judgment or
+when a runner fails.
+
+| Task | Starting model | Why |
+|---|---|---|
+| 1 Snapshot harness and move script | Haiku | The code is given in full below. |
+| 2 to 5 `router.py` routes and actions | Sonnet | For about 60 handlers, the runner decides which private helpers move with each one and which stay shared. |
+| 6 to 9 section moves by marker | Haiku | The script moves the code. The runner writes imports and re-export lists from ruff's output. |
+| 0 and 10, and every gate | Parent (Opus) | Preconditions, independent acceptance and the hand-off. |
+
+**Stepping up.** A task moves to the next model (Haiku, then Sonnet, then Opus)
+when either of these happens:
+- its acceptance checks fail after two corrections on the same model;
+- the runner reports that the task needs a judgment the plan does not settle.
+
+Start the stronger model fresh, with the task text, the failing output and the
+`git diff` of the attempt. Reset the attempt with `git checkout -- repo/src`, or
+keep it if the diff is sound. Record each step-up and its reason in the
+hand-off note.
+
+The parent never accepts a task on a runner's word. The gate reruns the checks.
 
 **Goal:** Split the four oversized UI modules into one module per area. No
 behaviour changes: every route, action, rendered page and import path stays the
@@ -61,15 +86,24 @@ kept colliding in `router.py`.
 Every task from 2 to 9 uses these steps. Each task repeats the parts it needs,
 so a runner can read one task on its own.
 
-1. Create the new module with the old module's header style: a docstring that
-   names the area, `from __future__ import annotations`, and the imports the
-   moved code needs.
-2. Cut the named section from the old module and paste it into the new module
-   word for word.
+1. Move the code with the script from Task 1, never by retyping it:
+   `python3 scripts/ui_split_move.py src/acme_city/ui/<old>.py src/acme_city/ui/<new>.py "<start marker>" "<end marker>"`.
+   It cuts the lines from the start marker up to (not including) the end marker
+   and appends them to the new module unchanged. It prints the SHA-256 of the
+   moved text, which it reads back from both files.
+   Marker strings are unique substrings of the section comment lines, for
+   example `# ---- work queue` written as it appears in the file. An empty end
+   marker means end of file.
+   For moves that are not a whole section (Tasks 2 to 5), call the script once
+   per contiguous block, using the first line of the function after the block
+   as the end marker.
+2. Put the new module's header above the moved text: a docstring that names the
+   area, `from __future__ import annotations`, and the imports.
 3. Find the undefined names with
-   `uvx ruff check --select F821,F811,F401 --no-cache src/acme_city/ui/<new>.py src/acme_city/ui/<old>.py` (ruff 0.17.3 is cached for uvx on this host), and import each one from
-   where it is defined. Shared helpers stay in the old module and are imported
-   from it.
+   `uvx ruff check --select F821,F811,F401 --no-cache src/acme_city/ui/<new>.py src/acme_city/ui/<old>.py`
+   (ruff 0.17.3 is cached for uvx on this host), and import each one from where
+   it is defined. Shared helpers stay in the old module and are imported from
+   it.
 4. At the end of the old module, add one re-export block that lists every moved
    name explicitly, private names included:
    `from acme_city.ui.<new> import (a, b, _c)  # noqa: E402,F401 - moved, re-exported`.
@@ -107,6 +141,7 @@ Run: `git worktree add -b refactor/ui-split ~/Projects/Personal/acme-permits-ui-
 
 **Files:**
 - Create: `repo/scripts/ui_split_snapshot.py`
+- Create: `repo/scripts/ui_split_move.py`
 - Snapshots are written to `repo/var/ui-split/` (git-ignored, because `var/` is
   in `.gitignore`).
 
@@ -274,6 +309,67 @@ if __name__ == "__main__":
 `names` only fails on a name that disappears. New names in a module (the
 re-export lines) are expected.
 
+- [ ] **Step 1b: Write the move script `repo/scripts/ui_split_move.py`.**
+
+```python
+#!/usr/bin/env python3
+"""Move a block of lines from one module to another, byte for byte.
+
+ui_split_move.py <source.py> <target.py> <start marker> [<end marker>]
+
+The block runs from the first line containing the start marker up to, but not
+including, the first later line containing the end marker (end of file when the
+end marker is empty or absent). The block is appended to the target and removed
+from the source, and the SHA-256 of the block is checked in both places.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import sys
+from pathlib import Path
+
+
+def main() -> None:
+    if len(sys.argv) not in (4, 5):
+        raise SystemExit(__doc__)
+    source, target = Path(sys.argv[1]), Path(sys.argv[2])
+    start_marker = sys.argv[3]
+    end_marker = sys.argv[4] if len(sys.argv) == 5 else ""
+    lines = source.read_text(encoding="utf-8").splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines) if start_marker in line]
+    if len(starts) != 1:
+        raise SystemExit(f"start marker found {len(starts)} times, expected once: {start_marker!r}")
+    start = starts[0]
+    end = len(lines)
+    if end_marker:
+        ends = [i for i in range(start + 1, len(lines)) if end_marker in lines[i]]
+        if not ends:
+            raise SystemExit(f"end marker not found after the start: {end_marker!r}")
+        end = ends[0]
+    block = "".join(lines[start:end])
+    digest = hashlib.sha256(block.encode()).hexdigest()
+    existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    separator = "" if not existing or existing.endswith("\n\n") else ("\n" if existing.endswith("\n") else "\n\n")
+    target.write_text(existing + separator + block, encoding="utf-8")
+    source.write_text("".join(lines[:start] + lines[end:]), encoding="utf-8")
+    if hashlib.sha256(target.read_text(encoding="utf-8")[-len(block):].encode()).hexdigest() != digest:
+        raise SystemExit("the block in the target does not match the source block")
+    print(f"moved {end - start} lines, sha256 {digest}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Check it on a scratch copy before any real move:
+
+Run: `cp src/acme_city/ui/steward_views.py /tmp/sv.py && python3 scripts/ui_split_move.py /tmp/sv.py /tmp/sv_new.py "- activity" "- registration" && wc -l /tmp/sv.py /tmp/sv_new.py && rm /tmp/sv.py /tmp/sv_new.py`
+Expected: "moved N lines, sha256 ...", and the two line counts add up to the
+original file's count. Use the exact text of the section comment for the
+marker, for example `# ------------------------------------------------------------------- activity`
+cut down to a unique substring such as `- activity`.
+
 - [ ] **Step 2: Capture twice and compare.**
 
 Run: `cd repo && PYTHONPATH=src python3 scripts/ui_split_snapshot.py capture base && PYTHONPATH=src python3 scripts/ui_split_snapshot.py capture base2 && PYTHONPATH=src python3 scripts/ui_split_snapshot.py compare base base2`
@@ -282,9 +378,9 @@ span that changed. Add a regex for it to `NOISE`, keeping it as narrow as the
 span, and repeat until two runs compare equal. Record each added regex in the
 hand-off note.
 
-- [ ] **Step 3: Commit the harness only.**
+- [ ] **Step 3: Commit the harness and the move script only.**
 
-Run: `git add repo/scripts/ui_split_snapshot.py && git commit -m "UI split: snapshot harness"`
+Run: `git add repo/scripts/ui_split_snapshot.py repo/scripts/ui_split_move.py && git commit -m "UI split: snapshot harness and move script"`
 
 ---
 
