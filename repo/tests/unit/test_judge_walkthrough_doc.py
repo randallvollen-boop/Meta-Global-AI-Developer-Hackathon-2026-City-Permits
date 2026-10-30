@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from acme_city.ui.guide_views import WALKTHROUGH
@@ -21,4 +22,4 @@ def test_the_document_lists_every_step_in_order_with_its_words() -> None:
         position = text.index(heading)
         for phrase in (step.path, step.do, step.look_for):
             assert phrase in text, f"{heading}: {phrase}"
-    assert text.count("\n## ") == len(WALKTHROUGH)
+    assert len(re.findall(r"^## \d+\. ", text, flags=re.M)) == len(WALKTHROUGH)
