@@ -46,9 +46,20 @@
    the table headers, and the steward screens read better without it. */
 body[data-screen="steward"] .data-table thead th,
 body[data-screen="source_records"] .data-table thead th,
+body[data-screen="activity"] .data-table thead th,
 body[data-screen="masters"] .data-table thead th {
   text-transform: none; letter-spacing: normal; font-size: .74rem;
 }
+
+/* The activity list.  The readable action and the record it changed lead,
+   the note and the actor follow, and the result says plainly whether the
+   event was recorded or refused. */
+.stw-activity-table { width: 100%; }
+.stw-action { display: block; font-weight: 600; }
+.stw-target { margin-top: 2px; }
+.stw-actor { display: block; }
+.stw-cell-note { color: var(--fg-2); }
+.stw-cell-result { white-space: nowrap; }
 
 /* The source-record catalogue.  One row is one accepted record: the name a
    person recognizes, the source, the state of its link and the one action
@@ -183,4 +194,28 @@ body[data-screen="masters"] .data-table thead th {
   }
   body[data-screen="masters"] .stw-master-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
   body[data-screen="masters"] .stw-master-tabs a { min-width: 0; overflow-wrap: anywhere; }
+
+  /* The activity list reads as one card per event: the action, the record,
+     the result, the actor with the time, and the note. */
+  body[data-screen="activity"] .stw-activity-table thead { display: none; }
+  body[data-screen="activity"] .stw-activity-table,
+  body[data-screen="activity"] .stw-activity-table tbody,
+  body[data-screen="activity"] .stw-activity-table th,
+  body[data-screen="activity"] .stw-activity-table td { display: block; width: 100%; }
+  body[data-screen="activity"] .stw-activity-table tr {
+    display: flex; flex-direction: column;
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="activity"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .84rem;
+  }
+  body[data-screen="activity"] .stw-cell-change { order: 1; }
+  body[data-screen="activity"] .stw-cell-result { order: 2; margin: 4px 0; }
+  body[data-screen="activity"] .stw-cell-actor { order: 3; }
+  body[data-screen="activity"] .stw-cell-note { order: 4; margin-top: 4px; }
+  body[data-screen="activity"] .stw-target::before {
+    content: attr(data-label) ": "; color: var(--fg-3); font-size: .72rem;
+    font-family: var(--f-body);
+  }
 }

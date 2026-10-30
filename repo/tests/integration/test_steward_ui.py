@@ -14,14 +14,14 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
-from acme_city.persistence.models import change, registry
+from acme_city.persistence.models import audit, change, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 # The router is imported before the view models on purpose: the detail kinds
@@ -859,6 +859,125 @@ def test_activity_lists_decisions_not_the_audit_log(client: TestClient, environm
     assert "Candidate links proposed" in body
     choose(client, "persona_applicant")
     assert client.get("/activity").status_code == 403
+
+
+def activity_rows(html: str) -> list[str]:
+    """Return the markup of every row of the activity list."""
+    return re.findall(r'<tr data-testid="activity-row">(.*?)</tr>', html, re.S)
+
+
+def record_event(
+    environment: Settings,
+    *,
+    action: str = "registry.crosswalk.decide",
+    outcome: str = "accepted",
+    target: str = "PER-AP-0003",
+    reason: str = "",
+    denial_reason: str = "",
+    count: int = 1,
+) -> None:
+    """Record activity events in the database of the test.
+
+    The check constraint of the table allows only the two known outcomes, so
+    the constraint is switched off while an unfamiliar outcome is written.
+    """
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            session.execute(text("PRAGMA ignore_check_constraints=ON"))
+            for number in range(count):
+                session.add(
+                    audit.AuditEvent(
+                        id=f"audit_activity_{action.replace('.', '_')}_{target}_{number}",
+                        correlation_id="correlation_activity",
+                        occurred_at=datetime(2026, 10, 20, 9, 30, tzinfo=UTC),
+                        actor_id="persona_data_steward",
+                        action=action,
+                        target_type="source_record",
+                        target_id=target,
+                        reason=reason,
+                        denial_reason=denial_reason,
+                        outcome=outcome,
+                    )
+                )
+            session.flush()
+            session.execute(text("PRAGMA ignore_check_constraints=OFF"))
+    finally:
+        factory.dispose()
+
+
+def test_the_activity_leads_with_the_action_and_the_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """The activity list names the action, the record, the actor and the result."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/activity").text
+    assert "Recorded stewardship decisions and changes." in body
+    rows = activity_rows(body)
+    assert len(rows) == 3
+    assert all("Candidate links proposed" in row for row in rows)
+    row = next(row for row in rows if "PER-AP-0003" in row)
+    assert "Data Steward" in row
+    # The record of the event opens the case it belongs to.
+    assert "/steward/issues/link/" in row
+    # An accepted event is a neutral record, never a failure.
+    assert re.search(r'class="pill plain nowrap" data-testid="activity-result">Recorded<', row)
+    assert "pill bad" not in body
+
+
+def test_the_activity_marks_a_refused_event_and_leaves_an_unknown_outcome_neutral(
+    client: TestClient, environment: Settings
+) -> None:
+    """Only a refused event carries the refusal tone."""
+    choose(client, "persona_data_steward")
+    record_event(
+        environment,
+        action="registry.crosswalk.decide",
+        outcome="denied",
+        target="PER-AP-0003",
+        denial_reason="the source record does not match the master record",
+    )
+    record_event(
+        environment,
+        action="registry.crosswalk.defer",
+        outcome="pending",
+        target="ERP-BL-00413",
+        reason="waiting for the source to answer",
+    )
+    body = client.get("/activity").text
+    refused = next(row for row in activity_rows(body) if "PER-AP-0003" in row)
+    assert "Refused" in refused
+    assert 'class="pill bad nowrap" data-testid="activity-result">Refused<' in refused
+    assert "the source record does not match the master record" in refused
+    unknown = next(row for row in activity_rows(body) if "ERP-BL-00413" in row)
+    assert re.search(r'class="pill plain nowrap" data-testid="activity-result">Recorded<', unknown)
+    assert "pill bad" not in unknown
+    assert "waiting for the source to answer" in unknown
+
+
+def test_the_activity_keeps_its_pages(client: TestClient, environment: Settings) -> None:
+    """The activity list keeps its pages and its page links."""
+    choose(client, "persona_data_steward")
+    record_event(environment, count=51)
+    body = client.get("/activity").text
+    assert body.count('data-testid="activity-row"') == 50
+    pager = client.get("/activity").text.split('data-testid="pager"')[1]
+    assert "1 to 50 of 51" in pager
+    second = client.get("/activity?page=2").text
+    assert second.count('data-testid="activity-row"') == 1
+    assert "51 to 51 of 51" in second
+
+
+def test_the_activity_is_not_the_administrator_audit_log(
+    client: TestClient, environment: Settings
+) -> None:
+    """The activity list shows the steward's own events, not every recorded action."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/activity").text
+    assert "ui." not in text_of(body)
+    assert "/audit" not in body
 
 
 # ------------------------------------------------------- registry service level

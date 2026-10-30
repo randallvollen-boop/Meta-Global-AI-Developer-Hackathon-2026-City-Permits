@@ -3127,6 +3127,18 @@ def source_records(
 ACTIVITY_PREFIXES = ("registry.crosswalk", "change.case", "change.command", "parcel.", "source.record", "extraction.")
 
 
+def _activity_outcome(outcome: str) -> tuple[str, str]:
+    """Return the label and the tone of one recorded outcome.
+
+    A refused event is the only one that carries the refusal tone.  Every
+    other outcome is a neutral record, and an outcome the steward does not
+    know never looks like a failure.
+    """
+    if outcome == "denied":
+        return "Refused", "bad"
+    return "Recorded", "plain"
+
+
 def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[str, Any]:
     """Return recorded steward decisions and changes."""
     synthetic = _synthetic_ids(session)
@@ -3139,6 +3151,7 @@ def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[st
             continue
         if row.target_id in synthetic:
             continue
+        outcome, tone = _activity_outcome(row.outcome)
         entries.append(
             {
                 "when": _iso(row.occurred_at),
@@ -3146,8 +3159,9 @@ def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[st
                 "what": _pretty_action(row.action),
                 "target": row.target_id or "",
                 "note": row.reason or row.denial_reason or "",
-                "outcome": "Refused" if row.outcome == "denied" else "Recorded",
+                "outcome": outcome,
                 "outcome_key": row.outcome,
+                "outcome_tone": tone,
                 "href": _activity_href(session, row),
             }
         )
