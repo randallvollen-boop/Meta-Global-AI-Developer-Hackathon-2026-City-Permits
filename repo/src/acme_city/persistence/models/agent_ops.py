@@ -80,7 +80,8 @@ class AgentWorkQueue(IdMixin, CorrelationMixin, CreatedAtMixin, VersionMixin, Ba
     it was tried.  There is no lease and no fencing token.  The row itself is
     the authority, and a worker takes a piece of work by moving it from
     ``pending`` to ``running`` in one statement, so two workers never hold
-    the same work.
+    the same work.  A finish names the attempt it ends, so a late finish of
+    an earlier attempt is refused.
     """
 
     __tablename__ = "agent_work_queue"

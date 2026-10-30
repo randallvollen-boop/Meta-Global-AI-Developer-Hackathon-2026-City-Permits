@@ -19,6 +19,7 @@ from sqlalchemy import select, update
 
 from acme_city.agents.control import AgentControlService
 from acme_city.agents.eligibility import eligible_applications
+from acme_city.agents.intake import waiting_applications
 from acme_city.agents.policy import current_policy
 from acme_city.agents.runtime import (
     AgentRuntime,
@@ -35,7 +36,6 @@ from acme_city.core.errors import ValidationError
 from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
-from acme_city.kernel.inputs import build_inputs
 from acme_city.muse.client import MuseClient
 from acme_city.muse.image_client import MuseImageClient
 from acme_city.persistence.models import agent as agent_models
@@ -44,8 +44,6 @@ from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.portal_intake.scenarios import build_scenario
 from acme_city.portal_intake.service import INTAKE_AGENT_ID, IntakeService
-from acme_city.rules.evaluator import evaluate, overall_status
-from acme_city.rules.service import RuleCatalogService
 from acme_city.triage.service import service_actor
 
 #: The repository root, so the test can read the acceptance-test data.
@@ -53,9 +51,6 @@ REPO = Path(__file__).resolve().parents[2]
 
 #: The fence scenarios of the two protected fence rules.
 FENCE_SCENARIOS = ("fence-conforming-rear", "fence-front-too-tall")
-
-#: The protected fence rules and the scenario each of them is measured with.
-FENCE_RULES = {"DF-1": "fence-front-too-tall", "DF-2": "fence-conforming-rear"}
 
 
 @pytest.fixture()
@@ -207,11 +202,72 @@ def test_two_workers_never_commit_the_same_work(environment: Settings) -> None:
             # The second worker cannot take the same work.
             assert runtime.claim(row.id) is None
             # Only the worker that holds the work may finish it.
-            finished = runtime.finish(row.id, agent_ops.WORK_COMPLETED, note="done")
+            finished = runtime.finish(row.id, 1, agent_ops.WORK_COMPLETED, note="done")
             assert finished is not None
             assert finished.status == agent_ops.WORK_COMPLETED
-            assert runtime.finish(row.id, agent_ops.WORK_COMPLETED) is None
+            assert runtime.finish(row.id, 1, agent_ops.WORK_COMPLETED) is None
             assert runtime.claim(row.id) is None
+    finally:
+        factory.dispose()
+
+
+def test_a_late_finish_of_an_earlier_attempt_is_refused(environment: Settings) -> None:
+    """A finish names its attempt, so a late one changes nothing."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = _arrival(session, environment)
+            runtime = AgentRuntime(session)
+            row = runtime.enqueue(application)
+            first = runtime.claim(row.id)
+            assert first is not None
+            assert first.attempts == 1
+            assert runtime.finish(row.id, 1, agent_ops.WORK_FAILED, note="it failed") is not None
+            # The work waits for another attempt and is taken again.
+            assert runtime.reopen(row.id) is not None
+            second = runtime.claim(row.id)
+            assert second is not None
+            assert second.attempts == 2
+            # The late finish of the first attempt is refused: the second
+            # attempt holds the work.
+            assert runtime.finish(row.id, 1, agent_ops.WORK_COMPLETED, note="too late") is None
+            session.refresh(row)
+            assert row.status == agent_ops.WORK_RUNNING
+            assert row.attempts == 2
+            # The finish of the attempt that holds the work is recorded.
+            finished = runtime.finish(row.id, 2, agent_ops.WORK_COMPLETED, note="done")
+            assert finished is not None
+            assert finished.status == agent_ops.WORK_COMPLETED
+    finally:
+        factory.dispose()
+
+
+def test_the_clock_is_read_at_the_claim_and_at_the_finish(environment: Settings) -> None:
+    """The row carries the moment of the attempt, not the moment of the queue."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = _arrival(session, environment)
+            runtime = AgentRuntime(session)
+            row = runtime.enqueue(application)
+            before = utc_now()
+            claimed = runtime.claim(row.id)
+            assert claimed is not None
+            assert claimed.claimed_at is not None
+            assert before <= claimed.claimed_at <= utc_now()
+            finished = runtime.finish(row.id, 1, agent_ops.WORK_COMPLETED, note="done")
+            assert finished is not None
+            assert finished.finished_at is not None
+            assert claimed.claimed_at <= finished.finished_at <= utc_now()
+            # A test may pass its own moment instead of the clock.
+            moment = utc_now()
+            other = AgentRuntime(session, now=moment)
+            second = other.enqueue(
+                _arrival(session, environment, scenario="shed-large")
+            )
+            claimed = other.claim(second.id)
+            assert claimed is not None
+            assert claimed.claimed_at == moment
     finally:
         factory.dispose()
 
@@ -224,7 +280,7 @@ def test_a_second_attempt_is_counted(environment: Settings) -> None:
             runtime = AgentRuntime(session)
             row = runtime.enqueue(application)
             runtime.claim(row.id)
-            runtime.finish(row.id, agent_ops.WORK_FAILED, note="the run failed")
+            runtime.finish(row.id, 1, agent_ops.WORK_FAILED, note="the run failed")
             # A failed piece of work waits for another attempt.  The retry
             # itself is the failure-recovery slice; here the waiting work is
             # put back by hand to show that the attempt count grows.
@@ -276,21 +332,23 @@ def test_the_protected_fixtures_are_never_eligible(environment: Settings) -> Non
         factory.dispose()
 
 
-def test_a_runtime_cycle_leaves_the_protected_fence_outcomes_unchanged(
-    environment: Settings,
-) -> None:
+def test_the_queue_is_empty_after_a_reset(environment: Settings) -> None:
+    """A reset clears the queue: no work of the old demonstration survives."""
     factory = SessionFactory(environment.database_url)
     try:
         with factory() as session:
             runtime = AgentRuntime(session)
-            for application in eligible_applications(session):
-                runtime.enqueue(application)
-            catalog = RuleCatalogService(session)
-            for rule_id, scenario in FENCE_RULES.items():
-                (record,) = build_scenario(scenario)
-                rule_set = catalog.resolve("executable", record.permit_type_key, record.received_at)
-                results = evaluate(build_inputs(record.submitted_facts), rule_set)
-                assert overall_status(results) == ("fail" if rule_id == "DF-1" else "pass")
+            runtime.enqueue(_arrival(session, environment))
+            assert runtime.counts()["pending"] == 1
+        bundle = FixtureBundle.load()
+        with transaction(factory) as session:
+            reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+        with factory() as session:
+            runtime = AgentRuntime(session)
+            assert runtime.counts()["pending"] == 0
+            assert runtime.counts()["running"] == 0
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert rows == []
     finally:
         factory.dispose()
 
@@ -331,6 +389,33 @@ def test_a_fresh_arrival_is_eligible_and_a_worked_case_is_not(
         factory.dispose()
 
 
+def test_the_waiting_cases_and_the_eligible_cases_share_one_clause(
+    environment: Settings,
+) -> None:
+    """One clause decides both, and only the history of a case narrows it."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = _arrival(session, environment)
+            waiting = {row.id for row in waiting_applications(session)}
+            eligible = {row.id for row in eligible_applications(session)}
+            assert application.id in waiting
+            assert application.id in eligible
+            # A case that is in the queue still waits for a person, but the
+            # automatic work never takes it a second time.
+            AgentRuntime(session).enqueue(application)
+            session.flush()
+            waiting = {row.id for row in waiting_applications(session)}
+            eligible = {row.id for row in eligible_applications(session)}
+            assert application.id in waiting
+            assert application.id not in eligible
+            # Every case the agents may pick up on their own waits for the
+            # intake agent.
+            assert eligible <= waiting
+    finally:
+        factory.dispose()
+
+
 def test_the_queue_counts_report_the_state_of_the_work(environment: Settings) -> None:
     factory = SessionFactory(environment.database_url)
     try:
@@ -345,7 +430,7 @@ def test_the_queue_counts_report_the_state_of_the_work(environment: Settings) ->
             runtime.claim(first.id)
             assert runtime.counts()["running"] == 1
             runtime.claim(second.id)
-            runtime.finish(second.id, agent_ops.WORK_HELD, note="a person is asked")
+            runtime.finish(second.id, 1, agent_ops.WORK_HELD, note="a person is asked")
             assert runtime.counts()["held"] == 1
             assert operator_summary(session)["queued"] == 0
             assert operator_summary(session)["retrying"] == 0

@@ -398,3 +398,11 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The controlled data is never eligible: the D01-D11 cases carry a scenario id, the cases the acceptance tests work on are those same controlled cases, and the DF-1 and DF-2 fence scenarios are data the rule evaluator reads, never a case of the queue. A test enumerates all three groups.
 - No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. Nothing pushed, merged or published.
 
+## 2026-10-29 — Agent Operator lane, review 3 fixes (`lane/agent-operator`)
+
+- A finish names the attempt it ends: `AgentRuntime.finish(work_id, attempt, status, note=...)` adds `attempts == attempt` to the statement, so the late finish of an attempt that already ended changes no row and is refused, while the finish of the attempt that holds the work is recorded. The two callers of the OPR-10 manual run pass the attempt the claim counted.
+- The clock is read when the work is taken and when it is finished, not when the runtime was built, so the row carries the moment of the attempt. A test may still pass its own moment.
+- One eligibility clause: `agents/eligibility.py` holds `waiting_clause()`, the clause of a case that waits for the intake agent, and both `eligible_applications` and `agents/intake.waiting_applications` use it, so the cases the agents may pick up on their own and the cases the operator sees as waiting never drift apart. The eligibility query keeps its own narrowing (a case that was worked or is already queued is history).
+- The fence test of the OPR-9 slice asserted a rule outcome that did not depend on the runtime cycle it named, so it was replaced by a test that says what the cycle means: a reset leaves the work queue empty.
+- No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. The full suite is green (2153 passed). Nothing pushed, merged or published.
+

@@ -148,16 +148,17 @@ def service_actor(session: Session, actor_id: str) -> ActorContext:
 def waiting_applications(session: Session) -> list[permit.Application]:
     """Return the applications that wait for the intake agent.
 
-    A case waits when it arrived from outside the City and no intake run has
-    routed it yet.  A seeded demonstration case carries a scenario id and is
-    never waiting: it is part of the fixed fixture, not an arrival.
+    A case waits when it arrived from outside the City and still waits for
+    the agent.  A seeded demonstration case carries a scenario id and is
+    never waiting: it is part of the fixed fixture, not an arrival.  The
+    clause is the one of the eligibility query, so the waiting cases and the
+    cases the agents may pick up on their own never drift apart.
     """
+    from acme_city.agents.eligibility import waiting_clause
+
     rows = session.execute(
         select(permit.Application)
-        .where(
-            permit.Application.status == "submitted",
-            permit.Application.scenario_id.is_(None),
-        )
+        .where(waiting_clause())
         .order_by(permit.Application.source_application_number)
     ).scalars().all()
     return list(rows)
@@ -259,10 +260,9 @@ class IntakeAgent:
     def waiting_applications(self) -> list[permit.Application]:
         """Return the applications that wait for the intake agent.
 
-        A case waits when it arrived from outside and no intake run has
-        routed it yet.  A seeded demonstration case carries a scenario id
-        and is never waiting: it is part of the fixed fixture, not an
-        arrival.
+        A case waits when it arrived from outside and still waits for the
+        agent.  A seeded demonstration case carries a scenario id and is
+        never waiting: it is part of the fixed fixture, not an arrival.
         """
         return waiting_applications(self._session)
 

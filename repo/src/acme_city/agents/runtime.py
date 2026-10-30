@@ -5,7 +5,8 @@ is run.  The queue row is the authority: a worker takes a piece of work by
 moving it from ``pending`` to ``running`` in a single statement, and only the
 worker that won that statement may finish it.  There is no lease and no
 fencing token.  The status column and the attempt count are the whole
-protocol.
+protocol, and a finish names the attempt it ends, so a late finish of an
+earlier attempt is refused.
 
 The runtime records what may be worked, what is being worked and what was
 finished, so that the operator screens and a later worker agree on the state
@@ -137,7 +138,16 @@ class AgentRuntime:
 
     def __init__(self, session: Session, *, now: datetime | None = None) -> None:
         self._session = session
-        self._now = now or utc_now()
+        self._now = now
+
+    def _clock(self) -> datetime:
+        """Return the moment of this call.
+
+        The clock is read when the work is taken and when it is finished, so
+        the row carries the time of the attempt.  A test may pass its own
+        moment instead.
+        """
+        return self._now if self._now is not None else utc_now()
 
     # ------------------------------------------------------------------ queue
 
@@ -195,7 +205,7 @@ class AgentRuntime:
             .values(
                 status=agent_ops.WORK_RUNNING,
                 attempts=agent_ops.AgentWorkQueue.attempts + 1,
-                claimed_at=self._now,
+                claimed_at=self._clock(),
                 finished_at=None,
                 version=agent_ops.AgentWorkQueue.version + 1,
             )
@@ -205,13 +215,15 @@ class AgentRuntime:
         return self._session.get(agent_ops.AgentWorkQueue, work_id, populate_existing=True)
 
     def finish(
-        self, work_id: str, status: str, *, note: str | None = None
+        self, work_id: str, attempt: int, status: str, *, note: str | None = None
     ) -> agent_ops.AgentWorkQueue | None:
-        """Record the outcome of one piece of work.
+        """Record the outcome of one attempt of one piece of work.
 
         Only the worker that holds the work may finish it: the row has to be
-        ``running``.  A second worker that tries to commit the same work
-        changes no row and the finish is refused.
+        ``running`` and its attempt count has to be the attempt the worker
+        holds.  A second worker that tries to commit the same work changes no
+        row and the finish is refused, and so is the late finish of an
+        attempt that already ended.
         """
         if status not in (
             agent_ops.WORK_COMPLETED,
@@ -224,10 +236,11 @@ class AgentRuntime:
             .where(
                 agent_ops.AgentWorkQueue.id == work_id,
                 agent_ops.AgentWorkQueue.status == agent_ops.WORK_RUNNING,
+                agent_ops.AgentWorkQueue.attempts == attempt,
             )
             .values(
                 status=status,
-                finished_at=self._now,
+                finished_at=self._clock(),
                 note=note,
                 version=agent_ops.AgentWorkQueue.version + 1,
             )
@@ -298,10 +311,17 @@ class AgentRuntime:
         try:
             run = runner(application.id, claimed.id)
         except Exception as error:  # noqa: BLE001 - the failure is recorded
-            self.finish(claimed.id, agent_ops.WORK_FAILED, note=f"the run failed: {error}")
+            self.finish(
+                claimed.id,
+                claimed.attempts,
+                agent_ops.WORK_FAILED,
+                note=f"the run failed: {error}",
+            )
             raise
         status = work_status_for(run.outcome)
-        self.finish(claimed.id, status, note=f"the run ended: {run.outcome}")
+        self.finish(
+            claimed.id, claimed.attempts, status, note=f"the run ended: {run.outcome}"
+        )
         return QueuedRun(
             application_id=application.id,
             work_id=claimed.id,
