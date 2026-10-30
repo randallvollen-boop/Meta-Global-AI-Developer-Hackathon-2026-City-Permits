@@ -11,10 +11,6 @@ and stays in ``steward.py``.  The Agent Operator opens it with the execution
 grant that lets it process the selected cases, and that grant is not a menu
 entry of its own: the queue is reached from the "Process selected cases" link
 on the Agents home.
-
-The Data Steward keeps its intake agent under More tools with its other
-secondary tools (STW-2).  The screen stays open for the persona; only its
-place in the navigation changed.
 """
 
 from __future__ import annotations
@@ -40,8 +36,11 @@ PRIMARY: dict[str, tuple[str, ...]] = {
 }
 
 #: The agent screens under More tools, by actor id.
+#:
+#: None: OPR-3 moved the wake and run grants to the Agent Operator alone, so
+#: no other persona opens an agent screen any more.
 SECONDARY: dict[str, tuple[str, ...]] = {
-    "persona_data_steward": ("agent_intake",),
+    "persona_data_steward": (),
 }
 
 #: Screens a persona may open for an authorized action but which are not menu
