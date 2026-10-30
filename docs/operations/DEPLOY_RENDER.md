@@ -135,14 +135,26 @@ Live Muse stays off until judging, and Randall turns it on himself. The live ser
 
 - `ACME_MUSE_LIVE_CALL_CAP` is not per visitor and not per session. The service counts every completed live model run in the database. At 2, live Muse stops after two live calls in total, from anyone, until the data is rebuilt.
 - One recorded provider error stops every further live call until the data is rebuilt, whatever the cap says.
-- `ACME_MUSE_DAILY_CALL_CAP` (code default 10, not set in `render.yaml`) caps provider calls per day across every path.
-- Randall chooses the cap for judging. Until he does, it stays at 2.
+- `ACME_MUSE_DAILY_CALL_CAP` (code default 10, not set in `render.yaml`) caps provider calls per day. It is reserved inside the Muse client before each call, so it binds as well, and at its default of 10 it would stop judging long before the live cap.
+
+| Path | Live call cap | Daily allowance | Image daily cap |
+|---|---|---|---|
+| Muse runs on a case (extraction, match proposal) | yes | yes | no |
+| Applicant help assistant | yes | yes | no |
+| What-if briefing, explanation and proposal | yes | yes | no |
+| Permit type icon generation (Muse Image) | no | yes | yes |
+
+The intake and adjudication agents use the City's built in logic and never call the provider, so no cap applies to them.
+
+- The judging setting is 100 for both caps (Randall's choice).
+- Both are Render environment variables. Randall can raise or lower them at any time: Environment, edit the value, Save. Render then redeploys, which also resets the counts.
+- The live call cap counts live runs since the last database reset. It works as a daily limit only once the nightly reset cron has `ACME_DEPLOY_HOOK_URL` set (see Nightly reset). Any deploy also resets it.
 
 ### Turn it on
 
 1. In Render, open `acme-city-permits`, then Environment, then Add Environment Variable. Add `META_API_KEY` with the key.
 2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1`. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live.
-3. Set `ACME_MUSE_LIVE_CALL_CAP` to the number Randall chose for judging.
+3. Set `ACME_MUSE_LIVE_CALL_CAP` to `100`, and add `ACME_MUSE_DAILY_CALL_CAP` with the value `100`. Without the second, the daily allowance stops live calls at 10.
 4. Save. Render redeploys by itself, which also resets the live call count. Run the smoke check.
 
 The key is never sent to a browser, and seeding never uses a live call.
