@@ -177,14 +177,30 @@ def test_users_and_reason_codes_keep_people_and_readable_labels_first(
 
 def test_the_configuration_log_leads_with_readable_changes(client: TestClient) -> None:
     select_persona(client, "persona_city_administrator")
+    page = client.get("/admin?tab=reason-codes")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text)
+    assert token is not None
+    retired = client.post(
+        "/ui/actions/config.reason_code.retire",
+        data={
+            "csrf_token": token.group(1),
+            "action_id": "config.reason_code.retire",
+            "next": "/admin?tab=reason-codes",
+            "code": "INCOMPLETE_APPLICATION",
+        },
+        headers={"Accept": "application/json"},
+    )
+    assert retired.status_code == 200, retired.text
     response = client.get("/admin?tab=log")
     assert response.status_code == 200
     body = response.text
     assert 'data-testid="admin-configuration-log"' in body
-    if 'data-testid="admin-log-row"' in body:
-        assert 'data-testid="admin-log-change"' in body
-        assert "View values" in body
-        assert "Raw action" in body
+    assert 'data-testid="admin-log-row"' in body
+    assert 'data-testid="admin-log-change"' in body
+    assert "Retired reason code" in body
+    assert "View values" in body
+    assert "Raw action" in body
+    assert "config.reason_code.retire" in body
 
 
 def test_the_planning_overview_is_refused_to_the_other_personas(

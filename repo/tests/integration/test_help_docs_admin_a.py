@@ -22,5 +22,6 @@ def test_the_operations_guide_names_the_labels_the_dashboard_shows() -> None:
     # The guide still names the parts of the dashboard a reader is sent to.
     assert '"Figures"' in steps
     assert '"Decisions recorded, by outcome"' in steps
+    assert '"View details"' in steps
     assert '"Support"' in steps
     assert '"Send reply"' in steps

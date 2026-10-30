@@ -42,7 +42,7 @@
         <textarea id="reply-{{ r.request_id }}" name="reply" rows="3" maxlength="2000" required aria-required="true" data-testid="help-reply"></textarea>
       </p>
       {% if r.reference and not r.archived %}<p class="adm-support-destination">The applicant can read this reply. It will also appear on the case.</p>{% endif %}
-      {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change. It is archived and cannot change.</p>{% endif %}
+      {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change.</p>{% endif %}
       {% if not r.reference %}<p class="adm-support-destination">This reply appears in the applicant’s help history.</p>{% endif %}
       <p><button type="submit" class="btn primary" data-testid="help-answer">Send reply</button></p>
     </form>
@@ -86,6 +86,7 @@
   <p data-testid="support-lookup-none">No application has the reference "{{ reference }}".</p>
   {% endif %}
   </div>
+</section>
 {% endif %}
 
 {% if can_record %}

@@ -234,8 +234,14 @@ def test_users_and_reason_codes_fit_a_phone(page, server: BrowserServer, login, 
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator(".demo-switch > summary"))
     if section == "users":
-        assert page.locator('[data-testid="admin-demo-persona"]').count() == 5
+        people = page.locator('[data-testid="admin-person-row"]')
+        personas_before = people.locator('[data-testid="admin-demo-persona"]').count()
+        from acme_city.ui.view_models import PERSONA_PROFILES
+
+        assert personas_before == len(PERSONA_PROFILES)
+        assert personas_before == people.count()
         page.locator('[data-testid="admin-service-identities-disclosure"] > summary').click()
+        assert people.locator('[data-testid="admin-demo-persona"]').count() == personas_before
     else:
         page.locator(".adm-retire-confirm > summary").first.click()
         assert "Existing records keep this code." in page.locator(".adm-retire-confirm").first.inner_text()

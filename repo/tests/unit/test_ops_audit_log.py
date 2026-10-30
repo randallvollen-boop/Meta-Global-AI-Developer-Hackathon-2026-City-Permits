@@ -135,6 +135,6 @@ def test_the_audit_presenter_keeps_raw_values_and_adds_readable_event_fields() -
     assert row["target_label"] == "help_request help_1"
     assert view["actions"] == [
         {"key": "support.help_request.answer", "label": "Answered help request"},
-        {"key": "made.up_action", "label": "Made Up Action"},
+        {"key": "made.up_action", "label": "Made up action"},
     ]
     assert audit_action_label("") == "Recorded event"

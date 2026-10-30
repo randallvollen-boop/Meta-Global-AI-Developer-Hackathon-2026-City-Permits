@@ -9,7 +9,13 @@ Administrator's reply reaches the applicant, with and without JavaScript.
 
 from __future__ import annotations
 
-from conftest import BrowserServer
+import sys
+from pathlib import Path
+
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
+from p3c_support import seed_help_request  # noqa: E402
 
 PLACEMENTS = (
     ("/apply", "chooser"),
@@ -156,6 +162,7 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
 
 
 def test_support_leads_with_requests_and_names_the_reply_destination(page, server: BrowserServer, login) -> None:
+    seed_help_request(server.settings, application_id="app_d05")
     login("persona_city_administrator")
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
@@ -163,5 +170,11 @@ def test_support_leads_with_requests_and_names_the_reply_destination(page, serve
     lookup = page.locator('[data-testid="support-lookup"]')
     assert requests.bounding_box()["y"] < lookup.bounding_box()["y"]
     assert page.locator('[data-testid="support-filter-open"]').get_attribute("aria-current") == "page"
-    assert page.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.locator('[data-testid="support-record"]').locator(
+        "xpath=ancestor::*[@data-testid='support-lookup']"
+    ).count() == 0
+    open_request = page.locator('[data-testid="help-request-card"][data-status="open"]').first
+    assert "The applicant can read this reply." in open_request.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
     assert page.recorded_errors == []

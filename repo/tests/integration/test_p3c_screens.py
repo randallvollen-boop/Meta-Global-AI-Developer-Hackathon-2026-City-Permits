@@ -368,7 +368,7 @@ def test_a_reply_on_an_archived_case_does_not_touch_the_application(client, envi
         factory.dispose()
     made = seed_help_request(environment, application_id="app_d05")
     choose(client, ADMIN)
-    assert "archived and cannot change" in client.get("/ops/support").text
+    assert "This reply stays on the help request. The archived case will not change." in client.get("/ops/support").text
     before = len(rows(environment, permit.ApplicationComment))
     assert post_action(client, "support.help_request.answer", {
         "help_request_id": made["request_id"], "expected_version": "1", "reply": "We will restore it."}, page="/ops/support").status_code == 200

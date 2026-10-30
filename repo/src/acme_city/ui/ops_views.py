@@ -55,10 +55,10 @@ CHECK_STATUS_LABELS: dict[str, str] = {
 #: The order the results of a run are shown in: a failure is read first.
 CHECK_STATUS_ORDER: tuple[str, ...] = ("fail", "pass", "not_applicable")
 
-#: Readable labels for the audit events that people encounter in the demo.
-#: The audit service keeps the stored action key; this map only changes how a
-#: row is read on screen.
-AUDIT_ACTION_LABELS: dict[str, str] = {
+#: Readable labels for recorded actions that people encounter in the demo.
+#: The services keep the stored action keys; this map only changes how a row
+#: is read on screen.
+ACTION_LABELS: dict[str, str] = {
     "checks.run": "Ran consistency checks",
     "config.permit_type.document": "Changed permit type documents",
     "config.reason_code.add": "Added reason code",
@@ -78,12 +78,14 @@ AUDIT_OUTCOME_LABELS: dict[str, str] = {
 }
 
 
+def readable_words(value: str) -> str:
+    """Return a stored identifier as reader-facing sentence-case words."""
+    return " ".join(str(value or "").replace("_", " ").replace(".", " ").split()).capitalize()
+
+
 def audit_action_label(action: str) -> str:
     """Return a readable audit-event label without changing its stored key."""
-    if action in AUDIT_ACTION_LABELS:
-        return AUDIT_ACTION_LABELS[action]
-    words = str(action or "").replace("_", " ").replace(".", " ").split()
-    return " ".join(word.capitalize() for word in words) or "Recorded event"
+    return ACTION_LABELS.get(action, readable_words(action) or "Recorded event")
 
 
 def audit_outcome_label(outcome: str) -> str:
@@ -237,7 +239,7 @@ def scope_statement(include_history: bool) -> str:
 
 __all__ = [
     "AS_OF_LABEL",
-    "AUDIT_ACTION_LABELS",
+    "ACTION_LABELS",
     "AUDIT_OUTCOME_LABELS",
     "audit_action_label",
     "audit_outcome_label",
@@ -253,5 +255,6 @@ __all__ = [
     "figure_groups",
     "group_of",
     "label_for",
+    "readable_words",
     "scope_statement",
 ]

@@ -344,9 +344,11 @@ def test_configuration_log_presentation_keeps_raw_values_in_expanded_details() -
     entry = view[0]
     assert entry["action"] == "config.reason_code.retire"
     assert entry["action_label"] == "Retired reason code"
-    assert entry["target_label"] == "Reason Code"
+    assert entry["target_label"] == "Reason code"
     assert entry["before_display"] == {"active": True}
     assert entry["after_display"] == {"active": False}
+
+
 def test_a_value_that_was_never_recorded_says_so(session: Session) -> None:
     actor = _actor_for(session, "persona_city_administrator")
     view = admin_config_views.administration(session, actor)

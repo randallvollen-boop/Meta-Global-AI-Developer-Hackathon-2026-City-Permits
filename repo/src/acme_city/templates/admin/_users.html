@@ -12,7 +12,7 @@
           <th scope="row"><span class="adm-field-label">Name</span>{{ person.label }}</th>
           <td><span class="adm-field-label">Role</span>{{ person.role_label }}</td>
           <td><span class="adm-field-label">Department</span>{{ person.department or 'Not recorded' }}</td>
-          <td><span class="adm-field-label">Demo access</span>{% if person.is_demo_persona %}<span class="adm-demo-persona" data-testid="admin-demo-persona">Demo persona</span>{% else %}Added user{% endif %}</td>
+          <td><span class="adm-field-label">Demo access</span>{% if person.selectable %}<span class="adm-demo-persona" data-testid="admin-demo-persona">Demo persona</span>{% else %}Added user{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>

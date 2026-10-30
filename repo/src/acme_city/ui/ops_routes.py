@@ -157,7 +157,7 @@ def _resolve_audit_event(ctx: DetailContext, event_id: str) -> DetailView | None
         Row("Target", " ".join(part for part in (event.target_type or "", event.target_id or "") if part) or "none", mono=True),
         Row(
             "Versions",
-            f"{event.before_version if event.before_version is not None else '-'} to {event.after_version if event.after_version is not None else '-'}",
+            f"{event.before_version if event.before_version is not None else 'Not recorded'} to {event.after_version if event.after_version is not None else 'Not recorded'}",
             mono=True,
         ),
         Row("Outcome", event.outcome),
