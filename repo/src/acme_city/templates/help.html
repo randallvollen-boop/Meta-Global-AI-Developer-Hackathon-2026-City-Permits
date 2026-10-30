@@ -61,7 +61,7 @@
 {% elif help_view == 'howto' %}
   {{ crumbs('How-to guides') }}
   <div class="page-head"><div><h1>{{ guide.title }}</h1><p class="sub">{{ guide.summary }}</p></div></div>
-  <p class="help-who" data-testid="howto-who"><strong>Who can do this:</strong> {{ guide.who }}. Use "Demo: switch user" to act as this person.</p>
+  <p class="help-who" data-testid="howto-who"><strong>Who can do this:</strong> {{ guide.who }}. Press "Demo controls" at the bottom left and pick the person to act as them.</p>
   <p><a class="btn primary" href="{{ guide.screen_href }}" data-testid="howto-go">Go to {{ guide.screen_label }}</a></p>
   <ol class="help-steps" data-testid="howto-steps">
     {% for step in guide.steps %}<li data-testid="howto-step">{{ step }}</li>{% endfor %}

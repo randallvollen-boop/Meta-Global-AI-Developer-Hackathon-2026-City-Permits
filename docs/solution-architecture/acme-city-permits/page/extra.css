@@ -95,3 +95,7 @@ footer{border-top:1px solid var(--hi)}
 /* Evidence register frame: a state for work that has not run. */
 .bnc-chk .st.na { background: var(--b-sub); color: var(--b-mut); border: 1px solid var(--b-line); }
 
+
+/* Registry master data is the visual centre of the diagram. */
+.node.core rect.box { stroke: var(--accent); stroke-width: 3; fill: var(--tint); stroke-dasharray: none; }
+.node.core .t { font-weight: 600; font-size: 15px; }

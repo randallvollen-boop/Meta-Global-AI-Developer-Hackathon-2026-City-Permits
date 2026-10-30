@@ -42,7 +42,7 @@ Every existing test, the start scripts, and the judged deployment run in demo mo
 | `ACME_SCENARIO_CLOCK` | empty (start script uses `auto`) | ignored | Demo date |
 | `META_API_KEY` | none | none | Provider credential. Leave unset until the AI controls below are closed |
 | `ACME_APPLICANT_ASSIST_LIVE_ENABLED`, `ACME_POLICY_ASSIST_LIVE_ENABLED` | off | off | Task switches, checked in addition to the global switch |
-| `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Existing caps, unchanged |
+| `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Live calls in total since the data was last rebuilt (not per visitor; one provider error also stops live calls), image calls per day, allowed model. See the Live Muse section of `DEPLOY_RENDER.md` |
 | `ACME_GIS_BASE_URL`, `ACME_GIS_AUTO_PROPOSE_SCORE`, `ACME_DEMO_TIMEZONE`, `ACME_EVIDENCE_ROOT`, `ACME_KEY_FILE` | as before | as before | Unchanged |
 | `ACME_RUN_MIGRATIONS`, `ACME_BIND_PORT`, `ACME_FORWARDED_ALLOW_IPS` | container entrypoint only | container entrypoint only | Skip the upgrade, listen port, proxy addresses uvicorn trusts. `PORT`, when set, wins over `ACME_BIND_PORT` |
 | `ACME_RATE_LIMIT_ALL_PER_MINUTE`, `_WRITE_`, `_SESSION_`, `_UPLOAD_` (`..._PER_MINUTE`) | 0 (off) | 0 (off) | Requests per minute per client address for all requests, state-changing requests, persona switches and uploads. For the public demonstration only; see `DEPLOY_RENDER.md` |
@@ -86,7 +86,7 @@ The hosted demonstration (`demo` mode, fictional data, seeded on every start, ra
 
 1. Stop writes (stop the container or switch the proxy to a maintenance page).
 2. If the new release did not change the schema (same Alembic head), start the previous image tag.
-3. If it did, do not rely on `alembic downgrade`: migration 0013 drops the support cases table on downgrade. Restore the database and documents from the backup taken before the deploy (below), then start the previous image.
+3. If it did, do not rely on `alembic downgrade`: most migrations drop the tables they created on downgrade (for example 0013 drops the support cases table). Restore the database and documents from the backup taken before the deploy (below), then start the previous image.
 4. Check `/readyz`. It returns 503 when the stored revision is not the head of the running build, which also catches an old image started on a newer database.
 
 ## Backup and restore
@@ -144,7 +144,7 @@ Steps to connect a provider: implement the interface, add a table that maps issu
 | Readiness endpoint with stale revision check | `tests/security/test_production_mode.py` |
 | Sanitized error envelopes in production | `tests/unit/test_deployment_mode.py`, `tests/security/test_production_mode.py` |
 | Work queue loads assessments in one query | `tests/ui/test_queue_queries.py` |
-| Dockerfile, compose file, entrypoint, continuous integration workflow | Syntax validated only (`docker compose config`, `docker build --check`); not built or run |
+| Dockerfile, compose file, entrypoint, continuous integration workflow | Syntax validated (`docker compose config`, `docker build --check`). The `demo` target was also built and run locally (`DEPLOY_RENDER.md`); the production target is not recorded as built or run |
 
 ## What remains
 
@@ -160,7 +160,7 @@ Effort follows the review: S is under 2 hours, M about half a day, L a day or mo
 | AI cost reservations | Atomic attempted-call, token and cost reservations, bounded input, per-user limits, a reset for the circuit breaker, provider data approval and retention rules | L |
 | Accessibility audit | WCAG (Web Content Accessibility Guidelines) 2.2 AA review with keyboard, screen reader, zoom and contrast checks | L |
 | Production business authority | A separate bootstrap with approved rules, fees and real role holders; the demo banner and footer text in `base.html` still say "fictional demonstration" | L, needs outside approval |
-| Rate limiting | Shared or edge limits for sign-in, uploads and expensive actions | M |
+| Rate limiting | The app has per-process limits for the public demo (off by default, see `DEPLOY_RENDER.md`). Production still needs shared or edge limits for sign-in, uploads and expensive actions | M |
 | CSRF (cross-site request forgery) checks on cookie-authenticated JSON writes | Uniform origin or token checks beyond the interface forms | M |
 | Remaining queue queries | The work queue still issues several queries per application for blockers and next actions; add scope filters and pagination | M |
 | Inline style attributes | Move them into stylesheets and drop `style-src-attr 'unsafe-inline'` | M |

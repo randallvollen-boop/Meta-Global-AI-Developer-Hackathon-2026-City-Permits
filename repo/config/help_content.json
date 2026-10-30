@@ -8,7 +8,7 @@
       {
         "key": "tutorial",
         "title": "Tutorial",
-        "summary": "A guided walk through the demo story, one person at a time: Applicant, Permit Reviewer, Data Steward and City Administrator.",
+        "summary": "A guided walk through the demo story, one person at a time: Applicant, Agent Operator, Data Steward, Permit Reviewer and City Administrator.",
         "href": "/help/tutorial"
       },
       {
@@ -33,8 +33,8 @@
   },
   "tutorial": {
     "title": "Tutorial: the demo story",
-    "intro": "The story follows one fence permit through the City. An applicant applies, a permit reviewer checks the application, a data steward settles a question about who the applicant is, and a city administrator tests a rule change. Each section is for one person. The numbered steps use the labels you see on the screens.",
-    "switch_note": "You act as one person at a time. To change person, press \"Demo: switch user\" at the bottom left of any screen and pick the next one. The tutorial does not switch for you.",
+    "intro": "The story follows one fence permit through the City. An applicant applies, an agent operator wakes the agents that prepare the case, a data steward settles a question about who the applicant is, a permit reviewer checks the application and records a decision, and a city administrator tests a rule change. Each section is for one person. The numbered steps use the labels you see on the screens.",
+    "switch_note": "You act as one person at a time. To change person, press \"Demo controls\" at the bottom left of any screen and pick the next one. The tutorial does not switch for you.",
     "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a Muse answer, it is a recorded replay: a stored answer shown again, labelled \"Recorded replay\" (a labelled demonstration fixture). No model is called when you follow these steps.",
     "state_note": "Some screens are empty until the demo data is prepared. The steps say when. If a list is empty, ask whoever runs the demo to prepare the data as the user test guide describes in the technical documentation.",
     "sections": [
@@ -74,7 +74,7 @@
             "href": "/apply/deck_fence"
           },
           {
-            "do": "Fix each item: Fence material cedar; Location \"Side or rear yard\"; Distance 2; tick \"I will not build over the property line\"; add a Project description; Email t.aldous@example.invalid; add a Site sketch and a Material specification with \"Add file\" (a small text file works); tick the certification.",
+            "do": "Fix each item: Fence material cedar; Location on the property \"Side or rear yard\"; Distance from the property line 2; tick \"I will not build over the property line\"; add a Project description; Email t.aldous@example.invalid; add a Site sketch and a Material specification with \"Add file\" (a small text file works); tick the certification.",
             "see": "Each message beside a field goes away once the field is complete.",
             "href": "/apply/deck_fence"
           },
@@ -96,12 +96,86 @@
         ]
       },
       {
+        "persona": "Agent Operator",
+        "persona_id": "persona_agent_operator",
+        "intro": "The agent operator wakes the intake agent and the adjudication agent, asks them to prepare the cases that wait, and reads what they did. An agent proposes and a person decides: the operator makes no permit decision. The case the applicant sent in the first section waits for the intake agent.",
+        "steps": [
+          {
+            "do": "Press \"Demo controls\" at the bottom left and pick \"Agent Operator\".",
+            "see": "You land on \"Agents\". Under \"Agent status\" both the Intake agent and the Adjudication agent read asleep.",
+            "href": "/agents"
+          },
+          {
+            "do": "Click \"Intake agent\" in the left menu.",
+            "see": "The state reads asleep, Processing reads \"Manual processing\" and Engine reads \"Built in logic\". The page says \"The agent is asleep, so the run buttons are off.\"",
+            "href": "/agent/intake"
+          },
+          {
+            "do": "Click \"Wake agent\".",
+            "see": "A message says the intake agent is awake. The state reads awake and the button now reads \"Put agent to sleep\".",
+            "href": "/agent/intake"
+          },
+          {
+            "do": "In the table \"Cases waiting for the agent\" click \"Process one\" on the case the applicant sent, or click the Process next 20 button.",
+            "see": "A message says the intake agent ran on the waiting case. The case leaves the table, and \"Recent results\" lists the run as completed with the mode \"Built in logic\". If the table says \"Nothing is waiting for this agent.\", no application has arrived yet: send one as the Applicant first.",
+            "href": "/agent/intake"
+          },
+          {
+            "do": "Click \"Adjudication agent\" in the left menu, click \"Wake agent\", then click \"Process one\" or the Process next 20 button.",
+            "see": "The recommendation appears under \"Recommendations waiting for a person\". It only proposes an outcome: the Permit Reviewer decides.",
+            "href": "/agent/adjudication"
+          },
+          {
+            "do": "Click \"Agent runs\" in the left menu, then click \"View run\" on a row.",
+            "see": "\"Run detail\" shows the processing steps, the \"Provenance\" and the \"Recorded business changes\". For these runs the provenance reads \"builtin-rules-1 (builtin)\": no model was called.",
+            "href": "/agents/runs"
+          },
+          {
+            "do": "Go back to each agent and click \"Put agent to sleep\".",
+            "see": "The state reads asleep again, and the run buttons are off until someone wakes the agent.",
+            "href": "/agents"
+          }
+        ]
+      },
+      {
+        "persona": "Data Steward",
+        "persona_id": "persona_data_steward",
+        "intro": "The data steward keeps the records of people, organizations and properties right. Here the steward settles whether two similar business names are the same organization. The records come from ERP (enterprise resource planning) software, the City's finance system.",
+        "steps": [
+          {
+            "do": "Press \"Demo controls\" at the bottom left and pick \"Data Steward\".",
+            "see": "You land on \"Data issues\".",
+            "href": "/steward"
+          },
+          {
+            "do": "Click \"Master records\" in the left menu, on the tab \"People & organizations\".",
+            "see": "The list shows the master records. A master record is the one agreed version of a person, organization or property.",
+            "href": "/masters"
+          },
+          {
+            "do": "Click \"Data issues\" in the left menu to return to the queue.",
+            "see": "\"Needs review\" lists open questions. It reads \"Nothing needs review\" until the Cedarline steward demonstration data is loaded, then it shows 3.",
+            "href": "/steward"
+          },
+          {
+            "do": "Open the case for ERP-BL-00413 (Cedarline Coffee Works).",
+            "see": "Six numbered sections run from \"1. What is the problem?\" to \"6. What happened?\". Section 3 compares the source record with two lookalike master records, Cedarline Coffee Works LLC and Cedarline Coffee Roasters LLC.",
+            "href": "/steward"
+          },
+          {
+            "do": "Under \"3. What are we comparing?\" choose Cedarline Coffee Works LLC under \"Compare with\" and press \"Show this record\". Then, under \"5. What will this action do?\", read the preview of each action. Choose \"Confirm link to Cedarline Coffee Works LLC\", click \"Start\", write a Decision note and submit.",
+            "see": "A message says it recorded the decision and the new version number. \"Data issues\" now shows one case less under \"Needs review\" and one under Resolved. The link ties the source record to the master record. Neither record's values are overwritten, and the conflicts stay visible in the history. Never confirm the link to Cedarline Coffee Roasters LLC: its number, name and unit all differ.",
+            "href": "/steward"
+          }
+        ]
+      },
+      {
         "persona": "Permit Reviewer",
         "persona_id": "persona_permit_reviewer",
         "intro": "The permit reviewer checks submitted applications against the rules and records a decision. In the untouched demo data, the first case cannot be approved yet, and the steps show why.",
         "steps": [
           {
-            "do": "Use \"Demo: switch user\" and choose \"Permit Reviewer\".",
+            "do": "Press \"Demo controls\" at the bottom left and pick \"Permit Reviewer\".",
             "see": "You land on the Work queue.",
             "href": "/queue"
           },
@@ -133,49 +207,17 @@
         ]
       },
       {
-        "persona": "Data Steward",
-        "persona_id": "persona_data_steward",
-        "intro": "The data steward keeps the records of people, organizations and properties right. Here the steward settles whether two similar business names are the same organization. The records come from ERP (enterprise resource planning) software, the City's finance system.",
-        "steps": [
-          {
-            "do": "Use \"Demo: switch user\" and choose \"Data Steward\".",
-            "see": "You land on the Work queue.",
-            "href": "/queue"
-          },
-          {
-            "do": "Click \"Master records\" in the left menu, on the tab \"People & organizations\".",
-            "see": "The list shows the master records. A master record is the one agreed version of a person, organization or property.",
-            "href": "/masters"
-          },
-          {
-            "do": "Click \"Data issues\" in the left menu.",
-            "see": "\"Needs review\" lists open questions. It reads \"Nothing needs review\" until the Cedarline steward demonstration data is loaded, then it shows 3.",
-            "href": "/steward"
-          },
-          {
-            "do": "Open the case for ERP-BL-00413 (Cedarline Coffee Works).",
-            "see": "Six numbered sections run from \"1. What is the problem?\" to \"6. What happened?\". Section 3 compares the source record with two lookalike master records, Cedarline Coffee Works LLC and Cedarline Coffee Roasters LLC.",
-            "href": "/steward"
-          },
-          {
-            "do": "Under \"5. What will this action do?\" read the preview of each action. Choose \"Confirm link to Cedarline Coffee Works LLC\", click \"Start\", write a Decision note and submit.",
-            "see": "A message says it recorded the decision and the new version number. \"Data issues\" now shows one case less under \"Needs review\" and one under Resolved. Never confirm the link to Cedarline Coffee Roasters LLC: its number, name and unit all differ.",
-            "href": "/steward"
-          }
-        ]
-      },
-      {
         "persona": "City Administrator",
         "persona_id": "persona_city_administrator",
         "intro": "The city administrator tests a rule change on past cases before anyone changes a rule, then looks at how the City is doing.",
         "steps": [
           {
-            "do": "Use \"Demo: switch user\" and choose \"City Administrator\".",
+            "do": "Press \"Demo controls\" at the bottom left and pick \"City Administrator\".",
             "see": "You land on the planning overview.",
             "href": "/overview"
           },
           {
-            "do": "Click \"What-if\" in the left menu.",
+            "do": "Open \"More tools\" in the left menu, then click \"What-if\".",
             "see": "The page lists suggestions and your saved what-ifs.",
             "href": "/policy/scenarios"
           },
@@ -196,11 +238,11 @@
           },
           {
             "do": "Go back to the results page and click \"Save as a draft rule change\".",
-            "see": "The change is saved as a draft with the status \"Draft: ready for your approval\". Click \"Open the draft\" to approve and publish it on Rules and fees. If your city uses independent approval, the status reads \"Draft: needs independent approval\" and the reason beside the disabled buttons says you authored this version so another administrator must approve it.",
+            "see": "The change is saved as a draft with the status \"Draft: ready for your approval\". Click \"Open the draft\" to approve and publish it on Rules and fees. If your city uses independent approval, the status reads \"Draft: needs independent approval\" and the reason beside the disabled buttons says you authored this version: another administrator must approve it, and another must publish it.",
             "href": "/policy/scenarios"
           },
           {
-            "do": "Open \"City view\", then \"Operations\", \"Audit log\", \"Support\" and \"Checks\" in the left menu.",
+            "do": "Open \"More tools\" in the left menu, then open \"City view\", \"Operations\", \"Audit log\", \"Support\" and \"Checks\".",
             "see": "Each page loads. Operations shows the figures, and the Audit log shows what each person and system did.",
             "href": "/ops/dashboard"
           }
@@ -222,7 +264,7 @@
         "screen_label": "Start an application",
         "screen_href": "/apply",
         "steps": [
-          "Open the City website and click \"Apply for a permit\", or open \"Start an application\" in the top menu.",
+          "Open the City website and click \"Apply for a permit\", then click \"Start an application\" on the Permits page. On the application pages, \"Start an application\" is also in the top menu.",
           "Click the \"Residential deck or fence\" card.",
           "Choose \"Fence\" or \"Deck\" and type the property address and the size or height.",
           "Press \"Submit application\" even if the form is not complete. It never stays disabled. A summary headed \"There is a problem\" lists what is missing and a message sits beside each field.",
@@ -244,7 +286,7 @@
         "screen_label": "My permits",
         "screen_href": "/apply/track",
         "steps": [
-          "Click \"My permits\" in the top menu. Applications are listed under the tabs Active, Drafts and Closed.",
+          "Click \"Track or resume an application\" on the Permits page, or click \"My permits\" in the top menu of an application page. Applications are listed under the tabs Active, Drafts and Closed.",
           "To find one by number, type it in \"Find an application by reference number\" and click \"Track\".",
           "Read the progress steps and the status on the application card.",
           "If the City has asked for something, a box on the card names the request. Click \"View request\" to read it.",
@@ -288,7 +330,7 @@
         "screen_label": "Work queue",
         "screen_href": "/queue",
         "steps": [
-          "Open \"Work queue\" or \"Review queue\" and click \"Open application\" on a case.",
+          "Open \"Work queue\" and click \"Open application\" on a case, or open \"Review queue\" and click the reference of a case.",
           "Read the tabs \"Documents\", \"People & property\", \"Activity\" and \"Review\".",
           "Under Actions click \"Run application checks\", then \"Start\", and submit the form.",
           "Read the rule results and any blockers on the page. A blocker is an open question, such as an identity link, that must be settled first.",
@@ -317,7 +359,7 @@
           "Under \"5. What will this action do?\" read the preview of each action. The guide's answer for the near-duplicate is \"Reject match\": never confirm a link to Cedarline Coffee Roasters LLC.",
           "Click \"Reject match\", then \"Start\". Write a Decision note that names the conflicts, and submit.",
           "Read the message and the section \"6. What happened?\".",
-          "If a candidate agrees on every compared field, as Cedarline Coffee Works LLC does for this record, the case also offers \"Confirm link to Cedarline Coffee Works LLC\". Choose the action that matches the evidence."
+          "If a candidate agrees on every compared field, as Cedarline Coffee Works LLC does for this record, choose it under \"Compare with\" and press \"Show this record\". The case then offers \"Confirm link to Cedarline Coffee Works LLC\". Choose the action that matches the evidence."
         ],
         "result": "A rejected match links nothing, and the source record keeps all its values. Another candidate can be linked by proposing again."
       },
@@ -332,7 +374,7 @@
         "screen_label": "What-if",
         "screen_href": "/policy/scenarios",
         "steps": [
-          "Click \"What-if\" in the left menu.",
+          "Open \"More tools\" in the left menu, then click \"What-if\".",
           "Under \"Start from a suggestion\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\", or build your own under \"Or start empty\".",
           "In \"Run this what-if\" check the Population, the Seed and the Number of cases.",
           "Click \"Run what-if\".",
@@ -361,7 +403,7 @@
           "Select the draft version and click \"Submit for review\".",
           "Click \"Approve version\". Tick the box that confirms you wrote the version, give a reason and submit. The record says \"Approved by the author (single-administrator policy)\".",
           "Click \"Publish version\". The draft becomes the version in force.",
-          "The line \"Approval policy: single administrator\" at the top of Rules and fees shows which policy applies. A city can switch to independent approval. Then the author of a version cannot approve or publish it, the buttons \"Approve version\" and \"Publish version\" are guarded for the author, and the reason reads \"You authored this version; another administrator must approve it.\" A second administrator then does both steps."
+          "The line \"Approval policy: single administrator\" at the top of Rules and fees shows which policy applies. A city can switch to independent approval. Then the author of a version cannot approve or publish it, the buttons \"Approve version\" and \"Publish version\" are guarded for the author, and the reason reads \"You authored this version; another administrator must approve it.\" beside \"Approve version\" and \"You authored this version; another administrator must publish it.\" beside \"Publish version\". A second administrator then does both steps."
         ],
         "result": "Nothing changes in the live rules until the version is approved and published. Under the single-administrator policy, which is the default, one City Administrator can do all of it with the demo persona, and the history and the audit log record that the author approved it. The city sets the policy in config/approval_policy.json, and the environment variable ACME_APPROVAL_POLICY overrides it."
       },
@@ -397,10 +439,10 @@
         "screen_label": "Operations",
         "screen_href": "/ops/dashboard",
         "steps": [
-          "Click \"Operations\" in the left menu.",
+          "Open \"More tools\" in the left menu, then click \"Operations\".",
           "Read \"Figures\" and \"Decisions recorded, by outcome\". Every figure is a count or a mean over stored rows. No model is used.",
           "Under \"Synthetic data\" click \"Include the synthetic history (labelled)\" to add the sample year, or \"Leave the synthetic history out\" to remove it.",
-          "Click \"Audit log\" in the left menu.",
+          "Open \"More tools\" in the left menu, then click \"Audit log\".",
           "Narrow the list with the filters Actor type, Action and \"Search (optional)\", then click \"Apply filters\".",
           "Click \"Details\" on a row to open the event in a side panel.",
           "Use \"Newer\" and \"Older\" to move between pages, and \"Clear filters\" to start again."

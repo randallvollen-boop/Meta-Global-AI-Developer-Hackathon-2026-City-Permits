@@ -140,6 +140,33 @@ def test_a_case_is_named_by_its_reference_and_not_by_its_internal_identifier(
     assert audit_presentation({"rows": [row]})["rows"][0]["target_label"] == "SYN-APP-001"
 
 
+def test_the_references_of_a_decision_name_its_case_by_reference(session) -> None:
+    """The decision drawer names the case SYN-APP-001, not its internal id."""
+    from types import SimpleNamespace
+
+    import acme_city.ui.router  # noqa: F401  (loads the routes in the app's order)
+    from acme_city.ui.ops_routes import _resolve_audit_event
+
+    session.add(
+        audit.AuditEvent(
+            id="audit_decision_refs",
+            correlation_id=new_id("corr"),
+            occurred_at=datetime(2026, 10, 28, 9, 0, tzinfo=UTC),
+            actor_id="persona_permit_reviewer",
+            actor_role_ids=[],
+            action="permit.decide",
+            target_type="decision",
+            target_id="decision_x",
+            outcome="accepted",
+            references=["app_synth_001", "eval_x"],
+        )
+    )
+    session.flush()
+    view = _resolve_audit_event(SimpleNamespace(session=session), "audit_decision_refs")
+    section = next(s for s in view.sections if s.heading == "References")
+    assert [row.value for row in section.rows] == ["SYN-APP-001", "eval_x"]
+
+
 def test_the_audit_presenter_keeps_raw_values_and_adds_readable_event_fields() -> None:
     view = audit_presentation(
         {

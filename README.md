@@ -10,7 +10,8 @@ Sibling workspace for the ACME City permitting option, built on registry master 
 - Full requirement outline: `repo/docs/REQUIREMENTS_OUTLINE.md`.
 - Executable parent plan: `repo/docs/plans/2026-10-26-acme-city-end-to-end.md`.
 - Vollen architecture: a checked internal draft is published in the team's internal knowledge library as `acme-city-permits-architecture`. Progress is recorded in `docs/solution-architecture/acme-city-permits/STATUS.json`.
-- Deployment, submission and public publication: not authorized.
+- Deployment: the public demo is hosted on Render at https://acme-city-permits.onrender.com with live Muse off; the deployment runbook is `docs/operations/DEPLOY_RENDER.md`. The submission is Randall's own action and has not been made.
+- Later lanes on top of phases 1 to 3: the Muse Wonder redesign, the policy what-if, the applicant help assistant, the City of Acme website and town map, ePermit intake, the intake and adjudication agents with the Agent Operator persona and a durable work queue, the steward Data issues workspace and automatic linking (paused on the hosted demo), and a production mode separate from demo mode.
 
 ## Workspace map
 

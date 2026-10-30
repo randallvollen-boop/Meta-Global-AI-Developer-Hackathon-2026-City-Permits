@@ -176,7 +176,15 @@ def _resolve_audit_event(ctx: DetailContext, event_id: str) -> DetailView | None
         rows.append(Row("Approval basis", basis))
     if event.denial_reason:
         rows.append(Row("Denial reason", event.denial_reason))
-    refs = tuple(Row(f"Reference {i}", str(ref), mono=True) for i, ref in enumerate(event.references or [], 1))
+    refs = tuple(
+        Row(f"Reference {i}", ref, mono=True)
+        for i, ref in enumerate(
+            audit_log_module.readable_references(
+                ctx.session, [str(ref) for ref in event.references or []]
+            ),
+            1,
+        )
+    )
     sections = [Section("Event", tuple(rows))]
     if refs:
         sections.append(Section("References", refs))

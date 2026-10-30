@@ -2,7 +2,7 @@
 
 ## Draft status
 
-This is submission text for Randall to review and submit himself. The current hosted build has four complete operational personas. The redesign branch has added Agent Operator as a fifth selectable persona with its grants, navigation, and a temporary home on the intake agent screen. Its full operations workspace is still in progress and is not yet on the hosted demo. Update the Agent Operator paragraph and the try it section after that work is integrated.
+This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas, and live Muse is off there.
 
 ## Summary
 
@@ -14,21 +14,21 @@ ACME City Permits is a fictional municipal permitting application that follows a
 
 An applicant can choose from seventeen fictional permit types, locate a property, save a draft, submit an application, replace documents, answer a request for information, track progress, read messages from the City, and download a submission or issued permit. The help panel uses published ACME rules and the applicant's own case. It cites its sources and says when it cannot answer.
 
+### Agent operator
+
+The Agent Operator is the only persona that wakes and runs the intake and adjudication agents. The operator opens the Agents home, wakes or puts an agent to sleep, runs one case or a batch of waiting cases, reads the run history and retries a failed run. The intake agent is a seven node graph and the adjudication agent is a five node graph, and each run records its nodes. The agents prepare a case and leave a recommendation. They never decide, price or issue a permit. Waiting work sits in a durable queue, and the City Administrator sets the processing policy under Administration, Agent processing. Optional automatic processing exists and is off on the hosted demo.
+
 ### Data steward
 
-A data steward works the intake and early resolution queues, runs the intake agent when it is awake, reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
+A data steward works the Data issues workspace, which has a guide, and the early resolution queue. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
 
 ### Permit reviewer
 
-A permit reviewer works the review queue, checks the property and application facts, runs the adjudication agent when it is awake, and reads its rule based recommendation. The reviewer can confirm or revert that recommendation, record the decision of record, add conditions, request revisions, and issue a permit only after the required links, decision, fee assessment, payment allocation, and reconciliation are complete.
+A permit reviewer works the review queue, checks the property and application facts, and reads the rule based recommendation the adjudication agent leaves. The reviewer can confirm or revert that recommendation, record the decision of record, add conditions, request revisions, and issue a permit only after the required links, decision, fee assessment, payment allocation, and reconciliation are complete.
 
 ### City administrator
 
-A city administrator sees the planning overview, operations measures, audit history, support requests, source governance, rules, fee schedules, users, access, appearance, and reconciliation. The administrator can simulate incoming applications, wake or stop the agents, manage fictional configuration, run invariant checks, and create governed policy drafts. Configuration authority does not grant permit decision authority.
-
-### Agent operator
-
-The redesign branch now includes Agent Operator as the fifth selectable persona. The built Wave 0 slice gives this persona the agent operations permission bundle, agent navigation, the demo switch entry, and a temporary home on the intake agent screen. The full Agent Operator workspace, run history, processing controls, and case views remain in progress and must not be described as hosted until they are integrated.
+A city administrator sees the planning overview, operations measures, audit history, support requests, source governance, rules, fee schedules, users, access, appearance, and reconciliation. The administrator can simulate incoming applications, set the agent processing policy, manage fictional configuration, run invariant checks, and create governed policy drafts. Configuration authority does not grant permit decision authority.
 
 ## How it uses Meta Muse
 
@@ -38,13 +38,62 @@ The applicant help and City policy paths also have bounded Muse support. Muse ca
 
 Muse Image support can generate fictional permit type icons through a governed administrator action with daily limits and recorded provenance. The hosted demo keeps live Muse calls off. It uses clearly labelled replay fixtures so visitors can follow the experience without sending a provider request.
 
+## Models used
+
+* muse-spark-1.3 is the runtime model. It extracts values from documents, proposes record matches, helps applicants, writes the policy briefing, explains a simulation and proposes policy changes. It makes proposals only, and people decide.
+
+* muse-image-1.0 made 14 of the 17 permit type icons.
+
+* muse-wonder-1.0 worked as a builder: the October 27 interface redesign, the permit type icon feature, and a second build with persona navigation, the ePermit intake portal and the agent triage.
+
+* Local and other frontier models assisted with planning, coding and review.
+
+
+Live Muse is off on the public demo. The guard is in the Muse client and the Render blueprint.
+
+## What was built during the event
+
+Before the event only the reference requirements package existed (received 2026-10-26). There was no application code. The whole application was built during the event. The git history starts on October 27 with a baseline commit of the overnight build of October 26. Work after that baseline includes:
+
+* Parity phases 1 to 3 and the Muse Wonder redesign.
+
+* A policy what-if tool. Runs are immutable and hash verified, and a Muse briefing and proposal pass claim checks before anyone sees them.
+
+* The applicant help assistant.
+
+* The City of Acme public website with a community lookup that shows no homeowner names, documents or fees, a town map and a City view.
+
+* ePermit intake with five channels and scan quality flags.
+
+* The intake and adjudication agents, a durable agent work queue, and optional automatic processing (off on the hosted demo).
+
+* The steward Data issues workspace and guide, and automatic linking, which is built and paused on the hosted demo.
+
+* The lifecycle and walkthrough pages, and demo video draft 8 on the persona page.
+
+* A production mode that is separate from demo mode, rate limits and security headers.
+
+## Verification
+
+* 2741 tests are collected. The last recorded full run passed 2726 tests.
+
+* 10 gates run in scripts/run_all_checks.py.
+
+* 57 requirements map to 39 checks (AT01 to AT20, VC01 to VC08, D01 to D11).
+
+* There are 17 permit types and six simulated subscriber departments.
+
+## Licence
+
+All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository is public for transparency, hackathon evaluation and demonstration only.
+
 ## Architecture
 
 * A Python FastAPI service renders the public site, applicant portal, and staff interface with Jinja templates and small vanilla JavaScript enhancements.
 
 * SQLAlchemy and Alembic manage one SQLite database that stores applications, master records, source links, decisions, rules, fees, audit records, model runs, and workflow state.
 
-* Three simulated source adapters represent permitting, geographic information, and finance systems. A database outbox records governed changes and acknowledgments.
+* Four simulated source adapters represent permitting, geographic information, ERP finance and the ePermit intake portal, which takes five channels (portal, counter scan, email, mail and fax) and records scan quality flags. A database outbox records governed changes and acknowledgments.
 
 * Server held actors, scoped permissions, record scope, version checks, audit history, and explicit human actions protect every sensitive read and write.
 
@@ -52,18 +101,18 @@ Muse Image support can generate fictional permit type icons through a governed a
 
 ## How to try it
 
-1. Open https://acme-city-permits.onrender.com.
+1. Open https://acme-city-permits.onrender.com. The front door wakes the hosted service, which can take a moment. The data resets at 02:00 UTC each night.
 
-2. Use the demo switcher to choose a persona available in the hosted build.
+2. Use the demo switcher to choose a persona. All five are available.
 
 3. As Applicant, start a fictional deck or fence application, save it, submit it, and open its tracker.
 
-4. As Data Steward, inspect the intake queue and the evidence behind proposed record and parcel links.
+4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent.
 
-5. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
+5. As Data Steward, open Data issues and inspect the evidence behind proposed record and parcel links.
 
-6. As City Administrator, open the planning overview, operations, governance, rules, reconciliation, support, and audit screens. The hosted demo uses replay for Muse paths and does not make live Muse calls.
+6. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
 
-7. After the redesign is integrated, confirm that Agent Operator appears in the demo switcher and replace the draft limitation above with the verified hosted workflow.
+7. As City Administrator, open the planning overview, operations, governance, rules, reconciliation, support, audit and agent processing screens, and try a policy what-if. The hosted demo uses replay for Muse paths and does not make live Muse calls.
 
 Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme.

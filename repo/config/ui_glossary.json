@@ -4,7 +4,7 @@
   "terms": {
     "muse_provenance": {
       "label": "Muse label",
-      "text": "Every Muse result has a label that says where it came from. \"Replay\" means the stored answer of an earlier run was shown again and no model was called now. \"Live\" means the model was called for this result. \"Cached\" means an identical earlier request was answered from the stored result. The label is never hidden."
+      "text": "Every Muse result has a label that says where it came from. \"Replay\" means the stored answer of an earlier run was shown again and no model was called now. \"Live\" means the model was called for this result. \"Cached\" means an identical earlier request was answered from the stored result. \"Builtin\" means the City's own deterministic logic ran and no model was called; the agent screens show it as \"Built in logic\" and a run's provenance reads \"builtin-rules-1 (builtin)\". The label is never hidden."
     },
     "muse_run": {
       "label": "Muse run",
@@ -19,7 +19,7 @@
       "text": "Application checks are the deterministic rules run against the application itself, for example a setback or a required document. They are separate from the extraction checks, which only test what Muse returned."
     },
     "record_status": {
-      "label": "Record status",
+      "label": "Case record status",
       "text": "Record status says where a case stands in its own workflow, such as submitted, under review or approved. The status of a credential is a separate fact."
     },
     "credential_status": {
@@ -32,10 +32,10 @@
     },
     "distance_from_property_line": {
       "label": "Distance from the property line",
-      "text": "How far the structure stands from the edge of the lot, measured on the ground in feet. The rule that applies to this permit type is checked from the value entered here."
+      "text": "How far the structure stands from the edge of the lot, measured on the ground in feet. For a deck, the distance from the rear property line is checked against the deck rear setback rule (DF-3, ACME Code §14-308); the form shows the limit beside the field. For a fence the distance is recorded for the reviewer and no rule checks it."
     },
     "content_hash": {
-      "label": "Content hash",
+      "label": "Document content hash",
       "text": "A short code calculated from the contents of a stored document. If even one character of the file changes, the code changes, so it shows that the document the model read is the document on file."
     },
     "prompt_version": {
@@ -83,7 +83,7 @@
       "text": "A case with no usable valuation, or with no fee schedule in force on its date, cannot be given a fee. It is left out of both totals and listed here with the reason."
     },
     "policy_content_hash": {
-      "label": "Content hash",
+      "label": "What-if run content hash",
       "text": "A short code calculated from everything the run used: the scenario revision, the full baseline and proposed configuration, the cases, the population definition, the analysis moment and the engine and generator versions. It does not include ids or times, so the same inputs always give the same hash."
     },
     "application_status": {
@@ -156,10 +156,10 @@
     },
     "ops_not_applicable": {
       "label": "Not applicable",
-      "text": "A check is not applicable when there is nothing it can inspect. The seeded history, such as the D07 approval and permit that the fixture inserts without a decision or issuance audit event, is reported as not applicable (historical seed). It is never counted as a pass and no event is made up for it."
+      "text": "A check is not applicable when there is nothing it can inspect. The seeded history, such as the approval and permit that the demonstration data inserts without a decision or issuance audit event, is reported as not applicable (historical seed). It is never counted as a pass and no event is made up for it."
     },
     "party_record_status": {
-      "label": "Record status",
+      "label": "Person or organization record status",
       "text": "Whether the person or organization record itself is active in the master data. It says nothing about any license or registration the record holds."
     },
     "license_status": {
@@ -190,9 +190,9 @@
       "can_do": [
         "Open a case that needs attention.",
         "Open the property context of an application in the side flyout.",
-        "Open a rule or fee version that is waiting to be published."
+        "Open a rule or fee version that is not yet published."
       ],
-      "next": "Open the record behind a count. The City view and the What-if are linked from here; the Operations dashboard has its own navigation entry."
+      "next": "Open the record behind a count. The City view and the What-if are linked from here; both and the Operations dashboard are under More tools in the left menu."
     },
     "queue": {
       "title": "Work queue",
@@ -257,7 +257,7 @@
         "Compare what was assessed with what was received.",
         "Record an allocation where your persona may."
       ],
-      "next": "When the balance is zero, the permit can be issued."
+      "next": "A zero balance with the status exact is one of the conditions for issuing a permit. The permit also needs an approved decision and no other blocker."
     },
     "governance": {
       "title": "Governance and sources",
@@ -270,27 +270,29 @@
     },
     "agent_intake": {
       "title": "Intake agent",
-      "purpose": "The intake agent reads the received documents and proposes values. A steward decides.",
+      "purpose": "The intake agent checks a received application: it confirms the type, proposes values from the documents, checks completeness and duplicates, and routes the case. The router sends each case to early resolution or to review, where a person decides.",
       "can_do": [
         "Review its recorded steps.",
-        "Run it on a case where your persona may."
+        "Wake the agent (\"Wake agent\") and run it on the waiting cases where your persona may. A sleeping agent does not run."
       ],
-      "next": "Its proposal goes to a steward for review."
+      "next": "The router sends the case to early resolution or to review. A person decides from there."
     },
     "agent_adjudication": {
       "title": "Adjudication agent",
-      "purpose": "The adjudication agent recommends an outcome from the rules and the evidence; the reviewer decides.",
+      "purpose": "The adjudication agent recommends an outcome from the rules and the evidence. A person records every decision.",
       "can_do": [
         "Read its recommendation and the evidence it cites.",
-        "Confirm or revert a recommendation where your persona may."
+        "Wake the agent (\"Wake agent\") and run it where your persona may.",
+        "On the permit workspace, a person with the decision grant chooses \"Confirm the recommendation\" or \"Revert the recommendation\"."
       ],
-      "next": "Only a confirmed recommendation can lead to a recorded decision."
+      "next": "A person records every decision. Confirming a recommendation records it as that person's decision. A held recommendation is decided on the normal decision form."
     },
     "admin": {
       "title": "Administration",
-      "purpose": "Configuration and persona administration for the demonstration. Configuration never implies a business approval.",
+      "purpose": "Configuration and persona administration for the demonstration, on six tabs: Permit types, Appearance, Users and roles, Agent processing, Reason codes and Configuration log. Every change is a governed, audited action. Changes apply to new intake and never rewrite a submitted case. Configuration never implies a business approval.",
       "can_do": [
-        "Review the configured actors and settings."
+        "Add or change a permit type and what it requires.",
+        "Review the users and roles, the agent processing settings, the reason codes and the configuration log."
       ],
       "next": "Business decisions stay with the personas that hold those grants."
     },
@@ -401,7 +403,7 @@
       "purpose": "See how permit work is going across the City: how many cases are open, how old they are, what the intake agent did and what needs a person.",
       "can_do": [
         "Read each figure with its definition beside it.",
-        "Include or leave out the labelled synthetic history."
+        "Include or leave out the labelled sample history."
       ],
       "next": "Open the queues or the audit log to look at the cases and actions behind a number."
     },
@@ -440,7 +442,7 @@
         "Filter by source system.",
         "Open source details to see the full identifiers and who owns the source."
       ],
-      "next": "To compare a source record with the master records, open the Data issues queue."
+      "next": "Use \"Find matches\" on a row to compare a source record with the master records, or open Data issues to decide a proposed match."
     },
     "activity": {
       "title": "Activity",

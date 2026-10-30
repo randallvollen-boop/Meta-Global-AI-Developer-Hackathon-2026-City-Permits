@@ -99,6 +99,38 @@ def declared_separately(application: permit.Application) -> list[str]:
     return [str(item) for item in value] if isinstance(value, list) else []
 
 
+
+def checked_upload(filename: str, content: bytes) -> tuple[str, str]:
+    """Return the extension and media type of an applicant's file, or refuse it.
+
+    Every applicant upload (a draft, a revision, a resubmission) passes here,
+    so a file is judged by its bytes as well as by its name.
+    """
+    extension = Path(filename or "").suffix.lower()
+    media_type = UPLOAD_EXTENSIONS.get(extension)
+    if media_type is None:
+        raise ValidationError(
+            "that file type is not accepted; add a PDF, PNG, JPG or plain text file"
+        )
+    if not content:
+        raise ValidationError("the file is empty")
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise ValidationError("the file is larger than 5 MB")
+    magic = {
+        "application/pdf": content.startswith(b"%PDF"),
+        "image/png": content.startswith(b"\x89PNG"),
+        "image/jpeg": content.startswith(b"\xff\xd8"),
+        "text/plain": True,
+    }[media_type]
+    if media_type == "text/plain":
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValidationError("a text file must be UTF-8 text") from error
+    if not magic:
+        raise ValidationError("the file content does not match its file type")
+    return extension, media_type
+
 class PortalService:
     """Reads the forms and writes drafts, uploads and submissions."""
 
@@ -492,29 +524,7 @@ class PortalService:
     ) -> gis.DraftDocument:
         """Store one uploaded file on a draft (the latest per document type wins)."""
         self._authorize(actor)
-        extension = Path(filename or "").suffix.lower()
-        media_type = UPLOAD_EXTENSIONS.get(extension)
-        if media_type is None:
-            raise ValidationError(
-                "that file type is not accepted; add a PDF, PNG, JPG or plain text file"
-            )
-        if not content:
-            raise ValidationError("the file is empty")
-        if len(content) > MAX_UPLOAD_BYTES:
-            raise ValidationError("the file is larger than 5 MB")
-        magic = {
-            "application/pdf": content.startswith(b"%PDF"),
-            "image/png": content.startswith(b"\x89PNG"),
-            "image/jpeg": content.startswith(b"\xff\xd8"),
-            "text/plain": True,
-        }[media_type]
-        if media_type == "text/plain":
-            try:
-                content.decode("utf-8")
-            except UnicodeDecodeError as error:
-                raise ValidationError("a text file must be UTF-8 text") from error
-        if not magic:
-            raise ValidationError("the file content does not match its file type")
+        extension, media_type = checked_upload(filename, content)
         digest = hashlib.sha256(content).hexdigest()
         directory = self._root / "drafts" / draft.id
         directory.mkdir(parents=True, exist_ok=True)
@@ -878,12 +888,7 @@ class PortalService:
         store = DocumentService(self._session, root=self._root)
         count = 0
         for document_type, filename, content in uploads:
-            extension = Path(filename or "").suffix.lower()
-            media_type = UPLOAD_EXTENSIONS.get(extension)
-            if media_type is None or not content or len(content) > MAX_UPLOAD_BYTES:
-                raise ValidationError(
-                    "a revised file must be a PDF, PNG, JPG or text file of at most 5 MB"
-                )
+            extension, media_type = checked_upload(filename, content)
             store.store_version(
                 StoreDocumentCommand(
                     application_id=application.id,

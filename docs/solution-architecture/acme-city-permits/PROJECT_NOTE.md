@@ -1,6 +1,6 @@
 # ACME City Permits architecture page, project note
 
-Date: 2026-10-27 (parity phases 1 and 2 added; originally 2026-10-26). Status: PLANNED, in implementation. Internal draft.
+Date: 2026-10-30 (accuracy rebuild; originally 2026-10-26). Status: AS BUILT. Internal draft.
 
 ## Revision 2026-10-28
 
@@ -14,7 +14,7 @@ The Hosting and Production passages now describe the live public demonstration o
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 335173 bytes. SHA-256 `f264311ef965a7fc1093ce1f4595abde2f22fe6c1b5dff02f67f1e922bf33eef`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 362944 bytes. SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
@@ -47,7 +47,7 @@ Do not edit the built HTML. Edit the sources and rebuild.
 
 The record is written by the parent and can move while a page is being built. It moved from 19:10 to 19:41 during the first build of this page. Re-read `STATUS.json` before every rebuild and take the values as they stand. The brief figures for the status panel are a snapshot and the file wins.
 
-`STATUS_RUNBOOK.md` and `update_status.py` implement the maintained update path. The script validates count bounds and exactly four personas, rewrites the marked status section and `info.status`, rebuilds, runs the Linux checker, runs independent page verification and copy lint, and optionally replaces the private AVA article.
+`STATUS_RUNBOOK.md` and `update_status.py` implement the maintained update path. The script validates count bounds and exactly four personas (the page now has five, so do not use it until it is updated), rewrites the marked status section and `info.status`, rebuilds, runs the Linux checker, runs independent page verification and copy lint, and optionally replaces the private AVA article.
 
 The status block lives in `page/body.src.html` between the exact comments:
 
@@ -96,3 +96,13 @@ The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections 
 - Two builder failures already in the sources were fixed: the Scene 7 card now uses the "Randy Vollen" byline, and the deployment row no longer names the signing-key variable. Both had tripped the page denylist.
 - `page/page.json` keeps the committed relative `output`. The kit builder needs an absolute path, so set it to an absolute worktree path for the build and restore it afterwards.
 - Open: `check/verify_page.py` fails on 8 figures that predate this revision (02, 1080, 18, 2.0, 300, 503, 60, 600). Each needs a sourced line in `facts.md` or a rewording. The AVA Library copy was not replaced in this revision.
+
+## Revision 2026-10-30, accuracy rebuild
+
+- Audited against code at `07f048b` and rebuilt from edited sources. Five personas (Agent Operator added, story order), later-lane screens and parts, current screen names, Administration tabs, local map tiles, bundled video copy, all-rights-reserved licence, current test figures. See the 2026-10-30 section of `BUILD_REPORT.md` and the last section of `facts.md`.
+- `update_status.py` hard-codes four personas and was not used. `STATUS.json` was edited by hand (as_of and personas) and the status block in `page/body.src.html` matches it.
+- Not done: the AVA Library copy was not replaced.
+
+## Revision 2026-10-30, master data as the spine
+
+- New section "Why master data is central", a registry-first standfirst, and a System view with the registry master data node at the centre (class `core`, heavier outline in `page/extra.css`). Edges: proposes link, decides, reads. Non-Muse product and model names were removed from the sources and the page.

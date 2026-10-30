@@ -5,8 +5,8 @@
         "slug": "resolve-a-data-issue",
         "steps": {
           "4": "Under \"5. What will this action do?\" read the preview of each action. The action that turns a proposal down names the record it turns down: \"Reject match proposed for\" Cedarline Coffee Works LLC. Never confirm a link to Cedarline Coffee Roasters LLC: its name, licence number and unit conflict.",
-          "5": "Choose the candidate that agrees with the source record, then click \"Start\". The confirmation names the record it links, so \"Confirm link to Cedarline Coffee Works LLC\" is the action that matches the evidence.",
-          "7": "A confirmed link gives the source values to the record they belong to. A rejected match links nothing, and the source record keeps every value."
+          "5": "Under \"3. What are we comparing?\" choose Cedarline Coffee Works LLC under \"Compare with\" and press \"Show this record\". The candidate agrees with the source record. Then click \"Confirm link to Cedarline Coffee Works LLC\" and click \"Start\". The confirmation names the record it links, so this is the action that matches the evidence.",
+          "7": "A confirmed link ties the source record to the master record. Neither record's values are overwritten, and the conflicts stay visible in the history. A rejected match links nothing, and the source record keeps every value."
         }
       },
       {
@@ -27,8 +27,8 @@
           "Read the \"Muse guide\" panel above the task. It answers from saved words: \"Saved guidance. Live Muse is off.\"",
           "Open \"Source records\" to see what each source system sent. Each row names the one action its link state asks for, such as \"Review match\".",
           "Open \"Activity\" to see who acted, what was recorded and when.",
-          "Open \"Intake queue\" to see the cases the City has in front of it. Every case names its next step. \"Process selected with agent\" is off for this role, because an Agent Operator wakes the agent and runs it.",
-          "Open \"Early resolution\" to see the cases that wait for a person, grouped by the finding that puts them there."
+          "Open \"More tools\" in the left menu, then \"Intake queue\", to see the cases the City has in front of it. Every case names its next step. \"Process selected with agent\" is off for this role, because an Agent Operator wakes the agent and runs it.",
+          "Open \"More tools\", then \"Early resolution\", to see the cases that wait for a person, grouped by the finding that puts them there."
         ],
         "result": "Every decision is recorded with its evidence, and the queue, the source records and the activity show what happened next."
       }

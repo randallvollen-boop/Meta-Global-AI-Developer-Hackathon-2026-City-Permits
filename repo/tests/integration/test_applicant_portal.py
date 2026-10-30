@@ -311,6 +311,49 @@ def test_tracking_is_scoped_and_revisions_can_be_submitted(client, environment) 
         factory.dispose()
 
 
+
+@pytest.mark.parametrize(
+    "filename", ["fake.pdf", "fake.png", "fake.jpg"], ids=["pdf", "png", "jpg"]
+)
+def test_a_revised_file_is_checked_by_its_content_like_a_first_upload(
+    client, environment, filename: str
+) -> None:
+    choose(client, "persona_applicant")
+    response = post_form(client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit")
+    reference = response.headers["location"].rsplit("/", 1)[1]
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application.status = "needs_information"
+            application_id = application.id
+    finally:
+        factory.dispose()
+    refused = client.post(
+        f"/apply/track/{application_id}/revise",
+        data={"csrf_token": token(client, "/apply/deck_fence"), "reference": reference},
+        files={"file__site_plan": (filename, b"this is plain text", "application/octet-stream")},
+        follow_redirects=False,
+    )
+    assert refused.status_code == 422
+    assert "does not match its file type" in refused.text
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            versions = session.execute(
+                select(permit.Document).where(
+                    permit.Document.application_id == application_id,
+                    permit.Document.document_type == "site_plan",
+                )
+            ).scalars().all()
+            assert [v.version for v in versions] == [1]
+    finally:
+        factory.dispose()
+
 def test_portal_case_flows_through_intake_and_applicant_sees_only_own_parcel(client) -> None:
     choose(client, "persona_applicant")
     response = post_form(client, "deck_fence", FENCE_FIELDS, files=fence_files(), intent="submit")

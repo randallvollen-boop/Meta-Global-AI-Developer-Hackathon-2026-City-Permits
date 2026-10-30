@@ -4,7 +4,7 @@ This directory holds the ACME City permit application, built on registry master 
 
 ## Current state
 
-The application is built. Phases 1, 2 and 3 (3a, 3b, chat 1 and 2, insight, and policy 1 to 4) are merged on main and verified by the 10 checks in `scripts/run_all_checks.py`. `USER_TEST_GUIDE.md` and `../docs/operations/` explain how to run and test it.
+The application is built. Phases 1, 2 and 3 (3a, 3b, chat 1 and 2, insight, and policy 1 to 4) are merged on main and verified by the 10 checks in `scripts/run_all_checks.py`. The suite collects 2741 tests. `USER_TEST_GUIDE.md` and `../docs/operations/` explain how to run and test it.
 
 ## Source of truth
 
@@ -30,4 +30,8 @@ The authoritative requirements remain outside this repository in the ignored int
 - server-held fictional actors, scoped permissions, and audit history;
 - automated AT01 to AT20 and VC01 to VC08 checks with D01 to D11 evidence.
 
-The stack is Python 3.12 with FastAPI, SQLAlchemy and Alembic, one SQLite database, server-rendered HTML with vanilla JavaScript, three in-process source adapters and a database-backed outbox.
+The stack is Python 3.12 with FastAPI, SQLAlchemy and Alembic, one SQLite database, server-rendered HTML with vanilla JavaScript, four in-process source adapters (permitting, GIS, ERP finance and the ePermit intake portal) and a database-backed outbox.
+
+## License
+
+All rights reserved. See `../LICENSE` and `../NOTICE`.

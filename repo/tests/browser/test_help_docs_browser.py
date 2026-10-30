@@ -16,7 +16,7 @@ def test_help_link_opens_the_tutorial_and_a_step_link_lands_on_its_screen(
     page.wait_for_url(f"{server.base_url}/help")
     page.locator('[data-testid="help-card-tutorial"]').click()
     page.wait_for_url(f"{server.base_url}/help/tutorial")
-    assert page.locator('[data-testid="tutorial-section"]').count() == 4
+    assert page.locator('[data-testid="tutorial-section"]').count() == 5
     section = page.locator('[data-testid="tutorial-section"][data-persona-id="persona_permit_reviewer"]')
     assert section.locator("h2").inner_text().endswith("Permit Reviewer")
     section.locator('[data-testid="tutorial-go"]').first.click()
