@@ -8,10 +8,10 @@ from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_co
 
 PERSONAS = (
     "persona_applicant",
+    "persona_agent_operator",
     "persona_data_steward",
     "persona_permit_reviewer",
     "persona_city_administrator",
-    "persona_agent_operator",
 )
 
 

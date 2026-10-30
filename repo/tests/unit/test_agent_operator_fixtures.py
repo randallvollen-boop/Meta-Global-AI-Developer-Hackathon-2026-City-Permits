@@ -41,7 +41,7 @@ DELTAS = DATA / "persona_grant_deltas.json"
 
 OPERATOR = "persona_agent_operator"
 
-#: The five selectable personas, in selector order.
+#: The five selectable personas, in fixture order.
 PERSONAS: tuple[tuple[str, str], ...] = (
     ("persona_applicant", "Applicant"),
     ("persona_data_steward", "Data Steward"),
@@ -115,7 +115,8 @@ def test_exactly_five_personas_are_selectable(bundle: FixtureBundle, session: Se
         select(governance.Actor.actor_id).where(governance.Actor.selectable.is_(True))
     ).scalars().all()
     assert sorted(seeded) == sorted(actor_id for actor_id, _ in PERSONAS)
-    assert [label for _, label in PERSONAS] == list(view_models.PERSONA_ORDER)
+    # The selector order follows the story and is pinned in test_view_models.
+    assert sorted(label for _, label in PERSONAS) == sorted(view_models.PERSONA_ORDER)
 
 
 def test_the_service_identities_stay_unselectable(bundle: FixtureBundle, session: Session) -> None:

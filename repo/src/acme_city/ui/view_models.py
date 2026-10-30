@@ -116,13 +116,16 @@ SCREENS: list[dict[str, str]] = [
     {"key": "steward_new_master", "label": "New master record", "href": "/steward/new-master"},
 ]
 
-#: The labels of the five selectable personas, in selector order.
+#: The labels of the five selectable personas, in selector order.  The order
+#: follows the story of one permit: the applicant applies, the agent routes it,
+#: the steward clears its findings, the reviewer decides and the administrator
+#: checks the record.
 PERSONA_ORDER: tuple[str, ...] = (
     "Applicant",
+    "Agent Operator",
     "Data Steward",
     "Permit Reviewer",
     "City Administrator",
-    "Agent Operator",
 )
 
 #: What the persona selector says about each persona, keyed by label.

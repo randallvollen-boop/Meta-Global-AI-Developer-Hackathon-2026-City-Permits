@@ -97,10 +97,10 @@ def test_the_selector_offers_exactly_the_five_personas(session: Session) -> None
     options = view_models.persona_options(session)
     assert [option["label"] for option in options] == [
         "Applicant",
+        "Agent Operator",
         "Data Steward",
         "Permit Reviewer",
         "City Administrator",
-        "Agent Operator",
     ]
     assert all(option["actor_id"].startswith("persona_") for option in options)
     labels = " ".join(option["actor_id"] for option in options)
