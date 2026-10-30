@@ -173,13 +173,14 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # screen.  Persona-scoped filtering is covered per persona below.
     # Changed deliberately (the Agent Operator): the two agent screens are
     # opened by the wake and run grants, which the City Administrator no longer
-    # holds, so the navigation loses those two entries (seventeen).
+    # holds, so the navigation loses those two entries (seventeen).  OPR-3 then
+    # gives the City Administrator read access to the intake queue (eighteen).
     select_persona(client, "persona_city_administrator")
     reference = None
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 17, path
+        assert len(items) == 18, path
         if reference is None:
             reference = items
         assert items == reference

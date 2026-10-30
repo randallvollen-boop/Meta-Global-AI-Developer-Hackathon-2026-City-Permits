@@ -102,6 +102,29 @@ def test_a_persona_outside_the_operator_may_not_post_the_agent_actions(
 
 
 @pytest.mark.parametrize("actor_id", OUTSIDE)
+def test_original_staff_personas_read_the_intake_queue_but_cannot_run_agents(
+    client: TestClient,  # noqa: F811
+    actor_id: str,
+) -> None:
+    """Queue visibility is distinct from the two agent execution grants."""
+    choose(client, actor_id)
+    queue = client.get("/queue/intake")
+    assert queue.status_code == 200, (actor_id, queue.text)
+    token = csrf_of(client.get(HOME_OF[actor_id]).text)
+    for action_id in ("agent.run.intake", "agent.run.adjudication"):
+        response = client.post(
+            f"/ui/actions/{action_id}",
+            data={
+                "csrf_token": token,
+                "action_id": action_id,
+                "next": "/queue/intake",
+            },
+            headers={"Accept": "application/json"},
+        )
+        assert response.status_code == 403, (actor_id, action_id, response.text)
+
+
+@pytest.mark.parametrize("actor_id", OUTSIDE)
 def test_a_persona_outside_the_operator_may_not_process_the_selection(
     client: TestClient,  # noqa: F811
     actor_id: str,
@@ -283,4 +306,3 @@ def test_a_stale_version_is_refused(client: TestClient) -> None:  # noqa: F811
     )
     assert stale.status_code in (409, 422), stale.text
     assert "changed since it was read" in stale.json()["message"]
-

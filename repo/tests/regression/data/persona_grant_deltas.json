@@ -34,6 +34,17 @@
       "reason": "The wake and run grants belong to the Agent Operator; the Permit Reviewer records decisions instead."
     },
     {
+      "actor_id": "persona_permit_reviewer",
+      "permission_id": "permit.intake.queue.view",
+      "change": "add",
+      "domains": [
+        "permits"
+      ],
+      "record_scope": [],
+      "slice": "OPR-3",
+      "reason": "The read grant keeps the intake queue open to the Permit Reviewer after the run grant moved."
+    },
+    {
       "actor_id": "persona_city_administrator",
       "permission_id": "agent.toggle",
       "change": "remove",
@@ -53,6 +64,17 @@
       "change": "remove",
       "slice": "OPR-3",
       "reason": "The wake and run grants belong to the Agent Operator; the City Administrator holds the processing policy instead."
+    },
+    {
+      "actor_id": "persona_city_administrator",
+      "permission_id": "permit.intake.queue.view",
+      "change": "add",
+      "domains": [
+        "permits"
+      ],
+      "record_scope": [],
+      "slice": "OPR-3",
+      "reason": "The read grant keeps the intake queue open to the City Administrator after the run grants moved."
     }
   ]
 }

@@ -7,7 +7,21 @@ is frozen.  Empty until the lane adds a test.
 
 from __future__ import annotations
 
+import pytest
+
 from conftest import assert_no_horizontal_overflow, assert_not_covered
+
+
+OPERATOR_SCREENS = (
+    ("/agent/intake", "Intake agent"),
+    ("/agent/adjudication", "Adjudication agent"),
+)
+
+OUTSIDE = (
+    "persona_data_steward",
+    "persona_permit_reviewer",
+    "persona_city_administrator",
+)
 
 
 def test_operator_navigation_has_four_visible_destinations_at_390(viewport_390, login) -> None:
@@ -20,3 +34,27 @@ def test_operator_navigation_has_four_visible_destinations_at_390(viewport_390, 
     ]
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator(".mobile-nav"))
+
+
+def test_operator_agent_screens_render_at_390_without_covered_controls(
+    viewport_390, server, login
+) -> None:
+    page = viewport_390
+    login("persona_agent_operator")
+    for path, title in OPERATOR_SCREENS:
+        response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert response is not None
+        assert response.status == 200, path
+        assert page.title().startswith(title), path
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator("main h1"))
+    assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("actor_id", OUTSIDE)
+def test_agent_screens_are_forbidden_to_other_personas(page, server, login, actor_id) -> None:
+    login(actor_id)
+    for path, _title in OPERATOR_SCREENS:
+        response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert response is not None
+        assert response.status == 403, (actor_id, path)

@@ -79,10 +79,10 @@ HIDDEN_SCREENS = {
     "persona_data_steward": ["/reconciliation", "/governance", "/agent/intake", "/agent/adjudication", "/admin",
                               "/queue/review"],
     "persona_permit_reviewer": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
-                                "/agent/intake", "/agent/adjudication", "/admin", "/queue/intake",
+                                "/agent/intake", "/agent/adjudication", "/admin",
                                 "/queue/early-resolution"],
     "persona_city_administrator": ["/agent/intake", "/agent/adjudication",
-                                   "/queue/intake", "/queue/early-resolution", "/queue/review"],
+                                   "/queue/early-resolution", "/queue/review"],
 }
 #: P3insight: the City view is held by the City Administrator only.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):

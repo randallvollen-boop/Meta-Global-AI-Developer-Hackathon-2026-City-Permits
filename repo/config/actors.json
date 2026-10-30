@@ -694,6 +694,14 @@
           "source": "explicit"
         },
         {
+          "permission_id": "permit.intake.queue.view",
+          "domains": [
+            "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "property.view",
           "domains": [],
           "record_scope": [],
@@ -1060,6 +1068,14 @@
         {
           "permission_id": "property.view",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.intake.queue.view",
+          "domains": [
+            "permits"
+          ],
           "record_scope": [],
           "source": "explicit"
         },

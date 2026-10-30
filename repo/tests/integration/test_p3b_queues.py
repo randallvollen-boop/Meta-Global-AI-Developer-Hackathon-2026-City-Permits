@@ -184,10 +184,8 @@ def test_the_permit_reviewer_opens_the_review_queue(client: TestClient) -> None:
         ("persona_applicant", "/queue/intake"),
         ("persona_applicant", "/queue/early-resolution"),
         ("persona_applicant", "/queue/review"),
-        ("persona_permit_reviewer", "/queue/intake"),
         ("persona_permit_reviewer", "/queue/early-resolution"),
         ("persona_data_steward", "/queue/review"),
-        ("persona_city_administrator", "/queue/intake"),
         ("persona_city_administrator", "/queue/early-resolution"),
         ("persona_city_administrator", "/queue/review"),
     ),
@@ -212,7 +210,9 @@ def test_the_shared_work_queue_links_the_queues_of_the_persona(
     choose(client, "persona_permit_reviewer")
     reviewer_links = client.get("/queue").text
     assert 'data-queue="review_queue"' in reviewer_links
-    assert 'data-queue="intake_queue"' not in reviewer_links
+    # OPR-3: the reviewer keeps read access to the intake queue (no run grants).
+    assert 'data-queue="intake_queue"' in reviewer_links
+    assert 'data-queue="early_resolution"' not in reviewer_links
 
     choose(client, "persona_applicant")
     applicant_links = client.get("/queue").text

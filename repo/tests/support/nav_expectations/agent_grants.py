@@ -18,15 +18,16 @@ AGENT_SCREENS: frozenset[str] = frozenset(
     {"agent_intake", "agent_adjudication", "agents_home", "agent_runs", "agent_case"}
 )
 
-#: The agent screens of the side navigation, by actor id.
+#: The cross-persona grant-driven navigation entries, by actor id.
 #:
-#: The wake and run grants belong to the Agent Operator alone, so only the
-#: Agent Operator opens the agent screens.
+#: The wake and run grants belong to the Agent Operator alone.  OPR-3 grants
+#: the intake-queue read permission to the Permit Reviewer and City
+#: Administrator, so their rendered navigation also includes that queue.
 PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_applicant": (),
     "persona_data_steward": (),
-    "persona_permit_reviewer": (),
-    "persona_city_administrator": (),
+    "persona_permit_reviewer": ("intake_queue",),
+    "persona_city_administrator": ("intake_queue",),
     "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
 }
 
