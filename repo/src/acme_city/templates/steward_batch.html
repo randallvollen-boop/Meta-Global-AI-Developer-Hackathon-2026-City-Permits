@@ -37,7 +37,8 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="action_id" value="steward.assist.batch_accept">
       <input type="hidden" name="next" value="/steward/batch">
-      {% for item in batch.recommendations %}<input type="hidden" name="recommendation_id" value="{{ item.id }}">{% endfor %}
+      <input type="hidden" name="{{ batch.preview_digest_field }}" value="{{ batch.preview_digest }}">
+      {% for item in batch.recommendations %}<input type="hidden" name="{{ batch.preview_field }}" value="{{ item.id }}:{{ item.version }}">{% endfor %}
       <p>
         <button type="submit" class="button button-primary btn primary" data-testid="assistant-batch-confirm">
           Accept these {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}

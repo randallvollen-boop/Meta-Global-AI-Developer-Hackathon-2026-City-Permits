@@ -3,8 +3,8 @@
 The demonstration database holds the tasks of the Data Steward's queue that
 the assistant can work on, one for each certainty it can reach:
 
-* two Cedarline record matches the assistant is sure of: the source names
-  one master record and no other;
+* three record matches the assistant is sure of: the source names one master
+  record and no other;
 * one Cedarline record match the assistant is not sure of: the source fits
   two master records almost equally well;
 * one issue whose two versions disagree, which no one but a person may

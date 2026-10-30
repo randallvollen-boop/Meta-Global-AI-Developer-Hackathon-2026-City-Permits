@@ -93,7 +93,11 @@ def post(client: TestClient, action: str, fields: dict[str, str], next_path: str
 
 
 def post_many(
-    client: TestClient, action: str, names: list[str], next_path: str
+    client: TestClient,
+    action: str,
+    names: list[str],
+    next_path: str,
+    digest: str = "",
 ):
     """Post one field several times, the way the preview form does."""
     return client.post(
@@ -101,7 +105,8 @@ def post_many(
         data={
             "csrf_token": csrf(client, next_path),
             "next": next_path,
-            "recommendation_id": list(names),
+            "preview_item": list(names),
+            "preview_digest": digest,
         },
         headers={"Accept": "application/json"},
         follow_redirects=False,
@@ -167,7 +172,29 @@ def batch_button(client: TestClient) -> str:
 def preview_ids(client: TestClient) -> list[str]:
     """Return the identifiers the preview form confirms."""
     body = client.get("/steward/batch").text
-    return re.findall(r'name="recommendation_id" value="([^"]+)"', body)
+    return [
+        value.split(":", 1)[0]
+        for value in re.findall(r'name="preview_item" value="([^"]+)"', body)
+    ]
+
+
+def preview_items(client: TestClient) -> list[str]:
+    """Return the values the preview form confirms, with their versions."""
+    body = client.get("/steward/batch").text
+    return re.findall(r'name="preview_item" value="([^"]+)"', body)
+
+
+def preview_digest(client: TestClient) -> str:
+    """Return the proof of the list the preview shows."""
+    body = client.get("/steward/batch").text
+    match = re.search(r'name="preview_digest" value="([^"]+)"', body)
+    assert match is not None, body[:400]
+    return match.group(1)
+
+
+def preview_form(client: TestClient) -> tuple[list[str], str]:
+    """Return the list the preview confirms and the proof of that list."""
+    return preview_items(client), preview_digest(client)
 
 
 def preview_labels(client: TestClient) -> list[str]:
@@ -201,7 +228,7 @@ def test_the_queue_shows_how_many_recommendations_the_batch_holds(
     choose(client, "persona_data_steward")
     body = client.get("/steward").text
     expected = len(certain_recommendations(environment))
-    assert expected == 2
+    assert expected == 3
     assert f"Accept all high-confidence ({expected})" in body
     assert "disabled" not in batch_button(client)
 
@@ -227,10 +254,10 @@ def test_the_preview_names_exactly_the_items_the_batch_accepts(
     body = client.get("/steward/batch").text
     ids = preview_ids(client)
     assert ids == [row.id for row in certain_recommendations(environment)]
-    assert len(ids) == 2
+    assert len(ids) == 3
     # Every item is named in the words of the queue.
     labels = preview_labels(client)
-    assert len(labels) == 2
+    assert len(labels) == 3
     assert any("PER-AP-0003" in label for label in labels)
     assert 'data-testid="assistant-batch-confirm"' in body
 
@@ -253,14 +280,17 @@ def test_confirming_the_preview_accepts_every_item_and_records_it(
     """Each item is a decision of the steward, with the recommendation named."""
     prepare(client)
     choose(client, "persona_data_steward")
-    ids = preview_ids(client)
-    response = post_many(client, "steward.assist.batch_accept", ids, "/steward/batch")
+    items, digest = preview_form(client)
+    ids = [item.split(":", 1)[0] for item in items]
+    response = post_many(
+        client, "steward.assist.batch_accept", items, "/steward/batch", digest
+    )
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["status"] == "accepted"
-    assert "Accepted 2 of 2" in payload["message"]
+    assert "Accepted 3 of 3" in payload["message"]
 
-    # The links of the two source records are approved by the steward.
+    # The links of the three source records are approved by the steward.
     factory = SessionFactory(environment.database_url)
     try:
         with factory() as session:
@@ -269,7 +299,7 @@ def test_confirming_the_preview_accepts_every_item_and_records_it(
                     registry.Crosswalk.link_status == "approved"
                 )
             ).scalars().all()
-            assert len(links) == 2
+            assert len(links) == 3
             assert all(link.decision_actor_id == "persona_data_steward" for link in links)
 
             # Every item is a separate decision that names its recommendation.
@@ -278,7 +308,7 @@ def test_confirming_the_preview_accepts_every_item_and_records_it(
                     audit.AuditEvent.action == "steward.recommendation.accept"
                 )
             ).scalars().all()
-            assert len(events) == 2
+            assert len(events) == 3
             assert {tuple(event.references or [])[0] for event in events} == set(ids)
             assert all(event.actor_id == "persona_data_steward" for event in events)
 
@@ -287,7 +317,7 @@ def test_confirming_the_preview_accepts_every_item_and_records_it(
             # untouched.
             rows = session.execute(select(StewardRecommendation)).scalars().all()
             assert {row.id for row in rows if row.cleared} == set(ids)
-            assert len(rows) == 3
+            assert len(rows) == 4
     finally:
         factory.dispose()
 
@@ -298,7 +328,8 @@ def test_an_item_that_changed_since_the_preview_is_skipped_and_named(
     """A record that changed is not accepted silently; it is named."""
     prepare(client)
     choose(client, "persona_data_steward")
-    ids = preview_ids(client)
+    items, digest = preview_form(client)
+    ids = [item.split(":", 1)[0] for item in items]
     # The link of one recommendation changes after the preview.
     factory = SessionFactory(environment.database_url)
     try:
@@ -313,10 +344,12 @@ def test_an_item_that_changed_since_the_preview_is_skipped_and_named(
     finally:
         factory.dispose()
 
-    response = post_many(client, "steward.assist.batch_accept", ids, "/steward/batch")
+    response = post_many(
+        client, "steward.assist.batch_accept", items, "/steward/batch", digest
+    )
     assert response.status_code == 200, response.text
     message = response.json()["message"]
-    assert "Accepted 1 of 2" in message
+    assert "Accepted 2 of 3" in message
     assert "Skipped" in message
     assert "changed" in message
 
@@ -328,7 +361,7 @@ def test_an_item_that_changed_since_the_preview_is_skipped_and_named(
                     registry.Crosswalk.link_status == "approved"
                 )
             ).scalars().all()
-            assert len(links) == 1
+            assert len(links) == 2
             # The item that changed was not accepted.
             stale = session.get(StewardRecommendation, ids[0])
             assert stale is not None
@@ -343,7 +376,8 @@ def test_an_item_whose_confidence_changed_is_skipped_and_named(
     """A recommendation that is no longer sure is skipped and named."""
     prepare(client)
     choose(client, "persona_data_steward")
-    ids = preview_ids(client)
+    items, digest = preview_form(client)
+    ids = [item.split(":", 1)[0] for item in items]
     factory = SessionFactory(environment.database_url)
     try:
         with transaction(factory) as session:
@@ -353,10 +387,12 @@ def test_an_item_whose_confidence_changed_is_skipped_and_named(
     finally:
         factory.dispose()
 
-    response = post_many(client, "steward.assist.batch_accept", ids, "/steward/batch")
+    response = post_many(
+        client, "steward.assist.batch_accept", items, "/steward/batch", digest
+    )
     assert response.status_code == 200, response.text
     message = response.json()["message"]
-    assert "Accepted 1 of 2" in message
+    assert "Accepted 2 of 3" in message
     assert "confidence" in message
 
     factory = SessionFactory(environment.database_url)
@@ -380,14 +416,70 @@ def test_the_batch_accepts_nothing_when_no_recommendation_is_confirmed(
     assert response.json()["status"] == "denied"
 
 
+def test_a_confirmation_of_a_shorter_list_is_refused(
+    client: TestClient, environment: Settings
+) -> None:
+    """A confirmation that leaves an item of the preview out is refused."""
+    prepare(client)
+    choose(client, "persona_data_steward")
+    items, digest = preview_form(client)
+    assert len(items) == 3
+    response = post_many(
+        client, "steward.assist.batch_accept", items[:1], "/steward/batch", digest
+    )
+    assert response.status_code == 422, response.text
+    payload = response.json()
+    assert payload["status"] == "denied"
+    assert "not the list you were shown" in payload["message"]
+
+    # Nothing was accepted.
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.link_status == "approved"
+                )
+            ).scalars().all()
+            assert links == []
+            rows = session.execute(select(StewardRecommendation)).scalars().all()
+            assert all(row.cleared is False for row in rows)
+    finally:
+        factory.dispose()
+
+
+def test_a_confirmation_of_another_recommendation_is_refused(
+    client: TestClient, environment: Settings
+) -> None:
+    """A confirmation that names a record the preview did not show is refused."""
+    prepare(client)
+    choose(client, "persona_data_steward")
+    items, digest = preview_form(client)
+    other = [row.id for row in stored_recommendations(environment) if row.confidence != "high"]
+    assert other
+    response = post_many(
+        client,
+        "steward.assist.batch_accept",
+        [*items, f"{other[0]}:1"],
+        "/steward/batch",
+        digest,
+    )
+    assert response.status_code == 422, response.text
+    payload = response.json()
+    assert payload["status"] == "denied"
+    assert "not the list you were shown" in payload["message"]
+
+
 def test_the_assistant_may_not_accept_a_batch_for_the_steward(
     client: TestClient, environment: Settings
 ) -> None:
     """The run grant of the assistant belongs to the Data Steward alone."""
     prepare(client)
     choose(client, "persona_data_steward")
-    ids = preview_ids(client)
+    items, digest = preview_form(client)
     choose(client, "persona_city_administrator")
-    response = post_many(client, "steward.assist.batch_accept", ids, "/steward")
+    response = post_many(
+        client, "steward.assist.batch_accept", items, "/steward", digest
+    )
     assert response.status_code == 403, response.text
     assert response.json()["status"] == "denied"

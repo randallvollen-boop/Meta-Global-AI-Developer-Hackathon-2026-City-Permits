@@ -2,16 +2,17 @@
 """Add the Cedarline steward demonstration to a fictional demo database.
 
 This is a prepare mode.  It is never part of a reset, an acceptance run or a
-D-scenario fixture.  It proposes (never decides) the candidate links of three
-Cedarline source records so the Data issues queue holds a story: Cedarline
-Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline
-Coffee Works LLC, a different license number.
+D-scenario fixture.  It proposes (never decides) the candidate links of the
+source records of the demonstration so the Data issues queue holds a story:
+Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against
+Cedarline Coffee Works LLC, a different license number, and the license of
+Quarry Lane Imports LLC, which the assistant is sure of.
 
 With ``--automation`` it also prepares the automatic linking: the policy of
 the Data Steward is activated, the worker of the City applies one eligible
 link, and the queue holds that link for a person to keep or undo.  Without
-the flag the load stays exactly as it was: three proposed links and nothing
-else.
+the flag the load stays exactly as it was: the proposed links of the
+demonstration and nothing else.
 
 Usage:
 

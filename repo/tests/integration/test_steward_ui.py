@@ -457,11 +457,11 @@ def test_queue_columns_and_filters_use_real_counts(client: TestClient, environme
         }
 
     body = client.get("/steward").text
-    assert counts(body) == {"needs_review": 4, "assigned_to_me": 1, "awaiting_source": 1, "resolved": 1}
+    assert counts(body) == {"needs_review": 5, "assigned_to_me": 1, "awaiting_source": 1, "resolved": 1}
     heads = [re.sub(r"<[^>]+>", "", h).strip() for h in re.findall(r'<th scope="col">(.*?)</th>', body.split('data-testid="issue-table"')[1].split("</thead>")[0], re.S)]
     assert heads[:5] == ["Issue", "Record", "Affected application", "Source", "Status"]
     assert "Assigned" in heads  # an assignment exists, so the column appears
-    assert len(re.findall(r"data-issue-row", body)) == 4
+    assert len(re.findall(r"data-issue-row", body)) == 5
     mine = client.get("/steward?filter=assigned_to_me").text
     assert len(re.findall(r"data-issue-row", mine)) == 1 and "Halcyon trading name" in mine
     waiting = client.get("/steward?filter=awaiting_source").text
@@ -475,7 +475,7 @@ def test_queue_columns_and_filters_use_real_counts(client: TestClient, environme
         "decision": "approve", "reason": "alias and reference agree",
     }, "/steward").status_code == 200
     after = client.get("/steward").text
-    assert counts(after) == {"needs_review": 3, "assigned_to_me": 1, "awaiting_source": 1, "resolved": 2}
+    assert counts(after) == {"needs_review": 4, "assigned_to_me": 1, "awaiting_source": 1, "resolved": 2}
     # A short confirmation replaces the old "No action has been performed" banner.
     assert 'data-testid="queue-confirmation"' in after and "Recorded the approve decision for PER-AP-0003" in after
 
@@ -949,7 +949,7 @@ def test_activity_lists_decisions_not_the_audit_log(client: TestClient, environm
     assert 'data-testid="activity-empty"' in client.get("/activity").text
     seed(environment)
     body = client.get("/activity").text
-    assert body.count('data-testid="activity-row"') == 3
+    assert body.count('data-testid="activity-row"') == 4
     assert "Candidate links proposed" in body
     choose(client, "persona_applicant")
     assert client.get("/activity").status_code == 403
@@ -1009,7 +1009,7 @@ def test_the_activity_leads_with_the_action_and_the_record(
     body = client.get("/activity").text
     assert "Recorded stewardship decisions and changes." in body
     rows = activity_rows(body)
-    assert len(rows) == 3
+    assert len(rows) == 4
     assert all("Candidate links proposed" in row for row in rows)
     row = next(row for row in rows if "PER-AP-0003" in row)
     assert "Data Steward" in row
@@ -1086,7 +1086,7 @@ def test_the_demo_seed_is_not_part_of_the_reset(environment: Settings) -> None:
         factory.dispose()
     source = Path(steward_views.__file__).parents[1].joinpath("fixtures", "reset.py").read_text(encoding="utf-8")
     assert "steward_demo" not in source
-    assert len(seed(environment)) == 3
+    assert len(seed(environment)) == 4
 
 
 # ------------------------------------------- the other kinds of focused case

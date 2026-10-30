@@ -153,14 +153,14 @@ def test_the_batch_opens_with_a_click_and_accepts_with_a_click(
     click_action(page, "assistant-prepare", "steward.assist.prepare")
     # The button of the batch names the number of the recommendations it holds.
     page.wait_for_selector('[data-testid="assistant-batch-preview"][href]')
-    assert "Accept all high-confidence (2)" in page.locator(
+    assert "Accept all high-confidence (3)" in page.locator(
         '[data-testid="assistant-batch-preview"]'
     ).inner_text()
     page.locator('[data-testid="assistant-batch-preview"]').click()
     page.wait_for_selector('[data-testid="batch-panel"]')
-    assert page.locator('[data-testid="batch-item"]').count() == 2
+    assert page.locator('[data-testid="batch-item"]').count() == 3
     message = click_action(page, "assistant-batch-confirm", "steward.assist.batch_accept")
-    assert "Accepted 2 of 2" in message
+    assert "Accepted 3 of 3" in message
     assert page.recorded_errors == []
 
 

@@ -15,13 +15,16 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
+from acme_city.persistence.models import audit
 from acme_city.persistence.models.governance import DemoEnvironment
+from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
 
@@ -130,7 +133,7 @@ def test_the_figure_counts_the_recommendations_the_steward_accepted(
         r'data-testid="agreement-counts">\s*([^<]+)<', body
     )
     assert counts is not None, body[:400]
-    assert "0 accepted of 3 prepared in the last 7 days" in counts.group(1)
+    assert "0 accepted unchanged of 4 prepared in the last 7 days" in counts.group(1)
 
 
 def test_the_figure_rises_when_a_recommendation_is_accepted(
@@ -158,7 +161,96 @@ def test_the_figure_rises_when_a_recommendation_is_accepted(
     body = client.get("/steward").text
     counts = re.search(r'data-testid="agreement-counts">\s*([^<]+)<', body)
     assert counts is not None, body[:400]
-    assert "1 accepted of 3 prepared in the last 7 days" in counts.group(1)
+    assert "1 accepted unchanged of 4 prepared in the last 7 days" in counts.group(1)
     share = re.search(r'data-testid="agreement-share">([^<]+)<', body)
     assert share is not None
-    assert share.group(1).strip() == "33%"
+    assert share.group(1).strip() == "25%"
+
+
+def test_a_reason_the_steward_wrote_is_not_agreement(
+    client: TestClient, environment: Settings
+) -> None:
+    """A recommendation the steward rewrote does not raise the figure."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    post(client, "steward.assist.prepare", {"next": "/steward"}, "/steward")
+    queue = client.get("/steward").text
+    hrefs = re.findall(r'href="(/steward/issues/link/[^"]+)"', queue)
+    assert hrefs
+    path = hrefs[0]
+    identifier = re.search(
+        r'name="recommendation_id" value="([^"]+)"', client.get(path).text
+    )
+    assert identifier is not None
+    post(
+        client,
+        "steward.assist.accept",
+        {
+            "recommendation_id": identifier.group(1),
+            "reason": "My independent assessment replaces the assistant reason.",
+            "next": path,
+        },
+        path,
+    )
+    body = client.get("/steward").text
+    counts = re.search(r'data-testid="agreement-counts">\s*([^<]+)<', body)
+    assert counts is not None, body[:400]
+    assert "0 accepted unchanged of 4 prepared in the last 7 days" in counts.group(1)
+    share = re.search(r'data-testid="agreement-share">([^<]+)<', body)
+    assert share is not None
+    assert share.group(1).strip() == "0%"
+    # The decision recorded the comparison it made when it was taken.
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            events = session.execute(
+                select(audit.AuditEvent).where(
+                    audit.AuditEvent.action == "steward.recommendation.accept"
+                )
+            ).scalars().all()
+            assert len(events) == 1
+            assert (events[0].metadata_json or {}).get("reason_unchanged") is False
+    finally:
+        factory.dispose()
+
+
+def test_the_words_muse_wrote_count_as_the_reason_of_the_assistant(
+    client: TestClient, environment: Settings
+) -> None:
+    """The words Muse wrote are the reason of the assistant in other words."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    post(client, "steward.assist.prepare", {"next": "/steward"}, "/steward")
+    queue = client.get("/steward").text
+    hrefs = re.findall(r'href="(/steward/issues/link/[^"]+)"', queue)
+    assert hrefs
+    path = hrefs[0]
+    identifier = re.search(
+        r'name="recommendation_id" value="([^"]+)"', client.get(path).text
+    )
+    assert identifier is not None
+    # The recommendation holds the words Muse wrote for it.
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, identifier.group(1))
+            assert row is not None
+            row.muse_reason = "The license holder names the same business."
+            row.version += 1
+    finally:
+        factory.dispose()
+    # The steward accepts the words Muse wrote.
+    post(
+        client,
+        "steward.assist.accept",
+        {
+            "recommendation_id": identifier.group(1),
+            "reason": "The license holder names the same business.",
+            "next": path,
+        },
+        path,
+    )
+    body = client.get("/steward").text
+    counts = re.search(r'data-testid="agreement-counts">\s*([^<]+)<', body)
+    assert counts is not None, body[:400]
+    assert "1 accepted unchanged of 4 prepared in the last 7 days" in counts.group(1)

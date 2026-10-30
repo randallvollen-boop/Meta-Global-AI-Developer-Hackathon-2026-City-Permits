@@ -108,9 +108,9 @@ def test_a_record_opens_in_the_drawer_with_three_views(page, server: BrowserServ
 def test_data_issues_and_a_focused_case_at_both_widths(page, server: BrowserServer, login, cedarline) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")
-    assert page.locator("[data-issue-row]").count() == 3
+    assert page.locator("[data-issue-row]").count() == 4
     counts = page.locator('[data-testid="issue-filter-count"]').all_inner_texts()
-    assert counts == ["3", "0", "0", "0"]
+    assert counts == ["4", "0", "0", "0"]
     # The row of the record: the task is the link, the reference is the text
     # under the source.
     page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(

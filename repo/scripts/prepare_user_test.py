@@ -29,12 +29,13 @@ MODE_LABELS = {
     "ready-for-review": "D01 has replay-labelled Muse evidence and approved identity links.",
     "completed-reference": "D01 has a replay-labelled reference chain and an issued simulated permit.",
     "steward-demo": (
-        "Fresh fixtures plus three proposed Cedarline links in Data issues: Cedarline "
-        "Coffee Roasters LLC against Cedarline Coffee Works LLC, and the conflicting "
-        "issue of the steward assistant. Nothing is decided."
+        "Fresh fixtures plus four proposed links in Data issues: Cedarline "
+        "Coffee Roasters LLC against Cedarline Coffee Works LLC, the license of "
+        "Quarry Lane Imports LLC, and the conflicting issue of the steward "
+        "assistant. Nothing is decided."
     ),
     "steward-automation": (
-        "Fresh fixtures plus three proposed Cedarline links, one link the automatic "
+        "Fresh fixtures plus four proposed links, one link the automatic "
         "linking applied and the conflicting issue of the steward assistant. The "
         "steward may keep that link or undo it with a reason."
     ),

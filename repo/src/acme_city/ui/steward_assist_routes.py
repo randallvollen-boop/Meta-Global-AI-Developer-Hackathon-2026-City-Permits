@@ -15,7 +15,9 @@ Four actions carry the work of the assistant:
 A fifth action, ``steward.assist.batch_accept``, accepts the list of
 recommendations the steward confirmed in the preview.  It is a sequence of
 the single acceptances and nothing else: every item goes through the same
-path, and an item that changed since the preview is skipped and named.
+path, and an item that changed since the preview is skipped and named.  The
+confirmation carries the list of the preview with the versions it showed and
+the proof of that list, so a confirmation of another list is refused.
 
 The accept does not write on its own: it goes through the existing service
 action of the task kind, with the steward as the decider of record, and it
@@ -324,11 +326,16 @@ def _accept_one(ctx: ActionContext, recommendation: Any, reason: str) -> Outcome
     it always does.  The recommendation is recorded in the audit trail and
     cleared, so the task holds no answer twice.
 
+    The decision records whether the steward took the reason of the assistant
+    as it was.  The reason the assistant prepared and the words Muse wrote for
+    it are the same decision, so either of them counts as unchanged.
+
     The single acceptance and the batch use this one path, so a batch is
     never more than a sequence of the decisions a steward takes one by one.
     """
     action_id, form = _accept_target(ctx.session, recommendation, reason)
     outcome = _dispatch(ctx, action_id, form)
+    unchanged = _reason_unchanged(recommendation, reason)
     AuditService(ctx.session).append(
         action="steward.recommendation.accept",
         actor=ctx.actor,
@@ -344,6 +351,8 @@ def _accept_one(ctx: ActionContext, recommendation: Any, reason: str) -> Outcome
             "confidence": recommendation.confidence,
             "outcome": recommendation.outcome,
             "action_id": action_id,
+            "reason_unchanged": unchanged,
+            "prepared_reason": recommendation.reason,
         },
     )
     recommendation.cleared = True
@@ -365,6 +374,21 @@ def _accept_one(ctx: ActionContext, recommendation: Any, reason: str) -> Outcome
             "recommendation_id": recommendation.id,
         },
     )
+
+
+def _reason_unchanged(recommendation: Any, reason: str) -> bool:
+    """Whether the steward took the reason of the assistant as it was.
+
+    The reason the assistant prepared is the reason of the recommendation.
+    The words Muse wrote for it say the same thing in other words, so a
+    steward who took those words took the reason as it was.  A reason the
+    steward wrote is a change, and it is recorded as one.
+    """
+    prepared = {
+        str(recommendation.reason or ""),
+        str(recommendation.muse_reason or ""),
+    } - {""}
+    return bool(prepared) and reason in prepared
 
 
 def _accept(ctx: ActionContext) -> Outcome:
@@ -394,21 +418,34 @@ def _accept(ctx: ActionContext) -> Outcome:
 def _batch_accept(ctx: ActionContext) -> Outcome:
     """Accept the recommendations the steward confirmed in the preview.
 
-    The confirmed set is the previewed set.  Every item goes through the same
-    path as a single acceptance, so the stale guard and the held guard of the
-    assistant apply to it as well.  An item that went stale, that changed its
-    confidence or that was cleared since the preview is skipped and named: it
-    is never accepted silently.
+    The confirmed set is the previewed set.  The preview names every item
+    with the version it showed, and the proof of the preview travels with the
+    form: a confirmation that names another list, or another version of a
+    recommendation, is refused instead of accepted.
+
+    Every item goes through the same path as a single acceptance, so the
+    stale guard and the held guard of the assistant apply to it as well.  An
+    item that went stale, that changed its confidence or that was cleared
+    since the preview is skipped and named: it is never accepted silently.
     """
-    identifiers = ctx.values("recommendation_id")
-    if not identifiers:
-        raise ValidationError("the request names no recommendation")
+    items = ctx.values(steward_assist_views.PREVIEW_FIELD) or ctx.values(
+        "recommendation_id"
+    )
     AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
+    if not items:
+        raise ValidationError("the request names no recommendation")
+    if not steward_assist_views.preview_confirmed(
+        ctx.settings, items, ctx.text(steward_assist_views.PREVIEW_DIGEST_FIELD)
+    ):
+        raise ValidationError(steward_assist_views.PREVIEW_MISMATCH_MESSAGE)
     labels = steward_assist_views.task_labels(ctx.session, ctx.actor)
     accepted: list[str] = []
     skipped: list[dict[str, str]] = []
     seen: set[str] = set()
-    for identifier in identifiers:
+    for item in items:
+        identifier, _, version = str(item).rpartition(":")
+        if not identifier:
+            identifier, version = str(item), ""
         if identifier in seen:
             continue
         seen.add(identifier)
@@ -424,6 +461,15 @@ def _batch_accept(ctx: ActionContext) -> Outcome:
         if recommendation.cleared:
             skipped.append(
                 {"id": identifier, "label": label, "reason": "it was cleared"}
+            )
+            continue
+        if version and version.isdigit() and int(version) != int(recommendation.version):
+            skipped.append(
+                {
+                    "id": identifier,
+                    "label": label,
+                    "reason": "it changed since the list you were shown",
+                }
             )
             continue
         refusal = recommenders.batch_refusal(recommendation)

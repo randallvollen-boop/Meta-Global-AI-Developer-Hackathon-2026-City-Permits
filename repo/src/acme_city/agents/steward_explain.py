@@ -16,9 +16,15 @@ travels with the call.
 
 The live path goes through the same gates as every other call of the City:
 the provider switch, the live-call cap of the build run, the daily
-allowance of the provider and the recorded ModelRun.  A refused call is
-recorded as a refused run; it is never replayed and never hidden, and the
-deterministic reason of the assistant stands.
+allowance of the provider and the recorded ModelRun.  The dispatch takes the
+same process-wide lock every other live path takes and reads the cap of the
+build run again under it, so two explanations never spend the same call.
+
+A refused call is recorded as a refused run; it is never replayed and never
+hidden, and the deterministic reason of the assistant stands.  An answer the
+provider refused to give, or did not finish, is refused the same way: the
+words of the refusal and the reason of the unfinished answer stay in the
+validation of the run.
 """
 # REQUIRES: AI-01, AI-02, AI-03, AI-04, UX-01
 # A model rewrites the words of one recommendation and nothing else. The output schema carries
@@ -52,7 +58,7 @@ from acme_city.muse.schemas import (
     STEWARD_EXPLANATION_TASK,
     task_schema,
 )
-from acme_city.muse.service import allowed_model, live_budget_error
+from acme_city.muse.service import LIVE_DISPATCH_LOCK, allowed_model, live_budget_error
 from acme_city.muse.validation import parse_output_text, parse_task_output
 from acme_city.persistence.models import model_run, source
 
@@ -76,6 +82,17 @@ EXPLANATION_INSTRUCTIONS = (
 
 #: The longest value of one field the provider sees.
 MAX_FIELD_LENGTH = 200
+
+#: The answers of the provider that carry a finished answer.  Every other
+#: status is an unfinished answer, and an unfinished answer is never read as
+#: a rewrite.
+COMPLETED_STATUSES = frozenset({"completed", "succeeded"})
+
+#: The message of a provider that refused to answer.
+REFUSAL_MESSAGE = "the provider refused to answer"
+
+#: The message of a provider that answered without finishing.
+INCOMPLETE_MESSAGE = "the provider did not finish the answer"
 
 
 @dataclass(frozen=True)
@@ -249,12 +266,18 @@ def _record(
     latency_ms: int | None = None,
     response_id: str | None = None,
     response_status: str | None = None,
+    details: Mapping[str, Any] | None = None,
 ) -> model_run.ModelRun:
     """Record the run of one explanation attempt.
 
     The record carries the identifiers and the hashes of what the run was
     given.  It never carries the values of the record: the values live in
     the record itself.
+
+    ``details`` carries what the provider said about an answer the City did
+    not accept: the words of a refusal or the reason an answer was not
+    finished.  The details stay in the validation of the run, so a reader can
+    see why the attempt produced nothing.
     """
     material = json.dumps(list(fields), sort_keys=True, separators=(",", ":"))
     refs = {
@@ -272,6 +295,8 @@ def _record(
         "status": "succeeded" if output else "failed",
         "provider": {"response_id": response_id, "response_status": response_status},
     }
+    if details:
+        validation["details"] = dict(details)
     if error:
         validation["issues"] = [{"code": "run_failed", "message": error}]
     row = model_run.ModelRun(
@@ -322,6 +347,12 @@ def explain(
     recorded, whether it succeeded or not.  A refused attempt leaves the
     deterministic reason of the assistant standing.
 
+    The dispatch is serialized with every other live path of the City: it
+    takes the process-wide lock of the live dispatch and reads the cap of the
+    build run again under it.  An answer that refuses to answer, or that was
+    not finished, is refused: the details stay in the run and the reason of
+    the assistant stands.
+
     Args:
         session: The open session.
         settings: The application settings, which hold the gates.
@@ -362,20 +393,37 @@ def explain(
     muse_client = client if client is not None else MuseClient(
         settings, budget=MuseBudget(session, settings=settings)
     )
-    try:
-        response: ProviderResponse = muse_client.create_response(payload)
-    except MuseRequestError as exc:
-        run = _record(
-            session,
-            settings=settings,
-            actor_id=actor_id,
-            recommendation=recommendation,
-            fields=fields,
-            output=None,
-            error=str(exc),
-            moment=moment,
-        )
-        return Explanation(text=reason, run_id=run.id, error=str(exc))
+    # The dispatch takes the lock every other live path takes, and the cap of
+    # the build run is read again under it.  A request that waited for the
+    # lock must not spend a call the request before it already spent.
+    with LIVE_DISPATCH_LOCK:
+        blocked = live_budget_error(session, settings)
+        if blocked is not None:
+            run = _record(
+                session,
+                settings=settings,
+                actor_id=actor_id,
+                recommendation=recommendation,
+                fields=fields,
+                output=None,
+                error=blocked,
+                moment=moment,
+            )
+            return Explanation(text=reason, run_id=run.id, error=blocked)
+        try:
+            response: ProviderResponse = muse_client.create_response(payload)
+        except MuseRequestError as exc:
+            run = _record(
+                session,
+                settings=settings,
+                actor_id=actor_id,
+                recommendation=recommendation,
+                fields=fields,
+                output=None,
+                error=str(exc),
+                moment=moment,
+            )
+            return Explanation(text=reason, run_id=run.id, error=str(exc))
 
     if response.error is not None:
         run = _record(
@@ -393,6 +441,49 @@ def explain(
             response_status=response.status,
         )
         return Explanation(text=reason, run_id=run.id, error=response.error)
+
+    if response.refusal:
+        # A refusal is not an answer.  The words of the refusal are kept in the
+        # validation of the run, and the reason of the assistant stands.
+        run = _record(
+            session,
+            settings=settings,
+            actor_id=actor_id,
+            recommendation=recommendation,
+            fields=fields,
+            output=None,
+            error=REFUSAL_MESSAGE,
+            moment=moment,
+            usage=response.usage,
+            latency_ms=response.latency_ms,
+            response_id=response.response_id,
+            response_status=response.status,
+            details={"refusal": response.refusal},
+        )
+        return Explanation(text=reason, run_id=run.id, error=REFUSAL_MESSAGE)
+
+    if response.status not in COMPLETED_STATUSES:
+        # An unfinished answer is not an answer either.  The reason the
+        # provider gives stays in the validation of the run.
+        run = _record(
+            session,
+            settings=settings,
+            actor_id=actor_id,
+            recommendation=recommendation,
+            fields=fields,
+            output=None,
+            error=INCOMPLETE_MESSAGE,
+            moment=moment,
+            usage=response.usage,
+            latency_ms=response.latency_ms,
+            response_id=response.response_id,
+            response_status=response.status,
+            details={
+                "incomplete_details": dict(response.incomplete_details or {}),
+                "status": response.status,
+            },
+        )
+        return Explanation(text=reason, run_id=run.id, error=INCOMPLETE_MESSAGE)
 
     data, issue = parse_output_text(STEWARD_EXPLANATION_TASK, response.output_text)
     if data is None:
@@ -451,8 +542,11 @@ def explain(
 
 
 __all__ = [
+    "COMPLETED_STATUSES",
     "EXPLANATION_INSTRUCTIONS",
+    "INCOMPLETE_MESSAGE",
     "MAX_FIELD_LENGTH",
+    "REFUSAL_MESSAGE",
     "Explanation",
     "build_explanation_payload",
     "explain",

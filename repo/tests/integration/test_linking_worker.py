@@ -746,14 +746,14 @@ def _prepare_demo(tmp_path: Path, mode: str) -> Path:
     return database
 
 
-def test_the_default_demo_still_proposes_three_links(tmp_path: Path) -> None:
-    """The Cedarline demonstration is unchanged: three proposals, no link."""
+def test_the_default_demo_still_proposes_only_links(tmp_path: Path) -> None:
+    """The demonstration proposes its links and decides nothing."""
     database = _prepare_demo(tmp_path, "steward-demo")
     factory = SessionFactory(f"sqlite:///{database}")
     try:
         with transaction(factory) as session:
             proposals = session.execute(select(registry.MatchProposal)).scalars().all()
-            assert len(proposals) == 3
+            assert len(proposals) == 4
             applications = session.execute(
                 select(registry_automation.RegistryAutomationApplication)
             ).scalars().all()
@@ -763,13 +763,13 @@ def test_the_default_demo_still_proposes_three_links(tmp_path: Path) -> None:
 
 
 def test_the_automation_demo_applies_one_link(tmp_path: Path) -> None:
-    """The automation demonstration holds three proposals and one applied link."""
+    """The automation demonstration holds the proposals and one applied link."""
     database = _prepare_demo(tmp_path, "steward-automation")
     factory = SessionFactory(f"sqlite:///{database}")
     try:
         with transaction(factory) as session:
             proposals = session.execute(select(registry.MatchProposal)).scalars().all()
-            assert len(proposals) == 3
+            assert len(proposals) == 4
             applications = session.execute(
                 select(registry_automation.RegistryAutomationApplication)
             ).scalars().all()

@@ -377,7 +377,9 @@ def ui_steward_review(
     assistant["bound"] = steward_assist_views.MAX_TASKS_PER_PRESS
     # The batch the steward may accept.  The queue shows how many
     # recommendations it holds; the preview names them.
-    batch = steward_assist_views.batch_state(session, resolved, with_items=False)
+    batch = steward_assist_views.batch_state(
+        session, resolved, with_items=False, settings=request.app.state.settings
+    )
     # The agreement figure: the share of the recommendations the steward
     # accepted unchanged in the last seven days.
     agreement = steward_assist_views.agreement_figure(session)
@@ -416,7 +418,9 @@ def ui_steward_batch(
     resolved, refused = _guard(request, session, actor, "steward")
     if refused is not None:
         return refused
-    batch = steward_assist_views.batch_state(session, resolved)
+    batch = steward_assist_views.batch_state(
+        session, resolved, settings=request.app.state.settings
+    )
     if not batch["may_batch"]:
         return error_response(
             request,

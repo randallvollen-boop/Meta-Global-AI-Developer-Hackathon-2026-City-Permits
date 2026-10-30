@@ -21,7 +21,7 @@ from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
-from acme_city.fixtures.steward_demo import CEDARLINE_RECORDS, seed_cedarline
+from acme_city.fixtures.steward_demo import DEMONSTRATION_RECORDS, seed_cedarline
 from acme_city.persistence.models import change
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
@@ -206,9 +206,9 @@ def test_the_queue_pages_the_work(client: TestClient) -> None:
     assert len(rows_of(first)) == queue.PAGE_SIZE
     assert 'data-testid="pager"' in first
     second = client.get("/steward?page=2").text
-    # The second page holds the three seeded proposals and the three tasks
+    # The second page holds the seeded proposals and the three tasks
     # the test added.
-    assert len(rows_of(second)) == len(CEDARLINE_RECORDS) + 3
+    assert len(rows_of(second)) == len(DEMONSTRATION_RECORDS) + 3
     # The page link keeps the search and the filters.
     pager = re.search(r'data-testid="pager".*?</nav>', first, re.S)
     assert pager is not None

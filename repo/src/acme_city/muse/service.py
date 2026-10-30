@@ -121,7 +121,11 @@ DISPOSITION_MAP: Final[dict[str, str]] = {
 }
 
 #: One live call is in flight at a time.  The lock is process wide.
-_LIVE_DISPATCH_LOCK = threading.Lock()
+#:
+#: Every path that may reach the provider takes this lock around the check of
+#: the live-call cap and the dispatch itself, so two requests never read the
+#: same slot of the cap and then dispatch.  The lock is shared, never copied.
+LIVE_DISPATCH_LOCK = threading.Lock()
 
 
 def allowed_model(settings: Settings) -> str:
@@ -644,7 +648,7 @@ class MuseService:
         blocked = self._live_budget_error()
         if blocked is not None:
             return _Dispatch(output=None, error=blocked, provider_error=True)
-        with _LIVE_DISPATCH_LOCK:
+        with LIVE_DISPATCH_LOCK:
             blocked = self._live_budget_error()
             if blocked is not None:
                 return _Dispatch(output=None, error=blocked, provider_error=True)
@@ -1107,6 +1111,7 @@ class MuseService:
 
 __all__ = [
     "DISPOSITION_MAP",
+    "LIVE_DISPATCH_LOCK",
     "STAFF_PERMISSIONS",
     "MuseRunCommand",
     "MuseService",

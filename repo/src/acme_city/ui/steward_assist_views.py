@@ -12,6 +12,8 @@ control is unavailable.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -85,6 +87,59 @@ EXPLAIN_ON_NOTE = (
     "the certainty of the recommendation."
 )
 
+#: The field the preview of a batch carries for every item of the list.
+#:
+#: The value names the recommendation and the version the preview showed, so a
+#: confirmation that names another list, or another version of a
+#: recommendation, cannot pass for the one the steward read.
+PREVIEW_FIELD = "preview_item"
+
+#: The field that carries the proof that the confirmed list is the list the
+#: preview showed.
+PREVIEW_DIGEST_FIELD = "preview_digest"
+
+#: The message of a confirmation that does not match the preview.
+PREVIEW_MISMATCH_MESSAGE = (
+    "the list you confirmed is not the list you were shown; open the preview "
+    "again and confirm the list it shows"
+)
+
+
+def preview_value(recommendation_id: str, version: int) -> str:
+    """Return the posted value of one item of the preview."""
+    return f"{recommendation_id}:{int(version)}"
+
+
+def preview_digest(settings: Any, items: list[str]) -> str:
+    """Return the proof that a list of previewed items is the list of the preview.
+
+    The proof is a signature of the list under the secret of the deployment, so
+    a client cannot confirm a list the server never showed.  The list itself
+    travels with the form; the proof says the server issued it.
+    """
+    secret = ""
+    if settings is not None:
+        key = getattr(settings, "secret_key", None)
+        secret = key.get_secret_value() if key is not None else ""
+    material = "|".join(sorted(str(item) for item in items))
+    return hmac.new(
+        secret.encode("utf-8"),
+        f"steward-batch-preview:{material}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:32]
+
+
+def preview_confirmed(settings: Any, items: list[str], presented: str) -> bool:
+    """Whether a confirmed list is the list the preview showed.
+
+    The proof of the preview has to match the list that was confirmed.  A
+    list that is shorter, longer or different in any item has another proof,
+    so it is not the list of the preview.
+    """
+    if not presented:
+        return False
+    return hmac.compare_digest(preview_digest(settings, items), presented)
+
 
 def explain_state(session: Any, settings: Any) -> dict[str, Any]:
     """Return whether a live call may be sent, and the note when it may not.
@@ -115,9 +170,10 @@ def agreement_figure(session: Any) -> dict[str, Any]:
     """Return the share of the recommendations the steward accepted unchanged.
 
     The figure counts the recommendations the assistant prepared in the last
-    seven days and the ones the steward accepted among them.  A recommendation
-    the steward changed or ignored lowers the share, so the figure shows how
-    much of the assistant's work the steward agreed with.
+    seven days and the ones the steward accepted among them without changing
+    the reason.  A recommendation the steward rewrote, changed or ignored
+    lowers the share, so the figure shows how much of the assistant's work the
+    steward agreed with.
 
     The counts the figure is made of are shown beside it, so a reader never
     sees a percentage without the numbers behind it.
@@ -143,6 +199,8 @@ def agreement_figure(session: Any) -> dict[str, Any]:
             "share": "",
             "note": AGREEMENT_EMPTY_NOTE,
         }
+    # Only an acceptance that left the reason of the assistant alone counts.
+    # The decision recorded the comparison when it was taken.
     accepted_ids = {
         str((event.metadata_json or {}).get("recommendation_id") or "")
         for event in session.execute(
@@ -150,6 +208,7 @@ def agreement_figure(session: Any) -> dict[str, Any]:
                 audit.AuditEvent.action == "steward.recommendation.accept"
             )
         ).scalars()
+        if (event.metadata_json or {}).get("reason_unchanged") is True
     }
     accepted = sum(1 for row in rows if row.id in accepted_ids)
     share = round(accepted * 100 / total)
@@ -161,7 +220,7 @@ def agreement_figure(session: Any) -> dict[str, Any]:
         "note": (
             f"You accepted {accepted} of the {total} recommendation"
             f"{'' if total == 1 else 's'} the assistant prepared in the last "
-            f"{AGREEMENT_DAYS} days."
+            f"{AGREEMENT_DAYS} days without changing the reason."
         ),
     }
 
@@ -181,7 +240,11 @@ def task_labels(session: Any, actor: ActorContext) -> dict[tuple[str, str], str]
 
 
 def batch_state(
-    session: Any, actor: ActorContext, *, with_items: bool = True
+    session: Any,
+    actor: ActorContext,
+    *,
+    with_items: bool = True,
+    settings: Any = None,
 ) -> dict[str, Any]:
     """Return the batch the steward may accept, and the items it holds.
 
@@ -192,6 +255,11 @@ def batch_state(
     The queue only shows how many recommendations the batch holds, so it
     asks for the count alone: the names of the tasks are read only for the
     preview.
+
+    Every item of the preview carries the version of its recommendation, and
+    the preview carries the proof of the list.  A confirmation that names
+    another list, or another version of a recommendation, is not the
+    confirmation of this preview.
     """
     may = may_run(session, actor)
     rows = assistant.batch_candidates(session) if may else []
@@ -201,6 +269,7 @@ def batch_state(
         items.append(
             {
                 "id": row.id,
+                "version": int(row.version),
                 "task_kind": row.task_kind,
                 "task_id": row.task_id,
                 "label": labels.get((row.task_kind, row.task_id), row.task_id),
@@ -220,6 +289,11 @@ def batch_state(
         "recommendations": items,
         "note": note,
         "empty_note": BATCH_EMPTY_NOTE,
+        "preview_field": PREVIEW_FIELD,
+        "preview_digest_field": PREVIEW_DIGEST_FIELD,
+        "preview_digest": preview_digest(
+            settings, [preview_value(item["id"], item["version"]) for item in items]
+        ),
     }
 
 
@@ -476,6 +550,9 @@ __all__ = [
     "EXPLAIN_OFF_NOTE",
     "EXPLAIN_ON_NOTE",
     "MAX_TASKS_PER_PRESS",
+    "PREVIEW_DIGEST_FIELD",
+    "PREVIEW_FIELD",
+    "PREVIEW_MISMATCH_MESSAGE",
     "RUN_PERMISSION",
     "SLEEP_NOTE",
     "agreement_figure",
@@ -486,6 +563,9 @@ __all__ = [
     "explain_state",
     "is_awake",
     "may_run",
+    "preview_confirmed",
+    "preview_digest",
+    "preview_value",
     "recommendation_view",
     "task_labels",
 ]

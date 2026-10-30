@@ -118,7 +118,7 @@ def test_the_queue_reads_as_one_card_per_task_on_a_phone(
     page.goto(f"{server.base_url}/steward", wait_until="load")
     assert not page.locator('[data-testid="issue-table"] thead').is_visible()
     rows = page.locator("[data-issue-row]")
-    assert rows.count() == 3
+    assert rows.count() == 4
     assert rows.first.evaluate("element => getComputedStyle(element).display") == "block"
     for index in range(rows.count()):
         box = rows.nth(index).bounding_box()
@@ -140,9 +140,9 @@ def test_the_queue_keeps_its_columns_on_a_desktop(
     assert page.locator("[data-issue-row]").first.evaluate(
         "element => getComputedStyle(element).display"
     ) == "table-row"
-    assert page.locator('[data-testid="issue-reason"]').count() == 3
-    assert page.locator('[data-testid="issue-action"]').count() == 3
-    assert page.locator('[data-testid="issue-reference"]').count() == 3
+    assert page.locator('[data-testid="issue-reason"]').count() == 4
+    assert page.locator('[data-testid="issue-action"]').count() == 4
+    assert page.locator('[data-testid="issue-reference"]').count() == 4
     assert page.recorded_errors == []
 
 

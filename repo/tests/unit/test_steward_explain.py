@@ -11,6 +11,8 @@ The provider is a fake transport: no test here makes an outside call.
 from __future__ import annotations
 
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -24,12 +26,13 @@ from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.muse.budget import MuseBudget
-from acme_city.muse.client import MuseClient
+from acme_city.muse.client import MuseClient, ProviderResponse
 from acme_city.muse.schemas import (
     STEWARD_EXPLANATION_SCHEMA_VERSION,
     STEWARD_EXPLANATION_TASK,
     task_schema,
 )
+from acme_city.muse.service import LIVE_DISPATCH_LOCK
 from acme_city.persistence.models import model_run
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.models.steward_recommendation import StewardRecommendation
@@ -460,3 +463,182 @@ def test_the_schema_version_is_recorded(seeded: Settings) -> None:
     assert STEWARD_EXPLANATION_SCHEMA_VERSION == "acme-steward-explanation-schema-v1"
     run_settings: dict[str, Any] = {"muse_model_allowlist": seeded.muse_model_allowlist}
     assert run_settings["muse_model_allowlist"]
+
+
+# --------------------------------------------------------------- the refusal
+
+
+class FixedClient:
+    """A client that answers with one prepared response."""
+
+    def __init__(self, response: ProviderResponse) -> None:
+        self.response = response
+        self.calls = 0
+
+    def create_response(self, payload: dict[str, Any]) -> ProviderResponse:
+        self.calls += 1
+        return self.response
+
+
+def test_a_refused_answer_is_not_a_rewrite(seeded: Settings) -> None:
+    """A provider that refuses to answer leaves the reason of the assistant standing."""
+    recommendation = a_recommendation(seeded)
+    client = FixedClient(
+        ProviderResponse(
+            status="completed",
+            refusal="I cannot explain this.",
+            output_text=explanation_body("Ask the source for verification."),
+        )
+    )
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, recommendation.id)
+            assert row is not None
+            result = steward_explain.explain(
+                session, seeded, row, actor_id="persona_data_steward", client=client
+            )
+    finally:
+        factory.dispose()
+
+    assert result.explained is False
+    assert result.text == recommendation.reason
+    assert result.error == steward_explain.REFUSAL_MESSAGE
+    # The answer of the provider was never taken for the reason.
+    assert client.calls == 1
+    run = a_run(seeded)
+    assert run is not None
+    assert run.error == steward_explain.REFUSAL_MESSAGE
+    assert run.output is None
+    validation = dict(run.validation_result or {})
+    assert validation["state"] == "failed"
+    # The words of the refusal stay in the validation of the run.
+    assert validation["details"]["refusal"] == "I cannot explain this."
+
+
+def test_an_unfinished_answer_is_not_a_rewrite(seeded: Settings) -> None:
+    """A provider that did not finish leaves the reason of the assistant standing."""
+    recommendation = a_recommendation(seeded)
+    client = FixedClient(
+        ProviderResponse(
+            status="incomplete",
+            incomplete_details={"reason": "max_output_tokens"},
+            output_text=explanation_body("Ask the source for verification."),
+        )
+    )
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, recommendation.id)
+            assert row is not None
+            result = steward_explain.explain(
+                session, seeded, row, actor_id="persona_data_steward", client=client
+            )
+    finally:
+        factory.dispose()
+
+    assert result.explained is False
+    assert result.text == recommendation.reason
+    assert result.error == steward_explain.INCOMPLETE_MESSAGE
+    assert client.calls == 1
+    run = a_run(seeded)
+    assert run is not None
+    assert run.error == steward_explain.INCOMPLETE_MESSAGE
+    assert run.output is None
+    validation = dict(run.validation_result or {})
+    assert validation["state"] == "failed"
+    # The reason the provider gave stays in the validation of the run.
+    assert validation["details"]["incomplete_details"] == {"reason": "max_output_tokens"}
+
+
+# ------------------------------------------------------------- the live cap
+
+
+def test_the_explanation_waits_for_the_live_dispatch_lock(seeded: Settings) -> None:
+    """The dispatch of an explanation takes the lock every live path takes."""
+    recommendation = a_recommendation(seeded)
+    transport = FakeTransport(explanation_body("The names agree."))
+    client = MuseClient(seeded, transport=transport)
+    factory = SessionFactory(seeded.database_url)
+    started = threading.Event()
+    finished = threading.Event()
+
+    def worker() -> None:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, recommendation.id)
+            assert row is not None
+            started.set()
+            steward_explain.explain(
+                session, seeded, row, actor_id="persona_data_steward", client=client
+            )
+        finished.set()
+
+    with LIVE_DISPATCH_LOCK:
+        thread = threading.Thread(target=worker)
+        thread.start()
+        assert started.wait(timeout=5)
+        # The lock of the other live paths is held, so the provider is not reached.
+        time.sleep(0.2)
+        assert transport.requests == []
+    thread.join(timeout=10)
+    assert finished.is_set()
+    assert len(transport.requests) == 1
+
+
+def test_the_explanation_reads_the_cap_again_under_the_lock(
+    seeded: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A call whose slot of the build run was spent while it waited is refused."""
+    settings = seeded.model_copy(update={"muse_live_call_cap": 1})
+    recommendation = a_recommendation(seeded)
+    transport = FakeTransport(explanation_body("The names agree."))
+    client = MuseClient(settings, transport=transport)
+    original_gate = steward_explain.gate_error
+
+    def gated(session: Any, gate_settings: Any) -> Any:
+        result = original_gate(session, gate_settings)
+        # Another path of the City spends the last call of the build run.
+        moment = steward_explain.utc_now()
+        session.add(
+            model_run.ModelRun(
+                id="modelrun_other_path",
+                correlation_id="corr_other_path",
+                mode="live",
+                provider="meta",
+                model=settings.muse_model_allowlist[0],
+                prompt_version="acme-extraction-prompt-v1",
+                schema_version="acme-extraction-schema-v1",
+                input_refs={},
+                output=None,
+                validation_result={"state": "passed", "status": "succeeded"},
+                usage={},
+                latency_ms=1,
+                error=None,
+                started_at=moment,
+                completed_at=moment,
+                actor_id="persona_data_steward",
+            )
+        )
+        session.flush()
+        return result
+
+    monkeypatch.setattr(steward_explain, "gate_error", gated)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, recommendation.id)
+            assert row is not None
+            result = steward_explain.explain(
+                session, settings, row, actor_id="persona_data_steward", client=client
+            )
+    finally:
+        factory.dispose()
+
+    assert result.explained is False
+    assert result.error is not None
+    assert "exhausted" in result.error
+    # The provider was never reached.
+    assert transport.requests == []
+    run = a_run(seeded)
+    assert run is not None
+    assert run.error is not None
