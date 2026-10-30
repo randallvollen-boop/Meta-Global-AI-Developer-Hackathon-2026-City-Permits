@@ -39,7 +39,7 @@ from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.muse.client import MuseClient
 from acme_city.muse.image_client import MuseImageClient
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import agent_ops, permit
+from acme_city.persistence.models import agent_ops, model_run, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.portal_intake.scenarios import build_scenario
@@ -607,5 +607,92 @@ def test_a_manual_run_never_calls_the_model_provider(
             work = session.get(agent_ops.AgentWorkQueue, result.work_id)
             assert work is not None
             assert work.status == result.status
+    finally:
+        factory.dispose()
+
+
+def test_a_run_without_a_key_records_the_built_in_provenance(environment: Settings) -> None:
+    """The deterministic logic of the City records its own provenance.
+
+    The run is not a replay of an earlier run and it is not a provider call:
+    it says so, and the two records of the attempt name each other.
+    """
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _arrival(session, environment, scenario="fence-conforming-rear")
+            result = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            rows = session.execute(select(model_run.ModelRun)).scalars().all()
+            assert [row.mode for row in rows] == ["builtin"]
+            recorded = rows[0]
+            assert recorded.provider == "builtin"
+            assert recorded.replay_of_run_id is None
+            # The run of the agent names the run of the model and its engine.
+            run = session.get(agent_models.AgentRun, result.run_id)
+            assert run is not None
+            inputs = dict(run.inputs or {})
+            assert inputs["model_run_id"] == recorded.id
+            assert inputs["engine"] == "builtin"
+            # The run of the model names the run of the agent.
+            assert recorded.input_refs["agent_run_id"] == run.id
+    finally:
+        factory.dispose()
+
+
+def test_a_hosted_run_with_a_key_records_the_built_in_provenance(
+    hosted_environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hosted demonstration never reaches the provider, not even with a key."""
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError("a manual run must not call the model provider")
+
+    monkeypatch.setattr(MuseClient, "create_response", refuse)
+    monkeypatch.setattr(MuseImageClient, "generate", refuse)
+    factory = SessionFactory(hosted_environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _arrival(
+                session, hosted_environment, scenario="fence-conforming-rear"
+            )
+            run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=hosted_environment,
+            )
+            rows = session.execute(select(model_run.ModelRun)).scalars().all()
+            assert [row.mode for row in rows] == ["builtin"]
+            assert rows[0].provider == "builtin"
+    finally:
+        factory.dispose()
+
+
+def test_the_replay_path_keeps_its_label_and_its_identifier(environment: Settings) -> None:
+    """The replay of an earlier run keeps the provenance it always had."""
+    from acme_city.agents.extraction import replay_extraction
+    from acme_city.triage.service import service_actor
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = _arrival(session, environment, scenario="fence-conforming-rear")
+            actor = service_actor(session, INTAKE_AGENT_ID)
+            result = replay_extraction(session, application, actor)
+            assert result["mode"] == "replay"
+            rows = session.execute(select(model_run.ModelRun)).scalars().all()
+            assert [row.mode for row in rows] == ["replay"]
+            assert rows[0].provider == "meta"
+            assert rows[0].model == "muse-spark-1.3"
+            assert rows[0].replay_of_run_id == "intake-document-replay"
     finally:
         factory.dispose()

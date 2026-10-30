@@ -4,6 +4,11 @@ Every run records its mode, provider, model, prompt and schema versions,
 inputs, output, validation result, usage and failures.  A credential is never
 stored here.  Evaluation truth is never part of a run input.
 
+A run records the engine that produced it.  ``live``, ``replay`` and
+``cached`` are the provider paths and keep their labels; ``builtin`` is the
+deterministic logic of the City, which sends no provider call and therefore
+never claims the label of a replay.
+
 The provider response that produced a run has no column of its own: its
 identifier, its status and its refusal are recorded inside the validation
 result under :data:`PROVIDER_RESPONSE_KEY`, and :attr:`ModelRun.
@@ -37,9 +42,16 @@ PROVIDER_RESPONSE_KEY: Final = "provider"
 #: The recorded outcomes of a model run.
 RUN_STATUSES: Final = frozenset({"succeeded", "failed"})
 
+#: The provenance of a run of the deterministic logic of the City.  A run in
+#: this mode sent no provider call and replays no earlier run.
+BUILTIN_MODE: Final = "builtin"
+
+#: The modes a model run may record.
+RUN_MODES: Final = ("live", "replay", "cached", BUILTIN_MODE)
+
 
 class ModelRun(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base):
-    """One model execution: live, replay or cached."""
+    """One model execution: live, replay, cached or the built in logic."""
 
     __tablename__ = "model_runs"
 
@@ -61,7 +73,9 @@ class ModelRun(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base):
     replay_of_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     scenario_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
     __table_args__ = (
-        CheckConstraint("mode IN ('live', 'replay', 'cached')", name="mode_allowed"),
+        CheckConstraint(
+            "mode IN ('live', 'replay', 'cached', 'builtin')", name="mode_allowed"
+        ),
     )
 
     @property
@@ -140,7 +154,9 @@ class EvidenceReference(IdMixin, CreatedAtMixin, Base):
 
 
 __all__ = [
+    "BUILTIN_MODE",
     "PROVIDER_RESPONSE_KEY",
+    "RUN_MODES",
     "RUN_STATUSES",
     "EvidenceReference",
     "ModelInput",

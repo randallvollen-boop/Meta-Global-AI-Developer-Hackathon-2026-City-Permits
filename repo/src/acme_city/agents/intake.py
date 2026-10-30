@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.agents import graphs
 from acme_city.agents.control import AgentControlService
-from acme_city.agents.extraction import replay_extraction
+from acme_city.agents.extraction import builtin_extraction
 from acme_city.agents.findings import FindingWriter, resolve_replaced_findings
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
@@ -389,7 +389,9 @@ class IntakeAgent:
         node = graphs.node_for('intake', graphs.INTAKE_FIELD_EXTRACTOR)
         row = self._begin(run, node)
         try:
-            result = replay_extraction(self._session, application, actor)
+            result = builtin_extraction(
+                self._session, application, actor, agent_run_id=run.id
+            )
         except Exception as exc:  # noqa: BLE001 - a failed node is recorded
             self._finish(
                 run,
@@ -401,6 +403,13 @@ class IntakeAgent:
             return
         state = str(result.get("state"))
         observations = list(result.get("observations") or [])
+        # The run names the model run that read the documents, so the two
+        # records of one attempt point at each other.
+        model_run_id = str(result.get("run_id") or "")
+        if model_run_id:
+            inputs = dict(run.inputs or {})
+            inputs["model_run_id"] = model_run_id
+            run.inputs = inputs
         if state == "failed":
             issues = result.get("issues") or []
             detail = "; ".join(

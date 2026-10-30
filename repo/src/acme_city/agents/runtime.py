@@ -44,6 +44,14 @@ from acme_city.persistence.models import agent_ops, permit
 DEFAULT_MAX_BATCH_SIZE = 20
 DEFAULT_RUNS_PER_HOUR = 60
 
+#: The engine of an attempt: the deterministic logic of the City.  The agents
+#: read the received documents and evaluate the published rules without a
+#: provider call, so every attempt names this engine.
+BUILTIN_ENGINE = "builtin"
+
+#: The label the operator screens show for the built in logic.
+BUILTIN_ENGINE_LABEL = "Built in logic"
+
 #: The outcomes of a run that finished the work of the case.
 _COMPLETED_OUTCOMES = frozenset({"completed", "recommended"})
 
@@ -318,6 +326,7 @@ class AgentRuntime:
                 note=f"the run failed: {error}",
             )
             raise
+        self._record_engine(run)
         status = work_status_for(run.outcome)
         self.finish(
             claimed.id, claimed.attempts, status, note=f"the run ended: {run.outcome}"
@@ -330,6 +339,16 @@ class AgentRuntime:
             status=status,
             attempts=claimed.attempts,
         )
+
+    def _record_engine(self, run: agent_models.AgentRun) -> None:
+        """Record the engine of the attempt on the run evidence.
+
+        The run names the engine that produced it, so the operator screens
+        read the engine instead of guessing it from the case.
+        """
+        inputs = dict(run.inputs or {})
+        inputs["engine"] = BUILTIN_ENGINE
+        run.inputs = inputs
 
     def counts(self) -> dict[str, int]:
         """Return how many pieces of work hold each status.
@@ -427,6 +446,8 @@ def run_batch(
 
 
 __all__ = [
+    "BUILTIN_ENGINE",
+    "BUILTIN_ENGINE_LABEL",
     "DEFAULT_MAX_BATCH_SIZE",
     "DEFAULT_RUNS_PER_HOUR",
     "AgentRuntime",
