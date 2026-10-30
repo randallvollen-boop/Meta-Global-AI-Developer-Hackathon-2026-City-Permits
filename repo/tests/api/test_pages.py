@@ -118,10 +118,10 @@ def test_the_selector_offers_exactly_the_five_personas(client: TestClient) -> No
     labels = re.findall(r'data-persona="([^"]+)"', response.text)
     assert labels == [
         "persona_applicant",
+        "persona_agent_operator",
         "persona_data_steward",
         "persona_permit_reviewer",
         "persona_city_administrator",
-        "persona_agent_operator",
     ]
     assert "service_" not in response.text
     assert "Intake Clerk" not in response.text
