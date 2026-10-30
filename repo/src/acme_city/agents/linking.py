@@ -14,8 +14,9 @@ worker never calls the model provider: the comparison is the built in
 deterministic logic of the City.
 """
 # REQUIRES: MDM-02, MDM-03, SEC-01
-# The worker claims one job at a time, records the evidence of its decision
-# and never applies a link on its own.
+# The worker claims one job at a time and records the evidence of its
+# decision.  It applies only the links that pass every check under a policy
+# that a steward activated.
 
 from __future__ import annotations
 
@@ -643,11 +644,16 @@ def _work(
 ) -> JobOutcome:
     """Work one claimed job and finish it.
 
-    A job that stops for a technical reason is left failed, so it is tried
-    again.  A job that used up its attempts waits for a person instead.
+    The work of one job runs inside a savepoint.  A job that stops leaves
+    nothing of its work behind, so a link it wrote is never committed without
+    the event and the review item that belong to it, and the next job of the
+    cycle still runs.  A job that stops for a technical reason is left
+    failed, so it is tried again.  A job that used up its attempts waits for
+    a person instead.
     """
     try:
-        outcome = process_job(session, job, now=now)
+        with session.begin_nested():
+            outcome = process_job(session, job, now=now)
     except Exception as error:  # noqa: BLE001 - the failure is recorded
         note = f"the job failed: {error}"
         status = JOB_NEEDS_REVIEW if job.attempts >= MAX_ATTEMPTS else JOB_FAILED

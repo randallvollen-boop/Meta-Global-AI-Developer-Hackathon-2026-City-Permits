@@ -35,16 +35,23 @@ from acme_city.registry.automation_policy import (
 )
 from acme_city.ui import view_models
 
-#: The modes a steward may activate, with the words the screen shows.
-ACTIVATE_MODES: tuple[tuple[str, str], ...] = (
-    ("suggestions", "Suggestions only"),
-    ("active", "Apply eligible links"),
-)
+#: The modes a steward may activate, with the words the screen shows.  The
+#: suggestions mode is not one of them: a suggestion reaches no one in this
+#: release, so the screen does not offer it.
+ACTIVATE_MODES: tuple[tuple[str, str], ...] = (("active", "Apply eligible links"),)
 
-#: The status line of every mode.
+#: The words the screen uses for the mode of a stored policy.  A policy that
+#: records suggestions only still names its mode, so a steward reads what the
+#: record holds.
+POLICY_MODE_LABELS: dict[str, str] = {
+    "paused": "Paused",
+    "suggestions": "Records suggestions only",
+    "active": "Apply eligible links",
+}
+
+#: The status line of every mode the screen reports.
 MODE_STATUS: dict[str, str] = {
     "paused": "Automatic linking is paused",
-    "suggestions": "Automatic linking suggests only",
     "active": "Automatic linking applies eligible links",
 }
 
@@ -58,9 +65,6 @@ FAMILY_LABELS: dict[str, str] = {
 
 #: The number of accepted records the preview shows at most.
 PREVIEW_LIMIT = 20
-
-#: The number of applied links one screen shows at most.
-APPLICATION_LIMIT = 25
 
 #: The state of an applied link and the words the screen shows.
 APPLICATION_STATUS_LABELS: dict[str, str] = {
@@ -194,7 +198,7 @@ def policy_view(
     return {
         "version": policy.version,
         "mode": policy.mode,
-        "mode_label": dict(ACTIVATE_MODES).get(policy.mode, "Paused"),
+        "mode_label": POLICY_MODE_LABELS.get(policy.mode, "Paused"),
         "scope": scope,
         "scope_labels": [labels.get(key, key) for key in scope],
         "reason": policy.reason,
@@ -241,8 +245,9 @@ def _effective_mode(
     if policy.mode == "paused":
         return "paused", "The active policy is paused."
     if deployment_mode == "suggestions" or policy.mode == "suggestions":
-        return "suggestions", (
-            "The active policy records suggestions. A person decides every link."
+        return "paused", (
+            "The active policy records suggestions only, and this release does "
+            "not deliver them to a steward, so no link is applied."
         )
     return "active", (
         "The active policy applies the links that pass every check, and a person "
@@ -270,7 +275,8 @@ def state(
         "running_mode": (
             "Paused. No source record is queued for the worker."
             if deployment_mode == "paused"
-            else "Suggestions only. The worker records suggestions."
+            else "Paused. This deployment records suggestions, which this release "
+            "does not deliver to the steward."
             if deployment_mode == "suggestions"
             else "Running. The worker may apply the eligible links."
         ),
@@ -435,10 +441,8 @@ def application_row(
     }
 
 
-def application_rows(
-    session: Session, *, limit: int = APPLICATION_LIMIT
-) -> list[dict[str, Any]]:
-    """Return the applied links, newest first."""
+def application_rows(session: Session, *, limit: int) -> list[dict[str, Any]]:
+    """Return the applied links, newest first, at most ``limit`` of them."""
     rows = [
         application_row(session, application)
         for application in automation.applications(session)
@@ -447,25 +451,13 @@ def application_rows(
     return rows[: max(0, limit)]
 
 
-def application_counts(session: Session) -> dict[str, int]:
-    """Return how many applied links hold each state."""
-    counts = {state: 0 for state in APPLICATION_STATUS_LABELS}
-    for application in automation.applications(session):
-        counts[application.status] = counts.get(application.status, 0) + 1
-    counts["total"] = sum(
-        count for state, count in counts.items() if state != "total"
-    )
-    return counts
-
-
 __all__ = [
     "ACTIVATE_MODES",
-    "APPLICATION_LIMIT",
     "APPLICATION_STATUS_LABELS",
     "FAMILY_LABELS",
     "MODE_STATUS",
+    "POLICY_MODE_LABELS",
     "PREVIEW_LIMIT",
-    "application_counts",
     "application_row",
     "application_rows",
     "dataset_options",

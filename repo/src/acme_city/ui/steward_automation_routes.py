@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
+from acme_city.core.errors import ValidationError
 from acme_city.registry import automation
 from acme_city.ui import steward_automation_views, steward_guide
 from acme_city.ui.router import (
@@ -103,10 +104,13 @@ def ui_steward_automation(
 
 def _automation_activate(ctx: ActionContext) -> Outcome:
     """Activate a policy version for the automatic linking."""
+    mode = ctx.text("mode")
+    if mode not in dict(steward_automation_views.ACTIVATE_MODES):
+        raise ValidationError("a policy is activated in one of the modes the screen offers")
     policy = automation.activate_policy(
         ctx.session,
         ctx.actor,
-        mode=ctx.text("mode"),
+        mode=mode,
         source_scopes=ctx.values("source_scope"),
         reason=ctx.text("reason"),
         expected_version=ctx.integer("expected_version"),
@@ -145,12 +149,17 @@ def _automation_pause(ctx: ActionContext) -> Outcome:
 
 def _automation_undo(ctx: ActionContext) -> Outcome:
     """Take back a link the automation applied."""
+    expected_version = ctx.integer("expected_version")
+    if expected_version is None:
+        raise ValidationError(
+            "the version of the link is required to take it back; read the case again"
+        )
     application = automation.reverse_application(
         ctx.session,
         application_id=ctx.text("application_id"),
         reason=ctx.text("reason"),
         actor=ctx.actor,
-        expected_version=ctx.integer("expected_version"),
+        expected_version=expected_version,
     )
     view = automation.application_view(ctx.session, application)
     return Outcome(

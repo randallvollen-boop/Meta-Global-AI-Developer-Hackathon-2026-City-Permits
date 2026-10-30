@@ -523,6 +523,7 @@ class RegistryService:
         reason: str,
         actor: ActorContext,
         expected_version: int | None = None,
+        restore_proposed: bool = False,
     ) -> VersionedResult[CrosswalkView] | ConflictResult:
         """Take back a link that was applied.
 
@@ -530,6 +531,10 @@ class RegistryService:
         event that applied it stays.  A link that a person changed since the
         application is not taken back silently, so the expected version has
         to be the version that is current.
+
+        A link that was applied on top of an open proposal is handed back as
+        that proposal: the steward decides it again, and the decision the
+        automation made does not stand in the way.
         """
         crosswalk = self._session.get(registry.Crosswalk, crosswalk_id)
         if crosswalk is None:
@@ -569,11 +574,22 @@ class RegistryService:
                 ),
             )
         before_version = crosswalk.version
-        crosswalk.link_status = "removed"
-        crosswalk.decision = reason.strip()
-        crosswalk.decision_actor_id = actor.actor_id
-        crosswalk.decided_at = self._now
-        crosswalk.valid_to = self._now
+        if restore_proposed:
+            # The link was applied on top of a proposal of the steward.  The
+            # proposal is what a person decides, so the undo hands it back
+            # instead of recording a decided removal.
+            crosswalk.link_status = "proposed"
+            crosswalk.decision = None
+            crosswalk.decision_actor_id = None
+            crosswalk.decided_at = None
+            crosswalk.valid_from = None
+            crosswalk.valid_to = None
+        else:
+            crosswalk.link_status = "removed"
+            crosswalk.decision = reason.strip()
+            crosswalk.decision_actor_id = actor.actor_id
+            crosswalk.decided_at = self._now
+            crosswalk.valid_to = self._now
         crosswalk.version = before_version + 1
         self._session.flush()
         self._register_revalidation(crosswalk, actor)
@@ -584,7 +600,7 @@ class RegistryService:
             target_id=crosswalk.source_record_id,
             before_version=before_version,
             after_version=crosswalk.version,
-            reason=crosswalk.decision,
+            reason=reason.strip(),
             references=[crosswalk.id, crosswalk.entity_id],
             metadata={"link_status": crosswalk.link_status},
         )

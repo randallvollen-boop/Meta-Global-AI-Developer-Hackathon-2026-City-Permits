@@ -23,7 +23,7 @@ from sqlalchemy import select
 from acme_city.agents import linking
 from acme_city.auth.context import ActorContext
 from acme_city.core.config import Settings
-from acme_city.core.errors import ConflictError
+from acme_city.core.errors import ConflictError, ValidationError
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
@@ -40,6 +40,13 @@ PAYLOAD = {
     "contact_email": "t.aldous+autolink@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
+}
+
+#: The payload of a source version of the parcel register.
+PARCEL_PAYLOAD = {
+    "parcel_number": "ACME-P-1001",
+    "jurisdiction": "acme_city",
+    "status": "active",
 }
 
 #: The repository root of the demonstration.
@@ -256,6 +263,40 @@ def _jobs(factory: SessionFactory) -> list[registry_automation.RegistryAutomatio
         return list(rows)
 
 
+def _ingest_parcel(factory: SessionFactory) -> None:
+    """Accept a source version of the parcel register, which queues the work."""
+    intake = IngestCommand(
+        source_system_id="gis",
+        dataset_key="parcel_register",
+        records=[
+            SourceRecordCommand(
+                source_record_id="GIS-PCL-9001",
+                source_record_version="1",
+                payload=PARCEL_PAYLOAD,
+                source_updated_at=datetime(2026, 10, 29, 12, 1, tzinfo=UTC),
+            )
+        ],
+    )
+    actor = ActorContext(actor_id="persona_data_steward", role_ids=frozenset())
+    with transaction(factory) as session:
+        service = IngestionService(session, registry_automation_mode="active")
+        assert service.ingest(intake, actor).accepted == 1
+
+
+def _register_parcel_entity(factory: SessionFactory) -> None:
+    """Record the canonical parcel the source version names."""
+    with transaction(factory) as session:
+        session.add(
+            registry.CanonicalEntity(
+                id="canonical_parcel_1001",
+                entity_id="parcel_1001",
+                entity_type="parcel",
+                label="Lot 400 Lantern Row",
+                status="active",
+            )
+        )
+
+
 def test_the_worker_records_the_evidence_of_its_decision(
     seeded: Settings,
 ) -> None:
@@ -431,6 +472,149 @@ def test_a_job_that_stops_is_tried_again_and_then_waits_for_a_person(
             row = session.get(registry_automation.RegistryAutomationJob, job.id)
             assert row is not None
             assert row.attempts == linking.MAX_ATTEMPTS
+    finally:
+        factory.dispose()
+
+
+def test_a_job_that_fails_leaves_nothing_behind_and_the_next_job_runs(
+    seeded: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A job that stops after it wrote a link leaves nothing of its work behind.
+
+    The link, the event and the review item of the failed job are gone, the
+    job is left failed so it is tried again, and the next job of the cycle is
+    worked as if the failure never happened.
+    """
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory, source_record_id="PER-AP-0001", source_record_version="4")
+        _ingest(factory, source_record_id="PER-AP-0002", source_record_version="4")
+        assert len(_jobs(factory)) == 2
+
+        original = automation.new_id
+        stopped = {"count": 0}
+
+        def stop_the_application(prefix: str) -> str:
+            """Stop the record of the application of the first job."""
+            if prefix == "autoapply" and stopped["count"] == 0:
+                stopped["count"] += 1
+                raise RuntimeError("the record of the application stopped")
+            return original(prefix)
+
+        monkeypatch.setattr(automation, "new_id", stop_the_application)
+
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+
+        failed = [item for item in report.processed if item.status == "failed"]
+        worked = [item for item in report.processed if item.status == "completed"]
+        assert len(failed) == 1
+        assert len(worked) == 1
+        assert worked[0].decision == "auto_apply"
+
+        with transaction(factory) as session:
+            job = session.get(registry_automation.RegistryAutomationJob, failed[0].job_id)
+            assert job is not None
+            assert job.status == "failed"
+            assert job.attempts == 1
+            snapshot = session.get(source.SourceSnapshot, job.source_snapshot_id)
+            assert snapshot is not None
+            failed_record = snapshot.source_record_id
+
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == failed_record
+                )
+            ).scalars().all()
+            assert links == []
+
+            # The next job of the cycle was worked and kept its own link.
+            next_job = session.get(
+                registry_automation.RegistryAutomationJob, worked[0].job_id
+            )
+            assert next_job is not None
+            assert next_job.status == "completed"
+            next_snapshot = session.get(source.SourceSnapshot, next_job.source_snapshot_id)
+            assert next_snapshot is not None
+            next_links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == next_snapshot.source_record_id
+                )
+            ).scalars().all()
+            assert len(next_links) == 1
+            assert next_links[0].link_status == "approved"
+
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert len(applications) == 1
+
+            events = session.execute(
+                select(audit.AuditEvent).where(
+                    audit.AuditEvent.action == automation.APPLY_ACTION
+                )
+            ).scalars().all()
+            assert len(events) == 1
+
+            tasks = session.execute(
+                select(change.ReviewTask).where(
+                    change.ReviewTask.task_type == automation.REVIEW_TASK_TYPE
+                )
+            ).scalars().all()
+            assert len(tasks) == 1
+    finally:
+        factory.dispose()
+
+
+def test_a_database_error_in_one_job_does_not_stop_the_cycle(
+    seeded: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A job the database refuses does not take the cycle down with it.
+
+    The write of the refused job is undone, the job is left failed so it is
+    tried again, and the link of the job that worked stays.
+    """
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory, source_record_id="PER-AP-0001", source_record_version="4")
+        _ingest(factory, source_record_id="PER-AP-0002", source_record_version="4")
+
+        original = automation.new_id
+
+        def duplicate_the_application(prefix: str) -> str:
+            """Give every application the same identifier, so the second fails."""
+            if prefix == "autoapply":
+                return "autoapply_taken"
+            return original(prefix)
+
+        monkeypatch.setattr(automation, "new_id", duplicate_the_application)
+
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+
+        failed = [item for item in report.processed if item.status == "failed"]
+        worked = [item for item in report.processed if item.status == "completed"]
+        assert len(failed) == 1
+        assert len(worked) == 1
+
+        with transaction(factory) as session:
+            job = session.get(registry_automation.RegistryAutomationJob, failed[0].job_id)
+            assert job is not None
+            assert job.status == "failed"
+            assert job.attempts == 1
+            snapshot = session.get(source.SourceSnapshot, job.source_snapshot_id)
+            assert snapshot is not None
+            refused = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == snapshot.source_record_id
+                )
+            ).scalars().all()
+            assert refused == []
+            links = session.execute(select(registry.Crosswalk)).scalars().all()
+            assert len(links) == 1
+            assert links[0].link_status == "approved"
     finally:
         factory.dispose()
 
@@ -848,5 +1032,100 @@ def test_the_worker_records_why_a_link_is_not_applied(seeded: Settings) -> None:
             assert evaluation.decision in {"suggest", "auto_apply"}
             assert evaluation.evidence["failed_checks"] is not None
             assert evaluation.evidence["reasons"]
+    finally:
+        factory.dispose()
+
+
+def test_a_parcel_is_only_suggested_and_never_linked(seeded: Settings) -> None:
+    """A parcel family is suggested: this release cannot take such a link back."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory, source_scopes=["applicant_profiles", "parcel_register"])
+        _ingest_parcel(factory)
+        _register_parcel_entity(factory)
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+        assert report.processed[0].decision == "suggest"
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "GIS-PCL-9001"
+                )
+            ).scalars().all()
+            assert links == []
+            evaluation = session.execute(
+                select(registry_automation.RegistryAutomationEvaluation)
+            ).scalar_one()
+            assert evaluation.decision == "suggest"
+            assert "undo_supported" in evaluation.evidence["failed_checks"]
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert applications == []
+    finally:
+        factory.dispose()
+
+
+def test_a_family_that_cannot_be_taken_back_is_never_applied(
+    seeded: Settings,
+) -> None:
+    """An application of a family without a tested reversal is refused."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory, source_scopes=["applicant_profiles", "parcel_register"])
+        _ingest_parcel(factory)
+        _register_parcel_entity(factory)
+        job = _jobs(factory)[0]
+        with transaction(factory) as session:
+            snapshot = session.get(source.SourceSnapshot, job.source_snapshot_id)
+            assert snapshot is not None
+            session.add(
+                registry_automation.RegistryAutomationEvaluation(
+                    id="autoeval_parcel",
+                    job_id=job.id,
+                    source_snapshot_id=snapshot.source_snapshot_id,
+                    policy_id="policy_worker_1",
+                    target_family="parcel",
+                    target_entity_id="parcel_1001",
+                    score=0.40,
+                    score_scale=linking.SCORE_SCALE,
+                    decision="auto_apply",
+                    evidence={
+                        "reasons": ["eligible"],
+                        "failed_checks": [],
+                        "compared_fields": ["parcel_number"],
+                        "supporting": [],
+                        "conflicting": [],
+                        "matcher_version": "registry-candidates-v1",
+                    },
+                )
+            )
+        with pytest.raises(ValidationError):
+            with transaction(factory) as session:
+                evaluation = session.get(
+                    registry_automation.RegistryAutomationEvaluation, "autoeval_parcel"
+                )
+                assert evaluation is not None
+                policy = session.get(
+                    registry_automation.RegistryAutomationPolicy, "policy_worker_1"
+                )
+                assert policy is not None
+                automation.apply_evaluation(
+                    session,
+                    evaluation=evaluation,
+                    policy=policy,
+                    actor=linking.service_actor(),
+                )
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "GIS-PCL-9001"
+                )
+            ).scalars().all()
+            assert links == []
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert applications == []
     finally:
         factory.dispose()

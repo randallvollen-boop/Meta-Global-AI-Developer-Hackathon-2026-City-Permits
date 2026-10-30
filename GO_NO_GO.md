@@ -88,3 +88,6 @@ The old statements that no remote, commit or deployment existed are historical a
 | Lease columns of the linking work table | GO / simplified | The table of the registry follows the runtime contract of the agents: one status column, an attempt count and no lease. The lease of the design proposal is not built |
 | Automatic application of parcels, addresses and permits | HOLD | Only the party families may be applied in this release. A family without a tested reversal is only ever suggested, so the other families wait for their own slices |
 | Live provider calls | OFF | The worker compares with the built in deterministic logic of the City. No model is called and no key is read |
+| The work of one job | GO / built | Every job of the worker runs inside a savepoint, so a job that stops leaves no link, no event, no review item and no record of the application behind, and the next job of the cycle still runs |
+| The take back of an applied link | GO / built | A link that was applied on top of an open proposal of a person is handed back as that proposal, and the take back of the screen needs the version of the link |
+| The mode that only records suggestions | HOLD | The screen does not offer it: a suggestion reaches no steward in this release. The stored value stays, and the delivery of the suggestions is written down as a future feature |

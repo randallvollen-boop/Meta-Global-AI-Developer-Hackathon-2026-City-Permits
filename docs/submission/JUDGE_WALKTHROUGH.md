@@ -74,5 +74,6 @@ Open `/city/community`.
 - A withdraw action for applicants. The Withdrawn status exists, but no action in the app sets it yet.
 - Application checks that leave a decided case decided. Today, running them on an approved or denied case moves it back to Ready for review.
 - Issued permits that stay closed. Today a record correction can reopen one.
+- Automatic link suggestions delivered to the steward's queue.
 
 This file mirrors `repo/src/acme_city/ui/guide_views.py` (`WALKTHROUGH`); `repo/tests/unit/test_judge_walkthrough_doc.py` fails if they differ.

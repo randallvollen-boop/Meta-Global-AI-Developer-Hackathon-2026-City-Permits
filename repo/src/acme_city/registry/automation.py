@@ -14,7 +14,7 @@ from acme_city.core.errors import ConflictError, NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.core.results import ConflictResult
 from acme_city.persistence.models import change, registry, registry_automation, source
-from acme_city.registry.automation_policy import DEFAULT_THRESHOLDS
+from acme_city.registry.automation_policy import DEFAULT_THRESHOLDS, UNDO_SUPPORTED_FAMILIES
 from acme_city.registry.schemas import (
     AutomaticApplicationView,
     AutomaticLinkCommand,
@@ -191,6 +191,9 @@ def reverse_application(
     applied it stays.  A link that a person changed since the application is
     not taken back silently, and a link that was already taken back is not
     taken back twice.
+
+    A link that was applied on top of an open proposal of a person is handed
+    back as that proposal, so the decision the steward has to make stays open.
     """
     _authorize(session, actor, UNDO_ACTION)
     application = application_by_id(session, application_id)
@@ -204,11 +207,17 @@ def reverse_application(
         raise ValidationError("a removal states why the link is taken back")
     from acme_city.registry.service import RegistryService
 
+    before = application.before_state or {}
+    restore_proposed = (
+        before.get("link_status") == "proposed"
+        and before.get("crosswalk_id") == application.crosswalk_id
+    )
     result = RegistryService(session, now=now or utc_now()).remove_automatic_link(
         crosswalk_id=application.crosswalk_id,
         reason=reason.strip(),
         actor=actor,
         expected_version=expected_version,
+        restore_proposed=restore_proposed,
     )
     if isinstance(result, ConflictResult):
         raise ConflictError(
@@ -281,6 +290,9 @@ def apply_evaluation(
     together or not at all.  The service identity applies the link and the
     policy of the City carries the authorization of the steward.
 
+    Only a record family whose links this release may reverse is applied: a
+    link that cannot be taken back is only ever suggested.
+
     An evaluation that was already applied is never applied twice: the record
     of the first application is returned.
     """
@@ -290,6 +302,10 @@ def apply_evaluation(
         return existing
     if evaluation.decision != "auto_apply" or evaluation.target_entity_id is None:
         raise ValidationError("only an eligible evaluation may be applied")
+    if evaluation.target_family not in UNDO_SUPPORTED_FAMILIES:
+        raise ValidationError(
+            "only a record family whose links can be taken back may be applied"
+        )
     snapshot = session.get(source.SourceSnapshot, evaluation.source_snapshot_id)
     if snapshot is None:
         raise ValidationError("the source record of this evaluation does not exist")

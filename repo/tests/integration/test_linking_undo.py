@@ -228,6 +228,74 @@ def test_the_steward_takes_the_link_back(seeded: Settings) -> None:
         factory.dispose()
 
 
+def test_the_take_back_hands_the_prior_proposal_back(seeded: Settings) -> None:
+    """A link that was applied on top of a proposal is handed back as it.
+
+    The steward had an open proposal for the record.  The automation applied
+    it, and the take back gives the proposal back instead of recording a
+    decided removal that the steward can no longer answer.
+    """
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _prepare(factory)
+        with transaction(factory) as session:
+            session.add(
+                registry.Crosswalk(
+                    id="crosswalk_proposal_1",
+                    entity_id="party_applicant_1",
+                    entity_type="party",
+                    source_system_id="permitting",
+                    source_dataset_key="applicant_profiles",
+                    source_record_id="PER-AP-0001",
+                    link_status="proposed",
+                    decision=None,
+                    decision_actor_id=None,
+                    decided_at=None,
+                    expected_version=None,
+                    valid_from=None,
+                    valid_to=None,
+                    superseded_by_crosswalk_id=None,
+                    scenario_id=None,
+                )
+            )
+        _run_worker(factory)
+        application = _application(factory)
+        assert application.crosswalk_id == "crosswalk_proposal_1"
+        assert application.before_state["link_status"] == "proposed"
+        assert application.before_state["crosswalk_id"] == "crosswalk_proposal_1"
+        with transaction(factory) as session:
+            link = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert link is not None
+            assert link.link_status == "approved"
+
+        with transaction(factory) as session:
+            recorded = automation.reverse_application(
+                session,
+                application_id=application.id,
+                reason=UNDO_REASON,
+                actor=STEWARD,
+            )
+            assert recorded.status == "reversed"
+
+        with transaction(factory) as session:
+            link = session.get(registry.Crosswalk, "crosswalk_proposal_1")
+            assert link is not None
+            assert link.link_status == "proposed"
+            assert link.decision is None
+            assert link.decision_actor_id is None
+            assert link.decided_at is None
+            assert link.valid_from is None
+            assert link.valid_to is None
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "PER-AP-0001"
+                )
+            ).scalars().all()
+            assert len(links) == 1
+    finally:
+        factory.dispose()
+
+
 def test_a_repeated_take_back_is_safe(seeded: Settings) -> None:
     """A link that was already taken back is not taken back twice."""
     factory = SessionFactory(seeded.database_url)
@@ -393,6 +461,10 @@ def test_the_steward_takes_the_link_back_through_the_screen(
         _prepare(factory)
         _run_worker(factory)
         application = _application(factory)
+        with transaction(factory) as session:
+            link = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert link is not None
+            version = link.version
         response = http_client.post(
             "/api/session/select", json={"actor_id": "persona_data_steward"}
         )
@@ -402,6 +474,7 @@ def test_the_steward_takes_the_link_back_through_the_screen(
             data={
                 "csrf_token": _csrf(http_client),
                 "application_id": application.id,
+                "expected_version": str(version),
                 "reason": UNDO_REASON,
                 "next": "/steward/automation",
             },
@@ -419,6 +492,79 @@ def test_the_steward_takes_the_link_back_through_the_screen(
             )
             assert stored is not None
             assert stored.status == "reversed"
+    finally:
+        factory.dispose()
+
+
+def test_the_take_back_of_the_screen_needs_the_version_of_the_link(
+    seeded: Settings, http_client: TestClient
+) -> None:
+    """A take back without the version of the link is refused."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _prepare(factory)
+        _run_worker(factory)
+        application = _application(factory)
+        response = http_client.post(
+            "/api/session/select", json={"actor_id": "persona_data_steward"}
+        )
+        assert response.status_code == 200
+        posted = http_client.post(
+            "/ui/actions/registry.automation.undo",
+            data={
+                "csrf_token": _csrf(http_client),
+                "application_id": application.id,
+                "reason": UNDO_REASON,
+                "next": "/steward/automation",
+            },
+            headers={"Accept": "application/json"},
+            follow_redirects=False,
+        )
+        assert posted.status_code == 422, posted.text
+        assert posted.json()["status"] == "denied"
+        with transaction(factory) as session:
+            link = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert link is not None
+            assert link.link_status == "approved"
+            stored = session.get(
+                registry_automation.RegistryAutomationApplication, application.id
+            )
+            assert stored is not None
+            assert stored.status == "applied"
+    finally:
+        factory.dispose()
+
+
+def test_the_activate_action_offers_only_the_mode_of_the_screen(
+    seeded: Settings, http_client: TestClient
+) -> None:
+    """A mode the screen does not offer is refused by the activate action."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        response = http_client.post(
+            "/api/session/select", json={"actor_id": "persona_data_steward"}
+        )
+        assert response.status_code == 200
+        posted = http_client.post(
+            "/ui/actions/registry.automation.activate",
+            data={
+                "csrf_token": _csrf(http_client),
+                "mode": "suggestions",
+                "source_scope": "applicant_profiles",
+                "reason": "the steward wants suggestions only",
+                "expected_version": "0",
+                "next": "/steward/automation",
+            },
+            headers={"Accept": "application/json"},
+            follow_redirects=False,
+        )
+        assert posted.status_code == 422, posted.text
+        assert posted.json()["status"] == "denied"
+        with transaction(factory) as session:
+            policies = session.execute(
+                select(registry_automation.RegistryAutomationPolicy)
+            ).scalars().all()
+            assert policies == []
     finally:
         factory.dispose()
 

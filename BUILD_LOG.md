@@ -433,3 +433,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - STW-31B: the demo preparation. A separate prepare mode activates the policy, runs the worker once and leaves one applied link in the queue for a person to keep or undo. The Cedarline demonstration is unchanged: three proposals and nothing decided.
 - No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
 
+## 2026-10-30 — Steward autolink lane, review 4 fixes (`lane/steward-autolink`)
+
+- The worker works every job inside a savepoint, so a job that stops after it wrote a link leaves nothing of its work behind: no link, no event, no review item and no record of the application. The job is left failed, so it is tried again, and the next job of the cycle is worked as if the failure never happened.
+- The take back hands the proposal back when the automation applied a link on top of an open proposal of a person. The proposal stays open for the steward to decide, instead of being recorded as a decided removal. A link that the automation applied without a proposal is still recorded as removed, and the event that applied it stays.
+- The take back of the screen needs the version of the link. A request without it is refused, so a link that changed since the case was read is never taken back silently.
+- Only a record family whose links this release may take back is applied. A parcel or an address is suggested to a steward, never linked, and an application of such a family is refused by the service.
+- The screen no longer offers the mode that only records suggestions: a suggestion reaches no steward in this release, so the mode is not offered and the activate action refuses it. The stored value of the mode stays, and a policy that holds it is reported as paused with the reason. The future feature is written down in `docs/submission/JUDGE_WALKTHROUGH.md`.
+- The unused count of the applied links and the second limit of the list are gone. The worker comment no longer says it never applies a link.
+- No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.

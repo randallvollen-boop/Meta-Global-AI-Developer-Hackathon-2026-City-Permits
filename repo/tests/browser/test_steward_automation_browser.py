@@ -21,12 +21,13 @@ from datetime import UTC, datetime
 
 import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+from sqlalchemy import select
 
 from acme_city.agents import linking
 from acme_city.auth.context import ActorContext
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
 from acme_city.ingestion.service import IngestionService
-from acme_city.persistence.models import registry_automation
+from acme_city.persistence.models import registry, registry_automation
 from acme_city.persistence.session import SessionFactory, transaction
 
 #: The reason the steward gives when a policy is activated.
@@ -129,6 +130,25 @@ def test_the_preview_reads_the_recorded_scores_of_the_accepted_records(
     # Every row carries a score and a reading.  A score is never a decision.
     assert table.locator('[data-label="Score"]').first.inner_text().strip() != ""
     assert "would" in table.locator('[data-label="Reading"]').first.inner_text()
+    assert page.recorded_errors == []
+
+
+def test_the_settings_screen_offers_only_the_mode_that_links(
+    page, server: BrowserServer, login
+) -> None:
+    """The screen offers the mode that applies links and reviews them.
+
+    A mode that only records suggestions is not offered: a suggestion reaches
+    no steward in this release, so the screen does not show it.
+    """
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward/automation", wait_until="load")
+    mode = page.locator('[data-testid="automation-mode"]')
+    assert mode.count() == 1
+    options = mode.locator("option")
+    assert options.count() == 1
+    assert options.first.inner_text().strip() == "Apply eligible links"
+    assert "Suggestions only" not in page.content()
     assert page.recorded_errors == []
 
 
@@ -282,6 +302,19 @@ def test_the_steward_undoes_the_applied_link(
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     message = submit_action("registry.automation.undo", {"reason": UNDO_REASON})
     assert "was taken back" in message
+    # The link itself is taken back in the registry.
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "PER-AP-0001"
+                )
+            ).scalars().all()
+            assert len(links) == 1
+            assert links[0].link_status == "removed"
+    finally:
+        factory.dispose()
     page.goto(f"{server.base_url}/steward", wait_until="load")
     assert page.locator('[data-issue-row][data-testid="automatic-link"]').count() == 0
     page.goto(f"{server.base_url}/steward?filter=resolved", wait_until="load")

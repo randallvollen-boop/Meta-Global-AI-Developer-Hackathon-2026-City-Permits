@@ -107,7 +107,7 @@
 <section class="panel stwa-panel" aria-labelledby="automation-activate-heading">
   <h2 id="automation-activate-heading">Activate a policy</h2>
   {% if automation.can_activate %}
-  <p class="muted">A new policy version replaces the previous one. It affects the records that are ingested later; the links that exist stay as they are.</p>
+  <p class="muted">A new policy version replaces the previous one. The policy applies the links that pass every check, and a person reviews each one. It affects the records that are ingested later; the links that exist stay as they are.</p>
   <form method="post" action="/ui/actions/registry.automation.activate" class="action-form" data-testid="automation-activate-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="next" value="/steward/automation">
