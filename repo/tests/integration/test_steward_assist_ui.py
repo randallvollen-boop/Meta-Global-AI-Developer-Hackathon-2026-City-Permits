@@ -254,6 +254,21 @@ def test_a_press_prepares_the_recommendations_of_the_queue(
     assert pills <= {"High", "Review", "Held"}
 
 
+def test_the_run_of_a_press_shows_in_the_run_history(
+    client: TestClient, environment: Settings
+) -> None:
+    """The operator reads what the assistant did in the run history."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    post(client, "steward.assist.prepare", {"next": "/steward"}, "/steward")
+    choose(client, "persona_agent_operator")
+    body = client.get("/agents/runs?agent_key=steward_assist").text
+    assert 'data-testid="agent-run-row"' in body
+    assert "Steward assistant" in body
+    # The run names the persona that asked for the work.
+    assert "Data Steward" in body
+
+
 def test_the_prepare_button_is_off_for_a_persona_without_the_grant(
     client: TestClient, environment: Settings
 ) -> None:
