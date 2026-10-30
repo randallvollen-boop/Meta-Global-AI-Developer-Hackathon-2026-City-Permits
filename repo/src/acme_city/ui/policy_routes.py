@@ -701,7 +701,11 @@ def _briefing_and_panel(
         panel["source"] = latest.source
         if latest.accepted:
             panel["cites"] = list(latest.cited_facts)
-            panel["display_source_label"] = "Recorded Muse briefing"
+            panel["display_source_label"] = (
+                "Recorded Muse briefing"
+                if latest.source["mode"] == "replay"
+                else "Muse briefing (live)"
+            )
         else:
             panel["rejected"] = True
             panel["fallback"] = FALLBACK_NOTICE

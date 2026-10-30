@@ -258,7 +258,7 @@ def test_the_collapsed_details_open_and_keep_their_definition(
     assert page.locator('[data-testid="policy-flipped-table"]').is_visible()
     # The definition of a collapsed figure sits in the summary, so it opens
     # without opening the section.
-    info = changed.locator("summary .ui-info-btn").first
+    info = changed.locator(":scope > .ui-info .ui-info-btn").first
     assert info.is_visible()
     info.click()
     assert changed.locator('[data-testid="ui-info-pop"]').first.is_visible()

@@ -9,7 +9,7 @@
 <div class="page-head">
   <div>
     <h1>Scenario results</h1>
-    <p class="sub">{{ r.scenario.name }} · Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open the what-if</a>{% endif %} · <a href="/policy/scenarios">All what-ifs</a></p>
+    <p class="sub">{{ r.scenario.name }} · Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open scenario</a>{% endif %} · <a href="/policy/scenarios">All scenarios</a></p>
   </div>
   <div class="actions">
     {{ ui.help_button('policy_run') }}
@@ -119,7 +119,8 @@
 </section>
 
 <details class="card" data-testid="policy-flipped">
-  <summary>Cases that change ({{ r.flipped.total }}) {{ ui.info('policy_flipped') }}</summary>
+  <summary>Cases that change ({{ r.flipped.total }})</summary>
+  {{ ui.info('policy_flipped') }}
   <p data-testid="policy-flipped-total"><strong>{{ r.flipped.total }}</strong> of {{ r.population.size }} cases get a different result.</p>
   <ul data-testid="policy-directions">
     {% for d in r.flipped.directions %}<li data-direction="{{ d.key }}">{{ d.label }}: <strong>{{ d.count }}</strong> {{ ui.info('policy_direction') }}</li>
@@ -136,7 +137,8 @@
 </details>
 
 <details class="card" data-testid="policy-holds">
-  <summary>Holds and missing information {{ ui.info('policy_holds') }}</summary>
+  <summary>Holds and missing information</summary>
+  {{ ui.info('policy_holds') }}
   <h3>Recommendation holds</h3>
   <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Recommendation holds</caption>
@@ -160,7 +162,8 @@
 </details>
 
 <details class="card" data-testid="policy-fees">
-  <summary>Hypothetical assessed fees {{ ui.info('policy_hypothetical_fees') }}</summary>
+  <summary>Hypothetical assessed fees</summary>
+  {{ ui.info('policy_hypothetical_fees') }}
   {% if r.fees %}
   <p>{{ r.fees.note }}</p>
   <div class="tbl-wrap"><table class="data-table">
@@ -181,7 +184,8 @@
 </details>
 
 <details class="card" data-testid="policy-targets">
-  <summary>Service targets {{ ui.info('policy_service_targets') }}</summary>
+  <summary>Service targets</summary>
+  {{ ui.info('policy_service_targets') }}
   {% if r.targets %}
   <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Service targets before and after</caption>
@@ -193,7 +197,7 @@
 </details>
 
 <section class="card" aria-labelledby="explain-heading" data-testid="policy-explain">
-  <h2 id="explain-heading">Recorded Muse explanation</h2>
+  <h2 id="explain-heading">{% if explain.live %}Muse{% else %}Recorded Muse{% endif %} explanation</h2>
   <p class="muted" data-testid="policy-explain-mode">{{ explain.mode_note }}</p>
   {% if explain.can %}
     {% if explain.result and explain.result.accepted %}
@@ -211,7 +215,7 @@
       <p class="muted">The summary at the top of this page is built from the counted figures, so the run is explained either way.</p>
     </div>
     {% else %}
-    <p class="muted">A recorded answer can explain these results in plain words. Every figure it states is checked against the counted figures above before you see it; if any claim fails, nothing of the explanation is shown.</p>
+    <p class="muted">A recorded answer can explain these results in plain words. Every figure it states is checked against the counted figures above before it is shown; if any claim fails, nothing of the explanation is shown.</p>
     {% endif %}
     <form method="post" action="/policy/runs/{{ r.id }}/explain" data-testid="policy-explain-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

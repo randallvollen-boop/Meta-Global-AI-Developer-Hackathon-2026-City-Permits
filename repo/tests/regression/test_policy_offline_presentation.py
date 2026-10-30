@@ -296,13 +296,15 @@ def test_the_run_settings_send_the_same_fields_as_before(client: TestClient) -> 
 # -------------------------------------------------------------- the results
 
 
-def _results(client: TestClient) -> str:
+def _results(
+    client: TestClient, *, suggestion: str = "fence_height_7ft", count: str = "120"
+) -> str:
     """Save the fence example, run it and return the page of the results."""
     page = client.get("/policy/scenarios")
     created = client.post(
         "/policy/scenarios",
         data={"csrf_token": _token(page.text), "expected_version": "0",
-              "suggestion": "fence_height_7ft", "name": "A results probe"},
+              "suggestion": suggestion, "name": "A results probe"},
         follow_redirects=False,
     )
     assert created.status_code == 303, created.text
@@ -312,7 +314,7 @@ def _results(client: TestClient) -> str:
         f"{editor}/run",
         data={"csrf_token": _token(page.text),
               "expected_version": _token(page.text, "expected_version"),
-              "kind": "synthetic_year", "seed": "20261028", "count": "120"},
+              "kind": "synthetic_year", "seed": "20261028", "count": count},
         follow_redirects=False,
     )
     assert ran.status_code == 303, ran.text
@@ -367,8 +369,12 @@ def test_the_safety_count_names_the_cases_and_not_the_signals(client: TestClient
     safety = body.split('data-testid="policy-safety"')[1].split("</section>")[0]
     match = re.search(r"<strong>(\d+)</strong> (case stops|cases stop) failing a rule", safety)
     assert match, safety
-    assert int(match.group(1)) >= 1
-    assert "safety signal" in safety
+    table = safety.split('data-testid="policy-safety-table"')[1].split("</table>")[0]
+    refs = re.findall(r'<th scope="row" class="mono">([^<]+)</th>', table)
+    signal_count = re.search(r'\((\d+) safety signals?\)', safety)
+    assert refs
+    assert int(match.group(1)) == len(set(refs))
+    assert signal_count and int(signal_count.group(1)) == len(refs)
 
 
 def test_the_detail_sections_are_disclosures(client: TestClient) -> None:
@@ -416,3 +422,46 @@ def test_the_briefing_keeps_its_full_source_for_exports(client: TestClient) -> N
     source = "Deterministic briefing built from the typed facts of this run. No model was used."
     assert source in page
     assert source in exported
+
+
+def test_the_results_and_briefing_use_clear_scenario_and_export_labels(client: TestClient) -> None:
+    results = _results(client)
+    assert "Open scenario" in results
+    assert "All scenarios" in results
+    assert "Open the what-if" not in results
+    assert "All what-ifs" not in results
+    assert "before you see it" not in results
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    briefing = client.get(f"/policy/runs/{run_id}/briefing").text
+    assert "All scenarios" in briefing
+    assert "Download HTML" in briefing
+    assert "Download Markdown" in briefing
+    assert "Download (HTML)" not in briefing
+    assert "Download (Markdown)" not in briefing
+    assert re.search(r'class="muted"[^>]*data-testid="policy-download-md"', briefing)
+
+
+def test_an_accepted_replay_names_its_source_in_the_briefing_head(client: TestClient) -> None:
+    results = _results(client, count="600")
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing")
+    replay = client.post(
+        f"/policy/runs/{run_id}/briefing/muse",
+        data={"csrf_token": _token(page.text), "expected_version": _token(page.text, "expected_version")},
+        follow_redirects=True,
+    ).text
+    assert "Recorded Muse briefing" in replay
+    assert '<details class="card" data-testid="policy-writer" open>' in replay
+
+
+def test_a_rejected_replay_keeps_the_saved_results_and_open_writer_details(client: TestClient) -> None:
+    results = _results(client, suggestion="shed_condition_300", count="600")
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing")
+    replay = client.post(
+        f"/policy/runs/{run_id}/briefing/muse",
+        data={"csrf_token": _token(page.text), "expected_version": _token(page.text, "expected_version")},
+        follow_redirects=True,
+    ).text
+    assert "Built from saved results" in replay
+    assert '<details class="card" data-testid="policy-writer" open>' in replay

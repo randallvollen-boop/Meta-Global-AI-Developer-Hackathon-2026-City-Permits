@@ -11,7 +11,8 @@
             "do": "Click \"Run comparison\"."
           },
           "4": {
-            "do": "Click \"Read briefing\", then \"Write the briefing with Muse\"."
+            "do": "Click \"Read briefing\", then \"Try recorded Muse briefing\".",
+            "see": "The briefing shows the label \"Recorded Muse briefing\" with the sections Summary, Key effects, and Risks and trade-offs."
           }
         }
       }
@@ -26,7 +27,9 @@
           "2": "In \"Run comparison\" check the Population, the Seed and the Number of cases.",
           "3": "Click \"Run comparison\".",
           "4": "Read \"Recommended outcomes\" and \"Cases that change\".",
-          "5": "Click \"Read briefing\"."
+          "5": "Click \"Read briefing\".",
+          "6": "Click \"Try recorded Muse briefing\". The source label says \"Recorded Muse briefing\".",
+          "7": "Read the sections, then use \"Download HTML\" or \"Download Markdown\" if you need a copy."
         }
       },
       {

@@ -7,12 +7,12 @@
 <div class="page-head">
   <div>
     <h1>Policy briefing</h1>
-    <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a> · <a href="/policy/scenarios">All what-ifs</a></p>
+    <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a> · <a href="/policy/scenarios">All scenarios</a></p>
   </div>
   <div class="actions">
     {{ ui.help_button('policy_briefing') }}
-    <a class="button btn primary button-primary" href="/policy/runs/{{ run_id }}/briefing/download?format=html" data-testid="policy-download-html" download>Download (HTML)</a>
-    <a class="button btn" href="/policy/runs/{{ run_id }}/briefing/download?format=md" data-testid="policy-download-md" download>Download (Markdown)</a>
+    <a class="button btn primary button-primary" href="/policy/runs/{{ run_id }}/briefing/download?format=html" data-testid="policy-download-html" download>Download HTML</a>
+    <a class="muted" href="/policy/runs/{{ run_id }}/briefing/download?format=md" data-testid="policy-download-md" download>Download Markdown</a>
   </div>
 </div>
 
@@ -56,14 +56,14 @@
 <details class="card" data-testid="policy-writer"{% if briefing.writer == 'muse' or muse.rejected %} open{% endif %}>
   <summary>Muse and validation details</summary>
   {% if briefing.writer == 'muse' %}
-  <p data-testid="policy-writer-muse">This recorded Muse briefing passed its checks. {{ muse_source(muse.source) }}</p>
+  <p data-testid="policy-writer-muse">This {% if muse.live %}Muse{% else %}recorded Muse{% endif %} briefing passed its checks. {{ muse_source(muse.source) }}</p>
   {% else %}
   <p data-testid="policy-writer-deterministic">Built from saved results. No model was used.</p>
   {% endif %}
   <p class="muted" data-testid="policy-writer-source">{{ briefing.source_label }}</p>
   {% if muse.rejected %}
   <div class="callout" data-testid="policy-writer-fallback">
-    <p><strong>The Muse briefing was not used.</strong> It was a recorded Muse briefing. {{ muse.fallback }}</p>
+    <p><strong>The Muse briefing was not used.</strong> It was a {% if muse.live %}Muse{% else %}recorded Muse{% endif %} briefing. {{ muse.fallback }}</p>
     <p class="muted">{{ muse_source(muse.source) }}</p>
     {% if muse.issues %}
     <details><summary>Why it was rejected ({{ muse.issues|length }} shown)</summary>
