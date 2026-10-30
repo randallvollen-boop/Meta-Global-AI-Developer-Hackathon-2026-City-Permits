@@ -199,6 +199,7 @@
       "label": "Agent Operator",
       "boundary": "Wakes and runs the intake and adjudication agents and processes a selection of waiting cases; no permit decision.",
       "permission_ids": [
+        "agent.ops.read",
         "agent.run.adjudication",
         "agent.run.intake",
         "agent.toggle",
@@ -560,7 +561,7 @@
           "source": "explicit"
         },
         {
-          "permission_id": "agent.run.intake",
+          "permission_id": "permit.intake.queue.view",
           "domains": [
             "permits"
           ],
@@ -623,14 +624,6 @@
         },
         {
           "permission_id": "permit.finding.waive",
-          "domains": [
-            "permits"
-          ],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "permit.intake.process_selected",
           "domains": [
             "permits"
           ],
@@ -701,7 +694,7 @@
           "source": "explicit"
         },
         {
-          "permission_id": "agent.run.adjudication",
+          "permission_id": "permit.intake.queue.view",
           "domains": [
             "permits"
           ],
@@ -1067,28 +1060,6 @@
           "source": "explicit"
         },
         {
-          "permission_id": "agent.toggle",
-          "domains": [],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.run.adjudication",
-          "domains": [
-            "permits"
-          ],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
-          "permission_id": "agent.run.intake",
-          "domains": [
-            "permits"
-          ],
-          "record_scope": [],
-          "source": "explicit"
-        },
-        {
           "permission_id": "config.manage",
           "domains": [],
           "record_scope": [],
@@ -1097,6 +1068,14 @@
         {
           "permission_id": "property.view",
           "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "permit.intake.queue.view",
+          "domains": [
+            "permits"
+          ],
           "record_scope": [],
           "source": "explicit"
         },
@@ -1218,6 +1197,12 @@
       "record_scope": [],
       "responsibility": "Runs the City's helper agents and the processing batches; the agents propose and recommend, a person decides.",
       "grants": [
+        {
+          "permission_id": "agent.ops.read",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
         {
           "permission_id": "agent.toggle",
           "domains": [],

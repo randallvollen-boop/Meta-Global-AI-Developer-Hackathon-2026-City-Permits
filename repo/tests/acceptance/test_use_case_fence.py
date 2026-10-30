@@ -258,7 +258,8 @@ def test_use_case_fence(client: TestClient, environment) -> None:
         state = application_row(environment, application_id)
         assert state["status"] == "submitted"
 
-    # 3. The administrator wakes the intake agent.
+    # 3. The agent operator wakes the intake agent.
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.toggle",
@@ -268,10 +269,11 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     intake_screen = client.get("/agent/intake").text
     assert 'data-testid="agent-mode">awake<' in intake_screen
 
-    # 4. The data steward runs the intake agent on all waiting cases.
+    # 4. The agent operator runs the intake agent on all waiting cases.
     choose(client, "persona_data_steward")
     assert 'data-screen-key="governance"' not in client.get("/queue").text
     assert client.get("/governance").status_code == 403
+    choose(client, "persona_agent_operator")
     run_all = act(client, "agent.run.intake", {}, "/agent/intake")
     assert run_all["status"] == "accepted", run_all
     for application_id in (front_id, rear_id):
@@ -292,6 +294,7 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     # 5. The steward approves the proposed links and the extracted values.
     # The applicant typed "400 Lantren Row": the locator corrected it to the
     # official address and proposed the parcel; the steward approves that link.
+    choose(client, "persona_data_steward")
     for application_id in (front_id, rear_id):
         body = client.get(f"/permits/{application_id}").text
         assert "400 Lantren Row" in body and "ACME-P-1001" in body
@@ -299,8 +302,8 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     for application_id in (front_id, rear_id):
         approve_parcel_link(client, environment, application_id)
 
-    # 6. The administrator wakes the adjudication agent.
-    choose(client, "persona_city_administrator")
+    # 6. The agent operator wakes the adjudication agent.
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.toggle",
@@ -308,12 +311,15 @@ def test_use_case_fence(client: TestClient, environment) -> None:
         "/agent/adjudication",
     )
 
-    # 7. The reviewer runs the adjudication agent on all cases in review.
+    # 7. The agent operator runs the adjudication agent on all cases in review.
     choose(client, "persona_permit_reviewer")
     assert client.get("/agent/intake").status_code == 403
+    choose(client, "persona_agent_operator")
     run_all = act(client, "agent.run.adjudication", {}, "/agent/adjudication")
     assert run_all["status"] == "accepted", run_all
 
+    # The case pages belong to the reviewer, who reads the recommendation.
+    choose(client, "persona_permit_reviewer")
     front_body = client.get(f"/permits/{front_id}").text
     rear_body = client.get(f"/permits/{rear_id}").text
     assert 'data-testid="recommendation-outcome">deny<' in front_body

@@ -217,14 +217,12 @@ def test_the_agent_runs_never_reach_the_provider_when_hosted(
     simulated = hosted_client.post("/api/intake/simulate", json={"scenario": "fence-conforming-rear"})
     assert simulated.status_code == 200, simulated.text
     app_id = simulated.json()["results"][0]["application_id"]
-    choose(hosted_client, "persona_city_administrator")
+    choose(hosted_client, "persona_agent_operator")
     for key in ("intake", "adjudication"):
         woke = act(hosted_client, "agent.toggle", {"agent_key": key, "mode": "awake"}, f"/agent/{key}")
         assert woke.status_code < 500, woke.text
-    choose(hosted_client, "persona_data_steward")
     ran = act(hosted_client, "agent.run.intake", {"application_id": app_id}, "/agent/intake")
     assert ran.status_code < 500, ran.text
-    choose(hosted_client, "persona_permit_reviewer")
     ran = act(hosted_client, "agent.run.adjudication", {"application_id": app_id}, "/agent/adjudication")
     assert ran.status_code < 500, ran.text
     assert tripwire.calls == []

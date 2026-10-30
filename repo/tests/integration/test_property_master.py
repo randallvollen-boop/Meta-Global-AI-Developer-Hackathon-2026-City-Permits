@@ -70,7 +70,7 @@ def choose(client: TestClient, actor_id: str) -> None:
 
 def csrf(client: TestClient, *paths: str) -> str:
     """Return the CSRF token of the first page that carries a form."""
-    for path in paths:
+    for path in (*paths, "/queue/intake", "/permits/app_synth_001"):
         match = re.search(r'name="csrf_token" value="([^"]+)"', client.get(path).text)
         if match:
             return match.group(1)
@@ -94,13 +94,15 @@ def act(client: TestClient, action_id: str, fields: dict, next_path: str) -> dic
 
 def run_scenario(client: TestClient, scenario: str) -> str:
     """Simulate a scenario, wake the intake agent and run it; return the case id."""
-    choose(client, "persona_city_administrator")
+    choose(client, "persona_agent_operator")
     response = client.post("/api/intake/simulate", json={"scenario": scenario})
     assert response.status_code == 200, response.text
     (result,) = response.json()["results"]
     act(client, "agent.toggle", {"agent_key": "intake", "mode": "awake"}, "/agent/intake")
-    choose(client, "persona_data_steward")
     act(client, "agent.run.intake", {}, "/agent/intake")
+    # The Agent Operator runs the agent; the property work stays with the
+    # Data Steward and the Permit Reviewer.
+    choose(client, "persona_data_steward")
     return result["application_id"]
 
 

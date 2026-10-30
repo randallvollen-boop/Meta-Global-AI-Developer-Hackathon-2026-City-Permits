@@ -188,6 +188,17 @@ class AgentControlService:
         return rows
 
 
+def authorize_processing(session: Session, actor: ActorContext) -> None:
+    """Refuse a bulk processing request from a persona that may not run the agent.
+
+    Processing a selection of waiting cases runs the intake agent on them, so
+    the person who may run the intake agent is the person who may process the
+    selection.  The check lives here, at the shared execution boundary, so
+    every entry point enforces it the same way.
+    """
+    AgentControlService(session).authorize_run(actor, agent_models.AGENT_INTAKE)
+
+
 __all__ = [
     "AGENT_KEYS",
     "AGENT_LABELS",
@@ -195,5 +206,6 @@ __all__ = [
     "PERMISSION_TOGGLE",
     "AgentControlService",
     "agent_mode",
+    "authorize_processing",
     "is_awake",
 ]

@@ -123,19 +123,26 @@ def test_the_seventeen_permit_types_carry_their_configuration(environment) -> No
 
 
 def test_the_agent_screens_are_persona_scoped(client: TestClient) -> None:
-    choose(client, "persona_data_steward")
+    # Changed deliberately (the Agent Operator): the wake and run grants moved
+    # to the Agent Operator, so the agent screens are opened by that persona.
+    choose(client, "persona_agent_operator")
     assert client.get("/agent/intake").status_code == 200
+    assert client.get("/agent/adjudication").status_code == 200
+    assert client.get("/admin").status_code == 403
+
+    choose(client, "persona_data_steward")
+    assert client.get("/agent/intake").status_code == 403
     assert client.get("/agent/adjudication").status_code == 403
     assert client.get("/admin").status_code == 403
 
     choose(client, "persona_permit_reviewer")
-    assert client.get("/agent/adjudication").status_code == 200
+    assert client.get("/agent/adjudication").status_code == 403
     assert client.get("/agent/intake").status_code == 403
     assert client.get("/admin").status_code == 403
 
     choose(client, "persona_city_administrator")
-    assert client.get("/agent/intake").status_code == 200
-    assert client.get("/agent/adjudication").status_code == 200
+    assert client.get("/agent/intake").status_code == 403
+    assert client.get("/agent/adjudication").status_code == 403
     assert client.get("/admin").status_code == 200
 
     choose(client, "persona_applicant")
@@ -144,20 +151,21 @@ def test_the_agent_screens_are_persona_scoped(client: TestClient) -> None:
     assert client.get("/admin").status_code == 403
 
 
-def test_only_the_administrator_sees_the_wake_button(client: TestClient) -> None:
-    choose(client, "persona_city_administrator")
+def test_only_the_operator_sees_the_wake_button(client: TestClient) -> None:
+    # Changed deliberately (the Agent Operator): the wake grant moved to the
+    # Agent Operator.  A persona without it is refused the agent screen, so no
+    # locked toggle is rendered for it any more.
+    choose(client, "persona_agent_operator")
     body = client.get("/agent/intake").text
     assert 'data-testid="agent-toggle"' in body
     assert 'data-testid="agent-toggle-locked"' not in body
 
     choose(client, "persona_data_steward")
-    body = client.get("/agent/intake").text
-    assert 'data-testid="agent-toggle-locked"' in body
-    assert 'data-testid="agent-toggle"' not in body
+    assert client.get("/agent/intake").status_code == 403
 
 
 def test_the_agent_screen_shows_its_kpis_and_graph(client: TestClient) -> None:
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     body = client.get("/agent/intake").text
     for testid in ("kpi-waiting", "kpi-processed", "kpi-needs-human", "kpi-errors"):
         assert f'data-testid="{testid}"' in body
@@ -173,7 +181,7 @@ def test_the_agent_screen_shows_its_kpis_and_graph(client: TestClient) -> None:
         assert f'data-node-id="{node}"' in body
     assert "Columns run in parallel; arrows are dependencies" in body
 
-    choose(client, "persona_permit_reviewer")
+    choose(client, "persona_agent_operator")
     body = client.get("/agent/adjudication").text
     for testid in (
         "kpi-in-review",
@@ -193,8 +201,10 @@ def test_the_agent_screen_shows_its_kpis_and_graph(client: TestClient) -> None:
 
 
 def test_the_sidebar_status_line_is_shown_to_staff_only(client: TestClient) -> None:
-    choose(client, "persona_data_steward")
-    body = client.get("/queue").text
+    # Changed deliberately (the Agent Operator): the status line follows the
+    # run grants, so the Agent Operator is the staff member who sees it.
+    choose(client, "persona_agent_operator")
+    body = client.get("/agent/intake").text
     assert 'data-testid="agent-status"' in body
     assert "Intake agent is asleep" in body
 
@@ -263,9 +273,9 @@ def test_a_data_steward_may_not_change_the_configuration(client: TestClient) -> 
     response = client.post(
         "/ui/actions/config.permit_type.document",
         data={
-            "csrf_token": csrf(client, "/agent/intake"),
+            "csrf_token": csrf(client, "/queue/intake"),
             "action_id": "config.permit_type.document",
-            "next": "/agent/intake",
+            "next": "/queue/intake",
             "permit_type_id": "permit_type_shed",
             "document_type": "construction_plans",
             "required": "yes",
@@ -410,13 +420,13 @@ def test_a_requirement_change_does_not_reach_an_already_received_case(
 
     # The case that was already received keeps the requirements it was
     # measured against.
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.toggle",
         {"agent_key": "intake", "mode": "awake"},
         "/agent/intake",
     )
-    choose(client, "persona_data_steward")
     act(
         client,
         "agent.run.intake",
@@ -439,6 +449,7 @@ def test_a_requirement_change_does_not_reach_an_already_received_case(
     response = client.post("/api/intake/records", json=payload)
     assert response.status_code == 200, response.text
     arrived_id = response.json()["application_id"]
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.intake",
@@ -493,12 +504,14 @@ def test_the_fax_scenario_carries_an_unreadable_page() -> None:
 
 
 def test_the_run_buttons_of_a_sleeping_agent_say_why(client: TestClient) -> None:
-    choose(client, "persona_data_steward")
+    # Changed deliberately (the Agent Operator): the wake grant moved to the
+    # Agent Operator, so it is the only persona that opens the agent screen.
+    # It sees why the run buttons are locked, and it may wake the agent.
+    choose(client, "persona_agent_operator")
     body = client.get("/agent/intake").text
     flat = body.replace("\n", " ")
     assert re.search(r'data-testid="agent-run-all"\s+disabled aria-describedby="agent-sleep-notice"', flat)
     assert 'id="agent-sleep-notice"' in body
-    assert "Your role cannot wake it; ask a City Administrator." in body
-    choose(client, "persona_city_administrator")
-    body = client.get("/agent/intake").text
     assert "Use Wake agent above to turn them on." in body
+    choose(client, "persona_data_steward")
+    assert client.get("/agent/intake").status_code == 403

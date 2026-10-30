@@ -21,6 +21,7 @@ from acme_city.persistence.session import (
     transaction,
 )
 from acme_city.core.config import Settings
+from tests.support.migration_head import migration_head
 
 #: Columns that carry the moment of the reset itself.  They are excluded when
 #: two runs are compared for byte equivalence.
@@ -372,8 +373,7 @@ def test_reset_script_initializes_an_empty_alembic_shell(tmp_path: Path) -> None
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         }
-    # Head is 0013 since the P3c migration (support cases), after 0012 (policy 4 draft conversions).
-    assert revision == ("0013",)
+    assert revision == (migration_head(),)
     assert "demo_environment" in tables
 
 
