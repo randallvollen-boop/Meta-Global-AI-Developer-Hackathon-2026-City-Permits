@@ -375,6 +375,9 @@ def ui_steward_review(
         (item["count"] for item in queue["filters"] if item["key"] == "needs_review"), 0
     )
     assistant["bound"] = steward_assist_views.MAX_TASKS_PER_PRESS
+    # The batch the steward may accept.  The queue shows how many
+    # recommendations it holds; the preview names them.
+    batch = steward_assist_views.batch_state(session, resolved, with_items=False)
     context = page_context(
         request,
         session,
@@ -385,12 +388,52 @@ def ui_steward_review(
         queue=queue,
         actions=actions,
         assistant=assistant,
+        batch=batch,
         queue_path=return_path,
         guide=_guide("queue"),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         quiet_feedback=True,
     )
     return render(request, "steward_review.html", context)
+
+
+@router.get("/steward/batch", operation_id="ui_steward_batch")
+def ui_steward_batch(
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show the preview of the recommendations a batch would accept.
+
+    The preview names every item the batch would accept and nothing else.
+    Nothing is accepted before the steward confirms this list, and an item
+    that changed since the list was made is skipped and named.
+    """
+    resolved, refused = _guard(request, session, actor, "steward")
+    if refused is not None:
+        return refused
+    batch = steward_assist_views.batch_state(session, resolved)
+    if not batch["may_batch"]:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=403,
+            title="This screen is outside your grants",
+            message=steward_assist_views.BATCH_GRANT_NOTE,
+            code="permission_denied",
+            back="/steward",
+        )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="steward",
+        title="Accept the high-confidence recommendations",
+        batch=batch,
+        guide=_guide("queue"),
+    )
+    return render(request, "steward_batch.html", context)
 
 
 @router.get("/steward/issues/{kind}/{item_id}", operation_id="ui_steward_case")

@@ -390,6 +390,22 @@ def prepare(
     )
 
 
+def batch_candidates(session: Session) -> list[StewardRecommendation]:
+    """Return the recommendations a batch may accept, oldest first.
+
+    A batch accepts only what a person may act on without reading further:
+    a recommendation the assistant is sure of, on a task whose decision the
+    steward can take back.  A cleared recommendation is history and is never
+    offered again.
+    """
+    rows = session.execute(
+        select(StewardRecommendation)
+        .where(StewardRecommendation.cleared.is_(False))
+        .order_by(StewardRecommendation.made_at, StewardRecommendation.id)
+    ).scalars().all()
+    return [row for row in rows if recommenders.is_batch_eligible(row)]
+
+
 def clear(
     session: Session,
     *,
@@ -447,6 +463,7 @@ __all__ = [
     "SERVICE_ACTOR_ID",
     "STALE_MESSAGE",
     "Prepared",
+    "batch_candidates",
     "clear",
     "current_record_version",
     "is_stale",

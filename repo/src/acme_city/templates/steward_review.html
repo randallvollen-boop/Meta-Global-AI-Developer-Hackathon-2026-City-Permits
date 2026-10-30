@@ -24,10 +24,29 @@
         Prepare recommendations
       </button>
     </form>
+    {% if batch.count %}
+    <a class="button button-primary btn primary" data-testid="assistant-batch-preview" href="/steward/batch">
+      Accept all high-confidence ({{ batch.count }})
+    </a>
+    {% else %}
+    <button type="button" class="button button-primary btn primary" data-testid="assistant-batch-preview"
+            disabled aria-describedby="assistant-batch-note">
+      Accept all high-confidence ({{ batch.count }})
+    </button>
+    {% endif %}
     {% endif %}
     {{ ui.help_button('steward') }}
   </div>
 </div>
+
+{% if assistant.may_run %}
+<p class="muted" id="assistant-batch-note" data-testid="assistant-batch-note">
+  {% if batch.count %}The batch accepts the {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}
+  the assistant is sure of, and only the ones whose decision you can take back.
+  You confirm the list before anything is accepted.
+  {% else %}{{ batch.empty_note }}{% endif %}
+</p>
+{% endif %}
 
 {% if assistant.may_run %}
 <p class="muted" data-testid="assistant-prepare-note">

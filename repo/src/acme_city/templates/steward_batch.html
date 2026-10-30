@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{% block content %}
+<p class="crumb"><a href="/steward">&larr; Data issues</a></p>
+
+<section class="panel stw-assistant" aria-labelledby="batch-heading" data-testid="batch-panel">
+  <div class="card-h">
+    <h2 id="batch-heading">Accept the high-confidence recommendations</h2>
+  </div>
+  <div class="card-b">
+    <p class="muted" data-testid="batch-note">
+      These are the {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}
+      the batch would accept. The assistant is sure of every one of them, and
+      each one is a decision you can take back. Nothing is accepted until you
+      confirm the list below. An item that changed since this list was made is
+      skipped and named, never accepted silently.
+    </p>
+    {% if batch.recommendations %}
+    <ol class="plain-list" data-testid="batch-items">
+      {% for item in batch.recommendations %}
+      <li data-testid="batch-item" data-recommendation="{{ item.id }}">
+        <strong>{{ item.label }}</strong>
+        <span class="muted" data-testid="batch-item-reason">{{ item.reason }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+    <form method="post" action="/ui/actions/steward.assist.batch_accept" class="action-form" data-testid="assistant-batch-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="steward.assist.batch_accept">
+      <input type="hidden" name="next" value="/steward/batch">
+      {% for item in batch.recommendations %}<input type="hidden" name="recommendation_id" value="{{ item.id }}">{% endfor %}
+      <p>
+        <button type="submit" class="button button-primary btn primary" data-testid="assistant-batch-confirm">
+          Accept these {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}
+        </button>
+      </p>
+    </form>
+    {% else %}
+    <p class="muted" data-testid="batch-empty">{{ batch.empty_note }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -139,6 +139,46 @@ def test_the_operator_may_not_press_the_steward_buttons(
     assert page.recorded_errors == []
 
 
+# --------------------------------------------------------------------- the batch
+
+
+def test_the_batch_opens_with_a_click_and_accepts_with_a_click(
+    page, server: BrowserServer, login
+) -> None:
+    """The steward reads the list first and confirms it with a click."""
+    prepare_queue(server)
+    wake_the_assistant(page, server, login)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
+    click_action(page, "assistant-prepare", "steward.assist.prepare")
+    # The button of the batch names the number of the recommendations it holds.
+    page.wait_for_selector('[data-testid="assistant-batch-preview"][href]')
+    assert "Accept all high-confidence (2)" in page.locator(
+        '[data-testid="assistant-batch-preview"]'
+    ).inner_text()
+    page.locator('[data-testid="assistant-batch-preview"]').click()
+    page.wait_for_selector('[data-testid="batch-panel"]')
+    assert page.locator('[data-testid="batch-item"]').count() == 2
+    message = click_action(page, "assistant-batch-confirm", "steward.assist.batch_accept")
+    assert "Accepted 2 of 2" in message
+    assert page.recorded_errors == []
+
+
+def test_the_batch_button_is_off_when_nothing_is_sure(
+    page, server: BrowserServer, login
+) -> None:
+    """An empty batch is a disabled button and a note that says why."""
+    prepare_queue(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
+    button = page.locator('[data-testid="assistant-batch-preview"]')
+    assert button.is_disabled()
+    note = page.locator('[data-testid="assistant-batch-note"]')
+    assert note.count() == 1
+    assert "sure enough" in note.inner_text()
+    assert page.recorded_errors == []
+
+
 # ----------------------------------------------------------------- the task page
 
 

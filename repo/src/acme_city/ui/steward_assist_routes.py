@@ -12,6 +12,11 @@ Four actions carry the work of the assistant:
   want;
 * ``steward.assist.accept``      accept a recommendation.
 
+A fifth action, ``steward.assist.batch_accept``, accepts the list of
+recommendations the steward confirmed in the preview.  It is a sequence of
+the single acceptances and nothing else: every item goes through the same
+path, and an item that changed since the preview is skipped and named.
+
 The accept does not write on its own: it goes through the existing service
 action of the task kind, with the steward as the decider of record, and it
 records the recommendation in the audit trail.
@@ -31,7 +36,9 @@ from acme_city.agents.control import AgentControlService
 from acme_city.audit.service import AuditService
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import NotFoundError, ValidationError
+from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.registry import steward_assist as recommenders
+from acme_city.ui import steward_assist_views
 from acme_city.ui.router import ActionContext, Outcome
 
 
@@ -309,27 +316,17 @@ def _dispatch(ctx: ActionContext, action_id: str, form: dict[str, str]) -> Outco
     return handler(inner)
 
 
-def _accept(ctx: ActionContext) -> Outcome:
-    """Accept a recommendation of the steward assistant.
+def _accept_one(ctx: ActionContext, recommendation: Any, reason: str) -> Outcome:
+    """Accept one recommendation through the existing action of its task kind.
 
     The write goes through the existing action of the task kind, so the
     steward is the decider of record and the service of the City writes as
     it always does.  The recommendation is recorded in the audit trail and
     cleared, so the task holds no answer twice.
+
+    The single acceptance and the batch use this one path, so a batch is
+    never more than a sequence of the decisions a steward takes one by one.
     """
-    recommendation_id = ctx.text("recommendation_id")
-    if not recommendation_id:
-        raise ValidationError("the request names no recommendation")
-    # Accepting a recommendation is the work of the Data Steward: the grant of
-    # the assistant is checked, and the service of the task kind checks its
-    # own grant again.  A sleeping assistant does not stop the steward from
-    # deciding.
-    AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
-    recommendation = assistant.recommendation_by_id(ctx.session, recommendation_id)
-    if recommendation.cleared:
-        raise ValidationError("this recommendation was cleared; prepare it again")
-    assistant.refuse_unless_acceptable(ctx.session, recommendation)
-    reason = ctx.text("reason") or recommendation.reason
     action_id, form = _accept_target(ctx.session, recommendation, reason)
     outcome = _dispatch(ctx, action_id, form)
     AuditService(ctx.session).append(
@@ -370,12 +367,119 @@ def _accept(ctx: ActionContext) -> Outcome:
     )
 
 
+def _accept(ctx: ActionContext) -> Outcome:
+    """Accept a recommendation of the steward assistant.
+
+    The write goes through the existing action of the task kind, so the
+    steward is the decider of record and the service of the City writes as
+    it always does.  The recommendation is recorded in the audit trail and
+    cleared, so the task holds no answer twice.
+    """
+    recommendation_id = ctx.text("recommendation_id")
+    if not recommendation_id:
+        raise ValidationError("the request names no recommendation")
+    # Accepting a recommendation is the work of the Data Steward: the grant of
+    # the assistant is checked, and the service of the task kind checks its
+    # own grant again.  A sleeping assistant does not stop the steward from
+    # deciding.
+    AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
+    recommendation = assistant.recommendation_by_id(ctx.session, recommendation_id)
+    if recommendation.cleared:
+        raise ValidationError("this recommendation was cleared; prepare it again")
+    assistant.refuse_unless_acceptable(ctx.session, recommendation)
+    reason = ctx.text("reason") or recommendation.reason
+    return _accept_one(ctx, recommendation, reason)
+
+
+def _batch_accept(ctx: ActionContext) -> Outcome:
+    """Accept the recommendations the steward confirmed in the preview.
+
+    The confirmed set is the previewed set.  Every item goes through the same
+    path as a single acceptance, so the stale guard and the held guard of the
+    assistant apply to it as well.  An item that went stale, that changed its
+    confidence or that was cleared since the preview is skipped and named: it
+    is never accepted silently.
+    """
+    identifiers = ctx.values("recommendation_id")
+    if not identifiers:
+        raise ValidationError("the request names no recommendation")
+    AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
+    labels = steward_assist_views.task_labels(ctx.session, ctx.actor)
+    accepted: list[str] = []
+    skipped: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for identifier in identifiers:
+        if identifier in seen:
+            continue
+        seen.add(identifier)
+        recommendation = ctx.session.get(StewardRecommendation, identifier)
+        if recommendation is None:
+            skipped.append(
+                {"id": identifier, "label": identifier, "reason": "it does not exist"}
+            )
+            continue
+        label = labels.get(
+            (recommendation.task_kind, recommendation.task_id), recommendation.task_id
+        )
+        if recommendation.cleared:
+            skipped.append(
+                {"id": identifier, "label": label, "reason": "it was cleared"}
+            )
+            continue
+        refusal = recommenders.batch_refusal(recommendation)
+        if refusal:
+            skipped.append({"id": identifier, "label": label, "reason": refusal})
+            continue
+        if assistant.is_stale(ctx.session, recommendation):
+            skipped.append(
+                {"id": identifier, "label": label, "reason": assistant.STALE_MESSAGE}
+            )
+            continue
+        _accept_one(ctx, recommendation, recommendation.reason)
+        accepted.append(identifier)
+
+    message = f"Accepted {len(accepted)} of {len(seen)} recommendation(s)."
+    if skipped:
+        message += " Skipped: " + "; ".join(
+            f"{item['label']} ({item['reason']})" for item in skipped
+        )
+    AuditService(ctx.session).append(
+        action="steward.assist.batch_accept",
+        actor=ctx.actor,
+        target_type="steward_recommendation",
+        target_id="",
+        after_version=len(accepted),
+        reason=message,
+        references=list(accepted),
+        metadata={
+            "agent_key": assistant.AGENT_KEY,
+            "accepted": list(accepted),
+            "skipped": list(skipped),
+        },
+    )
+    return Outcome(
+        message=message,
+        destination="Data issues",
+        state="accepted" if accepted else "skipped",
+        target_type="steward_recommendation",
+        target_id="",
+        after_version=len(accepted),
+        affected=tuple(accepted),
+        extra={
+            "detail": message,
+            "accepted": list(accepted),
+            "skipped": list(skipped),
+        },
+    )
+
+
 #: The interface actions of the lane, keyed by their stable identifier.
 HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "steward.assist.prepare": _prepare,
     "steward.assist.recommend": _recommend,
     "steward.assist.clear": _clear,
     "steward.assist.accept": _accept,
+    "steward.assist.batch_accept": _batch_accept,
 }
 
 __all__ = ["HANDLERS"]

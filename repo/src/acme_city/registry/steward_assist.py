@@ -61,6 +61,7 @@ from acme_city.persistence.models.steward_recommendation import StewardRecommend
 from acme_city.registry import automation, candidates
 from acme_city.registry.automation_policy import (
     DEFAULT_THRESHOLDS,
+    UNDO_SUPPORTED_FAMILIES,
     PolicyDecision,
     PolicyEvaluation,
     SafetyChecks,
@@ -171,6 +172,16 @@ ISSUE_CLASSES: dict[str, tuple[str, str]] = {
         "an answer.",
     ),
 }
+
+#: The kinds of task a batch of high-confidence recommendations may accept.
+#:
+#: A batch only accepts a decision the steward can take back: a link the
+#: steward confirms and a link the automation applied.  Both kinds have a
+#: service action of the City and a family whose reversal the City has
+#: tested.  A data issue has no service action at all, and a parcel link and
+#: a correction are not reversed by an action of the City, so a batch never
+#: offers them.
+BATCH_TASK_KINDS: frozenset[str] = frozenset({"link", "automatic_link"})
 
 _DISPLAY_PATH = REPO_ROOT / "config" / "ui_display.json"
 
@@ -1252,6 +1263,44 @@ def recommend(
     return builder(session, task, settings=settings)
 
 
+def batch_family(evidence: dict[str, Any]) -> str:
+    """Return the record family of the record a recommendation was made on.
+
+    The family is the one the City applies links on, read from the dataset
+    the source record belongs to.  A dataset the City does not map has no
+    family, and a record without a family is never offered in a batch.
+    """
+    dataset = str(evidence.get("source_dataset") or "")
+    return automation.DATASET_TARGET_FAMILIES.get(dataset, "")
+
+
+def batch_refusal(recommendation: Any) -> str:
+    """Return why a recommendation may not be accepted in a batch.
+
+    An empty string means the recommendation may be accepted in a batch.  The
+    reasons are the words of the screen: the steward reads why an item was
+    left out.
+    """
+    if recommendation.confidence != CONFIDENCE_HIGH:
+        return "its confidence is no longer High"
+    if recommendation.task_kind not in BATCH_TASK_KINDS:
+        return f"a batch may not accept a {recommendation.task_kind} task"
+    family = batch_family(dict(recommendation.evidence or {}))
+    if family not in UNDO_SUPPORTED_FAMILIES:
+        return "the family of its record has no tested reversal"
+    return ""
+
+
+def is_batch_eligible(recommendation: Any) -> bool:
+    """Whether a recommendation may be accepted in a batch.
+
+    A batch accepts only what a person may act on without reading further:
+    a recommendation the assistant is sure of, on a task whose decision the
+    steward can take back.
+    """
+    return not batch_refusal(recommendation)
+
+
 def store_recommendation(
     session: Session,
     recommendation: Recommendation,
@@ -1304,6 +1353,7 @@ def store_recommendation(
 
 
 __all__ = [
+    "BATCH_TASK_KINDS",
     "CHECK_WORDS",
     "CONFIDENCE_HIGH",
     "CONFIDENCE_HELD",
@@ -1326,6 +1376,9 @@ __all__ = [
     "VERSION_TOKEN_CURRENT_SOURCE",
     "Recommendation",
     "Task",
+    "batch_family",
+    "batch_refusal",
+    "is_batch_eligible",
     "recommend",
     "store_recommendation",
 ]

@@ -48,6 +48,75 @@ RUN_PERMISSION = "agent.run.steward_assist"
 #: The most tasks one press of the assistant prepares.
 MAX_TASKS_PER_PRESS = assistant.MAX_TASKS_PER_PRESS
 
+#: The note a steward reads when no recommendation may be accepted in a batch.
+#:
+#: The button is off, and the note says why: there is nothing the assistant
+#: is sure enough about, or the persona may not accept a batch at all.
+BATCH_EMPTY_NOTE = (
+    "No recommendation is sure enough to accept without reading it, so there is "
+    "nothing to accept in a batch."
+)
+
+#: The note a steward reads when the persona may not accept a batch.
+BATCH_GRANT_NOTE = "Your role cannot accept a batch of recommendations."
+
+
+def task_labels(session: Any, actor: ActorContext) -> dict[tuple[str, str], str]:
+    """Return the name of every task of the queue, keyed by its kind and id.
+
+    The names are the words of the queue, so the preview of a batch reads the
+    same way as the queue the steward came from.
+    """
+    from acme_city.ui import steward_views
+
+    return {
+        (issue.kind, issue.item_id): issue.title
+        for issue in steward_views.collect_issues(session, actor)
+    }
+
+
+def batch_state(
+    session: Any, actor: ActorContext, *, with_items: bool = True
+) -> dict[str, Any]:
+    """Return the batch the steward may accept, and the items it holds.
+
+    The batch holds the recommendations the assistant is sure of and whose
+    decision the steward can take back.  Nothing is accepted before the
+    steward confirms the list the preview shows.
+
+    The queue only shows how many recommendations the batch holds, so it
+    asks for the count alone: the names of the tasks are read only for the
+    preview.
+    """
+    may = may_run(session, actor)
+    rows = assistant.batch_candidates(session) if may else []
+    labels = task_labels(session, actor) if rows and with_items else {}
+    items = []
+    for row in rows:
+        items.append(
+            {
+                "id": row.id,
+                "task_kind": row.task_kind,
+                "task_id": row.task_id,
+                "label": labels.get((row.task_kind, row.task_id), row.task_id),
+                "reason": row.reason,
+                "outcome": row.outcome,
+                "confidence": row.confidence,
+            }
+        )
+    note = ""
+    if not may:
+        note = BATCH_GRANT_NOTE
+    elif not items:
+        note = BATCH_EMPTY_NOTE
+    return {
+        "may_batch": may,
+        "count": len(items),
+        "recommendations": items,
+        "note": note,
+        "empty_note": BATCH_EMPTY_NOTE,
+    }
+
 
 def is_awake(session: Any) -> bool:
     """Return whether the steward assistant is awake."""
@@ -282,13 +351,17 @@ def case_panel(
 
 __all__ = [
     "AWAKE_NOTE",
+    "BATCH_EMPTY_NOTE",
+    "BATCH_GRANT_NOTE",
     "MAX_TASKS_PER_PRESS",
     "RUN_PERMISSION",
     "SLEEP_NOTE",
     "assistant_state",
+    "batch_state",
     "case_panel",
     "evidence_lines",
     "is_awake",
     "may_run",
     "recommendation_view",
+    "task_labels",
 ]
