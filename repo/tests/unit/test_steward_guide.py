@@ -151,6 +151,17 @@ def test_a_gap_in_the_evidence_is_named_and_not_filled() -> None:
     assert response.evidence == ("No evidence recorded.",)
 
 
+def test_the_guide_holds_an_evidence_line_only_when_it_was_given_one() -> None:
+    """A screen with no recorded evidence shows no evidence line."""
+    without = steward_guide.build(steward_guide.GuideContext(screen="queue"))
+    assert without.evidence_recorded is False
+    with_evidence = steward_guide.build(
+        steward_guide.GuideContext(screen="match_case", evidence=("The name matches",))
+    )
+    assert with_evidence.evidence_recorded is True
+    assert with_evidence.evidence == ("The name matches",)
+
+
 def test_the_next_actions_follow_the_ordering_rule(
     context: steward_guide.GuideContext,
 ) -> None:

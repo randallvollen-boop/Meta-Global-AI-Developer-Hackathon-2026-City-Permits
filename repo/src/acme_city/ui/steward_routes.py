@@ -266,7 +266,7 @@ def _profile_page(
         actions=actions,
         guide=_guide(
             "record_profile", state=profile["identity_status"], task=profile["name"],
-            evidence=tuple(item["source"] for item in profile["sources"][:2]),
+            evidence=tuple(item["label"] for item in detail["evidence"]),
         ),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         back_href="/masters" if nav_screen == "masters" else "/applicants",
@@ -411,6 +411,7 @@ def ui_steward_case(
         guide=_guide(
             "match_case" if kind == "link" else "parcel_case" if kind == "parcel" else "source_correction",
             state=str(case["summary"]["status_label"]), task=str(case["summary"]["task"]),
+            evidence=tuple(case["evidence"]),
         ),
         case_path=case_path,
         confirmation=confirmation,

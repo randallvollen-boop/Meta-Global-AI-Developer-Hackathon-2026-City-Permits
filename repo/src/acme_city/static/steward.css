@@ -178,18 +178,21 @@ body[data-screen="masters"] .data-table thead th {
   body[data-screen="source_records"] .stw-search select,
   body[data-screen="source_records"] .stw-search input[type="search"] { width: 100%; }
 
-  body[data-screen="masters"] .stw-trusted-overview .data-table thead { display: none; }
-  body[data-screen="masters"] .stw-trusted-overview .data-table,
-  body[data-screen="masters"] .stw-trusted-overview .data-table tbody,
-  body[data-screen="masters"] .stw-trusted-overview .data-table tr,
-  body[data-screen="masters"] .stw-trusted-overview .data-table th,
-  body[data-screen="masters"] .stw-trusted-overview .data-table td { display: block; width: 100%; }
-  body[data-screen="masters"] .stw-trusted-overview .data-table tr {
+  /* The selected values read as one card per field on every screen that
+     shows them: the master record of the steward and the record of the
+     applicant the reviewer opens. */
+  .stw-trusted-overview .data-table thead { display: none; }
+  .stw-trusted-overview .data-table,
+  .stw-trusted-overview .data-table tbody,
+  .stw-trusted-overview .data-table tr,
+  .stw-trusted-overview .data-table th,
+  .stw-trusted-overview .data-table td { display: block; width: 100%; }
+  .stw-trusted-overview .data-table tr {
     margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--line);
     border-radius: var(--r-md); background: var(--surface);
   }
-  body[data-screen="masters"] .stw-trusted-overview .data-table th,
-  body[data-screen="masters"] .stw-trusted-overview .data-table td {
+  .stw-trusted-overview .data-table th,
+  .stw-trusted-overview .data-table td {
     padding: 2px 0; border: 0; overflow-wrap: anywhere;
   }
   body[data-screen="masters"] .stw-master-tabs { display: flex; flex-wrap: wrap; gap: 6px; }

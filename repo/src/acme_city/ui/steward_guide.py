@@ -99,6 +99,10 @@ class GuideResponse:
     state: str
     candidate: str
     evidence: tuple[str, ...]
+    #: ``True`` when the screen passed recorded evidence.  A screen with no
+    #: evidence says nothing about it, so the guide never claims evidence the
+    #: page does not show.
+    evidence_recorded: bool
     conflicts: tuple[str, ...]
     missing: tuple[str, ...]
     links: tuple[GuideLink, ...]
@@ -164,7 +168,8 @@ def build(context: GuideContext, prompt: str = DEFAULT_PROMPT) -> GuideResponse:
     explanation = str(
         texts.get(key) or entry.get("guidance") or content.get("no_guidance", "")
     )
-    evidence = tuple(context.evidence) or (str(content.get("no_evidence", "")),)
+    recorded = tuple(context.evidence)
+    evidence = recorded or (str(content.get("no_evidence", "")),)
     allowed = [item for item in context.actions if item.allowed]
     refused = [item for item in context.actions if not item.allowed]
     return GuideResponse(
@@ -176,6 +181,7 @@ def build(context: GuideContext, prompt: str = DEFAULT_PROMPT) -> GuideResponse:
         state=context.state,
         candidate=context.candidate,
         evidence=evidence,
+        evidence_recorded=bool(recorded),
         conflicts=tuple(context.conflicts),
         missing=tuple(context.missing),
         links=tuple(

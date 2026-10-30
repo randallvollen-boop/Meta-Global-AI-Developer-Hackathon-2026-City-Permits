@@ -2787,7 +2787,33 @@ def focused_case(
     case = _focused_case(session, actor, kind, item_id, selected_id)
     if case:
         case["summary"] = _case_summary(case)
+        case["evidence"] = _case_evidence(case)
     return case
+
+
+def _case_evidence(case: dict[str, Any]) -> tuple[str, ...]:
+    """Return the recorded evidence of a focused case, in the words of the page.
+
+    The words are the ones the case shows under "What supports the decision?",
+    so the guide never contradicts the page.  A case with no recorded evidence
+    holds nothing, and the guide then says nothing about evidence.
+    """
+    kind = str(case.get("kind", ""))
+    if kind == "link":
+        candidates = list(case.get("candidates") or [])
+        shown = next((item for item in candidates if item.get("open")), None)
+        if shown is None and candidates:
+            shown = candidates[0]
+        if shown is None:
+            return ()
+        return tuple(
+            str(item.get("method", ""))
+            for item in list(shown.get("agreements") or []) + list(shown.get("conflicts") or [])
+            if item.get("method")
+        )
+    if kind == "case":
+        return tuple(str(item) for item in case.get("case_evidence") or [])
+    return ()
 
 
 def _focused_case(

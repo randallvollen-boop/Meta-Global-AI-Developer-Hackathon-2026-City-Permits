@@ -117,3 +117,21 @@ def test_guide_is_saved_and_repeatable_without_muse(
     assert "Saved guidance. Live Muse is off." in first.text
     # No call to the model was made on the way to the saved answer.
     assert tripwire.calls == []
+
+
+def test_the_guide_names_only_the_evidence_the_page_shows(client: TestClient) -> None:
+    """The guide holds no evidence the page does not show."""
+    queue = client.get("/steward").text
+    # The queue shows no evidence, so the guide names none.
+    assert "Recorded evidence" not in queue
+    match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
+    assert match is not None
+    case = client.get(match.group(1).replace("&amp;", "&")).text
+    guide_evidence = case.split("<b>Recorded evidence:</b>", 1)[1].split("</p>", 1)[0]
+    assert guide_evidence
+    for phrase in guide_evidence.split("; "):
+        assert phrase in case, phrase
+    # The record has no document, so the guide names no evidence there either.
+    profile = client.get("/masters/party_cedarline?view=sources").text
+    assert "No evidence is recorded for this record." in profile
+    assert "Recorded evidence" not in profile

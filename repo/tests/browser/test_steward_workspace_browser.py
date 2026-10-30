@@ -249,13 +249,24 @@ def test_the_source_catalogue_names_the_record_and_its_action(
     assert page.recorded_errors == []
 
 
+@pytest.mark.parametrize(
+    ("persona", "path"),
+    (
+        ("persona_data_steward", "/masters/party_cedarline"),
+        ("persona_permit_reviewer", "/applicants/party_cedarline"),
+    ),
+)
 def test_the_profile_puts_selected_values_before_statuses_on_a_phone(
-    viewport_390, server: BrowserServer, login
+    viewport_390, server: BrowserServer, login, persona: str, path: str
 ) -> None:
-    """A profile leads with selected values and keeps its three statuses separate."""
+    """A profile leads with selected values and keeps its three statuses separate.
+
+    The selected values open on the record of the steward and on the record of
+    the applicant the reviewer opens, so both are checked at 390 pixels.
+    """
     page = viewport_390
-    login("persona_data_steward")
-    page.goto(f"{server.base_url}/masters/party_cedarline", wait_until="load")
+    login(persona)
+    page.goto(f"{server.base_url}{path}", wait_until="load")
     selected = page.locator('[data-testid="trusted-values-overview"]')
     statuses = page.locator('[data-testid="profile-status-overview"]')
     identity = page.locator('[data-testid="profile-overview"]')
