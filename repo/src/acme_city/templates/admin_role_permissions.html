@@ -14,7 +14,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="action_id" value="admin.role.permissions">
     <input type="hidden" name="next" value="/admin?tab=users">
-    <label class="opr-checkbox"><input type="checkbox" name="city_worker_enabled" value="true" {% if agent_role_permissions[1].enabled and agent_role_permissions[2].enabled %}checked{% endif %}> City worker can wake and run agents</label>
+    <label class="opr-checkbox"><input type="checkbox" name="city_worker_enabled" value="true" {% if city_worker_enabled %}checked{% endif %}> City worker can wake and run agents</label>
     <label for="opr-role-reason">Reason</label>
     <input id="opr-role-reason" name="reason" required>
     <button type="submit" class="btn sm primary" data-testid="admin-role-permissions-save">Save role permissions</button>

@@ -13,6 +13,12 @@ from sqlalchemy import select
 from acme_city.persistence.models import agent_ops, governance
 from acme_city.ui import admin_tabs
 
+#: The roles the City worker option covers.
+CITY_WORKER_ROLE_IDS: tuple[str, ...] = ("permit_reviewer", "intake_clerk")
+
+#: The roles the table lists, in the order it lists them.
+MANAGED_ROLE_IDS: tuple[str, ...] = ("agent_operator",) + CITY_WORKER_ROLE_IDS
+
 
 def role_permissions_context(session, actor) -> dict:
     """Return the managed staff-role entitlement rows for the Users tab."""
@@ -24,7 +30,6 @@ def role_permissions_context(session, actor) -> dict:
         row.role_id: row.label
         for row in session.execute(select(governance.Role)).scalars().all()
     }
-    roles = ("agent_operator", "permit_reviewer", "intake_clerk")
     return {
         "agent_role_permissions": [
             {
@@ -32,8 +37,15 @@ def role_permissions_context(session, actor) -> dict:
                 "label": labels.get(role_id, role_id),
                 "enabled": bool(rows.get(role_id) and rows[role_id].can_run_agents),
             }
-            for role_id in roles
-        ]
+            for role_id in MANAGED_ROLE_IDS
+        ],
+        # The City worker option is on when every City worker role may run
+        # the agents.  The flag is computed by role id, never by the position
+        # of a row in the table.
+        "city_worker_enabled": all(
+            bool(rows.get(role_id) and rows[role_id].can_run_agents)
+            for role_id in CITY_WORKER_ROLE_IDS
+        ),
     }
 
 

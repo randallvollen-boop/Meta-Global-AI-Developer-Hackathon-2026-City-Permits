@@ -8,7 +8,8 @@ module.  An agent screen is placed in a persona's group at its canonical
 The intake queue is not an agent screen: it is the Data Steward's own screen
 and stays in ``steward.py``.  The Agent Operator opens it with the execution
 grant that lets it process the selected cases, and that grant is not a menu
-entry of its own.
+entry of its own: the queue is reached from the "Process selected cases" link
+on the Agents home.
 """
 
 from __future__ import annotations
@@ -41,8 +42,9 @@ ORDER: dict[str, tuple[str, ...]] = {
 SECONDARY: dict[str, tuple[str, ...]] = {}
 
 #: Screens a persona may open for an authorized action but which are not menu
-#: destinations.  Processing a selected intake batch is available from a case,
-#: not from the Agent Operator's four-destination navigation.
+#: destinations.  The intake queue is one of them: the Agent Operator holds
+#: the execution grant and opens the queue from the "Process selected cases"
+#: link on the Agents home, not from the four-destination navigation.
 UNLISTED_OPEN_SCREENS: dict[str, frozenset[str]] = {
     "persona_agent_operator": frozenset({"intake_queue"}),
 }

@@ -58,3 +58,22 @@ def test_agent_screens_are_forbidden_to_other_personas(page, server, login, acto
         response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert response is not None
         assert response.status == 403, (actor_id, path)
+
+
+def test_an_agent_screen_links_back_to_the_agents_home(page, server, login) -> None:
+    """The agent screens link back to the Agents home, which the operator may open."""
+    login("persona_agent_operator")
+    for path, _title in OPERATOR_SCREENS:
+        page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        page.click("a:has-text('Back to agents')")
+        page.wait_for_url(f"{server.base_url}/agents")
+        assert page.locator("main h1").inner_text().strip() == "Agents"
+
+
+def test_the_agents_home_links_to_the_selected_cases(page, server, login) -> None:
+    """The operator reaches "Process selected" from the Agents home."""
+    login("persona_agent_operator")
+    page.goto(f"{server.base_url}/agents", wait_until="domcontentloaded")
+    page.click("[data-testid='opr-process-selected']")
+    page.wait_for_url(f"{server.base_url}/queue/intake")
+    assert page.locator("[data-testid='intake-bulk-submit']").is_visible()

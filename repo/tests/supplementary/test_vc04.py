@@ -262,6 +262,9 @@ def test_listed_screens_open_and_hidden_screens_refuse(
         # Master records.  Its address still opens (it renders that tab), so it is
         # open for a persona whose navigation lists the parent screen, though it
         # is not listed a second time.
+        # The Agent Operator holds the execution grant for the selected cases and
+        # opens the intake queue from the "Process selected cases" link on the
+        # Agents home, so the queue is open without being a menu entry.
         if (
             key in listed
             or key in UNLISTED_OPEN_SCREENS[actor_id]

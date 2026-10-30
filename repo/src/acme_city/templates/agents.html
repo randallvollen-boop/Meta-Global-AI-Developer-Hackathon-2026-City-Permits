@@ -27,6 +27,7 @@
     {% for agent in summary.states %}
     <p><a href="/agent/{{ agent.key }}">{{ agent.label }}</a><span class="muted"> {{ agent.mode }}</span></p>
     {% endfor %}
+    <p><a href="/queue/intake" data-testid="opr-process-selected">Process selected cases</a></p>
   </div>
 </section>
 {% else %}
