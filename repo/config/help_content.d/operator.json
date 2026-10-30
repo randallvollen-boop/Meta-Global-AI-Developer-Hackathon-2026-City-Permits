@@ -1,5 +1,30 @@
 {
   "howto": {
-    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work. A person still makes permit decisions."
+    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work. A person still makes permit decisions.",
+    "guides": [
+      {
+        "slug": "run-the-agents",
+        "title": "Run the agents",
+        "summary": "Wake an agent, process the cases that wait, read what it did and put it back to sleep.",
+        "who": "Agent Operator",
+        "persona_ids": [
+          "persona_agent_operator"
+        ],
+        "screen_label": "Agents",
+        "screen_href": "/agents",
+        "steps": [
+          "Open \"Agents\" in the left menu. A line at the top says whether processing is manual, which engine is active and that live Muse calls are off. Under \"Agent status\" each agent reads asleep or awake.",
+          "Click \"Intake agent\" in the left menu or under \"Agent status\". The state box shows Processing and Engine. The Process next 20 button and \"Process one\" are off while the agent is asleep.",
+          "Click \"Wake agent\". The state reads awake and the button now reads \"Put agent to sleep\". A woken agent stays awake until a person puts it back to sleep.",
+          "In the table \"Cases waiting for the agent\" click \"Process one\" on a case, or click the Process next 20 button to work the first 20 waiting cases. Read the message at the top.",
+          "Read \"Needs attention\" for work that failed, and click \"Try again\" on a row to run it again. Read \"Recent results\" for the result, the mode, who asked and the steps of each run.",
+          "For the Adjudication agent do the same on its own screen. The recommendations it makes appear under \"Recommendations waiting for a person\". Only a person decides.",
+          "Open \"Agent runs\" in the left menu. Narrow the list with Agent, State, Processing mode and Date, then click \"Apply filters\". Click \"Clear filters\" to start again.",
+          "Click \"View run\" on a row to open \"Run detail\". Read \"Processing steps\", \"Provenance\" and \"Recorded business changes\". A failed run offers \"Retry\", which needs the agent to be awake.",
+          "When you have finished, go back to each agent and click \"Put agent to sleep\"."
+        ],
+        "result": "The waiting cases are prepared for a person, and every run is recorded in Agent runs. A run records preparation only: a person makes every permit decision."
+      }
+    ]
   }
 }

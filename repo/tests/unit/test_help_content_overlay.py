@@ -95,12 +95,12 @@ def test_overlay_appends_guide_section_and_step(overlay_dir):
                     {"slug": "new-guide", "title": "New", "persona_ids": [], "steps": ["One."]},
                 ]
             },
-            "tutorial": {"sections": [{"persona_id": "persona_agent_operator", "steps": []}]},
+            "tutorial": {"sections": [{"persona_id": "persona_new_test", "steps": []}]},
         },
     )
     assert content.guide(slug)["steps"][count] == "An extra step."
     assert content.guide("new-guide")["steps"] == ["One."]
-    assert content.tutorial()["sections"][-1]["persona_id"] == "persona_agent_operator"
+    assert content.tutorial()["sections"][-1]["persona_id"] == "persona_new_test"
     with pytest.raises(ValueError):
         _write(overlay_dir, "a.json", {"howto": {"guides": [{"slug": slug, "steps": {str(count + 1): "Gap."}}]}})
         content._content()

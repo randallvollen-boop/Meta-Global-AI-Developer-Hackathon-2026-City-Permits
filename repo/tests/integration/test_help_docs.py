@@ -27,6 +27,7 @@ CONFIG = Path(__file__).resolve().parents[2] / "config"
 
 PERSONAS = (
     "persona_applicant",
+    "persona_agent_operator",
     "persona_data_steward",
     "persona_permit_reviewer",
     "persona_city_administrator",
@@ -178,7 +179,9 @@ def link_cases() -> list[tuple[str, str]]:
 
 def test_the_tutorial_runs_in_the_order_of_the_demo_story() -> None:
     order = [section["persona"] for section in content.tutorial()["sections"]]
-    assert order == ["Applicant", "Permit Reviewer", "Data Steward", "City Administrator"]
+    assert order == [
+        "Applicant", "Agent Operator", "Data Steward", "Permit Reviewer", "City Administrator",
+    ]
 
 
 def test_every_go_to_this_screen_link_resolves_for_the_persona_it_names(
@@ -207,7 +210,7 @@ def test_the_tutorial_page_renders_one_link_per_step(client: TestClient) -> None
     steps = sum(len(section["steps"]) for section in content.tutorial()["sections"])
     assert page.count('data-testid="tutorial-step"') == steps
     assert page.count('data-testid="tutorial-go"') == steps
-    assert "Demo: switch user" in page
+    assert "Demo controls" in page
     assert "Recorded replay" in page and "stored answer shown again" in page
 
 
