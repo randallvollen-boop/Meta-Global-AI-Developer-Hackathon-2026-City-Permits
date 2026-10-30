@@ -64,6 +64,9 @@
     {% if view.state == 'failed' %}<p data-testid="agent-run-detail-failure">{{ view.detail }}</p>{% endif %}
     {% if not view.revision_matches %}
     <p class="lock" data-testid="agent-run-detail-revision-changed">This application has changed. Process the current revision instead.</p>
+    {% elif view.state == 'failed' and view.subsequent %}
+    <p data-testid="agent-run-detail-replaced">A later attempt replaced this one.</p>
+    <p><a href="/agents/runs/{{ view.subsequent.run_id }}" data-testid="agent-run-detail-replaced-link">See the later attempt: {{ view.subsequent.label }}</a></p>
     {% elif view.can_retry and view.can_run %}
     <p>Processing stopped before this attempt saved changes. Retry uses the same application revision.</p>
     <form method="post" action="/ui/actions/agent.retry" class="action-form" data-testid="agent-run-detail-retry-form">
@@ -72,10 +75,20 @@
       <input type="hidden" name="next" value="/agents/runs/{{ view.run_id }}">
       <input type="hidden" name="agent_key" value="{{ view.agent_key }}">
       <input type="hidden" name="application_id" value="{{ view.application_id }}">
-      <button type="submit" class="btn sm" data-testid="agent-run-detail-retry"{% if not view.is_awake %} disabled{% endif %}>Retry</button>
+      <button type="submit" class="btn sm" data-testid="agent-run-detail-retry"{% if not view.is_awake %} disabled aria-describedby="agent-run-detail-retry-sleep"{% endif %}>Retry</button>
     </form>
+    {% if not view.is_awake %}
+    <p class="muted" data-testid="agent-run-detail-retry-sleep">Wake the agent to retry.</p>
+    {% endif %}
     {% elif view.state == 'failed' %}
+    {% if not view.can_run %}
+    <p class="lock" data-testid="agent-run-detail-no-grant">
+      <svg aria-hidden="true"><use href="#i-lock"/></svg>
+      Your role cannot do this.
+    </p>
+    {% else %}
     <p class="muted" data-testid="agent-run-detail-retry-unavailable">A person has to look at this attempt before it can run again.</p>
+    {% endif %}
     {% else %}<p class="muted">Only a failed attempt can be retried.</p>{% endif %}
   </div>
 </section>

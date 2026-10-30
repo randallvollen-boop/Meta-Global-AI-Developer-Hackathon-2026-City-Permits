@@ -1119,9 +1119,7 @@
         "tests/supplementary/test_vc04.py::test_the_page_offers_a_skip_link_and_a_labelled_status_region",
         "tests/supplementary/test_vc04.py::test_the_persona_selector_never_offers_a_service_identity",
         "tests/supplementary/test_vc04.py::test_the_stylesheet_keeps_a_visible_focus_ring",
-        "tests/supplementary/test_vc04.py::test_the_tables_are_compact_and_carry_a_caption",
-        "tests/browser/test_agent_operator.py::test_the_operator_retries_the_failed_work",
-        "tests/browser/test_agent_operator.py::test_the_desktop_status_refresh_only_reads_the_operator_status"
+        "tests/supplementary/test_vc04.py::test_the_tables_are_compact_and_carry_a_caption"
       ]
     },
     {
@@ -1599,9 +1597,7 @@
         "tests/supplementary/test_vc04.py::test_the_interface_loads_no_external_asset",
         "tests/supplementary/test_vc04.py::test_the_tables_are_compact_and_carry_a_caption",
         "tests/supplementary/test_vc04.py::test_the_filters_are_small_and_named",
-        "tests/supplementary/test_vc04.py::test_the_persona_selector_never_offers_a_service_identity",
-        "tests/browser/test_agent_operator.py::test_the_operator_retries_the_failed_work",
-        "tests/browser/test_agent_operator.py::test_the_desktop_status_refresh_only_reads_the_operator_status"
+        "tests/supplementary/test_vc04.py::test_the_persona_selector_never_offers_a_service_identity"
       ],
       "evidence_refs": [
         "agent_runs",

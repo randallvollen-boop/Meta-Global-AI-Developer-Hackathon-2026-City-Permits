@@ -21,14 +21,13 @@
     <div class="kpi"><span class="v">{{ summary.waiting }}</span><span class="k">Waiting</span></div>
     <div class="kpi"><span class="v">{{ summary.running }}</span><span class="k">Running</span></div>
     <div class="kpi"><span class="v">{{ summary.failed }}</span><span class="k">Failed</span></div>
-    <div class="kpi"><span class="v">{{ summary.retrying }}</span><span class="k">Retrying</span></div>
   </div>
 </section>
 <section class="panel card opr-agent-list" aria-labelledby="opr-agents-heading" data-status-refresh>
   <div class="card-h"><h2 id="opr-agents-heading">Agent status</h2></div>
   <div class="card-b">
     {% for agent in summary.states %}
-    <p><a href="/agent/{{ agent.key }}">{{ agent.label }}</a><span class="muted"> {{ agent.mode }}</span></p>
+    <p><a href="/agent/{{ agent.key }}" data-testid="agent-status-link" data-agent-key="{{ agent.key }}">{{ agent.label }}</a><span class="muted"> {{ agent.mode }}</span></p>
     {% endfor %}
     <p><a href="/queue/intake" data-testid="opr-process-selected">Process selected cases</a></p>
   </div>

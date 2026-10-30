@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from acme_city.agents.adjudication import AdjudicationAgent
 from acme_city.agents.policy import current_policy
@@ -20,7 +20,9 @@ from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import agent_ops, permit
+from acme_city.persistence.models import governance
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui import agent_views
@@ -334,6 +336,149 @@ def test_run_detail_shows_the_recorded_attempt_and_its_provenance(
     assert "Only a failed attempt can be retried." in detail.text
 
 
+def _fail_an_attempt(
+    client: TestClient, environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> tuple[str, str, str]:
+    """Let the intake agent stop on a case and return the work and the attempt.
+
+    The locator of the address node stops, so the attempt is recorded as
+    failed and the piece of work of the case waits for a person.
+    """
+    from acme_city.agents.intake import IntakeAgent
+
+    def _stopped(self, *args, **kwargs):
+        raise RuntimeError("the locator stopped")
+
+    monkeypatch.setattr(IntakeAgent, "_node_address_locator", _stopped)
+    simulated = client.post("/api/intake/simulate", json={"scenario": "deck-high"})
+    assert simulated.status_code == 200, simulated.text
+    application_id = simulated.json()["results"][0]["application_id"]
+    assert act(
+        client, "agent.toggle", {"agent_key": "intake", "mode": "awake"}, "/agent/intake"
+    )["status"] == "accepted"
+    ran = act(
+        client, "agent.run.intake", {"application_id": application_id}, "/agent/intake"
+    )
+    assert ran["status"] == "accepted", ran
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            work = session.execute(
+                select(agent_ops.AgentWorkQueue).where(
+                    agent_ops.AgentWorkQueue.application_id == application_id
+                )
+            ).scalars().first()
+            assert work is not None
+            assert work.status == agent_ops.WORK_FAILED
+            attempt = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().first()
+            assert attempt is not None
+            assert attempt.outcome == "failed"
+            return work.id, attempt.id, application_id
+    finally:
+        factory.dispose()
+
+
+def test_a_failed_attempt_is_shown_instead_of_an_empty_work_view(
+    client: TestClient, environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The link of a failure shows the attempt that failed.
+
+    The work of a case that failed after its attempt was created names that
+    attempt, so the screen shows the evidence of the failure and not a work
+    view that says nothing ever started.
+    """
+    work_id, attempt_id, _application_id = _fail_an_attempt(client, environment, monkeypatch)
+    page = client.get(f"/agents/runs/{work_id}")
+    assert page.status_code == 200, page.text
+    assert 'data-testid="agent-run-detail"' in page.text
+    assert "Failed" in page.text
+    # The attempt is shown, so the screen does not claim that nothing started.
+    assert "Not started" not in page.text
+    assert "Not recorded" not in page.text
+    assert "Built in logic" in page.text
+    # The attempt of the work is the one the screen shows.
+    attempt_page = client.get(f"/agents/runs/{attempt_id}")
+    assert attempt_page.status_code == 200, attempt_page.text
+    assert "Failed" in attempt_page.text
+
+
+def test_the_run_detail_explains_a_retry_that_is_off(
+    client: TestClient, environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A disabled Retry button says what is missing next to it."""
+    work_id, _attempt_id, _application_id = _fail_an_attempt(client, environment, monkeypatch)
+    # The agent is put back to sleep, so the retry button is off.
+    assert act(
+        client, "agent.toggle", {"agent_key": "intake", "mode": "asleep"}, "/agent/intake"
+    )["status"] == "accepted"
+    page = client.get(f"/agents/runs/{work_id}")
+    assert page.status_code == 200, page.text
+    assert 'data-testid="agent-run-detail-retry" disabled' in page.text
+    assert 'data-testid="agent-run-detail-retry-sleep"' in page.text
+    assert "Wake the agent to retry." in page.text
+
+
+def test_a_viewer_without_the_run_grant_is_told_what_is_missing(
+    client: TestClient,
+    environment: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A viewer who may not run the agent is not told to look at the attempt."""
+    work_id, _attempt_id, _application_id = _fail_an_attempt(client, environment, monkeypatch)
+    # The viewer may read the operations screens but may not run the agent.
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            session.execute(
+                delete(governance.ActorGrant).where(
+                    governance.ActorGrant.actor_id == "persona_agent_operator",
+                    governance.ActorGrant.permission_id == "agent.run.intake",
+                )
+            )
+            entitlement = session.execute(
+                select(agent_ops.AgentRoleEntitlement).where(
+                    agent_ops.AgentRoleEntitlement.role_id == "agent_operator"
+                )
+            ).scalars().first()
+            assert entitlement is not None
+            entitlement.can_run_agents = False
+    finally:
+        factory.dispose()
+    page = client.get(f"/agents/runs/{work_id}")
+    assert page.status_code == 200, page.text
+    assert 'data-testid="agent-run-detail-no-grant"' in page.text
+    assert "Your role cannot do this." in page.text
+    assert "A person has to look at this attempt" not in page.text
+
+
+def test_a_failed_attempt_says_that_a_later_attempt_replaced_it(
+    client: TestClient, environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An attempt that was tried again says so, and links to the later one."""
+    work_id, attempt_id, application_id = _fail_an_attempt(client, environment, monkeypatch)
+    # The node works again, so the retry succeeds.
+    monkeypatch.undo()
+    retried = act(
+        client,
+        "agent.retry",
+        {"application_id": application_id, "agent_key": "intake"},
+        f"/agents/runs/{attempt_id}",
+    )
+    assert retried["status"] == "accepted", retried
+    page = client.get(f"/agents/runs/{attempt_id}")
+    assert page.status_code == 200, page.text
+    assert 'data-testid="agent-run-detail-replaced"' in page.text
+    assert "A later attempt replaced this one." in page.text
+    assert 'data-testid="agent-run-detail-replaced-link"' in page.text
+    # The attempt that failed does not wait for a person any more.
+    assert "A person has to look at this attempt" not in page.text
+    assert work_id
+
+
 def test_the_administrator_opens_the_agent_processing_tab(
     admin_client: TestClient,
 ) -> None:
@@ -346,6 +491,31 @@ def test_the_administrator_opens_the_agent_processing_tab(
     # The tab is a tab of the administration screen and carries the current one.
     assert 'data-tab="agent_processing"' in page.text
     assert 'aria-current="page"' in page.text
+
+
+def test_the_processing_tab_does_not_promise_work_while_the_agent_sleeps(
+    admin_client: TestClient,
+) -> None:
+    """The tab says that the intake agent works the cases while it is awake."""
+    page = admin_client.get("/admin?tab=agent_processing")
+    assert page.status_code == 200, page.text
+    assert "works them while it is awake." in page.text
+    # While the policy is manual, the cases wait for the agent.
+    assert "are waiting for the intake agent." in page.text
+    act(
+        admin_client,
+        "admin.agent.processing",
+        {
+            "keep_awake": "true",
+            "runs_per_hour": "42",
+            "reason": "Evening coverage",
+            "expected_version": "1",
+        },
+        "/admin?tab=agent_processing",
+    )
+    page = admin_client.get("/admin?tab=agent_processing")
+    assert page.status_code == 200, page.text
+    assert "will be scheduled once the intake agent is awake." in page.text
 
 
 def test_the_operator_does_not_see_the_agent_processing_tab(

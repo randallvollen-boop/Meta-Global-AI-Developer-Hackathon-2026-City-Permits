@@ -500,13 +500,21 @@ def run_history(
 
 
 def run_detail(session: Session, actor: ActorContext, run_id: str) -> dict[str, Any]:
-    """Return the stored evidence and guarded retry state of one attempt."""
+    """Return the stored evidence and guarded retry state of one attempt.
+
+    The identifier may name a piece of work instead of an attempt.  A piece
+    of work that failed after its attempt was created names that attempt, so
+    the screen shows the attempt that failed and not an empty work view.
+    """
     run = session.get(agent_models.AgentRun, run_id)
     if run is None:
         work = session.get(agent_ops.AgentWorkQueue, run_id)
         if work is None:
             return {"missing": True, "run_id": run_id}
-        return _failed_work_detail(session, actor, work)
+        attempt = _attempt_of_work(session, work)
+        if attempt is None:
+            return _failed_work_detail(session, actor, work)
+        run = attempt
 
     application = session.get(permit.Application, run.application_id) if run.application_id else None
     inputs = dict(run.inputs or {})
@@ -593,6 +601,21 @@ def run_detail(session: Session, actor: ActorContext, run_id: str) -> dict[str, 
         "can_run": _holds(session, actor, f"agent.run.{run.agent_key}"),
         "is_awake": agent_state(session, run.agent_key)["mode"] == agent_models.AGENT_AWAKE,
     }
+
+
+def _attempt_of_work(
+    session: Session, work: agent_ops.AgentWorkQueue
+) -> agent_models.AgentRun | None:
+    """Return the attempt of one piece of work, the newest one.
+
+    The attempt names the piece of work it is the attempt of, so a failure
+    that left an attempt behind is found through the work row.
+    """
+    return session.execute(
+        select(agent_models.AgentRun)
+        .where(agent_models.AgentRun.inputs["work_id"].as_string() == work.id)
+        .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
+    ).scalars().first()
 
 
 def _failed_work_detail(

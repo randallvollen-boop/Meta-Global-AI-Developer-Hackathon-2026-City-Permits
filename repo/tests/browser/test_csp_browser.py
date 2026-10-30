@@ -28,11 +28,22 @@ def test_agent_status_refresh_loads_under_the_policy(page, server: BrowserServer
     response = page.goto(f"{server.base_url}/agents", wait_until="networkidle")
     assert response is not None
     assert "script-src 'self'" in response.headers["content-security-policy"]
+    # The page marks itself as one that must not be left.
+    page.evaluate("() => { window.__noNav = 1; }")
+    value = page.locator("[data-testid='agent-operator-summary'] .kpi .v").first
+    original = value.inner_text().strip()
+    value.evaluate("(node) => { node.textContent = '999'; }")
     with page.expect_response(
-        lambda answer: answer.request.method == "GET" and answer.url.endswith("/agents")
+        lambda answer: answer.request.method == "GET"
+        and answer.url.endswith("/agents")
+        and answer.request.resource_type == "fetch"
     ) as refreshed:
         page.locator("[data-testid='agent-status-refresh']").click()
     assert refreshed.value.status == 200
+    # The page was not replaced: the marker of the page is still there.
+    assert page.evaluate("() => window.__noNav") == 1
+    # The values on the screen are the ones the server holds.
+    assert value.inner_text().strip() == original
     assert page.recorded_errors == []
 
 

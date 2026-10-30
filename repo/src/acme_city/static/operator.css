@@ -1,7 +1,7 @@
 /* Agent operator screens. Every selector starts with .opr- or body[data-screen=...] for agent screens. */
 
 .opr-page-head { margin-bottom: 1rem; }
-.opr-summary .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.opr-summary .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .opr-status-actions { display: flex; justify-content: flex-end; margin: 0 0 .4rem; }
 .opr-agent-list p { display: flex; justify-content: space-between; gap: .5rem; }
 .opr-role-permissions { display: grid; gap: .75rem; }

@@ -300,7 +300,7 @@ def test_a_second_attempt_is_counted(environment: Settings) -> None:
                 .values(status=agent_ops.WORK_PENDING)
             )
             session.expire_all()
-            assert runtime.counts()["retrying"] == 1
+            assert runtime.counts()["pending"] == 1
             again = runtime.claim(row.id)
             assert again is not None
             assert (again.status, again.attempts) == (agent_ops.WORK_RUNNING, 2)
@@ -443,7 +443,7 @@ def test_the_queue_counts_report_the_state_of_the_work(environment: Settings) ->
             runtime.finish(second.id, 1, agent_ops.WORK_HELD, note="a person is asked")
             assert runtime.counts()["held"] == 1
             assert operator_summary(session)["queued"] == 0
-            assert operator_summary(session)["retrying"] == 0
+            assert operator_summary(session)["failed"] == 0
     finally:
         factory.dispose()
 
