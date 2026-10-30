@@ -139,10 +139,10 @@ def test_the_selector_offers_exactly_the_five_personas(session: Session) -> None
     offered = [option["actor_id"] for option in view_models.persona_options(session)]
     assert offered == [
         "persona_applicant",
+        "persona_agent_operator",
         "persona_data_steward",
         "persona_permit_reviewer",
         "persona_city_administrator",
-        "persona_agent_operator",
     ]
 
 

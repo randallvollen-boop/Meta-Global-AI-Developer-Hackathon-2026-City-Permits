@@ -162,7 +162,10 @@ def test_the_persona_cards_still_render_the_profiles(page, server: BrowserServer
     cards = page.locator('[data-testid="persona-card"]')
     assert cards.count() == len(PERSONA_PROFILES)
     for label, profile in PERSONA_PROFILES.items():
-        card = page.locator(f'[data-testid="persona-card"]:has-text("{label}")').first
+        # Match the card by its title: another card's text may mention this persona.
+        card = cards.filter(
+            has=page.get_by_role("heading", name=label, exact=True)
+        )
         assert card.count() == 1, label
         text = card.inner_text()
         assert profile["who"] in text, label
