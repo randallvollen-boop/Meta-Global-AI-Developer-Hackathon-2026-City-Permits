@@ -212,7 +212,7 @@ def finish(
         .values(
             status=status,
             finished_at=now or utc_now(),
-            last_error=note if status == JOB_FAILED else None,
+            last_error=note if status in (JOB_FAILED, JOB_NEEDS_REVIEW) else None,
         )
     )
     if result.rowcount == 0:
