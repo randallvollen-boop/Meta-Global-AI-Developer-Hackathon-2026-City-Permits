@@ -10,6 +10,7 @@
    action, in the order of the lifecycle. #}
 
 {% block content %}
+<div class="admin-b">
 <div class="page-head">
   <div>
     <h1>Rules and fees</h1>
@@ -86,7 +87,7 @@
   </p>
   {% else %}
   <div class="tbl-wrap">
-  <table class="data-table" data-testid="rule-table">
+  <table class="data-table admin-b-stack admin-b-rules-register" data-testid="rule-table">
     <caption class="visually-hidden">Stored rule and fee schedule versions</caption>
     <thead>
       <tr>
@@ -105,11 +106,11 @@
       {% for row in catalogue.rows %}
       <tr data-testid="rule-row" data-status="{{ row.status }}" data-rule-id="{{ row.row_id }}" data-version-label="{{ row.version_label }}">
         <th scope="row">{{ row.title }}</th>
-        <td>{{ row.project_type }}</td>
-        <td class="mono">{{ row.version_label }}</td>
-        <td><span class="badge badge-{{ row.status }}">{{ row.status_label }}</span></td>
-        <td>{{ row.effective_period }}</td>
-        <td>
+        <td data-label="Type">{{ row.project_type }}</td>
+        <td class="mono" data-label="Version">{{ row.version_label }}</td>
+        <td data-label="Status"><span class="badge badge-{{ row.status }}">{{ row.status_label }}</span></td>
+        <td data-label="Effective period">{{ row.effective_period }}</td>
+        <td data-label="Next action">
           {% if row.next_action.available %}
           <a class="btn sm" href="{{ row.href }}" data-testid="rule-next-action">{{ row.next_action.label }}</a>
           {% else %}
@@ -117,9 +118,9 @@
           {% if row.next_action.reason %}<span class="t2">: {{ row.next_action.reason }}</span>{% endif %}
           {% endif %}
         </td>
-        <td>{{ row.assigned_approver }}</td>
-        <td>{{ row.approved_by }}</td>
-        <td>{{ row.approved_on }}</td>
+        <td data-label="Assigned approver">{{ row.assigned_approver }}</td>
+        <td data-label="Approved by">{{ row.approved_by }}</td>
+        <td data-label="Approved on">{{ row.approved_on }}</td>
       </tr>
       {% else %}
       <tr><td colspan="9" class="muted">No version is stored in this view.</td></tr>
@@ -136,7 +137,7 @@
 
 {% if catalogue.selected %}
 {% set selected = catalogue.selected %}
-<section class="panel card" aria-labelledby="selected-version-heading" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
+<section class="panel card" aria-labelledby="selected-version-heading" id="selected-version-review" data-testid="selected-version" data-version-id="{{ selected.row_id }}">
   <div class="card-h">
     <h2 id="selected-version-heading">{{ selected.version_label }}: {{ selected.title }}</h2>
     <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
@@ -160,7 +161,8 @@
     </table>
     </div>
 
-    <h3>Published and proposed side by side</h3>
+    <h3>Published comparison</h3>
+    <p class="muted" data-testid="selected-published-baseline">Published baseline: {{ selected.comparison.published_baseline }}</p>
     <div class="tbl-wrap">
     <table class="data-table" data-testid="selected-version-sides">
       <caption class="visually-hidden">The published version and the proposed version</caption>
@@ -191,6 +193,7 @@
     </div>
 
     <h3 id="version-diff">What changed</h3>
+    <p class="muted" data-testid="selected-diff-baseline">Compared with {{ selected.comparison.diff_baseline }}</p>
     {% if selected.diff %}
     <div class="tbl-wrap">
     <table class="data-table" data-testid="selected-version-diff">
@@ -311,4 +314,5 @@
 {% endif %}
 
 {% include "components/evidence_panel.html" %}
+</div>
 {% endblock %}

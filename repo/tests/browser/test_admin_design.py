@@ -319,3 +319,127 @@ def test_the_scenarios_list_offers_the_recorded_examples(
     assert page.locator('[data-testid="policy-name"]').is_visible()
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
+
+
+# ------------------------------------------------ governance and source overview
+
+
+def test_governance_source_overview_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Source attention and cards fit 390px and remain reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=sources")
+    assert page.locator("h1").inner_text() == "Data sources and ownership"
+    assert page.locator('[data-testid="governance-attention"]').count() == 1
+    assert page.locator('[data-testid="source-card"]').count() == 3
+    source_grid = page.locator('[data-testid="source-overview"]')
+    assert source_grid.evaluate("element => getComputedStyle(element).display") == "grid"
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="source-card"]').last)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- rules and fees register
+
+
+@pytest.mark.parametrize("tab", ["rules", "fees"])
+@pytest.mark.parametrize("view", ["published", "drafts", "history"])
+def test_rules_and_fees_registers_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390, tab: str, view: str
+) -> None:
+    """Both registers and all three views keep their records at 390px."""
+    login("persona_city_administrator")
+    open_screen(page, server, f"/rules?tab={tab}&view={view}")
+    assert page.locator('[data-testid="rules-tab"]').count() == 2
+    assert page.locator('[data-testid="rules-view"]').count() == 3
+    if view != "history":
+        cell = page.locator('[data-testid="rule-table"] tbody td').first
+        assert cell.evaluate("element => getComputedStyle(element).display") == "flex"
+    fits_a_phone(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------ selected version review
+
+
+def test_selected_rule_version_review_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A selected version names both comparison baselines and stays reachable."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/rules?tab=rules&view=published&version=rulever_CT-1_v1",
+    )
+    selected = page.locator('[data-testid="selected-version"]')
+    assert selected.count() == 1
+    assert page.locator('[data-testid="selected-published-baseline"]').count() == 1
+    assert page.locator('[data-testid="selected-diff-baseline"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator("#selected-version-heading"))
+    assert page.recorded_errors == []
+
+
+# -------------------------------------------------------- governance registers
+
+
+def test_governance_access_lists_five_personas_without_page_overflow(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The access register stays readable and includes all selectable personas."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=access")
+    rows = page.locator('[data-testid="access-row"]')
+    assert rows.count() == 5
+    assert page.locator("summary", has_text="Exact permission keys").count() == 5
+    fits_a_phone(page)
+    assert_not_covered(page, rows.last)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------------ City permit view
+
+
+def test_city_permit_activity_hierarchy_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """City activity puts scope first and names filters not copied to a scenario."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/insight/city?type=shed&outcome=approved&period=30d&exceptions=1",
+    )
+    assert page.locator("h1").inner_text() == "City permit activity"
+    assert page.locator('[data-testid="insight-filter-summary"]').count() == 1
+    filters = page.locator('[data-testid="insight-filters"]')
+    assert filters.evaluate("element => getComputedStyle(element).display") == "grid"
+    note = page.locator('[data-testid="scenario-scope-note"]')
+    assert "not copied" in note.inner_text()
+    assert page.locator("th", has_text="Approved or issued").count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="filter-apply"]'))
+    assert page.recorded_errors == []
+
+
+# ----------------------------------------------------------- City chart tokens
+
+
+def test_city_charts_use_theme_tokens_in_light_and_dark(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Chart paint follows theme tokens while labels and tables remain present."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/insight/city")
+    bar = page.locator(".insight-bars rect").first
+    light_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    page.evaluate("document.documentElement.dataset.theme = 'dark'")
+    dark_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    assert light_fill != dark_fill
+    assert page.locator('[data-testid="district-table"]').count() == 1
+    assert page.locator('[data-testid="trend-table"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="insight-trend-chart"]'))
+    assert page.recorded_errors == []

@@ -654,6 +654,8 @@ def ui_insight_city(
                 if value
             }
         ),
+        whatif_scope_note=view["whatif_scope_note"],
+        quiet_feedback=True,
         model_runs=[],
         evidence=[
             {
@@ -921,6 +923,7 @@ def ui_rules_fees(
         responsibility=catalogue["responsibility"],
         actions=catalogue["actions"],
         denied_action_explanations=catalogue["denied_action_explanations"],
+        quiet_feedback=True,
     )
     return render(request, "rules_fees.html", context)
 
@@ -1008,6 +1011,7 @@ def ui_governance_sources(
         responsibility=governance["responsibility"],
         actions=actions,
         denied_action_explanations=view_models.denied_action_explanations(actions),
+        quiet_feedback=True,
     )
     return render(request, "governance_sources.html", context)
 
