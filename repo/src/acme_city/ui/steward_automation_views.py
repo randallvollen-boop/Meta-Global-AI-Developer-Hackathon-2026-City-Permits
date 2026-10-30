@@ -25,7 +25,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
-from acme_city.persistence.models import governance, registry_automation, source
+from acme_city.persistence.models import governance, registry, registry_automation, source
 from acme_city.registry import automation, candidates
 from acme_city.registry.automation_policy import (
     DEFAULT_THRESHOLDS,
@@ -58,6 +58,17 @@ FAMILY_LABELS: dict[str, str] = {
 
 #: The number of accepted records the preview shows at most.
 PREVIEW_LIMIT = 20
+
+#: The number of applied links one screen shows at most.
+APPLICATION_LIMIT = 25
+
+#: The state of an applied link and the words the screen shows.
+APPLICATION_STATUS_LABELS: dict[str, str] = {
+    "applied": "Waiting for review",
+    "acknowledged": "Reviewed",
+    "reversed": "Taken back",
+    "superseded": "Superseded",
+}
 
 #: Every safety check of the policy, passed.
 #:
@@ -366,11 +377,97 @@ def preview(
     }
 
 
+def _entity_label(session: Session, entity_id: str) -> str:
+    """Return the name of the canonical entity a link points at."""
+    party = session.get(registry.Party, entity_id)
+    if party is not None:
+        return party.display_name
+    entity = session.execute(
+        select(registry.CanonicalEntity).where(
+            registry.CanonicalEntity.entity_id == entity_id
+        )
+    ).scalar_one_or_none()
+    return entity.label if entity is not None and entity.label else entity_id
+
+
+def application_row(
+    session: Session,
+    application: registry_automation.RegistryAutomationApplication,
+) -> dict[str, Any]:
+    """Return one applied link as the screens show it.
+
+    The row names the service that applied the link, the steward whose policy
+    authorized it and the evidence the decision was built from.  A score is
+    shown as a score, never as a probability.
+    """
+    view = automation.application_view(session, application)
+    evaluation = session.get(
+        registry_automation.RegistryAutomationEvaluation, view.evaluation_id
+    )
+    evidence = dict(evaluation.evidence or {}) if evaluation is not None else {}
+    return {
+        "application_id": view.application_id,
+        "crosswalk_id": view.crosswalk_id or "",
+        "entity_id": view.entity_id,
+        "entity_label": _entity_label(session, view.entity_id),
+        "entity_type": view.entity_type,
+        "source_system": view.source_system_id,
+        "dataset": view.source_dataset_key or "",
+        "record": view.source_record_id,
+        "status": view.status,
+        "status_label": APPLICATION_STATUS_LABELS.get(view.status, view.status),
+        "score": view.score,
+        "score_text": f"{view.score:.2f}" if view.score is not None else "",
+        "score_scale": view.score_scale,
+        "decision": view.decision,
+        "policy_version": view.policy_version,
+        "applied_at": view.applied_at,
+        "applied_at_text": _when(view.applied_at),
+        "applied_by": view.applied_by_actor_id,
+        "authorized_by": view.authorized_by_actor_id or "",
+        "reasons": list(view.reasons),
+        "failed_checks": list(view.failed_checks),
+        "supporting": list(evidence.get("supporting") or []),
+        "conflicting": list(evidence.get("conflicting") or []),
+        "review_note": view.review_note or "",
+        "reviewed_by": view.reviewed_by_actor_id or "",
+        "reviewed_at": view.reviewed_at,
+    }
+
+
+def application_rows(
+    session: Session, *, limit: int = APPLICATION_LIMIT
+) -> list[dict[str, Any]]:
+    """Return the applied links, newest first."""
+    rows = [
+        application_row(session, application)
+        for application in automation.applications(session)
+    ]
+    rows.sort(key=lambda row: str(row["applied_at"]), reverse=True)
+    return rows[: max(0, limit)]
+
+
+def application_counts(session: Session) -> dict[str, int]:
+    """Return how many applied links hold each state."""
+    counts = {state: 0 for state in APPLICATION_STATUS_LABELS}
+    for application in automation.applications(session):
+        counts[application.status] = counts.get(application.status, 0) + 1
+    counts["total"] = sum(
+        count for state, count in counts.items() if state != "total"
+    )
+    return counts
+
+
 __all__ = [
     "ACTIVATE_MODES",
+    "APPLICATION_LIMIT",
+    "APPLICATION_STATUS_LABELS",
     "FAMILY_LABELS",
     "MODE_STATUS",
     "PREVIEW_LIMIT",
+    "application_counts",
+    "application_row",
+    "application_rows",
     "dataset_options",
     "last_run",
     "policy_view",

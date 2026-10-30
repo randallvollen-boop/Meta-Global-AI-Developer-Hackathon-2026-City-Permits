@@ -5,6 +5,10 @@ the policy, a preview of the accepted source records and the two controls
 that change the policy.  The tests walk the screen as the Data Steward on a
 desktop, and they check that the screen still fits a phone.
 
+The second part walks the links the automatic linking applied: the queue
+holds them, the case shows the evidence, and the steward keeps or undoes the
+link with a click.
+
 Fictional ACME City data only.
 """
 # REQUIRES: UX-01, UX-02, UX-04, SEC-01
@@ -13,14 +17,78 @@ Fictional ACME City data only.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+from acme_city.agents import linking
+from acme_city.auth.context import ActorContext
+from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
+from acme_city.ingestion.service import IngestionService
+from acme_city.persistence.models import registry_automation
+from acme_city.persistence.session import SessionFactory, transaction
 
 #: The reason the steward gives when a policy is activated.
 ACTIVATE_REASON = "The applicant records wait for a master record."
 
 #: The reason the steward gives when the automation is paused.
 PAUSE_REASON = "The steward reads the first results before the work continues."
+
+#: The reason the steward gives when an applied link is taken back.
+UNDO_REASON = "The record named the wrong master record."
+
+#: The payload of the source version the demonstration links.
+LINKED_PAYLOAD = {
+    "party_ref": "party_applicant_1",
+    "display_name": "Tamsin Aldous",
+    "contact_email": "t.aldous+autolink@example.invalid",
+    "contact_phone": "+1-555-0141",
+    "preferred_contact": "email",
+}
+
+
+def apply_one_link(server: BrowserServer) -> None:
+    """Prepare the demonstration: one link the automatic linking applied."""
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                registry_automation.RegistryAutomationPolicy(
+                    id="policy_browser_1",
+                    version=1,
+                    mode="active",
+                    status="active",
+                    matcher_version="registry-candidates-v1",
+                    thresholds={},
+                    source_scopes=["applicant_profiles"],
+                    reason="the demonstration applies one link",
+                    recorded_by_actor_id="persona_data_steward",
+                    activated_at=datetime(2026, 10, 29, 12, 0, tzinfo=UTC),
+                )
+            )
+        intake = IngestCommand(
+            source_system_id="permitting",
+            dataset_key="applicant_profiles",
+            records=[
+                SourceRecordCommand(
+                    source_record_id="PER-AP-0001",
+                    source_record_version="4",
+                    payload=LINKED_PAYLOAD,
+                    source_updated_at=datetime(2026, 10, 29, 12, 1, tzinfo=UTC),
+                )
+            ],
+        )
+        with transaction(factory) as session:
+            service = IngestionService(session, registry_automation_mode="active")
+            assert service.ingest(
+                intake, ActorContext(actor_id="persona_data_steward", role_ids=frozenset())
+            ).accepted == 1
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+        assert report.processed[0].decision == "auto_apply"
+    finally:
+        factory.dispose()
 
 
 def test_the_settings_screen_says_the_automation_is_paused(
@@ -160,3 +228,130 @@ def test_no_screen_overflows_on_a_desktop(
         "() => document.documentElement.scrollWidth - window.innerWidth"
     )
     assert overflow <= 1, (path, overflow)
+
+
+# ------------------------------------------------------- the applied links
+
+
+def test_the_applied_link_waits_in_the_queue(page, server: BrowserServer, login) -> None:
+    """The queue holds the link the automation applied until it is reviewed."""
+    apply_one_link(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    row = page.locator('[data-issue-row][data-testid="automatic-link"]')
+    assert row.count() == 1
+    assert "PER-AP-0001" in row.inner_text()
+    assert "Tamsin Aldous" in row.inner_text()
+    assert page.recorded_errors == []
+
+
+def test_the_case_shows_the_evidence_of_the_applied_link(
+    page, server: BrowserServer, login
+) -> None:
+    """The case shows the score, the evidence and the two controls."""
+    apply_one_link(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="automatic-evidence"]')
+    assert page.locator('[data-testid="case-q4"]').count() == 1
+    assert "0.70" in page.locator('[data-testid="case-q3"]').inner_text()
+    guide = page.locator('[data-testid="steward-guide-answer"]').text_content() or ""
+    assert "Review the recorded evidence or undo the link" in guide
+    evidence = page.locator('[data-testid="automatic-evidence"]')
+    assert evidence.count() == 1
+    assert evidence.inner_text().strip() != ""
+    assert page.locator('[data-testid="action-preview"]').count() == 2
+    assert page.locator('details[data-action-id="registry.automation.undo"]').count() == 1
+    assert page.locator('details[data-action-id="registry.automation.review"]').count() == 1
+    assert page.recorded_errors == []
+
+
+def test_the_steward_undoes_the_applied_link(
+    page, server: BrowserServer, login, submit_action
+) -> None:
+    """The undo takes the link back and the queue no longer waits for it."""
+    apply_one_link(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="automatic-evidence"]')
+    message = submit_action("registry.automation.undo", {"reason": UNDO_REASON})
+    assert "was taken back" in message
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert page.locator('[data-issue-row][data-testid="automatic-link"]').count() == 0
+    page.goto(f"{server.base_url}/steward?filter=resolved", wait_until="load")
+    assert page.locator('[data-issue-row][data-testid="automatic-link"]').count() == 1
+    assert page.recorded_errors == []
+
+
+def test_the_steward_keeps_the_applied_link(
+    page, server: BrowserServer, login, submit_action
+) -> None:
+    """The review keeps the link and records that a person looked at it."""
+    apply_one_link(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="automatic-evidence"]')
+    message = submit_action(
+        "registry.automation.review", {"note": "The master record is right."}
+    )
+    assert "was reviewed" in message
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert page.locator('[data-issue-row][data-testid="automatic-link"]').count() == 0
+    assert page.recorded_errors == []
+
+
+def test_the_reviewer_may_not_undo_an_applied_link(
+    page, server: BrowserServer, login
+) -> None:
+    """The undo control is the grant of the Data Steward alone."""
+    apply_one_link(server)
+    login("persona_permit_reviewer")
+    response = page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert response is not None
+    assert response.status == 403
+
+
+def test_the_applied_link_fits_a_phone(viewport_390, server: BrowserServer, login) -> None:
+    """At 390 pixels the case and its controls stay inside the screen."""
+    apply_one_link(server)
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    assert_no_horizontal_overflow(page)
+    page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="automatic-evidence"]')
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert_not_covered(
+        page, page.locator('details[data-action-id="registry.automation.undo"] summary')
+    )
+    assert page.recorded_errors == []
+
+
+def test_the_applied_link_case_stays_inside_a_desktop_window(
+    page, server: BrowserServer, login
+) -> None:
+    """The case of an applied link stays inside a desktop window."""
+    apply_one_link(server)
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="automatic-evidence"]')
+    overflow = page.evaluate(
+        "() => document.documentElement.scrollWidth - window.innerWidth"
+    )
+    assert overflow <= 1, overflow
+    assert page.recorded_errors == []
