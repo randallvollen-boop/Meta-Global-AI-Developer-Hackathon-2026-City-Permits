@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from acme_city.agents import graphs
 from acme_city.agents.control import AGENT_KEYS, AGENT_LABELS, AgentControlService
 from acme_city.agents.intake import waiting_applications
+from acme_city.agents.runtime import batch_limit
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import agent as agent_models
@@ -214,6 +215,9 @@ def agent_screen(
         "is_awake": state["mode"] == agent_models.AGENT_AWAKE,
         "can_toggle": _holds(session, actor, "agent.toggle"),
         "can_run": _holds(session, actor, f"agent.run.{agent_key}"),
+        # The most cases one manual batch may name, so the button on the
+        # screen says what it will do.
+        "batch_limit": batch_limit(session).max_batch_size,
         "kpis": kpis,
         "graph": _graph_view(agent_key),
         "waiting": waiting_rows,

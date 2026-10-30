@@ -1,30 +1,50 @@
 """The durable work queue of the agents.
 
-The runtime is the one place where agent work is recorded.  The queue row is
-the authority: a worker takes a piece of work by moving it from ``pending``
-to ``running`` in a single statement, and only the worker that won that
-statement may finish it.  There is no lease and no fencing token.  The
-status column and the attempt count are the whole protocol.
+The runtime is the one place where agent work is recorded and where an agent
+is run.  The queue row is the authority: a worker takes a piece of work by
+moving it from ``pending`` to ``running`` in a single statement, and only the
+worker that won that statement may finish it.  There is no lease and no
+fencing token.  The status column and the attempt count are the whole
+protocol.
 
-The runtime does not run anything by itself.  It records what may be worked,
-what is being worked and what was finished, so that the operator screens and
-a later worker agree on the state of the work.
+The runtime records what may be worked, what is being worked and what was
+finished, so that the operator screens and a later worker agree on the state
+of the work.  A manual run goes through the same queue: the work is queued,
+taken, run and finished, so the queue row records the attempt and its
+outcome.
+
+A manual run is bounded twice: by the batch size of the stored processing
+policy and by the runs the hour still allows.  A manual run uses the built in
+deterministic logic: it never calls the model provider.
 """
 # REQUIRES: PER-01, PER-04
-# The queue is durable, one piece of work has one identity, and two workers
-# never commit the same work.
+# The queue is durable, one piece of work has one identity, two workers
+# never commit the same work, and a manual run stays inside the bounds of
+# the stored policy.
 
 from __future__ import annotations
 
-from datetime import datetime
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from acme_city.agents.policy import current_policy
 from acme_city.core.clock import utc_now
+from acme_city.core.errors import ValidationError
 from acme_city.core.ids import new_id
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import agent_ops, permit
+
+#: The batch size and the hourly limit used when no policy was seeded.
+DEFAULT_MAX_BATCH_SIZE = 20
+DEFAULT_RUNS_PER_HOUR = 60
+
+#: The outcomes of a run that finished the work of the case.
+_COMPLETED_OUTCOMES = frozenset({"completed", "recommended"})
 
 
 def work_key(application: permit.Application, agent_key: str) -> str:
@@ -34,6 +54,82 @@ def work_key(application: permit.Application, agent_key: str) -> str:
     the same case at a later revision is a different piece of work.
     """
     return f"{agent_key}:{application.id}:r{application.revision}"
+
+
+@dataclass(frozen=True)
+class BatchLimit:
+    """The bounds of one manual batch of agent work."""
+
+    #: The most cases one batch may name.
+    max_batch_size: int
+    #: The most runs one hour may hold.
+    runs_per_hour: int
+    #: The runs the agents already started in this hour.
+    runs_this_hour: int
+
+    @property
+    def remaining_runs(self) -> int:
+        """Return how many runs the hour still allows."""
+        return max(0, self.runs_per_hour - self.runs_this_hour)
+
+
+@dataclass(frozen=True)
+class QueuedRun:
+    """One run of an agent, recorded in the work queue."""
+
+    application_id: str
+    work_id: str
+    run_id: str
+    outcome: str
+    status: str
+    attempts: int
+
+
+def batch_limit(session: Session, *, now: datetime | None = None) -> BatchLimit:
+    """Return the bounds of one manual batch.
+
+    The bounds come from the stored processing policy.  The hourly limit
+    counts the runs the agents started in the last hour, so an hour that is
+    used up is refused instead of running without a limit.
+    """
+    policy = current_policy(session)
+    max_batch = (
+        int(policy.max_batch_size) if policy is not None else DEFAULT_MAX_BATCH_SIZE
+    )
+    per_hour = int(policy.runs_per_hour) if policy is not None else DEFAULT_RUNS_PER_HOUR
+    since = (now or utc_now()) - timedelta(hours=1)
+    runs = session.execute(
+        select(func.count())
+        .select_from(agent_models.AgentRun)
+        .where(agent_models.AgentRun.started_at >= since)
+    ).scalar_one()
+    return BatchLimit(max_batch, per_hour, int(runs))
+
+
+def work_status_for(outcome: str) -> str:
+    """Return the queue status of a finished run.
+
+    A run that produced a result finished the work.  A run that needs a
+    person is held, and only a technical failure is failed.
+    """
+    if outcome == "failed":
+        return agent_ops.WORK_FAILED
+    if outcome in _COMPLETED_OUTCOMES:
+        return agent_ops.WORK_COMPLETED
+    return agent_ops.WORK_HELD
+
+
+def require_hour_room(limit: BatchLimit) -> None:
+    """Refuse a run in an hour that is used up.
+
+    The limit of the City is a limit of the hour, so a run never starts when
+    the hour holds no more room.
+    """
+    if limit.remaining_runs <= 0:
+        raise ValidationError(
+            f"the hourly limit of {limit.runs_per_hour} run(s) is used up; "
+            "try again later"
+        )
 
 
 class AgentRuntime:
@@ -140,6 +236,81 @@ class AgentRuntime:
             return None
         return self._session.get(agent_ops.AgentWorkQueue, work_id, populate_existing=True)
 
+    def reopen(self, work_id: str) -> agent_ops.AgentWorkQueue | None:
+        """Put a finished piece of work back to waiting.
+
+        A person may run an agent on a case again.  The row opens for another
+        attempt, and the attempt count keeps the history of the case.
+        """
+        result = self._session.execute(
+            update(agent_ops.AgentWorkQueue)
+            .where(
+                agent_ops.AgentWorkQueue.id == work_id,
+                agent_ops.AgentWorkQueue.status.in_(
+                    [
+                        agent_ops.WORK_COMPLETED,
+                        agent_ops.WORK_FAILED,
+                        agent_ops.WORK_HELD,
+                    ]
+                ),
+            )
+            .values(
+                status=agent_ops.WORK_PENDING,
+                claimed_at=None,
+                finished_at=None,
+                version=agent_ops.AgentWorkQueue.version + 1,
+            )
+        )
+        if result.rowcount == 0:
+            return None
+        return self._session.get(agent_ops.AgentWorkQueue, work_id, populate_existing=True)
+
+    def execute(
+        self,
+        application: permit.Application,
+        *,
+        agent_key: str,
+        runner: Callable[[str, str], agent_models.AgentRun],
+    ) -> QueuedRun:
+        """Run one agent on one case through the queue.
+
+        The work is queued, taken and finished around the run, so the queue
+        row records that the case was tried and how the attempt ended.  A
+        case that was worked before is opened for another attempt.  A run
+        that raises leaves the work failed and raises the error again.
+        """
+        queued = self.enqueue(application, agent_key=agent_key)
+        work = self._session.get(
+            agent_ops.AgentWorkQueue, queued.id, populate_existing=True
+        )
+        assert work is not None  # the row was just written or found
+        if work.status in (
+            agent_ops.WORK_COMPLETED,
+            agent_ops.WORK_FAILED,
+            agent_ops.WORK_HELD,
+        ):
+            reopened = self.reopen(work.id)
+            if reopened is not None:
+                work = reopened
+        claimed = self.claim(work.id)
+        if claimed is None:
+            raise ValidationError("another run is already working this case")
+        try:
+            run = runner(application.id, claimed.id)
+        except Exception as error:  # noqa: BLE001 - the failure is recorded
+            self.finish(claimed.id, agent_ops.WORK_FAILED, note=f"the run failed: {error}")
+            raise
+        status = work_status_for(run.outcome)
+        self.finish(claimed.id, status, note=f"the run ended: {run.outcome}")
+        return QueuedRun(
+            application_id=application.id,
+            work_id=claimed.id,
+            run_id=run.id,
+            outcome=run.outcome,
+            status=status,
+            attempts=claimed.attempts,
+        )
+
     def counts(self) -> dict[str, int]:
         """Return how many pieces of work hold each status.
 
@@ -170,4 +341,82 @@ def queue_counts(session: Session) -> dict[str, int]:
     return AgentRuntime(session).counts()
 
 
-__all__ = ["AgentRuntime", "queue_counts", "work_key"]
+def run_agent(
+    session: Session,
+    *,
+    application: permit.Application,
+    agent_key: str,
+    triggered_by: str,
+    settings: Any = None,
+    now: datetime | None = None,
+) -> QueuedRun:
+    """Run one agent on one case through the durable work queue.
+
+    The agent is named by its key, never by the request.  The run uses the
+    built in deterministic logic, so it never calls the model provider.
+    """
+    from acme_city.agents.adjudication import AdjudicationAgent
+    from acme_city.agents.intake import IntakeAgent
+
+    if agent_key == agent_models.AGENT_INTAKE:
+        agent: Any = IntakeAgent(session, settings=settings, now=now)
+    elif agent_key == agent_models.AGENT_ADJUDICATION:
+        agent = AdjudicationAgent(session, settings=settings, now=now)
+    else:
+        raise ValidationError(f"unknown agent: {agent_key!r}")
+
+    def runner(application_id: str, work_id: str) -> agent_models.AgentRun:
+        return agent.run(application_id, triggered_by=triggered_by, work_id=work_id)
+
+    limit = batch_limit(session, now=now)
+    require_hour_room(limit)
+    return AgentRuntime(session, now=now).execute(
+        application, agent_key=agent_key, runner=runner
+    )
+
+
+def run_batch(
+    session: Session,
+    *,
+    cases: Sequence[permit.Application],
+    agent_key: str,
+    triggered_by: str,
+    settings: Any = None,
+    now: datetime | None = None,
+) -> tuple[QueuedRun, ...]:
+    """Run one agent on the cases one manual batch may name.
+
+    The batch is bounded by the batch size of the stored policy and by the
+    runs the hour still allows.  The cases are the ones that waited when the
+    request arrived: a case that arrives later waits for the next batch.
+    """
+    limit = batch_limit(session, now=now)
+    require_hour_room(limit)
+    chosen = list(cases)[: min(limit.max_batch_size, limit.remaining_runs)]
+    return tuple(
+        run_agent(
+            session,
+            application=application,
+            agent_key=agent_key,
+            triggered_by=triggered_by,
+            settings=settings,
+            now=now,
+        )
+        for application in chosen
+    )
+
+
+__all__ = [
+    "DEFAULT_MAX_BATCH_SIZE",
+    "DEFAULT_RUNS_PER_HOUR",
+    "AgentRuntime",
+    "BatchLimit",
+    "QueuedRun",
+    "batch_limit",
+    "queue_counts",
+    "require_hour_room",
+    "run_agent",
+    "run_batch",
+    "work_key",
+    "work_status_for",
+]

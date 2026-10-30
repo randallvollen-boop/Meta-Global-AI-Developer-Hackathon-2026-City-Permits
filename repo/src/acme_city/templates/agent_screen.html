@@ -103,7 +103,8 @@
         <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
         <button type="submit" class="btn sm primary" data-testid="agent-run-all"
                 {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
-          {{ 'Process all waiting' if agent.agent_key == 'intake' else 'Run all' }}
+          {{ ('Process next ' ~ agent.batch_limit) if agent.agent_key == 'intake'
+             else ('Run next ' ~ agent.batch_limit) }}
         </button>
       </form>
       {% endif %}

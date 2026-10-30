@@ -170,6 +170,15 @@ class AgentControlService:
             ResourceContext(domain_id="permits", record_ids=()),
         )
 
+    def authorize_manual_run(self, actor: ActorContext, agent_key: str) -> None:
+        """Refuse a manual run that may not start.
+
+        A manual run needs the grant of the agent and an awake agent.  Both
+        checks live here, so every entry point enforces them the same way.
+        """
+        self.authorize_run(actor, agent_key)
+        self.require_awake(agent_key)
+
     def snapshot(self) -> list[dict[str, Any]]:
         """Return the state of both agents, for the screens and the sidebar."""
         rows: list[dict[str, Any]] = []
@@ -189,14 +198,14 @@ class AgentControlService:
 
 
 def authorize_processing(session: Session, actor: ActorContext) -> None:
-    """Refuse a bulk processing request from a persona that may not run the agent.
+    """Refuse a bulk processing request that may not start.
 
     Processing a selection of waiting cases runs the intake agent on them, so
     the person who may run the intake agent is the person who may process the
-    selection.  The check lives here, at the shared execution boundary, so
-    every entry point enforces it the same way.
+    selection, and the agent must be awake.  The check lives here, at the
+    shared execution boundary, so every entry point enforces it the same way.
     """
-    AgentControlService(session).authorize_run(actor, agent_models.AGENT_INTAKE)
+    AgentControlService(session).authorize_manual_run(actor, agent_models.AGENT_INTAKE)
 
 
 __all__ = [

@@ -187,8 +187,14 @@ class IntakeAgent:
 
     # ------------------------------------------------------------------ public
 
-    def run(self, application_id: str, *, triggered_by: str) -> agent_models.AgentRun:
-        """Run the intake graph on one application."""
+    def run(
+        self, application_id: str, *, triggered_by: str, work_id: str | None = None
+    ) -> agent_models.AgentRun:
+        """Run the intake graph on one application.
+
+        The ``work_id`` names the row of the work queue this run is the
+        attempt of, so the queue and the run evidence name each other.
+        """
         self._control.require_awake(agent_models.AGENT_INTAKE)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
@@ -212,6 +218,7 @@ class IntakeAgent:
                 # The revision the run was made against.  A run of an earlier
                 # revision is history: the case was answered again since.
                 "revision": application.revision,
+                **({"work_id": work_id} if work_id else {}),
             },
         )
         self._session.add(run)

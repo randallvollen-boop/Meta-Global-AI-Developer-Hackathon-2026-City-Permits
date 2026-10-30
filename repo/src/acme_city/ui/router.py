@@ -2373,64 +2373,57 @@ def _agent_toggle(ctx: ActionContext) -> Outcome:
 
 
 def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
-    """Run one agent on one case, or on every case that waits.
+    """Run one agent on one case, or on a bounded batch of the cases that wait.
 
     The agent is named by the action identifier, never by the form: the
-    browser does not choose which agent runs.
+    browser does not choose which agent runs.  The run goes through the
+    shared work queue, so the queue records the attempt and its outcome.
     """
     from acme_city.agents.adjudication import AdjudicationAgent
     from acme_city.agents.control import AGENT_LABELS, AgentControlService
-    from acme_city.agents.intake import IntakeAgent
+    from acme_city.agents.intake import waiting_applications
+    from acme_city.agents.runtime import run_agent, run_batch
+    from acme_city.permits.service import PermitService
 
     application_id = ctx.text("application_id")
     control = AgentControlService(ctx.session)
-    control.authorize_run(ctx.actor, agent_key)
-    control.require_awake(agent_key)
+    control.authorize_manual_run(ctx.actor, agent_key)
     label = AGENT_LABELS.get(agent_key, agent_key)
-    if agent_key == "intake":
-        agent = IntakeAgent(ctx.session, settings=ctx.settings)
-        if application_id:
-            run = agent.run(application_id, triggered_by=ctx.actor.actor_id)
-            return Outcome(
-                message=f"The {label.lower()} ran on {application_id}.",
-                destination=label,
-                state=run.outcome,
-                target_type="application",
-                target_id=application_id,
-            )
-        runs = [
-            agent.run(row.id, triggered_by=ctx.actor.actor_id)
-            for row in agent.waiting_applications()
-        ]
-        return Outcome(
-            message=f"The {label.lower()} ran on {len(runs)} waiting case(s).",
-            destination=label,
-            state="completed" if runs else "skipped",
-            target_type="agent",
-            target_id=agent_key,
-            affected=tuple(row.application_id or "" for row in runs),
-        )
-    agent = AdjudicationAgent(ctx.session, settings=ctx.settings)
     if application_id:
-        run = agent.run(application_id, triggered_by=ctx.actor.actor_id)
+        application = PermitService(ctx.session).load_application(application_id)
+        result = run_agent(
+            ctx.session,
+            application=application,
+            agent_key=agent_key,
+            triggered_by=ctx.actor.actor_id,
+            settings=ctx.settings,
+        )
         return Outcome(
             message=f"The {label.lower()} ran on {application_id}.",
             destination=label,
-            state=run.outcome,
+            state=result.outcome,
             target_type="application",
             target_id=application_id,
         )
-    runs = [
-        agent.run(row.id, triggered_by=ctx.actor.actor_id)
-        for row in agent.candidates()
-    ]
+    if agent_key == "intake":
+        cases = waiting_applications(ctx.session)
+    else:
+        cases = AdjudicationAgent(ctx.session, settings=ctx.settings).candidates()
+    results = run_batch(
+        ctx.session,
+        cases=cases,
+        agent_key=agent_key,
+        triggered_by=ctx.actor.actor_id,
+        settings=ctx.settings,
+    )
+    waiting = "waiting " if agent_key == "intake" else ""
     return Outcome(
-        message=f"The {label.lower()} ran on {len(runs)} case(s) in review.",
+        message=f"The {label.lower()} ran on {len(results)} {waiting}case(s).",
         destination=label,
-        state="completed" if runs else "skipped",
+        state="completed" if results else "skipped",
         target_type="agent",
         target_id=agent_key,
-        affected=tuple(row.application_id or "" for row in runs),
+        affected=tuple(result.application_id for result in results),
     )
 
 

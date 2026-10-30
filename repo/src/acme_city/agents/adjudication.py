@@ -85,8 +85,14 @@ class AdjudicationAgent:
 
     # ------------------------------------------------------------------ public
 
-    def run(self, application_id: str, *, triggered_by: str) -> agent_models.AgentRun:
-        """Run the adjudication graph on one application."""
+    def run(
+        self, application_id: str, *, triggered_by: str, work_id: str | None = None
+    ) -> agent_models.AgentRun:
+        """Run the adjudication graph on one application.
+
+        The ``work_id`` names the row of the work queue this run is the
+        attempt of, so the queue and the run evidence name each other.
+        """
         self._control.require_awake(agent_models.AGENT_ADJUDICATION)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
@@ -105,7 +111,10 @@ class AdjudicationAgent:
             started_at=self._now,
             finished_at=None,
             outcome="recorded",
-            inputs={"permit_type_id": application.permit_type_id},
+            inputs={
+                "permit_type_id": application.permit_type_id,
+                **({"work_id": work_id} if work_id else {}),
+            },
         )
         self._session.add(run)
         self._session.flush()

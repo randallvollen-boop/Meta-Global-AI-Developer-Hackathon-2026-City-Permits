@@ -3,6 +3,10 @@
 The runtime records one piece of work per row, with a status column and an
 attempt count.  Two workers never commit the same work, and the controlled
 demonstration data is never eligible for automatic work.
+
+A manual run goes through the same queue: the work is queued, taken, run and
+finished, so the queue records the attempt.  A manual run is bounded by the
+stored policy and never calls the model provider.
 """
 
 from __future__ import annotations
@@ -13,15 +17,27 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select, update
 
+from acme_city.agents.control import AgentControlService
 from acme_city.agents.eligibility import eligible_applications
-from acme_city.agents.runtime import AgentRuntime, work_key
+from acme_city.agents.policy import current_policy
+from acme_city.agents.runtime import (
+    AgentRuntime,
+    batch_limit,
+    run_agent,
+    run_batch,
+    work_key,
+    work_status_for,
+)
 from acme_city.agents.summary import operator_summary
 from acme_city.core.clock import utc_now
 from acme_city.core.config import Settings
+from acme_city.core.errors import ValidationError
 from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.kernel.inputs import build_inputs
+from acme_city.muse.client import MuseClient
+from acme_city.muse.image_client import MuseImageClient
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import agent_ops, permit
 from acme_city.persistence.models.governance import DemoEnvironment
@@ -72,9 +88,53 @@ def environment(tmp_path: Path):
     return settings
 
 
-def _arrival(session, settings: Settings, scenario: str = "deck-high") -> permit.Application:
+@pytest.fixture()
+def hosted_environment(tmp_path: Path):
+    """Return settings of a hosted demonstration with a key and the provider on.
+
+    The credential is an inert test only value: it never leaves this process
+    and it is never a real key.
+    """
+    settings = Settings.load(
+        environ={
+            "ACME_DATABASE_URL": f"sqlite:///{tmp_path / 'hosted-agent-runtime.db'}",
+            "ACME_SECRET_KEY": "hosted-agent-runtime-test-secret-value",
+            "META_API_KEY": "hosted-test-only-not-a-real-credential",
+            "ACME_MUSE_PROVIDER_ENABLED": "true",
+            "ACME_PUBLIC_DEMO": "true",
+        },
+        key_file=tmp_path / "missing.env",
+    )
+    initialize_database(settings)
+    bundle = FixtureBundle.load()
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                DemoEnvironment(
+                    id="demo_environment_local",
+                    environment_id=ENVIRONMENT_ID,
+                    fictional_demo=True,
+                    fixture_version=bundle.fixture_version,
+                    label="local fictional demonstration",
+                )
+            )
+        with transaction(factory) as session:
+            reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+    finally:
+        factory.dispose()
+    return settings
+
+
+def _arrival(
+    session,
+    settings: Settings,
+    scenario: str = "deck-high",
+    *,
+    sequence_start: int = 1,
+) -> permit.Application:
     """Return one genuine arrival, submitted through the outside intake."""
-    record = build_scenario(scenario)[0]
+    record = build_scenario(scenario, sequence_start=sequence_start)[0]
     result = IntakeService(session, settings=settings).submit_record(
         record, service_actor(session, INTAKE_AGENT_ID)
     )
@@ -82,6 +142,21 @@ def _arrival(session, settings: Settings, scenario: str = "deck-high") -> permit
     application = session.get(permit.Application, result.application_id)
     assert application is not None
     return application
+
+
+def _another_arrival(session, settings: Settings, sequence_start: int = 2) -> permit.Application:
+    """Return one more arrival, with a portal reference of its own."""
+    return _arrival(session, settings, sequence_start=sequence_start)
+
+
+def _wake(session, agent_key: str = agent_models.AGENT_INTAKE) -> None:
+    """Wake one agent, the way the operator does."""
+    service = AgentControlService(session)
+    service.ensure_defaults()
+    row = service.state(agent_key)
+    assert row is not None
+    row.mode = agent_models.AGENT_AWAKE
+    session.flush()
 
 
 def _acceptance_application_ids() -> set[str]:
@@ -274,5 +349,178 @@ def test_the_queue_counts_report_the_state_of_the_work(environment: Settings) ->
             assert runtime.counts()["held"] == 1
             assert operator_summary(session)["queued"] == 0
             assert operator_summary(session)["retrying"] == 0
+    finally:
+        factory.dispose()
+
+
+def test_a_manual_run_goes_through_the_work_queue(environment: Settings) -> None:
+    """A manual run is an attempt of the queue, and the run names it."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _arrival(session, environment)
+            result = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            assert result.status == work_status_for(result.outcome)
+            work = session.get(agent_ops.AgentWorkQueue, result.work_id)
+            assert work is not None
+            assert work.status == result.status
+            assert work.attempts == 1
+            assert work.agent_key == agent_models.AGENT_INTAKE
+            assert work.application_id == application.id
+            # The run and the queue name each other.
+            run = session.get(agent_models.AgentRun, result.run_id)
+            assert run is not None
+            assert dict(run.inputs or {})["work_id"] == result.work_id
+    finally:
+        factory.dispose()
+
+
+def test_a_second_manual_run_of_the_same_case_counts_another_attempt(
+    environment: Settings,
+) -> None:
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _arrival(session, environment)
+            first = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            second = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            assert first.work_id == second.work_id
+            assert second.attempts == 2
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert len(rows) == 1
+    finally:
+        factory.dispose()
+
+
+def test_a_manual_batch_is_bounded_by_the_stored_policy(environment: Settings) -> None:
+    """The batch names the cases the policy allows, and no more."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            policy = current_policy(session)
+            assert policy is not None
+            policy.max_batch_size = 2
+            session.flush()
+            cases = [
+                _arrival(session, environment),
+                _another_arrival(session, environment, sequence_start=2),
+            ]
+            third = _another_arrival(session, environment, sequence_start=3)
+            results = run_batch(
+                session,
+                cases=[*cases, third],
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            assert len(results) == 2
+            assert [result.application_id for result in results] == [
+                cases[0].id,
+                cases[1].id,
+            ]
+            # The case that was not in the batch still waits for the agent.
+            session.refresh(third)
+            assert third.status == "submitted"
+            assert len(session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()) == 2
+    finally:
+        factory.dispose()
+
+
+def test_an_hour_that_is_used_up_refuses_the_run(environment: Settings) -> None:
+    """The hourly limit of the City is a limit of the hour."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            policy = current_policy(session)
+            assert policy is not None
+            policy.runs_per_hour = 1
+            session.flush()
+            first = run_agent(
+                session,
+                application=_arrival(session, environment),
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            assert first.attempts == 1
+            with pytest.raises(ValidationError) as raised:
+                run_agent(
+                    session,
+                    application=_another_arrival(session, environment),
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+            assert "hourly limit" in str(raised.value)
+            # The refused run left no work behind.
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert len(rows) == 1
+    finally:
+        factory.dispose()
+
+
+def test_the_batch_limit_is_read_from_the_stored_policy(environment: Settings) -> None:
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            limit = batch_limit(session)
+            policy = current_policy(session)
+            assert policy is not None
+            assert limit.max_batch_size == policy.max_batch_size
+            assert limit.runs_per_hour == policy.runs_per_hour
+            assert limit.runs_this_hour == 0
+            assert limit.remaining_runs == policy.runs_per_hour
+    finally:
+        factory.dispose()
+
+
+def test_a_manual_run_never_calls_the_model_provider(
+    hosted_environment: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hosted demonstration with a key still runs on the built in logic."""
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError("a manual run must not call the model provider")
+
+    monkeypatch.setattr(MuseClient, "create_response", refuse)
+    monkeypatch.setattr(MuseImageClient, "generate", refuse)
+    factory = SessionFactory(hosted_environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _arrival(session, hosted_environment)
+            result = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=hosted_environment,
+            )
+            assert result.run_id
+            work = session.get(agent_ops.AgentWorkQueue, result.work_id)
+            assert work is not None
+            assert work.status == result.status
     finally:
         factory.dispose()

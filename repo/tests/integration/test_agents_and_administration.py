@@ -19,7 +19,8 @@ from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.portal_intake.scenarios import PERMIT_TYPE_KEYS, build_scenario
-from acme_city.persistence.models import audit, permit
+from acme_city.persistence.models import agent as agent_models
+from acme_city.persistence.models import agent_ops, audit, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -515,3 +516,90 @@ def test_the_run_buttons_of_a_sleeping_agent_say_why(client: TestClient) -> None
     assert "Use Wake agent above to turn them on." in body
     choose(client, "persona_data_steward")
     assert client.get("/agent/intake").status_code == 403
+
+
+def test_the_operator_run_is_recorded_in_the_work_queue(
+    client: TestClient, environment
+) -> None:
+    """A manual run is an attempt of the queue, and the run names it."""
+    choose(client, "persona_city_administrator")
+    response = client.post(
+        "/api/intake/simulate", json={"scenario": "fence-conforming-rear"}
+    )
+    assert response.status_code == 200, response.text
+    (received,) = response.json()["results"]
+    received_id = received["application_id"]
+
+    choose(client, "persona_agent_operator")
+    act(
+        client,
+        "agent.toggle",
+        {"agent_key": "intake", "mode": "awake"},
+        "/agent/intake",
+    )
+    result = act(
+        client,
+        "agent.run.intake",
+        {"application_id": received_id},
+        "/agent/intake",
+    )
+    assert result["status"] == "accepted", result
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert len(rows) == 1
+            work = rows[0]
+            assert work.application_id == received_id
+            assert work.agent_key == "intake"
+            assert work.status == agent_ops.WORK_COMPLETED
+            assert work.attempts == 1
+            run = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == received_id
+                )
+            ).scalars().one()
+            assert dict(run.inputs or {})["work_id"] == work.id
+    finally:
+        factory.dispose()
+
+
+def test_the_batch_action_runs_the_cases_the_policy_allows(
+    client: TestClient, environment
+) -> None:
+    """The batch action stays inside the batch size of the stored policy."""
+    choose(client, "persona_city_administrator")
+    for scenario in ("fence-conforming-rear", "fence-front-too-tall"):
+        response = client.post("/api/intake/simulate", json={"scenario": scenario})
+        assert response.status_code == 200, response.text
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            policy = session.execute(
+                select(agent_ops.AgentProcessingPolicy)
+            ).scalars().one()
+            policy.max_batch_size = 1
+            session.flush()
+    finally:
+        factory.dispose()
+
+    choose(client, "persona_agent_operator")
+    act(
+        client,
+        "agent.toggle",
+        {"agent_key": "intake", "mode": "awake"},
+        "/agent/intake",
+    )
+    result = act(client, "agent.run.intake", {}, "/agent/intake")
+    assert result["status"] == "accepted", result
+    assert result["message"] == "The intake agent ran on 1 waiting case(s)."
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            works = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert len(works) == 1
+            assert works[0].status == agent_ops.WORK_COMPLETED
+    finally:
+        factory.dispose()
