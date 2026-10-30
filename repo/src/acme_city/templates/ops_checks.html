@@ -28,7 +28,7 @@
     <input type="hidden" name="expected_version" value="{{ runs_version }}">
     <p>
       <button type="submit" class="btn primary" data-testid="checks-run">Run checks</button>
-      <span class="muted">{% if runs_version %}{{ runs_version }} earlier run(s) are recorded.{% else %}No run is recorded yet.{% endif %}</span>
+      <span class="muted">{% if runs_version %}{{ runs_version }} earlier run{{ 's are' if runs_version != 1 else ' is' }} recorded.{% else %}No run is recorded yet.{% endif %}</span>
     </p>
   </form>
   <p class="adm-scope-note">

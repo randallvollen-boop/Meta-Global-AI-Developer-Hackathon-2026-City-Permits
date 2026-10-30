@@ -5,12 +5,19 @@ what it says: they add a label, a group or a disclosure around the values the
 view model already holds.  These checks prove that the primitives render the
 markup the screens expect, that the plain labels replace the technical ones
 and that the scope of the figures is always named.
+
+The last part is the copy and accessibility pass over the six screens of the
+City Administrator: the words they write are plain, the help names the labels
+they show, every control has a name and the focus follows the order the
+screen is written in.
 """
 # REQUIRES: UX-01
 
 from __future__ import annotations
 
 import re
+import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -22,6 +29,7 @@ from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.help_docs import content
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
     SessionFactory,
@@ -29,6 +37,12 @@ from acme_city.persistence.session import (
     transaction,
 )
 from acme_city.ui import admin_config_views, ops_views
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from support.client import choose, client, settings  # noqa: E402,F401
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
+from p3c_support import seed_help_request  # noqa: E402
 
 TEMPLATES = Path(__file__).resolve().parents[2] / "src" / "acme_city" / "templates"
 
@@ -357,3 +371,200 @@ def test_a_value_that_was_never_recorded_says_so(session: Session) -> None:
     for row in view["permit_types"]:
         assert row["fee_schedule_label"] in {row["fee_schedule_key"], "Not recorded"}
         assert row["fee_schedule_label"] != "-"
+
+
+# ------------------------------------------------- the six screens, in words
+
+#: The screens of the City Administrator, by the address they answer at.
+SCREENS = {
+    "administration": "/admin",
+    "planning overview": "/overview",
+    "operations dashboard": "/ops/dashboard",
+    "checks": "/ops/checks",
+    "audit log": "/ops/audit",
+    "support": "/ops/support",
+}
+
+#: The templates each of those screens is written in.
+SCREEN_TEMPLATES = {
+    "administration": (
+        "admin.html",
+        "admin/_permit_types.html",
+        "admin/_appearance.html",
+        "admin/_users.html",
+        "admin/_reason_codes.html",
+        "admin/_log.html",
+    ),
+    "planning overview": ("overview.html",),
+    "operations dashboard": ("ops_dashboard.html",),
+    "checks": ("ops_checks.html",),
+    "audit log": ("ops_audit.html",),
+    "support": ("ops_support.html",),
+}
+
+#: The tags that carry no content of their own.
+VOID_TAGS = {
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+    "param", "source", "track", "wbr",
+}
+
+
+def _authored_copy(name: str) -> str:
+    """Return the words a template writes, without the markup and without the code."""
+    source = (TEMPLATES / name).read_text(encoding="utf-8")
+    source = re.sub(r"\{#.*?#\}", " ", source, flags=re.S)
+    source = re.sub(r"\{%.*?%\}", " ", source, flags=re.S)
+    source = re.sub(r"\{\{.*?\}\}", " ", source, flags=re.S)
+    source = re.sub(r"<[^>]*>", " ", source, flags=re.S)
+    return " ".join(source.split())
+
+
+class _Screen(HTMLParser):
+    """The parts of a rendered screen that a reader has to be able to name."""
+
+    def __init__(self, html: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.controls: list[tuple[str, dict[str, str], bool]] = []
+        self.labels: list[dict[str, str]] = []
+        self.ids: set[str] = set()
+        self.tabindex: list[tuple[str, str]] = []
+        self.links: list[tuple[str, dict[str, str]]] = []
+        self.buttons: list[tuple[str, dict[str, str]]] = []
+        self._open: list[str] = []
+        self._capture: list | None = None
+        self.feed(html)
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        attributes = {key: (value or "") for key, value in attrs}
+        if "id" in attributes:
+            self.ids.add(attributes["id"])
+        if "tabindex" in attributes:
+            self.tabindex.append((tag, attributes["tabindex"]))
+        if tag in {"input", "select", "textarea"}:
+            inside_label = bool(self._open) and self._open[-1] == "label"
+            self.controls.append((tag, attributes, inside_label))
+        elif tag == "label":
+            self.labels.append(attributes)
+        if tag in {"a", "button"}:
+            self._capture = [tag, attributes, []]
+        if tag not in VOID_TAGS:
+            self._open.append(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._capture is not None and self._capture[0] == tag:
+            text = " ".join("".join(self._capture[2]).split())
+            if tag == "a":
+                self.links.append((text, self._capture[1]))
+            else:
+                self.buttons.append((text, self._capture[1]))
+            self._capture = None
+        if tag in self._open:
+            while self._open:
+                if self._open.pop() == tag:
+                    break
+
+    def handle_data(self, data: str) -> None:
+        if self._capture is not None:
+            self._capture[2].append(data)
+
+
+@pytest.fixture(scope="module")
+def help_request(settings):
+    """One help request the administrator can answer."""
+    return seed_help_request(settings)
+
+
+@pytest.fixture()
+def administrator(client):
+    """A client that acts as the City Administrator."""
+    choose(client, "persona_city_administrator")
+    return client
+
+
+@pytest.mark.parametrize("screen", sorted(SCREENS))
+def test_the_words_a_screen_writes_are_plain(screen: str) -> None:
+    for name in SCREEN_TEMPLATES[screen]:
+        copy = _authored_copy(name)
+        # A dash in a sentence reads like a label, not like a sentence.
+        assert " - " not in copy, name
+        assert "—" not in copy and "–" not in copy, name
+        # A plural is written out, never as "application(s)".
+        assert "(s)" not in copy, name
+
+
+def test_the_overview_counts_the_further_applications_as_words(administrator) -> None:
+    body = administrator.get("/overview").text
+    assert "further application(s)" not in body
+    assert "further version(s)" not in body
+    # The demo holds more than one, so the plural reads.
+    assert "further applications are counted" in body
+
+
+def test_the_help_names_the_labels_the_screens_show(administrator) -> None:
+    guide = content.guide("read-the-operations-dashboard-and-audit-log")
+    bodies = [administrator.get(path).text for path in SCREENS.values()]
+    sources = [
+        (TEMPLATES / name).read_text(encoding="utf-8")
+        for names in SCREEN_TEMPLATES.values()
+        for name in names
+    ]
+    for step in guide["steps"]:
+        for label in re.findall(r'"([^"]+)"', step):
+            found = any(label in body for body in bodies) or any(
+                label in source for source in sources
+            )
+            assert found, label
+
+
+def test_every_control_of_the_six_screens_has_a_name(administrator) -> None:
+    for screen, path in SCREENS.items():
+        page = _Screen(administrator.get(path).text)
+        targets = {label.get("for") for label in page.labels if label.get("for")}
+        for tag, attributes, inside_label in page.controls:
+            if attributes.get("type") == "hidden":
+                continue
+            named = (
+                attributes.get("aria-label")
+                or attributes.get("aria-labelledby")
+                or attributes.get("id") in targets
+                or inside_label
+            )
+            assert named, (screen, tag, attributes)
+
+
+def test_the_focus_of_the_six_screens_follows_the_order_they_are_written(
+    administrator,
+) -> None:
+    for screen, path in SCREENS.items():
+        page = _Screen(administrator.get(path).text)
+        # A positive tabindex moves the focus out of the order of the page.
+        assert [item for item in page.tabindex if item[1] not in {"-1", "0"}] == [], screen
+
+
+def test_the_row_actions_of_the_overview_name_the_record_they_act_on(
+    administrator,
+) -> None:
+    page = _Screen(administrator.get("/overview").text)
+    actions = [
+        link
+        for link in page.links
+        if link[0] in {"Open the case", "Open the version", "Open the property context"}
+    ]
+    assert actions
+    for text, attributes in actions:
+        label = attributes.get("aria-label", "")
+        # The name keeps the words on the button and adds the record.
+        assert label.startswith(text), label
+        assert label != text, label
+
+
+def test_the_reply_button_of_the_support_screen_names_its_request(
+    administrator, help_request
+) -> None:
+    page = _Screen(administrator.get("/ops/support").text)
+    replies = [button for button in page.buttons if button[0] == "Send reply"]
+    assert replies, "the seeded request shows a reply button"
+    for text, attributes in replies:
+        label = attributes.get("aria-label", "")
+        assert label.startswith(text), label
+        assert label != text, label

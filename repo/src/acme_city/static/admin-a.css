@@ -1,5 +1,19 @@
 /* Admin area A screens. Every selector starts with .adm-. */
 
+/* The words of these screens are sentence case, so the table headers read as
+   the words the screen shows and not as small capitals. */
+.adm-register thead th,
+.adm-users-table thead th,
+.adm-reason-codes thead th,
+.adm-configuration-log thead th,
+.adm-overview-table thead th,
+.adm-checks-table thead th,
+.adm-audit-table thead th,
+.adm-table thead th {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .adm-scope-note {
   margin: 0;
   color: var(--fg-2);

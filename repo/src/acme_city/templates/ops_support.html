@@ -44,7 +44,7 @@
       {% if r.reference and not r.archived %}<p class="adm-support-destination">The applicant can read this reply. It will also appear on the case.</p>{% endif %}
       {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change.</p>{% endif %}
       {% if not r.reference %}<p class="adm-support-destination">This reply appears in the applicant’s help history.</p>{% endif %}
-      <p><button type="submit" class="btn primary" data-testid="help-answer">Send reply</button></p>
+      <p><button type="submit" class="btn primary" data-testid="help-answer" aria-label="Send reply to {{ r.applicant }}">Send reply</button></p>
     </form>
     {% else %}
     <p data-testid="help-request-reply"><strong>Reply:</strong> {{ r.reply }} <span class="muted">(answered {{ r.answered_at }})</span></p>
@@ -108,7 +108,7 @@
     <p><button type="submit" class="btn primary" data-testid="case-record">Record support case</button></p>
   </form>
   <h3>Recent support cases</h3>
-  <div class="tbl-wrap"><table class="data-table" data-testid="support-cases">
+  <div class="tbl-wrap"><table class="data-table adm-table" data-testid="support-cases">
     <caption class="visually-hidden">Recent support cases</caption>
     <thead><tr><th scope="col">Recorded</th><th scope="col">Reference</th><th scope="col">Channel</th><th scope="col">Summary</th></tr></thead>
     <tbody>
@@ -124,7 +124,7 @@
 
 <section class="card" aria-labelledby="faq-h" data-testid="support-faq">
   <div class="card-b">
-  <h2 id="faq-h">Short FAQ</h2>
+  <h2 id="faq-h">Common questions</h2>
   <dl>{% for f in faq %}<dt><strong>{{ f.question }}</strong></dt><dd>{{ f.answer }}</dd>{% endfor %}</dl>
   <h2>Contact</h2>
   <p data-testid="support-contact">{{ contact.desk }} {{ contact.phone }}</p>

@@ -68,7 +68,7 @@
 <section class="panel adm-breakdown" aria-labelledby="decisions-heading" data-testid="ops-decisions">
   <h2 id="decisions-heading">Decisions recorded, by outcome</h2>
   <p class="muted">Decision rows, all time, grouped by outcome.</p>
-  <div class="tbl-wrap"><table class="data-table">
+  <div class="tbl-wrap"><table class="data-table adm-table">
     <caption class="visually-hidden">Decisions recorded by outcome</caption>
     <thead><tr><th scope="col">Outcome</th><th scope="col">Decisions</th></tr></thead>
     <tbody>{% for row in v.decision_rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}</tbody>
@@ -87,7 +87,7 @@
   </details>
   <details class="adm-table-details" data-testid="{{ chart.testid }}-data">
     <summary class="adm-table-summary">Show the data table</summary>
-    <div class="tbl-wrap"><table class="data-table" data-testid="{{ chart.testid }}-table">
+    <div class="tbl-wrap"><table class="data-table adm-table" data-testid="{{ chart.testid }}-table">
       <caption class="visually-hidden">{{ chart.title }}</caption>
       <thead><tr><th scope="col">Group</th><th scope="col">Applications</th></tr></thead>
       <tbody>{% for row in chart.rows %}<tr><th scope="row">{{ row.label }}</th><td>{{ row.count }}</td></tr>{% endfor %}
