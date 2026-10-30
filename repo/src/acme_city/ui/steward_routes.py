@@ -36,7 +36,13 @@ from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.persistence.models import registry
 from acme_city.permits import queues
-from acme_city.ui import agent_views, steward_guide, steward_views, view_models
+from acme_city.ui import (
+    agent_views,
+    steward_guide,
+    steward_queue_views,
+    steward_views,
+    view_models,
+)
 from acme_city.ui.router import (
     ActionContext,
     Outcome,
@@ -522,6 +528,10 @@ def ui_intake_queue(
         owner=owner,
         sort=sort,
     )
+    # The next step of every case is a short summary of the state the server
+    # recorded, so a reader sees what happens next before the detailed signals.
+    for row in queue["rows"]:
+        row["next_step"] = steward_queue_views.intake_next_step(row)
     context = page_context(
         request,
         session,

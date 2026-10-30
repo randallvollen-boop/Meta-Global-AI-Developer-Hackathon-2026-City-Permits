@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+from sqlalchemy import select
 
 from acme_city.fixtures.steward_demo import seed_cedarline
+from acme_city.persistence.models import permit
 from acme_city.persistence.session import SessionFactory, transaction
 
 
@@ -25,6 +27,37 @@ def cedarline(server: BrowserServer) -> list[str]:
     try:
         with transaction(factory) as session:
             return seed_cedarline(session)
+    finally:
+        factory.dispose()
+
+
+@pytest.fixture()
+def waiting_case(server: BrowserServer) -> str:
+    """Put one demonstration case into early resolution with a recorded finding."""
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == "SYN-APP-007"
+                )
+            ).scalar_one()
+            application.status = "needs_information"
+            session.add(
+                permit.ApplicationFinding(
+                    id="finding_browser_early_resolution",
+                    correlation_id="correlation_browser_early_resolution",
+                    application_id=application.id,
+                    finding_type="missing_document",
+                    message="The site plan carries no signature.",
+                    rule="A site plan needs a signature.",
+                    applicant_must="Send a signed site plan.",
+                    severity="block",
+                    state="current",
+                    revision_number=application.revision,
+                )
+            )
+            return application.source_application_number
     finally:
         factory.dispose()
 
@@ -191,6 +224,71 @@ def test_the_comparison_fits_a_phone(
     assert table.locator('[data-label="Master record"]').count() >= 1
     for row in table.locator("tbody tr").all():
         box = row.bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_intake_queue_reads_as_one_card_per_case_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """At 390 pixels the incoming cases read as cards, and every card fits."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    assert page.viewport_size == {"width": 390, "height": 844}
+    table = page.locator('[data-testid="intake-table"]')
+    assert table.count() == 1
+    assert not table.locator("thead").is_visible()
+    rows = page.locator('[data-testid="intake-row"]')
+    assert rows.count() >= 1
+    # Every case names what happens next.
+    assert page.locator('[data-testid="intake-next-step"]').count() == rows.count()
+    for index in range(rows.count()):
+        box = rows.nth(index).bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_intake_queue_keeps_its_filters_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The search and the open filters of the incoming queue fit a phone."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    filters = page.locator('[data-testid="intake-filters"]')
+    assert filters.count() == 1
+    filters.locator("summary").click()
+    assert filters.locator("select").count() == 5
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_early_resolution_board_fits_a_phone(
+    viewport_390, server: BrowserServer, login, waiting_case
+) -> None:
+    """The cases that wait for a person fit a 390 pixel screen."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/early-resolution", wait_until="load")
+    groups = page.locator('[data-testid="early-resolution-group"]')
+    assert groups.count() == 1
+    table = page.locator('[data-testid="group-table"]')
+    assert not table.locator("thead").is_visible()
+    rows = page.locator('[data-testid="early-resolution-case"]')
+    assert rows.count() == 1
+    assert waiting_case in rows.first.inner_text()
+    for index in range(rows.count()):
+        box = rows.nth(index).bounding_box()
         assert box is not None
         assert box["x"] >= 0, box
         assert box["x"] + box["width"] <= 390, box

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -6,6 +7,7 @@
     <h1>Early resolution</h1>
     <p class="sub">The cases that wait for a person, grouped by the finding that puts them here. Open a case to resolve it.</p>
   </div>
+  <div class="actions">{{ ui.help_button('early_resolution') }}</div>
 </div>
 
 <div class="kpis" data-testid="early-resolution-kpis">
@@ -13,6 +15,7 @@
   <div class="card kpi"><div class="k">Groups</div><div class="v num">{{ board.groups|length }}</div><div class="s">by primary finding</div></div>
 </div>
 
+<div id="early-resolution-groups">
 {% for group in board.groups %}
 <section class="card" data-testid="early-resolution-group" data-finding-type="{{ group.finding_type }}">
   <div class="card-h">
@@ -26,11 +29,11 @@
       {% endfor %}
     </ul>
     <div class="tbl-wrap">
-    <table class="data-table" data-testid="group-table">
+    <table class="data-table stw-queue-table" data-testid="group-table">
       <caption class="visually-hidden">The cases of the {{ group.label }} group</caption>
       <thead>
         <tr>
-          <th scope="col">Reference</th>
+          <th scope="col">Case</th>
           <th scope="col">Type</th>
           <th scope="col">Primary finding</th>
           <th scope="col">Current findings</th>
@@ -39,29 +42,32 @@
       </thead>
       <tbody>
         {% for case in group.cases %}
-        <tr class="row" data-testid="early-resolution-case">
-          <td><span class="ref"><a href="{{ case.href }}">{{ case.reference }}</a></span><div class="t2">{{ case.applicant_name }}</div>
-            <div><a class="btn sm" href="{{ case.href }}" data-testid="resolve-case">Resolve</a></div></td>
-          <td>{{ case.permit_type_label }}</td>
-          <td>
+        <tr class="stw-row" data-testid="early-resolution-case">
+          <th scope="row" class="stw-cell stw-cell-record" data-label="Case">
+            <span class="ref"><a href="{{ case.href }}">{{ case.reference }}</a></span>
+            <span class="stw-reference">{{ case.applicant_name }}</span>
+            <div><a class="btn sm" href="{{ case.href }}" data-testid="resolve-case">Resolve</a></div>
+          </th>
+          <td class="stw-cell" data-label="Type">{{ case.permit_type_label }}</td>
+          <td class="stw-cell" data-label="Primary finding">
             {% if case.primary_finding %}
             <div data-testid="case-primary-finding">{{ case.primary_finding.message }}</div>
-            <div class="t2">{{ case.primary_finding.finding_type|replace('_', ' ') }} · {{ case.primary_finding.severity }}</div>
+            <div class="stw-reference">{{ case.primary_finding.finding_type|replace('_', ' ') }} · {{ case.primary_finding.severity }}</div>
             {% else %}<span class="muted">No finding is recorded.</span>{% endif %}
           </td>
-          <td>
+          <td class="stw-cell" data-label="Current findings">
             <ul class="issue-list" data-testid="case-findings">
               {% for finding in case.current_findings %}
               <li data-testid="case-finding" data-finding-type="{{ finding.finding_type }}" data-state="{{ 'waived' if finding.waived else 'current' }}">
                 {{ finding.message }}
-                {% if finding.applicant_must %}<div class="t2">Applicant must: {{ finding.applicant_must }}</div>{% endif %}
-                {% if finding.rule %}<div class="t2">{{ finding.rule }}</div>{% endif %}
-                {% if finding.waived %}<div class="t2">Waived.</div>{% endif %}
+                {% if finding.applicant_must %}<div class="stw-reference">Applicant must: {{ finding.applicant_must }}</div>{% endif %}
+                {% if finding.rule %}<div class="stw-reference">{{ finding.rule }}</div>{% endif %}
+                {% if finding.waived %}<div class="stw-reference">Waived.</div>{% endif %}
               </li>
               {% endfor %}
             </ul>
           </td>
-          <td>{% if case.age_days is not none %}<span class="age">{{ case.age_days }}d</span>{% else %}-{% endif %}</td>
+          <td class="stw-cell nowrap" data-label="Age">{% if case.age_days is not none %}<span class="age">{{ case.age_days }}d</span>{% else %}-{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -74,6 +80,7 @@
   <p class="muted" data-testid="early-resolution-empty">No case waits for a person.</p>
 </section>
 {% endfor %}
+</div>
 
 <section class="panel card">
   <div class="card-h"><h2>How a case is resolved</h2></div>

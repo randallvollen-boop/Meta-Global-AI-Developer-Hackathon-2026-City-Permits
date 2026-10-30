@@ -84,6 +84,24 @@ RECORD_TYPE_LABELS: dict[str, str] = dict(RECORD_TYPES)
 #: The number of tasks one page of the queue holds.
 PAGE_SIZE = 25
 
+#: The next step of an incoming case, by the state the server recorded.  The
+#: words say what happens next; they never promise a time and they never
+#: decide anything.
+INTAKE_NEXT_STEPS: dict[str, str] = {
+    "submitted": "The intake agent reads the received documents.",
+    "needs_information": "A person resolves the recorded finding.",
+    "ready_for_review": "The Permit Reviewer reads the case.",
+    "under_review": "The Permit Reviewer reads the case.",
+    "revisions_requested": "The applicant answers the request.",
+    "archived": "The case is archived. A restore returns it.",
+    "issued": "The permit is issued. Nothing is waiting.",
+    "denied": "The case was denied. Nothing is waiting.",
+    "returned": "The case was returned. Nothing is waiting.",
+}
+
+#: The next step of a case the server holds no state for.
+INTAKE_NEXT_STEP_UNKNOWN = "Open the case to see what it needs."
+
 #: The priority that marks recorded blocking work.
 BLOCKING_PRIORITY = "Blocking"
 
@@ -306,6 +324,18 @@ def queue_href(path: str = "/steward", **params: str | int | None) -> str:
     return f"{path}?{urlencode(values)}"
 
 
+def intake_next_step(row: dict[str, Any]) -> str:
+    """Return the next step of one incoming case in plain words.
+
+    The step follows the state the server recorded.  A case that waits for a
+    person says so, and a case that is closed says so too, so the summary
+    never promises a step the server does not hold.
+    """
+    if row.get("primary_finding"):
+        return "A person resolves the recorded finding."
+    return INTAKE_NEXT_STEPS.get(str(row.get("status", "")), INTAKE_NEXT_STEP_UNKNOWN)
+
+
 def work_row(issue: Issue, *, assignee: str = "") -> WorkRow:
     """Return the row of one task."""
     return WorkRow(
@@ -465,6 +495,8 @@ __all__ = [
     "ACTION_LABELS",
     "BLOCKING_PRIORITY",
     "IDENTITY_TASKS",
+    "INTAKE_NEXT_STEPS",
+    "INTAKE_NEXT_STEP_UNKNOWN",
     "Issue",
     "PAGE_SIZE",
     "QUEUE_FILTERS",
@@ -475,6 +507,7 @@ __all__ = [
     "WorkRow",
     "action_label",
     "age_label",
+    "intake_next_step",
     "matches",
     "matches_query",
     "matches_record_type",

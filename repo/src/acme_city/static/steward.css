@@ -47,9 +47,21 @@
 body[data-screen="steward"] .data-table thead th,
 body[data-screen="source_records"] .data-table thead th,
 body[data-screen="activity"] .data-table thead th,
-body[data-screen="masters"] .data-table thead th {
+body[data-screen="masters"] .data-table thead th,
+body[data-screen="intake_queue"] .data-table thead th,
+body[data-screen="early_resolution"] .data-table thead th {
   text-transform: none; letter-spacing: normal; font-size: .74rem;
 }
+
+/* The incoming work of the steward.  The intake queue and the early
+   resolution board use the shell of the work queue: the search, the compact
+   filter disclosure, the saved views and one row per case.  The next step
+   of a case reads before the detailed signals. */
+.stw-panel { margin-bottom: 16px; }
+.stw-cell-next { font-size: .82rem; }
+.stw-cell-signals { font-size: .78rem; }
+.stw-cell-signals .badge { margin-right: 2px; }
+.stw-cell-select { width: 1%; }
 
 /* The activity list.  The readable action and the record it changed lead,
    the note and the actor follow, and the result says plainly whether the
@@ -196,6 +208,44 @@ body[data-screen="masters"] .data-table thead th {
   }
   body[data-screen="masters"] .stw-master-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
   body[data-screen="masters"] .stw-master-tabs a { min-width: 0; overflow-wrap: anywhere; }
+
+  /* The incoming work reads as one card per case on a phone: the case, the
+     type, the state, the priority, the owner, the next step, the signals and
+     the age, each with its own label. */
+  body[data-screen="intake_queue"] .stw-queue-table thead,
+  body[data-screen="early_resolution"] .stw-queue-table thead { display: none; }
+  body[data-screen="intake_queue"] .stw-queue-table,
+  body[data-screen="intake_queue"] .stw-queue-table tbody,
+  body[data-screen="intake_queue"] .stw-queue-table tr,
+  body[data-screen="intake_queue"] .stw-queue-table th,
+  body[data-screen="intake_queue"] .stw-queue-table td,
+  body[data-screen="early_resolution"] .stw-queue-table,
+  body[data-screen="early_resolution"] .stw-queue-table tbody,
+  body[data-screen="early_resolution"] .stw-queue-table tr,
+  body[data-screen="early_resolution"] .stw-queue-table th,
+  body[data-screen="early_resolution"] .stw-queue-table td { display: block; width: 100%; }
+  body[data-screen="intake_queue"] .stw-row,
+  body[data-screen="early_resolution"] .stw-row {
+    margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: var(--r-md); background: var(--surface);
+  }
+  body[data-screen="intake_queue"] .stw-cell,
+  body[data-screen="early_resolution"] .stw-cell {
+    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+  }
+  body[data-screen="intake_queue"] .stw-cell::before,
+  body[data-screen="early_resolution"] .stw-cell::before {
+    content: attr(data-label); display: inline-block; min-width: 9.5em;
+    color: var(--fg-3); font-size: .72rem;
+  }
+  body[data-screen="intake_queue"] .stw-cell-record::before,
+  body[data-screen="early_resolution"] .stw-cell-record::before { content: none; }
+  body[data-screen="intake_queue"] .stw-cell-select { width: auto; }
+  body[data-screen="intake_queue"] .stw-cell-select::before { content: none; }
+  body[data-screen="intake_queue"] .stw-search { display: grid; gap: 8px; }
+  body[data-screen="intake_queue"] .stw-search input[type="search"] { width: 100%; }
+  body[data-screen="intake_queue"] .stw-filter-form { display: grid; gap: 8px; }
+  body[data-screen="intake_queue"] .stw-filter-form select { width: 100%; }
 
   /* The activity list reads as one card per event: the action, the record,
      the result, the actor with the time, and the note. */
