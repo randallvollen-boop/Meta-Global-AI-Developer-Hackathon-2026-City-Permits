@@ -286,8 +286,41 @@ def city_view(
     exception_counts = Counter(kind for row in rows for kind in row.exception_kinds)
 
     table_rows = sorted(rows, key=lambda r: (r.submitted_at, r.number), reverse=True)[:row_limit]
+    active_filters = []
+    if filters["type"]:
+        active_filters.append(f"Type: {type_labels.get(filters['type'], filters['type'])}")
+    if filters["outcome"]:
+        active_filters.append(f"Outcome: {OUTCOME_LABELS[filters['outcome']]}")
+    if filters["period"] != "all":
+        active_filters.append(f"Period: {PERIODS[filters['period']][0]}")
+    if filters["category"]:
+        active_filters.append("Category: " + ", ".join(CATEGORY_LABELS[item] for item in filters["category"]))
+    if filters["exceptions"]:
+        active_filters.append("Exceptions only")
+    if filters["synthetic"] == "exclude":
+        active_filters.append("Generated sample excluded")
+    uncopied_filters = []
+    if filters["outcome"]:
+        uncopied_filters.append("outcome")
+    if filters["period"] != "all":
+        uncopied_filters.append("period")
+    if filters["exceptions"]:
+        uncopied_filters.append("exceptions")
+    if filters["synthetic"] == "exclude":
+        uncopied_filters.append("generated sample")
+    if uncopied_filters:
+        whatif_scope_note = (
+            "Copies permit type and business category only. "
+            + ", ".join(uncopied_filters).capitalize()
+            + " filters are not copied."
+        )
+    else:
+        whatif_scope_note = "Copies permit type and business category only. No other active filter needs to be omitted."
     return {
         "filters": filters,
+        "active_filters": active_filters,
+        "filter_summary": "; ".join(active_filters) if active_filters else "All permit activity",
+        "whatif_scope_note": whatif_scope_note,
         "query": _query(filters),
         "period_options": [{"key": k, "label": v[0]} for k, v in PERIODS.items()],
         "type_options": [{"key": k, "label": type_labels[k]} for k in sorted(type_labels)],

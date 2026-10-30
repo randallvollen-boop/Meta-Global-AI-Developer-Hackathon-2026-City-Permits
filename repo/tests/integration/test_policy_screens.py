@@ -505,7 +505,7 @@ def test_the_briefing_is_deterministic_typed_and_labelled(client) -> None:
     assert "Deterministic briefing built from the typed facts of this run. No model was used." in first
     assert 'data-testid="policy-briefing-synthetic"' in first and "Synthetic data" in first
     assert "Fictional ACME City data. Impact estimates come from the ACME permit engine. They forecast no staff time and give no legal opinion." in first
-    assert 'data-testid="policy-download-html"' in first and "Download (HTML)" in first
+    assert 'data-testid="policy-download-html"' in first and "Download HTML" in first
     assert "ACME Code §14-306" in first
     lowered = first.lower()
     for word in FORBIDDEN_CLAIMS:

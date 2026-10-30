@@ -1,0 +1,584 @@
+{
+  "note": "The selector and form contract of the admin-b screens, taken before the redesign. A hook may move to another place of the same template, but it must not disappear, and a form may not change its destination or the name of a field it sends.",
+  "screens": {
+    "policy_scenarios": {
+      "template": "src/acme_city/templates/policy_scenarios.html",
+      "hooks": [
+        "policy-notice",
+        "policy-new",
+        "policy-starting",
+        "policy-suggestions",
+        "policy-suggestion",
+        "policy-create-form",
+        "policy-name",
+        "policy-create",
+        "policy-propose",
+        "policy-propose-mode",
+        "policy-propose-form",
+        "policy-question",
+        "policy-propose-submit",
+        "policy-proposals",
+        "policy-propose-guard",
+        "policy-list",
+        "policy-row",
+        "policy-empty",
+        "policy-recent-runs",
+        "policy-run-row",
+        "synthetic-badge"
+      ],
+      "forms": [
+        {
+          "action": "/policy/scenarios",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "suggestion",
+            "name",
+            "start_permit_type",
+            "start_district",
+            "start_category"
+          ]
+        },
+        {
+          "action": "/policy/scenarios",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "start_permit_type",
+            "start_district",
+            "start_category",
+            "name"
+          ]
+        },
+        {
+          "action": "/policy/propose",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "question"
+          ]
+        }
+      ]
+    },
+    "policy_scenario": {
+      "template": "src/acme_city/templates/policy_scenario.html",
+      "hooks": [
+        "policy-notice",
+        "policy-changes",
+        "policy-change-list",
+        "policy-change",
+        "policy-remove-change",
+        "policy-no-changes",
+        "policy-retire-note",
+        "policy-unsupported",
+        "policy-unsupported-item",
+        "policy-issues",
+        "policy-affected",
+        "policy-add",
+        "policy-add-threshold",
+        "policy-add-threshold-submit",
+        "policy-add-retirement",
+        "policy-add-retirement-submit",
+        "policy-add-requirement",
+        "policy-add-requirement-submit",
+        "policy-add-category",
+        "policy-add-category-submit",
+        "policy-add-discretionary",
+        "policy-add-discretionary-submit",
+        "policy-add-target",
+        "policy-add-target-submit",
+        "policy-add-fee",
+        "policy-add-fee-submit",
+        "policy-unsupported-kinds",
+        "policy-add-unsupported",
+        "policy-run-panel",
+        "policy-run-form",
+        "policy-run-kind",
+        "policy-run-count",
+        "policy-run-submit",
+        "policy-run-reason",
+        "policy-run-no-changes",
+        "policy-run-unsupported",
+        "policy-rename-form",
+        "policy-rename",
+        "policy-revisions",
+        "policy-delete-form",
+        "policy-delete",
+        "policy-scenario-runs"
+      ],
+      "forms": [
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "change_index"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "rule_id",
+            "limit_value",
+            "operator"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "rule_id"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "permit_type_key",
+            "item_kind",
+            "action",
+            "item"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "permit_type_key",
+            "process_category"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "permit_type_key",
+            "discretionary"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "permit_type_key",
+            "service_target_days"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind",
+            "fee_schedule_id",
+            "fixed_review_charge_cents",
+            "valuation_multiplier"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "kind"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/run",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "kind",
+            "seed",
+            "count",
+            "range_start",
+            "range_end",
+            "permit_type",
+            "district",
+            "category"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/save",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "operation",
+            "name"
+          ]
+        },
+        {
+          "action": "/policy/scenarios/{{ scenario.id }}/delete",
+          "fields": [
+            "csrf_token",
+            "expected_version"
+          ]
+        }
+      ]
+    },
+    "policy_proposal": {
+      "template": "src/acme_city/templates/policy_proposal.html",
+      "hooks": [
+        "policy-proposal",
+        "policy-proposal-question",
+        "policy-proposal-source",
+        "policy-proposal-changes",
+        "policy-proposal-change",
+        "policy-proposal-save-form",
+        "policy-proposal-name",
+        "policy-proposal-save",
+        "policy-proposal-save-guard",
+        "policy-proposal-rejected",
+        "policy-proposal-notice",
+        "policy-proposal-checks"
+      ],
+      "forms": [
+        {
+          "action": "/policy/scenarios",
+          "fields": [
+            "csrf_token",
+            "expected_version",
+            "proposal",
+            "name"
+          ]
+        }
+      ]
+    },
+    "policy_run": {
+      "template": "src/acme_city/templates/policy_run.html",
+      "hooks": [
+        "policy-open-briefing",
+        "policy-briefing-guard",
+        "policy-notice",
+        "policy-population",
+        "policy-population-label",
+        "synthetic-badge",
+        "policy-population-note",
+        "policy-run-changes",
+        "policy-retire-note",
+        "policy-outcomes",
+        "policy-flipped",
+        "policy-flipped-total",
+        "policy-directions",
+        "policy-flipped-table",
+        "policy-safety",
+        "policy-safety-table",
+        "policy-holds",
+        "policy-added-holds",
+        "policy-retire-holds",
+        "policy-needs",
+        "policy-targets",
+        "policy-fees",
+        "policy-fee-totals",
+        "policy-unpriceable",
+        "policy-fees-none",
+        "policy-draft",
+        "policy-draft-status",
+        "policy-draft-table",
+        "policy-draft-row",
+        "policy-draft-state",
+        "policy-draft-approvers",
+        "policy-draft-open",
+        "policy-draft-reason",
+        "policy-draft-approve",
+        "policy-draft-publish",
+        "policy-draft-note",
+        "policy-draft-plan",
+        "policy-draft-form",
+        "policy-draft-submit",
+        "policy-draft-guard",
+        "policy-draft-blockers",
+        "policy-explain",
+        "policy-explain-mode",
+        "policy-explanation",
+        "policy-explain-source",
+        "policy-explanation-paragraph",
+        "policy-explain-fallback",
+        "policy-explain-form",
+        "policy-explain-submit",
+        "policy-explain-guard"
+      ],
+      "forms": [
+        {
+          "action": "/policy/runs/{{ r.id }}/draft",
+          "fields": [
+            "csrf_token",
+            "expected_version"
+          ]
+        },
+        {
+          "action": "/policy/runs/{{ r.id }}/explain",
+          "fields": [
+            "csrf_token",
+            "expected_version"
+          ]
+        }
+      ]
+    },
+    "policy_briefing": {
+      "template": "src/acme_city/templates/policy_briefing.html",
+      "hooks": [
+        "policy-download-html",
+        "policy-download-md",
+        "policy-notice",
+        "policy-writer",
+        "policy-writer-muse",
+        "policy-writer-deterministic",
+        "policy-writer-fallback",
+        "policy-writer-source",
+        "policy-writer-issues",
+        "policy-writer-mode",
+        "policy-writer-form",
+        "policy-write-with-muse",
+        "policy-writer-guard",
+        "policy-briefing",
+        "policy-briefing-synthetic",
+        "synthetic-badge",
+        "policy-briefing-population",
+        "policy-briefing-source",
+        "policy-briefing-section",
+        "policy-section-cites",
+        "policy-briefing-footer",
+        "policy-facts"
+      ],
+      "forms": [
+        {
+          "action": "/policy/runs/{{ run_id }}/briefing/muse",
+          "fields": [
+            "csrf_token",
+            "expected_version"
+          ]
+        }
+      ]
+    },
+    "governance_sources": {
+      "template": "src/acme_city/templates/governance_sources.html",
+      "hooks": [
+        "governance-tab",
+        "source-overview",
+        "source-card",
+        "source-record-count",
+        "source-last-changed",
+        "source-last-received",
+        "source-open-issues",
+        "source-responsible-team",
+        "source-correction-path",
+        "registration-table",
+        "registration-row",
+        "published-datasets",
+        "published-dataset",
+        "simulated-departments-heading",
+        "dataset-subscribers",
+        "staged-table",
+        "staged-row",
+        "quarantine-table",
+        "quarantine-row",
+        "synchronization-table",
+        "synchronization-row",
+        "domain-table",
+        "domain-row",
+        "queue-configuration-table",
+        "queue-configuration-row",
+        "assignment-table",
+        "assignment-row",
+        "policy-table",
+        "policy-row",
+        "access-table",
+        "access-row",
+        "governance-history-table",
+        "governance-history-row",
+        "denied-actions"
+      ],
+      "forms": []
+    },
+    "rules_fees": {
+      "template": "src/acme_city/templates/rules_fees.html",
+      "hooks": [
+        "approval-policy",
+        "rules-tab",
+        "rules-view",
+        "policy-drafts",
+        "{{ item.kind }}-policy-link",
+        "rule-history-table",
+        "rule-history-row",
+        "approval-basis",
+        "rule-table",
+        "rule-row",
+        "rule-next-action",
+        "selected-version",
+        "selected-version-states",
+        "selected-version-sides",
+        "selected-published-side",
+        "selected-proposed-side",
+        "selected-version-diff",
+        "diff-row",
+        "selected-version-diff-empty",
+        "selected-version-reason",
+        "selected-version-supporting",
+        "selected-version-overlap",
+        "selected-version-applicability",
+        "selected-version-applications",
+        "selected-version-application-row",
+        "selected-version-history",
+        "selected-version-history-row",
+        "selected-version-next-action",
+        "action",
+        "denied-actions"
+      ],
+      "forms": []
+    },
+    "insight_city": {
+      "template": "src/acme_city/templates/insight_city.html",
+      "hooks": [
+        "synthetic-badge",
+        "synthetic-panel",
+        "synthetic-note",
+        "synthetic-toggle",
+        "insight-filters",
+        "filter-type",
+        "filter-outcome",
+        "filter-period",
+        "filter-category",
+        "filter-exceptions",
+        "filter-apply",
+        "filter-clear",
+        "insight-start-whatif",
+        "start-whatif",
+        "insight-quick-links",
+        "quick-restaurants-bars",
+        "quick-variances",
+        "quick-exceptions",
+        "insight-map-section",
+        "insight-total",
+        "insight-legend",
+        "district-table",
+        "unmapped-note",
+        "unmapped-count",
+        "exception-clusters",
+        "exception-kinds",
+        "insight-categories",
+        "dining-total",
+        "category-table",
+        "dining-sites",
+        "insight-trend",
+        "trend-table",
+        "type-table",
+        "outcome-table",
+        "insight-rows"
+      ],
+      "forms": [
+        {
+          "action": "/insight/city",
+          "fields": [
+            "type",
+            "outcome",
+            "period",
+            "category",
+            "exceptions",
+            "synthetic"
+          ]
+        }
+      ]
+    },
+    "early_resolution": {
+      "template": "src/acme_city/templates/early_resolution.html",
+      "hooks": [
+        "early-resolution-kpis",
+        "early-resolution-group",
+        "group-count",
+        "group-findings",
+        "group-table",
+        "early-resolution-case",
+        "resolve-case",
+        "case-primary-finding",
+        "case-findings",
+        "case-finding",
+        "early-resolution-empty",
+        "early-resolution-definitions",
+        "early-resolution-resolve"
+      ],
+      "forms": []
+    }
+  },
+  "includes": {
+    "components/evidence_panel.html": {
+      "template": "src/acme_city/templates/components/evidence_panel.html",
+      "hooks": [
+        "evidence-panel",
+        "model-runs",
+        "model-run",
+        "model-run-mode",
+        "model-run-source",
+        "model-run-usage",
+        "evidence-table",
+        "evidence-empty"
+      ]
+    },
+    "components/responsibility_panel.html": {
+      "template": "src/acme_city/templates/components/responsibility_panel.html",
+      "hooks": [
+        "responsibility-panel",
+        "responsibility-owner",
+        "responsibility-steward",
+        "responsibility-source",
+        "responsibility-change-this-in",
+        "responsibility-last-source-update",
+        "responsibility-last-received",
+        "responsibility-version",
+        "responsibility-open-issues",
+        "open-issues",
+        "responsibility-queue"
+      ]
+    },
+    "components/muse_source.html": {
+      "template": "src/acme_city/templates/components/muse_source.html",
+      "hooks": [
+        "muse-source"
+      ]
+    },
+    "_ui.html": {
+      "template": "src/acme_city/templates/_ui.html",
+      "hooks": [
+        "ui-info-btn",
+        "ui-info-pop",
+        "ui-detail-link",
+        "ui-help",
+        "ui-drawer-title",
+        "ui-drawer-close",
+        "ui-drawer-body",
+        "ui-drawer-tabs",
+        "ui-drawer-tab",
+        "ui-drawer-refused",
+        "ui-drawer"
+      ]
+    }
+  },
+  "generated": {
+    "src/acme_city/insight/city_view.py": [
+      "insight-trend-chart"
+    ]
+  },
+  "note_generated": "Hooks that the Python builders write into the page rather than a template. They are checked against the source that writes them."
+}

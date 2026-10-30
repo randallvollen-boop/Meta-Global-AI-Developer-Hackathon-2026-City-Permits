@@ -1217,6 +1217,10 @@ def _selected_rule(
         "compared_with": (
             f"{catalog.version_label(previous)}" if previous is not None else ""
         ),
+        "comparison": {
+            "diff_baseline": catalog.version_label(previous) if previous is not None else "No predecessor",
+            "published_baseline": published_side["label"] if published_side else "No published counterpart",
+        },
         "reason": (
             (approval_event.reason or "")
             if approval_event is not None and approval_event.reason
@@ -1362,6 +1366,10 @@ def _selected_fee(
             if previous is not None
             else ""
         ),
+        "comparison": {
+            "diff_baseline": (f"{previous.fee_schedule_id} {previous.version_label}" if previous is not None else "No predecessor"),
+            "published_baseline": published_side["label"] if published_side else "No published counterpart",
+        },
         "reason": (
             (approval_event.reason or "")
             if approval_event is not None and approval_event.reason
@@ -1726,11 +1734,30 @@ def governance_screen(
     The screen opens with the sources; the tabs below it hold the
     responsibilities, the authority rules, the access map and the history.
     """
+    from acme_city.ui import admin_b_labels  # lane-owned labels
+
     tab = tab if tab in dict(_GOVERNANCE_TABS) else "sources"
     service = GovernanceService(session)
-    registrations = [
-        view.model_dump(mode="json") for view in service.list_registrations()
-    ]
+    sources = _source_overview(session)
+    source_labels = {item["source_system_id"]: item["label"] for item in sources}
+    registrations = []
+    for view in service.list_registrations():
+        item = view.model_dump(mode="json")
+        item["dataset_label"] = admin_b_labels.identifier_label(item["dataset_key"])
+        item["source_label"] = source_labels.get(
+            item["source_system_id"], admin_b_labels.identifier_label(item["source_system_id"])
+        )
+        item["domain_label"] = admin_b_labels.identifier_label(item.get("domain_id"), missing="No domain assigned")
+        item["owner_label"] = (
+            _actor_label(session, item.get("accountable_owner_actor_id"))
+            if item.get("accountable_owner_actor_id") else "No owner assigned"
+        )
+        item["queue_label"] = admin_b_labels.identifier_label(item.get("steward_queue_id"), missing="No queue assigned")
+        item["custodian_label"] = (
+            _actor_label(session, item.get("system_custodian_actor_id"))
+            if item.get("system_custodian_actor_id") else "No custodian assigned"
+        )
+        registrations.append(item)
     domains = [
         {
             "domain_id": row.domain_id,
@@ -1835,9 +1862,13 @@ def governance_screen(
     ]
     subscriber_rows = property_views.subscribers_for(session, None)
 
-    sources = _source_overview(session)
     history = _governance_history(session)
     access = _access_map(session)
+    for entry in access:
+        entry["permission_rows"] = [
+            {"id": permission_id, "label": admin_b_labels.permission_label(permission_id)}
+            for permission_id in entry["permissions"]
+        ]
 
     return {
         "tab": tab,
@@ -1846,6 +1877,7 @@ def governance_screen(
             for key, label in _GOVERNANCE_TABS
         ],
         "sources": sources,
+        "attention": {"staged_records": len(staged), "quarantine_errors": len(quarantined)},
         "registrations": registrations,
         "domains": domains,
         "queues": queues,
