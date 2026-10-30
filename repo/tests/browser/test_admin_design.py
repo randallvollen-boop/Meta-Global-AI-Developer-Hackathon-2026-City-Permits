@@ -57,6 +57,41 @@ def fits_a_phone(page) -> None:
         assert_not_covered(page, heading)
 
 
+def assert_visible_controls_take_keyboard_focus(page) -> None:
+    """Every exposed control in the admin-b region can take visible focus."""
+    controls = page.locator(
+        ".admin-b a[href], .admin-b button:not([disabled]), "
+        ".admin-b input:not([type=hidden]):not([disabled]), "
+        ".admin-b select:not([disabled]), .admin-b textarea:not([disabled]), "
+        ".admin-b summary, .admin-b [tabindex]:not([tabindex='-1'])"
+    )
+    for index in range(controls.count()):
+        control = controls.nth(index)
+        if not control.is_visible():
+            continue
+        control.focus()
+        assert control.evaluate("element => document.activeElement === element")
+        assert control.evaluate("element => element.matches(':focus-visible')")
+
+
+@pytest.mark.parametrize(
+    "path",
+    (
+        "/governance?tab=sources",
+        "/rules?tab=rules&view=published&version=rulever_CT-1_v1",
+        "/insight/city",
+    ),
+)
+def test_admin_b_controls_are_keyboard_reachable_on_desktop(
+    page, server: BrowserServer, login, path: str
+) -> None:
+    """The exposed controls of each final-copy screen receive visible focus."""
+    login("persona_city_administrator")
+    open_screen(page, server, path)
+    assert_visible_controls_take_keyboard_focus(page)
+    assert page.recorded_errors == []
+
+
 def test_the_admin_b_stylesheet_does_not_reach_the_other_screens(
     page, server: BrowserServer, login, viewport_390
 ) -> None:

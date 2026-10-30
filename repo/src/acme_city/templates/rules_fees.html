@@ -14,10 +14,7 @@
 <div class="page-head">
   <div>
     <h1>Rules and fees</h1>
-    <p class="sub">
-      Versioned rule sets and fee schedules. Synthetic ACME values that do not state
-      the rules, the fees or the practice of any real jurisdiction.
-    </p>
+    <p class="sub">Fictional ACME rules and fees. They do not govern a real jurisdiction.</p>
   </div>
   <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
@@ -39,13 +36,13 @@
 
 {% if catalogue.policy_drafts %}
 <section class="panel" aria-labelledby="policy-drafts-heading" data-testid="policy-drafts">
-  <h2 id="policy-drafts-heading">Drafts made from a what-if run</h2>
-  <p class="muted">Each draft below was saved from a what-if run. The run shows the cases the change would affect.</p>
+  <h2 id="policy-drafts-heading">Drafts saved from a what if run</h2>
+  <p class="muted">Each draft below was saved from a what if run. The run shows the cases the change would affect.</p>
   <ul>
     {% for item in catalogue.policy_drafts %}
     <li>
       <a href="{{ item.register_href }}">{{ item.title }} ({{ item.version }})</a>, {{ item.status | replace('_', ' ') }}:
-      <a href="{{ item.href }}" data-testid="{{ item.kind }}-policy-link">Made from a what-if run</a>
+      <a href="{{ item.href }}" data-testid="{{ item.kind }}-policy-link">Made from a what if run</a>
     </li>
     {% endfor %}
   </ul>
@@ -83,7 +80,7 @@
   </table>
   </div>
   <p class="muted">
-    The history is the append-only record of what happened to each version.
+    The history is the append only record of what happened to each version.
   </p>
   {% else %}
   <div class="tbl-wrap">

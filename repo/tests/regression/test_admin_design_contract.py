@@ -146,6 +146,30 @@ def test_five_personas_are_selectable(client: TestClient) -> None:
         assert response.status_code == 303, actor_id
 
 
+def test_governance_rules_and_city_copy_is_plain_and_fictional(client: TestClient) -> None:
+    """The final admin-b copy states scope without implying real authority."""
+    assert client.post(
+        "/api/session/select", json={"actor_id": ADMIN}
+    ).status_code == 200
+
+    governance = client.get("/governance?tab=sources").text
+    assert "Data sources and ownership" in governance
+    assert "See each dataset owner, source, correction route and unowned record." in governance
+    assert "Records needing attention" in governance
+
+    rules = client.get("/rules?tab=rules&view=published").text
+    assert "Fictional ACME rules and fees. They do not govern a real jurisdiction." in rules
+    assert "what-if" not in rules
+    assert "append-only" not in rules
+
+    city = client.get("/insight/city").text
+    assert "Fictional ACME City permit records by district, type, outcome and business category." in city
+    assert 'data-testid="filter-apply">Apply</button>' in city
+    assert "Business categories" in city
+    assert "Permit records" in city
+    assert "Where restaurants and bars are opening" not in city
+
+
 @pytest.mark.parametrize("path", ADMIN_SCREENS)
 def test_the_city_administrator_opens_every_admin_b_screen(client: TestClient, path: str) -> None:
     assert client.post(

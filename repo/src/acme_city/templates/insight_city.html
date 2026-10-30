@@ -8,7 +8,7 @@
 <div class="page-head">
   <div>
     <h1>City permit activity</h1>
-    <p class="sub">Counts of fictional ACME City permit records by district, type, outcome and business category.</p>
+    <p class="sub">Fictional ACME City permit records by district, type, outcome and business category.</p>
   </div>
 </div>
 
@@ -54,7 +54,7 @@
   </label>
   <label><span><input type="checkbox" name="exceptions" value="1"{% if v.filters.exceptions %} checked{% endif %} data-testid="filter-exceptions"> Exceptions only</span></label>
   {% if v.synthetic.mode == 'exclude' %}<input type="hidden" name="synthetic" value="exclude">{% endif %}
-  <button type="submit" class="btn" data-testid="filter-apply">Apply filters</button>
+  <button type="submit" class="btn" data-testid="filter-apply">Apply</button>
   <a href="/insight/city" data-testid="filter-clear">Clear filters</a>
 </form>
 <p class="insight-def" data-testid="insight-filter-summary"><strong>{{ v.total }} permits match.</strong> {{ v.filter_summary }}.</p>
@@ -111,7 +111,7 @@
 </section>
 
 <section class="card" aria-labelledby="category-heading" data-testid="insight-categories">
-  <h2 id="category-heading">Business activity by category</h2>
+  <h2 id="category-heading">Business categories</h2>
   <p class="insight-def">{{ v.definitions.category }}</p>
   <p data-testid="dining-total"><strong>{{ v.categories.dining_total }}</strong> permits in this view are for restaurants and bars. {{ v.categories.linked_to_business }} permits are linked to a business.</p>
   <table class="data-table" data-testid="category-table">
@@ -163,11 +163,11 @@
 </section>
 
 <section class="card" aria-labelledby="rows-heading">
-  <h2 id="rows-heading">Permits in this view</h2>
+  <h2 id="rows-heading">Permit records</h2>
   <p class="insight-def">The newest {{ v.rows_shown }} of {{ v.total }}. Each links to its public record.</p>
   <div class="tbl-wrap">
   <table class="data-table" data-testid="insight-rows">
-    <caption class="visually-hidden">Permits in this view</caption>
+    <caption class="visually-hidden">Permit records in this view</caption>
     <thead><tr><th scope="col">Reference</th><th scope="col">Type</th><th scope="col">Address</th><th scope="col">District</th><th scope="col">Submitted</th><th scope="col">Outcome</th><th scope="col">Category</th><th scope="col">Exceptions</th></tr></thead>
     <tbody>
       {% for r in v.rows %}
