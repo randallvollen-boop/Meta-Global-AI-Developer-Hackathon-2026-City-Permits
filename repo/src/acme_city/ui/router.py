@@ -2825,11 +2825,6 @@ ACTION_HANDLERS.update(_steward_routes.HANDLERS)
 ACTION_HANDLERS.update(_steward_automation_routes.HANDLERS)
 ACTION_HANDLERS.update(_agent_routes.ACTIONS)
 
-# The life cycle and walkthrough pages switch personas, so they mount with the selector.
-from acme_city.ui import guide_routes as _guide_routes  # noqa: E402
-
-persona_router.include_router(_guide_routes.router)
-
 
 __all__ = [
     "ACTION_HANDLERS",

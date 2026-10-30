@@ -11,19 +11,33 @@ import pytest
 
 from acme_city.permits import lifecycle_map
 from acme_city.ui.guide_views import WALKTHROUGH
-from conftest import BrowserServer
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+PERSONAS = (
+    "persona_applicant",
+    "persona_data_steward",
+    "persona_permit_reviewer",
+    "persona_city_administrator",
+    "persona_agent_operator",
+)
+CONTROLS = '[data-testid="open-as"], [data-testid="lifecycle-example"], [data-testid="walkthrough-open"], [data-testid="walkthrough-link"]'
 
 
-def _fits(page) -> bool:
-    return page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-
-
+@pytest.mark.parametrize("actor_id", ("",) + PERSONAS)
 @pytest.mark.parametrize("path", ["/lifecycle", "/walkthrough"])
-def test_guide_pages_open_signed_out_and_fit_390px(page, server: BrowserServer, path: str) -> None:
+def test_guide_pages_fit_390px_for_every_persona_and_signed_out(
+    page, server: BrowserServer, login, path: str, actor_id: str
+) -> None:
     page.set_viewport_size({"width": 390, "height": 844})
+    if actor_id:
+        login(actor_id)
     response = page.goto(f"{server.base_url}{path}", wait_until="networkidle")
     assert response is not None and response.ok
-    assert _fits(page)
+    assert_no_horizontal_overflow(page)
+    controls = page.locator(CONTROLS)
+    assert controls.count() >= 1
+    for index in range(controls.count()):
+        assert_not_covered(page, controls.nth(index))
     assert page.recorded_errors == []
 
 
@@ -52,6 +66,7 @@ def test_lifecycle_examples_open_the_permit_workspace(page, server: BrowserServe
         page.wait_for_load_state("domcontentloaded")
         assert urlparse(page.url).path == target
         assert "moved_from" not in page.url
+        assert page.locator('[data-testid="error-panel"]').count() == 0
 
 
 def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer) -> None:
@@ -64,6 +79,10 @@ def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer)
             page.wait_for_load_state("domcontentloaded")
             assert urlparse(page.url).path == step.path, step.title
             assert "moved_from" not in page.url, step.title
+            if step.persona == "Applicant":
+                assert page.locator('[data-testid="applicant-account"]').count() == 1, step.title
+            else:
+                assert page.locator('[data-testid="acting-persona"]').first.inner_text().startswith(step.persona), step.title
         else:
             response = page.request.get(f"{server.base_url}{step.path}")
             assert response.ok, step.title

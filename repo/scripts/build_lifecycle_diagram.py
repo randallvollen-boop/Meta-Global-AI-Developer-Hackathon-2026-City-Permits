@@ -15,13 +15,11 @@ markers of the page source.
 from __future__ import annotations
 
 import argparse
-import json
 from html import escape
 from pathlib import Path
 
 from acme_city.permits import lifecycle_map as lm
 
-ROOT = Path(__file__).resolve().parents[1]
 BOX_W, BOX_H = 190, 56
 
 #: Box positions (left, top): the main path on the second row, revisions above it.
@@ -107,7 +105,7 @@ def _edge(source: str, target: str, offset: int, label: str, ldx: int, ldy: int)
 
 def _box(key: str, label: str, kind: str, small: str = "") -> str:
     x, y = LAYOUT[key]
-    cls = f"lc-box lc-{kind}" + (" lc-dashed" if small else "")
+    cls = f"lc-box lc-{kind}" + (" lc-dashed" if key == "withdrawn" else "")
     text_y = y + BOX_H / 2 + (-2 if small else 5)
     extra = (
         f'<text class="lc-small" x="{x + BOX_W / 2}" y="{y + BOX_H / 2 + 16}" text-anchor="middle">{escape(small)}</text>'
@@ -130,7 +128,8 @@ def build_svg() -> str:
         body.append(_edge(source, move.target, offset, SHORT[key], ldx, ldy))
     for key in LAYOUT:
         item = labels[key]
-        body.append(_box(key, item.label, item.kind, "seeded history only" if item.seeded_only else ""))
+        small = "seeded history only" if item.seeded_only else ("a record correction reopens it" if key == "issued" else "")
+        body.append(_box(key, item.label, item.kind, small))
     x, y, w, h = ARCHIVE_BOX
     body.append(
         f'<g class="lc-box lc-closed"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10"/>'
@@ -166,20 +165,9 @@ def build_svg() -> str:
     )
 
 
-def _holders() -> dict[str, list[str]]:
-    data = json.loads((ROOT / "config/actors.json").read_text(encoding="utf-8"))
-    holders: dict[str, list[str]] = {}
-    for persona in data["personas"]:
-        if not persona["selectable"]:
-            continue
-        for grant in persona["grants"]:
-            holders.setdefault(grant["permission_id"], []).append(persona["label"])
-    return holders
-
-
 def build_section(svg: str) -> str:
     labels = {item.key: item.label for item in lm.STATUSES}
-    holders = _holders()
+    holders = lm.persona_holders()
     rows = []
     for move in lm.MOVES:
         who = (
@@ -205,8 +193,8 @@ def build_section(svg: str) -> str:
         f"{len(lm.MOVES)} moves. The intake agent only routes a submitted case. A person makes every other move. "
         "Each move checks the person's grant and the case version, and writes an audit record.</p>\n"
         f'  <figure class="lc-figure"><div class="lc-scroll" style="overflow-x:auto">{svg}</div><figcaption>The diagram shows the main moves. '
-        "Run application checks, Request information, Archive and Restore apply from several statuses. "
-        "The table lists them, with Approve and Deny from Submitted and Needs information.</figcaption></figure>\n"
+        "Run application checks, Correct the application record, Request information, Archive and Restore apply from several statuses. "
+        "The table lists them, with Approve, Deny and Revert from further statuses.</figcaption></figure>\n"
         '  <div class="tbl-wrap"><table>\n'
         "    <thead><tr><th>Move</th><th>From</th><th>To</th><th>Who</th><th>Grant</th><th>Note</th></tr></thead>\n"
         f"    <tbody>{''.join(rows)}</tbody>\n"
@@ -219,7 +207,9 @@ def build_section(svg: str) -> str:
         "The guided path for judges is <code>/walkthrough</code>.</p>\n"
         "  <p><b>Known gaps.</b> Withdrawn appears only in seeded history, because the app has no withdraw action yet. "
         "Run application checks reopens any case that is not issued, returned or archived. "
-        "That includes an approved or denied case, by design of the evaluation service.</p>\n"
+        "That includes an approved or denied case. Correct the application record reopens any case that is not returned or archived, "
+        "including an issued one. Revert the agent recommendation reopens a returned case when a recommendation is still pending. "
+        "These moves stay as they are for now, and closing them is listed as future work.</p>\n"
         "</div></section>"
     )
 

@@ -51,11 +51,11 @@ def test_only_the_seeded_only_statuses_are_unreachable_from_a_draft() -> None:
     assert unreachable == {item.key for item in lm.STATUSES if item.seeded_only}
 
 
-def test_end_statuses_leave_only_by_archive_or_a_new_validation() -> None:
+def test_end_statuses_leave_only_by_archive_or_a_reopening_move() -> None:
     for item in lm.STATUSES:
         leaving = {move.key for move in lm.moves_from(item.key)}
         if item.kind == "end":
-            assert leaving <= {"archive", "validate"}, item.key
+            assert leaving <= {"archive", "validate", "revise", "revert_recommendation"}, item.key
         elif item.kind == "closed":
             assert leaving == {"restore"}, item.key
         else:

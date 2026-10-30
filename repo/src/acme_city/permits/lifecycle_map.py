@@ -3,8 +3,13 @@
 The moves themselves live in the services named on each row; this module only
 describes them, so the life cycle page, the architecture record and the judge
 walkthrough read one list.  ``tests/unit/test_lifecycle_map.py`` checks the
-table against the status constraint of the model and against the status sets
-the services enforce, so the description cannot drift from the code.
+table against the status constraint of the model and the status sets the
+services export, and ``tests/unit/test_lifecycle_map_probe.py`` runs the
+services whose status rules are written inline from every status, so the
+description cannot drift from the code.
+
+An application row is created as submitted; Draft is the applicant's saved
+form before the row exists, so no service move starts from it but Submit.
 
 ``actor`` is either a permission id, which the page resolves to the personas
 that hold it, or ``agent:<name>`` for a move an automated agent makes.
@@ -14,9 +19,12 @@ that hold it, or ``agent:<name>`` for a move an automated agent makes.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
 from acme_city.applicant_portal.service import RESPONDABLE_STATUSES
+from acme_city.fixtures.loader import CONFIG_DIRNAME, REPO_ROOT
 from acme_city.permits.decisions import DECIDABLE_STATUSES
 from acme_city.permits.lifecycle import (
     ADVANCEABLE_STATUSES,
@@ -80,7 +88,12 @@ STATUSES: tuple[Status, ...] = (
         "The reviewer approved the application, with or without conditions. The permit is not issued yet.",
         "active",
     ),
-    Status("issued", "Issued", "The permit is issued after the fee is assessed, paid and reconciled. It is never archived.", "end"),
+    Status(
+        "issued",
+        "Issued",
+        "The permit is issued after the fee is assessed, paid and reconciled. It is never archived, but a record correction reopens it.",
+        "end",
+    ),
     Status(
         "denied",
         "Denied",
@@ -98,8 +111,21 @@ STATUSES: tuple[Status, ...] = (
     Status("archived", "Archived", "The City closed the case. A restore returns it to the status it held.", "closed"),
 )
 
-#: The statuses a revert of the agent recommendation leaves unchanged.
-REVERT_KEEPS: frozenset[str] = frozenset({"issued", "approved", "denied"})
+#: The file the persona grants are seeded from.
+ACTORS_FILE = REPO_ROOT / CONFIG_DIRNAME / "actors.json"
+
+#: The statuses a revert of a pending agent recommendation moves to under review:
+#: every status but draft (no row), under review itself, the three it leaves
+#: unchanged (issued, approved, denied) and archived (refused).
+REVERT_SOURCES: frozenset[str] = frozenset(
+    {"submitted", "needs_information", "revisions_requested", "ready_for_review", "returned", "withdrawn"}
+)
+
+#: The statuses Correct the application record moves back to submitted: every
+#: status but draft (no row), submitted itself, returned and archived (refused).
+REVISE_SOURCES: frozenset[str] = frozenset(
+    {"needs_information", "revisions_requested", "ready_for_review", "under_review", "approved", "denied", "withdrawn", "issued"}
+)
 
 #: The statuses Run application checks moves to ready for review: every
 #: status of a stored case except issued (kept), returned (refused), archived
@@ -177,12 +203,21 @@ MOVES: tuple[Move, ...] = (
     ),
     Move(
         "revert_recommendation",
-        ("ready_for_review",),
+        tuple(sorted(REVERT_SOURCES)),
         "under_review",
         "Revert the agent recommendation",
         "permit.decide",
         "Permit workspace",
-        "The reviewer takes the case over from the adjudication agent.",
+        "Needs a pending agent recommendation. The reviewer takes the case over from the agent.",
+    ),
+    Move(
+        "revise",
+        tuple(sorted(REVISE_SOURCES)),
+        "submitted",
+        "Correct the application record",
+        "application.revision.submit",
+        "Permit workspace",
+        "Records a new revision. It reopens any case that is not returned or archived, including an issued one.",
     ),
     Move(
         "approve",
@@ -230,6 +265,17 @@ MOVES: tuple[Move, ...] = (
 )
 
 
+def persona_holders(actors_file: Path = ACTORS_FILE) -> dict[str, list[str]]:
+    """Return, for each permission, the labels of the selectable personas seeded with it."""
+    data = json.loads(actors_file.read_text(encoding="utf-8"))
+    holders: dict[str, list[str]] = {}
+    for persona in data["personas"]:
+        if persona["selectable"]:
+            for grant in persona["grants"]:
+                holders.setdefault(grant["permission_id"], []).append(persona["label"])
+    return holders
+
+
 def status(key: str) -> Status:
     """Return one status by key."""
     return next(item for item in STATUSES if item.key == key)
@@ -240,4 +286,4 @@ def moves_from(key: str) -> list[Move]:
     return [move for move in MOVES if key in move.sources]
 
 
-__all__ = ["MOVES", "Move", "PREVIOUS", "REVERT_KEEPS", "STATUSES", "Status", "moves_from", "status"]
+__all__ = ["MOVES", "Move", "PREVIOUS", "REVERT_SOURCES", "REVISE_SOURCES", "STATUSES", "Status", "VALIDATE_SOURCES", "moves_from", "persona_holders", "status"]

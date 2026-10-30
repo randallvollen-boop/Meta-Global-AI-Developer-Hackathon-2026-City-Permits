@@ -138,6 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from acme_city.rules.router import router as rules_router
     from acme_city.ui.router import persona_router, signin_router
     from acme_city.ui.router import router as ui_router
+    from acme_city.ui.guide_routes import router as guide_router
 
     app.include_router(session_router)
     if production:
@@ -147,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     else:
         app.include_router(session_selector_router)
         app.include_router(persona_router)
+        app.include_router(guide_router)
         app.include_router(intake_simulator_router)
         app.include_router(gis_simulator_router)
     app.include_router(governance_router)

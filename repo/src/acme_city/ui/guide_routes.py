@@ -1,7 +1,7 @@
 """The permit life cycle page and the judge walkthrough.
 
-Both pages are mounted only with the persona selector (demonstration mode):
-their "Open as" buttons post to the persona switch.  They open with or
+``app.py`` mounts both pages only in demonstration mode, beside the persona
+selector: their "Open as" buttons post to the persona switch.  They open with or
 without an acting persona and change nothing.
 """
 # REQUIRES: UX-04

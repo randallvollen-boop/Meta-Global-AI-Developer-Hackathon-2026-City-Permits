@@ -1,9 +1,8 @@
 """The permit life cycle page and the judge walkthrough.
 
 Both pages read; neither changes a record.  The life cycle comes from
-:mod:`acme_city.permits.lifecycle_map`; who makes each move is resolved from
-the grants the personas hold now, so the page never claims an authority the
-server would refuse.  Every "Open as" button posts to the ordinary persona
+:mod:`acme_city.permits.lifecycle_map`; who makes each move comes from the
+grants the personas are seeded with, the same list the architecture page uses.  Every "Open as" button posts to the ordinary persona
 switch, so a step runs the real screen with the real checks.
 """
 # REQUIRES: UX-04, PER-03
@@ -18,7 +17,6 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from acme_city.auth.permissions import PermissionResolver
 from acme_city.permits import lifecycle_map as lm
 from acme_city.persistence.models import permit
 from acme_city.ui.view_models import persona_options
@@ -84,7 +82,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Decide a case",
         "Permit Reviewer",
         "/queue/review",
-        "Open the top case. Press Run application checks, read the agent's recommendation, then Record review decision with a reason.",
+        "Open the case from step 3, or the top case. Press Run application checks, read the agent's recommendation, then Record review decision with a reason.",
         "Deciding and issuing are separate. Issue permit stays blocked until the fee is assessed, paid and reconciled, so a blocked button is expected.",
     ),
     Step(
@@ -115,16 +113,6 @@ def _persona_ids(session: Session) -> dict[str, str]:
     return {option["label"]: option["actor_id"] for option in persona_options(session)}
 
 
-def _holders(session: Session) -> dict[str, list[str]]:
-    """Return, for each permission, the labels of the personas that hold it now."""
-    resolver = PermissionResolver(session)
-    holders: dict[str, list[str]] = {}
-    for option in persona_options(session):
-        for permission in resolver.permissions_for(option["actor_id"]):
-            holders.setdefault(permission, []).append(option["label"])
-    return holders
-
-
 def _who(move: lm.Move, holders: dict[str, list[str]]) -> list[str]:
     if move.actor.startswith("agent:"):
         return [AGENT_NAMES.get(move.actor, move.actor.split(":", 1)[1].title() + " agent")]
@@ -133,7 +121,7 @@ def _who(move: lm.Move, holders: dict[str, list[str]]) -> list[str]:
 
 def lifecycle_view(session: Session) -> dict[str, Any]:
     """Return the life cycle page: statuses, moves, live counts and one example case each."""
-    holders = _holders(session)
+    holders = lm.persona_holders()
     counts = dict(
         session.execute(
             select(permit.Application.status, func.count()).group_by(permit.Application.status)
@@ -169,7 +157,6 @@ def lifecycle_view(session: Session) -> dict[str, Any]:
                 "label": item.label,
                 "meaning": item.meaning,
                 "kind": item.kind,
-                "seeded_only": item.seeded_only,
                 "count": int(counts.get(item.key, 0)),
                 "example": examples.get(item.key) if item.key != "draft" else None,
                 "moves": moves,

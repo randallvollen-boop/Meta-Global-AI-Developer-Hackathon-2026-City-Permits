@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>Permit life cycle</h1>
-    <p class="sub">Every status a permit application can hold and every move between them: {{ lifecycle.statuses|length }} statuses, {{ lifecycle.move_count }} moves. Each move names who makes it, from the grants the personas hold now. The counts are the cases stored in this demonstration.</p>
+    <p class="sub">Every status a permit application can hold and every move between them: {{ lifecycle.statuses|length }} statuses, {{ lifecycle.move_count }} moves. Each move names who makes it, from the grants the personas are seeded with. The counts are the cases stored in this demonstration.</p>
   </div>
 </div>
 
@@ -30,7 +30,7 @@
     <ul class="guide-moves">
       {% for mv in st.moves %}
       <li data-testid="lifecycle-move">
-        <strong>{{ mv.action }}</strong> leads to {% if mv.target_key in ('previous',) %}{{ mv.target }}{% else %}<a href="#status-{{ mv.target_key }}">{{ mv.target }}</a>{% endif %}.
+        <strong>{{ mv.action }}</strong> leads to {% if mv.target_key == 'previous' %}{{ mv.target }}{% else %}<a href="#status-{{ mv.target_key }}">{{ mv.target }}</a>{% endif %}.
         <span class="guide-who">By {{ mv.who|join(', ') if mv.who else 'no persona in this demonstration' }}, in {{ mv.where }}.</span>
         {% if mv.note %}<span class="muted">{{ mv.note }}</span>{% endif %}
       </li>
