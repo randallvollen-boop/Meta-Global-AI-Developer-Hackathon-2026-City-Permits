@@ -14,7 +14,7 @@ The Hosting and Production passages now describe the live public demonstration o
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 359677 bytes. SHA-256 `133d65f5864aae0e6a0ddb5781cd3cfc3621d10db55c1599a7438c94bab0c54b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 362944 bytes. SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
@@ -102,3 +102,7 @@ The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections 
 - Audited against code at `07f048b` and rebuilt from edited sources. Five personas (Agent Operator added, story order), later-lane screens and parts, current screen names, Administration tabs, local map tiles, bundled video copy, all-rights-reserved licence, current test figures. See the 2026-10-30 section of `BUILD_REPORT.md` and the last section of `facts.md`.
 - `update_status.py` hard-codes four personas and was not used. `STATUS.json` was edited by hand (as_of and personas) and the status block in `page/body.src.html` matches it.
 - Not done: the AVA Library copy was not replaced.
+
+## Revision 2026-10-30, master data as the spine
+
+- New section "Why master data is central", a registry-first standfirst, and a System view with the registry master data node at the centre (class `core`, heavier outline in `page/extra.css`). Edges: proposes link, decides, reads. Non-Muse product and model names were removed from the sources and the page.

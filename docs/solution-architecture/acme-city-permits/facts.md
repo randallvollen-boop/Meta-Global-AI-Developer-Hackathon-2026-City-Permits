@@ -135,9 +135,7 @@ Build with the installed Solution Architecture Kit and Vollen Linux brand layer.
 
 ## How it was built (2026-10-27)
 
-- OpenAI GPT-5.6 Sol with GPT-6 Astra led the first build: requirements, plans, integration and acceptance.
-- MiniMax M3 executors built the implementation slices; the orchestrator reviewed each.
-- Claude Opus 5.5 fixed the live Muse extraction, ran the gates, designed the redesign mockup and reviewed the Muse build.
+- Local and other frontier models assisted the Muse models: requirements, plans, implementation slices, integration, the live Muse extraction fix, the gates and review of each merge. The page names no non-Muse product or model (Randall, 2026-10-30).
 - Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made 14 of the 17 permit-type icons.
 - Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.
 
@@ -170,8 +168,8 @@ Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. 
 Source: `../acme-permits-parity-notes/VIDEO-SCRIPT-r7.md`. Review record: `VIDEO-SCRIPT-REVIEW.md` (private; it never goes on the page).
 
 - Length 2:00, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
-- Presenter: the VollenData sunflower character, lip-synced with MiniMax H3 to Kokoro narration (DemoVideo session, draft 7, 2026-10-29). Slides, app recordings, captions and assembly are done in Kinetograph 0.2.0, a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
-- Workflow: H3 pilot clip of scene 1 (on hold until the GPU is free); seven presenter clips; app recordings on a separate copy of the app with live Muse Spark for the Muse moments; Kinetograph assembly; review; final render; Randall's sign-off. Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without Randall's go.
+- Presenter: the VollenData sunflower character, lip-synced with a video model to text-to-speech narration (DemoVideo session, draft 7, 2026-10-29). Slides, app recordings, captions and assembly are done in a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
+- Workflow: video model pilot clip of scene 1 (on hold until the GPU is free); seven presenter clips; app recordings on a separate copy of the app with live Muse Spark for the Muse moments; video engine assembly; review; final render; Randall's sign-off. Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without Randall's go.
 - Script text for the page: the seven narration paragraphs of `VIDEO-SCRIPT-r7.md`, verbatim, under a "Planned explainer video" heading.
 - Never on the page: the private review record, voice or face reference file paths, or the identity name.
 
@@ -258,7 +256,7 @@ Sources are the code on that commit under `repo/`. Every item below was checked 
 - Optional automatic processing: durable queue and one worker (`agents/worker.py`, `agents/policy.py`, `agents/runtime.py`). `ACME_AGENT_WORKER_ENABLED` defaults to false (`core/config_operator.py`) and `render.yaml` does not set it, so it is not enabled on Render. Automatic runs use built-in deterministic logic (`agents/extraction.py`, `agents/runtime.py`) and never call the provider.
 - Daily Muse allowance: `muse/budget.py`, `ACME_MUSE_DAILY_CALL_CAP`, default 10 (`core/config_operator.py`). Live call cap default 2.
 - Applicant help answer, council briefing and what-if proposals use the same adapter and default to replay: `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` are 0 in `render.yaml`.
-- Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were made with Krea 2 at build time (commits `5eddb89`, `6e96c36`), a build-time asset only.
+- Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were generated at build time with a local image model (commits `5eddb89`, `6e96c36`), a build-time asset only.
 - Demo video: `static/video/demo-video.mp4` is draft 8 at 720p (commit `426bc5a`), 164.2 s (2:44), 7.96 MB, preload none, no autoplay. Picture lock and final export remain open.
 - Tests: 2741 collected on merged main (`python -m pytest --collect-only -q`, 2026-10-30). Last recorded full run 2726 passed in 815.58 s (`EVIDENCE_LOG.md`). Phase counts 762 and 879 are historical. 10 gates unchanged.
 - Licence: all rights reserved, copyright Randy Vollen and VollenData; the repository is public for transparency, hackathon evaluation and demonstration only (`LICENSE`, `NOTICE`). The earlier Apache 2.0 statement is withdrawn.
@@ -268,3 +266,10 @@ Sources are the code on that commit under `repo/`. Every item below was checked 
 - Screen names (`ui/view_models.py`): People & organizations, Master records (`/masters`, `/property`), Data issues (`/steward`), Source records, Activity, Intake queue, Early resolution, Review queue, City view, What-if, Operations, Agents, Agent runs, Agent cases, Steward automation, New master record.
 - Six simulated subscriber departments (not four).
 - Diagram: Agent Operator persona box added, persona boxes in story order, edge from the operator to the browser; the Administration to agents edge is now labelled processing policy. A separate worker and queue box was not drawn: the diagram grid has no free slot (the permit edge crosses the only empty cell), so the worker is described in the agents node text.
+
+## Master data as the spine (2026-10-30)
+
+Sources: `repo/src/acme_city/registry/` (`service.py` propose, decide, apply_automatic_link; `provenance.py` trusted view), `persistence/models/registry.py` (CanonicalEntity, Crosswalk with versions and decision actor, MatchProposal, Provenance), `config/property_subscribers.json` (six departments, read only).
+- Callers that import the registry: `ingestion/service.py`, `agents/intake.py`, `agents/linking.py`, `muse/service.py` (proposals); `permits/service.py`, `permits/issuance.py`, `permits/queues.py`, `finance/service.py` (reads); `ui/property_views.py` (property master).
+- The public community lookup does not read registry identities. It reads `insight/public.py` over an allowlist model and the GIS catalog, so the page says it is separate by design.
+- Diagram: the registry node is at the centre of the System view with a heavier outline (class `core`). New edges: agents to registry "proposes link", Data Steward to registry "decides", registry to permits, finance and property master "reads". Evidence and tests moved to the cell the registry used to hold.

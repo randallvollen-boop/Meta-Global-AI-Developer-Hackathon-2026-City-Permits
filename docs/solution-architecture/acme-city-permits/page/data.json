@@ -147,14 +147,14 @@
    "cls": "plan"
   },
   "registry": {
-   "x": 850,
-   "y": 202,
-   "w": 230,
-   "h": 64,
-   "t": "Registry and stewardship",
-   "s": "Canonical identities, crosswalks",
+   "x": 580,
+   "y": 416,
+   "w": 240,
+   "h": 84,
+   "t": "Registry master data",
+   "s": "One record per party and parcel",
    "i": "share_network",
-   "cls": "plan"
+   "cls": "plan core"
   },
   "permits": {
    "x": 580,
@@ -187,8 +187,8 @@
    "cls": "plan"
   },
   "evidence": {
-   "x": 580,
-   "y": 426,
+   "x": 850,
+   "y": 202,
    "w": 230,
    "h": 64,
    "t": "Evidence and tests",
@@ -589,33 +589,33 @@
      118
     ],
     [
-     840,
+     826,
      118
     ],
     [
-     840,
-     234
+     826,
+     446
     ],
     [
-     850,
-     234
+     820,
+     446
     ]
    ],
    "lbl": {
     "authority": [
      "identity",
-     788,
-     234
+     826,
+     190
     ],
     "permit": [
      "identity",
-     788,
-     234
+     826,
+     190
     ],
     "system": [
      "identity",
-     788,
-     234
+     826,
+     190
     ]
    }
   },
@@ -715,32 +715,27 @@
   "e_api_evidence": {
    "p": [
     [
-     580,
+     810,
      148
     ],
     [
-     572,
+     834,
      148
     ],
     [
-     572,
-     458
+     834,
+     250
     ],
     [
-     580,
-     458
+     850,
+     250
     ]
    ],
    "lbl": {
     "permit": [
      "check results",
-     572,
-     164
-    ],
-    "system": [
-     "check results",
-     572,
-     275
+     834,
+     226
     ]
    }
   },
@@ -858,62 +853,8 @@
   "e_db_evidence": {
    "p": [
     [
-     850,
-     354
-    ],
-    [
-     830,
-     354
-    ],
-    [
-     830,
-     458
-    ],
-    [
-     810,
-     458
-    ]
-   ],
-   "lbl": {
-    "muse": [
-     "evidence",
-     830,
-     401
-    ],
-    "permit": [
-     "evidence",
-     830,
-     401
-    ],
-    "system": [
-     "evidence",
-     830,
-     401
-    ],
-    "verify": [
-     "evidence",
-     830,
-     401
-    ]
-   }
-  },
-  "e_src_registry": {
-   "p": [
-    [
-     1154,
-     417
-    ],
-    [
-     1094,
-     417
-    ],
-    [
-     1094,
-     290
-    ],
-    [
      965,
-     290
+     314
     ],
     [
      965,
@@ -921,15 +862,53 @@
     ]
    ],
    "lbl": {
-    "authority": [
-     "source snapshot",
-     1030,
+    "muse": [
+     "evidence",
+     990,
+     290
+    ],
+    "permit": [
+     "evidence",
+     990,
      290
     ],
     "system": [
-     "source snapshot",
-     1030,
+     "evidence",
+     990,
      290
+    ],
+    "verify": [
+     "evidence",
+     990,
+     290
+    ]
+   }
+  },
+  "e_src_registry": {
+   "p": [
+    [
+     1154,
+     402
+    ],
+    [
+     800,
+     402
+    ],
+    [
+     800,
+     416
+    ]
+   ],
+   "lbl": {
+    "authority": [
+     "source snapshot",
+     1075,
+     402
+    ],
+    "system": [
+     "source snapshot",
+     1075,
+     402
     ]
    }
   },
@@ -1362,6 +1341,129 @@
      192
     ]
    }
+  },
+  "e_agents_registry": {
+   "p": [
+    [
+     695,
+     538
+    ],
+    [
+     695,
+     500
+    ]
+   ],
+   "lbl": {
+    "system": [
+     "proposes link",
+     695,
+     519
+    ],
+    "authority": [
+     "proposes link",
+     695,
+     519
+    ]
+   }
+  },
+  "e_stw_registry": {
+   "p": [
+    [
+     256,
+     284
+    ],
+    [
+     572,
+     284
+    ],
+    [
+     572,
+     440
+    ],
+    [
+     580,
+     440
+    ]
+   ],
+   "lbl": {
+    "system": [
+     "decides",
+     420,
+     284
+    ],
+    "authority": [
+     "decides",
+     420,
+     284
+    ]
+   }
+  },
+  "e_registry_permits": {
+   "p": [
+    [
+     695,
+     416
+    ],
+    [
+     695,
+     378
+    ]
+   ],
+   "lbl": {
+    "system": [
+     "reads",
+     695,
+     397
+    ],
+    "authority": [
+     "reads",
+     695,
+     397
+    ]
+   }
+  },
+  "e_registry_finance": {
+   "p": [
+    [
+     580,
+     480
+    ],
+    [
+     540,
+     480
+    ]
+   ],
+   "lbl": {
+    "system": [
+     "reads",
+     560,
+     480
+    ],
+    "authority": [
+     "reads",
+     560,
+     480
+    ]
+   }
+  },
+  "e_registry_prop": {
+   "p": [
+    [
+     820,
+     480
+    ],
+    [
+     850,
+     480
+    ]
+   ],
+   "lbl": {
+    "system": [
+     "reads",
+     835,
+     500
+    ]
+   }
   }
  },
  "views": {
@@ -1401,7 +1503,12 @@
     "e_synth_insight",
     "e_insight_city",
     "e_synth_policy",
-    "e_admin_img"
+    "e_admin_img",
+    "e_agents_registry",
+    "e_stw_registry",
+    "e_registry_permits",
+    "e_registry_finance",
+    "e_registry_prop"
    ],
    "user": [
     "e_p_app",
@@ -1409,7 +1516,8 @@
     "e_p_rev",
     "e_p_adm",
     "e_p_pub",
-    "e_p_op"
+    "e_p_op",
+    "e_stw_registry"
    ],
    "nodes": [
     "p_applicant",
@@ -1544,11 +1652,16 @@
     "e_write_permit",
     "e_ack_permit",
     "e_write_erp",
-    "e_ack_erp"
+    "e_ack_erp",
+    "e_stw_registry",
+    "e_registry_permits",
+    "e_registry_finance",
+    "e_agents_registry"
    ],
    "user": [
     "e_p_app",
-    "e_p_stw"
+    "e_p_stw",
+    "e_stw_registry"
    ],
    "nodes": [
     "p_applicant",
@@ -1562,17 +1675,17 @@
     "db",
     "src_permit",
     "src_gis",
-    "src_erp"
+    "src_erp",
+    "agents",
+    "permits"
    ],
    "hide": [
     "p_reviewer",
     "p_admin",
-    "permits",
     "musead",
     "muse",
     "evidence",
     "status",
-    "agents",
     "admin",
     "propmaster",
     "subs",
@@ -2009,8 +2122,8 @@
    314
   ],
   [
-   850,
-   202
+   580,
+   416
   ],
   [
    850,
@@ -2145,12 +2258,13 @@
   },
   "registry": {
    "k": "Built",
-   "t": "Registry and stewardship",
-   "r": "Registry and stewardship",
-   "b": "Stable canonical identities, proposals, crosswalk decisions, provenance, trusted views and reversible links.",
+   "t": "Registry master data",
+   "r": "Registry master data",
+   "b": "The centre of the application. One canonical identity for each party, parcel and address, the source links that tie source records to it, and the provenance of every displayed value.",
    "f": [
-    "Owns identity, not source-owned facts.",
-    "A link correction commits a new crosswalk version and claims nothing about the source."
+    "Ingestion, the intake and linking agents and checked Muse proposals propose a link. A Data Steward decides it.",
+    "Permits and finance read it. The property master built on it feeds six simulated departments.",
+    "Owns identity, not source-owned facts. A link correction commits a new crosswalk version and claims nothing about the source."
    ],
    "status": "ex",
    "sl": "Verified"
@@ -2303,7 +2417,7 @@
    "f": [
     "The address locator proposes a parcel link and never approves it.",
     "A permit decision is blocked until the parcel link is approved and confirmed.",
-    "Parcels are textured with 17 bundled local WebP image tiles, made with Krea 2 at build time. The City view uses them too."
+    "Parcels are textured with 17 bundled local WebP image tiles, generated at build time with a local image model. The City view uses them too."
    ],
    "status": "ga",
    "sl": "Built"

@@ -8,6 +8,7 @@
       <div class="secsel-menu" id="secsel-menu" role="menu" hidden>
           <p class="secsel-g">Overview</p>
           <a href="#purpose" role="menuitem">Purpose</a>
+          <a href="#master-data" role="menuitem">Why master data is central</a>
           <a href="#status" role="menuitem">Status</a>
           <a href="#components" role="menuitem">What is built</a>
           <p class="secsel-g">Design</p>
@@ -42,7 +43,7 @@
 <div class="hero"><div class="wrap"><div>
   <p class="client">Fictional City of Acme &middot; Muse Hackathon &middot; As-built architecture</p>
   <h1>ACME City Permits Architecture</h1>
-  <p class="standfirst">This is a local permit application for the fictional ACME City. A master data management (MDM) registry keeps one identity for each person, property and business, and the AI model can only suggest.</p>
+  <p class="standfirst">Master data is the spine of this local permit application for the fictional ACME City. A master data management (MDM) registry keeps one shared record for each resident, business, contractor and property. Intake, the agents, Muse match proposals, the steward, permits, finance and the six departments all work from it, and the AI model can only suggest.</p>
 </div></div></div>
 
 <section id="purpose"><div class="wrap">
@@ -50,6 +51,7 @@
   <p class="lede">This page describes the built local solution. The integrated evidence gate passed on October 27, 2026, so the architecture status is AS BUILT.</p>
   <div class="two">
     <div class="prose">
+      <p>The registry comes first. Every other part reads the shared records or proposes a change to them, and only a person, or a policy a steward activated, makes a link official.</p>
       <p>One local application holds fictional ACME City records. It stores submissions, decisions, fee versions and evidence in one SQLite database.</p>
       <p>The synthetic case SYN-APP-001 is a commercial tenant improvement. It follows one case from a submission that cannot be changed to a simulated permit, issued as a separate step.</p>
       <p>Refreshing the page, restarting the server or repeating the issuance returns the same record each time, and the build checks for it.</p>
@@ -71,6 +73,18 @@
       </ul></div>
     </div>
   </div>
+</div></section>
+
+<section id="master-data"><div class="wrap">
+  <h2>Why master data is central</h2>
+  <p class="lede">Everything in the application hangs off one registry. It is the place where a person, a business, a contractor or a parcel has a single identity.</p>
+  <ul>
+    <li><b>Canonical identities.</b> The registry in <code>src/acme_city/registry/</code> owns one identity for each entity, typed as a party, parcel or address. It never owns a source fact, because the permitting, GIS and finance sources stay authoritative for theirs.</li>
+    <li><b>Source links and crosswalks.</b> A crosswalk row ties one source record to one identity and records the decision and who made it. Each change is a new version, so a link stays reversible.</li>
+    <li><b>Proposals and decisions.</b> Ingestion, the intake and linking agents and the checked Muse proposals can only propose a link through <code>registry/service.py</code>. A Data Steward decides it. Under a policy a steward activated, a bounded worker applies only high-confidence party links, and each is reviewable and reversible.</li>
+    <li><b>Provenance.</b> The trusted view shows the value that the published authority policy names. Field-level provenance records why, and it keeps any disagreement visible (<code>registry/provenance.py</code>).</li>
+    <li><b>Readers.</b> Permits and finance read the registry. The six simulated departments read the property master built on it, with fields set in <code>config/property_subscribers.json</code>, and write nothing back. The public community lookup is separate by design and reads a dedicated allowlist model.</li>
+  </ul>
 </div></section>
 
 <!-- ARCH_STATUS_BEGIN -->
@@ -589,7 +603,7 @@
 
 <section id="build" class="alt"><div class="wrap">
   <h2>How it was built</h2>
-  <p class="lede">Three Meta Muse models designed, built and run parts of the application during the hackathon week. People set the scope, approved each step and kept every decision with the server.</p>
+  <p class="lede">Three Meta Muse models designed, built and run parts of the application during the hackathon week. People set the scope, approved each step and kept every decision with the server. The app was built with Muse Wonder, Muse Image and Muse Spark, with local and other frontier models assisting.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Muse model</th><th>Role</th><th>What it did</th></tr></thead>
     <tbody>
@@ -601,10 +615,9 @@
   <div class="sub">
     <h3>Notes: other models used</h3>
     <ul>
-      <li>OpenAI GPT-5.6 Sol, with GPT-6 Astra, led the first build: the requirements outline, the plans, integration of each slice and the first acceptance runs. GPT-6 Astra also reviews changes.</li>
-      <li>MiniMax M3 wrote much of the governed foundation, the registry, permits, rules, finance and issuance, and several phase 3 slices, each under review.</li>
-      <li>Claude Opus 5.5 and Claude Sonnet lead integration, fixed the live Muse extraction, run the gates and review every merge.</li>
-      <li>Krea 2 made the 17 town map image tiles at build time. It is a build-time asset only and does not run in the application.</li>
+      <li>Local and other frontier models assisted the Muse models. They helped with the requirements outline, the plans, the governed foundation, the registry, permits, rules, finance and issuance, and several phase 3 slices.</li>
+      <li>They also led integration, fixed the live Muse extraction, ran the gates and reviewed every merge.</li>
+      <li>A local image model generated the 17 town map image tiles at build time. They are a build-time asset only and the model does not run in the application.</li>
       <li>None of these models runs inside the application. Muse Spark is its only runtime model.</li>
     </ul>
   </div>
@@ -770,8 +783,8 @@
     <thead><tr><th>Item</th><th>State</th><th>Detail</th></tr></thead>
     <tbody>
       <tr><td>Draft cut 7</td><td><span class="chip ga">Done</span></td><td>2:44 at 1080p, with a phone copy. It uses narration revision 12, sharp screen footage, animated title cards and captions at the top.</td></tr>
-      <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>The VollenData sunflower, an animated character, sits in the bottom left corner over the screens. MiniMax H3 renders each clip from the sunflower image and the approved narration, so the mouth follows the spoken words. All 18 clips have matched mouths.</td></tr>
-      <tr><td>Voice</td><td><span class="chip ga">Done</span></td><td>Kokoro text to speech reads every line exactly as written. A wording change regenerates one line and rebuilds the cut.</td></tr>
+      <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>The VollenData sunflower, an animated character, sits in the bottom left corner over the screens. A video model renders each clip from the sunflower image and the approved narration, so the mouth follows the spoken words. All 18 clips have matched mouths.</td></tr>
+      <tr><td>Voice</td><td><span class="chip ga">Done</span></td><td>Text to speech reads every line exactly as written. A wording change regenerates one line and rebuilds the cut.</td></tr>
       <tr><td>Screens</td><td><span class="chip ga">Done</span></td><td>A scripted browser steps through a separate copy of the application and captures timed screenshots for crisp footage. The Muse help answer and the council briefing were recorded from live Muse Spark calls the project owner approved.</td></tr>
       <tr><td>Bundled copy</td><td><span class="chip ga">Done</span></td><td>Draft 8 is bundled on the persona page as a 720p copy, 2:44 and about 8 MB. It never plays on its own and loads nothing until play is pressed.</td></tr>
       <tr><td>Final pass</td><td><span class="chip ex">In progress</span></td><td>Clips where the sunflower's face drifts get rendered again. Picture lock and the final export remain open. Then the draft badges come off and the final file is exported, with no music.</td></tr>
