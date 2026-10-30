@@ -299,9 +299,9 @@
       "purpose": "The cases the City has in front of it, in saved views. Search, filter and sort work through the address bar alone.",
       "can_do": [
         "Pick a saved view.",
-        "Select cases and process them with the agent."
+        "Read the next step of every case and open the case it names."
       ],
-      "next": "Open a case to resolve what the intake left."
+      "next": "Open a case to resolve what the intake left. An Agent Operator wakes the intake agent and processes the selected cases."
     },
     "early_resolution": {
       "title": "Early resolution",

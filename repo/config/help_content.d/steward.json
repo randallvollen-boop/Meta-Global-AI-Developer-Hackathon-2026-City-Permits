@@ -1,1 +1,37 @@
-{}
+{
+  "howto": {
+    "guides": [
+      {
+        "slug": "resolve-a-data-issue",
+        "steps": {
+          "4": "Under \"5. What will this action do?\" read the preview of each action. The action that turns a proposal down names the record it turns down: \"Reject match proposed for\" Cedarline Coffee Works LLC. Never confirm a link to Cedarline Coffee Roasters LLC: its name, licence number and unit conflict.",
+          "5": "Choose the candidate that agrees with the source record, then click \"Start\". The confirmation names the record it links, so \"Confirm link to Cedarline Coffee Works LLC\" is the action that matches the evidence.",
+          "7": "A confirmed link gives the source values to the record they belong to. A rejected match links nothing, and the source record keeps every value."
+        }
+      },
+      {
+        "slug": "work-the-queue-and-the-incoming-work",
+        "title": "Work the queue and the incoming work",
+        "summary": "Find the work that waits for you and follow the cases that need a person.",
+        "who": "Data Steward",
+        "persona_ids": [
+          "persona_data_steward"
+        ],
+        "screen_label": "Data issues",
+        "screen_href": "/steward",
+        "steps": [
+          "Open \"Data issues\" in the left menu. The queue starts on the tasks that need a person.",
+          "Search with \"Search records\". The search travels in the address of the page, so you can send the queue to a colleague.",
+          "Open \"More filters\" to narrow the queue by record type or by source, then click \"Apply filters\". The count beside each filter covers the same tasks as the rows.",
+          "Open a task. Its summary names the record, the source, the status and the next step before the comparison.",
+          "Read the \"Muse guide\" panel above the task. It answers from saved words: \"Saved guidance. Live Muse is off.\"",
+          "Open \"Source records\" to see what each source system sent. Each row names the one action its link state asks for, such as \"Review match\".",
+          "Open \"Activity\" to see who acted, what was recorded and when.",
+          "Open \"Intake queue\" to see the cases the City has in front of it. Every case names its next step. \"Process selected with agent\" is off for your role, because an Agent Operator wakes the agent and runs it.",
+          "Open \"Early resolution\" to see the cases that wait for a person, grouped by the finding that puts them there."
+        ],
+        "result": "Every decision is recorded with its evidence, and the queue, the source records and the activity show what happened next."
+      }
+    ]
+  }
+}
