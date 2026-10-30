@@ -60,6 +60,70 @@ BATCH_EMPTY_NOTE = (
 #: The note a steward reads when the persona may not accept a batch.
 BATCH_GRANT_NOTE = "Your role cannot accept a batch of recommendations."
 
+#: The days the agreement figure counts.
+AGREEMENT_DAYS = 7
+
+#: The note a steward reads when the assistant prepared nothing lately.
+AGREEMENT_EMPTY_NOTE = (
+    "The steward assistant prepared no recommendation in the last 7 days, so there "
+    "is no agreement to report."
+)
+
+
+def agreement_figure(session: Any) -> dict[str, Any]:
+    """Return the share of the recommendations the steward accepted unchanged.
+
+    The figure counts the recommendations the assistant prepared in the last
+    seven days and the ones the steward accepted among them.  A recommendation
+    the steward changed or ignored lowers the share, so the figure shows how
+    much of the assistant's work the steward agreed with.
+
+    The counts the figure is made of are shown beside it, so a reader never
+    sees a percentage without the numbers behind it.
+    """
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from acme_city.core.clock import utc_now
+    from acme_city.persistence.models import audit
+    from acme_city.persistence.models.steward_recommendation import StewardRecommendation
+
+    cutoff = utc_now() - timedelta(days=AGREEMENT_DAYS)
+    rows = session.execute(
+        select(StewardRecommendation).where(StewardRecommendation.made_at >= cutoff)
+    ).scalars().all()
+    total = len(rows)
+    if not total:
+        return {
+            "days": AGREEMENT_DAYS,
+            "accepted": 0,
+            "total": 0,
+            "share": "",
+            "note": AGREEMENT_EMPTY_NOTE,
+        }
+    accepted_ids = {
+        str((event.metadata_json or {}).get("recommendation_id") or "")
+        for event in session.execute(
+            select(audit.AuditEvent).where(
+                audit.AuditEvent.action == "steward.recommendation.accept"
+            )
+        ).scalars()
+    }
+    accepted = sum(1 for row in rows if row.id in accepted_ids)
+    share = round(accepted * 100 / total)
+    return {
+        "days": AGREEMENT_DAYS,
+        "accepted": accepted,
+        "total": total,
+        "share": f"{share}%",
+        "note": (
+            f"You accepted {accepted} of the {total} recommendation"
+            f"{'' if total == 1 else 's'} the assistant prepared in the last "
+            f"{AGREEMENT_DAYS} days."
+        ),
+    }
+
 
 def task_labels(session: Any, actor: ActorContext) -> dict[tuple[str, str], str]:
     """Return the name of every task of the queue, keyed by its kind and id.
@@ -350,12 +414,15 @@ def case_panel(
 
 
 __all__ = [
+    "AGREEMENT_DAYS",
+    "AGREEMENT_EMPTY_NOTE",
     "AWAKE_NOTE",
     "BATCH_EMPTY_NOTE",
     "BATCH_GRANT_NOTE",
     "MAX_TASKS_PER_PRESS",
     "RUN_PERMISSION",
     "SLEEP_NOTE",
+    "agreement_figure",
     "assistant_state",
     "batch_state",
     "case_panel",

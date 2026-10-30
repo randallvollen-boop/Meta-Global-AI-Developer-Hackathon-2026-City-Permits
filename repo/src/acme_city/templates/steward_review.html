@@ -48,6 +48,23 @@
 </p>
 {% endif %}
 
+<section class="panel card stw-agreement" aria-labelledby="agreement-heading" data-testid="agreement-panel">
+  <div class="card-h"><h2 id="agreement-heading">Agreement with the assistant</h2></div>
+  <div class="card-b">
+    {% if agreement.total %}
+    <p data-testid="agreement-figure">
+      <span class="pill plain nowrap" data-testid="agreement-share">{{ agreement.share }}</span>
+      <span class="muted" data-testid="agreement-note">{{ agreement.note }}</span>
+    </p>
+    <p class="muted" data-testid="agreement-counts">
+      {{ agreement.accepted }} accepted of {{ agreement.total }} prepared in the last {{ agreement.days }} days.
+    </p>
+    {% else %}
+    <p class="muted" data-testid="agreement-empty">{{ agreement.note }}</p>
+    {% endif %}
+  </div>
+</section>
+
 {% if assistant.may_run %}
 <p class="muted" data-testid="assistant-prepare-note">
   The steward assistant prepares the evidence and a proposed decision for the
