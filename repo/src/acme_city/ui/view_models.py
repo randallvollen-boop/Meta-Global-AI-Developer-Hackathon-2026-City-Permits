@@ -288,8 +288,14 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     ),
     # The intake queue and the early-resolution board are the Data Steward's
     # work.  The review queue is the Permit Reviewer's.  Each is opened by a
-    # grant only that persona holds, never by a persona label.
-    "intake_queue": (("permit.intake.process_selected", "permits"),),
+    # grant only that persona holds, never by a persona label.  The intake
+    # queue is opened by the read grant, and by the execution grant the Agent
+    # Operator holds: the person who may process the selected cases needs to
+    # open the queue that lists them.
+    "intake_queue": (
+        ("permit.intake.queue.view", "permits"),
+        ("permit.intake.process_selected", "permits"),
+    ),
     "early_resolution": (("permit.case.advance", "permits"),),
     "review_queue": (("permit.decide", "permits"),),
     # The City view is the City Administrator's read-only picture of permit
@@ -327,7 +333,7 @@ QUEUE_LINKS: tuple[dict[str, Any], ...] = (
         "key": "intake_queue",
         "label": "Intake queue",
         "href": "/queue/intake",
-        "permission": "permit.intake.process_selected",
+        "permission": "permit.intake.queue.view",
         "domain_id": "permits",
         "note": "the saved views of the cases that arrived and wait for the City",
     },

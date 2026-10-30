@@ -1,0 +1,16 @@
+{# One public permit record, shown as a card.  The card takes the public
+   record and the presentation values only: the address leads, the status is
+   spelled out, and one link opens the record. #}
+<li class="community-card" data-reference="{{ r.reference }}">
+  <p class="community-card-address">{{ r.address }}</p>
+  <p class="community-card-type">{{ r.permit_type }}</p>
+  <p class="community-card-meta">
+    <span class="badge {{ status_badge_class(r.status) }}">{{ r.status }}</span>
+    <span class="community-card-date">Submitted <time datetime="{{ r.submitted_on }}">{{ display_date(r.submitted_on) }}</time></span>
+  </p>
+  <p class="community-card-meta">
+    <span class="community-card-reference">{{ 'Permit number' if r.permit_number else 'Application number' }} {{ r.reference }}</span>
+    {% if r.synthetic %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}
+  </p>
+  <a class="community-card-link" href="{{ public_record_url(r.reference, return_q, return_type) }}" aria-label="View the public record for {{ r.address }}, {{ r.reference }}">View public record</a>
+</li>

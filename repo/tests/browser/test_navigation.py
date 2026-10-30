@@ -36,8 +36,9 @@ SCREENS = (
     ("/rules", "Rules and fees"),
     ("/reconciliation", "Reconciliation"),
     ("/governance", "Governance and sources"),
-    ("/agent/intake", "Intake agent"),
-    ("/agent/adjudication", "Adjudication agent"),
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the City Administrator no longer
+    # holds.  They are swept as their own persona in PERSONA_SCREENS.
     ("/admin", "Administration"),
     ("/insight/city", "City view"),
     ("/policy/scenarios", "What-if"),
@@ -56,6 +57,10 @@ PERSONA_SCREENS: tuple[tuple[str, str, str], ...] = (
     ("persona_data_steward", "/queue/intake", "Intake queue"),
     ("persona_data_steward", "/queue/early-resolution", "Early resolution"),
     ("persona_permit_reviewer", "/queue/review", "Review queue"),
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the Agent Operator holds.
+    ("persona_agent_operator", "/agent/intake", "Intake agent"),
+    ("persona_agent_operator", "/agent/adjudication", "Adjudication agent"),
 )
 
 #: The screens each persona may open, primary group first, then More tools.
@@ -68,12 +73,16 @@ HIDDEN_SCREENS = {
     "persona_applicant": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
                            "/agent/intake", "/agent/adjudication", "/admin",
                            "/queue/intake", "/queue/early-resolution", "/queue/review"],
-    "persona_data_steward": ["/reconciliation", "/governance", "/agent/adjudication", "/admin",
+    # Changed deliberately (the Agent Operator): the wake and run grants moved
+    # to the Agent Operator, so the agent screens are closed to the other
+    # personas as well.
+    "persona_data_steward": ["/reconciliation", "/governance", "/agent/intake", "/agent/adjudication", "/admin",
                               "/queue/review"],
     "persona_permit_reviewer": ["/steward", "/source-records", "/activity", "/masters", "/rules", "/rules-fees", "/reconciliation", "/governance",
-                                "/agent/intake", "/admin", "/queue/intake",
+                                "/agent/intake", "/agent/adjudication", "/admin",
                                 "/queue/early-resolution"],
-    "persona_city_administrator": ["/queue/intake", "/queue/early-resolution", "/queue/review"],
+    "persona_city_administrator": ["/agent/intake", "/agent/adjudication",
+                                   "/queue/early-resolution", "/queue/review"],
 }
 #: P3insight: the City view is held by the City Administrator only.
 for _persona in ("persona_applicant", "persona_data_steward", "persona_permit_reviewer"):

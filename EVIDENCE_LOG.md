@@ -227,3 +227,30 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The reconciliation screen is proven to keep the receipt register apart from the selected assessment, to show the readable reference SYN-APP-007, to mark the euro receipt apart from the dollar receipts, and to label the exception measure ("Assessments with a recorded exception") without an attention badge when there is nothing to review.
 - The demo moment is proven in a real browser: the Administrator lands on the overview, opens the draft CT-2@2 from the "Proposed changes" card, reads the diff and the applicability, submits it for review and sees the recorded result in the feedback region (`tests/browser/test_admin_ui_browser.py`).
 - No live provider call was made; the Muse Image generation and the replay labels are unchanged.
+
+## 2026-10-29 — Agent Operator lane repair evidence
+
+- Focused operator/navigation checks: 63 passed in 22.44s. Reset, session and migration checks: 32 passed in 10.85s.
+- Fixture guard, outcome snapshot and acceptance suite: 106 passed in 20.60s. Chromium operator navigation at 390px: 1 passed in 7.43s.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2118 passed in 569.69s (9:29).
+
+## 2026-10-29 — Agent Operator lane review 2 evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/integration/test_agent_role_permissions.py` → 11 passed: the three non-administrator refusals of the saving action, the reviewer running the agents exactly while the City worker option is on, the operator's own domains in the managed bundle, the agent screens of the reviewer and the reset that restores the operator alone.
+  - `tests/unit/test_migration_opr_processing_policy.py`, `tests/unit/test_config_operator.py` and `tests/integration/test_agent_processing_policy.py` → 15 passed with that file: the migration test reads the migration head, and the policy table carries no column that nothing writes.
+  - `tests/browser/test_agent_operator.py` and `tests/browser/test_navigation_operator.py` → 10 passed in 68.00s: the City Administrator clicks "Save role permissions" and sees the saved state after a reload, the agent screens link back to the Agents home, the Agents home reaches the "Process selected with agent" control, and the Agents home and the run history pass the 390 pixel overflow and coverage checks.
+  - `tests/ui/test_view_models.py` and `tests/supplementary/test_vc04.py` → 48 passed in 18.89s with the navigation expectations that no longer carry the `ORDER` table.
+  - `tests/regression` and `tests/acceptance` → 111 passed in 22.41s: the fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged.
+  - `tests/unit`, `tests/integration`, `tests/ui`, `tests/supplementary` and `tests/security` with six workers → exit 0.
+  - `scripts/check_owned_hunks.py --lane agent-operator --base 9a37789 --head HEAD` → "every hunk is inside the lane's own functions".
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2133 passed in 622.57s (10:22). The requirement coverage check reports 57/57 requirements mapped and 2133 collected nodes.
+- The City worker bundle is proven to be the operator's bundle: the managed grants of the reviewer and the seeded grants of the operator agree on the domain of every action, the reviewer opens `/agents` and `/agents/runs` while the option is on and is refused with 403 while it is off, and the reviewer is refused on the agent screen itself while the option is off.
+- The refusal of the saving action is proven to be a refusal and not a side effect of the state: the post carries a valid token and is answered 403 for the Data Steward, the Permit Reviewer and the Agent Operator.
+- No live provider call was made, and no rule text, replay fixture, acceptance test, persona or grant of the original four personas changed.
+## Permit life cycle and the AVA republish (2026-10-29)
+
+- Branch `feature/permit-lifecycle`. Commit eae39f5 added the life cycle table, `/lifecycle`, `/walkthrough`, the architecture section and the judge walkthrough document. Commit e4c7dc4 listed the future features. The full suite passed with 2094 tests at eae39f5.
+- The architecture page was rebuilt through the solution-architecture-page kit. The checker passed with 10 warnings, all older than this change. `verify_page` still flags 8 older figures. The leak scan was clean.
+- The private AVA Library article `acme-city-permits-architecture` was replaced at 2026-10-30T01:04:47Z with Randall's approval. The copy matches the build: SHA-256 `7b75d4e29ed54f2879de788553249f696f5008a4448956aef1e5ebce0c92a4d0`, 347190 bytes. The AVA service was not restarted.
+- After review lifecycle-1 (commit e2c413a, 16 moves), the AVA article was replaced again at 2026-10-30T01:30:18Z. The library copy matches the build: SHA-256 `12046a77ac70bdf14448128b0cef6b2fdc1945d0dff99e24056fd48c1e64e136`, 348059 bytes. The same page was republished to Randall's private Claude artifact at his request.

@@ -1,4 +1,80 @@
 {
   "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. Only OPR-3 and STW-18 add entries. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
-  "deltas": []
+  "deltas": [
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "agent.run.intake",
+      "change": "remove",
+      "slice": "OPR-3",
+      "reason": "The wake and run grants belong to the Agent Operator; the Data Steward keeps the intake queue as a read only screen."
+    },
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "permit.intake.queue.view",
+      "change": "add",
+      "domains": [
+        "permits"
+      ],
+      "record_scope": [],
+      "slice": "OPR-3",
+      "reason": "The read grant keeps the intake queue open to the Data Steward after the run grant moved."
+    },
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "permit.intake.process_selected",
+      "change": "remove",
+      "slice": "OPR-4",
+      "reason": "Processing a selection of waiting cases runs the intake agent, so the execution grant follows the run grant to the Agent Operator."
+    },
+    {
+      "actor_id": "persona_permit_reviewer",
+      "permission_id": "agent.run.adjudication",
+      "change": "remove",
+      "slice": "OPR-3",
+      "reason": "The wake and run grants belong to the Agent Operator; the Permit Reviewer records decisions instead."
+    },
+    {
+      "actor_id": "persona_permit_reviewer",
+      "permission_id": "permit.intake.queue.view",
+      "change": "add",
+      "domains": [
+        "permits"
+      ],
+      "record_scope": [],
+      "slice": "OPR-3",
+      "reason": "The read grant keeps the intake queue open to the Permit Reviewer after the run grant moved."
+    },
+    {
+      "actor_id": "persona_city_administrator",
+      "permission_id": "agent.toggle",
+      "change": "remove",
+      "slice": "OPR-3",
+      "reason": "The wake and run grants belong to the Agent Operator; the City Administrator holds the processing policy instead."
+    },
+    {
+      "actor_id": "persona_city_administrator",
+      "permission_id": "agent.run.intake",
+      "change": "remove",
+      "slice": "OPR-3",
+      "reason": "The wake and run grants belong to the Agent Operator; the City Administrator holds the processing policy instead."
+    },
+    {
+      "actor_id": "persona_city_administrator",
+      "permission_id": "agent.run.adjudication",
+      "change": "remove",
+      "slice": "OPR-3",
+      "reason": "The wake and run grants belong to the Agent Operator; the City Administrator holds the processing policy instead."
+    },
+    {
+      "actor_id": "persona_city_administrator",
+      "permission_id": "permit.intake.queue.view",
+      "change": "add",
+      "domains": [
+        "permits"
+      ],
+      "record_scope": [],
+      "slice": "OPR-3",
+      "reason": "The read grant keeps the intake queue open to the City Administrator after the run grants moved."
+    }
+  ]
 }

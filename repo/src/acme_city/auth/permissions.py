@@ -24,6 +24,38 @@ from acme_city.core.errors import PermissionDeniedError
 from acme_city.persistence.models import governance
 
 
+def _managed_agent_grants(session: Session, actor_id: str) -> tuple[Grant, ...]:
+    """Return the operational bundle enabled for an actor's entitled roles."""
+    from acme_city.agents.bundle import AGENT_OPERATION_DOMAINS, AGENT_OPERATIONS
+    from acme_city.persistence.models import agent_ops
+
+    entitled = session.execute(
+        select(governance.ActorRole.role_id)
+        .join(
+            agent_ops.AgentRoleEntitlement,
+            agent_ops.AgentRoleEntitlement.role_id == governance.ActorRole.role_id,
+        )
+        .where(
+            governance.ActorRole.actor_id == actor_id,
+            agent_ops.AgentRoleEntitlement.can_run_agents.is_(True),
+        )
+    ).first()
+    if entitled is None:
+        return ()
+    grants: list[Grant] = []
+    for action in sorted(AGENT_OPERATIONS):
+        grants.append(
+            Grant(
+                permission_id=action,
+                action=action,
+                domain_id=AGENT_OPERATION_DOMAINS[action],
+                record_scope=frozenset(),
+                sensitive=False,
+            )
+        )
+    return tuple(grants)
+
+
 @dataclass(frozen=True)
 class Grant:
     """One persisted grant of one permission to one actor."""
@@ -79,7 +111,7 @@ class PermissionResolver:
                 ),
             )
         ).all()
-        return tuple(
+        persisted = tuple(
             Grant(
                 permission_id=permission_id,
                 action=action,
@@ -88,6 +120,16 @@ class PermissionResolver:
                 sensitive=bool(sensitive),
             )
             for permission_id, domain_id, record_scope, action, sensitive in rows
+        )
+        # The saved role entitlement is an explicit managed grant bundle.  It
+        # applies to existing people and users added later without trusting a
+        # role string from the request.
+        managed = _managed_agent_grants(self._session, actor_id)
+        if not managed:
+            return persisted
+        existing = {(grant.action, grant.domain_id) for grant in persisted}
+        return persisted + tuple(
+            grant for grant in managed if (grant.action, grant.domain_id) not in existing
         )
 
     def permissions_for(self, actor_id: str) -> frozenset[str]:

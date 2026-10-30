@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-from p3c_support import ADMIN, REVIEWER, STEWARD, build_settings, choose, post_action
+from p3c_support import ADMIN, OPERATOR, REVIEWER, STEWARD, build_settings, choose, post_action
 from sqlalchemy import select
 
 from acme_city.app import create_app
@@ -59,11 +59,12 @@ def figure(page: str, key: str) -> str:
 
 
 def test_the_simulator_never_assigns_the_human_only_statuses(client, environment) -> None:
-    choose(client, ADMIN)
+    choose(client, OPERATOR)
     assert post_action(client, "agent.toggle", {"agent_key": "intake", "mode": "awake", "expected_version": "1"}, page="/agent/intake").status_code == 200
     choose(client, STEWARD)
-    assert post_action(client, "intake.simulate", {"scenario": "random", "count": "12"}, page="/agent/intake").status_code == 200
+    assert post_action(client, "intake.simulate", {"scenario": "random", "count": "12"}, page="/queue/intake").status_code == 200
     assert {row[2] for row in arrivals(environment)} == {"submitted"}  # nothing is decided on arrival
+    choose(client, OPERATOR)
     assert post_action(client, "agent.run.intake", {}, page="/agent/intake").status_code == 200
     cases = arrivals(environment)
     statuses = {row[2] for row in cases}
@@ -73,10 +74,11 @@ def test_the_simulator_never_assigns_the_human_only_statuses(client, environment
 
 
 def test_the_terminal_states_appear_only_after_human_actions(client, environment) -> None:
-    choose(client, ADMIN)
+    choose(client, OPERATOR)
     post_action(client, "agent.toggle", {"agent_key": "intake", "mode": "awake", "expected_version": "1"}, page="/agent/intake")
     choose(client, STEWARD)
-    post_action(client, "intake.simulate", {"scenario": "random", "count": "12"}, page="/agent/intake")
+    post_action(client, "intake.simulate", {"scenario": "random", "count": "12"}, page="/queue/intake")
+    choose(client, OPERATOR)
     post_action(client, "agent.run.intake", {}, page="/agent/intake")
     cases = arrivals(environment)
     needs = next(row for row in cases if row[2] == "needs_information")

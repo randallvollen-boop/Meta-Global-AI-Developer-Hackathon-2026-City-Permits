@@ -214,10 +214,10 @@ def test_switching_from_a_screen_the_new_persona_cannot_open_lands_on_its_home(c
     assert nav and home == {"queue": "/queue", "applicants": "/applicants"}.get(nav[0], home)
 
     choose(client, "persona_data_steward")
-    done = _switch(client, "persona_permit_reviewer", "/queue/intake")
-    assert "moved_from=intake_queue" in done.headers["location"]
+    done = _switch(client, "persona_permit_reviewer", "/queue/early-resolution")
+    assert "moved_from=early_resolution" in done.headers["location"]
     page = client.get(done.headers["location"])
-    assert "Permit Reviewer can't open Intake queue" in html.unescape(page.text)
+    assert "Permit Reviewer can't open Early resolution" in html.unescape(page.text)
 
     done = _switch(client, "persona_applicant", "/admin")
     assert done.headers["location"] == "/city/?moved_from=admin"

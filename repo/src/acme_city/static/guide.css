@@ -1,0 +1,25 @@
+/* The permit life cycle page and the walkthrough. Every rule is prefixed .guide-. */
+.guide-section { margin-bottom: 1rem; }
+.guide-path { list-style: none; padding: 0; margin: 0.5rem 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.guide-path li { display: flex; align-items: center; gap: 0.4rem; }
+.guide-path li + li::before { content: "\2192"; color: var(--ink-soft); }
+.guide-path a { display: inline-block; padding: 0.25rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.guide-statuses { display: grid; gap: 0.75rem; }
+@media (min-width: 900px) { .guide-statuses { grid-template-columns: repeat(2, minmax(0, 1fr)); } .guide-statuses > h2 { grid-column: 1 / -1; } }
+.guide-status { border-left: 4px solid var(--line); min-width: 0; }
+.guide-status.guide-kind-start { border-left-color: var(--warn); }
+.guide-status.guide-kind-active { border-left-color: var(--accent); }
+.guide-status.guide-kind-end { border-left-color: var(--ok); }
+.guide-status.guide-kind-closed { border-left-color: var(--ink-soft); }
+.guide-status-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.guide-status-head h3 { margin: 0; }
+.guide-moves { padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+.guide-moves li > span { display: block; }
+.guide-who { color: var(--ink-soft); }
+.guide-example { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; margin-top: 0.5rem; }
+.guide-open-as { margin: 0.25rem 0 0; }
+.guide-steps { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+.guide-step h2 { display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0; }
+.guide-step-n { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.95rem; }
+.guide-persona { margin: 0 0 0.4rem; font-weight: 600; }
+.guide-k { display: block; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
