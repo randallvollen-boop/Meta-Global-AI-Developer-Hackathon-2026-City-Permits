@@ -12,6 +12,9 @@ from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_co
 #: The four screens of the side navigation, in the order they are listed.
 PRIMARY = ("steward", "masters", "source_records", "activity")
 
+#: The screens that stay reachable under More tools.
+SECONDARY = ("intake_queue", "early_resolution")
+
 
 def test_the_demo_switch_lands_the_steward_on_its_work_queue(
     page, server: BrowserServer
@@ -57,4 +60,54 @@ def test_the_phone_bar_holds_four_entries_and_more_tools(
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1").first)
     assert_not_covered(page, more.locator("summary"))
+    assert page.recorded_errors == []
+
+
+def test_more_tools_holds_the_incoming_screens(
+    page, server: BrowserServer, login
+) -> None:
+    """The incoming screens of the steward stay reachable under More tools."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    more = page.locator('[data-testid="nav-more"]')
+    keys = more.locator("a").evaluate_all(
+        "links => links.map(link => link.getAttribute('data-screen-key'))"
+    )
+    for key in SECONDARY:
+        assert key in keys, (key, keys)
+    assert page.recorded_errors == []
+
+
+def test_the_incoming_screens_open_from_more_tools_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """A phone reaches the incoming screens through More tools."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    more = page.locator('.mobile-nav [data-testid="nav-more-mobile"]')
+    more.locator("summary").click()
+    for path, marker in (
+        ("/queue/intake", '[data-testid="intake-table"]'),
+        ("/queue/early-resolution", '[data-testid="early-resolution-kpis"]'),
+    ):
+        page.goto(f"{server.base_url}{path}", wait_until="load")
+        assert page.locator(marker).count() == 1, path
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_demo_switch_stays_reachable_on_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The demo switcher is on the phone and opens the personas."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    switch = page.locator('[data-testid="demo-switch"]')
+    assert switch.count() == 1
+    switch.locator("summary").click()
+    assert switch.locator("form").count() >= 4
+    assert_not_covered(page, switch.locator("summary"))
     assert page.recorded_errors == []

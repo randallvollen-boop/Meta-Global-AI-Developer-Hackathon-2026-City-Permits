@@ -484,3 +484,104 @@ def test_the_profile_guide_off_the_overview_links_nowhere(
     guide.locator("summary").click()
     assert guide.locator("a").count() == 0
     assert page.recorded_errors == []
+
+
+def test_the_guide_of_the_incoming_work_fits_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The saved guide of the incoming work opens on a phone and stays readable."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    assert guide.count() == 1
+    guide.locator("summary").click()
+    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert guide.locator('[data-testid="steward-guide-answer"]').inner_text().strip()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, guide)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_guide_of_the_early_resolution_board_fits_a_phone(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The saved guide of the early resolution board opens on a phone."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/early-resolution", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    assert guide.count() == 1
+    guide.locator("summary").click()
+    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, guide)
+    assert page.recorded_errors == []
+
+
+def test_the_queue_is_searched_and_opened_with_the_keyboard(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """The queue is searched and a task is opened without a mouse."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    search = page.locator('[data-testid="queue-search-input"]')
+    search.focus()
+    search.fill("ERP-BL-00413")
+    search.press("Enter")
+    page.wait_for_url("**/steward?q=ERP-BL-00413")
+    assert page.locator("[data-issue-row]").count() == 1
+    link = page.locator('[data-testid="issue-link"]').first
+    link.focus()
+    link.press("Enter")
+    page.wait_for_selector('[data-testid="compare-table"]')
+    assert page.locator('[data-testid="case-q6"]').count() == 1
+    assert page.recorded_errors == []
+
+
+def test_the_guide_opens_with_the_keyboard(
+    page, server: BrowserServer, login
+) -> None:
+    """The saved guide opens from the keyboard."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    summary = page.locator('[data-testid="steward-guide"] > summary')
+    summary.focus()
+    summary.press("Enter")
+    assert page.locator('[data-testid="steward-guide-answer"]').is_visible()
+    assert page.recorded_errors == []
+
+
+def test_the_incoming_queue_is_searched_with_the_keyboard(
+    page, server: BrowserServer, login
+) -> None:
+    """The incoming queue is searched from the keyboard."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    search = page.locator('[data-testid="intake-search-input"]')
+    search.focus()
+    search.fill("no such case")
+    search.press("Enter")
+    page.wait_for_url("**/queue/intake?*")
+    assert "q=no+such+case" in page.url
+    assert page.locator('[data-testid="intake-empty"]').count() == 1
+    assert page.recorded_errors == []
+
+
+def test_the_filters_of_the_incoming_queue_work_with_the_keyboard(
+    page, server: BrowserServer, login
+) -> None:
+    """The filters of the incoming queue are chosen and applied without a mouse."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    page.locator('[data-testid="intake-filters"] > summary').focus()
+    page.keyboard.press("Enter")
+    priority = page.locator('[data-testid="intake-priority-filter"]')
+    priority.select_option("high")
+    page.locator('[data-testid="intake-filter-submit"]').focus()
+    page.keyboard.press("Enter")
+    page.wait_for_url("**/queue/intake?*")
+    assert "priority=high" in page.url
+    assert page.locator('[data-testid="intake-priority-filter"]').input_value() == "high"
+    assert page.recorded_errors == []

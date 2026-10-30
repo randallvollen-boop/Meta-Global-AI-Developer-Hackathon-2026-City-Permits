@@ -160,6 +160,8 @@ def test_the_steward_screens_fit_the_screen(page, server: BrowserServer, login, 
         "/steward",
         "/source-records",
         "/activity",
+        "/queue/intake",
+        "/queue/early-resolution",
         "/masters?detail=record:party_cedarline",
         "/masters?tab=registrations&detail=credential:cred_contractor_halcyon",
     ]
