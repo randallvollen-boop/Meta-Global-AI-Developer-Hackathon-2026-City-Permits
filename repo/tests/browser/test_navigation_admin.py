@@ -14,7 +14,7 @@ from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_co
 #: The five personas and the screen each one lands on.
 PERSONA_HOMES: tuple[tuple[str, str], ...] = (
     ("persona_applicant", "/city/"),
-    ("persona_data_steward", "/queue"),
+    ("persona_data_steward", "/steward"),
     ("persona_permit_reviewer", "/queue"),
     ("persona_city_administrator", "/overview"),
     ("persona_agent_operator", "/agents"),
