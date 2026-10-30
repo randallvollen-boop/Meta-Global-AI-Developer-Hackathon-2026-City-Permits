@@ -1,0 +1,40 @@
+{# One typed comparison: the fields of one family of record.
+
+   The macro takes the comparison the view model built:
+
+     comparison.family   party, parcel or address
+     comparison.caption  what the table compares
+     comparison.rows     the fields, in the order a reader needs them:
+                         what disagrees first, then what is missing on one
+                         side, and only then what agrees
+     comparison.current  the values were compared again after a decision was
+                         recorded, so the reader is told that
+
+   A missing value stays missing.  The raw value and the value the matcher
+   normalized sit apart, so a reader sees what was recorded and what was
+   compared. #}
+
+{% macro result_cell(result) -%}
+<span class="result result-{{ result }}" data-testid="compare-result" data-result="{{ result }}">{{ {'agrees': 'Agrees', 'conflicts': 'Conflicts', 'no_comparison': 'No comparison'}[result] }}</span>
+{%- endmacro %}
+
+{% macro comparison(comparison) -%}
+{% if comparison.current %}
+<p class="stw-comparison-label" data-testid="comparison-label">Current comparison</p>
+<p class="muted stw-comparison-note">The values were compared again after the decision was recorded.</p>
+{% endif %}
+<table class="data-table compare-table stw-comparison" data-testid="compare-table" data-family="{{ comparison.family }}">
+  <caption class="visually-hidden">{{ comparison.caption }}</caption>
+  <thead><tr><th scope="col">Field</th><th scope="col">{{ comparison.headers.source }}</th><th scope="col">{{ comparison.headers.master }}</th><th scope="col">Result</th></tr></thead>
+  <tbody>
+    {% for row in comparison.rows %}
+    <tr data-field="{{ row.field }}">
+      <th scope="row" class="stw-cell-field">{{ row.field }}</th>
+      <td class="stw-cell-source" data-label="{{ comparison.headers.source }}"><span class="stw-value">{{ row.source }}</span>{% if row.source_normalized %}<span class="stw-normalized">Compared as: {{ row.source_normalized }}</span>{% endif %}</td>
+      <td class="stw-cell-master" data-label="{{ comparison.headers.master }}"><span class="stw-value">{{ row.master }}</span>{% if row.master_normalized %}<span class="stw-normalized">Compared as: {{ row.master_normalized }}</span>{% endif %}</td>
+      <td class="nowrap stw-cell-result">{{ result_cell(row.result) }}{% if row.note %} <span class="muted">{{ row.note }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}

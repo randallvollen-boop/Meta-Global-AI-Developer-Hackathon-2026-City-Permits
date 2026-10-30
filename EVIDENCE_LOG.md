@@ -248,3 +248,33 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The City worker bundle is proven to be the operator's bundle: the managed grants of the reviewer and the seeded grants of the operator agree on the domain of every action, the reviewer opens `/agents` and `/agents/runs` while the option is on and is refused with 403 while it is off, and the reviewer is refused on the agent screen itself while the option is off.
 - The refusal of the saving action is proven to be a refusal and not a side effect of the state: the post carries a valid token and is answered 403 for the Data Steward, the Permit Reviewer and the Agent Operator.
 - No live provider call was made, and no rule text, replay fixture, acceptance test, persona or grant of the original four personas changed.
+## Permit life cycle and the AVA republish (2026-10-29)
+
+- Branch `feature/permit-lifecycle`. Commit eae39f5 added the life cycle table, `/lifecycle`, `/walkthrough`, the architecture section and the judge walkthrough document. Commit e4c7dc4 listed the future features. The full suite passed with 2094 tests at eae39f5.
+- The architecture page was rebuilt through the solution-architecture-page kit. The checker passed with 10 warnings, all older than this change. `verify_page` still flags 8 older figures. The leak scan was clean.
+- The private AVA Library article `acme-city-permits-architecture` was replaced at 2026-10-30T01:04:47Z with Randall's approval. The copy matches the build: SHA-256 `7b75d4e29ed54f2879de788553249f696f5008a4448956aef1e5ebce0c92a4d0`, 347190 bytes. The AVA service was not restarted.
+- After review lifecycle-1 (commit e2c413a, 16 moves), the AVA article was replaced again at 2026-10-30T01:30:18Z. The library copy matches the build: SHA-256 `12046a77ac70bdf14448128b0cef6b2fdc1945d0dff99e24056fd48c1e64e136`, 348059 bytes. The same page was republished to Randall's private Claude artifact at his request.
+
+## 2026-10-29 - Steward queue and guide lane evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/integration/test_p3b_queues.py`, `tests/regression/test_admin_early_resolution.py`, `tests/regression/test_steward_selector_contract.py`, `tests/unit/test_steward_queue_views.py` and `tests/unit/test_stylesheet_scopes.py` -> 57 passed: the next step of every incoming case, the membership, the grouping and the order of the early resolution board, the selector inventory and the scoped stylesheet.
+  - `tests/integration/test_steward_guide_offline.py` and `tests/unit/test_steward_guide.py` -> 34 passed: seven guide screens answer from saved words, repeat themselves exactly on a second run, reach no model, and hold a link that lands on a real target.
+  - `tests/integration/test_help_docs.py` and `tests/integration/test_help_docs_steward.py` -> 47 passed: every label the steward help quotes is on the page the step names, and the rejection action names the record it turns down.
+  - `tests/browser/test_steward_workspace_browser.py`, `tests/browser/test_steward_browser.py` and `tests/browser/test_navigation_steward.py` -> 45 passed: the incoming screens, the guide panels and the search read as one card per case at 390 pixels, and the queue, the guide and the filters are used with the keyboard alone.
+  - `tests/unit`, `tests/integration`, `tests/regression` and `tests/api` with six workers -> 1696 passed.
+  - The fixture hash guard and the outcome snapshot -> 10 passed.
+  - `scripts/check_owned_hunks.py --lane steward-queue-guide --base main --head HEAD` -> "every hunk is inside the lane's own functions"; `--actor-only` -> "only actor-id literals change".
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2333 passed in 711.69s (11:51).
+- No live provider call was made. The guide answered from saved words in hosted mode with a credential set, and the tripwire recorded no call.
+
+## 2026-10-29 - Steward queue and guide lane, review 4 evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/browser/test_steward_workspace_browser.py`, `tests/browser/test_steward_browser.py` and `tests/browser/test_navigation_steward.py` -> 52 passed: the Resolve button, the Search button, a tab, the help link of both new screens and the guide link of both new screens are clicked and the landing page of each is read.
+  - `tests/regression/test_admin_early_resolution.py` -> 9 passed: the membership and the order of the board as a list, the sentence case finding label, the severity words, the duty of the applicant, the absence of a case that does not wait and the group of the primary finding.
+  - `tests/integration/test_help_docs_steward.py` and `tests/integration/test_help_docs.py` -> 47 passed: every label a steward step quotes is in the element that holds it.
+  - `tests/regression/test_admin_early_resolution.py`, `tests/regression/test_steward_selector_contract.py`, `tests/integration/test_help_docs_steward.py`, `tests/integration/test_help_docs.py`, `tests/integration/test_steward_guide_offline.py`, `tests/integration/test_steward_ui.py`, `tests/integration/test_p3b_queues.py`, `tests/unit/test_steward_guide.py`, `tests/unit/test_steward_queue_views.py`, `tests/unit/test_stylesheet_scopes.py` and `tests/api/test_steward_workspace.py` -> 201 passed.
+- The label test of the steward help was checked against a wrong element on purpose: the check failed, so it reads the element and not the page.
+- No live provider call was made. No fixture, rule text, replay fixture, acceptance test, persona or grant changed.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2341 passed in 725.99s (12:05).

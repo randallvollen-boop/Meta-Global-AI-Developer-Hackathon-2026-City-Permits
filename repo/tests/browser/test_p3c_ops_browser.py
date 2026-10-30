@@ -12,7 +12,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from conftest import BrowserServer
+from conftest import (
+    BrowserServer,
+    assert_no_horizontal_overflow,
+    assert_not_covered,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
 from p3c_support import seed_help_request  # noqa: E402
@@ -66,6 +70,57 @@ def test_the_dashboard_prints_six_figures_with_definitions_and_three_charts(page
     assert page.locator('[data-testid="chart-status-table"]').count() == 1
 
 
+def test_the_breakdowns_show_a_chart_on_a_desktop_and_a_table_on_a_phone(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    # A wide screen shows the chart and keeps the table behind its summary.
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert page.locator('[data-testid="chart-status-chart"] svg').is_visible()
+    assert not page.locator('[data-testid="chart-status-table"]').is_visible()
+    assert page.locator('[data-testid="chart-channel-chart"]').count() == 1
+    assert page.locator('[data-testid="chart-channel-table"]').count() == 1
+
+    # A phone shows the readable table and keeps the chart in its disclosure.
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    assert page.locator('[data-testid="chart-status-table"]').is_visible()
+    assert not page.locator('[data-testid="chart-status-chart"] svg').is_visible()
+
+    # The chart keeps its own size on a phone, so no label of it is shrunk.
+    page.locator('[data-testid="chart-status-chart"] summary').click()
+    chart = page.locator('[data-testid="chart-status-chart"] svg')
+    assert chart.is_visible()
+    box = chart.bounding_box()
+    assert box is not None and box["width"] == 480, box
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_dashboard_fits_a_phone_and_keeps_the_figures_readable(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+
+    # The scope of the numbers comes first, then the two groups.
+    assert page.locator('[data-testid="ops-scope-statement"]').is_visible()
+    assert page.locator('[data-testid="ops-figure-group"]').count() == 2
+    assert page.locator('[data-testid="ops-figure"]').count() == 6
+    # The figures keep their definitions on a phone.
+    for definition in page.locator('[data-testid="ops-figure-definition"]').all_inner_texts():
+        assert len(definition) > 20
+
+    # Neither the mobile bar nor the demo switch covers the scope.
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="ops-scope-statement"]'))
+    assert page.recorded_errors == []
+
+
 def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserServer, login) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/ops/checks", wait_until="domcontentloaded")
@@ -75,6 +130,39 @@ def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserSe
     assert page.locator('[data-testid="check-row"]').count() == 8
     assert "not applicable (historical seed)" in page.locator('[data-testid="checks-table"]').inner_text()
     assert page.locator('[data-testid="feedback-message"]').inner_text().startswith("Ran the checks")
+    assert page.recorded_errors == []
+
+
+def test_the_checks_screen_shows_the_result_first_and_fits_a_phone(
+    page, server: BrowserServer, login
+) -> None:
+    login("persona_city_administrator")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/checks", wait_until="domcontentloaded")
+    page.locator('[data-testid="checks-run"]').click()
+    page.wait_for_selector('[data-testid="checks-result"]')
+    assert_no_horizontal_overflow(page)
+
+    # The result comes before the results themselves.
+    order = page.evaluate(
+        "() => ['checks-result', 'checks-counts', 'checks-table', 'checks-details'].map("
+        "(key) => document.querySelector(`[data-testid=${key}]`)"
+        ".getBoundingClientRect().top)"
+    )
+    assert order == sorted(order), order
+    # The counts are named and the eight results keep their reasons.
+    counts = [
+        int(
+            page.locator(f'[data-testid="checks-count-{key}"]').inner_text().strip()
+        )
+        for key in ("pass", "fail", "na")
+    ]
+    assert sum(counts) == 8
+    assert page.locator('[data-testid="check-row"]').count() == 8
+
+    # Neither the mobile bar nor the demo switch covers the controls.
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="checks-run"]'))
     assert page.recorded_errors == []
 
 

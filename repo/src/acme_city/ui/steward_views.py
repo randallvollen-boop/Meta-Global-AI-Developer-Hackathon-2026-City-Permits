@@ -33,6 +33,14 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import app_now
 from acme_city.fixtures.loader import REPO_ROOT
+from acme_city.ingestion.normalization import (
+    normalize_address,
+    normalize_email,
+    normalize_identifier,
+    normalize_name,
+    normalize_phone,
+    normalize_text,
+)
 from acme_city.persistence.models import (
     audit,
     change,
@@ -83,6 +91,24 @@ QUEUE_FILTERS: tuple[tuple[str, str], ...] = steward_queue_views.QUEUE_FILTERS
 #: The label of each state of a task.
 STATUS_LABELS: dict[str, str] = steward_queue_views.STATUS_LABELS
 
+#: What the steward does next in a focused case that is still open.
+OPEN_NEXT_STEPS: dict[str, str] = {
+    "link": "Compare the record with each candidate, then confirm the link, reject it or defer it.",
+    "linked": "Open the master record to see where each value came from.",
+    "parcel": "Compare the submitted address with the parcel, then approve or reject the link.",
+    "case": "Move the case to the next state, or wait for the source to answer.",
+    "issue": "Resolve the recorded issue so the work it blocks can continue.",
+}
+
+#: What the steward does next in a focused case that is finished.
+CLOSED_NEXT_STEPS: dict[str, str] = {
+    "link": "The link is decided. Open the master record to see where each value came from.",
+    "linked": "The link is decided. Open the master record to see where each value came from.",
+    "parcel": "The parcel link is decided. The Permit Reviewer still confirms the parcel.",
+    "case": "The case is closed. Open the record to see what the source answered.",
+    "issue": "The issue is closed. Open the record to see what changed.",
+}
+
 #: The four collections of Master records, in tab order.
 MASTER_TABS: tuple[tuple[str, str], ...] = (
     ("people", "People & organizations"),
@@ -90,6 +116,23 @@ MASTER_TABS: tuple[tuple[str, str], ...] = (
     ("licenses", "Business licenses"),
     ("registrations", "Contractor registrations"),
 )
+
+#: The families of record a focused case can compare.
+COMPARISON_FAMILIES: tuple[str, ...] = ("party", "parcel", "address")
+
+#: The order the rows of a comparison are read in: what disagrees first,
+#: then what is missing on one side, and only then what agrees.
+COMPARISON_ORDER: tuple[str, ...] = ("conflicts", "no_comparison", "agrees")
+
+#: The link states of the source-record catalogue, and the label each one
+#: carries.  The action a record asks for follows from its state.
+SOURCE_LINK_STATES: dict[str, tuple[str, str]] = {
+    "not_compared": ("Not compared", "Find matches"),
+    "proposed": ("Match proposed", "Review match"),
+    "linked": ("Linked", "View master record"),
+    "decided": ("No suitable match", "Review next step"),
+    "not_linkable": ("Not a master record", ""),
+}
 
 #: Grants that open the drawer kinds (the same predicate as the screens).
 RECORD_GRANTS: tuple[tuple[str, str | None], ...] = view_models.SCREEN_PERMISSIONS["applicants"]
@@ -459,21 +502,34 @@ def credentials_collection(
 
 
 def open_issue_lines(session: Session, party_id: str) -> list[dict[str, str]]:
-    """Return the open data issues of one record in plain words, with a link."""
+    """Return the open data issues of one record in plain words, with a link.
+
+    Each line names its kind: an ``identity`` line questions the identity of
+    the record, a ``correction`` line asks a source to change a value, and an
+    ``issue`` line is a recorded issue routed to its owner.
+    """
     lines: list[dict[str, str]] = []
     for row in session.execute(
         select(change.GovernanceIssue).where(
             change.GovernanceIssue.subject_id == party_id, change.GovernanceIssue.status == "open"
         )
     ).scalars():
-        lines.append({"text": row.description, "href": f"/steward/issues/issue/{row.id}"})
+        lines.append(
+            {"text": row.description, "href": f"/steward/issues/issue/{row.id}", "kind": "issue"}
+        )
     for row in session.execute(
         select(change.ChangeCase).where(
             change.ChangeCase.target_id == party_id,
             change.ChangeCase.status.notin_(("closed", "rejected", "published")),
         )
     ).scalars():
-        lines.append({"text": row.title, "href": f"/steward/issues/case/{row.id}"})
+        lines.append(
+            {
+                "text": row.title,
+                "href": f"/steward/issues/case/{row.id}",
+                "kind": "identity" if row.change_kind == "identity" else "correction",
+            }
+        )
     snapshots = {
         row.source_snapshot_id: row
         for row in session.execute(select(source.SourceSnapshot)).scalars()
@@ -488,6 +544,7 @@ def open_issue_lines(session: Session, party_id: str) -> list[dict[str, str]]:
             {
                 "text": f"Source record {snap.source_record_id} may match this record",
                 "href": f"/steward/issues/link/{proposal.id}",
+                "kind": "identity",
             }
         )
     return lines
@@ -592,6 +649,11 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
         if linked
         else source_summary(session, "permitting", "applicant_profiles")
     )
+    issues = open_issue_lines(session, party_id)
+    trusted_values = [
+        field for field in detail["trusted_fields"] if field.get("value") is not None
+    ]
+    credential_states = sorted({item["status_label"] for item in credentials})
     return {
         "detail": detail,
         "party": party,
@@ -603,7 +665,14 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
         "contacts": detail["current"]["contacts"],
         "credentials": credentials,
         "applications": applications,
-        "issues": open_issue_lines(session, party_id),
+        "issues": issues,
+        "trusted_values": trusted_values,
+        "identity_status": (
+            "Authority needs review"
+            if any(line["kind"] == "identity" for line in issues)
+            else "Identity linked"
+        ),
+        "credential_status": ", ".join(credential_states) or "No credential recorded",
         "sources": sources,
         "source_summary": summary,
         "history": history,
@@ -692,7 +761,7 @@ def _resolve_record(ctx: DetailContext, party_id: str) -> DetailView | None:
     )
     links = [("Open the full profile page", f"/masters/{party_id}" if _can_open_master(ctx.session, ctx.actor) else f"/applicants/{party_id}")]
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=profile["name"],
         subtitle=f"{profile['type']} · Overview",
@@ -743,7 +812,7 @@ def _resolve_record_sources(ctx: DetailContext, party_id: str) -> DetailView | N
     summary = profile["source_summary"]
     links = []
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=profile["name"],
         subtitle=f"{profile['type']} · Sources",
@@ -802,6 +871,24 @@ def _split_source_id(item_id: str) -> tuple[str, str, str]:
     parts = item_id.split(":")
     parts += [""] * (3 - len(parts))
     return parts[0], parts[1], ":".join(parts[2:])
+
+
+def _accepted_values(payload: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return the accepted values of a source record, in a readable order.
+
+    These are the values the source sent and the registry accepted.  A value
+    that holds a document rather than a field is left out.
+    """
+    rows: list[tuple[str, str]] = []
+    for key in sorted(payload):
+        value = payload[key]
+        if isinstance(value, (dict, list)):
+            continue
+        text = str(value)
+        if len(text) > 240:
+            text = text[:237] + "..."
+        rows.append((display.pretty(key), text))
+    return rows
 
 
 def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
@@ -865,6 +952,37 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
                 ),
             ),
         )
+    if snapshot is not None:
+        values = _accepted_values(dict(snapshot.raw_payload or {}))
+        if values:
+            sections.insert(
+                1,
+                Section(
+                    "Accepted values",
+                    tuple(Row(label, value) for label, value in values),
+                ),
+            )
+        crosswalk = ctx.session.execute(
+            select(registry.Crosswalk)
+            .where(
+                registry.Crosswalk.source_system_id == system_id,
+                registry.Crosswalk.source_record_id == record_id,
+            )
+            .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
+        ).scalars().all()
+        if crosswalk:
+            latest = crosswalk[-1]
+            sections.append(
+                Section(
+                    "Current link",
+                    (
+                        Row("State", display.pretty(latest.link_status)),
+                        Row("Master record", _party_label(ctx.session, latest.entity_id)),
+                        Row("Decided by", view_models.actor_label(ctx.session, latest.decision_actor_id)),
+                        Row("Decided at", display.readable_date(latest.decided_at) or "not decided"),
+                    ),
+                )
+            )
     if summary["warning"]:
         sections.append(Section("Freshness", lines=(summary["warning"],)))
     technical = [
@@ -954,7 +1072,7 @@ def _resolve_credential(ctx: DetailContext, credential_id: str) -> DetailView | 
     ]
     links = [("Open the organization profile", f"?detail=record:{holder.id}")]
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=f"{display.pretty(credential.credential_type)} {credential.number}",
         subtitle=holder.display_name,
@@ -1132,6 +1250,74 @@ def _payload_values(payload: dict[str, Any], keys: tuple[str, ...]) -> str:
     return ""
 
 
+def _comparison_row(
+    field: str,
+    left: str,
+    right: str,
+    result: str,
+    note: str = "",
+    left_normalized: str = "",
+    right_normalized: str = "",
+) -> dict[str, str]:
+    """Return one row of a comparison.
+
+    The raw value stays as it was recorded.  The normalized value, when the
+    matcher computed one, sits beside it and is never shown as the value
+    itself, so a reader sees what was recorded and what was compared.
+    """
+    return {
+        "field": field,
+        "source": left or "No value",
+        "master": right or "No value",
+        "result": result,
+        "note": note,
+        "source_normalized": left_normalized,
+        "master_normalized": right_normalized,
+    }
+
+
+def typed_comparison(
+    rows: list[dict[str, str]],
+    *,
+    family: str = "party",
+    caption: str = "",
+    current: bool = False,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Return one typed comparison, ready for the comparison renderer.
+
+    The rows come in the order a reader needs them: what disagrees first,
+    then what is missing on one side, and only then what agrees.  A missing
+    value stays missing; it is never filled in.  ``current`` marks a
+    comparison that was computed again after a decision was recorded.
+    """
+    def rank(row: dict[str, str]) -> int:
+        result = str(row.get("result", ""))
+        return COMPARISON_ORDER.index(result) if result in COMPARISON_ORDER else len(COMPARISON_ORDER)
+
+    ordered = sorted(rows, key=rank)
+    for row in ordered:
+        # A value that is not there is shown as missing, never as an empty
+        # cell that could be read as an empty value.
+        row["source"] = row.get("source") or "No value"
+        row["master"] = row.get("master") or "No value"
+        row.setdefault("note", "")
+        row.setdefault("source_normalized", "")
+        row.setdefault("master_normalized", "")
+    return {
+        "family": family,
+        "caption": caption,
+        "headers": {"source": "Source record", "master": "Master record", **(headers or {})},
+        "rows": ordered,
+        "conflicts": [row for row in ordered if row.get("result") == "conflicts"],
+        "missing": [row for row in ordered if row.get("result") == "no_comparison"],
+        "agreements": [row for row in ordered if row.get("result") == "agrees"],
+        "current": current,
+        "has_conflicts": any(row.get("result") == "conflicts" for row in ordered),
+        "has_missing": any(row.get("result") == "no_comparison" for row in ordered),
+    }
+
+
 def compare_with_party(
     session: Session, payload: dict[str, Any], party: registry.Party
 ) -> list[dict[str, str]]:
@@ -1155,8 +1341,18 @@ def compare_with_party(
     ).scalars().all()
     rows: list[dict[str, str]] = []
 
-    def add(field: str, left: str, right: str, result: str, note: str = "") -> None:
-        rows.append({"field": field, "source": left or "No value", "master": right or "No value", "result": result, "note": note})
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
 
     name = _payload_values(payload, ("organization_name", "holder_name", "display_name", "full_name"))
     if name:
@@ -1164,9 +1360,26 @@ def compare_with_party(
         hit = next((item for item in names if item and _norm(item) == _norm(name)), "")
         if hit:
             note = "matches a recorded alias" if hit in aliases and hit != party.display_name else ""
-            add("Name", name, hit if hit != party.display_name else party.display_name, "agrees", note)
+            shown = hit if hit != party.display_name else party.display_name
+            add(
+                "Name",
+                name,
+                shown,
+                "agrees",
+                note,
+                normalize_name(name).normalized,
+                normalize_name(shown).normalized,
+            )
         else:
-            add("Name", name, party.display_name, "conflicts", "similar words do not make the same organization")
+            add(
+                "Name",
+                name,
+                party.display_name,
+                "conflicts",
+                "similar words do not make the same organization",
+                normalize_name(name).normalized,
+                normalize_name(party.display_name).normalized,
+            )
     else:
         add("Name", "", party.display_name, "no_comparison")
 
@@ -1178,16 +1391,35 @@ def compare_with_party(
             named,
             party.display_name,
             "agrees" if ref == party.id else "conflicts",
+            "",
+            normalize_identifier(ref),
+            normalize_identifier(party.id),
         )
 
     email = _payload_values(payload, ("contact_email",))
     if email:
         mine = next((c.value for c in contacts if c.contact_type == "email"), "")
-        add("Email", email, mine, ("agrees" if _norm(mine) == _norm(email) else "conflicts") if mine else "no_comparison")
+        add(
+            "Email",
+            email,
+            mine,
+            ("agrees" if _norm(mine) == _norm(email) else "conflicts") if mine else "no_comparison",
+            "",
+            normalize_email(email),
+            normalize_email(mine),
+        )
     phone = _payload_values(payload, ("contact_phone",))
     if phone:
         mine = next((c.value for c in contacts if c.contact_type == "phone"), "")
-        add("Phone", phone, mine, ("agrees" if _norm(mine) == _norm(phone) else "conflicts") if mine else "no_comparison")
+        add(
+            "Phone",
+            phone,
+            mine,
+            ("agrees" if _norm(mine) == _norm(phone) else "conflicts") if mine else "no_comparison",
+            "",
+            normalize_phone(phone),
+            normalize_phone(mine),
+        )
 
     number = _payload_values(payload, ("license_number", "registration_number"))
     if number:
@@ -1195,9 +1427,25 @@ def compare_with_party(
         if not numbers:
             add("License or registration number", number, "", "no_comparison")
         elif any(_norm(n) == _norm(number) for n in numbers):
-            add("License or registration number", number, number, "agrees")
+            add(
+                "License or registration number",
+                number,
+                number,
+                "agrees",
+                "",
+                normalize_identifier(number),
+                normalize_identifier(number),
+            )
         else:
-            add("License or registration number", number, ", ".join(numbers), "conflicts", "a different number")
+            add(
+                "License or registration number",
+                number,
+                ", ".join(numbers),
+                "conflicts",
+                "a different number",
+                normalize_identifier(number),
+                normalize_identifier(", ".join(numbers)),
+            )
 
     address = _payload_values(payload, ("business_address",))
     if address:
@@ -1205,12 +1453,265 @@ def compare_with_party(
 
         official = _party_addresses(session, party.id)
         if not official:
-            add("Site address", address, "", "no_comparison")
+            add(
+                "Site address",
+                address,
+                "",
+                "no_comparison",
+                "",
+                normalize_address(address).normalized,
+                "",
+            )
         elif any(_norm(a) == _norm(address) for a in official):
-            add("Site address", address, address, "agrees")
+            add(
+                "Site address",
+                address,
+                address,
+                "agrees",
+                "",
+                normalize_address(address).normalized,
+                normalize_address(address).normalized,
+            )
         else:
-            add("Site address", address, ", ".join(official), "conflicts", "a different address or unit")
+            add(
+                "Site address",
+                address,
+                ", ".join(official),
+                "conflicts",
+                "a different address or unit",
+                normalize_address(address).normalized,
+                normalize_address(", ".join(official)).normalized,
+            )
     return rows
+
+
+def compare_with_parcel(
+    session: Session, payload: dict[str, Any], parcel: registry.Parcel
+) -> list[dict[str, str]]:
+    """Compare the values of a source record with one official parcel.
+
+    The parcel number and the jurisdiction are the identity of a parcel.  A
+    value the source did not send stays missing; it is never filled in.
+    """
+    rows: list[dict[str, str]] = []
+
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
+
+    number = _payload_values(payload, ("parcel_number", "submitted_parcel"))
+    official_number = parcel.source_parcel_number
+    if number:
+        same = _norm(number) == _norm(official_number)
+        add(
+            "Parcel number",
+            number,
+            official_number,
+            "agrees" if same else "conflicts",
+            "" if same else "a different parcel",
+            normalize_identifier(number),
+            normalize_identifier(official_number),
+        )
+    else:
+        add("Parcel number", "", official_number, "no_comparison")
+    jurisdiction = _payload_values(payload, ("jurisdiction_id", "jurisdiction"))
+    if jurisdiction:
+        same = _norm(jurisdiction) == _norm(parcel.jurisdiction_id)
+        add(
+            "Jurisdiction",
+            jurisdiction,
+            parcel.jurisdiction_id,
+            "agrees" if same else "conflicts",
+            "" if same else "another jurisdiction",
+            normalize_identifier(jurisdiction),
+            normalize_identifier(parcel.jurisdiction_id),
+        )
+    else:
+        add("Jurisdiction", "", parcel.jurisdiction_id, "no_comparison")
+    return rows
+
+
+def _written_unit(raw: str, address: Any) -> str:
+    """Return the unit of an address as it was written.
+
+    The comparison form of an address folds the case away, so the unit is
+    read back from the text the source sent.
+    """
+    if not address.unit_key:
+        return ""
+    pattern = re.escape(address.unit_key).replace(r"\ ", r"\s+")
+    match = re.search(pattern, raw, re.IGNORECASE)
+    return match.group(0) if match else address.unit_key
+
+
+def compare_with_address(
+    session: Session, payload: dict[str, Any], address: registry.Address
+) -> list[dict[str, str]]:
+    """Compare the values of a source record with one official address.
+
+    The street and the unit stay apart: two addresses in the same building
+    that name the unit differently are not the same place.  A missing value
+    stays missing.
+    """
+    rows: list[dict[str, str]] = []
+
+    def add(
+        field: str,
+        left: str,
+        right: str,
+        result: str,
+        note: str = "",
+        left_normalized: str = "",
+        right_normalized: str = "",
+    ) -> None:
+        rows.append(
+            _comparison_row(field, left, right, result, note, left_normalized, right_normalized)
+        )
+
+    source_text = _payload_values(payload, ("source_string", "business_address", "address_text"))
+    official_text = address.source_string or ""
+    source_address = normalize_address(source_text)
+    official_address = normalize_address(official_text)
+    if source_text and official_text:
+        same = (
+            source_address.building_key == official_address.building_key
+            and source_address.unit_key == official_address.unit_key
+        )
+        add(
+            "Address",
+            source_text,
+            official_text,
+            "agrees" if same else "conflicts",
+            "" if same else "a different address or unit",
+            source_address.normalized,
+            official_address.normalized,
+        )
+    elif source_text:
+        add(
+            "Address",
+            source_text,
+            "",
+            "no_comparison",
+            "",
+            source_address.normalized,
+            "",
+        )
+    else:
+        add("Address", "", official_text, "no_comparison")
+    source_unit = _written_unit(source_text, source_address)
+    official_unit = _written_unit(official_text, official_address)
+    if source_unit and official_unit:
+        same = _norm(source_unit) == _norm(official_unit)
+        add(
+            "Unit",
+            source_unit,
+            official_unit,
+            "agrees" if same else "conflicts",
+            "" if same else "another unit in the same building",
+            normalize_text(source_unit),
+            normalize_text(official_unit),
+        )
+    else:
+        add("Unit", source_unit, official_unit, "no_comparison")
+    return rows
+
+
+def _candidate_comparison(
+    session: Session, candidate: Any, payload: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Return the typed comparison of one candidate.
+
+    A party, a parcel and an address are compared in their own fields, so a
+    case never shows a party card for a parcel.  ``None`` means the record
+    the candidate names is not in the registry.
+    """
+    if candidate.entity_type == "party":
+        party = session.get(registry.Party, candidate.entity_id)
+        if party is None:
+            return None
+        numbers = [
+            f"{display.pretty(credential.credential_type)} {credential.number}"
+            for credential in session.execute(
+                select(registry.Credential).where(
+                    registry.Credential.holder_party_id == party.id
+                )
+            ).scalars()
+        ]
+        return {
+            "family": "party",
+            "name": party.display_name,
+            "type": display.pretty(party.party_type),
+            "credentials": numbers,
+            "record_ref": _ref("record", party.id),
+            "linkable": True,
+            "rows": compare_with_party(session, payload, party),
+        }
+    if candidate.entity_type == "parcel":
+        parcel = session.get(registry.Parcel, candidate.entity_id)
+        if parcel is None:
+            return None
+        return {
+            "family": "parcel",
+            "name": parcel.source_parcel_number,
+            "type": "Parcel",
+            "credentials": [],
+            "record_ref": _ref("parcel", parcel.parcel_id),
+            "linkable": False,
+            "rows": compare_with_parcel(session, payload, parcel),
+        }
+    if candidate.entity_type == "address":
+        address = session.get(registry.Address, candidate.entity_id)
+        if address is None:
+            return None
+        return {
+            "family": "address",
+            "name": address.source_string or address.address_id,
+            "type": "Address",
+            "credentials": [],
+            "record_ref": _ref("address", address.address_id),
+            "linkable": False,
+            "rows": compare_with_address(session, payload, address),
+        }
+    return None
+
+
+def _stored_evidence(
+    proposal: registry.MatchProposal | None, entity_id: str
+) -> tuple[list[dict[str, str]], list[dict[str, str]]] | None:
+    """Return the evidence the proposal recorded for one candidate.
+
+    The proposal stores the evidence it used, so a decision can be read with
+    the evidence that was recorded at the time.  ``None`` means the proposal
+    holds no evidence for that candidate.
+    """
+    if proposal is None or proposal.entity_id != entity_id:
+        return None
+    supporting = [dict(item) for item in (proposal.supporting_evidence or [])]
+    conflicting = [dict(item) for item in (proposal.conflicting_evidence or [])]
+    if not supporting and not conflicting:
+        return None
+    return supporting, conflicting
+
+
+def _evidence_items(items: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Return the evidence of one direction in the shape the screen reads."""
+    return [
+        {
+            "field": str(item.get("field", "")),
+            "text": str(item.get("detail", "")),
+            "method": _evidence_phrase(str(item.get("method", ""))),
+        }
+        for item in items
+    ]
 
 
 def _score_parts(supporting: tuple[Any, ...], conflicting: tuple[Any, ...]) -> list[dict[str, str]]:
@@ -1524,6 +2025,25 @@ def _action(
     return item
 
 
+def _master_choice(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return a form field that names the master record to link to.
+
+    The value is the canonical identifier and the text is the name a person
+    reads.  The first choice is empty, so an ambiguous case has no implicit
+    selection: the steward has to name the record before the link changes.
+    """
+    return {
+        "name": "entity_id",
+        "label": "Master record",
+        "type": "select",
+        "value": "",
+        "options": [("", "Choose a master record")]
+        + [(str(item["entity_id"]), str(item["name"])) for item in candidates],
+        "required": True,
+        "hint": "",
+    }
+
+
 def _preview(
     records: str, application: str, source_values: str, issue_after: str
 ) -> dict[str, str]:
@@ -1596,8 +2116,16 @@ def _events_for(session: Session, target_ids: list[str], prefixes: tuple[str, ..
     return events
 
 
-def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[str, Any]:
-    """Return the focused case of a record match, answering the six questions in order."""
+def link_case(
+    session: Session, actor: ActorContext, proposal_id: str, selected_id: str = ""
+) -> dict[str, Any]:
+    """Return the focused case of a record match, answering the six questions in order.
+
+    ``selected_id`` is the master record the steward chose in the chooser.  A
+    case with one candidate needs no choice, so that candidate is the one the
+    decision acts on; an ambiguous case has no candidate chosen until the
+    steward chooses one.
+    """
     proposal = session.get(registry.MatchProposal, proposal_id)
     if proposal is None:
         return {}
@@ -1624,39 +2152,63 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
 
     candidates = []
     for candidate in sorted(candidate_set.candidates, key=lambda c: c.score, reverse=True):
-        party = session.get(registry.Party, candidate.entity_id)
-        if party is None:
+        typed = _candidate_comparison(session, candidate, payload)
+        if typed is None:
             continue
-        numbers = [
-            f"{display.pretty(c.credential_type)} {c.number}"
-            for c in session.execute(
-                select(registry.Credential).where(registry.Credential.holder_party_id == party.id)
-            ).scalars()
-        ]
-        comparison = compare_with_party(session, payload, party)
+        comparison = typed_comparison(
+            typed["rows"],
+            family=typed["family"],
+            caption=f"Source record values against {typed['name']}",
+            current=decided is not None,
+        )
+        # The proposal keeps the evidence it used.  A candidate the proposal
+        # named is read with that evidence; the others are read with the
+        # evidence the matcher holds now.
+        recorded = _stored_evidence(proposal, candidate.entity_id)
+        if recorded is not None:
+            agreements = _evidence_items(recorded[0])
+            conflicts = _evidence_items(recorded[1])
+            evidence_source = "Recorded evidence"
+        else:
+            agreements = [
+                {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
+                for item in candidate.supporting
+            ]
+            conflicts = [
+                {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
+                for item in candidate.conflicting
+            ]
+            evidence_source = "Current evidence"
         candidates.append(
             {
                 "entity_id": candidate.entity_id,
-                "name": party.display_name,
-                "type": display.pretty(party.party_type),
-                "credentials": numbers,
+                "name": typed["name"],
+                "type": typed["type"],
+                "credentials": typed["credentials"],
                 "comparison": comparison,
-                "agreements": [
-                    {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
-                    for item in candidate.supporting
-                ],
-                "conflicts": [
-                    {"field": item.field, "text": item.detail or _evidence_phrase(item.method), "method": _evidence_phrase(item.method)}
-                    for item in candidate.conflicting
-                ],
-                "no_comparison": [row["field"] for row in comparison if row["result"] == "no_comparison"],
+                "agreements": agreements,
+                "conflicts": conflicts,
+                "evidence_source": evidence_source,
+                "no_comparison": [row["field"] for row in comparison["missing"]],
                 "score": candidate.score,
                 "score_parts": _score_parts(candidate.supporting, candidate.conflicting),
-                "record_ref": _ref("record", party.id),
+                "record_ref": typed["record_ref"],
+                "linkable": typed["linkable"],
                 "lead": candidate.entity_id == (decided.entity_id if decided is not None else proposal.entity_id),
             }
         )
     lead = next((c for c in candidates if c["lead"]), candidates[0] if candidates else None)
+    # The record the steward chose, and the one the matcher put first.  An
+    # ambiguous case has no chosen record until the steward chooses one.
+    chosen = next((c for c in candidates if c["entity_id"] == selected_id), None)
+    if chosen is None and len(candidates) == 1:
+        chosen = candidates[0]
+    # One comparison is shown open; the other candidates stay in a disclosure.
+    shown = chosen or lead
+    for candidate in candidates:
+        candidate["selected"] = chosen is not None and candidate["entity_id"] == chosen["entity_id"]
+        candidate["recommended"] = lead is not None and candidate["entity_id"] == lead["entity_id"]
+        candidate["open"] = shown is not None and candidate["entity_id"] == shown["entity_id"]
 
     # 1. The problem.
     if decided is not None:
@@ -1714,51 +2266,68 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
             if cand["conflicts"]
             else "No conflicting value remains."
         )
-        for cand in candidates:
-            same = cand["entity_id"] == pending.entity_id
-            actions.append(
-                {
-                    **_action(
-                        session,
-                        actor,
-                        action_id="registry.decide",
-                        label=f"Confirm link to {cand['name']}",
-                        path="/ui/actions/registry.decide",
-                        permission="registry.crosswalk.decide",
-                        domain_id=domain,
-                        destination="Registry crosswalk",
-                        description="Link this source record to the master record. The decision, your name, the time and the note are recorded.",
-                        expected_version=pending.version,
-                        fields=(
-                            *common_fields,
-                            view_models._field("decision", "Decision", value="approve" if same else "correct", field_type="hidden"),
-                            view_models._field("entity_id", "Master record", value=cand["entity_id"], field_type="hidden"),
-                            view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
-                            view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
-                            view_models._field("reason", "Decision note", field_type="textarea", required=True),
-                        ),
-                    ),
-                    "dom_id": f"confirm-{cand['entity_id']}",
-                    "preview": _preview(
-                        f"Links {record_id} ({source_label}) to {cand['name']}.",
-                        (
-                            f"{len(_applications_of(session, [cand['entity_id']], synthetic))} application(s) name {cand['name']}; "
-                            "their applicant is unchanged"
-                            + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
-                        ),
-                        f"The source record is not edited and no master value is overwritten. Source value kept: {name or 'as received'}."
-                        + (" The payer link of the finance account is set to this record." if dataset_key == "finance_accounts" else ""),
-                        conflict_note(cand),
-                    ),
-                }
+        # The steward names the master record.  A chosen record is confirmed;
+        # an ambiguous case has no chosen record, so the action offers the
+        # choice and asks for it.
+        if chosen is not None:
+            entity_field = view_models._field(
+                "entity_id", "Master record", value=chosen["entity_id"], field_type="hidden"
             )
+            confirm_label = f"Confirm link to {chosen['name']}"
+            confirm_records = f"Links {record_id} ({source_label}) to {chosen['name']}."
+            confirm_application = (
+                f"{len(_applications_of(session, [chosen['entity_id']], synthetic))} application(s) "
+                f"name {chosen['name']}; their applicant is unchanged"
+                + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
+            )
+            confirm_conflicts = conflict_note(chosen)
+        else:
+            entity_field = _master_choice(candidates)
+            confirm_label = "Confirm link to the selected record"
+            confirm_records = f"Links {record_id} ({source_label}) to the master record you choose."
+            confirm_application = (
+                "The applications that name the chosen record use it; their applicant is unchanged"
+                + (f" and {dependents_text} are marked for recheck." if dependents_total else ".")
+            )
+            confirm_conflicts = "The conflicts of the record you choose stay visible in the history."
         actions.append(
             {
                 **_action(
                     session,
                     actor,
                     action_id="registry.decide",
-                    label="Reject match",
+                    label=confirm_label,
+                    path="/ui/actions/registry.decide",
+                    permission="registry.crosswalk.decide",
+                    domain_id=domain,
+                    destination="Registry crosswalk",
+                    description="Link this source record to the master record. The decision, your name, the time and the note are recorded.",
+                    expected_version=pending.version,
+                    fields=(
+                        *common_fields,
+                        entity_field,
+                        view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
+                        view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
+                        view_models._field("reason", "Decision note", field_type="textarea", required=True),
+                    ),
+                ),
+                "dom_id": f"confirm-{chosen['entity_id'] if chosen else 'choice'}",
+                "preview": _preview(
+                    confirm_records,
+                    confirm_application,
+                    f"The source record is not edited and no master value is overwritten. Source value kept: {name or 'as received'}."
+                    + (" The payer link of the finance account is set to this record." if dataset_key == "finance_accounts" else ""),
+                    confirm_conflicts,
+                ),
+            }
+        )
+        actions.append(
+            {
+                **_action(
+                    session,
+                    actor,
+                    action_id="registry.decide",
+                    label=f"Reject match proposed for {_party_label(session, pending.entity_id)}",
                     path="/ui/actions/registry.decide",
                     permission="registry.crosswalk.decide",
                     domain_id=domain,
@@ -1788,7 +2357,7 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
                     session,
                     actor,
                     action_id="registry.defer",
-                    label="Defer",
+                    label="Keep for review",
                     path="/ui/actions/registry.defer",
                     permission="registry.crosswalk.decide",
                     domain_id=domain,
@@ -1900,6 +2469,10 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
     return {
         "kind": "link",
         "id": proposal.id,
+        "record_name": name,
+        "record_reference": record_id,
+        "source_name": source_label,
+        "record_type": _party_type(session, lead["entity_id"] if lead else None),
         "title": (
             f"{record_id}" + (f": {name}" if name else "")
         ),
@@ -1915,6 +2488,8 @@ def link_case(session: Session, actor: ActorContext, proposal_id: str) -> dict[s
             "name": name,
         },
         "candidates": candidates,
+        "selected_candidate": chosen,
+        "recommended_candidate": lead,
         "similar_note": (
             "A similar name does not make these the same organization. Each candidate stays its own record."
             if len(candidates) > 1
@@ -2013,6 +2588,10 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
     return {
         "kind": "parcel",
         "id": application_id,
+        "record_name": match.submitted_text or "",
+        "record_reference": application.source_application_number,
+        "source_name": "GIS: Address locator (simulated)",
+        "record_type": "parcel",
         "title": f"Parcel link for {application.source_application_number}",
         "status": "needs_review" if waiting else "resolved",
         "status_label": STATUS_LABELS["needs_review" if waiting else "resolved"],
@@ -2023,10 +2602,26 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
         "why": f"{application.source_application_number} cannot be decided until its parcel link is approved and the Permit Reviewer confirms the parcel.",
         "applications": outstanding,
         "parcel": proposal,
-        "compare_rows": [
-            {"field": "Address", "source": match.submitted_text or "No value", "master": match.matched_address or "No value",
-             "result": "agrees" if match.matched_address and _norm(match.submitted_text) == _norm(match.matched_address) else ("conflicts" if match.matched_address else "no_comparison")},
-        ],
+        "comparison": typed_comparison(
+            [
+                {
+                    "field": "Address",
+                    "source": match.submitted_text or "No value",
+                    "master": match.matched_address or "No value",
+                    "result": (
+                        "agrees"
+                        if match.matched_address and _norm(match.submitted_text) == _norm(match.matched_address)
+                        else ("conflicts" if match.matched_address else "no_comparison")
+                    ),
+                    "note": "",
+                    "source_normalized": normalize_address(match.submitted_text).normalized,
+                    "master_normalized": normalize_address(match.matched_address).normalized,
+                }
+            ],
+            family="parcel",
+            caption="What the applicant typed against what the locator found",
+            headers={"source": "Submitted", "master": "Found by the locator"},
+        ),
         "actions": actions,
         "result": result,
         "events": events,
@@ -2063,6 +2658,9 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
             "source": str((case.old_value or {}).get(key, "No value")),
             "master": str((case.proposed_value or {}).get(key, "No value")),
             "result": "conflicts" if (case.old_value or {}).get(key) != (case.proposed_value or {}).get(key) else "agrees",
+            "note": "",
+            "source_normalized": "",
+            "master_normalized": "",
         }
         for key in keys
     ]
@@ -2134,13 +2732,22 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
         "commands": commands,
         "deliveries": deliveries,
         "id": case.id,
+        "record_name": _party_label(session, target_party) if target_party else case.title,
+        "record_reference": case.id,
+        "source_name": case.destination or "Configured steward queue",
+        "record_type": "correction",
         "title": case.title,
         "status": status,
         "status_label": STATUS_LABELS[status],
         "problem": case.reason or case.title,
         "why": "Applications that depend on this record are rechecked when the source accepts the change.",
         "applications": applications,
-        "compare_rows": rows,
+        "comparison": typed_comparison(
+            rows,
+            family="change",
+            caption="Current value against the proposed value",
+            headers={"source": "Current", "master": "Proposed"},
+        ),
         "case_evidence": [str(item) for item in (case.evidence or [])],
         "destination": case.destination or "Configured steward queue",
         "state_label": display.pretty(case.status),
@@ -2169,6 +2776,10 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
     return {
         "kind": "issue",
         "id": row.id,
+        "record_name": party.display_name if party is not None else str(row.subject_id),
+        "record_reference": row.id,
+        "source_name": row.responsible_queue_id or "Steward queue",
+        "record_type": "issue",
         "title": row.description,
         "status": status,
         "status_label": STATUS_LABELS[status],
@@ -2187,15 +2798,84 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
     }
 
 
-def focused_case(session: Session, actor: ActorContext, kind: str, item_id: str) -> dict[str, Any]:
+def focused_case(
+    session: Session, actor: ActorContext, kind: str, item_id: str, selected_id: str = ""
+) -> dict[str, Any]:
     """Return the focused case for one queue address, or an empty dict."""
+    case = _focused_case(session, actor, kind, item_id, selected_id)
+    if case:
+        case["summary"] = _case_summary(case)
+        case["evidence"] = _case_evidence(case)
+    return case
+
+
+def _case_evidence(case: dict[str, Any]) -> tuple[str, ...]:
+    """Return the recorded evidence of a focused case, in the words of the page.
+
+    The words are the ones the case shows under "What supports the decision?",
+    so the guide never contradicts the page.  A case with no recorded evidence
+    holds nothing, and the guide then says nothing about evidence.
+    """
+    kind = str(case.get("kind", ""))
+    if kind == "link":
+        candidates = list(case.get("candidates") or [])
+        shown = next((item for item in candidates if item.get("open")), None)
+        if shown is None and candidates:
+            shown = candidates[0]
+        if shown is None:
+            return ()
+        return tuple(
+            str(item.get("method", ""))
+            for item in list(shown.get("agreements") or []) + list(shown.get("conflicts") or [])
+            if item.get("method")
+        )
+    if kind == "case":
+        return tuple(str(item) for item in case.get("case_evidence") or [])
+    return ()
+
+
+def _focused_case(
+    session: Session, actor: ActorContext, kind: str, item_id: str, selected_id: str = ""
+) -> dict[str, Any]:
+    """Build the focused case of one queue address."""
     if kind == "linked":
         crosswalk = session.get(registry.Crosswalk, item_id)
         if crosswalk is None:
             return {}
         return _linked_case(session, actor, crosswalk)
     builder = {"link": link_case, "parcel": parcel_case, "case": case_case, "issue": governance_case}.get(kind)
-    return builder(session, actor, item_id) if builder else {}
+    if builder is None:
+        return {}
+    if kind == "link":
+        return builder(session, actor, item_id, selected_id=selected_id)
+    return builder(session, actor, item_id)
+
+
+def _case_summary(case: dict[str, Any]) -> dict[str, Any]:
+    """Return the compact summary of a focused case.
+
+    The summary names the task, the record, the source, the status, the
+    affected applications and the next step.  It repeats nothing the six
+    questions below it already say, so the steward reads the situation once
+    and then the evidence.
+    """
+    kind = str(case.get("kind", ""))
+    task = steward_queue_views.TASK_TITLES.get(kind, steward_queue_views.TASK_TITLES["issue"])
+    if kind in ("link", "linked"):
+        task = steward_queue_views.IDENTITY_TASKS.get(str(case.get("record_type", "")), task)
+    status = str(case.get("status", "needs_review"))
+    steps = CLOSED_NEXT_STEPS if status == "resolved" else OPEN_NEXT_STEPS
+    applications = list(case.get("applications") or [])
+    return {
+        "task": task,
+        "record": str(case.get("record_name", "")),
+        "reference": str(case.get("record_reference", "")),
+        "source": str(case.get("source_name", "")),
+        "status": status,
+        "status_label": str(case.get("status_label", "")),
+        "application_count": len(applications),
+        "next_step": steps.get(kind, OPEN_NEXT_STEPS["issue"]),
+    }
 
 
 def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Crosswalk) -> dict[str, Any]:
@@ -2205,6 +2885,10 @@ def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Cros
     return {
         "kind": "linked",
         "id": crosswalk.id,
+        "record_name": lead,
+        "record_reference": crosswalk.source_record_id,
+        "source_name": display.source_name(session, crosswalk.source_system_id, crosswalk.source_dataset_key),
+        "record_type": _party_type(session, crosswalk.entity_id),
         "title": f"{crosswalk.source_record_id}: {display.pretty(crosswalk.link_status)}",
         "status": "resolved",
         "status_label": STATUS_LABELS["resolved"],
@@ -2264,7 +2948,7 @@ def _resolve_evidence(ctx: DetailContext, proposal_id: str) -> DetailView | None
         links.append(
             (
                 "View source details",
-                f"?detail=source:{snap.source_system_id}:{snap.source_dataset_id}:{snap.source_record_id}",
+                f"?detail=source-record:{snap.source_system_id}:{snap.source_dataset_id}:{snap.source_record_id}",
             )
         )
     return DetailView(title="Evidence for this match", sections=tuple(sections), links=tuple(links))
@@ -2273,10 +2957,64 @@ def _resolve_evidence(ctx: DetailContext, proposal_id: str) -> DetailView | None
 # ---------------------------------------------------------- source records page
 
 
-def source_records(
-    session: Session, actor: ActorContext, *, system: str = "", query: str = "", page: int = 1
+def _source_domain(session: Session, system_id: str, dataset: str) -> str:
+    """Return the domain the source contract of a dataset belongs to."""
+    contract = session.execute(
+        select(governance.SourceContract).where(
+            governance.SourceContract.source_system_id == system_id,
+            governance.SourceContract.dataset_key == dataset,
+        )
+    ).scalars().first()
+    return contract.domain_id if contract is not None else "applicants"
+
+
+def _find_matches_action(
+    session: Session,
+    actor: ActorContext,
+    *,
+    system_id: str,
+    dataset: str,
+    record_id: str,
+    domain_id: str,
 ) -> dict[str, Any]:
-    """Return the source-record catalogue: accepted records with the master record each links to."""
+    """Return the action that compares one source record with the master records."""
+    return view_models.action(
+        session,
+        actor,
+        action_id="registry.propose",
+        label="Find matches",
+        path="/ui/actions/registry.propose",
+        permission="registry.crosswalk.propose",
+        domain_id=domain_id,
+        destination="Registry candidate comparison",
+        description=(
+            "Compare this source record with the master records and record the "
+            "evidence. A steward still has to decide."
+        ),
+        fields=(
+            view_models._field("source_system_id", "Source system", value=system_id, field_type="hidden"),
+            view_models._field("dataset_key", "Dataset", value=dataset, field_type="hidden"),
+            view_models._field("source_record_id", "Source record", value=record_id, field_type="hidden"),
+        ),
+    )
+
+
+def source_records(
+    session: Session,
+    actor: ActorContext,
+    *,
+    system: str = "",
+    query: str = "",
+    page: int = 1,
+    link_state: str = "",
+) -> dict[str, Any]:
+    """Return the source-record catalogue: accepted records with the master record each links to.
+
+    Every row names the record a person recognizes, the source it came from,
+    the state of its link and the one action that state asks for.  The search
+    and the filters are read from the address of the request, so a steward can
+    come back to the same catalogue.
+    """
     latest: dict[tuple[str, str, str], source.SourceSnapshot] = {}
     for row in session.execute(
         select(source.SourceSnapshot).where(source.SourceSnapshot.record_status == "accepted")
@@ -2296,45 +3034,103 @@ def source_records(
             existing.link_status not in ("approved", "proposed") and crosswalk.link_status == "proposed"
         ):
             links[key] = crosswalk
+    proposals: dict[tuple[str, str], registry.MatchProposal] = {}
+    for proposal in session.execute(
+        select(registry.MatchProposal).order_by(registry.MatchProposal.created_at, registry.MatchProposal.id)
+    ).scalars():
+        snapshot = session.get(source.SourceSnapshot, proposal.source_snapshot_id)
+        if snapshot is None:
+            continue
+        proposals[(snapshot.source_system_id, snapshot.source_record_id)] = proposal
     needle = query.strip().lower()
     by_system: dict[str, int] = defaultdict(int)
+    by_state: dict[str, int] = defaultdict(int)
     rows: list[dict[str, Any]] = []
     for (system_id, dataset, record_id), snapshot in sorted(latest.items()):
-        text = f"{record_id} {display.source_name(session, system_id, dataset)}".lower()
+        payload = dict(snapshot.raw_payload or {})
+        name = _payload_values(
+            payload,
+            (
+                "organization_name",
+                "holder_name",
+                "display_name",
+                "full_name",
+                "applicant_name",
+                "name",
+            ),
+        )
+        text = f"{record_id} {name} {display.source_name(session, system_id, dataset)}".lower()
         if needle and needle not in text:
             continue
         by_system[system_id] += 1
         if system and system != system_id:
             continue
         crosswalk = links.get((system_id, record_id))
+        proposal = proposals.get((system_id, record_id))
+        action = None
         if dataset not in LINKABLE_DATASETS:
             linked = "Not a record that links to a master record"
-            state = "none"
+            state = "not_linkable"
+            detail = ""
+            action_label = ""
+            action_href = ""
         elif crosswalk is None:
             linked = "Not linked"
-            state = "unlinked"
+            state = "not_compared"
+            detail = "Not linked"
+            action_label = "Find matches"
+            action_href = ""
+            action = _find_matches_action(
+                session,
+                actor,
+                system_id=system_id,
+                dataset=dataset,
+                record_id=record_id,
+                domain_id=_source_domain(session, system_id, dataset),
+            )
         elif crosswalk.link_status == "proposed":
             linked = "Match waiting for a decision"
-            state = "waiting"
+            state = "proposed"
+            detail = "Match waiting for a decision"
+            action_label = "Review match"
+            action_href = (
+                f"/steward/issues/link/{proposal.id}" if proposal is not None else ""
+            )
         elif crosswalk.link_status == "approved":
             linked = _party_label(session, crosswalk.entity_id)
             state = "linked"
+            detail = ""
+            action_label = "View master record"
+            action_href = f"/masters/{crosswalk.entity_id}"
         else:
             linked = display.pretty(crosswalk.link_status)
             state = "decided"
+            detail = display.pretty(crosswalk.link_status)
+            action_label = "Review next step"
+            action_href = f"/steward/issues/linked/{crosswalk.id}"
+        by_state[state] += 1
         rows.append(
             {
                 "source": display.source_name(session, system_id, dataset),
+                "name": name or record_id,
                 "record_id": record_id,
                 "version": snapshot.source_record_version or "",
                 "changed": _iso(snapshot.source_updated_at),
                 "received": _iso(snapshot.ingested_at),
                 "linked": linked,
+                "linked_ref": _ref("record", crosswalk.entity_id) if state == "linked" else "",
                 "state": state,
+                "state_label": SOURCE_LINK_STATES.get(state, ("", ""))[0],
+                "detail": detail,
+                "action_label": action_label,
+                "action_href": action_href,
+                "action": action,
                 "detail_id": f"{system_id}:{dataset}:{record_id}",
                 "scenario": snapshot.scenario_id or "",
             }
         )
+    if link_state:
+        rows = [row for row in rows if row["state"] == link_state]
     window, paging = _page(rows, page)
     systems = [
         {
@@ -2342,18 +3138,30 @@ def source_records(
             "label": display.source_name(session, system_id),
             "count": count,
             "active": system == system_id,
-            "href": _href("/source-records", system=system_id, q=query),
+            "href": _href("/source-records", system=system_id, q=query, link_state=link_state),
         }
         for system_id, count in sorted(by_system.items())
+    ]
+    states = [
+        {
+            "key": key,
+            "label": label,
+            "count": by_state.get(key, 0),
+            "active": link_state == key,
+            "href": _href("/source-records", system=system or None, q=query, link_state=key),
+        }
+        for key, label in SOURCE_LINK_STATES.items()
     ]
     return {
         "rows": window,
         "paging": paging,
         "systems": systems,
+        "states": states,
         "all_count": sum(by_system.values()),
-        "all_href": _href("/source-records", q=query),
+        "all_href": _href("/source-records", q=query, link_state=link_state),
         "system": system,
         "query": query,
+        "link_state": link_state,
     }
 
 
@@ -2361,6 +3169,18 @@ def source_records(
 
 #: What the Activity screen shows: steward decisions and changes, not the audit log.
 ACTIVITY_PREFIXES = ("registry.crosswalk", "change.case", "change.command", "parcel.", "source.record", "extraction.")
+
+
+def _activity_outcome(outcome: str) -> tuple[str, str]:
+    """Return the label and the tone of one recorded outcome.
+
+    A refused event is the only one that carries the refusal tone.  Every
+    other outcome is a neutral record, and an outcome the steward does not
+    know never looks like a failure.
+    """
+    if outcome == "denied":
+        return "Refused", "bad"
+    return "Recorded", "plain"
 
 
 def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[str, Any]:
@@ -2375,6 +3195,7 @@ def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[st
             continue
         if row.target_id in synthetic:
             continue
+        outcome, tone = _activity_outcome(row.outcome)
         entries.append(
             {
                 "when": _iso(row.occurred_at),
@@ -2382,8 +3203,9 @@ def activity(session: Session, actor: ActorContext, *, page: int = 1) -> dict[st
                 "what": _pretty_action(row.action),
                 "target": row.target_id or "",
                 "note": row.reason or row.denial_reason or "",
-                "outcome": "Refused" if row.outcome == "denied" else "Recorded",
+                "outcome": outcome,
                 "outcome_key": row.outcome,
+                "outcome_tone": tone,
                 "href": _activity_href(session, row),
             }
         )
@@ -2415,7 +3237,10 @@ def register() -> None:
     patterns.register_detail("record-sources", _resolve_record_sources, label="Record sources", any_grant=RECORD_GRANTS)
     patterns.register_detail("record-history", _resolve_record_history, label="Record history", any_grant=RECORD_GRANTS)
     patterns.register_detail("applications", _resolve_applications, label="Applications", any_grant=RECORD_GRANTS)
-    patterns.register_detail("source", _resolve_source, label="Source details", any_grant=SOURCE_GRANTS)
+    # The kind is "source-record" and not "source": the governance screen
+    # registers "source" for the source system itself, and one kind may only
+    # have one resolver.
+    patterns.register_detail("source-record", _resolve_source, label="Source details", any_grant=SOURCE_GRANTS)
     patterns.register_detail("credential", _resolve_credential, label="License or registration", any_grant=MASTER_GRANTS)
     patterns.register_detail("parcel", _resolve_parcel, label="Property", any_grant=MASTER_GRANTS)
     patterns.register_detail("evidence", _resolve_evidence, label="Match evidence", any_grant=STEWARD_GRANTS)

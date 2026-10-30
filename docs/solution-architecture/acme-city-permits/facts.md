@@ -52,7 +52,7 @@ System custodians, source adapters, outbox workers and Muse are service identiti
 
 ## Planned application architecture
 
-One Python 3.12 FastAPI service binds loopback only. SQLAlchemy and Alembic manage one SQLite database. Jinja pages and small vanilla JavaScript enhancements provide eight screens. Three persisted in-process source adapters simulate Permitting, GIS and ERP/Finance. A database outbox carries durable publication and acknowledgements. An append-only application audit trail records accepted and denied sensitive actions without claiming tamper-proof storage.
+One Python 3.12 FastAPI service binds loopback for local use and runs as a paid Render web service for the hosted demonstration. SQLAlchemy and Alembic manage one SQLite database. Jinja pages and small vanilla JavaScript enhancements provide eight screens. Three persisted in-process source adapters simulate Permitting, GIS and ERP/Finance. A database outbox carries durable publication and acknowledgements. An append-only application audit trail records accepted and denied sensitive actions without claiming tamper-proof storage.
 
 Modules:
 
@@ -112,12 +112,19 @@ Example with fictional data: fixed review fee 100.00 USD plus 0.001 times declar
 
 No implementation or verification figure is shown as complete until the corresponding stored evidence exists.
 
+## Hosting and production
+
+- The live public demonstration is at `https://acme-city-permits.onrender.com` on a paid Render web service. It runs the demo image from `repo/Dockerfile-demo`, uses SQLite and contains fictional data only.
+- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC.
+- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock, `ACME_MUSE_PROVIDER_ENABLED=0` disables the live Muse provider and no provider key is configured.
+- The production mode remains a hardened core rather than a finished product. Real sign-in, a server database, backups, monitoring and malware scanning remain open.
+
 ## Open decisions and release gates
 
 - External click-through prototype source remains absent; the new app is built independently from the specification.
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
 - The repository is on GitHub under the personal owner, private until submission.
-- Final competition candidate, event terms, submission format, deployment and submission remain held.
+- Final competition candidate, event terms, submission format and submission remain held. The public demonstration is deployed separately in demo mode.
 - Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. Keep the internal-review banner.
 - Architecture status is AS BUILT; the integrated evidence gate passed.
 
@@ -225,3 +232,18 @@ The diagram on the page (`#arch`) shows every block below. Each line names the s
 Layout notes for the diagram: the persona tier gains the public visitor, the application tier gains two rows for the phase 3 blocks, and the external tier gains Muse Image beside Muse Spark. The status record block moved to the lower right so the application tier could grow. Two earlier details were corrected in the same pass: the `db_evidence` edge now starts at the database block, and the Muse request and proposal labels sit on their lines.
 
 Left out because it could not be verified: nothing is drawn for a live Muse Spark call on the help or briefing paths, because both default to replay and the log records no live run for them.
+
+## Permit life cycle (2026-10-29, branch `feature/permit-lifecycle` off main `6437418`)
+
+Randall asked for a permit life cycle in the architecture, a route to test it and a judge walkthrough (2026-10-29). Status: BUILT on the branch and not yet merged. The page is republished only after the merge.
+
+- 12 statuses. Source: the `status_allowed` check constraint in `repo/src/acme_city/persistence/models/permit.py`.
+- 16 moves, each with its source statuses, target, acting grant and screen. Source: `repo/src/acme_city/permits/lifecycle_map.py`. The source status sets are imported from the services where they exist: `ADVANCEABLE_STATUSES`, `RETURNABLE_STATUSES`, `REVISION_STATUSES` and `ARCHIVABLE_STATUSES` (`permits/lifecycle.py`), `DECIDABLE_STATUSES` (`permits/decisions.py`) and `RESPONDABLE_STATUSES` (`applicant_portal/service.py`).
+- Where each move happens in code: submit (`permits/service.py` `submit`, created as submitted), intake routing (`kernel/intake.py` `route`, applied in `agents/intake.py`), validate (`permits/service.py` `evaluate`), return, advance, request revisions, archive and restore (`permits/lifecycle.py`), revert recommendation (`agents/recommendation.py` `revert`), correct the application record (`permits/service.py` `revise`), approve, deny and request information (`permits/decisions.py`), issue (`permits/issuance.py`), resubmit (`applicant_portal/service.py` `resubmit`).
+- Who: the selectable persona grants in `repo/config/actors.json`. Agent moves are labelled "Intake agent (automatic)".
+- Checks: `repo/tests/unit/test_lifecycle_map.py` (6 tests) checks the table against the model and the imported status sets. `repo/tests/unit/test_lifecycle_map_probe.py` runs Run application checks, Correct the application record, Revert the agent recommendation and the issuance blockers from every stored status and compares the result with the table. FULL_SUITE_PLACEHOLDER
+- In-app screens: `/lifecycle` and `/walkthrough`, mounted only with the persona selector (demonstration mode). Browser checks: `repo/tests/browser/test_guide_pages_browser.py`, 6 tests, passed 2026-10-29.
+- Diagram and table: generated by `repo/scripts/build_lifecycle_diagram.py`. Standalone copy: `diagram/permit-lifecycle.svg`.
+- Known gaps, stated on the page: no code path sets Withdrawn, so only seeded history holds it. Run application checks reopens an approved or denied case (`evaluate` sets ready for review unless the case is issued, returned or archived). Correct the application record reopens any case but a returned or archived one, including an issued one. Revert the agent recommendation reopens a returned case while a recommendation is pending.
+
+Decided by Randall on 2026-10-29: no code change. A withdraw action, checks that leave decided cases decided, and issued permits that stay closed are listed as future features in `docs/submission/JUDGE_WALKTHROUGH.md`.

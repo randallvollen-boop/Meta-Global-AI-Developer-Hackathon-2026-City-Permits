@@ -99,6 +99,56 @@ def test_the_planning_overview_names_the_scope_of_its_counts(
     assert "Sample applications · synthetic" in response.text
 
 
+def test_the_planning_overview_leads_with_attention_and_the_unpublished_versions(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/overview")
+    assert response.status_code == 200
+    body = response.text
+    for label in (
+        "Applications needing attention",
+        "Applications with property details",
+        "Unpublished rule and fee versions",
+        "Simulated source systems",
+    ):
+        assert label in body, label
+    # Attention comes first, then the versions that are not published.
+    order = [
+        body.index(f'data-testid="overview-{key}-count"')
+        for key in ("attention", "changes", "property", "sources")
+    ]
+    assert order == sorted(order)
+    # A count is never renamed into a promise it does not make.
+    assert "Awaiting approval" not in body
+    assert "unique properties" not in body
+    assert "healthy connections" not in body
+
+
+def test_the_planning_overview_keeps_the_records_behind_the_counts(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/overview")
+    body = response.text
+    for testid in (
+        "overview-attention-table",
+        "overview-attention-row",
+        "overview-changes-table",
+        "overview-changes-row",
+        "overview-property-table",
+        "overview-property-row",
+        "overview-sources-table",
+        "overview-source-row",
+    ):
+        assert f'data-testid="{testid}"' in body, testid
+    # The property context still opens in the shared drawer.
+    assert 'data-detail-kind="property-context"' in body
+    # The next step of a version and the approval policy are still named.
+    assert 'data-testid="overview-changes-next-step"' in body
+    assert 'data-testid="overview-approval-policy"' in body
+
+
 def test_the_planning_overview_links_the_city_view_and_the_what_if(
     client: TestClient,
 ) -> None:
@@ -109,6 +159,48 @@ def test_the_planning_overview_links_the_city_view_and_the_what_if(
     # Changed deliberately (P3c merged): the brief says to link the Operations
     # dashboard from the overview once it exists.
     assert 'href="/ops/dashboard"' in response.text
+
+
+def test_users_and_reason_codes_keep_people_and_readable_labels_first(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    users = client.get("/admin?tab=users").text
+    assert 'data-testid="admin-demo-persona"' in users
+    assert 'data-testid="admin-service-identities-disclosure"' in users
+    assert users.index('data-testid="admin-people"') < users.index('data-testid="admin-service-identities"')
+    reasons = client.get("/admin?tab=reason-codes").text
+    assert "Technical code" in reasons
+    assert 'data-testid="admin-reason-code-retire"' in reasons
+    assert "Existing records keep this code." in reasons
+
+
+def test_the_configuration_log_leads_with_readable_changes(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    page = client.get("/admin?tab=reason-codes")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text)
+    assert token is not None
+    retired = client.post(
+        "/ui/actions/config.reason_code.retire",
+        data={
+            "csrf_token": token.group(1),
+            "action_id": "config.reason_code.retire",
+            "next": "/admin?tab=reason-codes",
+            "code": "INCOMPLETE_APPLICATION",
+        },
+        headers={"Accept": "application/json"},
+    )
+    assert retired.status_code == 200, retired.text
+    response = client.get("/admin?tab=log")
+    assert response.status_code == 200
+    body = response.text
+    assert 'data-testid="admin-configuration-log"' in body
+    assert 'data-testid="admin-log-row"' in body
+    assert 'data-testid="admin-log-change"' in body
+    assert "Retired reason code" in body
+    assert "View values" in body
+    assert "Raw action" in body
+    assert "config.reason_code.retire" in body
 
 
 def test_the_planning_overview_is_refused_to_the_other_personas(
@@ -253,6 +345,102 @@ def test_the_appearance_tab_carries_the_icons_their_limits_and_provenance(
     assert 'data-testid="icon-provenance"' in response.text
     assert 'data-testid="permit-type-icon-row"' in response.text
     assert 'data-testid="icon-generate"' in response.text
+
+
+# ------------------------------------------------------ the section navigation
+
+
+def test_the_sections_are_named_in_plain_words(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin")
+    assert response.status_code == 200
+    for label in (
+        "Permit types",
+        "Appearance",
+        "Users and roles",
+        "Reason codes",
+        "Configuration log",
+    ):
+        assert f">{label}</a>" in response.text, label
+
+
+def test_only_the_selected_section_renders(client: TestClient) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=permit-types")
+    assert response.status_code == 200
+    assert 'data-testid="admin-section" data-section="permit-types"' in response.text
+    for other in ("users", "reason-codes", "log", "permit-type-icons"):
+        assert f'data-section="{other}"' not in response.text, other
+    # The section that is selected is marked as the current page.
+    assert (
+        response.text.count(
+            'aria-current="page" aria-selected="true" data-testid="admin-tab"'
+        )
+        == 1
+    )
+
+
+def test_a_tab_another_lane_registered_renders_with_aria_current(
+    client: TestClient,
+) -> None:
+    from acme_city.ui import admin_tabs
+
+    select_persona(client, "persona_city_administrator")
+    admin_tabs.register_admin_tab(
+        "probe", "Probe tab", "admin/_log.html", order=900
+    )
+    try:
+        response = client.get("/admin?tab=probe")
+        assert response.status_code == 200
+        assert 'data-testid="admin-tab" data-tab="probe">Probe tab</a>' in response.text
+        assert 'aria-current="page" aria-selected="true" data-testid="admin-tab" data-tab="probe"' in response.text
+        # The section of the registered tab renders through the same loop.
+        assert 'data-testid="admin-section" data-section="log"' in response.text
+    finally:
+        admin_tabs.unregister_admin_tab("probe")
+    response = client.get("/admin?tab=probe")
+    assert "Probe tab" not in response.text
+    # An unknown tab falls back to the first one.
+    assert 'aria-current="page" aria-selected="true" data-testid="admin-tab" data-tab="permit-types"' in response.text
+
+
+# ----------------------------------------------------------- the permit types
+
+
+def test_the_permit_type_register_is_compact_and_keeps_its_settings(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=permit-types")
+    assert response.status_code == 200
+    text = response.text
+    assert text.count('data-testid="admin-permit-type-row"') == 17
+    for heading in ("Name", "Review area", "Requirements", "Settings"):
+        assert f'<th scope="col">{heading}</th>' in text, heading
+    # The settings of every type hold the stored values and the document forms.
+    assert text.count('data-testid="admin-permit-type-settings"') == 17
+    assert "Permit type key" in text
+    assert "Fee schedule" in text
+    assert "Requires a person or board" in text
+    # The explanation of the document changes stays beside the forms.
+    assert "Changes apply to new applications." in text
+    assert "Submitted applications keep their existing requirements." in text
+    # The old eight column register is gone.
+    assert "Discretionary" not in text
+
+
+def test_the_add_permit_type_form_is_behind_its_own_heading(
+    client: TestClient,
+) -> None:
+    select_persona(client, "persona_city_administrator")
+    response = client.get("/admin?tab=permit-types")
+    assert 'data-testid="admin-add-permit-type"' in response.text
+    assert 'data-testid="admin-add-permit-type-submit"' in response.text
+    # The form is in a disclosure, so it is opened on purpose.
+    assert 'data-testid="admin-add-permit-type-panel"' in response.text
+    assert response.text.index('data-testid="admin-add-permit-type-panel"') < response.text.index(
+        'data-testid="admin-permit-types"'
+    )
 
 
 # ---------------------------------------------------------------- governance

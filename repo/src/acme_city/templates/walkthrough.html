@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "components/open_as.html" import open_as %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Walkthrough</h1>
+    <p class="sub">{{ walkthrough.steps|length }} steps, about ten minutes. The button on each step switches to the persona who does that job and opens the real screen, so every check the app makes still applies. Steps 6 and 7 go together.</p>
+  </div>
+</div>
+
+<ol class="guide-steps" data-testid="walkthrough-steps">
+  {% for step in walkthrough.steps %}
+  <li class="panel guide-step" data-testid="walkthrough-step">
+    <h2><span class="guide-step-n">{{ step.number }}</span> {{ step.title }}</h2>
+    {% if step.persona %}<p class="guide-persona">As {{ step.persona }}</p>{% endif %}
+    <p><span class="guide-k">Do</span> {{ step.do }}</p>
+    <p><span class="guide-k">Look for</span> {{ step.look_for }}</p>
+    {% if step.actor_id %}
+    {{ open_as(step.actor_id, step.persona, step.path, 'walkthrough-open') }}
+    {% else %}
+    <a class="button btn" href="{{ step.path }}" data-testid="walkthrough-link">Open</a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

@@ -175,7 +175,9 @@ def test_a_case_opened_without_a_queue_returns_to_the_queue(client: TestClient) 
     body = client.get("/steward").text
     link = re.search(r'href="(/steward/issues/link/[^"]+)"', body)
     assert link is not None
-    case = client.get(link.group(1).replace("&amp;", "&"))
+    direct_path = link.group(1).replace("&amp;", "&").split("?", maxsplit=1)[0]
+    assert "back=" not in direct_path
+    case = client.get(direct_path)
     crumb = re.search(r'<p class="crumb"><a href="([^"]+)"', case.text)
     assert crumb is not None
     assert crumb.group(1) == "/steward"

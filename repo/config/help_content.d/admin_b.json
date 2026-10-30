@@ -1,1 +1,43 @@
-{}
+{
+  "tutorial": {
+    "sections": [
+      {
+        "persona_id": "persona_city_administrator",
+        "steps": {
+          "2": {
+            "do": "Under \"Start from an example\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\"."
+          },
+          "3": {
+            "do": "Click \"Run comparison\"."
+          },
+          "4": {
+            "do": "Click \"Read briefing\", then \"Try recorded Muse briefing\".",
+            "see": "The briefing shows the label \"Recorded Muse briefing\" with the sections Summary, Key effects, and Risks and trade-offs."
+          }
+        }
+      }
+    ]
+  },
+  "howto": {
+    "guides": [
+      {
+        "slug": "run-a-what-if-and-write-the-briefing",
+        "steps": {
+          "1": "Under \"Start from an example\" click \"Raise the side/rear fence height limit from 6 ft to 7 ft\", or build your own under \"Build a what-if\".",
+          "2": "In \"Run comparison\" check the Population, the Seed and the Number of cases.",
+          "3": "Click \"Run comparison\".",
+          "4": "Read \"Recommended outcomes\" and \"Cases that change\".",
+          "5": "Click \"Read briefing\".",
+          "6": "Click \"Try recorded Muse briefing\". The source label says \"Recorded Muse briefing\".",
+          "7": "Read the sections, then use \"Download HTML\" or \"Download Markdown\" if you need a copy."
+        }
+      },
+      {
+        "slug": "propose-and-approve-a-rule-change",
+        "steps": {
+          "1": "On the results page, under \"Draft handoff\", click \"Save as a draft rule change\"."
+        }
+      }
+    ]
+  }
+}

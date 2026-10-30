@@ -6,26 +6,31 @@ Date: 2026-10-27 (parity phases 1 and 2 added; originally 2026-10-26). Status: P
 
 The diagram now shows the parts built through repo commit `4ea0497`. See the revision section at the end of `BUILD_REPORT.md` and `facts.md` under "As-built diagram contents". Standalone copies for the video: `diagram/arch-as-built.svg` and `diagram/arch-as-built-1920x1080.png`.
 
+## Revision 2026-10-29, hosting copy
+
+The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact remains an internal draft and was not published.
+
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 932654 bytes. SHA-256 `93e6cd0554f8c7e8481fdc3885a67476f0ec7d22151860876fc738e50649b55f`. It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 335173 bytes. SHA-256 `f264311ef965a7fc1093ce1f4595abde2f22fe6c1b5dff02f67f1e922bf33eef`. It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
 Run from the solution workspace root, in this order:
 
 ```
-python3 -I ~/.claude/skills/solution-architecture-page/scripts/inline_assets.py page
-python3 -I "~/Documents/VollenData Analytics/Solution_Architecture_Kit/build_page.py" page
-~/.claude/skills/solution-architecture-page/scripts/check_linux.sh \
+python3 -I ~/.agents/skills/solution-architecture-page/scripts/inline_assets.py page
+# The current kit requires page/page.json output to be an absolute path for this build.
+python3 -I "~/Documents/Vollen Data Analytics/Solution_Architecture_Kit/build_page.py" page
+~/.agents/skills/solution-architecture-page/scripts/check_linux.sh \
   "$PWD/vollen_acme-city-permits_solution-architecture_2026-10-26.html" "$PWD/check"
 python3 -I check/verify_page.py \
   vollen_acme-city-permits_solution-architecture_2026-10-26.html STATUS.json page/page.json
 ```
 
-The checker needs absolute paths because its Linux wrapper changes the working directory. The output path in `page/page.json` is absolute, so the builder needs no argument change.
+The checker needs absolute paths because its Linux wrapper changes the working directory. Before the build, set `page/page.json` `output` to the absolute path of the target HTML. Restore the portable relative value after the build if the workspace is a temporary worktree.
 
 Sources of truth for a rebuild:
 
@@ -84,3 +89,10 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 ## Planned content
 
 The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections are planned content only. They claim no result, and nothing in them is built, published or submitted.
+
+## Revision 2026-10-29, permit life cycle section
+
+- New section `#lifecycle` with a state diagram and a table of every move. It is generated into `page/body.src.html`, between the LIFECYCLE markers, by `repo/scripts/build_lifecycle_diagram.py`, from `repo/src/acme_city/permits/lifecycle_map.py`. Regenerate it before a rebuild whenever the life cycle changes. Do not hand-edit between the markers.
+- Two builder failures already in the sources were fixed: the Scene 7 card now uses the "Randy Vollen" byline, and the deployment row no longer names the signing-key variable. Both had tripped the page denylist.
+- `page/page.json` keeps the committed relative `output`. The kit builder needs an absolute path, so set it to an absolute worktree path for the build and restore it afterwards.
+- Open: `check/verify_page.py` fails on 8 figures that predate this revision (02, 1080, 18, 2.0, 300, 503, 60, 600). Each needs a sourced line in `facts.md` or a rewording. The AVA Library copy was not replaced in this revision.

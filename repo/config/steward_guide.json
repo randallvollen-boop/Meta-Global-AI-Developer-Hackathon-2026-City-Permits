@@ -1,0 +1,164 @@
+{
+  "version": "1",
+  "mode": {
+    "key": "saved_guidance",
+    "label": "Saved guidance. Live Muse is off."
+  },
+  "no_evidence": "No evidence recorded.",
+  "no_guidance": "This screen has no saved guidance yet.",
+  "prompts": {
+    "explain_screen": "Explain this screen",
+    "next_step": "What should happen next",
+    "why_match": "Why this match",
+    "what_changes": "What will change",
+    "why_review": "Why this needs review"
+  },
+  "screens": {
+    "queue": {
+      "label": "Work queue",
+      "guidance": "Start with a task that blocks an application. Open the task to compare the records and see the available actions.",
+      "prompts": {
+        "next_step": "Open the task that blocks an application. Compare the records before you decide.",
+        "why_review": "A task is waiting for a person. The matcher only proposed it; it did not decide it."
+      },
+      "links": []
+    },
+    "incoming": {
+      "label": "Incoming",
+      "guidance": "This application is waiting for intake. The recorded findings show which information needs attention.",
+      "prompts": {
+        "next_step": "Read the recorded findings, then process the intake for this application.",
+        "why_review": "The application has not been through intake yet. A person reads the findings and acts."
+      },
+      "links": [
+        {"label": "See what the figures mean", "href": "#intake-definitions"}
+      ]
+    },
+    "early_resolution": {
+      "label": "Early resolution",
+      "guidance": "These cases wait for a person. The recorded finding says what is missing, and the case moves on when a person resolves it.",
+      "prompts": {
+        "next_step": "Open the case and resolve the recorded finding. The finding names what the applicant or the City must supply.",
+        "why_review": "The intake agent recorded the finding. It did not resolve it, and it did not decide the case."
+      },
+      "links": [
+        {"label": "See the groups", "href": "#early-resolution-groups"}
+      ]
+    },
+    "match_case": {
+      "label": "Match case",
+      "guidance": "Compare the record reference, credential, and unit. Similar names can belong to different organizations.",
+      "prompts": {
+        "next_step": "Compare the reference, the credential and the unit. Then confirm the link, reject it or defer it.",
+        "why_match": "The matcher ordered the candidates with the recorded agreements and conflicts. The score is an ordering aid, not a probability.",
+        "what_changes": "A link changes which master record owns the source values. The source values stay as they are, and no permit is decided.",
+        "why_review": "The match is not decided. A steward compares the records before a link is applied."
+      },
+      "links": [
+        {"label": "See the comparison", "href": "#q3"},
+        {"label": "See the actions", "href": "#q5"}
+      ]
+    },
+    "parcel_case": {
+      "label": "Parcel case",
+      "guidance": "The locator proposed a property. Check the parcel and unit. The Permit Reviewer still needs to confirm the property.",
+      "prompts": {
+        "next_step": "Check the parcel and the unit, then approve or reject the link.",
+        "what_changes": "The link sets the property of the application. The address the applicant typed is kept as submitted, and no permit is decided.",
+        "why_review": "The parcel link is not decided. The locator proposed it; a person confirms it."
+      },
+      "links": [
+        {"label": "See the comparison", "href": "#q3"},
+        {"label": "See the actions", "href": "#q5"}
+      ]
+    },
+    "no_candidate": {
+      "label": "No candidate",
+      "guidance": "No suitable master record was found. Search existing records before requesting a new identity.",
+      "prompts": {
+        "next_step": "Search the master records first. If nothing matches, ask the source owner for a correction."
+      },
+      "links": [
+        {"label": "Search the master records", "href": "/masters"}
+      ]
+    },
+    "automatic_link": {
+      "label": "Automatic link review",
+      "guidance": "The automatic linking policy applied this link. Review the recorded evidence or undo the link with a reason.",
+      "prompts": {
+        "next_step": "Read the recorded evidence, then keep the link or undo it with a reason.",
+        "why_match": "The policy applied this link from the recorded score and the identity checks. A steward reviews it after the fact."
+      },
+      "links": [
+        {"label": "See the evidence", "href": "#q4"}
+      ]
+    },
+    "master_collection": {
+      "label": "Master records",
+      "guidance": "Search for a person, organization, property, or permit. Open a record to see its sources and unresolved questions.",
+      "prompts": {
+        "next_step": "Search for the record you need, then open it to see its sources and open questions."
+      },
+      "links": [
+        {"label": "See the collections", "href": "#master-tabs"}
+      ]
+    },
+    "record_profile": {
+      "label": "Record profile",
+      "guidance": "Each current value follows its named source policy. Identity status and license status are separate.",
+      "prompts": {
+        "next_step": "Check the open questions first. Then look at the value and the source it comes from."
+      },
+      "links": [
+        {"label": "See the identity", "href": "#identity-heading"},
+        {"label": "See the related records", "href": "#related-heading"}
+      ]
+    },
+    "source_record": {
+      "label": "Source record",
+      "guidance": "These are the values accepted from the source. A correction must follow the named source route.",
+      "prompts": {
+        "next_step": "Compare the accepted values with the master record. Ask the source owner for a correction if a value is wrong."
+      },
+      "links": [
+        {"label": "See the source records", "href": "#source-records-heading"}
+      ]
+    },
+    "source_correction": {
+      "label": "Source correction",
+      "guidance": "The accepted value stays unchanged until the source accepts the correction. The response appears in this history.",
+      "prompts": {
+        "next_step": "Wait for the source to answer. The answer and its acknowledgement appear in the history."
+      },
+      "links": [
+        {"label": "See what happened", "href": "#q6"}
+      ]
+    },
+    "activity": {
+      "label": "Activity",
+      "guidance": "Open an event to see who acted, the evidence used, and any later correction.",
+      "prompts": {
+        "next_step": "Open the event you need. It shows who acted and what was recorded."
+      },
+      "links": [
+        {"label": "See the recorded decisions", "href": "#activity-heading"}
+      ]
+    },
+    "automation_settings": {
+      "label": "Automatic linking settings",
+      "guidance": "Preview the policy before activating it. A higher score requirement does not replace the identity checks.",
+      "prompts": {
+        "next_step": "Preview the policy, then activate it with a reason if the classification is right."
+      },
+      "links": []
+    },
+    "reconciliation": {
+      "label": "Reconciliation",
+      "guidance": "Account identity, settled money, and payment allocation are separate. Linking an account does not settle a balance.",
+      "prompts": {
+        "next_step": "Resolve the account identity here. Settling money stays with the authorized finance workflow."
+      },
+      "links": []
+    }
+  }
+}

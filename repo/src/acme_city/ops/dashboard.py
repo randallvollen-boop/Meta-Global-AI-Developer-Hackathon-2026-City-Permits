@@ -38,6 +38,12 @@ COMPLETED_INTAKE_OUTCOMES: tuple[str, ...] = ("completed", "needs_information")
 #: The two modes of the synthetic switch.
 SYNTHETIC_MODES: tuple[str, ...] = ("exclude", "include")
 
+#: The group of the figures that count the work that is open now.
+WORKLOAD_GROUP = "workload"
+
+#: The group of the figures that count the work the services recorded.
+PROCESSING_GROUP = "processing"
+
 #: The plain words of the statuses.
 STATUS_LABELS: dict[str, str] = {
     "draft": "Draft",
@@ -196,6 +202,7 @@ def dashboard(
         {
             "key": "active",
             "label": "Active cases",
+            "group": WORKLOAD_GROUP,
             "value": len(active),
             "display": str(len(active)),
             "definition": (
@@ -207,17 +214,19 @@ def dashboard(
         {
             "key": "average_age",
             "label": "Average age of active cases",
+            "group": WORKLOAD_GROUP,
             "value": average_age,
             "display": "no active case" if average_age is None else f"{average_age} days",
             "definition": (
                 "Mean of now minus the original submission time over the active cases, "
                 "in days. A resubmission does not reset it. "
-                f"Read at {moment.isoformat()}."
+                f"As of {moment.isoformat()}."
             ),
         },
         {
             "key": "early_incomplete",
-            "label": "Early-incomplete share",
+            "label": "Incomplete at first intake",
+            "group": PROCESSING_GROUP,
             "value": early_incomplete,
             "display": share(early_incomplete, with_a_run)
             + (f" ({early_incomplete} of {with_a_run})" if with_a_run else ""),
@@ -228,7 +237,8 @@ def dashboard(
         },
         {
             "key": "agent_processed",
-            "label": "Agent-processed",
+            "label": "Applications processed by intake",
+            "group": PROCESSING_GROUP,
             "value": len(processed),
             "display": str(len(processed)),
             "definition": (
@@ -239,19 +249,33 @@ def dashboard(
         {
             "key": "decisions",
             "label": "Decisions recorded",
+            "group": PROCESSING_GROUP,
             "value": len(decisions),
             "display": str(len(decisions)),
             "definition": "Decision rows, all time. The split by outcome is in the table below.",
         },
         {
             "key": "needs_a_person",
-            "label": "Needs a person",
+            "label": "Items needing attention",
+            "group": WORKLOAD_GROUP,
             "value": needs_information + held,
             "display": str(needs_information + held),
             "definition": (
                 f"Applications in needs information ({needs_information}) plus pending "
-                f"adjudication recommendations held for a person ({held})."
+                f"adjudication recommendations held for a person ({held}). It is a count "
+                "of items, not of distinct cases: one application and one held "
+                "recommendation are two items."
             ),
+            "components": [
+                {
+                    "label": "Applications in needs information",
+                    "value": needs_information,
+                },
+                {
+                    "label": "Recommendations held for a person",
+                    "value": held,
+                },
+            ],
         },
     ]
 
@@ -324,7 +348,9 @@ def dashboard(
 __all__ = [
     "ACTIVE_STATUSES",
     "COMPLETED_INTAKE_OUTCOMES",
+    "PROCESSING_GROUP",
     "REVIEW_BACKLOG_STATUSES",
     "STATUS_LABELS",
+    "WORKLOAD_GROUP",
     "dashboard",
 ]

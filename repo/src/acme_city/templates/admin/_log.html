@@ -2,20 +2,19 @@
 <details class="panel card" data-testid="admin-section" data-section="log" {% if tab == 'log' %}open{% endif %}>
   <summary><strong>Configuration log</strong></summary>
   <div class="card-b">
-    <table class="data-table" data-testid="admin-configuration-log">
+    <table class="data-table adm-configuration-log" data-testid="admin-configuration-log">
       <caption class="visually-hidden">Configuration changes, newest first</caption>
-      <thead><tr><th scope="col">When</th><th scope="col">Change</th><th scope="col">Target</th><th scope="col">Before → after</th><th scope="col">Actor</th></tr></thead>
+      <thead><tr><th scope="col">Change</th><th scope="col">Actor</th><th scope="col">Time</th><th scope="col">Details</th></tr></thead>
       <tbody>
         {% for entry in admin.configuration_log %}
         <tr data-testid="admin-log-row" data-action="{{ entry.action }}">
-          <td>{{ entry.occurred_at }}</td>
-          <th scope="row">{{ entry.action }}</th>
-          <td>{{ entry.target_type }}{% if entry.target_id %} {{ entry.target_id }}{% endif %}</td>
-          <td>{{ entry.before }} → {{ entry.after }}</td>
-          <td>{{ entry.actor }}</td>
+          <th scope="row"><span class="adm-field-label">Change</span><strong data-testid="admin-log-change">{{ entry.action_label }}</strong><span class="adm-log-target">{{ entry.target_label }}{% if entry.target_id %} {{ entry.target_id }}{% endif %}</span></th>
+          <td><span class="adm-field-label">Actor</span>{{ entry.actor_label }}</td>
+          <td><span class="adm-field-label">Time</span><span class="mono">{{ entry.occurred_at }}</span></td>
+          <td><span class="adm-field-label">Details</span><details class="adm-log-details"><summary>View values</summary><dl><div><dt>Raw action</dt><dd class="mono">{{ entry.action }}</dd></div><div><dt>Before</dt><dd>{{ entry.before_display }}</dd></div><div><dt>After</dt><dd>{{ entry.after_display }}</dd></div></dl></details></td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="muted">No configuration change has been recorded yet.</td></tr>
+        <tr><td colspan="4" class="muted">No configuration change has been recorded yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

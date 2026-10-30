@@ -5,8 +5,11 @@
    st.source_summary(summary)   Source · Source last changed · Last received or checked · View source details
    st.pager(paging)             Previous / next page links that keep the other query values
    st.affected(applications)    The applications a task of the queue affects
-   st.pill(label, tone)         A status that never wraps #}
+   st.pill(label, tone)         A status that never wraps
+   st.source_state(row)         The link state of a source record, and what it means
+   st.source_action(row, token) The one action the state of a source record asks for #}
 {% import "_ui.html" as ui with context %}
+{% import "components/action_form.html" as forms %}
 
 {% macro affected(applications) -%}
 {% if applications %}
@@ -22,7 +25,7 @@
   <span><b>Source</b> {{ summary.name }}</span>
   <span><b>Source last changed</b> {{ ui.info('source_last_changed') }} {{ ui_time(summary.changed) }}</span>
   <span><b>Last received or checked</b> {{ ui_time(summary.received) }}</span>
-  {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source', summary.detail_id, 'View source details') }}</span>{% endif %}
+  {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source-record', summary.detail_id, 'View source details') }}</span>{% endif %}
 </p>
 {% if summary.warning %}<p class="notice" role="status" data-testid="freshness-warning">{{ summary.warning }}</p>{% endif %}
 {%- endmacro %}
@@ -39,4 +42,18 @@
 
 {% macro pill(label, tone='plain') -%}
 <span class="pill {{ tone }} nowrap">{{ label }}</span>
+{%- endmacro %}
+
+{% macro source_state(row) -%}
+<span class="pill {{ 'ok' if row.state == 'linked' else 'warn' if row.state == 'proposed' else 'plain' }} nowrap" data-testid="source-link-state">{{ row.state_label }}</span>
+{%- if row.linked_ref %}{% set parts = row.linked_ref.split(':', 1) %}{{ ui.detail_link('record', parts[1], row.linked) }}
+{%- elif row.detail %}<span class="muted stw-state-detail">{{ row.detail }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro source_action(row, csrf_token='') -%}
+{%- if row.action_href -%}
+<a class="button button-quiet btn sm" href="{{ row.action_href }}" data-testid="source-action">{{ row.action_label }}</a>
+{%- elif row.action -%}
+{{ forms.action_form(row.action, csrf_token, '/source-records') }}
+{%- endif -%}
 {%- endmacro %}

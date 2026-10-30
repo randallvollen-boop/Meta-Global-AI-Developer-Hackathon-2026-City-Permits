@@ -75,6 +75,23 @@ UNSUPPORTED_OPTIONS = (
     ("conditional_plan_review_removal", "Removing plan review for some cases only"),
 )
 
+#: A readable name for each operator.  The editor shows the name and still
+#: sends the key, so the submitted value never changes.
+OPERATOR_LABELS = {
+    "max": "At most",
+    "min": "At least",
+    "equals": "Exactly",
+    "required": "Required",
+}
+
+#: A readable name for each process category, so a person does not have to
+#: know the key to choose one.
+PROCESS_CATEGORY_LABELS = {
+    "simple": "Simple review",
+    "with_plans": "Review with plans",
+    "formal_review": "Formal review",
+}
+
 RETIRE_NOTE = (
     "Retiring a rule does not approve the cases it used to stop. A case that the "
     "remaining rules cannot place in a known category is put on review hold for a "
@@ -181,6 +198,31 @@ def check_changes(
     }
 
 
+def operator_text(operator: str, limit: Any, unit: str = "") -> str:
+    """Return an operator and its limit in plain words.
+
+    The keys stay technical on the wire; the screen shows the words a person
+    reads: "at most 6", "at least 20", "must be yes", "must be present".
+    """
+    value = str(limit)
+    suffix = f" {unit}" if unit else ""
+    if operator == "max":
+        return f"at most {value}{suffix}"
+    if operator == "min":
+        return f"at least {value}{suffix}"
+    if operator == "equals":
+        if value == "yes":
+            return "must be yes"
+        if value == "no":
+            return "must be no"
+        return f"must be {value}"
+    if operator == "required":
+        if value == "present":
+            return "must be present"
+        return f"must be {value}"
+    return f"{operator} {value}{suffix}"
+
+
 def editor_options(baseline: PolicyConfig) -> dict[str, Any]:
     """Return the choices the add-a-change forms offer, from the frozen baseline."""
     seen: set[str] = set()
@@ -196,12 +238,27 @@ def editor_options(baseline: PolicyConfig) -> dict[str, Any]:
                 "title": rule.title,
                 "type": _type_label(baseline, rule.permit_type_key),
                 "operator": rule.operator,
+                "operator_label": OPERATOR_LABELS.get(rule.operator, rule.operator),
                 "limit": rule.limit_value,
                 "unit": rule.unit or "",
+                "label": f"{rule.title} ({rule.citation})",
+                "current": operator_text(rule.operator, rule.limit_value, rule.unit or ""),
             }
         )
     rules.sort(key=lambda item: item["rule_id"])
     schedules = sorted({s.fee_schedule_id for s in baseline.fee_schedules})
+    fee_schedules = []
+    for schedule_id in schedules:
+        shared = [
+            _type_label(baseline, t.key)
+            for t in baseline.permit_types
+            if t.fee_schedule_key == schedule_id
+        ]
+        if len(shared) == len(baseline.permit_types):
+            label = f"{schedule_id}, the schedule every permit type shares"
+        else:
+            label = f"{schedule_id}, shared by {', '.join(shared)}"
+        fee_schedules.append({"value": schedule_id, "label": label})
     return {
         "rules": rules,
         "types": [
@@ -209,16 +266,24 @@ def editor_options(baseline: PolicyConfig) -> dict[str, Any]:
                 "key": t.key,
                 "label": t.label,
                 "process_category": t.process_category or "",
+                "process_category_label": PROCESS_CATEGORY_LABELS.get(
+                    t.process_category or "", t.process_category or ""
+                ),
                 "discretionary": t.discretionary,
                 "service_target_days": t.service_target_days,
             }
             for t in baseline.permit_types
         ],
-        "fee_schedules": schedules,
-        "process_categories": list(PROCESS_CATEGORIES),
+        "fee_schedules": fee_schedules,
+        "process_categories": [
+            {"value": c, "label": PROCESS_CATEGORY_LABELS.get(c, c)} for c in PROCESS_CATEGORIES
+        ],
         "kinds": [{"key": k, "label": v} for k, v in KIND_LABELS.items()],
         "unsupported_kinds": [{"key": k, "label": v} for k, v in UNSUPPORTED_OPTIONS],
-        "operators": ["max", "min", "equals", "required"],
+        "operators": [
+            {"value": value, "label": OPERATOR_LABELS.get(value, value)}
+            for value in ("max", "min", "equals", "required")
+        ],
     }
 
 
@@ -468,7 +533,9 @@ def _baseline_view(run: models.PolicyRun) -> Any:
 __all__ = [
     "DIRECTION_LABELS",
     "KIND_LABELS",
+    "OPERATOR_LABELS",
     "OUTCOME_LABELS",
+    "PROCESS_CATEGORY_LABELS",
     "RETIRE_NOTE",
     "RETROSPECTIVE_NOTE",
     "SPEC_KINDS",
@@ -477,5 +544,6 @@ __all__ = [
     "check_changes",
     "describe_change",
     "editor_options",
+    "operator_text",
     "run_view",
 ]

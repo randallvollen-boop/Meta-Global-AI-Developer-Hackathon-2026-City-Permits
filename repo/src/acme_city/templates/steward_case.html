@@ -1,21 +1,34 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
 {% import "components/action_form.html" as forms %}
-
-{% macro result_cell(result) -%}
-<span class="result result-{{ result }}" data-testid="compare-result" data-result="{{ result }}">{{ {'agrees': 'Agrees', 'conflicts': 'Conflicts', 'no_comparison': 'No comparison'}[result] }}</span>
-{%- endmacro %}
+{% import "components/steward_comparison.html" as comparisons with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 {% set c = case %}
 <p class="crumb"><a href="{{ back_href or '/steward' }}">&larr; Data issues</a></p>
-<div class="page-head">
-  <div>
-    <h1 data-testid="case-title">{{ c.title }}</h1>
-    <p class="sub"><span class="pill {{ 'ok' if c.status == 'resolved' else 'warn' if c.status == 'awaiting_source' else 'bad' }} nowrap" data-testid="case-status">{{ c.status_label }}</span></p>
+
+<section class="stw-case-summary" aria-labelledby="case-task-heading" data-testid="case-summary">
+  <div class="page-head">
+    <div>
+      <h1 id="case-task-heading" data-testid="case-title">{{ c.summary.task }}</h1>
+      <p class="sub" data-testid="case-summary-record">{{ c.summary.record or c.title }}{% if c.summary.reference %} <span class="stw-reference">{{ c.summary.reference }}</span>{% endif %}</p>
+    </div>
+    <div class="actions">{{ ui.help_button('steward') }}</div>
   </div>
-  <div class="actions">{{ ui.help_button('steward') }}</div>
-</div>
+  <dl class="stw-case-facts">
+    <dt>Status</dt>
+    <dd><span class="pill {{ 'ok' if c.summary.status == 'resolved' else 'warn' if c.summary.status == 'awaiting_source' else 'bad' }} nowrap" data-testid="case-status">{{ c.summary.status_label }}</span></dd>
+    <dt>Source</dt>
+    <dd data-testid="case-summary-source">{{ c.summary.source }}</dd>
+    <dt>Affected applications</dt>
+    <dd data-testid="case-summary-applications">{% if c.summary.application_count %}<a href="#case-applications">{{ c.summary.application_count }} application{{ '' if c.summary.application_count == 1 else 's' }}</a>{% else %}<span class="muted">None open</span>{% endif %}</dd>
+    <dt>Next step</dt>
+    <dd data-testid="case-summary-next">{{ c.summary.next_step }}</dd>
+  </dl>
+</section>
+
+{{ guide_ui.panel(guide) }}
 
 {% if confirmation %}
 <p class="case-confirmation" role="status" data-testid="case-confirmation">{{ confirmation }}</p>
@@ -35,7 +48,7 @@
   <h2 id="q2">2. Why does it matter?</h2>
   <p>{{ c.why }}</p>
   {% if c.applications %}
-  <table class="data-table" data-testid="case-applications">
+  <table class="data-table" id="case-applications" data-testid="case-applications">
     <caption class="visually-hidden">Affected applications and what is still outstanding on each permit</caption>
     <thead><tr><th scope="col">Affected application</th><th scope="col">Status</th><th scope="col">Still outstanding on the permit</th></tr></thead>
     <tbody>
@@ -55,34 +68,41 @@
   <h2 id="q3">3. What are we comparing?</h2>
   {% if c.kind == 'link' %}
   <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to. A missing value reads “No comparison”; nothing is filled in.</p>
-  {% for cand in c.candidates %}
-  <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}">
-    <h3>{{ ui.detail_link('record', cand.entity_id, cand.name) }} <span class="muted">{{ cand.type }}</span>{% if cand.credentials %} <span class="muted">· {{ cand.credentials|join(', ') }}</span>{% endif %}</h3>
-    <table class="data-table compare-table" data-testid="compare-table">
-      <caption class="visually-hidden">Source record values against {{ cand.name }}</caption>
-      <thead><tr><th scope="col">Field</th><th scope="col">Source record</th><th scope="col">Master record</th><th scope="col">Result</th></tr></thead>
-      <tbody>
-        {% for row in cand.comparison %}
-        <tr data-field="{{ row.field }}"><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ result_cell(row.result) }}{% if row.note %} <span class="muted">{{ row.note }}</span>{% endif %}</td></tr>
+  {% if c.candidates|length > 1 %}
+  <form class="stw-chooser stw-filter-form" method="get" action="{{ request.url.path }}" data-testid="candidate-chooser">
+    {% if back_href %}<input type="hidden" name="back" value="{{ back_href }}">{% endif %}
+    <p class="field">
+      <label for="candidate-choice">Compare with</label>
+      <select id="candidate-choice" name="candidate" data-testid="candidate-select">
+        <option value="">No record chosen</option>
+        {% for cand in c.candidates %}
+        <option value="{{ cand.entity_id }}"{% if cand.selected %} selected{% endif %}>{{ cand.name }}{% if cand.recommended and not cand.selected %} (recommended for review){% endif %}</option>
         {% endfor %}
-      </tbody>
-    </table>
+      </select>
+    </p>
+    <p><button type="submit" class="button btn" data-testid="candidate-choose">Show this record</button></p>
+  </form>
+  <p class="muted">Choosing a record only changes what the page shows. The link changes when you decide.</p>
+  {% endif %}
+  {% for cand in c.candidates %}
+  <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}"{% if cand.selected %} data-selected="true"{% endif %}>
+    <h3>{% if cand.linkable %}{{ ui.detail_link('record', cand.entity_id, cand.name) }}{% else %}{{ cand.name }}{% endif %} <span class="muted">{{ cand.type }}</span>{% if cand.credentials %} <span class="muted">· {{ cand.credentials|join(', ') }}</span>{% endif %}
+      {% if cand.selected %}<span class="pill ok nowrap" data-testid="candidate-selected">Selected</span>{% elif cand.recommended %}<span class="pill plain nowrap" data-testid="candidate-recommended">Recommended for review</span>{% endif %}
+    </h3>
+    {% if cand.open %}
+    {{ comparisons.comparison(cand.comparison) }}
+    {% else %}
+    <details class="stw-disclosure">
+      <summary>See the comparison with {{ cand.name }}</summary>
+      {{ comparisons.comparison(cand.comparison) }}
+    </details>
+    {% endif %}
   </div>
   {% else %}
   <p class="muted">The matcher found no master record to compare with.</p>
   {% endfor %}
-  {% elif c.kind == 'parcel' %}
-  <table class="data-table compare-table" data-testid="compare-table">
-    <caption class="visually-hidden">What the applicant typed against what the locator found</caption>
-    <thead><tr><th scope="col">Field</th><th scope="col">Submitted</th><th scope="col">Found by the locator</th><th scope="col">Result</th></tr></thead>
-    <tbody>{% for row in c.compare_rows %}<tr><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ result_cell(row.result) }}</td></tr>{% endfor %}</tbody>
-  </table>
-  {% elif c.compare_rows %}
-  <table class="data-table compare-table" data-testid="compare-table">
-    <caption class="visually-hidden">Current value against the proposed value</caption>
-    <thead><tr><th scope="col">Field</th><th scope="col">Current</th><th scope="col">Proposed</th><th scope="col">Result</th></tr></thead>
-    <tbody>{% for row in c.compare_rows %}<tr><th scope="row">{{ row.field }}</th><td>{{ row.source }}</td><td>{{ row.master }}</td><td class="nowrap">{{ 'Changes' if row.result == 'conflicts' else 'Same' }}</td></tr>{% endfor %}</tbody>
-  </table>
+  {% elif c.comparison %}
+  {{ comparisons.comparison(c.comparison) }}
   {% else %}
   <p class="muted">There are no values to compare for this issue.</p>
   {% endif %}
@@ -95,7 +115,7 @@
   {% if c.kind == 'link' %}
   {% for cand in c.candidates %}
   <div class="evidence-block" data-testid="evidence-block" data-entity="{{ cand.entity_id }}">
-    <h3>{{ cand.name }}</h3>
+    <h3>{{ cand.name }} <span class="muted" data-testid="evidence-source">{{ cand.evidence_source }}</span></h3>
     <div class="ev">
       <div class="ev-col">
         <h4><span class="pill ok">Agreements</span></h4>
@@ -109,15 +129,20 @@
     {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
     <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
       It is an ordering aid built from the evidence above. It does not state the probability of a match.
-      {% if cand.score_parts %}It adds up from:
-      {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
     </p>
+    {% if cand.score_parts %}
+    <details class="stw-disclosure" data-testid="how-matching-works">
+      <summary>How matching works</summary>
+      <p>It adds up from:
+      {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>
+    </details>
+    {% endif %}
   </div>
   {% endfor %}
   {% if c.similar_note %}<p class="notice" data-testid="similar-note">{{ c.similar_note }}</p>{% endif %}
   <p>
     {{ ui.detail_link('evidence', c.evidence_detail_id, 'Evidence details') }}
-    · {{ ui.detail_link('source', c.source_record.summary.detail_id, 'View source record') }}
+    · {{ ui.detail_link('source-record', c.source_record.summary.detail_id, 'View source record') }}
     · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received or checked {{ ui_time(c.source_record.summary.received) }}</span>
   </p>
   <p data-testid="provenance"><span class="pill {{ 'muse' if c.provenance.run_id else 'plain' }}">{{ c.provenance.label }}</span> <span class="muted">{{ c.provenance.detail }}</span>{% if c.provenance.run_id %} {{ ui.detail_link('muse-run', c.provenance.run_id, 'Run details') }}{% endif %}</p>

@@ -237,6 +237,19 @@ def test_the_tabs_of_the_intake_queue_hold_their_cases(
     assert archived.status_code == 200, archived.text
 
 
+def test_every_case_of_the_intake_queue_names_its_next_step(
+    client: TestClient,
+) -> None:
+    """The queue summarizes what happens next before it lists the signals."""
+    choose(client, "persona_data_steward")
+    page = client.get("/queue/intake").text
+    steps = re.findall(r'data-testid="intake-next-step"[^>]*>([^<]+)<', page)
+    assert steps
+    assert all(step.strip() for step in steps)
+    # A case that arrived from outside the City waits for the intake agent.
+    assert any("intake agent" in step.lower() for step in steps)
+
+
 def test_the_bulk_action_refuses_an_empty_selection(
     client: TestClient, environment: Settings
 ) -> None:

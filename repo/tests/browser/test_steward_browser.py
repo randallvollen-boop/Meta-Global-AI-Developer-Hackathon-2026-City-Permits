@@ -11,10 +11,13 @@ browser fixture's database through the demo module, exactly as the
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
-from conftest import BrowserServer
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 from acme_city.fixtures.steward_demo import seed_cedarline
+from acme_city.persistence.models import audit
 from acme_city.persistence.session import SessionFactory, transaction
 
 
@@ -30,6 +33,34 @@ def cedarline(server: BrowserServer) -> list[str]:
 
 def overflow(page) -> int:
     return page.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
+
+
+#: A record identifier that is long enough to widen a table on a phone.
+LONG_RECORD = "PER-AP-0003-with-a-very-long-identifier-0123456789-abcdefghij"
+
+
+@pytest.fixture()
+def long_record(server: BrowserServer) -> str:
+    """Record one activity event whose record identifier is very long."""
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                audit.AuditEvent(
+                    id="audit_activity_long_record",
+                    correlation_id="correlation_activity",
+                    occurred_at=datetime(2026, 10, 20, 9, 30, tzinfo=UTC),
+                    actor_id="persona_data_steward",
+                    action="registry.crosswalk.propose",
+                    target_type="source_record",
+                    target_id=LONG_RECORD,
+                    reason="a long identifier wraps instead of widening the screen",
+                    outcome="accepted",
+                )
+            )
+    finally:
+        factory.dispose()
+    return LONG_RECORD
 
 
 def test_master_record_tabs_switch_one_collection_at_a_time(page, server: BrowserServer, login) -> None:
@@ -129,6 +160,8 @@ def test_the_steward_screens_fit_the_screen(page, server: BrowserServer, login, 
         "/steward",
         "/source-records",
         "/activity",
+        "/queue/intake",
+        "/queue/early-resolution",
         "/masters?detail=record:party_cedarline",
         "/masters?tab=registrations&detail=credential:cred_contractor_halcyon",
     ]
@@ -136,6 +169,85 @@ def test_the_steward_screens_fit_the_screen(page, server: BrowserServer, login, 
         response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert response is not None and response.status in (200, 404), path
         assert overflow(page) <= 1, (path, width, overflow(page))
+    assert page.recorded_errors == []
+
+
+def test_the_activity_keeps_its_columns_on_a_desktop(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """On a desktop the activity list keeps its columns: the change, the note, the actor and the result."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/activity", wait_until="load")
+    table = page.locator('[data-testid="activity-table"]')
+    assert table.count() == 1
+    assert table.locator("thead").is_visible()
+    assert table.locator("thead th").all_inner_texts() == [
+        "Change and record",
+        "Note",
+        "Actor and time",
+        "Result",
+    ]
+    row = page.locator('[data-testid="activity-row"]').first
+    assert row.evaluate("element => getComputedStyle(element).display") == "table-row"
+    assert row.locator('[data-testid="activity-action"]').inner_text().strip()
+    assert row.locator('[data-testid="activity-target"]').inner_text().strip()
+    assert row.locator('[data-testid="activity-result"]').inner_text().strip() == "Recorded"
+    assert page.recorded_errors == []
+
+
+def test_the_activity_reads_as_one_card_per_event_on_a_phone(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """At 390 pixels the activity list becomes one card per event, and every card fits."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/activity", wait_until="load")
+    assert page.viewport_size == {"width": 390, "height": 844}
+    table = page.locator('[data-testid="activity-table"]')
+    assert table.count() == 1
+    assert not table.locator("thead").is_visible()
+    rows = page.locator('[data-testid="activity-row"]')
+    assert rows.count() >= 1
+    for index in range(rows.count()):
+        box = rows.nth(index).bounding_box()
+        assert box is not None
+        assert box["x"] >= 0, box
+        assert box["x"] + box["width"] <= 390, box
+    card = rows.first
+    assert card.locator('[data-testid="activity-action"]').inner_text().strip()
+    assert card.locator('[data-testid="activity-target"]').inner_text().strip()
+    assert card.locator('[data-testid="activity-result"]').inner_text().strip() == "Recorded"
+    # The card reads in one order: the action, the result and then the note.
+    action = card.locator('[data-testid="activity-action"]').bounding_box()
+    result = card.locator('[data-testid="activity-result"]').bounding_box()
+    note = card.locator('[data-testid="activity-note"]').bounding_box()
+    assert action is not None and result is not None and note is not None
+    assert action["y"] < result["y"] < note["y"]
+    # The record of the event is named on the card.
+    label = card.locator('[data-testid="activity-target"]').evaluate(
+        "element => getComputedStyle(element, '::before').content"
+    )
+    assert "Record" in label
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("main h1").first)
+    assert_not_covered(page, page.locator('[data-testid="activity-row"]').first)
+    assert page.recorded_errors == []
+
+
+def test_a_long_record_identifier_fits_a_phone(
+    viewport_390, server: BrowserServer, login, long_record
+) -> None:
+    """A long record identifier wraps inside the card instead of widening it."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/activity", wait_until="load")
+    row = page.locator('[data-testid="activity-row"]', has_text=long_record).first
+    assert row.count() == 1
+    box = row.bounding_box()
+    assert box is not None
+    assert box["x"] >= 0, box
+    assert box["x"] + box["width"] <= 390, box
+    assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
 
 

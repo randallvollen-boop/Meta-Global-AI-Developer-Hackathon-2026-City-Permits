@@ -10,11 +10,11 @@
    and the recorded history. #}
 
 {% block content %}
-
+<div class="admin-b">
 <div class="page-head">
   <div>
-    <h1>Governance and sources</h1>
-    <p class="sub">Who owns each dataset, where the data comes from, and what arrived without an owner.</p>
+    <h1>Data sources and ownership</h1>
+    <p class="sub">See each dataset owner, source, correction route and unowned record.</p>
   </div>
   <div class="actions">{{ ui.help_button('governance') }}</div>
 </div>
@@ -24,6 +24,14 @@
   <a href="{{ item.href }}" role="tab" aria-selected="{{ 'true' if item.key == governance.tab else 'false' }}" data-testid="governance-tab" data-tab="{{ item.key }}">{{ item.label }}</a>
   {% endfor %}
 </nav>
+
+{% if governance.tab == 'sources' %}
+<section class="panel admin-b-attention" aria-labelledby="governance-attention-heading" data-testid="governance-attention">
+  <h2 id="governance-attention-heading">Records needing attention</h2>
+  <p><strong>{{ governance.attention.staged_records }}</strong> staged records and <strong>{{ governance.attention.quarantine_errors }}</strong> recorded quarantine errors.</p>
+  <p><a href="#intake-heading">View records</a> <a href="#governance-actions-heading">Manage governance</a></p>
+</section>
+{% endif %}
 
 {% include "components/responsibility_panel.html" %}
 
@@ -35,9 +43,9 @@
     demonstration received or checked a record. The number of open issues is a separate fact.
     {{ ui.info('source_freshness') }}
   </p>
-  <div class="kpis" data-testid="source-overview">
+  <div class="admin-b-source-grid" data-testid="source-overview">
     {% for item in governance.sources %}
-    <section class="card kpi" aria-labelledby="source-{{ item.source_system_id }}-heading" data-testid="source-card" data-source-system-id="{{ item.source_system_id }}">
+    <section class="card admin-b-source-card" aria-labelledby="source-{{ item.source_system_id }}-heading" data-testid="source-card" data-source-system-id="{{ item.source_system_id }}">
       <div class="k" id="source-{{ item.source_system_id }}-heading">
         <svg aria-hidden="true" style="width:13px;height:13px"><use href="#i-db"/></svg>
         {{ item.label }}
@@ -90,12 +98,12 @@
     <tbody>
       {% for registration in governance.registrations %}
       <tr data-testid="registration-row" data-state="{{ registration.registration_state }}">
-        <th scope="row">{{ registration.dataset_key }}</th>
-        <td>{{ registration.source_system_id }}</td>
-        <td>{{ registration.domain_id or 'not assigned' }}</td>
-        <td>{{ registration.accountable_owner_actor_id or 'not assigned' }}</td>
-        <td>{{ registration.steward_queue_id or 'not assigned' }}</td>
-        <td>{{ registration.system_custodian_actor_id or 'not assigned' }}</td>
+        <th scope="row">{{ registration.dataset_label }} <span class="mono">{{ registration.dataset_key }}</span></th>
+        <td>{{ registration.source_label }} <span class="mono">{{ registration.source_system_id }}</span></td>
+        <td>{{ registration.domain_label }}</td>
+        <td>{{ registration.owner_label }}</td>
+        <td>{{ registration.queue_label }}</td>
+        <td>{{ registration.custodian_label }}</td>
         <td>{{ registration.correction_route or 'not declared' }}</td>
         <td><span class="badge badge-{{ registration.registration_state }}">{{ registration.registration_state }}</span></td>
         <td>{{ 'yes' if registration.publishable else 'no' }}</td>
@@ -306,8 +314,8 @@
     decides with. A service identity is never selectable and no role label
     authorizes an action.
   </p>
-  <div class="tbl-wrap">
-  <table class="data-table" data-testid="access-table">
+  <div class="tbl-wrap admin-b-access-region" role="region" aria-label="Persona access register" tabindex="0">
+  <table class="data-table admin-b-stack" data-testid="access-table">
     <caption class="visually-hidden">The permission each persona holds</caption>
     <thead>
       <tr><th scope="col">Persona</th><th scope="col">Selectable</th><th scope="col">Permissions held</th><th scope="col">Count</th></tr>
@@ -316,9 +324,9 @@
       {% for entry in governance.access %}
       <tr data-testid="access-row" data-actor-id="{{ entry.actor_id }}">
         <th scope="row">{{ entry.label }}</th>
-        <td>{{ 'yes' if entry.selectable else 'no' }}</td>
-        <td class="mono">{{ entry.permissions|join(', ') }}</td>
-        <td class="num">{{ entry.count }}</td>
+        <td data-label="Selectable">{{ 'Yes' if entry.selectable else 'No' }}</td>
+        <td data-label="Permissions"><ul class="admin-b-permissions">{% for permission in entry.permission_rows %}<li>{{ permission.label }}</li>{% endfor %}</ul><details><summary>Exact permission keys</summary><span class="mono">{{ entry.permissions|join(', ') }}</span></details></td>
+        <td class="num" data-label="Count">{{ entry.count }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -371,4 +379,5 @@
   {% endif %}
   </div>
 </section>
+</div>
 {% endblock %}

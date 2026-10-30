@@ -1,1 +1,271 @@
 /* Admin area B screens. Every selector starts with .admin-b. */
+
+/* The frame of one admin-b screen: a single column that answers three
+   questions in order.  What am I looking at, what needs my attention and what
+   can I do next.  The spacing and the type carry the hierarchy, so the page
+   needs no new colour. */
+.admin-b { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.admin-b > * { min-width: 0; }
+
+.admin-b .page-head { align-items: flex-start; gap: .75rem; }
+.admin-b .page-head h1 { margin: 0 0 .15rem; }
+.admin-b .page-head .sub { margin: 0; max-width: 70ch; }
+.admin-b .page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-left: auto; }
+
+/* One bordered section holds the content.  A section never holds another
+   bordered section: rows inside it are separated by a thin rule. */
+.admin-b section.card,
+.admin-b article.card,
+.admin-b details.card { margin: 0; padding: 1rem 1.1rem; }
+.admin-b section.card > h2,
+.admin-b article.card > h2 { margin: 0 0 .45rem; font-size: 1.05rem; }
+.admin-b section.card > h3,
+.admin-b article.card > h3 { margin: .95rem 0 .3rem; font-size: .95rem; }
+.admin-b section.card > :first-child,
+.admin-b article.card > :first-child { margin-top: 0; }
+.admin-b details.card > summary { margin: 0 0 .3rem; }
+
+/* The links that move inside one screen. */
+.admin-b .admin-b-nav { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .1rem 0 0; }
+.admin-b .admin-b-nav a { white-space: nowrap; }
+
+/* An anchor target clears the header above it. */
+.admin-b [id] { scroll-margin-top: 1rem; }
+
+/* A record row: the name first, the facts beside it. */
+.admin-b .admin-b-records { list-style: none; margin: 0; padding: 0; }
+.admin-b .admin-b-record {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .9rem;
+  border-top: 1px solid var(--line-soft); padding: .6rem 0;
+}
+.admin-b .admin-b-record:first-child { border-top: 0; }
+.admin-b .admin-b-record-name { font-weight: 600; }
+.admin-b .admin-b-record-meta { color: var(--fg-2); font-size: .82rem; }
+
+/* One proposed or saved change, with its own reason. */
+.admin-b .admin-b-change {
+  border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  padding: .7rem .8rem; margin: .55rem 0; background: var(--surface);
+}
+.admin-b .admin-b-change > h3 { margin: 0 0 .2rem; font-size: .95rem; }
+.admin-b .admin-b-change > p { margin: .2rem 0; }
+.admin-b .admin-b-change .admin-b-change-why { color: var(--fg-2); font-size: .85rem; }
+.admin-b .admin-b-change-kind {
+  margin: 0 0 .2rem; font-size: .74rem; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--fg-3);
+}
+.admin-b .admin-b-change-label { font-weight: 600; }
+.admin-b .admin-b-changes { margin: .4rem 0; padding-left: 1.2rem; }
+.admin-b .admin-b-changes > li { margin: .3rem 0; }
+
+/* The state of the screen in one line, above the detail. */
+.admin-b .admin-b-state {
+  margin: 0 0 .6rem; padding: .5rem .7rem; border-left: 4px solid var(--accent);
+  background: var(--surface-2); border-radius: 6px;
+}
+
+/* A measure for a document that is read rather than scanned. */
+.admin-b .admin-b-reading { max-width: 68ch; }
+
+/* Two columns on a wide screen, one column on a phone. */
+.admin-b .admin-b-split { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+
+/* The lead of a screen: the part a person reads first and the part they act
+   on.  On a wide screen they sit side by side; on a phone they follow each
+   other. */
+.admin-b .admin-b-lead { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
+
+/* The result of a run: the one line that answers the question. */
+.admin-b .admin-b-headline {
+  margin: .1rem 0 .5rem; font-size: 1.3rem; font-weight: 600; line-height: 1.35;
+}
+.admin-b .admin-b-summary-line { margin: .25rem 0; }
+
+/* A briefing is a document before it is a model-control screen. Keep its
+   reading measure comfortable while allowing its evidence tables to scroll
+   inside their own region. */
+.admin-b .briefing { max-width: 68ch; }
+.admin-b .briefing-head { margin-bottom: 1.25rem; }
+.admin-b .briefing-head > :last-child { margin-bottom: 0; }
+.admin-b .briefing > section + section { margin-top: 1.35rem; }
+.admin-b .briefing > section > h2 { font-size: 1.05rem; }
+
+@media print {
+  .admin-b .briefing { max-width: none; }
+  .admin-b .policy-screen > .page-head .actions,
+  .admin-b [data-testid="policy-writer"] { display: none; }
+}
+
+/* Tables.  The page never scrolls sideways: a table that is wider than the
+   screen scrolls inside its own labelled region. */
+.admin-b .tbl-wrap { max-width: 100%; overflow-x: auto; }
+.admin-b .data-table { font-size: .82rem; }
+.admin-b .data-table th,
+.admin-b .data-table td { overflow-wrap: anywhere; }
+.admin-b .data-table caption { text-align: left; color: var(--fg-2); font-size: .8rem; padding-bottom: .3rem; }
+
+/* Forms.  A control never leaves the width of the screen and a long label
+   wraps instead of pushing the page sideways. */
+.admin-b .field { margin: .5rem 0; }
+.admin-b .field label { display: block; font-weight: 600; }
+.admin-b input:not([type="hidden"]):not([type="checkbox"]),
+.admin-b select,
+.admin-b textarea { max-width: 100%; box-sizing: border-box; }
+.admin-b .btn,
+.admin-b .button { white-space: normal; text-align: left; max-width: 100%; }
+.admin-b .inline-form { display: inline-block; max-width: 100%; }
+.admin-b fieldset { border: 1px solid var(--line); border-radius: 6px; margin: .5rem 0; min-width: 0; }
+.admin-b .lock { flex-direction: column; align-items: flex-start; font-size: .82rem; color: var(--fg-2); margin-top: .4rem; }
+.admin-b .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: .6rem .8rem; border-radius: 6px; }
+
+/* The run settings.  The population and the number of cases come first, the
+   rest sits in a disclosure, and a short list says which settings the run
+   reads for each population. */
+.admin-b .admin-b-run-main { margin: .3rem 0 .1rem; }
+.admin-b .admin-b-run-main .field { margin: .45rem 0; }
+.admin-b .admin-b-run-main input,
+.admin-b .admin-b-run-main select { width: 100%; }
+.admin-b .admin-b-applies {
+  margin: .3rem 0 .2rem; padding-left: 1.15rem;
+  font-size: .84rem; color: var(--fg-2);
+}
+.admin-b .admin-b-applies > li { margin: .25rem 0; }
+.admin-b .admin-b-applies strong { color: var(--fg); }
+
+/* A disclosure.  The summary is a control, so it is tall enough to press. */
+.admin-b details { margin: .45rem 0; }
+.admin-b details > summary { min-height: 44px; padding: .55rem 0; cursor: pointer; }
+.admin-b details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-b details.card > summary { font-weight: 600; }
+.admin-b details.card > summary::marker { color: var(--fg-2); }
+/* The glossary popover is a control of its own, not a disclosure of the page. */
+.admin-b .ui-info-fallback { margin: 0; }
+.admin-b .ui-info-fallback > summary { min-height: 0; padding: 0; }
+
+/* Words never break the line in the middle of an identifier. */
+.admin-b h1,
+.admin-b h2,
+.admin-b h3,
+.admin-b li,
+.admin-b p { overflow-wrap: anywhere; }
+.admin-b .mono { overflow-wrap: anywhere; }
+
+/* On a phone: one column, comfortable targets and no sideways page. */
+@media (max-width: 640px) {
+  .admin-b { gap: .75rem; }
+  .admin-b section.card,
+  .admin-b article.card { padding: .8rem .75rem; }
+  .admin-b .page-head { flex-direction: column; align-items: stretch; }
+  .admin-b .page-head .actions { margin-left: 0; }
+  .admin-b input:not([type="hidden"]):not([type="checkbox"]),
+  .admin-b select,
+  .admin-b textarea { font-size: 16px; }
+  .admin-b .btn,
+  .admin-b .button { min-height: 44px; }
+  .admin-b .admin-b-record { flex-direction: column; gap: .1rem; }
+}
+
+/* A stacked table on a phone.  The table stays one table: the header row is
+   kept for the screen reader and every cell names its own field. */
+@media (max-width: 640px) {
+  .admin-b .admin-b-stack thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .admin-b .admin-b-stack tbody tr {
+    display: block; border-top: 1px solid var(--line-soft); padding: .45rem 0;
+  }
+  .admin-b .admin-b-stack tbody th,
+  .admin-b .admin-b-stack tbody td {
+    display: flex; justify-content: space-between; gap: 1rem;
+    border: 0; padding: .2rem 0; text-align: left;
+  }
+  .admin-b .admin-b-stack tbody td::before {
+    content: attr(data-label); font-weight: 600; color: var(--fg-2); flex: none;
+  }
+  .admin-b .admin-b-stack tbody th { display: block; }
+}
+
+/* On a wide screen the run settings sit beside the changes, and the result of
+   a run sits beside the handoff of a draft. */
+@media (min-width: 900px) {
+  .admin-b .admin-b-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .admin-b .admin-b-lead { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+}
+
+/* governance, rules and City view (ADB-10 to ADB-15) */
+.admin-b .admin-b-attention {
+  border-left: 4px solid var(--warn);
+}
+.admin-b .admin-b-attention p:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.admin-b .admin-b-source-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.admin-b .admin-b-source-card {
+  min-width: 0;
+}
+.admin-b .admin-b-source-card .responsibility-grid {
+  grid-template-columns: 1fr;
+}
+.admin-b .admin-b-rules-register tbody th {
+  overflow-wrap: anywhere;
+}
+.admin-b .admin-b-rules-register .btn {
+  display: inline-flex;
+}
+.admin-b [data-testid="selected-version"] {
+  scroll-margin-top: 6rem;
+}
+.admin-b [data-testid="selected-version"] .card-b {
+  min-width: 0;
+}
+.admin-b [data-testid="selected-version-sides"],
+.admin-b [data-testid="selected-version-diff"] {
+  min-width: 34rem;
+}
+.admin-b .admin-b-access-region:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.admin-b .admin-b-permissions {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.admin-b .admin-b-permissions li {
+  margin: .15rem 0;
+}
+.admin-b .insight-filters {
+  align-items: end;
+}
+.admin-b [data-testid="synthetic-panel"] {
+  padding-block: .75rem;
+}
+.admin-b [data-testid="insight-filter-summary"] {
+  margin-block: .75rem;
+  font-size: 1rem;
+}
+@media (max-width: 640px) {
+  .admin-b .insight-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .admin-b .insight-filters label,
+  .admin-b .insight-filters select {
+    width: 100%;
+  }
+}
+.admin-b .insight-bars [tabindex="0"]:focus rect {
+  stroke: var(--fg);
+  stroke-width: 2px;
+}
+.admin-b .insight-bars,
+.admin-b .insight-map {
+  max-width: 100%;
+  height: auto;
+}

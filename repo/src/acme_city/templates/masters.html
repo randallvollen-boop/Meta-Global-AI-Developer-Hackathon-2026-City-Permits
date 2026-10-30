@@ -1,29 +1,33 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
 {% import "components/steward.html" as st with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
   <div>
     <h1>{{ 'Master records' if tabs|length > 1 else 'People & organizations' }}</h1>
-    <p class="sub">One searchable collection at a time. Each value comes from a source system; change it there.</p>
+    <p class="sub">Find an identity or property first. Licenses and registrations remain credentials held by that identity.</p>
   </div>
   <div class="actions">{{ ui.help_button(help_screen) }}</div>
 </div>
 
-<nav class="tabs master-tabs" aria-label="Master record collections" data-testid="master-tabs">
+{{ guide_ui.panel(guide) }}
+
+<nav class="tabs master-tabs stw-master-tabs" id="master-tabs" aria-label="Master record collections" data-testid="master-tabs">
   {% for item in tabs %}
   <a href="{{ item.href }}" data-testid="master-tab" data-tab="{{ item.key }}"{% if item.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ item.label }} <span class="n">{{ item.count }}</span></a>
   {% endfor %}
 </nav>
 
-{% if tabs|length > 1 %}{% set query = '' %}{% include "components/property_search.html" %}{% endif %}
+{% if tab == 'people' and tabs|length > 1 %}{% set query = '' %}{% include "components/property_search.html" %}{% endif %}
 
 {{ st.source_summary(summary) }}
 
 {% if tab == 'people' %}
 <section class="panel" aria-labelledby="people-heading">
-  <h2 id="people-heading" class="visually-hidden">People &amp; organizations</h2>
+  <h2 id="people-heading"{% if tabs|length == 1 %} class="visually-hidden"{% endif %}>People and organizations</h2>
+  <p class="muted">These are canonical identities. Open one to inspect its selected values, sources, and open questions.</p>
   <form class="filters toolbar" method="get" action="{{ collection_path }}" data-testid="applicant-search">
     {% if collection.kind != 'all' %}<input type="hidden" name="kind" value="{{ collection.kind }}">{% endif %}
     {% if collection_path == '/masters' %}<input type="hidden" name="tab" value="people">{% endif %}
@@ -66,7 +70,8 @@
 
 {% elif tab == 'properties' %}
 <section class="panel" aria-labelledby="properties-heading">
-  <h2 id="properties-heading" class="visually-hidden">Properties</h2>
+  <h2 id="properties-heading">Properties</h2>
+  <p class="muted">Search by the address a person recognizes or the recorded parcel number.</p>
   <form class="filters toolbar" method="get" action="/masters">
     <input type="hidden" name="tab" value="properties">
     <p class="field"><label for="property-query">Search by address or parcel number</label><input id="property-query" type="search" name="q" value="{{ collection.query }}"></p>
@@ -95,7 +100,8 @@
 {% else %}
 {% set is_license = tab == 'licenses' %}
 <section class="panel" aria-labelledby="credentials-heading">
-  <h2 id="credentials-heading" class="visually-hidden">{{ 'Business licenses' if is_license else 'Contractor registrations' }}</h2>
+  <h2 id="credentials-heading">{{ 'Business licenses' if is_license else 'Contractor registrations' }}</h2>
+  <p class="muted">A credential belongs to an identity. Its status does not replace the identity or record status.</p>
   <form class="filters toolbar" method="get" action="/masters">
     <input type="hidden" name="tab" value="{{ tab }}">
     <p class="field"><label for="credential-query">Search by {{ 'business' if is_license else 'contractor' }} or number</label><input id="credential-query" type="search" name="q" value="{{ collection.query }}"></p>

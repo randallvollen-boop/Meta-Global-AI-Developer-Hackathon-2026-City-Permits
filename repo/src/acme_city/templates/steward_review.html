@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui with context %}
 {% import "components/action_form.html" as forms %}
 {% import "components/steward.html" as st with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -11,6 +12,8 @@
   </div>
   <div class="actions">{{ ui.help_button('steward') }}</div>
 </div>
+
+{{ guide_ui.panel(guide) }}
 
 {% if confirmation %}<p class="case-confirmation" role="status" data-testid="queue-confirmation">{{ confirmation }}</p>{% endif %}
 

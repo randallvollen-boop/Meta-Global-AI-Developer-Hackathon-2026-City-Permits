@@ -1179,7 +1179,7 @@ def allowed_actions_for(
                 session,
                 actor,
                 action_id="source.write",
-                label="Open source record",
+                label="Update source record",
                 path="/ui/actions/source.write",
                 permission="source.record.update",
                 domain_id=domain_id,

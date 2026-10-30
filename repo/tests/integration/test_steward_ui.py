@@ -14,19 +14,20 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from acme_city.app import create_app
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
-from acme_city.persistence.models import change, registry
+from acme_city.persistence.models import audit, change, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 # The router is imported before the view models on purpose: the detail kinds
-# are registered in import order, and the shared router registers its kinds
-# first, exactly as the application does.
+# are registered when their module is imported, and the shared router imports
+# its kinds first, exactly as the application does.  Every kind has one name,
+# so the order no longer decides which resolver answers.
 from acme_city.ui.router import router as ui_router
 from acme_city.ui import display, steward_views
 
@@ -255,7 +256,7 @@ def test_record_profile_drawer_has_overview_sources_and_history(
 def test_other_drawer_kinds_resolve(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     proposals = seed(environment)
-    source = client.get("/detail/source/erp_finance:business_licensing_register:ERP-BL-00413")
+    source = client.get("/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413")
     assert source.status_code == 200
     for needle in ("Change this in", "Owner", "Steward", "Open recorded issues", "Last source update", "Last received", "Version"):
         assert needle in source.text, needle
@@ -270,19 +271,40 @@ def test_other_drawer_kinds_resolve(client: TestClient, environment: Settings) -
     assert evidence.status_code == 200 and "Agreements" in evidence.text
     assert client.get("/detail/applications/party_cedarline").status_code == 200
     assert client.get("/detail/record/party_nobody").status_code == 404
-    assert client.get("/detail/source/nowhere:nothing").status_code == 404
+    assert client.get("/detail/source-record/nowhere:nothing").status_code == 404
+
+
+def test_the_source_detail_kinds_keep_their_own_resolver(
+    client: TestClient, environment: Settings
+) -> None:
+    """The steward record detail and the governance source detail are separate kinds.
+
+    The two kinds are registered in two modules, so the order the modules are
+    imported in must not decide which resolver answers.
+    """
+    seed(environment)
+    choose(client, "persona_data_steward")
+    record = client.get(
+        "/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413"
+    )
+    assert record.status_code == 200
+    assert "Accepted values" in record.text
+    choose(client, "persona_city_administrator")
+    system = client.get("/detail/source/erp_finance")
+    assert system.status_code == 200
+    assert "Stored records" in system.text
 
 
 def test_drawer_refusals_carry_no_data(client: TestClient, environment: Settings) -> None:
     seed(environment)
     # No persona: 401.  The Applicant and the Permit Reviewer hold no source or master grant: 403.
-    assert client.get("/detail/source/permitting:applicant_profiles:PER-AP-0003").status_code == 401
+    assert client.get("/detail/source-record/permitting:applicant_profiles:PER-AP-0003").status_code == 401
     for actor, path in (
-        ("persona_applicant", "/detail/source/permitting:applicant_profiles:PER-AP-0003"),
+        ("persona_applicant", "/detail/source-record/permitting:applicant_profiles:PER-AP-0003"),
         ("persona_applicant", "/detail/credential/cred_license_cedarline"),
         ("persona_applicant", "/detail/parcel/parcel_1001"),
         ("persona_permit_reviewer", "/detail/credential/cred_license_cedarline"),
-        ("persona_permit_reviewer", "/detail/source/erp_finance:business_licensing_register:ERP-BL-00413"),
+        ("persona_permit_reviewer", "/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413"),
     ):
         choose(client, actor)
         response = client.get(path)
@@ -347,7 +369,7 @@ def test_stored_keys_read_as_words_and_timestamps_as_dates(client: TestClient) -
     assert "erp_finance:business_licensing_register" not in text_of(licenses)
     assert "ERP/Finance: Business licences" in licenses
     # The full identifiers stay in the details.
-    detail = client.get("/detail/source/erp_finance:business_licensing_register:ERP-BL-00412").text
+    detail = client.get("/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00412").text
     assert "erp_finance" in detail and "business_licensing_register" in detail and "2026-09-02 08:30:00 UTC" in detail
 
 
@@ -517,7 +539,7 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert 'data-result="agrees"' in works
     # The similarly named organization stays visible as its own record, with a link to its source.
     assert 'data-testid="similar-note"' in q4 and "Cedarline Coffee Roasters LLC" in q4
-    assert 'data-detail-kind="source"' in q4
+    assert 'data-detail-kind="source-record"' in q4
     # Evidence comes before the score, the score is explained, and no percentage is invented.
     assert q4.index("Agreements") < q4.index('data-testid="score-line"')
     assert "It adds up from" in q4 and "does not state the probability" in q4
@@ -555,7 +577,10 @@ def test_every_action_previews_what_it_will_do(client: TestClient, environment: 
     blocks = html.split('data-testid="action-preview-block"')[1:]
     labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
     assert labels == [
-        "Confirm link to Cedarline Coffee Roasters LLC", "Reject match", "Defer", "Request source correction",
+        "Confirm link to Cedarline Coffee Roasters LLC",
+        "Reject match proposed for Cedarline Coffee Roasters LLC",
+        "Keep for review",
+        "Request source correction",
     ]
     for block in blocks:
         for label in ("Records linked", "Application relationship", "Source values kept", "Issue afterwards"):
@@ -570,6 +595,93 @@ def test_every_action_previews_what_it_will_do(client: TestClient, environment: 
     assert not re.search(r">\s*Approve\s*<", html)
     # Required inputs show a visible * and the legend is present.
     assert 'class="req-star"' in html and "* Required" in html
+
+
+def test_an_ambiguous_case_asks_the_steward_to_choose_a_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """A case with two candidates has no chosen record until the steward chooses one."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    html = client.get(case_path(client, "ERP-BL-00413")).text
+    chooser = html.split('data-testid="candidate-chooser"')[1].split("</form>")[0]
+    assert 'name="candidate"' in chooser
+    options = re.findall(r'<option value="([^"]*)"([^>]*)>', chooser)
+    assert options[0][0] == ""
+    assert len(options) == 3, options
+    assert not any("selected" in flags for _, flags in options)
+    # The leading candidate is recommended for review, and none is selected.
+    assert html.count('data-testid="candidate-recommended"') == 1
+    assert 'data-testid="candidate-selected"' not in html
+    # The decision asks for the record instead of naming one.
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
+    assert "Confirm link to the selected record" in labels
+    # The action offers the choice and asks for it.
+    chooser_action = html.split('data-action-id="registry.decide"')[1].split("</details>")[0]
+    assert '<select' in chooser_action and 'name="entity_id"' in chooser_action
+    assert 'required' in chooser_action
+
+
+def test_choosing_a_record_shows_it_and_leaves_the_link_alone(
+    client: TestClient, environment: Settings
+) -> None:
+    """Choosing a record in the chooser changes the page and nothing else."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    entities = re.findall(r'data-testid="candidate" data-entity="([^"]+)"', html)
+    assert len(entities) == 2
+    chosen = f"{path}&candidate={entities[1]}" if "?" in path else f"{path}?candidate={entities[1]}"
+    page = client.get(chosen).text
+    assert 'data-testid="candidate-selected"' in page
+    assert f'data-entity="{entities[1]}" data-selected="true"' in page
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', page)
+    assert any(
+        label.startswith("Confirm link to ") and label != "Confirm link to the selected record"
+        for label in labels
+    ), labels
+    # The link itself is untouched: the case still waits for a decision.
+    assert 'data-testid="case-status">Needs review' in page
+
+
+def test_the_server_says_what_the_chosen_record_means(
+    client: TestClient, environment: Settings
+) -> None:
+    """The form names the record; the server decides what it means for the link."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "PER-AP-0003")
+    html = client.get(path).text
+    crosswalk = re.search(r'name="crosswalk_id" value="([^"]+)"', html)
+    assert crosswalk is not None
+    response = client.post(
+        "/ui/actions/registry.decide",
+        data={
+            "csrf_token": csrf(client, path), "next": path,
+            "source_system_id": "permitting", "dataset_key": "applicant_profiles",
+            "source_record_id": "PER-AP-0003", "entity_id": "party_cedarline",
+            "crosswalk_id": crosswalk.group(1),
+            "expected_version": str(link_version(environment, "PER-AP-0003")),
+            "reason": "the recorded alias and the declared reference agree",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303, response.text
+    assert "Recorded the approve decision for PER-AP-0003" in client.get(path).text
+
+
+def test_a_rejection_names_the_record_it_rejects(
+    client: TestClient, environment: Settings
+) -> None:
+    """The rejection says which master record it turns down."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "PER-AP-0003")
+    html = client.get(path).text
+    labels = re.findall(r'data-testid="action-preview-block" data-action-label="([^"]+)"', html)
+    assert "Reject match proposed for Cedarline Coffee Roasters LLC" in labels
+    assert "Reject match" not in labels
 
 
 def test_a_decision_is_recorded_and_the_case_confirms_it(client: TestClient, environment: Settings) -> None:
@@ -709,6 +821,129 @@ def test_source_records_catalogue_filters_and_links(client: TestClient, environm
     assert 'data-testid="source-record-table"' in body
 
 
+def test_the_catalogue_names_the_record_the_state_and_the_action(
+    client: TestClient, environment: Settings
+) -> None:
+    """A source record leads with its name, carries its state and offers one action."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records?system=erp_finance").text
+    # The name a person recognizes leads; the reference is the secondary text.
+    assert "Cedarline Coffee Works" in body
+    assert 'data-testid="source-reference">ERP-BL-00413' in body
+    # The state of the link is named, and the row offers the review of it.
+    assert 'data-testid="source-link-state"' in body
+    assert "Match proposed" in body
+    assert re.search(
+        r'href="(/steward/issues/link/[^"]+)"[^>]*data-testid="source-action"', body
+    )
+    # A record that was never compared offers the comparison of the records.
+    assert 'data-action-id="registry.propose"' in body
+
+
+def test_the_link_state_filter_narrows_the_catalogue(
+    client: TestClient, environment: Settings
+) -> None:
+    """The link state filter is read from the address and keeps the search."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records?link_state=proposed&q=cedarline").text
+    assert "ERP-BL-00413" in body
+    assert "ERP-BL-00412" not in body
+    assert 'name="link_state"' in body
+    assert 'value="proposed" selected' in body
+    # A state with no records says so.
+    empty = client.get("/source-records?link_state=linked").text
+    assert 'data-testid="source-empty"' in empty
+
+
+def guide_answer(html: str) -> str:
+    """Return the words of the guide on a page."""
+    return html.split('data-testid="steward-guide-answer">', 1)[1].split("</p>", 1)[0]
+
+
+def test_the_guide_of_each_case_kind_names_its_own_words(
+    client: TestClient, environment: Settings
+) -> None:
+    """A decided link reads the match words; a recorded issue reads no guidance."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                registry.Crosswalk(
+                    id="xwalk_guide_linked",
+                    entity_id="party_cedarline",
+                    entity_type="party",
+                    source_system_id="erp_finance",
+                    source_dataset_key="business_licensing_register",
+                    source_record_id="ERP-BL-00999",
+                    link_status="approved",
+                    decision="the license number matches",
+                    decision_actor_id="persona_data_steward",
+                    decided_at=datetime(2026, 9, 14, 15, 20, tzinfo=UTC),
+                )
+            )
+            session.add(
+                change.ChangeCase(
+                    id="case_guide_source",
+                    target_type="party",
+                    target_id="party_cedarline",
+                    change_kind="factual",
+                    correlation_id="corr_guide_source",
+                    title="Correct the trading name of the record",
+                    status="in_review",
+                    destination="Permitting applicant profile",
+                )
+            )
+            session.add(
+                change.GovernanceIssue(
+                    id="issue_guide_recorded",
+                    subject_type="party",
+                    subject_id="party_cedarline",
+                    issue_type="registration",
+                    description="The registration looks out of step with the record",
+                    responsible_queue_id="queue_contractors",
+                    blocking=True,
+                    status="open",
+                )
+            )
+    finally:
+        factory.dispose()
+    # A match to compare reads the words of the match case.
+    match_case = client.get(case_path(client, "ERP-BL-00413"))
+    assert match_case.status_code == 200
+    assert guide_answer(match_case.text).startswith("Compare the record reference")
+    # A decided link is a match that was already applied.
+    linked = client.get("/steward/issues/linked/xwalk_guide_linked")
+    assert linked.status_code == 200
+    assert guide_answer(linked.text).startswith("Compare the record reference")
+    # A source correction keeps the words of the source.
+    source_case = client.get("/steward/issues/case/case_guide_source")
+    assert source_case.status_code == 200
+    assert guide_answer(source_case.text).startswith("The accepted value stays unchanged")
+    # A recorded issue has no saved words of its own.
+    issue = client.get("/steward/issues/issue/issue_guide_recorded")
+    assert issue.status_code == 200
+    assert guide_answer(issue.text) == "This screen has no saved guidance yet."
+
+
+def test_the_source_details_show_the_accepted_values(
+    client: TestClient, environment: Settings
+) -> None:
+    """The source details show the values the registry accepted."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    html = client.get(
+        "/source-records?detail=source-record:erp_finance:business_licensing_register:ERP-BL-00413"
+    ).text
+    assert "Accepted values" in html
+    assert "License number" in html
+    assert "BL-2026-00413" in html
+    assert "Cedarline Coffee Works" in html
+
+
 def test_activity_lists_decisions_not_the_audit_log(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     assert 'data-testid="activity-empty"' in client.get("/activity").text
@@ -718,6 +953,125 @@ def test_activity_lists_decisions_not_the_audit_log(client: TestClient, environm
     assert "Candidate links proposed" in body
     choose(client, "persona_applicant")
     assert client.get("/activity").status_code == 403
+
+
+def activity_rows(html: str) -> list[str]:
+    """Return the markup of every row of the activity list."""
+    return re.findall(r'<tr data-testid="activity-row">(.*?)</tr>', html, re.S)
+
+
+def record_event(
+    environment: Settings,
+    *,
+    action: str = "registry.crosswalk.decide",
+    outcome: str = "accepted",
+    target: str = "PER-AP-0003",
+    reason: str = "",
+    denial_reason: str = "",
+    count: int = 1,
+) -> None:
+    """Record activity events in the database of the test.
+
+    The check constraint of the table allows only the two known outcomes, so
+    the constraint is switched off while an unfamiliar outcome is written.
+    """
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            session.execute(text("PRAGMA ignore_check_constraints=ON"))
+            for number in range(count):
+                session.add(
+                    audit.AuditEvent(
+                        id=f"audit_activity_{action.replace('.', '_')}_{target}_{number}",
+                        correlation_id="correlation_activity",
+                        occurred_at=datetime(2026, 10, 20, 9, 30, tzinfo=UTC),
+                        actor_id="persona_data_steward",
+                        action=action,
+                        target_type="source_record",
+                        target_id=target,
+                        reason=reason,
+                        denial_reason=denial_reason,
+                        outcome=outcome,
+                    )
+                )
+            session.flush()
+            session.execute(text("PRAGMA ignore_check_constraints=OFF"))
+    finally:
+        factory.dispose()
+
+
+def test_the_activity_leads_with_the_action_and_the_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """The activity list names the action, the record, the actor and the result."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/activity").text
+    assert "Recorded stewardship decisions and changes." in body
+    rows = activity_rows(body)
+    assert len(rows) == 3
+    assert all("Candidate links proposed" in row for row in rows)
+    row = next(row for row in rows if "PER-AP-0003" in row)
+    assert "Data Steward" in row
+    # The record of the event opens the case it belongs to.
+    assert "/steward/issues/link/" in row
+    # An accepted event is a neutral record, never a failure.
+    assert re.search(r'class="pill plain nowrap" data-testid="activity-result">Recorded<', row)
+    assert "pill bad" not in body
+
+
+def test_the_activity_marks_a_refused_event_and_leaves_an_unknown_outcome_neutral(
+    client: TestClient, environment: Settings
+) -> None:
+    """Only a refused event carries the refusal tone."""
+    choose(client, "persona_data_steward")
+    record_event(
+        environment,
+        action="registry.crosswalk.decide",
+        outcome="denied",
+        target="PER-AP-0003",
+        denial_reason="the source record does not match the master record",
+    )
+    record_event(
+        environment,
+        action="registry.crosswalk.defer",
+        outcome="pending",
+        target="ERP-BL-00413",
+        reason="waiting for the source to answer",
+    )
+    body = client.get("/activity").text
+    refused = next(row for row in activity_rows(body) if "PER-AP-0003" in row)
+    assert "Refused" in refused
+    assert 'class="pill bad nowrap" data-testid="activity-result">Refused<' in refused
+    assert "the source record does not match the master record" in refused
+    unknown = next(row for row in activity_rows(body) if "ERP-BL-00413" in row)
+    assert re.search(r'class="pill plain nowrap" data-testid="activity-result">Recorded<', unknown)
+    assert "pill bad" not in unknown
+    assert "waiting for the source to answer" in unknown
+
+
+def test_the_activity_keeps_its_pages(client: TestClient, environment: Settings) -> None:
+    """The activity list keeps its pages and its page links."""
+    choose(client, "persona_data_steward")
+    record_event(environment, count=51)
+    body = client.get("/activity").text
+    assert body.count('data-testid="activity-row"') == 50
+    pager = client.get("/activity").text.split('data-testid="pager"')[1]
+    assert "1 to 50 of 51" in pager
+    second = client.get("/activity?page=2").text
+    assert second.count('data-testid="activity-row"') == 1
+    assert "51 to 51 of 51" in second
+
+
+def test_the_activity_is_not_the_administrator_audit_log(
+    client: TestClient, environment: Settings
+) -> None:
+    """The activity list shows the steward's own events, not every recorded action."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/activity").text
+    assert "ui." not in text_of(body)
+    assert "/audit" not in body
 
 
 # ------------------------------------------------------- registry service level

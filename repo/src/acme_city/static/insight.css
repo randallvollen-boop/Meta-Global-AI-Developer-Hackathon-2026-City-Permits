@@ -1,25 +1,25 @@
 /* ---- Community permit insight: district-shaded map, bars, badges ---- */
-.insight-parcel path { stroke: var(--ink-2, #55616d); stroke-width: 1; }
-.insight-shade-0 path { fill: #f4f6f8; }
-.insight-shade-1 path { fill: #d6e6f5; }
-.insight-shade-2 path { fill: #a9cbea; }
-.insight-shade-3 path { fill: #6ea6d8; }
-.insight-shade-4 path { fill: #2f7cc0; }
+.insight-parcel path { stroke: var(--fg-2); stroke-width: 1; }
+.insight-shade-0 path { fill: var(--surface-2); }
+.insight-shade-1 path { fill: var(--accent-soft); }
+.insight-shade-2 path { fill: color-mix(in srgb, var(--accent) 35%, var(--surface)); }
+.insight-shade-3 path { fill: color-mix(in srgb, var(--accent) 65%, var(--surface)); }
+.insight-shade-4 path { fill: var(--accent); }
 .insight-hatch path { fill: url(#insight-hatch); }
-.insight-hatch-bg { fill: #f4f6f8; }
-.insight-hatch-line { stroke: #8a96a3; stroke-width: 2; }
-.insight-district-code { font: 700 22px sans-serif; fill: #14202b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
-.insight-district-figure { font: 600 17px sans-serif; fill: #14202b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
-.insight-dot circle { fill: #d9480f; fill-opacity: .82; stroke: #fff; stroke-width: 1.5; }
-.insight-dot text { font: 700 10px sans-serif; fill: #fff; }
+.insight-hatch-bg { fill: var(--surface-2); }
+.insight-hatch-line { stroke: var(--fg-3); stroke-width: 2; }
+.insight-district-code { font: 700 22px sans-serif; fill: var(--fg); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.insight-district-figure { font: 600 17px sans-serif; fill: var(--fg); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.insight-dot circle { fill: var(--bad); fill-opacity: .82; stroke: var(--surface); stroke-width: 1.5; }
+.insight-dot text { font: 700 10px sans-serif; fill: var(--surface); }
 .insight-legend { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; list-style: none; padding: 0; margin: .5rem 0; }
-.insight-legend .key { display: inline-block; width: 1.1rem; height: 1.1rem; vertical-align: -.2rem; border: 1px solid #55616d; margin-right: .3rem; }
-.insight-legend .key.s0 { background: #f4f6f8; } .insight-legend .key.s1 { background: #d6e6f5; }
-.insight-legend .key.s2 { background: #a9cbea; } .insight-legend .key.s3 { background: #6ea6d8; } .insight-legend .key.s4 { background: #2f7cc0; }
-.insight-legend .key.dot { background: #d9480f; border-radius: 50%; }
+.insight-legend .key { display: inline-block; width: 1.1rem; height: 1.1rem; vertical-align: -.2rem; border: 1px solid var(--fg-2); margin-right: .3rem; }
+.insight-legend .key.s0 { background: var(--surface-2); } .insight-legend .key.s1 { background: var(--accent-soft); }
+.insight-legend .key.s2 { background: color-mix(in srgb, var(--accent) 35%, var(--surface)); } .insight-legend .key.s3 { background: color-mix(in srgb, var(--accent) 65%, var(--surface)); } .insight-legend .key.s4 { background: var(--accent); }
+.insight-legend .key.dot { background: var(--bad); border-radius: 50%; }
 .insight-filters { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: end; margin: 1rem 0; }
 .insight-filters label { display: flex; flex-direction: column; font-weight: 600; gap: .2rem; }
-.insight-bars rect { fill: #2f7cc0; }
-.insight-bars text { font: 12px sans-serif; fill: #14202b; }
-.badge-synthetic { background: #fff3bf; color: #5c4400; border: 1px solid #c9a227; border-radius: .25rem; padding: 0 .4rem; font-size: .8em; font-weight: 600; white-space: nowrap; }
-.insight-def { color: #55616d; font-size: .9em; }
+.insight-bars rect { fill: var(--accent); }
+.insight-bars text { font: 12px sans-serif; fill: var(--fg); }
+.badge-synthetic { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); border-radius: .25rem; padding: 0 .4rem; font-size: .8em; font-weight: 600; white-space: nowrap; }
+.insight-def { color: var(--fg-2); font-size: .9em; }

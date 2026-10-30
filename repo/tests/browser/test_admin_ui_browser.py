@@ -12,9 +12,12 @@ register apart from the selected assessment.
 from __future__ import annotations
 
 import pytest
-from conftest import BrowserServer
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 ADMINISTRATOR = "persona_city_administrator"
+
+#: The five sections of the administration screen.
+SECTIONS = ("permit-types", "appearance", "users", "reason-codes", "log")
 
 
 def test_the_administrator_lands_on_the_planning_overview(
@@ -146,10 +149,101 @@ def test_the_administrator_screens_do_not_overflow(
         "/governance?tab=sources",
         "/reconciliation?tab=assessments",
         "/admin?tab=appearance",
+        "/admin?tab=permit-types",
     ):
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         overflow = page.evaluate(
             "() => document.documentElement.scrollWidth - window.innerWidth"
         )
         assert overflow <= 1, (path, overflow)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- the section navigation
+
+
+def test_the_sections_are_ordinary_links(page, server: BrowserServer, login) -> None:
+    login(ADMINISTRATOR)
+    page.goto(f"{server.base_url}/admin", wait_until="domcontentloaded")
+    # The navigation is a row of links, not a tab widget.
+    assert page.locator('[role="tablist"]').count() == 0
+    assert page.locator('[role="tab"]').count() == 0
+    tabs = page.locator('[data-testid="admin-tab"]')
+    assert tabs.count() == len(SECTIONS)
+    # The section that is open is the current page.
+    current = page.locator('[data-testid="admin-tab"][aria-current="page"]')
+    assert current.count() == 1
+    assert current.get_attribute("data-tab") == "permit-types"
+    # Only the open section is on the page.
+    assert page.locator('[data-testid="admin-section"]').count() == 1
+
+
+def test_a_section_opens_the_section_it_names(page, server: BrowserServer, login) -> None:
+    login(ADMINISTRATOR)
+    page.goto(f"{server.base_url}/admin", wait_until="domcontentloaded")
+    page.locator('[data-testid="admin-tab"][data-tab="reason-codes"]').click()
+    page.wait_for_url("**/admin?tab=reason-codes")
+    assert page.locator('[data-testid="admin-section"][data-section="reason-codes"]').count() == 1
+    assert page.locator('[data-testid="admin-section"][data-section="permit-types"]').count() == 0
+    current = page.locator('[data-testid="admin-tab"][aria-current="page"]')
+    assert current.get_attribute("data-tab") == "reason-codes"
+    assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("section", SECTIONS)
+def test_every_section_fits_a_phone(page, server: BrowserServer, login, section: str) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab={section}", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    row = page.locator("nav.adm-tabs")
+    box = row.bounding_box()
+    assert box is not None
+    assert box["x"] >= 0 and box["x"] + box["width"] <= 390, box
+    # Neither the mobile bar nor the demo switch covers the navigation.
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="admin-tab"][aria-current="page"]'))
+    assert page.recorded_errors == []
+
+
+def test_the_permit_type_register_fits_a_phone_and_opens_its_settings(
+    page, server: BrowserServer, login
+) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab=permit-types", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    rows = page.locator('[data-testid="admin-permit-type-row"]')
+    assert rows.count() == 17
+    # The settings of a type open in place, with the governed document forms.
+    settings = rows.first.locator('[data-testid="admin-permit-type-settings"]')
+    assert settings.count() == 1
+    settings.locator("summary").click()
+    assert settings.locator('[data-testid="admin-document-toggle"]').count() > 0
+    assert "Changes apply to new applications." in settings.inner_text()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("section", ("users", "reason-codes"))
+def test_users_and_reason_codes_fit_a_phone(page, server: BrowserServer, login, section: str) -> None:
+    login(ADMINISTRATOR)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/admin?tab={section}", wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    if section == "users":
+        people = page.locator('[data-testid="admin-person-row"]')
+        personas_before = people.locator('[data-testid="admin-demo-persona"]').count()
+        from acme_city.ui.view_models import PERSONA_PROFILES
+
+        assert personas_before == len(PERSONA_PROFILES)
+        assert personas_before == people.count()
+        page.locator('[data-testid="admin-service-identities-disclosure"] > summary').click()
+        assert people.locator('[data-testid="admin-demo-persona"]').count() == personas_before
+    else:
+        page.locator(".adm-retire-confirm > summary").first.click()
+        assert "Existing records keep this code." in page.locator(".adm-retire-confirm").first.inner_text()
+    assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
