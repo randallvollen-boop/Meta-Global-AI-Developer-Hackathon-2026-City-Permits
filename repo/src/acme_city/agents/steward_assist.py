@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -360,24 +360,6 @@ def clear(
     return row
 
 
-def view(recommendation: StewardRecommendation) -> dict[str, Any]:
-    """Return the view of one recommendation the screens read."""
-    return {
-        "recommendation_id": recommendation.id,
-        "task_kind": recommendation.task_kind,
-        "task_id": recommendation.task_id,
-        "record_version": recommendation.record_version,
-        "outcome": recommendation.outcome,
-        "confidence": recommendation.confidence,
-        "reason": recommendation.reason,
-        "evidence": dict(recommendation.evidence or {}),
-        "made_by": recommendation.made_by_actor_id,
-        "made_at": recommendation.made_at,
-        "run_id": str((recommendation.evidence or {}).get("run_id") or ""),
-        "version": recommendation.version,
-    }
-
-
 __all__ = [
     "AGENT_KEY",
     "HELD_MESSAGE",
@@ -392,5 +374,4 @@ __all__ = [
     "recommendation_by_id",
     "recommendation_for",
     "refuse_unless_acceptable",
-    "view",
 ]
