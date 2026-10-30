@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.agents import graphs
 from acme_city.agents.control import AgentControlService
-from acme_city.agents.extraction import replay_extraction
+from acme_city.agents.extraction import builtin_extraction
 from acme_city.agents.findings import FindingWriter, resolve_replaced_findings
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
@@ -148,16 +148,17 @@ def service_actor(session: Session, actor_id: str) -> ActorContext:
 def waiting_applications(session: Session) -> list[permit.Application]:
     """Return the applications that wait for the intake agent.
 
-    A case waits when it arrived from outside the City and no intake run has
-    routed it yet.  A seeded demonstration case carries a scenario id and is
-    never waiting: it is part of the fixed fixture, not an arrival.
+    A case waits when it arrived from outside the City and still waits for
+    the agent.  A seeded demonstration case carries a scenario id and is
+    never waiting: it is part of the fixed fixture, not an arrival.  The
+    clause is the one of the eligibility query, so the waiting cases and the
+    cases the agents may pick up on their own never drift apart.
     """
+    from acme_city.agents.eligibility import waiting_clause
+
     rows = session.execute(
         select(permit.Application)
-        .where(
-            permit.Application.status == "submitted",
-            permit.Application.scenario_id.is_(None),
-        )
+        .where(waiting_clause())
         .order_by(permit.Application.source_application_number)
     ).scalars().all()
     return list(rows)
@@ -187,9 +188,23 @@ class IntakeAgent:
 
     # ------------------------------------------------------------------ public
 
-    def run(self, application_id: str, *, triggered_by: str) -> agent_models.AgentRun:
-        """Run the intake graph on one application."""
-        self._control.require_awake(agent_models.AGENT_INTAKE)
+    def run(
+        self,
+        application_id: str,
+        *,
+        triggered_by: str,
+        work_id: str | None = None,
+        require_awake: bool = True,
+    ) -> agent_models.AgentRun:
+        """Run the intake graph on one application.
+
+        The ``work_id`` names the row of the work queue this run is the
+        attempt of, so the queue and the run evidence name each other.  The
+        automatic worker passes ``require_awake=False``: the processing
+        policy of the City is the authority of that run.
+        """
+        if require_awake:
+            self._control.require_awake(agent_models.AGENT_INTAKE)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
         # An archived case is closed: no agent may reopen it.
@@ -212,6 +227,7 @@ class IntakeAgent:
                 # The revision the run was made against.  A run of an earlier
                 # revision is history: the case was answered again since.
                 "revision": application.revision,
+                **({"work_id": work_id} if work_id else {}),
             },
         )
         self._session.add(run)
@@ -252,10 +268,9 @@ class IntakeAgent:
     def waiting_applications(self) -> list[permit.Application]:
         """Return the applications that wait for the intake agent.
 
-        A case waits when it arrived from outside and no intake run has
-        routed it yet.  A seeded demonstration case carries a scenario id
-        and is never waiting: it is part of the fixed fixture, not an
-        arrival.
+        A case waits when it arrived from outside and still waits for the
+        agent.  A seeded demonstration case carries a scenario id and is
+        never waiting: it is part of the fixed fixture, not an arrival.
         """
         return waiting_applications(self._session)
 
@@ -382,7 +397,9 @@ class IntakeAgent:
         node = graphs.node_for('intake', graphs.INTAKE_FIELD_EXTRACTOR)
         row = self._begin(run, node)
         try:
-            result = replay_extraction(self._session, application, actor)
+            result = builtin_extraction(
+                self._session, application, actor, agent_run_id=run.id
+            )
         except Exception as exc:  # noqa: BLE001 - a failed node is recorded
             self._finish(
                 run,
@@ -394,6 +411,13 @@ class IntakeAgent:
             return
         state = str(result.get("state"))
         observations = list(result.get("observations") or [])
+        # The run names the model run that read the documents, so the two
+        # records of one attempt point at each other.
+        model_run_id = str(result.get("run_id") or "")
+        if model_run_id:
+            inputs = dict(run.inputs or {})
+            inputs["model_run_id"] = model_run_id
+            run.inputs = inputs
         if state == "failed":
             issues = result.get("issues") or []
             detail = "; ".join(

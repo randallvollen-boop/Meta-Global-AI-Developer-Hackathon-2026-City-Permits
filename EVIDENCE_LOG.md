@@ -248,6 +248,17 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The City worker bundle is proven to be the operator's bundle: the managed grants of the reviewer and the seeded grants of the operator agree on the domain of every action, the reviewer opens `/agents` and `/agents/runs` while the option is on and is refused with 403 while it is off, and the reviewer is refused on the agent screen itself while the option is off.
 - The refusal of the saving action is proven to be a refusal and not a side effect of the state: the post carries a valid token and is answered 403 for the Data Steward, the Permit Reviewer and the Agent Operator.
 - No live provider call was made, and no rule text, replay fixture, acceptance test, persona or grant of the original four personas changed.
+
+## 2026-10-29 — Agent Operator lane OPR-9 evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/unit/test_migration_opr_work_queue.py` and `tests/integration/test_agent_runtime.py` → 8 passed: the migration creates only the queue table with the work identity, the status column and the attempt count and no lease or fencing token; the same work is never queued twice; the first worker takes the work and counts the attempt while the second worker cannot take it and cannot commit it; a second attempt counts; the protected D01-D11 cases, the cases the acceptance tests work on and the fixed fence scenarios are never eligible; a fresh arrival is eligible and a queued or worked case is not; the queue counts and the operator summary report the same state.
+  - `tests/unit/test_migrations.py`, `tests/unit/test_schema.py`, `tests/regression/test_fixture_outcomes_snapshot.py` and `tests/regression/test_protected_fixtures_unchanged.py` → 29 passed: the single head, the unique ids, the linear chain and the Alembic model check pass with the new migration, and the outcome snapshot and the fixture hash guard are unchanged.
+  - `tests/unit/test_stylesheet_scopes.py`, `tests/integration/test_agents_and_administration.py`, `tests/integration/test_agent_operator_ui.py`, `tests/integration/test_agent_processing_policy.py` and `tests/integration/test_agent_role_permissions.py` → 39 passed.
+  - `scripts/check_owned_hunks.py --lane agent-operator --base main --head HEAD` → "every hunk is inside the lane's own functions".
+  - `scripts/check_requirement_coverage.py` → 57/57 requirements mapped, 63 requirement identifiers referenced.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` → 2141 passed in 622.64s (10:22).
+- No live provider call was made, and no rule text, replay fixture, acceptance test, persona, grant or screen changed.
 ## Permit life cycle and the AVA republish (2026-10-29)
 
 - Branch `feature/permit-lifecycle`. Commit eae39f5 added the life cycle table, `/lifecycle`, `/walkthrough`, the architecture section and the judge walkthrough document. Commit e4c7dc4 listed the future features. The full suite passed with 2094 tests at eae39f5.

@@ -408,3 +408,19 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The steward help labels are checked in the element that holds them, the navigation entry, the summary, the button or the action label, and not anywhere on the page.
 - The steward help overlay says "waits for a person", "the queue can be sent to a colleague" and "off for this role". The shared `config/help_content.json` is untouched.
 - No fixture, rule text, replay fixture, acceptance test, persona or grant changed, no assertion was weakened, and no new binary was added.
+## 2026-10-29 — Agent Operator lane, OPR-9 the durable work queue (`lane/agent-operator`)
+
+- One table, `agent_work_queue` (migration `opr_work_queue`): one row per piece of work, with the work identity (`work_key`), a status column (`pending`, `running`, `completed`, `failed`, `held`) and an attempt count. The slice was built in the simplified form the lead asked for: no lease and no fencing token. The row is the authority, and a worker takes the work by moving it from `pending` to `running` in one statement, so two workers never hold the same work and only the worker that holds it may finish it.
+- `agents/runtime.py` is the one place where agent work is recorded: enqueue (idempotent on the work key), the waiting work, claim, finish and the queue counts. `agents/eligibility.py` is the one query that decides what may enter the queue on its own: a case that still waits for the intake agent, carries no controlled scenario and was never worked. A person may still run an agent on any named case; this query only governs the work that starts on its own.
+- The operator home reads the same queue: the summary reports the waiting work and the work that waits for another attempt. The Agents screen is unchanged in this slice.
+- The controlled data is never eligible: the D01-D11 cases carry a scenario id, the cases the acceptance tests work on are those same controlled cases, and the DF-1 and DF-2 fence scenarios are data the rule evaluator reads, never a case of the queue. A test enumerates all three groups.
+- No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. Nothing pushed, merged or published.
+
+## 2026-10-29 — Agent Operator lane, review 3 fixes (`lane/agent-operator`)
+
+- A finish names the attempt it ends: `AgentRuntime.finish(work_id, attempt, status, note=...)` adds `attempts == attempt` to the statement, so the late finish of an attempt that already ended changes no row and is refused, while the finish of the attempt that holds the work is recorded. The two callers of the OPR-10 manual run pass the attempt the claim counted.
+- The clock is read when the work is taken and when it is finished, not when the runtime was built, so the row carries the moment of the attempt. A test may still pass its own moment.
+- One eligibility clause: `agents/eligibility.py` holds `waiting_clause()`, the clause of a case that waits for the intake agent, and both `eligible_applications` and `agents/intake.waiting_applications` use it, so the cases the agents may pick up on their own and the cases the operator sees as waiting never drift apart. The eligibility query keeps its own narrowing (a case that was worked or is already queued is history).
+- The fence test of the OPR-9 slice asserted a rule outcome that did not depend on the runtime cycle it named, so it was replaced by a test that says what the cycle means: a reset leaves the work queue empty.
+- No rule text, replay fixture, acceptance test, persona, grant, screen or live Muse setting changed. The fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged. The full suite is green (2153 passed). Nothing pushed, merged or published.
+

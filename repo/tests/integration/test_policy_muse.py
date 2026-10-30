@@ -493,6 +493,20 @@ class _Explodes:
         raise RuntimeError("boom")
 
 
+class _ProviderError:
+    """A provider response that proves the request left this process."""
+
+    calls = 0
+
+    def create_response(self, payload):
+        type(self).calls += 1
+        return ProviderResponse(
+            response_id="resp_provider_error",
+            status="failed",
+            error="the provider refused the request",
+        )
+
+
 @pytest.fixture()
 def fresh(tmp_path):
     """A database of its own: the live cap and the error-stop are counted over all recorded runs."""
@@ -533,8 +547,9 @@ def test_the_replay_path_never_calls_the_client_even_when_one_is_given(settings)
     assert _Raises.calls == 0
 
 
-@pytest.mark.parametrize("client_class", [_Raises, _Explodes])
-def test_a_provider_client_that_raises_is_a_recorded_error_and_the_fallback_shows(fresh, client_class) -> None:
+def test_a_provider_response_error_stops_later_live_calls(fresh) -> None:
+    """Only an error after a provider response stops later live calls."""
+    client_class = _ProviderError
     client_class.calls = 0
     live = _live_settings(fresh)
     factory = open_factory(fresh)
@@ -548,11 +563,30 @@ def test_a_provider_client_that_raises_is_a_recorded_error_and_the_fallback_show
             assert "No Muse briefing was written" in result.notice
             shown, latest = service.briefing_for(admin, run)
             assert shown.writer == "deterministic" and latest is not None
-            # The error is recorded, and it stops every further live call (the shared error-stop).
+            # The response is recorded, and it stops every further live call.
             second = service.request_brief(admin, run, purpose="brief", expected_version=1)
             assert second.accepted is False
             assert "a previous live run recorded a provider error" in second.notice
         assert client_class.calls == 1
+    finally:
+        factory.dispose()
+
+
+@pytest.mark.parametrize("client_class", [_Raises, _Explodes])
+def test_a_client_error_before_a_provider_response_can_be_tried_again(fresh, client_class) -> None:
+    """A local refusal has no provider response and does not set the error stop."""
+    client_class.calls = 0
+    live = _live_settings(fresh)
+    factory = open_factory(fresh)
+    try:
+        with transaction(factory) as session:
+            admin, run = _run_for_service(session)
+            service = muse.PolicyMuseService(session, live, now=NOW, client=client_class())
+            first = service.request_brief(admin, run, purpose="brief", expected_version=0)
+            assert first.accepted is False
+            second = service.request_brief(admin, run, purpose="brief", expected_version=1)
+            assert second.accepted is False
+        assert client_class.calls == 2
     finally:
         factory.dispose()
 

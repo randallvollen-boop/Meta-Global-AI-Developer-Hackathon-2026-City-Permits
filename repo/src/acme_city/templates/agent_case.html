@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% set view = view %}
+
+{% block content %}
+<div class="page-head opr-page-head">
+  <div>
+    <h1>{% if view.missing %}Case not found{% else %}Case {{ view.reference }}{% endif %}</h1>
+    <p class="sub muted">
+      {% if view.missing %}
+      This case does not exist in the demonstration.
+      {% else %}
+      The operational picture of the case: its revision, the state of the
+      processing, the findings and the recorded runs.
+      {% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/agents/runs" data-testid="agent-case-back">Back to run history</a>
+  </div>
+</div>
+
+{% if view.missing %}
+<section class="panel card">
+  <div class="card-b">
+    <p class="muted" data-testid="agent-case-missing">No case with this reference exists.</p>
+  </div>
+</section>
+{% else %}
+<section class="panel card" aria-labelledby="agent-case-heading" data-testid="agent-case-summary">
+  <div class="card-h"><h2 id="agent-case-heading">Case</h2></div>
+  <div class="card-b">
+    <dl class="opr-facts">
+      <dt>Reference</dt>
+      <dd data-testid="agent-case-reference">{{ view.reference }}</dd>
+      <dt>Revision</dt>
+      <dd data-testid="agent-case-revision">{{ view.revision }}</dd>
+      <dt>Status</dt>
+      <dd data-testid="agent-case-status">{{ view.status }}</dd>
+      <dt>Type</dt>
+      <dd>{{ view.permit_type_key or '-' }}</dd>
+      <dt>Review area</dt>
+      <dd>{{ view.review_area or '-' }}</dd>
+      <dt>Processing state</dt>
+      <dd data-testid="agent-case-state">{{ view.state_label or 'Not queued yet' }}</dd>
+      <dt>Attempts</dt>
+      <dd data-testid="agent-case-attempts">{{ view.attempts }}</dd>
+      <dt>Processing mode</dt>
+      <dd data-testid="agent-case-engine">{{ view.engine_label }}</dd>
+    </dl>
+    {% if view.note %}
+    <p class="muted" data-testid="agent-case-note">{{ view.note }}</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel card" aria-labelledby="agent-case-findings-heading">
+  <div class="card-h"><h2 id="agent-case-findings-heading">Findings</h2></div>
+  <div class="card-b">
+    <table class="data-table opr-table" data-testid="agent-case-findings">
+      <caption class="visually-hidden">The findings of the current revision</caption>
+      <thead>
+        <tr><th scope="col">Finding</th><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">When</th></tr>
+      </thead>
+      <tbody>
+        {% for finding in view.findings %}
+        <tr data-testid="agent-case-finding">
+          <td data-label="Finding">{{ finding.message }}</td>
+          <td data-label="Rule">{{ finding.rule or '-' }}</td>
+          <td data-label="Severity">{{ finding.severity }}</td>
+          <td data-label="When">{{ finding.recorded_at }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted" data-testid="agent-case-findings-empty">No finding is open on this case.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel card" aria-labelledby="agent-case-runs-heading">
+  <div class="card-h"><h2 id="agent-case-runs-heading">Recorded runs</h2></div>
+  <div class="card-b">
+    <table class="data-table opr-table" data-testid="agent-case-runs">
+      <caption class="visually-hidden">The recorded runs of this case</caption>
+      <thead>
+        <tr><th scope="col">Started</th><th scope="col">Agent</th><th scope="col">State</th><th scope="col">Processing mode</th><th scope="col">Requested by</th><th scope="col">Duration</th><th scope="col">Steps</th></tr>
+      </thead>
+      <tbody>
+        {% for run in view.runs %}
+        <tr data-testid="agent-case-run" data-run-id="{{ run.run_id }}">
+          <td data-label="Started">{{ run.started_at }}</td>
+          <td data-label="Agent">{{ run.agent_label }}</td>
+          <td data-label="State"><span class="badge badge-{{ run.state }}">{{ run.state_label }}</span></td>
+          <td data-label="Processing mode">{{ run.engine_label }}</td>
+          <td data-label="Requested by">{{ run.triggered_label or '-' }}</td>
+          <td data-label="Duration">{{ run.duration or '-' }}</td>
+          <td data-label="Steps">
+            <ul class="issue-list" data-testid="agent-case-run-nodes">
+              {% for node in run.nodes %}
+              <li data-node-id="{{ node.node_id }}" data-status="{{ node.status }}">{{ node.label }}: {{ node.status }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="muted" data-testid="agent-case-runs-empty">No agent has run on this case.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

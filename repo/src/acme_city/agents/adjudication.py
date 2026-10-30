@@ -85,9 +85,23 @@ class AdjudicationAgent:
 
     # ------------------------------------------------------------------ public
 
-    def run(self, application_id: str, *, triggered_by: str) -> agent_models.AgentRun:
-        """Run the adjudication graph on one application."""
-        self._control.require_awake(agent_models.AGENT_ADJUDICATION)
+    def run(
+        self,
+        application_id: str,
+        *,
+        triggered_by: str,
+        work_id: str | None = None,
+        require_awake: bool = True,
+    ) -> agent_models.AgentRun:
+        """Run the adjudication graph on one application.
+
+        The ``work_id`` names the row of the work queue this run is the
+        attempt of, so the queue and the run evidence name each other.  The
+        automatic worker passes ``require_awake=False``: the processing
+        policy of the City is the authority of that run.
+        """
+        if require_awake:
+            self._control.require_awake(agent_models.AGENT_ADJUDICATION)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
         # An archived case is closed: no agent may reopen it.
@@ -105,7 +119,10 @@ class AdjudicationAgent:
             started_at=self._now,
             finished_at=None,
             outcome="recorded",
-            inputs={"permit_type_id": application.permit_type_id},
+            inputs={
+                "permit_type_id": application.permit_type_id,
+                **({"work_id": work_id} if work_id else {}),
+            },
         )
         self._session.add(run)
         self._session.flush()
@@ -146,7 +163,8 @@ class AdjudicationAgent:
         rows = self._session.execute(
             select(permit.Application)
             .where(
-                permit.Application.status.in_(["ready_for_review", "under_review"])
+                permit.Application.status.in_(["ready_for_review", "under_review"]),
+                permit.Application.scenario_id.is_(None),
             )
             .order_by(permit.Application.source_application_number)
         ).scalars().all()

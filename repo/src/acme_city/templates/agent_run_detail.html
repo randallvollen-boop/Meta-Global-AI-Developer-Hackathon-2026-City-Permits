@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set view = view %}
+
+{% block content %}
+<div class="page-head opr-page-head">
+  <div>
+    <h1>Run detail</h1>
+    <p class="sub muted">Recorded attempt evidence. A run records preparation only. A person makes permit decisions.</p>
+  </div>
+  <div class="actions"><a class="btn ghost" href="/agents/runs" data-testid="agent-run-detail-back">Back to run history</a></div>
+</div>
+
+{% if view.missing %}
+<section class="panel card" data-testid="agent-run-detail-missing"><div class="card-b"><p>This recorded run is not available.</p></div></section>
+{% else %}
+<section class="panel card opr-run-detail" data-testid="agent-run-detail">
+  <div class="card-h"><h2>{{ view.agent_label }} attempt</h2><span class="pill" data-testid="agent-run-detail-state">{{ view.state_label }}</span></div>
+  <div class="card-b">
+    <dl class="opr-facts">
+      <dt>Case</dt><dd>{{ view.reference or view.application_id or 'No case' }}</dd>
+      <dt>Revision</dt><dd data-testid="agent-run-detail-revision">{{ view.recorded_revision }}</dd>
+      <dt>Requested by</dt><dd>{{ view.triggered_by }}</dd>
+      <dt>Service identity</dt><dd>{{ view.service_identity }}</dd>
+      <dt>Started</dt><dd>{{ view.started_at }}</dd>
+      <dt>Finished</dt><dd>{{ view.finished_at }}</dd>
+      <dt>Elapsed time</dt><dd>{{ view.duration }}</dd>
+      <dt>Processing mode</dt><dd data-testid="agent-run-detail-mode">{{ view.engine_label }}</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="panel card opr-run-detail" aria-labelledby="run-steps-heading">
+  <div class="card-h"><h2 id="run-steps-heading">Processing steps</h2></div>
+  <div class="card-b">
+    <ol class="issue-list" data-testid="agent-run-detail-steps">
+      {% for node in view.nodes %}<li data-node-id="{{ node.node_id }}">{{ node.label }}: {{ node.status }}{% if node.note %}. {{ node.note }}{% endif %}</li>
+      {% else %}<li>No processing steps were recorded.</li>{% endfor %}
+    </ol>
+  </div>
+</section>
+
+<section class="panel card opr-run-detail" aria-labelledby="run-provenance-heading">
+  <div class="card-h"><h2 id="run-provenance-heading">Provenance</h2></div>
+  <div class="card-b" data-testid="agent-run-detail-provenance">
+    {% for model in view.model_runs %}
+    <p><strong>{{ model.source_label }}</strong>. {{ model.status }}{% if model.response_id %}. Response {{ model.response_id }}{% endif %}{% if model.error %}. {{ model.error }}{% endif %}</p>
+    {% else %}<p>{{ view.engine_label }}. No provider call or replay is recorded for this attempt.</p>{% endfor %}
+  </div>
+</section>
+
+<section class="panel card opr-run-detail" aria-labelledby="run-changes-heading">
+  <div class="card-h"><h2 id="run-changes-heading">Recorded business changes</h2></div>
+  <div class="card-b">
+    <ul class="issue-list" data-testid="agent-run-detail-changes">
+      {% for finding in view.findings %}<li>{{ finding.type }}: {{ finding.message }}</li>
+      {% else %}<li>No business changes were recorded by this attempt.</li>{% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="panel card opr-run-detail" aria-labelledby="run-retry-heading">
+  <div class="card-h"><h2 id="run-retry-heading">Retry</h2></div>
+  <div class="card-b">
+    {% if view.state == 'failed' %}<p data-testid="agent-run-detail-failure">{{ view.detail }}</p>{% endif %}
+    {% if not view.revision_matches %}
+    <p class="lock" data-testid="agent-run-detail-revision-changed">This application has changed. Process the current revision instead.</p>
+    {% elif view.can_retry and view.can_run %}
+    <p>Processing stopped before this attempt saved changes. Retry uses the same application revision.</p>
+    <form method="post" action="/ui/actions/agent.retry" class="action-form" data-testid="agent-run-detail-retry-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="agent.retry">
+      <input type="hidden" name="next" value="/agents/runs/{{ view.run_id }}">
+      <input type="hidden" name="agent_key" value="{{ view.agent_key }}">
+      <input type="hidden" name="application_id" value="{{ view.application_id }}">
+      <button type="submit" class="btn sm" data-testid="agent-run-detail-retry"{% if not view.is_awake %} disabled{% endif %}>Retry</button>
+    </form>
+    {% elif view.state == 'failed' %}
+    <p class="muted" data-testid="agent-run-detail-retry-unavailable">A person has to look at this attempt before it can run again.</p>
+    {% else %}<p class="muted">Only a failed attempt can be retried.</p>{% endif %}
+  </div>
+</section>
+
+<nav class="opr-run-links" aria-label="Related attempts">
+  {% if view.previous %}<a href="/agents/runs/{{ view.previous.run_id }}" data-testid="agent-run-detail-previous">Previous attempt: {{ view.previous.label }}</a>{% endif %}
+  {% if view.subsequent %}<a href="/agents/runs/{{ view.subsequent.run_id }}" data-testid="agent-run-detail-subsequent">Subsequent attempt: {{ view.subsequent.label }}</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

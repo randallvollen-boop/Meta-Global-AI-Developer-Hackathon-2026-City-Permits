@@ -394,6 +394,33 @@ def test_global_cap_refuses_past_the_settings_cap(seeded) -> None:
     assert transport.requests == []
 
 
+def test_the_default_icon_provider_path_obeys_a_zero_daily_cap(
+    seeded, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Icon generation reserves the shared provider allowance before transport."""
+    settings, factory = seeded
+    capped = settings.model_copy(update={"muse_daily_call_cap": 0})
+    transport = RecordingTransport(success_body())
+
+    def image_client_with_recording_transport(client_settings, **kwargs):
+        return MuseImageClient(client_settings, transport=transport, **kwargs)
+
+    monkeypatch.setattr(icon_service, "MuseImageClient", image_client_with_recording_transport)
+    with factory() as session:
+        ctx = action_ctx(
+            session,
+            capped,
+            ADMIN,
+            permit_type_id="permit_type_deck_fence",
+            prompt="a wooden deck with a fence",
+            expected_version="1",
+        )
+        outcome = icon_service.generate_icon(ctx)
+        assert outcome.state == "failed"
+        assert "allowance" in outcome.message
+    assert transport.requests == []
+
+
 def test_the_availability_names_the_reason_a_generation_is_off(seeded) -> None:
     settings, _factory = seeded
     # The test settings carry a credential, so a generation may be attempted.

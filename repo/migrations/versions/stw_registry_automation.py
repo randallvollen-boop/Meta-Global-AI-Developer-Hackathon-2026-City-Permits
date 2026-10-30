@@ -1,7 +1,7 @@
 """registry automation persistence
 
 Revision ID: stw_registry_automation
-Revises: opr_processing_policy
+Revises: opr_muse_budget
 Create Date: 2026-10-29 17:23:28.452612
 """
 
@@ -15,7 +15,7 @@ from alembic import op
 import acme_city.persistence.types
 
 revision: str = 'stw_registry_automation'
-down_revision: str | None = 'opr_processing_policy'
+down_revision: str | None = 'opr_muse_budget'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

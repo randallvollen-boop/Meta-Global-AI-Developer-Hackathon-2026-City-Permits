@@ -27,6 +27,9 @@ from support.client import choose, client, settings  # noqa: E402,F401
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ADMIN = "persona_city_administrator"
 
+#: The five sections the administration screen is built of.
+BUILT_IN_SECTIONS = ("permit-types", "appearance", "users", "reason-codes", "log")
+
 #: The interface action ids before the lane modules existed (W0-5).
 ACTION_IDS_BEFORE_W0_5 = frozenset({
     "agent.run.adjudication", "agent.run.intake", "agent.toggle", "change.dispatch",
@@ -51,16 +54,19 @@ ACTION_IDS_BEFORE_W0_5 = frozenset({
 
 def test_the_five_tabs_keep_their_order_and_labels() -> None:
     tabs = sorted(admin_tabs.ADMIN_TABS.values(), key=lambda tab: tab.order)
+    # The five sections of the screen keep their keys, their order and their
+    # labels.  A lane may register a tab of its own between them.
+    built_in = [tab for tab in tabs if tab.key in BUILT_IN_SECTIONS]
     # Changed deliberately (admin-a ADA-4): the labels are the plain names of
     # the five sections, in sentence case.
-    assert [(tab.key, tab.label) for tab in tabs[:5]] == [
+    assert [(tab.key, tab.label) for tab in built_in] == [
         ("permit-types", "Permit types"),
         ("appearance", "Appearance"),
         ("users", "Users and roles"),
         ("reason-codes", "Reason codes"),
         ("log", "Configuration log"),
     ]
-    for tab in tabs[:5]:
+    for tab in built_in:
         assert (REPO_ROOT / "src" / "acme_city" / "templates" / tab.template).is_file()
 
 
