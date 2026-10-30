@@ -109,7 +109,7 @@ This prepares the Cedarline demonstration and one link the automatic linking app
 
 Choose **Data Steward** and open **Data issues**. The applied link is a row of its own: open it and read the score, the evidence of the comparison and the two controls. Press **Keep this link** to record that the master record is right, or press **Undo this link**, give a reason, and the link is taken back while the event that applied it stays in the trail. Then open **Automatic linking** to read the policy, preview the accepted records and pause the automation.
 
-The mode is a prepare mode. The default reset, the Cedarline demonstration and every acceptance fixture hold no applied link, and the linking service never calls a model provider.
+The settings screen says that this deployment runs the automation paused, because no new record is queued for the worker here. The link in the queue was applied while the mode was prepared, and it waits for your review. The mode is a prepare mode. The default reset, the Cedarline demonstration and every acceptance fixture hold no applied link, and the linking service never calls a model provider.
 
 ## Prepared states
 
