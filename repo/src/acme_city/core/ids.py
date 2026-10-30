@@ -66,6 +66,7 @@ ID_PREFIXES: frozenset[str] = frozenset(
         "session",
         "snap",
         "srcsys",
+        "stewrec",
         "task",
         "contract",
         "alias",
