@@ -258,10 +258,15 @@ class MuseClient:
         *,
         transport: httpx.BaseTransport | None = None,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+        budget: Any = None,
     ) -> None:
         self._settings = settings
         self._transport = transport
         self._timeout = timeout_seconds
+        #: The daily allowance of provider calls.  When it is given, one call is
+        #: reserved before the request leaves; a client without one is used by
+        #: the tests that inject their own transport.
+        self._budget = budget
         self.request_summary: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------ checks
@@ -317,7 +322,9 @@ class MuseClient:
         The request is sent exactly once.  A failure is returned as a failed
         response rather than raised, so that the failure can be recorded as an
         immutable run.  A request the hosted dispatch lock refuses is the one
-        exception: it raises :class:`MuseLiveCallBlocked`.
+        exception: it raises :class:`MuseLiveCallBlocked`.  A request the daily
+        allowance refuses raises :class:`~acme_city.muse.budget.MuseBudgetExceeded`
+        before anything is sent.
         """
         self.check_payload(payload)
         self.request_summary = summarize_request(payload)
@@ -337,6 +344,12 @@ class MuseClient:
                 status="failed",
                 error="no provider credential is configured for this service",
             )
+
+        # The daily allowance is checked and reserved here, after the hosted
+        # lock and before the transport: the lock wins, and a day without room
+        # sends nothing.
+        if self._budget is not None:
+            self._budget.reserve()
 
         headers = {
             "Authorization": f"Bearer {secret}",

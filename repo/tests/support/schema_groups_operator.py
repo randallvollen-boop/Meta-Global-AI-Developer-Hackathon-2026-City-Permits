@@ -11,5 +11,6 @@ SCHEMA_GROUPS: dict[str, tuple[str, ...]] = {
         "agent_role_entitlements",
         "agent_processing_policies",
         "agent_work_queue",
+        "muse_daily_budget",
     ),
 }

@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from acme_city.core.config import Settings
-from acme_city.core.config_operator import operator_env_overrides
+from acme_city.core.config_operator import (
+    DEFAULT_MUSE_DAILY_CALL_CAP,
+    operator_env_overrides,
+)
 
 SECRET_VALUE = "unit-test-secret-value-not-a-real-key"
 
@@ -39,3 +44,23 @@ def test_operator_overrides_only_contain_set_names() -> None:
     assert operator_env_overrides({"ACME_MUSE_LIVE_CALLS_ALLOWED": "true"}) == {
         "muse_live_calls_allowed": True
     }
+
+
+def test_the_daily_call_cap_has_a_default_and_an_override(tmp_path: Path) -> None:
+    settings = _load(tmp_path)
+    assert settings.muse_daily_call_cap == DEFAULT_MUSE_DAILY_CALL_CAP
+    assert Settings(secret_key=SECRET_VALUE).muse_daily_call_cap == (
+        DEFAULT_MUSE_DAILY_CALL_CAP
+    )
+    settings = _load(tmp_path, ACME_MUSE_DAILY_CALL_CAP="3")
+    assert settings.muse_daily_call_cap == 3
+    assert operator_env_overrides({"ACME_MUSE_DAILY_CALL_CAP": "0"}) == {
+        "muse_daily_call_cap": 0
+    }
+
+
+def test_a_daily_call_cap_that_is_not_a_whole_number_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(ValueError):
+        _load(tmp_path, ACME_MUSE_DAILY_CALL_CAP="many")
+    with pytest.raises(ValueError):
+        _load(tmp_path, ACME_MUSE_DAILY_CALL_CAP="-1")
