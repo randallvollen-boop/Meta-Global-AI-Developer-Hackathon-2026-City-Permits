@@ -1,0 +1,480 @@
+"""The admin-b screens in the browser: the phone fit of every screen.
+
+The harness of the lane is shared by its slices.  It opens a screen as the
+City Administrator at 390 by 844 pixels, checks that the page does not scroll
+sideways, that the mobile navigation and the demo switcher do not cover the
+controls of the screen and that the browser reports no error.
+
+The first slice of the lane adds the harness and the guard that keeps the new
+stylesheet away from the screens of the other lanes.
+"""
+# REQUIRES: UX-01, UX-02, UX-03, UX-04
+
+from __future__ import annotations
+
+import pytest
+
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
+
+#: The screens of the other lanes, with the address that opens each of them.
+OTHER_SCREENS = (
+    ("persona_applicant", "/city/"),
+    ("persona_data_steward", "/queue"),
+    ("persona_permit_reviewer", "/queue"),
+    ("persona_city_administrator", "/queue"),
+)
+
+#: The staff screens, which carry the shared "Last action" region.
+STAFF_SCREENS = (
+    ("persona_data_steward", "/queue"),
+    ("persona_permit_reviewer", "/queue"),
+    ("persona_city_administrator", "/queue"),
+)
+
+
+@pytest.fixture(autouse=True)
+def patient_browser(page):
+    """Give the page time to answer when the whole suite runs on one machine.
+
+    The checks of this lane are about the layout of a screen, not about how
+    fast a server answers.  A loaded machine must not turn a layout check into
+    a timeout.
+    """
+    page.set_default_timeout(60_000)
+    return page
+
+
+def open_screen(page, server: BrowserServer, path: str) -> None:
+    """Open one screen of the demonstration server."""
+    page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+
+
+def fits_a_phone(page) -> None:
+    """Check that the page fits a phone and that its heading is reachable."""
+    assert_no_horizontal_overflow(page)
+    heading = page.locator("main h1").first
+    if heading.count():
+        assert_not_covered(page, heading)
+
+
+def assert_visible_controls_take_keyboard_focus(page) -> None:
+    """Every exposed control in the admin-b region can take visible focus."""
+    controls = page.locator(
+        ".admin-b a[href], .admin-b button:not([disabled]), "
+        ".admin-b input:not([type=hidden]):not([disabled]), "
+        ".admin-b select:not([disabled]), .admin-b textarea:not([disabled]), "
+        ".admin-b summary, .admin-b [tabindex]:not([tabindex='-1'])"
+    )
+    for index in range(controls.count()):
+        control = controls.nth(index)
+        if not control.is_visible():
+            continue
+        control.focus()
+        assert control.evaluate("element => document.activeElement === element")
+        assert control.evaluate("element => element.matches(':focus-visible')")
+
+
+@pytest.mark.parametrize(
+    "path",
+    (
+        "/governance?tab=sources",
+        "/rules?tab=rules&view=published&version=rulever_CT-1_v1",
+        "/insight/city",
+    ),
+)
+def test_admin_b_controls_are_keyboard_reachable_on_desktop(
+    page, server: BrowserServer, login, path: str
+) -> None:
+    """The exposed controls of each final-copy screen receive visible focus."""
+    login("persona_city_administrator")
+    open_screen(page, server, path)
+    assert_visible_controls_take_keyboard_focus(page)
+    assert page.recorded_errors == []
+
+
+def test_the_admin_b_stylesheet_does_not_reach_the_other_screens(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The scoped stylesheet may not change a screen the lane does not own."""
+    for actor_id, path in OTHER_SCREENS:
+        login(actor_id)
+        open_screen(page, server, path)
+        assert_no_horizontal_overflow(page)
+        assert page.locator(".admin-b").count() == 0, path
+    assert page.recorded_errors == []
+
+
+def test_the_other_screens_keep_their_feedback_region(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The shared "Last action" region survives the new stylesheet."""
+    for actor_id, path in STAFF_SCREENS:
+        login(actor_id)
+        open_screen(page, server, path)
+        assert page.locator('[data-testid="feedback"]').count() == 1, path
+        assert page.locator('[data-testid="feedback-message"]').count() == 1, path
+    assert page.recorded_errors == []
+
+
+def test_a_saved_what_if_stacks_on_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The saved list is one table that stacks, with a name for every field."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    open_screen(page, server, "/policy/scenarios")
+    row = page.locator('[data-testid="policy-row"]').first
+    assert row.count() == 1
+    cell = row.locator('td[data-label="Revision"]')
+    assert cell.count() == 1
+    shown = cell.evaluate("element => getComputedStyle(element, '::before').content")
+    assert "Revision" in shown, shown
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- the proposal review
+
+
+def test_the_proposal_review_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The checked proposal fits a phone and its save control stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-question"]').fill(
+        "What if the side and rear yard fence limit were 7 ft?"
+    )
+    page.locator('[data-testid="policy-propose-submit"]').click()
+    page.wait_for_selector('[data-testid="policy-proposal-changes"]')
+    assert_no_horizontal_overflow(page)
+    save = page.locator('[data-testid="policy-proposal-save"]')
+    assert save.is_visible()
+    assert_not_covered(page, save)
+    assert page.recorded_errors == []
+
+
+def test_a_refused_proposal_offers_the_way_back(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A refused proposal offers the two ways forward and no save."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-question"]').fill(
+        "What if no permit were required for a shed?"
+    )
+    page.locator('[data-testid="policy-propose-submit"]').click()
+    page.wait_for_selector('[data-testid="policy-proposal-rejected"]')
+    assert page.locator('[data-testid="policy-proposal-save"]').count() == 0
+    assert page.locator('a[href="/policy/scenarios#examples"]').count() == 1
+    assert page.locator('a[href="/policy/scenarios#build-whatif"]').count() == 1
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------------- the editor
+
+
+def test_the_editor_fits_a_phone_and_keeps_its_forms(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The editor fits a phone: the changes, the run settings and the forms."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    assert_no_horizontal_overflow(page)
+    anchor = page.locator('[data-testid="policy-run-anchor"]')
+    assert anchor.is_visible()
+    assert_not_covered(page, anchor)
+    assert page.locator('[data-testid="policy-run-submit"]').is_visible()
+    # The change catalogue is a disclosure, so it is opened before it is used.
+    page.locator('details:has([data-testid="policy-add-fee"]) > summary').click()
+    assert page.locator('[data-testid="policy-add-fee"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_editor_saves_a_change_from_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A change can still be added on a phone, and the run button stays honest."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    page.locator('details:has([data-testid="policy-add-requirement"]) > summary').click()
+    form = page.locator('[data-testid="policy-add-requirement"]')
+    form.locator('select[name="permit_type_key"]').select_option("shed")
+    form.locator('select[name="item_kind"]').select_option("document")
+    form.locator('select[name="action"]').select_option("add")
+    form.locator('input[name="item"]').fill("site_plan")
+    form.locator('button[type="submit"]').click()
+    page.wait_for_load_state("domcontentloaded")
+    assert page.locator('[data-testid="policy-change"]').count() == 2
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_run_settings_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The run settings fit a phone: the case count stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    editor = page.url.split("?")[0]
+    page.goto(editor, wait_until="domcontentloaded")
+    count = page.locator('[data-testid="policy-run-count"]')
+    assert count.is_visible()
+    assert_not_covered(page, count)
+    submit = page.locator('[data-testid="policy-run-submit"]')
+    assert submit.is_visible()
+    assert_not_covered(page, submit)
+    # The other settings sit in a disclosure, so it is opened before it is used.
+    page.locator('details[data-testid="policy-run-more"] > summary').click()
+    assert page.locator("#run-seed").is_visible()
+    assert page.locator("#run-category").is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ---------------------------------------------------------- the results
+
+
+def run_a_scenario(page, server: BrowserServer) -> str:
+    """Save the fence example, run it and return the address of the results."""
+    open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-suggestion"]').first.click()
+    page.wait_for_url("**/policy/scenarios/polscen_*")
+    page.locator('[data-testid="policy-run-count"], #run-count').first.fill("120")
+    page.locator('[data-testid="policy-run-submit"]').click()
+    page.wait_for_url("**/policy/runs/polrun_*")
+    return page.url.split("?")[0].replace(server.base_url, "")
+
+
+def test_the_results_lead_with_the_result_and_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The result comes first, the safety block stays visible, nothing overflows."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, results)
+    headline = page.locator('[data-testid="policy-summary"]')
+    assert headline.is_visible()
+    assert "have a different result" in headline.inner_text()
+    assert_not_covered(page, headline)
+    safety = page.locator('[data-testid="policy-safety"]')
+    assert safety.is_visible()
+    assert_not_covered(page, safety)
+    assert page.locator('[data-testid="policy-outcomes"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_collapsed_details_open_and_keep_their_definition(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A collapsed section opens, and its definition is reachable without it."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, results)
+    changed = page.locator('[data-testid="policy-flipped"]')
+    assert changed.evaluate("element => element.open") is False
+    changed.locator("summary").first.click()
+    assert changed.evaluate("element => element.open") is True
+    assert page.locator('[data-testid="policy-flipped-table"]').is_visible()
+    # The definition of a collapsed figure sits in the summary, so it opens
+    # without opening the section.
+    info = changed.locator(":scope > .ui-info .ui-info-btn").first
+    assert info.is_visible()
+    info.click()
+    assert changed.locator('[data-testid="ui-info-pop"]').first.is_visible()
+    assert changed.evaluate("element => element.open") is True
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+def test_the_briefing_leads_with_the_document_and_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The document and export remain reachable before optional details."""
+    login("persona_city_administrator")
+    results = run_a_scenario(page, server)
+    open_screen(page, server, f"{results}/briefing")
+    briefing = page.locator('[data-testid="policy-briefing"]')
+    assert briefing.is_visible()
+    assert "Built from saved results" in briefing.inner_text()
+    assert_not_covered(page, briefing.locator("h2").first)
+    download = page.locator('[data-testid="policy-download-html"]')
+    assert download.is_visible()
+    assert_not_covered(page, download)
+    assert page.locator('[data-testid="policy-writer"]').evaluate("element => element.open") is False
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- the scenarios list
+
+
+def test_the_scenarios_list_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The list of what-ifs fits a phone and its first action stays reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    assert_no_horizontal_overflow(page)
+    assert page.locator(".admin-b").count() == 1
+    suggestion = page.locator('[data-testid="policy-suggestion"]').first
+    assert suggestion.is_visible()
+    assert_not_covered(page, suggestion)
+    assert page.recorded_errors == []
+
+
+def test_the_scenarios_list_offers_the_recorded_examples(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The recorded questions are choices, and the empty form opens when asked."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/policy/scenarios")
+    choice = page.locator('[data-testid="policy-question-choice"]')
+    assert choice.count() == 1
+    text = choice.inner_text()
+    assert "What if the side and rear yard fence limit were 7 ft?" in text
+    assert "Example of an unsupported request" in text
+    # The disclosure is opened before its control is used.
+    page.locator('details:has([data-testid="policy-create-form"]) > summary').click()
+    assert page.locator('[data-testid="policy-name"]').is_visible()
+    assert_no_horizontal_overflow(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------ governance and source overview
+
+
+def test_governance_source_overview_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Source attention and cards fit 390px and remain reachable."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=sources")
+    assert page.locator("h1").inner_text() == "Data sources and ownership"
+    assert page.locator('[data-testid="governance-attention"]').count() == 1
+    assert page.locator('[data-testid="source-card"]').count() == 3
+    source_grid = page.locator('[data-testid="source-overview"]')
+    assert source_grid.evaluate("element => getComputedStyle(element).display") == "grid"
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="source-card"]').last)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------- rules and fees register
+
+
+@pytest.mark.parametrize("tab", ["rules", "fees"])
+@pytest.mark.parametrize("view", ["published", "drafts", "history"])
+def test_rules_and_fees_registers_fit_a_phone(
+    page, server: BrowserServer, login, viewport_390, tab: str, view: str
+) -> None:
+    """Both registers and all three views keep their records at 390px."""
+    login("persona_city_administrator")
+    open_screen(page, server, f"/rules?tab={tab}&view={view}")
+    assert page.locator('[data-testid="rules-tab"]').count() == 2
+    assert page.locator('[data-testid="rules-view"]').count() == 3
+    if view != "history":
+        cell = page.locator('[data-testid="rule-table"] tbody td').first
+        assert cell.evaluate("element => getComputedStyle(element).display") == "flex"
+    fits_a_phone(page)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------ selected version review
+
+
+def test_selected_rule_version_review_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """A selected version names both comparison baselines and stays reachable."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/rules?tab=rules&view=published&version=rulever_CT-1_v1",
+    )
+    selected = page.locator('[data-testid="selected-version"]')
+    assert selected.count() == 1
+    assert page.locator('[data-testid="selected-published-baseline"]').count() == 1
+    assert page.locator('[data-testid="selected-diff-baseline"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator("#selected-version-heading"))
+    assert page.recorded_errors == []
+
+
+# -------------------------------------------------------- governance registers
+
+
+def test_governance_access_lists_five_personas_without_page_overflow(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """The access register stays readable and includes all selectable personas."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/governance?tab=access")
+    rows = page.locator('[data-testid="access-row"]')
+    assert rows.count() == 5
+    assert page.locator("summary", has_text="Exact permission keys").count() == 5
+    fits_a_phone(page)
+    assert_not_covered(page, rows.last)
+    assert page.recorded_errors == []
+
+
+# ------------------------------------------------------------ City permit view
+
+
+def test_city_permit_activity_hierarchy_fits_a_phone(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """City activity puts scope first and names filters not copied to a scenario."""
+    login("persona_city_administrator")
+    open_screen(
+        page,
+        server,
+        "/insight/city?type=shed&outcome=approved&period=30d&exceptions=1",
+    )
+    assert page.locator("h1").inner_text() == "City permit activity"
+    assert page.locator('[data-testid="insight-filter-summary"]').count() == 1
+    filters = page.locator('[data-testid="insight-filters"]')
+    assert filters.evaluate("element => getComputedStyle(element).display") == "grid"
+    note = page.locator('[data-testid="scenario-scope-note"]')
+    assert "not copied" in note.inner_text()
+    assert page.locator("th", has_text="Approved or issued").count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="filter-apply"]'))
+    assert page.recorded_errors == []
+
+
+# ----------------------------------------------------------- City chart tokens
+
+
+def test_city_charts_use_theme_tokens_in_light_and_dark(
+    page, server: BrowserServer, login, viewport_390
+) -> None:
+    """Chart paint follows theme tokens while labels and tables remain present."""
+    login("persona_city_administrator")
+    open_screen(page, server, "/insight/city")
+    bar = page.locator(".insight-bars rect").first
+    light_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    page.evaluate("document.documentElement.dataset.theme = 'dark'")
+    dark_fill = bar.evaluate("element => getComputedStyle(element).fill")
+    assert light_fill != dark_fill
+    assert page.locator('[data-testid="district-table"]').count() == 1
+    assert page.locator('[data-testid="trend-table"]').count() == 1
+    fits_a_phone(page)
+    assert_not_covered(page, page.locator('[data-testid="insight-trend-chart"]'))
+    assert page.recorded_errors == []

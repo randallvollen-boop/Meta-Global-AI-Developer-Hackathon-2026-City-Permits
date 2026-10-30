@@ -1,106 +1,162 @@
-{# The Appearance tab: the permit type icons, their limits, cost and provenance. #}
+{# The Appearance tab: the icons the City shows, the saved choices and the
+   generation, in that order.
+
+   The saved icon comes first because it is the icon the City shows today.
+   The saved icons of a type come next, because choosing one of them is a
+   local change.  The generation comes last, because it is the only part
+   that needs the provider, and the provider is often off. #}
 {% import "_ui.html" as ui with context %}
 <details class="panel card" data-testid="admin-section" data-section="permit-type-icons" {% if tab == 'appearance' %}open{% endif %}>
   <summary><strong>Permit type icons</strong></summary>
-  <div class="card-b" style="display:grid;gap:16px">
-    <p class="muted" style="margin:0">One icon per permit type, shown on work-queue rows and the permit workspace. Describe a new icon in a sentence and Muse Image creates a candidate; it stays pending until you save it.</p>
-    <dl class="responsibility-grid" data-testid="icon-limits">
-      <div class="responsibility-item">
-        <dt>Model</dt>
-        <dd><span class="pill muse">Muse Image</span></dd>
-      </div>
-      <div class="responsibility-item">
-        <dt>Cost per generation</dt>
-        <dd data-testid="icon-cost">${{ '%.2f'|format(admin.permit_type_icons.cost_estimate_usd) }} (estimate)</dd>
-      </div>
-      <div class="responsibility-item">
-        <dt>Limit per permit type</dt>
-        <dd data-testid="icon-per-type-cap">{{ admin.permit_type_icons.per_type_cap }} generations per type per day</dd>
-      </div>
-      <div class="responsibility-item">
-        <dt>Limit for the day</dt>
-        <dd data-testid="icon-global-cap">{{ admin.permit_type_icons.global_cap }} generations for all types per day</dd>
-      </div>
-      <div class="responsibility-item">
-        <dt>Generations today</dt>
-        <dd data-testid="icon-attempts-today">{{ admin.permit_type_icons.attempts_today }}</dd>
-      </div>
-      <div class="responsibility-item">
-        <dt>Provenance</dt>
-        <dd data-testid="icon-provenance">Every icon records its source: a bundled seed asset or a Muse Image generation, with the prompt, the date and who made it. The label is never hidden. {{ ui.info('muse_provenance') }}</dd>
-      </div>
-    </dl>
+  <div class="card-b adm-stack">
+
+    <p class="adm-scope-note">
+      One icon per permit type. The saved icon is the one the City shows on a
+      work queue row and on a permit workspace.
+    </p>
+
+    {% if not admin.permit_type_icons.generation.available %}
+    <p class="adm-notice" role="note" data-testid="icon-generation-unavailable">
+      <strong>Live Muse generation is off.</strong>
+      You can preview and use saved icons.
+      {{ admin.permit_type_icons.generation.reason }}
+    </p>
+    {% endif %}
+
     {% for type in admin.permit_type_icons.types %}
-    <div class="icon-type" data-testid="permit-type-icon-row" data-permit-type="{{ type.permit_type_key }}" style="border-top:1px solid var(--line-soft);padding-top:14px">
-      <div class="item" style="align-items:flex-start">
+    <article class="adm-icon-type" data-testid="permit-type-icon-row" data-permit-type="{{ type.permit_type_key }}" data-icon-panel>
+      <h3 class="adm-icon-title">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></h3>
+
+      {# The icon the City shows today, with the source it was saved from. #}
+      <div class="adm-icon-current">
         {% if type.current_icon %}
-        <img class="type-ic" src="{{ type.current_icon.url }}" alt="" data-testid="permit-type-current-icon" style="width:48px;height:48px;border-radius:12px">
+        <img class="type-ic" src="{{ type.current_icon.url }}" alt="" data-testid="permit-type-current-icon">
         {% else %}
-        <span class="type-ic line" data-testid="permit-type-current-icon" style="width:48px;height:48px;border-radius:12px"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
+        <span class="type-ic line" data-testid="permit-type-current-icon"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
         {% endif %}
-        <div style="min-width:0;flex:1">
-          <div class="t1">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></div>
-          <div class="t2" data-testid="permit-type-icon-provenance">Current icon: {{ type.current_icon.source if type.current_icon else 'none (line icon fallback)' }} · {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }} generation(s) today</div>
+        <dl class="adm-facts">
           {% if type.current_icon %}
-          <div class="t2">Recorded {{ type.current_icon.created_at }} by {{ type.current_icon.created_by or 'the fixture' }}: “{{ type.current_icon.prompt }}”</div>
+          <div>
+            <dt>Icon on record</dt>
+            <dd data-testid="permit-type-icon-provenance">
+              {% if type.current_icon.source == 'seed' %}Bundled seed asset
+              {% elif type.current_icon.source == 'generated' %}Muse Image generation
+              {% else %}{{ type.current_icon.source }}{% endif %}
+            </dd>
+          </div>
+          <div>
+            <dt>Recorded</dt>
+            <dd>{{ type.current_icon.created_at }}{% if type.current_icon.created_by %} by {{ type.current_icon.created_by }}{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Prompt</dt>
+            <dd>{{ type.current_icon.prompt }}</dd>
+          </div>
+          {% else %}
+          <div>
+            <dt>Icon on record</dt>
+            <dd>Default icon</dd>
+          </div>
           {% endif %}
-        </div>
+        </dl>
       </div>
 
-      {% if admin.permit_type_icons.can_generate %}
-      <details class="action icon-editor" id="icon-{{ type.permit_type_key }}" data-testid="icon-editor" data-permit-type="{{ type.permit_type_key }}" style="margin-top:10px">
-        <summary><span class="btn sm">Create an icon for this type</span></summary>
-        <div class="icongen" data-icon-panel style="margin-top:10px">
-          <div class="icon-preview">
-            {% if type.current_icon %}<img src="{{ type.current_icon.url }}" alt="Current icon for {{ type.label }}">{% else %}<svg aria-hidden="true"><use href="#i-spark"/></svg>{% endif %}
-          </div>
-          <div style="display:grid;gap:10px;min-width:0">
-            <form method="post" action="/ui/actions/permit.icon.generate" class="action-form" data-testid="icon-generate-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input type="hidden" name="action_id" value="permit.icon.generate">
-              <input type="hidden" name="next" value="/admin?tab=appearance">
-              <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
-              <input type="hidden" name="expected_version" value="{{ type.version }}">
-              <div class="fieldset">
-                <label for="icon-prompt-{{ type.permit_type_key }}">Describe an icon <span class="pill muse" style="margin-left:4px">Muse Image</span></label>
-                <textarea class="inp" id="icon-prompt-{{ type.permit_type_key }}" name="prompt" rows="2" required></textarea>
-                <span class="hint">One sentence. The server wraps it in the fixed civic style: flat vector icon, no text, no letters, no logos.</span>
+      {# The saved icons of this type, and the choice between them. #}
+      <details class="adm-disclosure" data-testid="icon-editor" data-permit-type="{{ type.permit_type_key }}">
+        <summary class="adm-disclosure-summary">Saved icons</summary>
+        <div class="adm-disclosure-body">
+          <form method="post" action="/ui/actions/permit.icon.save" class="action-form" data-testid="icon-save-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action_id" value="permit.icon.save">
+            <input type="hidden" name="next" value="/admin?tab=appearance">
+            <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
+            <input type="hidden" name="expected_version" value="{{ type.version }}">
+            <div class="fieldset">
+              <label for="icon-choice-{{ type.permit_type_key }}">Choose the icon of this permit type</label>
+              <input type="hidden" id="icon-choice-{{ type.permit_type_key }}" name="icon_id" value="{{ type.current_icon.icon_id if type.current_icon else '' }}">
+              <div class="history history-thumbs" data-icon-history="icon-choice-{{ type.permit_type_key }}" data-testid="icon-history">
+                {% for icon in type.icons %}
+                <button type="button" class="icon-thumb" data-icon-pick="{{ icon.icon_id }}" data-testid="icon-thumb" aria-pressed="{{ 'true' if icon.is_current else 'false' }}" title="{{ icon.source }} from {{ icon.created_at }}"><img src="{{ icon.url }}" alt="{{ icon.source }} icon from {{ icon.created_at }}"></button>
+                {% else %}
+                <span class="muted">No icon is saved for this permit type yet.</span>
+                {% endfor %}
               </div>
-              <div class="row" style="margin-top:8px">
-                <button type="submit" class="btn sm muse" data-testid="icon-generate"><svg aria-hidden="true"><use href="#i-spark"/></svg>Generate icon</button>
-                <span class="hint">Try another by generating again. Candidates stay pending until saved.</span>
-              </div>
-            </form>
+              <span class="hint">
+                Each thumbnail shows the source and the date of the icon it holds.
+                Choosing one keeps the choice as text until you save it.
+              </span>
+            </div>
+            <p>
+              <button type="submit" class="btn sm primary" data-testid="icon-save">Save icon</button>
+            </p>
+          </form>
+        </div>
+      </details>
 
-            <form method="post" action="/ui/actions/permit.icon.save" class="action-form" data-testid="icon-save-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <input type="hidden" name="action_id" value="permit.icon.save">
-              <input type="hidden" name="next" value="/admin?tab=appearance">
-              <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
-              <input type="hidden" name="expected_version" value="{{ type.version }}">
-              <div class="fieldset">
-                <label for="icon-choice-{{ type.permit_type_key }}">Icon history: pick one to save</label>
-                <input type="hidden" id="icon-choice-{{ type.permit_type_key }}" name="icon_id" value="{{ type.current_icon.icon_id if type.current_icon else '' }}">
-                <div class="history history-thumbs" data-icon-history="icon-choice-{{ type.permit_type_key }}" data-testid="icon-history">
-                  {% for icon in type.icons %}
-                  <button type="button" class="icon-thumb" data-icon-pick="{{ icon.icon_id }}" data-testid="icon-thumb" aria-pressed="{{ 'true' if icon.is_current else 'false' }}" title="{{ icon.source }} · {{ icon.created_at }} · {{ icon.prompt }}"><img src="{{ icon.url }}" alt="{{ icon.source }} icon from {{ icon.created_at }}"></button>
-                  {% else %}
-                  <span class="muted">No icon yet. Generate the first candidate.</span>
-                  {% endfor %}
-                </div>
-                <span class="hint">Thumbnails are labelled with their source and date; picking one keeps the choice as text until you save.</span>
-              </div>
-              <div class="row" style="margin-top:8px">
-                <button type="submit" class="btn sm primary" data-testid="icon-save">Save icon</button>
-              </div>
-            </form>
-          </div>
+      {# The generation comes last: it is the only part that needs the provider. #}
+      {% if admin.can_manage_icons %}
+      <details class="adm-disclosure" data-testid="icon-generate-panel" data-permit-type="{{ type.permit_type_key }}">
+        <summary class="adm-disclosure-summary">Create an icon with Muse Image</summary>
+        <div class="adm-disclosure-body">
+          <form method="post" action="/ui/actions/permit.icon.generate" class="action-form" data-testid="icon-generate-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action_id" value="permit.icon.generate">
+            <input type="hidden" name="next" value="/admin?tab=appearance">
+            <input type="hidden" name="permit_type_id" value="{{ type.permit_type_id }}">
+            <input type="hidden" name="expected_version" value="{{ type.version }}">
+            <div class="fieldset">
+              <label for="icon-prompt-{{ type.permit_type_key }}">Describe an icon <span class="pill muse" style="margin-left:4px">Muse Image</span></label>
+              <textarea class="inp" id="icon-prompt-{{ type.permit_type_key }}" name="prompt" rows="2" required{% if not admin.permit_type_icons.generation.available %} disabled{% endif %}></textarea>
+              <span class="hint">One sentence. The server wraps it in the fixed civic style: flat vector icon, no text, no letters, no logos.</span>
+            </div>
+            <p>
+              <button type="submit" class="btn sm muse" data-testid="icon-generate"{% if not admin.permit_type_icons.generation.available %} disabled aria-describedby="icon-generate-note-{{ type.permit_type_key }}"{% endif %}><svg aria-hidden="true"><use href="#i-spark"/></svg>Generate icon</button>
+              <span class="hint">A new candidate stays pending until you save it.</span>
+            </p>
+          </form>
+          {% if not admin.permit_type_icons.generation.available %}
+          <p class="hint" id="icon-generate-note-{{ type.permit_type_key }}" data-testid="icon-generate-unavailable">
+            {{ admin.permit_type_icons.generation.reason }}
+          </p>
+          {% endif %}
+          <p class="hint">Generations today for this permit type: {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }}.</p>
         </div>
       </details>
       {% else %}
-      <p class="lock" style="margin-top:8px"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change a permit type icon. Your persona does not hold the 'permit.icon.generate' grant.</p>
+      <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change a permit type icon. Your persona does not hold the 'permit.icon.generate' grant.</p>
       {% endif %}
-    </div>
+    </article>
     {% endfor %}
+
+    {# What a generation costs and how many are left, at the end of the section. #}
+    <section class="adm-limits" aria-labelledby="icon-limits-heading">
+      <h3 id="icon-limits-heading">Generation</h3>
+      <dl class="responsibility-grid" data-testid="icon-limits">
+        <div class="responsibility-item">
+          <dt>Model</dt>
+          <dd><span class="pill muse">Muse Image</span></dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Cost per generation</dt>
+          <dd data-testid="icon-cost">${{ '%.2f'|format(admin.permit_type_icons.cost_estimate_usd) }} (estimate)</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Limit per permit type</dt>
+          <dd data-testid="icon-per-type-cap">{{ admin.permit_type_icons.per_type_cap }} generations per type per day</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Limit for the day</dt>
+          <dd data-testid="icon-global-cap">{{ admin.permit_type_icons.global_cap }} generations for all types per day</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Generations today</dt>
+          <dd data-testid="icon-attempts-today">{{ admin.permit_type_icons.attempts_today }}</dd>
+        </div>
+        <div class="responsibility-item">
+          <dt>Provenance</dt>
+          <dd data-testid="icon-provenance">Every icon records its source: a bundled seed asset or a Muse Image generation, with the prompt, the date and who made it. The label is never hidden. {{ ui.info('muse_provenance') }}</dd>
+        </div>
+      </dl>
+    </section>
   </div>
 </details>

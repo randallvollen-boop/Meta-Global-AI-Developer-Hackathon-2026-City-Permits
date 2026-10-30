@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Audit log</h1>
-    <p class="sub">A read-only view of the append-only audit records, newest first. It reads the one audit trail the application writes. The server takes the type of an actor from its identity records and ignores the text of a row.</p>
+    <p class="sub">See who changed a record and what happened. Newest records appear first.</p>
   </div>
   <div class="actions">{{ ui.help_button('ops_audit') }}</div>
 </div>
@@ -21,7 +21,7 @@
   <label>Action
     <select name="action" data-testid="audit-filter-action">
       <option value="">Any action</option>
-      {% for a in v.actions %}<option value="{{ a }}"{% if v.filters.action == a %} selected{% endif %}>{{ a }}</option>{% endfor %}
+      {% for a in v.actions %}<option value="{{ a.key }}"{% if v.filters.action == a.key %} selected{% endif %}>{{ a.label }}</option>{% endfor %}
     </select>
   </label>
   <label>Search (optional)
@@ -36,22 +36,20 @@
 <section class="card" aria-labelledby="audit-h">
   <div class="card-b">
   <h2 id="audit-h" class="visually-hidden">Audit records</h2>
-  <div class="tbl-wrap"><table class="data-table" data-testid="audit-rows">
+  <div class="tbl-wrap adm-audit-wrap"><table class="data-table adm-audit-table" data-testid="audit-rows">
     <caption class="visually-hidden">Audit records, newest first</caption>
-    <thead><tr><th scope="col">When</th><th scope="col">Actor</th><th scope="col">Type</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Outcome</th><th scope="col">Detail</th></tr></thead>
+    <thead><tr><th scope="col">Event</th><th scope="col">Actor</th><th scope="col">Record</th><th scope="col">Result</th><th scope="col">Time and details</th></tr></thead>
     <tbody>
       {% for r in v.rows %}
       <tr data-testid="audit-row" data-actor-type="{{ r.actor_type }}">
-        <td class="mono">{{ r.occurred_at }}</td>
-        <td>{{ r.actor_label or r.actor_id or 'none' }}{% if r.actor_label %}<br><span class="mono muted">{{ r.actor_id }}</span>{% endif %}</td>
-        <td><span class="ops-badge {{ r.actor_type }}" data-testid="audit-actor-type">{{ r.actor_type }}</span></td>
-        <td class="mono">{{ r.action }}</td>
-        <td>{% if r.target_type %}{% if r.href %}<a href="{{ r.href }}" data-testid="audit-record-link">{{ r.target_type }} {{ r.target_id }}</a>{% else %}<span data-testid="audit-record-text">{{ r.target_type }} {{ r.target_id }}</span>{% endif %}{% else %}<span class="muted">none</span>{% endif %}</td>
-        <td>{{ r.outcome }}<br><span class="muted">version {{ r.versions }}</span>{% if r.basis %}<br><span data-testid="audit-basis">{{ r.basis }}</span>{% endif %}</td>
-        <td>{{ ui.detail_link('audit-event', r.event_id, 'Details') }}</td>
+        <th scope="row"><span class="adm-field-label">Event</span><strong data-testid="audit-action-label">{{ r.action_label }}</strong></th>
+        <td><span class="adm-field-label">Actor</span>{{ r.actor_label or r.actor_id or 'none' }}<br><span class="ops-badge {{ r.actor_type }}" data-testid="audit-actor-type">{{ r.actor_type_label }}</span></td>
+        <td><span class="adm-field-label">Record</span>{% if r.target_type %}{% if r.href %}<a href="{{ r.href }}" data-testid="audit-record-link">{{ r.target_label }}</a>{% else %}<span data-testid="audit-record-text">{{ r.target_label }}</span>{% endif %}{% else %}<span class="muted">No record</span>{% endif %}</td>
+        <td><span class="adm-field-label">Result</span><span data-testid="audit-outcome-label">{{ r.outcome_label }}</span>{% if r.basis %}<br><span data-testid="audit-basis">{{ r.basis }}</span>{% endif %}</td>
+        <td><span class="adm-field-label">Time and details</span><span class="mono">{{ r.occurred_at }}</span><br>{{ ui.detail_link('audit-event', r.event_id, 'View details') }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="muted" data-testid="audit-empty">No audit record matches these filters.</td></tr>
+      <tr><td colspan="5" class="muted" data-testid="audit-empty">No audit record matches these filters.</td></tr>
       {% endfor %}
     </tbody>
   </table></div>

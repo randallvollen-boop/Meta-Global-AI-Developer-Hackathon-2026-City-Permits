@@ -1,1 +1,918 @@
 /* Admin area A screens. Every selector starts with .adm-. */
+
+/* The words of these screens are sentence case, so the table headers read as
+   the words the screen shows and not as small capitals. */
+.adm-register thead th,
+.adm-users-table thead th,
+.adm-reason-codes thead th,
+.adm-configuration-log thead th,
+.adm-overview-table thead th,
+.adm-checks-table thead th,
+.adm-audit-table thead th,
+.adm-table thead th {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.adm-nav-label {
+  text-transform: none;
+}
+
+.adm-scope-note {
+  margin: 0;
+  color: var(--fg-2);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.adm-status-summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.adm-status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.adm-status-label {
+  color: var(--fg-2);
+}
+
+.adm-status-value {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-status--ok .adm-status-value {
+  color: var(--ok);
+}
+
+.adm-status--warn .adm-status-value {
+  color: var(--warn);
+}
+
+.adm-status--bad .adm-status-value {
+  color: var(--bad);
+}
+
+.adm-disclosure {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.adm-disclosure-summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.adm-disclosure-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.adm-field-label {
+  display: none;
+  color: var(--fg-3);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.adm-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.adm-register {
+  table-layout: fixed;
+}
+
+.adm-register thead th:nth-child(1) {
+  width: 26%;
+}
+
+.adm-register thead th:nth-child(2) {
+  width: 16%;
+}
+
+.adm-register thead th:nth-child(3) {
+  width: 22%;
+}
+
+.adm-register thead th:nth-child(4) {
+  width: 36%;
+}
+
+.adm-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.adm-facts > div {
+  display: grid;
+  gap: 2px;
+}
+
+.adm-facts dt {
+  color: var(--fg-2);
+}
+
+.adm-facts dd {
+  margin: 0;
+  color: var(--fg);
+}
+
+@media (max-width: 640px) {
+  .adm-field-label {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .adm-register thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-register,
+  .adm-register tbody,
+  .adm-register tr,
+  .adm-register th,
+  .adm-register td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-register tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-register th,
+  .adm-register td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}
+
+/* Support leads with replyable requests. Lookup and assistance stay secondary. */
+
+.adm-support-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.adm-support-requests {
+  min-width: 0;
+}
+
+.adm-support-secondary {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.adm-support-status-links {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 12px;
+}
+
+.adm-support-status-links a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.adm-support-request {
+  padding: 14px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.adm-support-request h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.adm-support-destination {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  color: var(--fg-2);
+}
+
+/* Users and reason codes keep people first and technical detail secondary. */
+
+.adm-users-table,
+.adm-reason-codes {
+  table-layout: fixed;
+}
+
+.adm-demo-persona {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--fg);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.adm-service-identities {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+  padding: 0 12px 12px;
+}
+
+.adm-service-identities > summary,
+.adm-retire-confirm > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+
+.adm-reason-description {
+  display: block;
+  margin-top: 3px;
+  color: var(--fg-2);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.adm-retire-confirm > p {
+  margin: 0 0 8px;
+  color: var(--fg-2);
+  font-size: 0.9rem;
+}
+
+/* The configuration log shows a readable event first and raw values on demand. */
+
+.adm-configuration-log {
+  table-layout: fixed;
+}
+
+.adm-log-target {
+  display: block;
+  margin-top: 3px;
+  color: var(--fg-2);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.adm-log-details > summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.adm-log-details dl {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.adm-log-details dl > div {
+  display: grid;
+  gap: 2px;
+}
+
+.adm-log-details dt {
+  color: var(--fg-2);
+  font-size: 0.82rem;
+}
+
+.adm-log-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 800px) {
+  .adm-support-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-users-table,
+  .adm-users-table tbody,
+  .adm-users-table tr,
+  .adm-users-table th,
+  .adm-users-table td,
+  .adm-reason-codes,
+  .adm-reason-codes tbody,
+  .adm-reason-codes tr,
+  .adm-reason-codes th,
+  .adm-reason-codes td,
+  .adm-configuration-log,
+  .adm-configuration-log tbody,
+  .adm-configuration-log tr,
+  .adm-configuration-log th,
+  .adm-configuration-log td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-users-table thead,
+  .adm-reason-codes thead,
+  .adm-configuration-log thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-users-table tr,
+  .adm-reason-codes tr,
+  .adm-configuration-log tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-users-table th,
+  .adm-users-table td,
+  .adm-reason-codes th,
+  .adm-reason-codes td,
+  .adm-configuration-log th,
+  .adm-configuration-log td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}
+
+/* The appearance section: the icon the City shows, the saved choices and
+   the generation, in that order. */
+
+.adm-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.adm-icon-type {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.adm-icon-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adm-icon-current {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.adm-icon-current .type-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.adm-icon-current .adm-facts {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.adm-limits {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+
+.adm-limits h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .adm-icon-current {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* The planning overview: attention first, then the versions that are not
+   published, then the compact property and source sections. */
+
+.adm-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 1rem;
+}
+
+.adm-summary-item {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.adm-summary-item--attention {
+  border-color: var(--accent);
+}
+
+.adm-summary-label {
+  margin: 0;
+  color: var(--fg);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.adm-summary-value {
+  margin: 0;
+  font: 600 1.7rem/1.1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-summary-definition {
+  margin: 4px 0 0;
+  color: var(--fg-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.adm-summary-link {
+  margin-top: 8px;
+  font-size: 0.84rem;
+}
+
+.adm-overview-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.adm-overview-section {
+  margin-bottom: 16px;
+}
+
+.adm-overview-table {
+  table-layout: fixed;
+}
+
+.adm-overview-table thead th:nth-child(1) {
+  width: 30%;
+}
+
+.adm-overview-table thead th:nth-child(2) {
+  width: 46%;
+}
+
+.adm-overview-table thead th:nth-child(3) {
+  width: 24%;
+}
+
+.adm-note {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-property-address {
+  display: block;
+}
+
+.adm-property-parcel {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-property-site {
+  display: block;
+  color: var(--fg-3);
+  font-size: 0.78rem;
+}
+
+.adm-related {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.adm-related li {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+@media (max-width: 1080px) {
+  .adm-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adm-overview-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-overview-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-overview-table,
+  .adm-overview-table tbody,
+  .adm-overview-table tr,
+  .adm-overview-table th,
+  .adm-overview-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-overview-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-overview-table th,
+  .adm-overview-table td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}
+
+/* The checks screen: the recorded result first, the results stacked on a
+   phone. */
+
+.adm-checks {
+  margin-bottom: 16px;
+}
+
+.adm-checks-headline {
+  margin: 0 0 10px;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.adm-checks-table {
+  table-layout: fixed;
+}
+
+.adm-checks-table thead th:nth-child(1) {
+  width: 30%;
+}
+
+.adm-checks-table thead th:nth-child(2) {
+  width: 18%;
+}
+
+.adm-checks-table thead th:nth-child(3) {
+  width: 52%;
+}
+
+@media (max-width: 640px) {
+  .adm-checks-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-checks-table,
+  .adm-checks-table tbody,
+  .adm-checks-table tr,
+  .adm-checks-table th,
+  .adm-checks-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-checks-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-checks-table th,
+  .adm-checks-table td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}
+
+/* The operations dashboard: the scope of the numbers, then the figures in
+   two groups, then the breakdowns. */
+
+.adm-scope-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  margin: 0 0 1rem;
+  padding: 10px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.adm-scope-bar p {
+  margin: 0;
+}
+
+.adm-scope-bar-action {
+  margin-left: auto;
+}
+
+.adm-figure-group {
+  margin: 0 0 18px;
+}
+
+.adm-figure-group h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.adm-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adm-metric {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.adm-metric-label {
+  color: var(--fg);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.adm-metric-value {
+  font: 600 1.6rem/1.1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-metric-definition {
+  color: var(--fg-2);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.adm-metric-components {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
+}
+
+.adm-metric-components li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--fg-2);
+  font-size: 0.78rem;
+}
+
+.adm-metric-component-value {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1080px) {
+  .adm-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-scope-bar-action {
+    margin-left: 0;
+  }
+}
+
+/* The breakdowns of the dashboard: the chart on a wide screen, the readable
+   table on a phone.  Both sit in the page, so every hook stays reachable. */
+
+.adm-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.adm-breakdown {
+  margin-bottom: 16px;
+}
+
+.adm-breakdown h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.adm-chart-summary,
+.adm-table-summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.84rem;
+  padding: 6px 0;
+}
+
+.adm-chart-figure {
+  margin: 6px 0 0;
+}
+
+.adm-table-details {
+  margin-top: 4px;
+}
+
+@media (max-width: 1080px) {
+  .adm-breakdowns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A wide screen shows the chart and keeps the table behind a summary.  The
+   details content is revealed with the pseudo element of the disclosure, so
+   one copy of every record serves both screens. */
+@media (min-width: 900px) {
+  @supports selector(::details-content) {
+    .adm-chart-details::details-content {
+      content-visibility: visible;
+    }
+
+    .adm-chart-details > summary {
+      display: none;
+    }
+  }
+}
+
+/* A phone shows the table and keeps the chart in its disclosure.  The chart
+   keeps its own size, so no label of it is shrunk. */
+@media (max-width: 900px) {
+  @supports selector(::details-content) {
+    .adm-table-details::details-content {
+      content-visibility: visible;
+    }
+
+    .adm-table-details > summary {
+      display: none;
+    }
+  }
+
+  .adm-chart-figure {
+    overflow-x: auto;
+  }
+
+  .adm-chart-figure .ops-chart {
+    width: 480px;
+    max-width: none;
+  }
+}
+
+/* The audit log keeps evidence in the drawer and lets the event lead each row. */
+
+.adm-audit-wrap {
+  overflow-x: visible;
+}
+
+.adm-audit-table {
+  table-layout: fixed;
+}
+
+.adm-audit-table th:nth-child(1) {
+  width: 23%;
+}
+
+.adm-audit-table th:nth-child(2) {
+  width: 20%;
+}
+
+.adm-audit-table th:nth-child(3) {
+  width: 20%;
+}
+
+.adm-audit-table th:nth-child(4) {
+  width: 17%;
+}
+
+.adm-audit-table th:nth-child(5) {
+  width: 20%;
+}
+
+.adm-audit-table td,
+.adm-audit-table th {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .adm-audit-table,
+  .adm-audit-table tbody,
+  .adm-audit-table tr,
+  .adm-audit-table th,
+  .adm-audit-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .adm-audit-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .adm-audit-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .adm-audit-table th,
+  .adm-audit-table td {
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+  }
+}

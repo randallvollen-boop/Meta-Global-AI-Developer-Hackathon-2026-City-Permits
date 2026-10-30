@@ -1,0 +1,467 @@
+"""The what-if screens with the live model off: what they say and what they offer.
+
+Live Muse calls are off on the hosted demonstration, so the recorded answers
+are the only answers there are.  The screen has to say so, and it has to offer
+the recorded questions as they are instead of asking for a question it cannot
+answer.  A recorded answer that was refused stays refused, and the page never
+calls a provider.
+"""
+# REQUIRES: UX-01, UX-03, PER-04
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from acme_city.app import create_app
+from acme_city.ui.router import router as ui_router
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from support.client import build_settings  # noqa: E402
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+ADMIN = "persona_city_administrator"
+
+#: The recorded questions of the demonstration set, exactly as they are stored.
+RECORDED_QUESTIONS = (
+    "What if the side and rear yard fence limit were 7 ft?",
+    "What if no permit were required for a shed?",
+)
+
+
+@pytest.fixture()
+def client(tmp_path: Path):
+    """Return a client with its own seeded database."""
+    settings = build_settings(tmp_path, "policy-offline.db")
+    app = create_app(settings)
+    app.include_router(ui_router)
+    with TestClient(app) as test_client:
+        test_client.post("/api/session/select", json={"actor_id": ADMIN})
+        yield test_client
+
+
+def _list(client: TestClient) -> str:
+    response = client.get("/policy/scenarios")
+    assert response.status_code == 200
+    return response.text
+
+
+# --------------------------------------------------------------- the list
+
+
+def test_the_list_says_that_the_live_calls_are_off(client: TestClient) -> None:
+    body = _list(client)
+    assert "Live Muse calls are off" in body
+    assert "recorded demonstration fixtures only" in body
+
+
+def test_the_recorded_questions_are_offered_as_choices(client: TestClient) -> None:
+    body = _list(client)
+    select = re.search(r'<select[^>]*data-testid="policy-question-choice".*?</select>', body, re.S)
+    assert select, "the recorded questions are offered as a choice"
+    options = re.findall(r'<option value="([^"]*)"[^>]*>([^<]*)</option>', select.group(0))
+    values = [value for value, _label in options]
+    assert values == list(RECORDED_QUESTIONS), values
+    labels = [label for _value, label in options]
+    assert labels[0] == RECORDED_QUESTIONS[0], "the recorded question is offered as it is"
+    assert labels[1] == "Example of an unsupported request"
+
+
+def test_the_page_does_not_promise_an_answer_to_any_question(client: TestClient) -> None:
+    """A free question is refused, and the screen says so before it is asked."""
+    body = _list(client)
+    assert "Only the recorded example above can be answered locally" in body
+    assert "Another question is refused" in body
+
+
+def test_the_saved_work_comes_first_and_the_creation_comes_first_when_there_is_none(
+    client: TestClient,
+) -> None:
+    empty = _list(client)
+    assert empty.index('data-testid="policy-new"') < empty.index('data-testid="policy-list"')
+
+    token = re.search(r'name="csrf_token" value="([^"]+)"', empty).group(1)
+    response = client.post(
+        "/policy/scenarios",
+        data={"csrf_token": token, "expected_version": "0",
+              "suggestion": "fence_height_7ft", "name": "A saved what-if"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    saved = _list(client)
+    assert saved.index('data-testid="policy-list"') < saved.index('data-testid="policy-new"')
+    assert "A saved what-if" in saved
+
+
+def test_the_created_moment_is_named_and_shown_as_a_date(client: TestClient) -> None:
+    body = _list(client)
+    assert "<th scope=\"col\">Created</th>" in body
+    assert "Saved</th>" not in body
+    # The moment is a date, not a technical timestamp.
+    assert not re.search(r"data-testid=\"policy-row\".*?\d{4}-\d{2}-\d{2}T", body, re.S)
+
+
+def test_no_provider_is_called_for_the_list(client: TestClient, monkeypatch) -> None:
+    def refuse(*args, **kwargs):  # pragma: no cover - must never be reached
+        raise AssertionError("the list must not call a provider")
+
+    monkeypatch.setattr("acme_city.muse.client.MuseClient.create_response", refuse)
+    assert _list(client)
+
+
+# -------------------------------------------------------- the proposal review
+
+
+def _propose(client: TestClient, question: str) -> str:
+    """Ask for a proposal and return the page that shows it."""
+    page = client.get("/policy/scenarios")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    response = client.post(
+        "/policy/propose",
+        data={"csrf_token": token, "expected_version": "0", "question": question},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    return response.text
+
+
+def test_a_checked_proposal_says_that_nothing_is_saved_yet(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[0])
+    assert "Checked proposal. No what-if has been saved." in body
+    assert "This saves a what-if. It does not run it, and it changes no published rule." in body
+    assert 'data-testid="policy-proposal-save"' in body
+
+
+def test_a_checked_proposal_names_the_change_the_rule_and_its_source(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[0])
+    assert "Change ACME Code §14-306" in body
+    assert "limit 6 to 7" in body
+    assert "Rule limit" in body
+    assert "Why the recorded answer says so" in body
+    assert "Recorded replay" in body
+
+
+def test_a_refused_proposal_offers_a_way_out_and_no_save(client: TestClient) -> None:
+    body = _propose(client, RECORDED_QUESTIONS[1])
+    assert "These changes could not be used" in body
+    assert "Choose an example" in body
+    assert "Build a what-if" in body
+    assert 'data-testid="policy-proposal-save"' not in body
+    assert "not supported in this release" in body.lower()
+
+
+def test_a_refused_proposal_keeps_the_question_it_was_given(client: TestClient) -> None:
+    """A refused question is never answered with a different proposal."""
+    question = "What if every fee were free on Tuesdays?"
+    body = _propose(client, question)
+    assert question in body
+    assert "no recorded demonstration answer matches this request" in body
+    assert "Nothing was saved." in body
+
+
+# ------------------------------------------------------------- the editor
+
+
+def _editor(client: TestClient) -> str:
+    """Save a what-if from the first example and return its editor page."""
+    page = client.get("/policy/scenarios")
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    response = client.post(
+        "/policy/scenarios",
+        data={"csrf_token": token, "expected_version": "0",
+              "suggestion": "fence_height_7ft", "name": "An editor probe"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    editor = client.get(response.headers["location"].split("?")[0])
+    assert editor.status_code == 200
+    return editor.text
+
+
+def test_the_editor_leads_with_the_changes_and_the_run_settings(client: TestClient) -> None:
+    body = _editor(client)
+    assert body.index('id="changes-heading"') < body.index('id="run-comparison"')
+    assert body.index('id="run-comparison"') < body.index('id="add-a-change"')
+    assert "Your changes" in body
+    assert "Run comparison" in body
+    assert 'href="#run-comparison"' in body
+    assert 'data-testid="policy-run-anchor"' in body
+    assert 'data-testid="policy-add-anchor"' in body
+
+
+def test_the_editor_keeps_the_seven_change_forms(client: TestClient) -> None:
+    body = _editor(client)
+    for kind in ("threshold", "retirement", "requirement", "category",
+                 "discretionary", "target", "fee"):
+        assert f'data-testid="policy-add-{kind}"' in body, kind
+        assert f'data-testid="policy-add-{kind}-submit"' in body, kind
+    assert 'data-testid="policy-unsupported-kinds"' in body
+
+
+def test_the_technical_values_are_explained_without_changing_them(client: TestClient) -> None:
+    body = _editor(client)
+    assert "Fence height, side and rear yard (ACME Code §14-306)" in body
+    assert "at most 6" in body
+    assert '<option value="max">At most</option>' in body
+    assert "Review with plans" in body
+
+
+def test_the_revisions_table_names_the_change_type(client: TestClient) -> None:
+    body = _editor(client)
+    assert "Change type" in body
+    assert "Made by" not in body
+
+
+def test_the_deletion_sits_in_its_own_disclosure(client: TestClient) -> None:
+    body = _editor(client)
+    assert 'id="delete-whatif"' in body
+    assert "<summary>Delete this what-if</summary>" in body
+
+
+def test_the_fee_change_keeps_cents_as_cents(client: TestClient) -> None:
+    body = _editor(client)
+    assert "New fixed charge in cents" in body
+    assert "100 cents equals 1 dollar" in body
+    assert 'name="fixed_review_charge_cents"' in body
+
+
+# ---------------------------------------------------------- the run settings
+
+
+def test_the_run_settings_lead_with_the_population_and_the_case_count(
+    client: TestClient,
+) -> None:
+    """The population and the number of cases come first, the rest follows."""
+    body = _editor(client)
+    assert body.index('data-testid="policy-run-kind"') < body.index(
+        'data-testid="policy-run-count"'
+    )
+    assert body.index('data-testid="policy-run-count"') < body.index(
+        'data-testid="policy-run-more"'
+    )
+    assert body.index('data-testid="policy-run-more"') < body.index(
+        'data-testid="policy-run-dates"'
+    )
+    assert body.index('data-testid="policy-run-dates"') < body.index(
+        'data-testid="policy-run-submit"'
+    )
+
+
+def test_the_seed_and_the_narrowing_sit_in_the_more_settings_disclosure(
+    client: TestClient,
+) -> None:
+    """The seed and the narrowing are one disclosure, the dates another."""
+    body = _editor(client)
+    more = body.split('data-testid="policy-run-more"')[1].split("</details>")[0]
+    for field in ('name="seed"', 'name="permit_type"', 'name="district"', 'name="category"'):
+        assert field in more, field
+    dates = body.split('data-testid="policy-run-dates"')[1].split("</details>")[0]
+    assert 'name="range_start"' in dates
+    assert 'name="range_end"' in dates
+    assert "<summary>More run settings</summary>" in body
+    assert "<summary>Dates for decided applications</summary>" in body
+
+
+def test_the_run_says_which_settings_apply_to_each_population(client: TestClient) -> None:
+    """A person can tell which inputs the run reads for the population."""
+    body = _editor(client)
+    applies = body.split('data-testid="policy-run-applies-list"')[1].split("</ul>")[0]
+    assert "Synthetic year (sample data)</strong>: the seed, the number of cases" in applies
+    assert "Current applications</strong>: the narrowing by permit type and district" in applies
+    assert "Applications decided in a date range</strong>: the dates" in applies
+    assert "The seed and the number of cases do not apply." in applies
+
+
+def test_the_run_settings_keep_their_defaults(client: TestClient) -> None:
+    """The default seed and the default number of cases are unchanged."""
+    body = _editor(client)
+    assert 'name="count" inputmode="numeric" value="600"' in body
+    assert 'name="seed" inputmode="numeric" value="20261028"' in body
+    assert '<option value="synthetic_year" selected>' in body
+
+
+def test_the_run_settings_send_the_same_fields_as_before(client: TestClient) -> None:
+    """Every field the run reads is still in the form, with its own name."""
+    body = _editor(client)
+    form = body.split('data-testid="policy-run-form"')[1].split("</form>")[0]
+    for field in ("kind", "seed", "count", "range_start", "range_end",
+                  "permit_type", "district", "category"):
+        assert f'name="{field}"' in form, field
+
+
+# -------------------------------------------------------------- the results
+
+
+def _results(
+    client: TestClient, *, suggestion: str = "fence_height_7ft", count: str = "120"
+) -> str:
+    """Save the fence example, run it and return the page of the results."""
+    page = client.get("/policy/scenarios")
+    created = client.post(
+        "/policy/scenarios",
+        data={"csrf_token": _token(page.text), "expected_version": "0",
+              "suggestion": suggestion, "name": "A results probe"},
+        follow_redirects=False,
+    )
+    assert created.status_code == 303, created.text
+    editor = created.headers["location"].split("?")[0]
+    page = client.get(editor)
+    ran = client.post(
+        f"{editor}/run",
+        data={"csrf_token": _token(page.text),
+              "expected_version": _token(page.text, "expected_version"),
+              "kind": "synthetic_year", "seed": "20261028", "count": count},
+        follow_redirects=False,
+    )
+    assert ran.status_code == 303, ran.text
+    results = client.get(ran.headers["location"])
+    assert results.status_code == 200
+    return results.text
+
+
+def _token(body: str, name: str = "csrf_token") -> str:
+    """Return the value of a hidden form field."""
+    match = re.search(rf'name="{name}" value="([^"]*)"', body)
+    assert match, f"the page carries a {name}"
+    return match.group(1)
+
+
+def test_the_results_lead_with_the_count_and_the_explanation(client: TestClient) -> None:
+    """The screen answers the question first: how many cases change, and why."""
+    body = _results(client)
+    assert "<h1>Scenario results</h1>" in body
+    summary = body.split('data-testid="policy-summary"')[1].split("</p>")[0]
+    assert re.search(r"\d+ of \d+ cases have a different result\.", summary)
+    assert body.index('data-testid="policy-summary"') < body.index(
+        'data-testid="policy-population-label"'
+    )
+    assert body.index('data-testid="policy-population-label"') < body.index(
+        'data-testid="policy-safety"'
+    )
+    assert body.index('data-testid="policy-safety"') < body.index(
+        'data-testid="policy-outcomes"'
+    )
+
+
+def test_the_baseline_is_the_one_the_run_captured(client: TestClient) -> None:
+    """The screen says what the baseline is, so the comparison cannot drift."""
+    body = _results(client)
+    assert "The baseline is the published rules and fees as they stood when the run was made" in body
+    assert "Retrospective re-scoring" not in body  # a synthetic year, not a stored one
+
+
+def test_the_safety_block_is_always_visible(client: TestClient) -> None:
+    """The safety summary and the safeguards stay outside every disclosure."""
+    body = _results(client)
+    safety = body.split('data-testid="policy-safety"')[1].split("</section>")[0]
+    assert "stop failing a rule" in safety
+    assert safety.index("stop failing a rule") < safety.index('<details data-testid=')
+    assert 'data-testid="policy-safety-table"' in safety
+
+
+def test_the_safety_count_names_the_cases_and_not_the_signals(client: TestClient) -> None:
+    """One case may raise more than one signal, so the count names the cases."""
+    body = _results(client)
+    safety = body.split('data-testid="policy-safety"')[1].split("</section>")[0]
+    match = re.search(r"<strong>(\d+)</strong> (case stops|cases stop) failing a rule", safety)
+    assert match, safety
+    table = safety.split('data-testid="policy-safety-table"')[1].split("</table>")[0]
+    refs = re.findall(r'<th scope="row" class="mono">([^<]+)</th>', table)
+    signal_count = re.search(r'\((\d+) safety signals?\)', safety)
+    assert refs
+    assert int(match.group(1)) == len(set(refs))
+    assert signal_count and int(signal_count.group(1)) == len(refs)
+
+
+def test_the_detail_sections_are_disclosures(client: TestClient) -> None:
+    """The four detail groups open when they are needed."""
+    body = _results(client)
+    for section in ("policy-flipped", "policy-holds", "policy-fees", "policy-targets"):
+        assert f'<details class="card" data-testid="{section}"' in body, section
+
+
+def test_the_draft_handoff_stays_outside_the_disclosures(client: TestClient) -> None:
+    """The next permitted action and its reason are never hidden."""
+    body = _results(client)
+    assert body.index('data-testid="policy-draft"') < body.index('data-testid="policy-flipped"')
+    assert 'data-testid="policy-draft-submit"' in body
+    assert '<details class="card" data-testid="policy-draft"' not in body
+
+
+# ------------------------------------------------------------- the briefing
+
+
+def test_the_briefing_leads_with_the_saved_results(client: TestClient) -> None:
+    """The document appears before optional facts and Muse controls."""
+    results = _results(client)
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    body = client.get(f"/policy/runs/{run_id}/briefing").text
+    assert "<h1>Policy briefing</h1>" in body
+    assert "Built from saved results" in body
+    assert body.index('data-testid="policy-briefing"') < body.index(
+        'data-testid="policy-facts"'
+    )
+    assert body.index('data-testid="policy-facts"') < body.index(
+        'data-testid="policy-writer"'
+    )
+    assert 'data-testid="policy-briefing-synthetic"' in body
+    assert "Live Muse calls are off" in body
+    assert "Try recorded Muse briefing" in body
+
+
+def test_the_briefing_keeps_its_full_source_for_exports(client: TestClient) -> None:
+    """The concise page label does not obscure the export provenance."""
+    results = _results(client)
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing").text
+    exported = client.get(f"/policy/runs/{run_id}/briefing/download?format=html").text
+    source = "Deterministic briefing built from the typed facts of this run. No model was used."
+    assert source in page
+    assert source in exported
+
+
+def test_the_results_and_briefing_use_clear_scenario_and_export_labels(client: TestClient) -> None:
+    results = _results(client)
+    assert "Open scenario" in results
+    assert "All scenarios" in results
+    assert "Open the what-if" not in results
+    assert "All what-ifs" not in results
+    assert "before you see it" not in results
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    briefing = client.get(f"/policy/runs/{run_id}/briefing").text
+    assert "All scenarios" in briefing
+    assert "Download HTML" in briefing
+    assert "Download Markdown" in briefing
+    assert "Download (HTML)" not in briefing
+    assert "Download (Markdown)" not in briefing
+    assert re.search(r'class="muted"[^>]*data-testid="policy-download-md"', briefing)
+
+
+def test_an_accepted_replay_names_its_source_in_the_briefing_head(client: TestClient) -> None:
+    results = _results(client, count="600")
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing")
+    replay = client.post(
+        f"/policy/runs/{run_id}/briefing/muse",
+        data={"csrf_token": _token(page.text), "expected_version": _token(page.text, "expected_version")},
+        follow_redirects=True,
+    ).text
+    assert "Recorded Muse briefing" in replay
+    assert '<details class="card" data-testid="policy-writer" open>' in replay
+
+
+def test_a_rejected_replay_keeps_the_saved_results_and_open_writer_details(client: TestClient) -> None:
+    results = _results(client, suggestion="shed_condition_300", count="600")
+    run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
+    page = client.get(f"/policy/runs/{run_id}/briefing")
+    replay = client.post(
+        f"/policy/runs/{run_id}/briefing/muse",
+        data={"csrf_token": _token(page.text), "expected_version": _token(page.text, "expected_version")},
+        follow_redirects=True,
+    ).text
+    assert "Built from saved results" in replay
+    assert '<details class="card" data-testid="policy-writer" open>' in replay

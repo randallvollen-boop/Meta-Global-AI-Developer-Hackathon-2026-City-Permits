@@ -2,33 +2,40 @@
 <details class="panel card" data-testid="admin-section" data-section="users" {% if tab == 'users' %}open{% endif %}>
   <summary><strong>Users and roles</strong></summary>
   <div class="card-b" style="display:grid;gap:16px">
-    <table class="data-table" data-testid="admin-people">
+    <h2>People</h2>
+    <table class="data-table adm-users-table" data-testid="admin-people">
       <caption class="visually-hidden">People</caption>
-      <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Department</th><th scope="col">Persona</th></tr></thead>
+      <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Department</th><th scope="col">Demo access</th></tr></thead>
       <tbody>
         {% for person in admin.people %}
         <tr data-testid="admin-person-row">
-          <th scope="row">{{ person.label }}</th>
-          <td>{{ person.role_label }}</td>
-          <td>{{ person.department or '-' }}</td>
-          <td>{{ 'yes' if person.selectable else 'no' }}</td>
+          <th scope="row"><span class="adm-field-label">Name</span>{{ person.label }}</th>
+          <td><span class="adm-field-label">Role</span>{{ person.role_label }}</td>
+          <td><span class="adm-field-label">Department</span>{{ person.department or 'Not recorded' }}</td>
+          <td><span class="adm-field-label">Demo access</span>{% if person.selectable %}<span class="adm-demo-persona" data-testid="admin-demo-persona">Demo persona</span>{% else %}Added user{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
 
-    <table class="data-table" data-testid="admin-service-identities">
-      <caption class="visually-hidden">Service identities</caption>
-      <thead><tr><th scope="col">Identity</th><th scope="col">Agent</th></tr></thead>
-      <tbody>
-        {% for identity in admin.service_identities %}
-        <tr data-testid="admin-service-identity-row" data-actor-id="{{ identity.actor_id }}">
-          <th scope="row">{{ identity.label }}</th>
-          <td>{{ 'yes' if identity.is_agent else 'no' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% for part in admin_users_extras %}{% include part %}{% endfor %}
+
+    <details class="adm-service-identities" data-testid="admin-service-identities-disclosure">
+      <summary>Service identities</summary>
+      <p class="muted">Service identities support the system. They are not demo personas.</p>
+      <table class="data-table adm-users-table" data-testid="admin-service-identities">
+        <caption class="visually-hidden">Service identities</caption>
+        <thead><tr><th scope="col">Identity</th><th scope="col">Agent</th></tr></thead>
+        <tbody>
+          {% for identity in admin.service_identities %}
+          <tr data-testid="admin-service-identity-row" data-actor-id="{{ identity.actor_id }}">
+            <th scope="row"><span class="adm-field-label">Identity</span>{{ identity.label }}</th>
+            <td><span class="adm-field-label">Agent</span>{{ 'Yes' if identity.is_agent else 'No' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
 
     <h3>Add user</h3>
     {% if admin.can_manage_users %}
@@ -59,6 +66,5 @@
     {% else %}
     <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can add a user.</p>
     {% endif %}
-    {% for part in admin_users_extras %}{% include part %}{% endfor %}
   </div>
 </details>

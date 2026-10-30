@@ -11,18 +11,19 @@
       new intake; they never rewrite an already-submitted case.
     </p>
   </div>
-  <div class="actions"><a class="btn ghost" href="/queue">Back to queue</a></div>
+  <div class="actions"><a class="btn ghost" href="/queue">Back to the work queue</a></div>
 </div>
 
-<nav class="tabs" role="tablist" aria-label="Administration sections">
+<nav class="tabs adm-tabs" aria-label="Administration sections">
   {% for name in admin_tabs %}
-  <a href="/admin?tab={{ name }}" role="tab" aria-selected="{{ 'true' if name == tab else 'false' }}" data-testid="admin-tab" data-tab="{{ name }}">{{ admin_tab_labels[name] }}</a>
+  <a href="/admin?tab={{ name }}"{% if name == tab %} aria-current="page"{% endif %} aria-selected="{{ 'true' if name == tab else 'false' }}" data-testid="admin-tab" data-tab="{{ name }}">{{ admin_tab_labels[name] }}</a>
   {% endfor %}
 </nav>
 
-{% for template in admin_tab_templates %}
-{% include template %}
-
+{# One section at a time: the selected tab renders its own partial, and a tab
+   another lane registered renders through the same loop. #}
+{% for name in admin_tabs %}
+{% if name == tab %}{% include admin_tab_templates[loop.index0] %}{% endif %}
 {% endfor %}
 
 {% include "components/evidence_panel.html" %}

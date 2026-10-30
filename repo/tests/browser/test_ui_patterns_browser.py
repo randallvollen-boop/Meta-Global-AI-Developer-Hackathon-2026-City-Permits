@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-from conftest import BrowserServer
+from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 from acme_city.persistence.models import model_run
 from acme_city.persistence.session import SessionFactory, transaction
@@ -162,3 +162,25 @@ def test_drawer_does_not_cover_toast_or_demo_controls(
         "() => document.documentElement.scrollWidth - document.documentElement.clientWidth"
     )
     assert overflow <= 0
+
+
+def test_the_audit_event_row_and_its_drawer_fit_a_phone(page, server, login) -> None:
+    login("persona_city_administrator")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{server.base_url}/ops/checks", wait_until="domcontentloaded")
+    page.locator('[data-testid="checks-run"]').click()
+    page.wait_for_selector('[data-testid="checks-result"]')
+    page.goto(f"{server.base_url}/ops/audit", wait_until="domcontentloaded")
+    row = page.locator('[data-testid="audit-row"]').first
+    assert row.locator('[data-testid="audit-action-label"]').inner_text().strip()
+    assert row.locator('[data-testid="audit-outcome-label"]').inner_text().strip()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, row.locator('[data-detail-kind="audit-event"]'))
+    row.locator('[data-detail-kind="audit-event"]').click()
+    drawer = page.locator('[data-testid="ui-drawer"]')
+    drawer.wait_for(state="visible")
+    text = drawer.inner_text()
+    assert "Raw action" in text
+    assert "Versions" in text
+    assert page.recorded_errors == []

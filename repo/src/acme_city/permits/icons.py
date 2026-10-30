@@ -12,6 +12,10 @@ pending until an administrator saves it; saving is what makes it the
 type's current icon.  The bundled seed assets are written by the
 fixture reset, and only inside the caller's transaction: this module
 never commits.
+
+A deployment without a live provider refuses the request before any
+provider client is built, so an unavailable generation costs no attempt
+record and reaches no network.
 """
 # REQUIRES: AI-01, AI-03, SEC-01, SEC-04, UX-01
 # An icon generation is a governed, capped, audited administrator action;
@@ -32,6 +36,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.config import Settings
 from acme_city.core.errors import PermissionDeniedError, ValidationError
 from acme_city.core.ids import new_id
+from acme_city.muse.client import live_call_block_reason
 from acme_city.muse.image_client import (
     IMAGE_COST_ESTIMATE_USD,
     MuseImageClient,
@@ -77,6 +82,36 @@ STATIC_ICON_DIR: Final = (
 
 #: The audit action of one generation attempt.
 ATTEMPT_ACTION: Final = "ui.permit.icon.generate"
+
+#: The plain words that say why a generation may not be attempted.  Each one
+#: names a server fact, never a promise.
+PROVIDER_DISABLED_REASON: Final = (
+    "Icon generation is off: external AI provider calls are disabled in this "
+    "deployment."
+)
+LIVE_CALLS_LOCKED_REASON: Final = (
+    "Icon generation is off: live Muse calls are locked on the hosted demo."
+)
+NO_CREDENTIAL_REASON: Final = (
+    "Icon generation is off: no provider credential is configured for this service."
+)
+
+
+def generation_availability(settings: Settings) -> dict[str, Any]:
+    """Return whether an icon generation may be attempted, and why it may not.
+
+    The answer comes from the server settings alone: the provider switch, the
+    hosted dispatch lock and the credential.  A screen that offers a
+    generation therefore never offers one the server would refuse, and a
+    screen that disables it always says why.
+    """
+    if not settings.provider_enabled:
+        return {"available": False, "reason": PROVIDER_DISABLED_REASON}
+    if live_call_block_reason(settings) is not None:
+        return {"available": False, "reason": LIVE_CALLS_LOCKED_REASON}
+    if settings.meta_api_key is None:
+        return {"available": False, "reason": NO_CREDENTIAL_REASON}
+    return {"available": True, "reason": ""}
 
 
 def _permit_type(session: Session, permit_type_id: str) -> permit.PermitType:
@@ -256,6 +291,14 @@ def generate_icon(
             "describe the icon in a sentence before generating",
             code="missing_icon_description",
         )
+    # The refusal happens before any provider client is built, so a deployment
+    # without a live provider never reaches the network.  No attempt is
+    # recorded either: a disabled provider is not a generation attempt.
+    availability = generation_availability(settings)
+    if not availability["available"]:
+        raise ValidationError(
+            availability["reason"], code="icon_generation_unavailable"
+        )
     ensure_seeded(session)
     per_type, total = icon_attempt_counts(session, today=now)
     type_count = per_type.get(type_row.id, 0)
@@ -404,12 +447,16 @@ __all__ = [
     "ATTEMPT_ACTION",
     "GENERATE_ACTION",
     "ICON_PERMISSION",
+    "LIVE_CALLS_LOCKED_REASON",
+    "NO_CREDENTIAL_REASON",
     "PERMIT_TYPE_SEED_ICONS",
     "PER_TYPE_DAILY_CAP",
+    "PROVIDER_DISABLED_REASON",
     "SAVE_ACTION",
     "STATIC_ICON_DIR",
     "ensure_seeded",
     "generate_icon",
+    "generation_availability",
     "icon_attempt_counts",
     "record_denied_attempt",
     "save_icon",

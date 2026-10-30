@@ -11,6 +11,10 @@ open are listed in ``agent_grants.py``.
 - P3insight adds the City view (insight.city.view), policy 2 the What-if
   screen (policy.scenario.manage) and P3c the four operations screens, each
   behind its own grant that only the Administrator holds.
+- Admin-a groups the navigation (ADA-3): the daily work stays in the bar and
+  the screens that read across the whole program move under More tools.  The
+  two groups together keep the order of the screens, so the grouping never
+  moves a destination.
 """
 
 from __future__ import annotations
@@ -30,6 +34,10 @@ PRIMARY: tuple[str, ...] = (
     "reconciliation",
     "governance",
     "admin",
+)
+
+#: The screens under More tools.
+SECONDARY: tuple[str, ...] = (
     "insight_city",
     "policy_scenarios",
     "ops_dashboard",
@@ -37,6 +45,3 @@ PRIMARY: tuple[str, ...] = (
     "ops_support",
     "ops_checks",
 )
-
-#: The screens under More tools.
-SECONDARY: tuple[str, ...] = ()

@@ -3,10 +3,10 @@
 {% from "components/muse_source.html" import muse_source %}
 
 {% block content %}
-<div class="policy-screen">
+<div class="policy-screen admin-b">
 <div class="page-head">
   <div>
-    <h1>Proposed what-if</h1>
+    <h1>Review proposed changes</h1>
     <p class="sub"><a href="/policy/scenarios">All what-ifs</a></p>
   </div>
 </div>
@@ -20,10 +20,18 @@
 {% if proposal.accepted %}
 <section class="card" aria-labelledby="changes-heading" data-testid="policy-proposal-changes">
   <h2 id="changes-heading">Proposed changes</h2>
-  <p class="muted">Each change was read and applied on its own to a copy of today's published rules, and the set was applied together. Nothing is saved and nothing has run. Muse proposes; you decide.</p>
-  <ol>
-    {% for item in proposal.items %}
-    <li data-testid="policy-proposal-change"><strong>{{ item.description }}</strong><br><span class="muted">Muse's reason: {{ item.rationale }}</span></li>
+  <p class="admin-b-state">Checked proposal. No what-if has been saved.</p>
+  <p class="muted">Each change was read and applied on its own to a copy of today's published rules, and the set was applied together. Muse proposes; you decide.</p>
+  <ol class="admin-b-changes">
+    {% for card in cards %}
+    <li data-testid="policy-proposal-change">
+      <div class="admin-b-change">
+        <p class="admin-b-change-kind">{{ card.kind_label }}</p>
+        <p class="admin-b-change-part"><span class="admin-b-change-label">Proposed change</span> {{ card.what }}</p>
+        {% if card.where %}<p class="admin-b-change-part"><span class="admin-b-change-label">Affects</span> {{ card.where }}</p>{% endif %}
+        <p class="admin-b-change-part admin-b-change-why"><span class="admin-b-change-label">{{ why_label }}</span> {{ card.why }}</p>
+      </div>
+    </li>
     {% endfor %}
   </ol>
   {% if can_save %}
@@ -36,8 +44,8 @@
       <input id="proposal-name" name="name" maxlength="200" required aria-required="true" value="{{ proposal.name }}" data-testid="policy-proposal-name">
     </p>
     <p class="muted">* Required</p>
-    <p><button type="submit" class="button btn primary button-primary" data-testid="policy-proposal-save">Save as a what-if</button>
-    <span class="muted">Saving only stores the what-if. You run it afterwards.</span></p>
+    <p><button type="submit" class="button btn primary button-primary" data-testid="policy-proposal-save">Save the what-if</button></p>
+    <p class="muted">This saves a what-if. It does not run it, and it changes no published rule.</p>
   </form>
   {% else %}
   <p class="muted" data-testid="policy-proposal-save-guard">Your role cannot do this.</p>
@@ -45,7 +53,8 @@
 </section>
 {% else %}
 <section class="card" aria-labelledby="notused-heading" data-testid="policy-proposal-rejected">
-  <h2 id="notused-heading">No what-if was proposed</h2>
+  <h2 id="notused-heading">These changes could not be used</h2>
+  <p class="admin-b-state">Nothing was saved. Your question was not answered with a different proposal.</p>
   <p class="callout" data-testid="policy-proposal-notice">{{ proposal.notice }}</p>
   {% if proposal.items %}
   <h3>What was checked</h3>
@@ -58,7 +67,8 @@
   {% if proposal.issues and not proposal.items %}
   <ul>{% for i in proposal.issues[:8] %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
   {% endif %}
-  <p><a class="button btn" href="/policy/scenarios">Build the what-if yourself</a></p>
+  <p><a class="button btn" href="/policy/scenarios#examples">Choose an example</a></p>
+  <p><a class="button btn" href="/policy/scenarios#build-whatif">Build a what-if</a></p>
 </section>
 {% endif %}
 {% include "components/evidence_panel.html" %}

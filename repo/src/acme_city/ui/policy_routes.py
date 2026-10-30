@@ -28,6 +28,7 @@ and is audited without free text.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlencode
 
@@ -41,6 +42,7 @@ from acme_city.auth.router import get_session
 from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
 from acme_city.policy import briefing as briefing_module
 from acme_city.policy import runs as runs_module
+from acme_city.policy import summary as summary_module
 from acme_city.policy import views
 from acme_city.policy.drafts import (
     OWN_VERSION_REASON,
@@ -194,13 +196,15 @@ def ui_policy_scenarios(
         request, session, resolved, screen=SCREEN, title="What-if",
         scenarios=[
             {"id": s.id, "name": s.name, "revision": s.current_revision, "version": s.version,
-             "created_at": s.created_at.isoformat(), "runs": len(service.runs_of(resolved, s.id)) if service.can(resolved, PERMISSION_RUN_VIEW) else 0}
+             "created_at": s.created_at.isoformat(), "created_label": _date_label(s.created_at),
+             "runs": len(service.runs_of(resolved, s.id)) if service.can(resolved, PERMISSION_RUN_VIEW) else 0}
             for s in scenarios
         ],
         recent_runs=[
             {"id": r.id, "name": r.scenario_name, "revision": r.scenario_revision_number,
              "population": r.population_label, "size": r.population_size,
              "synthetic": bool(r.population_synthetic), "created_at": r.created_at.isoformat(),
+             "created_label": _date_label(r.created_at),
              "deleted": (service.scenario_state(r.scenario_id) or (False, ""))[0]}
             for r in recent
         ],
@@ -230,7 +234,7 @@ def ui_policy_scenarios(
 
 
 def _propose_panel(request: Request, session: Session, actor: ActorContext) -> dict[str, Any]:
-    """Return the data of the "Ask Muse to propose a what-if" panel."""
+    """Return the data of the "Explore recorded Muse examples" panel."""
     muse = _muse(request, session)
     state = _muse_state(muse, actor, PERMISSION_MUSE_PROPOSE)
     recent = muse.recent_proposals(actor) if state["can"] else []
@@ -243,10 +247,28 @@ def _propose_panel(request: Request, session: Session, actor: ActorContext) -> d
     return state
 
 
-#: The questions the demonstration set has recorded proposals for.
+def _date_label(moment: datetime) -> str:
+    """Return a date in plain words, without the time of the day.
+
+    A saved what-if carries the moment it was created, not the moment it was
+    last edited, so the screen says "Created" and shows the date.
+    """
+    return f"{moment.day} {moment.strftime('%B')} {moment.year}"
+
+
+#: The questions the demonstration set has recorded proposals for.  The first
+#: one is a recorded answer, the second one the recorded example of a request
+#: the agent cannot serve.  With live calls off these are the only questions
+#: that can be answered, so the screen offers them as they are.
 PROPOSE_EXAMPLES = (
-    "What if the side and rear yard fence limit were 7 ft?",
-    "What if no permit were required for a shed?",
+    {
+        "value": "What if the side and rear yard fence limit were 7 ft?",
+        "label": "What if the side and rear yard fence limit were 7 ft?",
+    },
+    {
+        "value": "What if no permit were required for a shed?",
+        "label": "Example of an unsupported request",
+    },
 )
 
 
@@ -490,9 +512,13 @@ def ui_policy_run(
     except AcmeError as error:
         return _refusal(request, session, resolved, error, action="policy.run.read",
                         target_type="policy_run", target_id=run_id, back="/policy/scenarios")
+    display = views.run_view(run, scenario_deleted=bool(state and state[0]))
     context = page_context(
         request, session, resolved, screen=SCREEN, title=f"What-if results: {run.scenario_name}",
-        run=views.run_view(run, scenario_deleted=bool(state and state[0])),
+        run=display,
+        # The summary is worked out from the stored run, so it is the same
+        # whether or not a model is available to explain it.
+        summary=summary_module.run_summary(display),
         can_brief=can_brief,
         explain=explain,
         draft_panel=draft_panel,
@@ -593,6 +619,7 @@ def ui_policy_briefing(
     context = page_context(
         request, session, resolved, screen=SCREEN, title=briefing.title,
         briefing=briefing,
+        run=run,
         run_id=run.id,
         muse=muse_panel,
         notice=_notice_text(notice),
@@ -664,7 +691,7 @@ def _briefing_and_panel(
     muse = _muse(request, session)
     panel = _muse_state(muse, actor, PERMISSION_MUSE_BRIEF)
     panel.update({"version": 0, "latest": None, "source": None, "fallback": "", "rejected": False,
-                  "issues": [], "cites": []})
+                  "issues": [], "cites": [], "display_source_label": "Built from saved results"})
     if not panel["can"]:
         return briefing_module.build_briefing(run), panel
     briefing, latest = muse.briefing_for(actor, run)
@@ -674,6 +701,11 @@ def _briefing_and_panel(
         panel["source"] = latest.source
         if latest.accepted:
             panel["cites"] = list(latest.cited_facts)
+            panel["display_source_label"] = (
+                "Recorded Muse briefing"
+                if latest.source["mode"] == "replay"
+                else "Muse briefing (live)"
+            )
         else:
             panel["rejected"] = True
             panel["fallback"] = FALLBACK_NOTICE
@@ -803,9 +835,11 @@ def ui_policy_proposal(
         return _refusal(request, session, resolved, error, action="policy.muse.propose.read",
                         target_type="policy_proposal", target_id=proposal_id, back="/policy/scenarios")
     context = page_context(
-        request, session, resolved, screen=SCREEN, title="Proposed what-if",
+        request, session, resolved, screen=SCREEN, title="Review proposed changes",
         proposal=proposal,
         can_save=can_save,
+        cards=_change_cards(proposal),
+        why_label=_why_label(proposal),
         model_runs=[],
         evidence=[
             {
@@ -817,6 +851,59 @@ def ui_policy_proposal(
         ],
     )
     return render(request, "policy_proposal.html", context)
+
+
+#: The short name of each kind of proposed change, used by the change cards.
+CHANGE_KIND_LABELS = {
+    "rule_threshold": "Rule limit",
+    "rule_retirement": "Retire a rule",
+    "requirement": "Required information",
+    "process_category": "Process category",
+    "discretionary": "By right or discretionary",
+    "service_target": "Service target",
+    "fee": "Fee",
+}
+
+
+def _change_parts(description: str) -> tuple[str, str]:
+    """Return the affected rule or permit type of a change and the change itself.
+
+    A change is written as "Change <where>: <what>", for example "Change ACME
+    Code §14-306 (rule DF-2, Deck fence): limit 6 to 7".  A change that names
+    no rule has no separator, and all of it is the change.
+    """
+    head, separator, tail = description.partition(": ")
+    if not separator:
+        return "", description
+    return head, tail
+
+
+def _change_cards(proposal: Any) -> list[dict[str, str]]:
+    """Return one card for every proposed change of a proposal."""
+    cards: list[dict[str, str]] = []
+    for item in proposal.items:
+        description = str(item.get("description", ""))
+        where, what = _change_parts(description)
+        cards.append(
+            {
+                "where": where,
+                "what": what,
+                "why": str(item.get("rationale", "")),
+                "kind_label": CHANGE_KIND_LABELS.get(str(item.get("kind", "")), "Change"),
+            }
+        )
+    return cards
+
+
+def _why_label(proposal: Any) -> str:
+    """Return the name of the source of the explanation of a proposal.
+
+    A recorded answer is not a live answer, and a deterministic text is not a
+    model answer.  The label says which one the reader is looking at.
+    """
+    if proposal.mode == "live":
+        return "Why Muse says so"
+    return "Why the recorded answer says so"
 
 
 # ------------------------------------------------------------- the detail kind
