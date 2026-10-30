@@ -63,6 +63,14 @@ body[data-screen="early_resolution"] .data-table thead th {
 .stw-cell-signals .badge { margin-right: 2px; }
 .stw-cell-select { width: 1%; }
 
+/* The early resolution rows.  The step that follows reads before the
+   findings, and what the applicant must supply stands out from the
+   wording of the finding itself. */
+.stw-applicant-must {
+  margin-top: 3px; padding: 3px 6px; border-left: 2px solid var(--accent);
+  background: var(--surface-2); font-size: .78rem;
+}
+
 /* The activity list.  The readable action and the record it changed lead,
    the note and the actor follow, and the result says plainly whether the
    event was recorded or refused. */

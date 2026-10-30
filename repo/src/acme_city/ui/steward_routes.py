@@ -566,6 +566,11 @@ def ui_early_resolution(
     if refused is not None:
         return refused
     board = queues.early_resolution(session, resolved)
+    # Every case of the board names the step that follows, so a reader knows
+    # what the board is waiting for before the findings are read.
+    for group in board["groups"]:
+        for case in group["cases"]:
+            case["next_step"] = steward_queue_views.intake_next_step(case)
     context = page_context(
         request,
         session,

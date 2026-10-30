@@ -35,6 +35,7 @@
         <tr>
           <th scope="col">Case</th>
           <th scope="col">Type</th>
+          <th scope="col">Next step</th>
           <th scope="col">Primary finding</th>
           <th scope="col">Current findings</th>
           <th scope="col">Age</th>
@@ -49,10 +50,11 @@
             <div><a class="btn sm" href="{{ case.href }}" data-testid="resolve-case">Resolve</a></div>
           </th>
           <td class="stw-cell" data-label="Type">{{ case.permit_type_label }}</td>
+          <td class="stw-cell stw-cell-next" data-label="Next step" data-testid="early-resolution-next-step">{{ case.next_step }}</td>
           <td class="stw-cell" data-label="Primary finding">
             {% if case.primary_finding %}
             <div data-testid="case-primary-finding">{{ case.primary_finding.message }}</div>
-            <div class="stw-reference">{{ case.primary_finding.finding_type|replace('_', ' ') }} · {{ case.primary_finding.severity }}</div>
+            <div class="stw-reference">{{ case.finding_label }} · {{ case.severity_label }}</div>
             {% else %}<span class="muted">No finding is recorded.</span>{% endif %}
           </td>
           <td class="stw-cell" data-label="Current findings">
@@ -60,7 +62,7 @@
               {% for finding in case.current_findings %}
               <li data-testid="case-finding" data-finding-type="{{ finding.finding_type }}" data-state="{{ 'waived' if finding.waived else 'current' }}">
                 {{ finding.message }}
-                {% if finding.applicant_must %}<div class="stw-reference">Applicant must: {{ finding.applicant_must }}</div>{% endif %}
+                {% if finding.applicant_must %}<div class="stw-applicant-must">Applicant must: {{ finding.applicant_must }}</div>{% endif %}
                 {% if finding.rule %}<div class="stw-reference">{{ finding.rule }}</div>{% endif %}
                 {% if finding.waived %}<div class="stw-reference">Waived.</div>{% endif %}
               </li>

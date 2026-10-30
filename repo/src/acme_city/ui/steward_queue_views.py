@@ -89,7 +89,7 @@ PAGE_SIZE = 25
 #: decide anything.
 INTAKE_NEXT_STEPS: dict[str, str] = {
     "submitted": "The intake agent reads the received documents.",
-    "needs_information": "A person resolves the recorded finding.",
+    "needs_information": "A person resolves the case.",
     "ready_for_review": "The Permit Reviewer reads the case.",
     "under_review": "The Permit Reviewer reads the case.",
     "revisions_requested": "The applicant answers the request.",
