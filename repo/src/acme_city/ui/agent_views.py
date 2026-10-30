@@ -27,6 +27,7 @@ from acme_city.agents.runtime import (
     DEFAULT_MAX_BATCH_SIZE,
     DEFAULT_RUNS_PER_HOUR,
     batch_limit,
+    retry_allowed,
 )
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
@@ -321,6 +322,9 @@ def _queue_row_view(session: Session, row: agent_ops.AgentWorkQueue) -> dict[str
         "attempts": row.attempts,
         "note": row.note or "",
         "finished_at": _iso(row.finished_at),
+        # A technical failure may be tried again while the work has attempts
+        # left.  A work that waits for a person is never retried.
+        "can_retry": retry_allowed(row),
     }
 
 

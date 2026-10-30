@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.agents.policy import current_policy
 from acme_city.core.clock import utc_now
-from acme_city.core.errors import ValidationError
+from acme_city.core.errors import AcmeError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import agent_ops, permit
@@ -45,6 +45,11 @@ from acme_city.persistence.models import agent_ops, permit
 #: The batch size and the hourly limit used when no policy was seeded.
 DEFAULT_MAX_BATCH_SIZE = 20
 DEFAULT_RUNS_PER_HOUR = 60
+
+#: The most attempts one piece of work may have: the first try and two
+#: retries.  A piece of work that was tried that often stays failed and
+#: waits for a person.
+MAX_ATTEMPTS = 3
 
 #: The engine of an attempt: the deterministic logic of the City.  The agents
 #: read the received documents and evaluate the published rules without a
@@ -128,6 +133,33 @@ def work_status_for(outcome: str) -> str:
     if outcome in _COMPLETED_OUTCOMES:
         return agent_ops.WORK_COMPLETED
     return agent_ops.WORK_HELD
+
+
+class AgentRunFailed(AcmeError):
+    """The run of an agent stopped before it finished.
+
+    The failure is recorded on the queue row of the piece of work, so the
+    operator sees it and may try the work again.  The error that stopped the
+    run is kept as the cause, so nothing is lost.
+    """
+
+    code = "agent_run_failed"
+    status_code = 422
+
+    def __init__(self, message: str, *, cause: Exception) -> None:
+        super().__init__(message)
+        self.cause = cause
+
+
+def retry_allowed(row: agent_ops.AgentWorkQueue) -> bool:
+    """Return whether the work may be tried again.
+
+    Only a technical failure is retried.  A piece of work that waits for a
+    person is not a failure, and a piece of work that was already tried
+    three times stays failed: repeated clicking never creates unlimited
+    retries.
+    """
+    return row.status == agent_ops.WORK_FAILED and row.attempts < MAX_ATTEMPTS
 
 
 def require_hour_room(limit: BatchLimit) -> None:
@@ -353,13 +385,14 @@ class AgentRuntime:
         try:
             run = runner(application.id, claimed.id)
         except Exception as error:  # noqa: BLE001 - the failure is recorded
+            self._finish_failed_run(application, error)
             self.finish(
                 claimed.id,
                 claimed.attempts,
                 agent_ops.WORK_FAILED,
                 note=f"the run failed: {error}",
             )
-            raise
+            raise AgentRunFailed(f"the run failed: {error}", cause=error) from error
         self._record_engine(run)
         status = work_status_for(run.outcome)
         self.finish(
@@ -383,6 +416,28 @@ class AgentRuntime:
         inputs = dict(run.inputs or {})
         inputs["engine"] = BUILTIN_ENGINE
         run.inputs = inputs
+
+    def _finish_failed_run(self, application: permit.Application, error: Exception) -> None:
+        """Record the failure on the run evidence of the attempt.
+
+        A run that stops leaves an open run row behind.  The row is closed
+        with the failure, so the run history shows what happened instead of
+        a run that never ended.
+        """
+        row = self._session.execute(
+            select(agent_models.AgentRun)
+            .where(
+                agent_models.AgentRun.application_id == application.id,
+                agent_models.AgentRun.finished_at.is_(None),
+            )
+            .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
+        ).scalars().first()
+        if row is None:
+            return
+        row.outcome = "failed"
+        row.outcome_detail = f"the run failed: {error}"
+        row.finished_at = self._clock()
+        self._session.flush()
 
     def counts(self) -> dict[str, int]:
         """Return how many pieces of work hold each status.
@@ -487,21 +542,78 @@ def run_batch(
     runs the hour still allows.  The cases are the ones that waited when the
     request arrived: a case that arrives later waits for the next batch.  A
     controlled case of the demonstration is never named by a batch.
+
+    A case whose run stops does not end the batch: the failure is recorded
+    on the queue row of that case and the batch continues with the next one.
     """
     limit = batch_limit(session, now=now)
     require_hour_room(limit)
     eligible = [case for case in cases if case.scenario_id is None]
     chosen = eligible[: min(limit.max_batch_size, limit.remaining_runs)]
-    return tuple(
-        run_agent(
-            session,
-            application=application,
-            agent_key=agent_key,
-            triggered_by=triggered_by,
-            settings=settings,
-            now=now,
+    results: list[QueuedRun] = []
+    for application in chosen:
+        try:
+            results.append(
+                run_agent(
+                    session,
+                    application=application,
+                    agent_key=agent_key,
+                    triggered_by=triggered_by,
+                    settings=settings,
+                    now=now,
+                )
+            )
+        except AgentRunFailed:
+            # The failure is recorded on the queue row of the work.
+            continue
+    return tuple(results)
+
+
+def retry_agent(
+    session: Session,
+    *,
+    application: permit.Application,
+    agent_key: str,
+    triggered_by: str,
+    settings: Any = None,
+    now: datetime | None = None,
+) -> QueuedRun:
+    """Run the failed work of one case again.
+
+    The work is opened for another attempt and the agent runs again on the
+    case, exactly as it did the first time.  The attempt count keeps the
+    history, so the operator sees how often the work was tried.
+
+    Only a technical failure is retried, and only while the work has
+    attempts left: a piece of work that was tried three times stays failed
+    and waits for a person.  A work that waits for a person is never a
+    technical failure and is never retried.
+
+    The retry is a manual run: it needs the grant of the agent and an awake
+    agent, and it counts towards the hourly limit like any other run.
+    """
+    key = work_key(application, agent_key)
+    row = session.execute(
+        select(agent_ops.AgentWorkQueue).where(agent_ops.AgentWorkQueue.work_key == key)
+    ).scalar_one_or_none()
+    if row is None:
+        raise ValidationError("there is no recorded work for this case to try again")
+    if row.status != agent_ops.WORK_FAILED:
+        raise ValidationError(
+            "this work did not fail, so there is nothing to try again"
         )
-        for application in chosen
+    if row.attempts >= MAX_ATTEMPTS:
+        raise ValidationError(
+            f"the work was tried {row.attempts} times already, so a person has to "
+            "look at it"
+        )
+    return run_agent(
+        session,
+        application=application,
+        agent_key=agent_key,
+        triggered_by=triggered_by,
+        settings=settings,
+        now=now,
     )
 
 
@@ -510,12 +622,16 @@ __all__ = [
     "BUILTIN_ENGINE_LABEL",
     "DEFAULT_MAX_BATCH_SIZE",
     "DEFAULT_RUNS_PER_HOUR",
+    "MAX_ATTEMPTS",
+    "AgentRunFailed",
     "AgentRuntime",
     "BatchLimit",
     "QueuedRun",
     "batch_limit",
     "queue_counts",
     "require_hour_room",
+    "retry_agent",
+    "retry_allowed",
     "run_agent",
     "run_batch",
     "work_key",

@@ -776,3 +776,170 @@ def test_the_replay_path_keeps_its_label_and_its_identifier(environment: Setting
             assert rows[0].replay_of_run_id == "intake-document-replay"
     finally:
         factory.dispose()
+
+
+def _work_of(session, application_id: str) -> agent_ops.AgentWorkQueue:
+    """Return the queued work of one case."""
+    row = session.execute(
+        select(agent_ops.AgentWorkQueue).where(
+            agent_ops.AgentWorkQueue.application_id == application_id
+        )
+    ).scalars().first()
+    assert row is not None, "the case has no recorded work"
+    return row
+
+
+def test_a_failed_run_is_recorded_and_the_work_can_be_tried_again(
+    environment: Settings,
+) -> None:
+    """A technical failure is kept, and the retry works the case again."""
+    from acme_city.agents.runtime import AgentRunFailed, retry_agent
+    from acme_city.permits.guard import ARCHIVED_STATUS
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = _arrival(session, environment)
+            application_id = application.id
+            _wake(session)
+            # The case is archived, so the agent refuses to work on it and the
+            # attempt stops.
+            row = session.get(permit.Application, application_id)
+            row.status = ARCHIVED_STATUS
+            session.flush()
+            with pytest.raises(AgentRunFailed):
+                run_agent(
+                    session,
+                    application=row,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+        with factory() as session:
+            work = _work_of(session, application_id)
+            assert work.status == agent_ops.WORK_FAILED
+            assert work.attempts == 1
+            assert "archived" in (work.note or "")
+            # No run is left open by the attempt that stopped.
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().all()
+            assert all(row.finished_at is not None for row in runs)
+        # The case is restored, so the retry can work on it.
+        with transaction(factory) as session:
+            row = session.get(permit.Application, application_id)
+            row.status = "submitted"
+            session.flush()
+            result = retry_agent(
+                session,
+                application=row,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+            assert result.outcome != "failed"
+        with factory() as session:
+            work = _work_of(session, application_id)
+            assert work.status == agent_ops.WORK_COMPLETED
+            assert work.attempts == 2
+    finally:
+        factory.dispose()
+
+
+def test_the_work_is_not_retried_after_three_attempts(environment: Settings) -> None:
+    """Repeated clicking never creates unlimited retries."""
+    from acme_city.agents.runtime import AgentRunFailed, retry_agent
+    from acme_city.permits.guard import ARCHIVED_STATUS
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = _arrival(session, environment)
+            application_id = application.id
+            _wake(session)
+            # The case stays archived, so every attempt stops the same way.
+            row = session.get(permit.Application, application_id)
+            row.status = ARCHIVED_STATUS
+            session.flush()
+        with transaction(factory) as session:
+            row = session.get(permit.Application, application_id)
+            with pytest.raises(AgentRunFailed):
+                run_agent(
+                    session,
+                    application=row,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+        for _attempt in range(2):
+            with transaction(factory) as session:
+                row = session.get(permit.Application, application_id)
+                with pytest.raises(AgentRunFailed):
+                    # The second and the third attempt fail the same way.
+                    retry_agent(
+                        session,
+                        application=row,
+                        agent_key=agent_models.AGENT_INTAKE,
+                        triggered_by="persona_agent_operator",
+                        settings=environment,
+                    )
+        with factory() as session:
+            work = _work_of(session, application_id)
+            assert work.status == agent_ops.WORK_FAILED
+            assert work.attempts == 3
+        # The work is not tried a fourth time.
+        with transaction(factory) as session:
+            row = session.get(permit.Application, application_id)
+            with pytest.raises(ValidationError) as raised:
+                retry_agent(
+                    session,
+                    application=row,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+            assert "a person has to look at it" in str(raised.value)
+        with factory() as session:
+            work = _work_of(session, application_id)
+            assert work.attempts == 3
+    finally:
+        factory.dispose()
+
+
+def test_a_work_that_waits_for_a_person_is_never_retried(environment: Settings) -> None:
+    """A held work is not a technical failure."""
+    from acme_city.agents.runtime import retry_agent
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = _arrival(session, environment)
+            application_id = application.id
+            _wake(session)
+            run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by="persona_agent_operator",
+                settings=environment,
+            )
+        with factory() as session:
+            work = _work_of(session, application_id)
+            assert work.status in (agent_ops.WORK_COMPLETED, agent_ops.WORK_HELD)
+            if work.status == agent_ops.WORK_COMPLETED:
+                return
+        with transaction(factory) as session:
+            row = session.get(permit.Application, application_id)
+            with pytest.raises(ValidationError) as raised:
+                retry_agent(
+                    session,
+                    application=row,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+            assert "did not fail" in str(raised.value)
+    finally:
+        factory.dispose()

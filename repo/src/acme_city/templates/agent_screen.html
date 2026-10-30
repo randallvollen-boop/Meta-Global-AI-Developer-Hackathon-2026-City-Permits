@@ -147,7 +147,7 @@
     <table class="data-table opr-table" data-testid="agent-failure-table">
       <caption class="visually-hidden">The work that failed and the work that waits for another attempt</caption>
       <thead>
-        <tr><th scope="col">Case</th><th scope="col">State</th><th scope="col">Attempts</th><th scope="col">What happened</th></tr>
+        <tr><th scope="col">Case</th><th scope="col">State</th><th scope="col">Attempts</th><th scope="col">What happened</th><th scope="col">Try again</th></tr>
       </thead>
       <tbody>
         {% for row in agent.failures %}
@@ -156,6 +156,27 @@
           <td data-label="State"><span class="badge badge-failed">Failed</span></td>
           <td data-label="Attempts">{{ row.attempts }}</td>
           <td data-label="What happened">{{ row.note or 'The run stopped before it finished.' }}</td>
+          <td data-label="Try again">
+            {% if agent.can_run and row.can_retry %}
+            <form method="post" action="/ui/actions/agent.retry" class="action-form" data-testid="agent-retry-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="agent.retry">
+              <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
+              <input type="hidden" name="agent_key" value="{{ agent.agent_key }}">
+              <input type="hidden" name="application_id" value="{{ row.application_id }}">
+              <button type="submit" class="btn sm" data-testid="agent-retry"
+                      {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
+                Try again
+              </button>
+            </form>
+            {% elif not row.can_retry %}
+            <span class="muted" data-testid="agent-retry-exhausted">A person has to look at it.</span>
+            {% else %}
+            <span class="lock" title="Your persona does not hold the run grant">
+              <svg aria-hidden="true"><use href="#i-lock"/></svg> <span data-testid="agent-retry-no-grant">Your role cannot do this.</span>
+            </span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
         {% for row in agent.retries %}
@@ -164,10 +185,11 @@
           <td data-label="State"><span class="badge badge-held">Waiting for another attempt</span></td>
           <td data-label="Attempts">{{ row.attempts }}</td>
           <td data-label="What happened">{{ row.note or 'The work waits for another attempt.' }}</td>
+          <td data-label="Try again"><span class="muted">-</span></td>
         </tr>
         {% endfor %}
         {% if not agent.failures and not agent.retries %}
-        <tr><td colspan="4" class="muted" data-testid="agent-failure-empty">No work has failed and nothing waits for another attempt.</td></tr>
+        <tr><td colspan="5" class="muted" data-testid="agent-failure-empty">No work has failed and nothing waits for another attempt.</td></tr>
         {% endif %}
       </tbody>
     </table>

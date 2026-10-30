@@ -6,7 +6,26 @@ import json
 
 from conftest import assert_no_horizontal_overflow, assert_not_covered
 
+from acme_city.persistence.models import permit
+from acme_city.persistence.session import SessionFactory, transaction
+
 SAVED_MESSAGE = "City worker agent access was saved."
+
+
+def _set_case_status(server, application_id: str, status: str) -> None:
+    """Set the state of one case in the database of the fixture.
+
+    The operator cannot archive a case, so the test does it the way the
+    administration does: the row of the case carries the state.
+    """
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(permit.Application, application_id)
+            assert row is not None, application_id
+            row.status = status
+    finally:
+        factory.dispose()
 
 
 def _run_the_intake_agent(page, server) -> None:
@@ -333,3 +352,54 @@ def test_the_agent_processing_tab_fits_at_390(viewport_390, server, login) -> No
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("[data-testid='admin-processing-mode']"))
     assert_not_covered(page, page.locator("[data-testid='admin-agent-processing-save']"))
+
+
+def test_the_operator_retries_the_failed_work(page, server, login) -> None:
+    """The Retry button works the case again and the failure is gone.
+
+    The case is archived while the operator is looking at the screen, so the
+    run stops and the failure is recorded.  The case is restored, and the
+    retry works it for real.
+    """
+    login("persona_agent_operator")
+    response = page.request.post(
+        f"{server.base_url}/api/intake/simulate",
+        data=json.dumps({"scenario": "deck-high"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.ok, response.text()
+    _wake_the_agent(page, server, "intake")
+    page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
+    row = page.locator("[data-testid='agent-waiting-row']").first
+    application_id = row.get_attribute("data-application-id")
+    assert application_id
+    # The case is archived, so the run of the agent stops.
+    _set_case_status(server, application_id, "archived")
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.run.intake" in answer.url
+    ) as answered:
+        page.click("[data-testid='agent-run-one']")
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert "stopped on" in payload["message"], payload
+    # The failure is on the screen with a button that works it again.
+    page.reload(wait_until="domcontentloaded")
+    failure = page.locator("[data-testid='agent-failure-row']")
+    assert failure.count() == 1
+    assert "archived" in failure.first.inner_text()
+    button = page.locator("[data-testid='agent-retry']")
+    assert button.is_enabled()
+    # The case is restored, so the retry can work on it.
+    _set_case_status(server, application_id, "submitted")
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.retry" in answer.url
+    ) as answered:
+        button.click()
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert payload["message"] == f"The intake agent ran again on {application_id}."
+    # The work is done: the failure is gone and the case left the waiting list.
+    page.reload(wait_until="domcontentloaded")
+    assert page.locator("[data-testid='agent-failure-row']").count() == 0
+    assert page.locator("[data-testid='agent-waiting-empty']").is_visible()
+    assert_no_horizontal_overflow(page)

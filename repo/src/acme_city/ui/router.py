@@ -2382,11 +2382,15 @@ def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
     The agent is named by the action identifier, never by the form: the
     browser does not choose which agent runs.  The run goes through the
     shared work queue, so the queue records the attempt and its outcome.
+
+    A run that stops is not lost: the failure is recorded on the queue row
+    of the work, so the operator sees it on the screen of the agent and may
+    try the work again.
     """
     from acme_city.agents.adjudication import AdjudicationAgent
     from acme_city.agents.control import AGENT_LABELS, AgentControlService
     from acme_city.agents.intake import waiting_applications
-    from acme_city.agents.runtime import run_agent, run_batch
+    from acme_city.agents.runtime import AgentRunFailed, run_agent, run_batch
     from acme_city.permits.service import PermitService
 
     application_id = ctx.text("application_id")
@@ -2395,13 +2399,25 @@ def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
     label = AGENT_LABELS.get(agent_key, agent_key)
     if application_id:
         application = PermitService(ctx.session).load_application(application_id)
-        result = run_agent(
-            ctx.session,
-            application=application,
-            agent_key=agent_key,
-            triggered_by=ctx.actor.actor_id,
-            settings=ctx.settings,
-        )
+        try:
+            result = run_agent(
+                ctx.session,
+                application=application,
+                agent_key=agent_key,
+                triggered_by=ctx.actor.actor_id,
+                settings=ctx.settings,
+            )
+        except AgentRunFailed:
+            return Outcome(
+                message=(
+                    f"The {label.lower()} stopped on {application_id}. The work waits "
+                    "for a person."
+                ),
+                destination=label,
+                state="failed",
+                target_type="application",
+                target_id=application_id,
+            )
         return Outcome(
             message=f"The {label.lower()} ran on {application_id}.",
             destination=label,

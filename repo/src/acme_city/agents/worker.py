@@ -27,7 +27,7 @@ from typing import Any
 
 from acme_city.agents.eligibility import eligible_applications
 from acme_city.agents.policy import automatic_processing
-from acme_city.agents.runtime import AgentRuntime, batch_limit, run_agent
+from acme_city.agents.runtime import AgentRunFailed, AgentRuntime, batch_limit, run_agent
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
@@ -145,15 +145,20 @@ class AgentWorker:
                 application = session.get(permit.Application, application_id)
                 if application is None:
                     return 0
-                run_agent(
-                    session,
-                    application=application,
-                    agent_key=agent_models.AGENT_INTAKE,
-                    triggered_by=WORKER_ACTOR_ID,
-                    settings=self._settings,
-                    now=self._now,
-                    require_awake=False,
-                )
+                try:
+                    run_agent(
+                        session,
+                        application=application,
+                        agent_key=agent_models.AGENT_INTAKE,
+                        triggered_by=WORKER_ACTOR_ID,
+                        settings=self._settings,
+                        now=self._now,
+                        require_awake=False,
+                    )
+                except AgentRunFailed:
+                    # The failure is recorded on the queue row of the work, so
+                    # the transaction keeps it and a person sees it.
+                    return 0
         except Exception:  # noqa: BLE001 - the failure is recorded by the runtime
             logger.warning(
                 "the automatic run failed for the case %s", application_id, exc_info=True

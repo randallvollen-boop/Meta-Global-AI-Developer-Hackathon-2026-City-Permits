@@ -79,6 +79,58 @@ def _agent_processing(ctx: ActionContext) -> Outcome:
 ACTIONS["admin.agent.processing"] = _agent_processing
 
 
+def _agent_retry(ctx: ActionContext) -> Outcome:
+    """Run the failed work of one case again.
+
+    The retry is a manual run: the browser does not choose the agent, the
+    agent is named by the work it repeats.  The failure is recorded on the
+    queue row, so the operator sees what happened before trying again.
+    """
+    from acme_city.agents.control import AGENT_LABELS, AgentControlService
+    from acme_city.agents.runtime import AgentRunFailed, retry_agent
+    from acme_city.permits.service import PermitService
+
+    application_id = ctx.text("application_id")
+    agent_key = ctx.text("agent_key")
+    # The grant is checked before the payload, so a request without the
+    # grant is refused for that reason and nothing else.
+    AgentControlService(ctx.session).authorize_manual_run(ctx.actor, agent_key)
+    if not application_id:
+        raise ValidationError("the retry needs the case it works on")
+    label = AGENT_LABELS.get(agent_key, agent_key)
+    application = PermitService(ctx.session).load_application(application_id)
+    try:
+        result = retry_agent(
+            ctx.session,
+            application=application,
+            agent_key=agent_key,
+            triggered_by=ctx.actor.actor_id,
+            settings=ctx.settings,
+        )
+    except AgentRunFailed:
+        return Outcome(
+            message=(
+                f"The {label.lower()} stopped again on {application_id}. The work "
+                "waits for a person."
+            ),
+            destination=label,
+            state="failed",
+            target_type="application",
+            target_id=application_id,
+        )
+    return Outcome(
+        message=f"The {label.lower()} ran again on {application_id}.",
+        destination=label,
+        state=result.outcome,
+        target_type="application",
+        target_id=application_id,
+        after_version=result.attempts,
+    )
+
+
+ACTIONS["agent.retry"] = _agent_retry
+
+
 def _role_permissions(ctx: ActionContext) -> Outcome:
     """Save the optional City worker entitlement through the governed service."""
     from acme_city.configuration.service import ConfigurationService
