@@ -98,8 +98,8 @@ def enqueue_accepted_snapshot(
         status="pending",
         attempts=0,
         available_at=now or utc_now(),
-        lease_owner=None,
-        lease_expires_at=None,
+        claimed_at=None,
+        finished_at=None,
         last_error=None,
     )
     session.add(job)

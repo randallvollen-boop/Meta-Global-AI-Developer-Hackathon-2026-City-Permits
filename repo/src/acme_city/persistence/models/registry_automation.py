@@ -32,7 +32,13 @@ class RegistryAutomationPolicy(IdMixin, VersionMixin, CreatedAtMixin, Base):
 
 
 class RegistryAutomationJob(IdMixin, CreatedAtMixin, Base):
-    """Durable work for one accepted source version and target family."""
+    """Durable work for one accepted source version and target family.
+
+    The row follows the runtime contract of the agents: one status column, an
+    attempt count and no lease.  A worker takes the job by moving it from
+    ``pending`` to ``running`` in a single statement, and only the worker that
+    won that statement may finish it.
+    """
 
     __tablename__ = "registry_automation_jobs"
 
@@ -48,8 +54,8 @@ class RegistryAutomationJob(IdMixin, CreatedAtMixin, Base):
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending", server_default="pending")
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
     available_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
-    lease_owner: Mapped[str | None] = mapped_column(String(96), nullable=True)
-    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     __table_args__ = (
         UniqueConstraint(
@@ -57,7 +63,7 @@ class RegistryAutomationJob(IdMixin, CreatedAtMixin, Base):
             name="uq_registry_automation_job_evaluation_key",
         ),
         CheckConstraint(
-            "status IN ('pending', 'leased', 'completed', 'failed', 'needs_review')",
+            "status IN ('pending', 'running', 'completed', 'failed', 'needs_review')",
             name="status_allowed",
         ),
     )

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any
 
 
 class PolicyDecision(StrEnum):
@@ -37,6 +38,34 @@ DEFAULT_THRESHOLDS: dict[str, Thresholds] = {
     "permit": Thresholds(1.00, 0.50),
     "address_locator": Thresholds(90.0, 80.0, 0.0, 100.0),
 }
+
+#: The record families whose automatic links this release may reverse.  A
+#: family without a tested reversal is only ever suggested to a steward, so a
+#: threshold never enables a link that cannot be taken back.
+UNDO_SUPPORTED_FAMILIES: frozenset[str] = frozenset()
+
+
+def thresholds_for(family: str, stored: Any = None) -> Thresholds:
+    """Return the thresholds of one family, from stored values or the defaults.
+
+    The stored values are the thresholds of an activated policy.  A stored
+    value that is missing or unreadable falls back to the default of the
+    family, so a broken policy never widens the thresholds on its own.
+    """
+    default = DEFAULT_THRESHOLDS.get(family)
+    if default is None:
+        return Thresholds(auto_apply=1.0, suggest=0.0)
+    if not isinstance(stored, dict):
+        return default
+    try:
+        return Thresholds(
+            auto_apply=float(stored["auto_apply"]),
+            suggest=float(stored["suggest"]),
+            score_min=default.score_min,
+            score_max=default.score_max,
+        )
+    except (KeyError, TypeError, ValueError):
+        return default
 
 
 @dataclass(frozen=True)
@@ -119,9 +148,11 @@ def evaluate_link(
 
 __all__ = [
     "DEFAULT_THRESHOLDS",
+    "UNDO_SUPPORTED_FAMILIES",
     "PolicyDecision",
     "PolicyEvaluation",
     "SafetyChecks",
     "Thresholds",
     "evaluate_link",
+    "thresholds_for",
 ]
