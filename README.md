@@ -40,4 +40,4 @@ The original RailFlow workspace remains separate at `../Meta-Global-AI-Developer
 
 ## License
 
-Copyright © 2026 Randall Vollen and Vollen Data. All rights reserved. Public for transparency, hackathon evaluation and demonstration only; no permission to reproduce, modify, redistribute, sublicense, host commercially or sell without written authorization from Randall Vollen. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Copyright © 2026 Randall Vollen and VollenData. All rights reserved. Public for transparency, hackathon evaluation and demonstration only; no permission to reproduce, modify, redistribute, sublicense, host commercially or sell without written authorization from Randall Vollen. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
