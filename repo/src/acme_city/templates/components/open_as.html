@@ -1,0 +1,8 @@
+{# An "Open as" button: switches to a persona through the ordinary persona switch, then opens a path. #}
+{% macro open_as(actor_id, label, path, testid='open-as') -%}
+<form method="post" action="/ui/actor" class="guide-open-as">
+  <input type="hidden" name="actor_id" value="{{ actor_id }}">
+  <input type="hidden" name="next" value="{{ path }}">
+  <button type="submit" class="button btn" data-testid="{{ testid }}" data-persona="{{ actor_id }}" data-next="{{ path }}">Open as {{ label }}</button>
+</form>
+{%- endmacro %}

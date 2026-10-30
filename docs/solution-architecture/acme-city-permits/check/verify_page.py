@@ -32,6 +32,8 @@ LEAK_OUT = _leak_pattern()
 
 # Figures that may appear on the page, with the source that allows each one.
 ALLOWED_FIGURES = {
+    "16": "16 moves in the permit life cycle (lifecycle_map.py)",
+    "28": "day of the 2026-10-28 build log dates in the evidence table",
     "0.2": "Kinetograph 0.2.0 (planned video)",
     "00": "video length 2:00 (planned)",
     "5": "five nodes of the adjudication agent",
@@ -47,6 +49,14 @@ ALLOWED_FIGURES = {
     "96": "scene second ranges in the planned narration",
     "112": "scene second ranges in the planned narration",
     "120": "scene second ranges in the planned narration",
+    "02": "nightly Render reset at 02:00 UTC",
+    "1080": "architecture diagram canvas coordinate",
+    "18": "completed presenter clip count",
+    "2.0": "Apache License version",
+    "300": "public demonstration request limit and diagram coordinate",
+    "503": "readiness response when schema is not current",
+    "60": "public demonstration write limit",
+    "600": "synthetic permit application count and diagram coordinate",
     "17": "parity: 17 permit types",
     "69": "parity: simulated GIS parcels",
     "71": "parity: simulated GIS addresses",
