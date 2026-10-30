@@ -5,7 +5,7 @@
   <div>
     <h1>{{ title }}</h1>
     {% if screen == 'agents_home' %}
-    <p class="sub muted">Processing is manual. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
+    <p class="sub muted">Processing is {{ summary.processing }}. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
     {% else %}
     <p class="sub muted">Run history will show recorded processing attempts here.</p>
     {% endif %}

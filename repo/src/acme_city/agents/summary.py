@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.agents.control import AGENT_KEYS, agent_mode
 from acme_city.agents.intake import waiting_applications
+from acme_city.agents.policy import MODE_AUTOMATIC, processing_mode
 from acme_city.agents.runtime import queue_counts
 from acme_city.persistence.models import agent as agent_models
 
@@ -23,6 +24,7 @@ def operator_summary(session: Session) -> dict[str, object]:
         }
         for key in AGENT_KEYS
     ]
+    mode = processing_mode(session)
     return {
         "waiting": len(waiting_applications(session)),
         "running": len([row for row in runs if row.finished_at is None]),
@@ -31,6 +33,10 @@ def operator_summary(session: Session) -> dict[str, object]:
         "queued": queue["pending"],
         "states": states,
         "engine": "Built in logic",
+        "processing": mode,
+        "processing_label": (
+            "Automatic processing" if mode == MODE_AUTOMATIC else "Manual processing"
+        ),
     }
 
 

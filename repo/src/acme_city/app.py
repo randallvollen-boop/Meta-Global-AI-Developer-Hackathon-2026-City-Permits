@@ -8,6 +8,7 @@ request body.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -83,6 +84,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """
     resolved = settings or Settings.load()
     production = resolved.is_production
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Run the background worker of the agents while the service is up.
+
+        The worker is off unless the deployment allows it, so a service that
+        does not ask for automatic processing never starts a thread.  The
+        worker stops cleanly when the service shuts down.
+        """
+        from acme_city.agents.worker import AgentWorker, worker_enabled
+
+        worker = None
+        if worker_enabled(resolved):
+            worker = AgentWorker(app.state.session_factory, settings=resolved)
+            worker.start()
+        app.state.agent_worker = worker
+        try:
+            yield
+        finally:
+            if worker is not None:
+                worker.stop()
+
     app = FastAPI(
         title="ACME City Permit Demonstration",
         version="0.1.0",
@@ -94,9 +117,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=None if production else "/docs",
         redoc_url=None if production else "/redoc",
         openapi_url=None if production else "/openapi.json",
+        lifespan=lifespan,
     )
     app.state.settings = resolved
     app.state.session_factory = SessionFactory(resolved.database_url)
+    app.state.agent_worker = None
     if production:
         if database_is_demo(app.state.session_factory.engine):
             app.state.session_factory.dispose()

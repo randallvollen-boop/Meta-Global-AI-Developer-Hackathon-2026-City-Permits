@@ -11,6 +11,7 @@ from acme_city.core.config_operator import (
     DEFAULT_MUSE_DAILY_CALL_CAP,
     operator_env_overrides,
 )
+from acme_city.agents.worker import worker_enabled
 
 SECRET_VALUE = "unit-test-secret-value-not-a-real-key"
 
@@ -64,3 +65,15 @@ def test_a_daily_call_cap_that_is_not_a_whole_number_is_refused(tmp_path: Path) 
         _load(tmp_path, ACME_MUSE_DAILY_CALL_CAP="many")
     with pytest.raises(ValueError):
         _load(tmp_path, ACME_MUSE_DAILY_CALL_CAP="-1")
+
+
+def test_the_background_worker_needs_the_deployment_to_ask_for_it(
+    tmp_path: Path,
+) -> None:
+    """The worker stays off unless the deployment allows it."""
+    settings = _load(tmp_path)
+    assert settings.agent_worker_enabled is False
+    assert worker_enabled(settings) is False
+    settings = _load(tmp_path, ACME_AGENT_WORKER_ENABLED="true")
+    assert settings.agent_worker_enabled is True
+    assert worker_enabled(settings) is True

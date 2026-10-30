@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from acme_city.agents.policy import current_policy
@@ -288,6 +288,38 @@ class AgentRuntime:
             return None
         return self._session.get(agent_ops.AgentWorkQueue, work_id, populate_existing=True)
 
+    def recover_running(self, before: datetime) -> int:
+        """Return the work that was running before this moment to the waiting state.
+
+        A process that ended while a case was being worked leaves its row
+        running.  The next worker returns that work to the waiting state, so
+        the case is worked again instead of waiting for ever.  Only the work
+        that was claimed before the worker started is returned: the work of
+        the worker that is running now is never touched.
+
+        Returns:
+            The number of pieces of work that were returned to the waiting
+            state.
+        """
+        result = self._session.execute(
+            update(agent_ops.AgentWorkQueue)
+            .where(
+                agent_ops.AgentWorkQueue.status == agent_ops.WORK_RUNNING,
+                or_(
+                    agent_ops.AgentWorkQueue.claimed_at.is_(None),
+                    agent_ops.AgentWorkQueue.claimed_at < before,
+                ),
+            )
+            .values(
+                status=agent_ops.WORK_PENDING,
+                claimed_at=None,
+                finished_at=None,
+                note="the attempt was interrupted; the work waits for another attempt",
+                version=agent_ops.AgentWorkQueue.version + 1,
+            )
+        )
+        return int(result.rowcount or 0)
+
     def execute(
         self,
         application: permit.Application,
@@ -390,6 +422,7 @@ def run_agent(
     triggered_by: str,
     settings: Any = None,
     now: datetime | None = None,
+    require_awake: bool = True,
 ) -> QueuedRun:
     """Run one agent on one case through the durable work queue.
 
@@ -401,6 +434,10 @@ def run_agent(
     the fixed fixture of the demonstration, not an arrival, and it is never
     worked.  The agent must be awake: a sleeping agent waits for its cases
     instead of leaving a failed piece of work behind.
+
+    The automatic worker passes ``require_awake=False``: the processing
+    policy of the City is the authority of that run, not the manual wake
+    state of the agent.
     """
     from acme_city.agents.adjudication import AdjudicationAgent
     from acme_city.agents.control import AgentControlService
@@ -419,11 +456,17 @@ def run_agent(
         raise ValidationError(f"unknown agent: {agent_key!r}")
 
     def runner(application_id: str, work_id: str) -> agent_models.AgentRun:
-        return agent.run(application_id, triggered_by=triggered_by, work_id=work_id)
+        return agent.run(
+            application_id,
+            triggered_by=triggered_by,
+            work_id=work_id,
+            require_awake=require_awake,
+        )
 
     limit = batch_limit(session, now=now)
     require_hour_room(limit)
-    AgentControlService(session, now=now).require_awake(agent_key)
+    if require_awake:
+        AgentControlService(session, now=now).require_awake(agent_key)
     return AgentRuntime(session, now=now).execute(
         application, agent_key=agent_key, runner=runner
     )

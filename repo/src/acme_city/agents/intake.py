@@ -189,14 +189,22 @@ class IntakeAgent:
     # ------------------------------------------------------------------ public
 
     def run(
-        self, application_id: str, *, triggered_by: str, work_id: str | None = None
+        self,
+        application_id: str,
+        *,
+        triggered_by: str,
+        work_id: str | None = None,
+        require_awake: bool = True,
     ) -> agent_models.AgentRun:
         """Run the intake graph on one application.
 
         The ``work_id`` names the row of the work queue this run is the
-        attempt of, so the queue and the run evidence name each other.
+        attempt of, so the queue and the run evidence name each other.  The
+        automatic worker passes ``require_awake=False``: the processing
+        policy of the City is the authority of that run.
         """
-        self._control.require_awake(agent_models.AGENT_INTAKE)
+        if require_awake:
+            self._control.require_awake(agent_models.AGENT_INTAKE)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
         # An archived case is closed: no agent may reopen it.
