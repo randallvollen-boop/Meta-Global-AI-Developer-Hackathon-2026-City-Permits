@@ -71,6 +71,8 @@ def token(client: TestClient, path: str) -> str:
     """Return the CSRF token of the session, from a screen the persona may open."""
     for candidate in (
         path,
+        "/queue/intake",
+        "/permits/app_synth_001",
         "/agent/intake",
         "/agent/adjudication",
         "/admin?tab=reason-codes",

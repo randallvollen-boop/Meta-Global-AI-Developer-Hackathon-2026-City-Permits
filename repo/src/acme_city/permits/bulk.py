@@ -24,7 +24,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from acme_city.agents.control import AgentControlService
+from acme_city.agents.control import AgentControlService, authorize_processing
 from acme_city.agents.intake import IntakeAgent
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
@@ -131,6 +131,9 @@ def process_selected(
         PERMISSION_BULK,
         ResourceContext(domain_id=PERMIT_DOMAIN, record_ids=()),
     )
+    # The batch runs the intake agent, so the person who may run the agent is
+    # the person who may process the selection.
+    authorize_processing(session, actor)
     chosen = _normalize(selections)
 
     # The agent must be awake: a sleeping agent waits for its cases.

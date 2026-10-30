@@ -767,14 +767,16 @@ def test_a_change_case_and_a_parcel_link_open_as_focused_cases(client: TestClien
     simulated = client.post("/api/intake/simulate", json={"scenario": "address-typo"})
     assert simulated.status_code == 200, simulated.text
     application_id = simulated.json()["results"][0]["application_id"]
+    choose(client, "persona_agent_operator")
     token = csrf(client, "/agent/intake")
     for action, fields, nxt in (
         ("agent.toggle", {"agent_key": "intake", "mode": "awake"}, "/agent/intake"),
     ):
         assert client.post(f"/ui/actions/{action}", data={"csrf_token": token, "next": nxt, **fields}, headers={"Accept": "application/json"}).status_code == 200
-    choose(client, "persona_data_steward")
     token = csrf(client, "/agent/intake")
     assert client.post("/ui/actions/agent.run.intake", data={"csrf_token": token, "next": "/agent/intake"}, headers={"Accept": "application/json"}).status_code == 200
+    # The Agent Operator runs the agent; the parcel link is the steward's work.
+    choose(client, "persona_data_steward")
     queue = client.get("/steward").text
     assert 'data-testid="parcel-proposal"' in queue and "ACME-P-1004" in queue
     parcel = client.get(f"/steward/issues/parcel/{application_id}")
@@ -844,7 +846,7 @@ def test_remove_needs_the_version_csrf_and_the_grant(client: TestClient, environ
     )
     assert token_less.status_code in (400, 403)
     choose(client, "persona_permit_reviewer")
-    reviewer_token = csrf(client, "/agent/adjudication")
+    reviewer_token = csrf(client, "/permits/app_synth_001")
     denied = client.post(
         "/ui/actions/registry.decide",
         data={"csrf_token": reviewer_token, "next": "/steward", **fields, "expected_version": str(version)},

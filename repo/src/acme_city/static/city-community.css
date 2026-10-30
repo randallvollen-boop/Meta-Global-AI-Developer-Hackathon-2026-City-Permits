@@ -1,1 +1,69 @@
 /* City community pages. Every selector starts with .community-page or .community-record-page. */
+
+.community-page { --community-gap: 24px; }
+.community-page > * + * { margin-top: var(--community-gap); }
+.community-page h2 { margin-bottom: .6rem; }
+.community-page .city-lede { margin-top: 0; max-width: 46ch; }
+
+.community-page .community-search-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.community-page .community-search-form { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: flex-end; margin: 0; }
+.community-page .community-search-form label { display: flex; flex-direction: column; gap: .3rem; font-weight: 600; flex: 1 1 16rem; min-width: 0; }
+.community-page .community-search-form input[type="search"] { width: 100%; min-height: 44px; padding: .5rem .6rem; font-size: 1rem; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.community-page .community-search-form input[type="search"]:focus-visible { outline: 3px solid var(--city-navy); outline-offset: 2px; }
+.community-page .community-search-form button[type="submit"] { min-height: 44px; }
+.community-page .community-clear { display: inline-flex; align-items: center; min-height: 44px; }
+.community-page .community-clear:focus-visible { outline: 3px solid var(--city-navy); outline-offset: 2px; }
+.community-page .community-hint { flex: 1 0 100%; margin: 0; color: var(--fg-2); font-size: .9rem; }
+
+.community-page .community-results-count { margin: 0 0 .75rem; font-weight: 600; }
+.community-page .community-notice { margin: 0; color: var(--fg-2); }
+.community-page .community-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.community-page .community-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.community-page .community-card p { margin: 0 0 .4rem; overflow-wrap: anywhere; }
+.community-page .community-card-address { font-size: 1.1rem; font-weight: 700; color: var(--city-navy); }
+.community-page .community-card-type { font-weight: 600; }
+.community-page .community-card-meta { display: flex; flex-wrap: wrap; gap: .4rem .75rem; align-items: center; color: var(--fg-2); font-size: .9rem; }
+.community-page .community-card-reference { font-variant-numeric: tabular-nums; }
+.community-page .community-card-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.community-page .community-card-link:focus-visible { outline: 3px solid var(--city-navy); outline-offset: 2px; }
+
+.community-page .community-note { margin-bottom: 0; color: var(--fg-2); max-width: 62ch; }
+.community-page .community-overview-scope { margin-bottom: .75rem; color: var(--fg-2); max-width: 62ch; }
+.community-page .community-overview .insight-filters { margin: 0 0 .75rem; }
+.community-page .community-overview .insight-filters select { min-height: 44px; font-size: 1rem; }
+.community-page .community-overview .insight-filters button[type="submit"] { min-height: 44px; }
+.community-page .community-overview .map-wrap { margin: 0 0 .5rem; }
+.community-page .community-legend { margin: 0 0 .35rem; }
+.community-page .community-legend .key.hatch { background: repeating-linear-gradient(45deg, #f4f6f8 0 4px, #8a96a3 4px 6px); }
+
+.community-page .community-privacy { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.community-page .community-privacy summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.community-page .community-privacy p { margin: .6rem 0 0; max-width: 62ch; }
+
+@media (max-width: 640px) {
+  .community-page .community-search-form label { flex: 1 1 100%; }
+}
+
+.community-record-page { --community-gap: 24px; }
+.community-record-page > * + * { margin-top: var(--community-gap); }
+.community-record-page .community-back-link { margin: 0; }
+.community-record-page .community-record-address { font-size: 1.9rem; margin: 0; overflow-wrap: anywhere; }
+.community-record-page .community-record-type { margin: 0; font-weight: 600; }
+.community-record-page .community-record-reference { margin: .35rem 0 0; color: var(--fg-2); overflow-wrap: anywhere; }
+.community-record-page .community-record-status { margin: .75rem 0 0; }
+.community-record-page .community-record-explanation { margin: .35rem 0 0; max-width: 60ch; }
+.community-record-page .community-record-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.community-record-page .community-record-main h2,
+.community-record-page .community-record-side h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
+.community-record-page .community-record-work { margin: 0 0 1rem; max-width: 62ch; }
+.community-record-page .community-record-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 1rem; }
+.community-record-page .community-record-facts dt { font-weight: 600; }
+.community-record-page .community-record-facts dd { margin: 0; overflow-wrap: anywhere; }
+.community-record-page .community-record-facts ul { margin: 0; padding-left: 1.1rem; }
+.community-record-page .community-note { margin-bottom: 0; }
+
+@media (max-width: 900px) {
+  .community-record-page .community-record-columns { grid-template-columns: minmax(0, 1fr); }
+  .community-record-page .community-record-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .community-record-page .community-record-facts dd { margin-bottom: 10px; }
+}

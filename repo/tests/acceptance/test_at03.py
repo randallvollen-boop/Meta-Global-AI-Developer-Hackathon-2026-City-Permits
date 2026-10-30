@@ -134,7 +134,7 @@ def test_at03_a_clerk_may_not_approve_a_permit(
 ) -> None:
     client, settings = environment
     before = business_counts(settings)
-    sign_in(client, "persona_data_steward")
+    sign_in(client, "persona_agent_operator")
 
     refused = client.post(
         "/api/permits/applications/app_synth_001/decisions",

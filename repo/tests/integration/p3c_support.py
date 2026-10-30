@@ -20,6 +20,7 @@ ADMIN = "persona_city_administrator"
 APPLICANT = "persona_applicant"
 STEWARD = "persona_data_steward"
 REVIEWER = "persona_permit_reviewer"
+OPERATOR = "persona_agent_operator"
 
 
 def build_settings(directory: Path, name: str = "p3c.db") -> Settings:
@@ -64,7 +65,17 @@ def token(client: TestClient, path: str) -> str:
 
 def _any_token(client: TestClient, page: str) -> str:
     """Return the CSRF token from the first screen the persona may open."""
-    for candidate in (page, "/ops/checks", "/agent/intake", "/agent/adjudication", "/apply/deck_fence", "/apply"):
+    for candidate in (
+        page,
+        "/ops/checks",
+        "/queue/intake",
+        "/steward",
+        "/permits/app_synth_001",
+        "/agent/intake",
+        "/agent/adjudication",
+        "/apply/deck_fence",
+        "/apply",
+    ):
         match = re.search(r'name="csrf_token" value="([^"]+)"', client.get(candidate).text)
         if match:
             return match.group(1)

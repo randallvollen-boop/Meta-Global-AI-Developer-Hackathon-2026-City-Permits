@@ -39,9 +39,15 @@ def _load(name: str) -> ModuleType | None:
 
 
 def _place(group: tuple[str, ...], agent_keys: tuple[str, ...]) -> list[str]:
-    """Insert each agent screen before the first entry that follows it in ``SCREENS``."""
+    """Insert each agent screen before the first entry that follows it in ``SCREENS``.
+
+    A persona module that lists no screen of its own takes the order of its
+    agent screens as given: the Agent Operator's home comes first.
+    """
     order = {screen["key"]: index for index, screen in enumerate(view_models.SCREENS)}
     placed = list(group)
+    if not placed:
+        return list(agent_keys)
     for key in agent_keys:
         rank = order[key]
         position = next(
@@ -83,4 +89,11 @@ EXPECTED_SCREENS: dict[str, frozenset[str]] = {
     actor_id: frozenset(keys) for actor_id, keys in EXPECTED_NAVIGATION.items()
 }
 
-__all__ = ["EXPECTED_NAVIGATION", "EXPECTED_SCREENS", "GROUPING", "PERSONA_MODULES"]
+UNLISTED_OPEN_SCREENS: dict[str, frozenset[str]] = {
+    actor_id: agent_grants.UNLISTED_OPEN_SCREENS.get(actor_id, frozenset())
+    for actor_id in GROUPING
+}
+
+__all__ = [
+    "EXPECTED_NAVIGATION", "EXPECTED_SCREENS", "GROUPING", "PERSONA_MODULES", "UNLISTED_OPEN_SCREENS",
+]

@@ -97,7 +97,7 @@ def act(client: TestClient, action_id: str, fields: dict, next_path: str) -> dic
 
 
 def wake(client: TestClient, agent_key: str) -> None:
-    choose(client, "persona_city_administrator")
+    choose(client, "persona_agent_operator")
     result = act(
         client,
         "agent.toggle",
@@ -141,7 +141,7 @@ def test_the_classifier_records_a_wrong_type_finding(
     finally:
         factory.dispose()
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.intake",
@@ -173,7 +173,7 @@ def test_the_classifier_records_a_fee_finding_when_the_case_cannot_be_priced(
     finally:
         factory.dispose()
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.intake",
@@ -194,7 +194,7 @@ def test_a_rerun_supersedes_the_findings_of_the_first_run(
     (result,) = simulate(client, "fence-missing-site-plan")
     application_id = result["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.intake",
@@ -236,7 +236,7 @@ def test_the_intake_agent_records_the_priority_of_the_record(
     finally:
         factory.dispose()
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.intake",

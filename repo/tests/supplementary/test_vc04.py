@@ -33,7 +33,7 @@ from acme_city.ui.router import router as ui_router
 # The screens each persona may open (same table as the view-model tests),
 # aggregated in tests/support/nav_expectations, one module per persona.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
+from support.nav_expectations import EXPECTED_NAVIGATION, UNLISTED_OPEN_SCREENS  # noqa: E402
 
 #: The screens that have to use the same controls, swept as the City
 #: Administrator.
@@ -50,8 +50,9 @@ CONTROL_SCREENS = (
     "/rules",
     "/reconciliation",
     "/governance",
-    "/agent/intake",
-    "/agent/adjudication",
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the run grants, which the City Administrator no longer holds.
+    # They are swept with their own persona below.
     "/admin",
     # P3insight: the City view, behind its own grant of the City Administrator.
     "/insight/city",
@@ -70,6 +71,10 @@ PERSONA_CONTROL_SCREENS = (
     ("persona_data_steward", "/queue/intake"),
     ("persona_data_steward", "/queue/early-resolution"),
     ("persona_permit_reviewer", "/queue/review"),
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the Agent Operator holds.
+    ("persona_agent_operator", "/agent/intake"),
+    ("persona_agent_operator", "/agent/adjudication"),
 )
 
 
@@ -166,12 +171,16 @@ def test_the_navigation_is_the_same_on_every_screen(client: TestClient) -> None:
     # home gains one entry),
     # so for that persona the navigation is the full canonical list on every
     # screen.  Persona-scoped filtering is covered per persona below.
+    # Changed deliberately (the Agent Operator): the two agent screens are
+    # opened by the wake and run grants, which the City Administrator no longer
+    # holds, so the navigation loses those two entries (seventeen).  OPR-3 then
+    # gives the City Administrator read access to the intake queue (eighteen).
     select_persona(client, "persona_city_administrator")
     reference = None
     for path in CONTROL_SCREENS:
         body = client.get(path).text
         items = re.findall(r'data-screen-key="([^"]+)"', body)
-        assert len(items) == 19, path
+        assert len(items) == 18, path
         if reference is None:
             reference = items
         assert items == reference
@@ -253,7 +262,14 @@ def test_listed_screens_open_and_hidden_screens_refuse(
         # Master records.  Its address still opens (it renders that tab), so it is
         # open for a persona whose navigation lists the parent screen, though it
         # is not listed a second time.
-        if key in listed or (key == "applicants" and "masters" in listed):
+        # The Agent Operator holds the execution grant for the selected cases and
+        # opens the intake queue from the "Process selected cases" link on the
+        # Agents home, so the queue is open without being a menu entry.
+        if (
+            key in listed
+            or key in UNLISTED_OPEN_SCREENS[actor_id]
+            or (key == "applicants" and "masters" in listed)
+        ):
             assert response.status_code == 200, (actor_id, key, path)
         else:
             assert response.status_code == 403, (actor_id, key, path)

@@ -23,8 +23,7 @@ HOMES = (
     ("persona_data_steward", "/queue", "Work queue"),
     ("persona_permit_reviewer", "/queue", "Work queue"),
     ("persona_city_administrator", "/overview", "Planning overview"),
-    # Temporary home until OPR-16 (the plan calls it "Agent intake"; the real H1 is "Intake agent").
-    ("persona_agent_operator", "/agent/intake", "Intake agent"),
+    ("persona_agent_operator", "/agents", "Agents"),
 )
 
 

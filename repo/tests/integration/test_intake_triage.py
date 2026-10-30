@@ -100,8 +100,8 @@ def act(client: TestClient, action_id: str, fields: dict, next_path: str) -> dic
 
 
 def wake(client: TestClient, agent_key: str) -> None:
-    """Wake one agent as the City Administrator."""
-    choose(client, "persona_city_administrator")
+    """Wake one agent as the Agent Operator, the persona that may run it."""
+    choose(client, "persona_agent_operator")
     result = act(
         client,
         "agent.toggle",
@@ -148,10 +148,10 @@ def test_a_new_record_waits_for_the_intake_agent(client: TestClient, environment
     assert "Awaiting intake agent" in queue
 
 
-def test_the_intake_agent_sleeps_until_an_administrator_wakes_it(
+def test_the_intake_agent_sleeps_until_the_operator_wakes_it(
     client: TestClient, environment
 ) -> None:
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     (result,) = simulate(client, "fence-conforming-rear")
     application_id = result["application_id"]
     # The agent sleeps, so a run is refused.
@@ -170,7 +170,7 @@ def test_the_intake_agent_sleeps_until_an_administrator_wakes_it(
     assert application_row(environment, application_id)["status"] == "submitted"
 
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     accepted = act(
         client,
         "agent.run.intake",
@@ -183,10 +183,10 @@ def test_the_intake_agent_sleeps_until_an_administrator_wakes_it(
     assert state["review_area"] == "Building"
 
 
-def test_the_administrator_may_not_decide_but_may_run_the_agents(
+def test_the_operator_may_run_the_agents_but_may_not_decide(
     client: TestClient, environment
 ) -> None:
-    choose(client, "persona_city_administrator")
+    choose(client, "persona_agent_operator")
     wake(client, "intake")
     (result,) = simulate(client, "fence-conforming-rear")
     application_id = result["application_id"]
@@ -197,7 +197,9 @@ def test_the_administrator_may_not_decide_but_may_run_the_agents(
         "/agent/intake",
     )
     assert accepted["status"] == "accepted", accepted
-    # The City Administrator holds no business approval authority.
+    # Neither the Agent Operator nor the City Administrator holds business
+    # approval authority.
+    choose(client, "persona_city_administrator")
     refused = client.post(
         "/ui/actions/recommendation.confirm",
         data={
@@ -220,7 +222,7 @@ def test_the_rear_fence_is_routed_to_the_building_review_area(
     (result,) = simulate(client, "fence-conforming-rear")
     application_id = result["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": application_id}, "/agent/intake")
     state = application_row(environment, application_id)
     assert state["status"] == "ready_for_review"
@@ -266,7 +268,7 @@ def test_a_missing_site_plan_is_routed_to_early_resolution(
     (result,) = simulate(client, "fence-missing-site-plan")
     application_id = result["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": application_id}, "/agent/intake")
     assert application_row(environment, application_id)["status"] == "needs_information"
     factory = SessionFactory(environment.database_url)
@@ -293,7 +295,7 @@ def test_the_duplicate_finder_links_the_resubmission_to_the_original(
     assert len(results) == 2
     original_id, repeat_id = results[0]["application_id"], results[1]["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": original_id}, "/agent/intake")
     act(client, "agent.run.intake", {"application_id": repeat_id}, "/agent/intake")
     assert application_row(environment, repeat_id)["status"] == "needs_information"
@@ -317,7 +319,7 @@ def test_an_unreadable_fax_page_blocks_the_case(client: TestClient, environment)
     (result,) = simulate(client, "fax-unreadable")
     application_id = result["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": application_id}, "/agent/intake")
     assert application_row(environment, application_id)["status"] == "needs_information"
     factory = SessionFactory(environment.database_url)
@@ -342,12 +344,12 @@ def test_the_adjudication_agent_recommends_deny_and_approve(
     (front,) = simulate(client, "fence-front-too-tall")
     (rear,) = simulate(client, "fence-conforming-rear")
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": front["application_id"]}, "/agent/intake")
     act(client, "agent.run.intake", {"application_id": rear["application_id"]}, "/agent/intake")
 
     wake(client, "adjudication")
-    choose(client, "persona_permit_reviewer")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.adjudication",
@@ -395,10 +397,10 @@ def test_a_discretionary_type_is_held_for_a_person(
     (result,) = simulate(client, "variance-request")
     application_id = result["application_id"]
     wake(client, "intake")
-    choose(client, "persona_data_steward")
+    choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": application_id}, "/agent/intake")
     wake(client, "adjudication")
-    choose(client, "persona_permit_reviewer")
+    choose(client, "persona_agent_operator")
     act(
         client,
         "agent.run.adjudication",

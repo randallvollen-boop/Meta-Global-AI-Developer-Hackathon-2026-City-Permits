@@ -6,6 +6,11 @@
   "demo_timezone": "America/New_York",
   "assignment_epoch": "2026-01-01T00:00:00Z",
   "policy_epoch": "2026-01-01T00:00:00Z",
+  "agent_processing": {
+    "mode": "manual",
+    "runs_per_hour": 60,
+    "max_batch_size": 20
+  },
   "calendar_basis": "configured_demo_calendar",
   "business_day_definition": "Monday to Friday excluding no holidays in the demonstration calendar",
   "session": {

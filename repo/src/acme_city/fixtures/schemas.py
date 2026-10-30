@@ -302,6 +302,7 @@ class DemoConfig(CatalogModel):
     reset: dict[str, Any] = Field(default_factory=dict)
     scenarios: list[ScenarioFixture] = Field(default_factory=list)
     reason_codes: list[ReasonCodeFixture] = Field(default_factory=list)
+    agent_processing: dict[str, Any] = Field(default_factory=dict)
 
 
 class PartyFixture(StrictModel):
