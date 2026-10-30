@@ -168,7 +168,7 @@
         <td class="mono">{{ link.record_id }}</td>
         <td class="nowrap"><span class="badge badge-{{ link.status_key }}">{{ link.status }}</span></td>
         <td>{{ link.decided_by if link.status_key != 'proposed' else 'Waiting for a decision' }}{% if link.decided_at %}, {{ ui_time(link.decided_at) }}{% endif %}</td>
-        <td>{% if may_read_source %}{{ ui.detail_link('source', link.detail_id, 'Source details') }}{% endif %}</td>
+        <td>{% if may_read_source %}{{ ui.detail_link('source-record', link.detail_id, 'Source details') }}{% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="5" class="muted">No source record is linked to this record yet.</td></tr>

@@ -743,7 +743,7 @@ def _resolve_record(ctx: DetailContext, party_id: str) -> DetailView | None:
     )
     links = [("Open the full profile page", f"/masters/{party_id}" if _can_open_master(ctx.session, ctx.actor) else f"/applicants/{party_id}")]
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=profile["name"],
         subtitle=f"{profile['type']} · Overview",
@@ -794,7 +794,7 @@ def _resolve_record_sources(ctx: DetailContext, party_id: str) -> DetailView | N
     summary = profile["source_summary"]
     links = []
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=profile["name"],
         subtitle=f"{profile['type']} · Sources",
@@ -1054,7 +1054,7 @@ def _resolve_credential(ctx: DetailContext, credential_id: str) -> DetailView | 
     ]
     links = [("Open the organization profile", f"?detail=record:{holder.id}")]
     if summary["detail_id"]:
-        links.append(("View source details", f"?detail=source:{summary['detail_id']}"))
+        links.append(("View source details", f"?detail=source-record:{summary['detail_id']}"))
     return DetailView(
         title=f"{display.pretty(credential.credential_type)} {credential.number}",
         subtitle=holder.display_name,
@@ -2904,7 +2904,7 @@ def _resolve_evidence(ctx: DetailContext, proposal_id: str) -> DetailView | None
         links.append(
             (
                 "View source details",
-                f"?detail=source:{snap.source_system_id}:{snap.source_dataset_id}:{snap.source_record_id}",
+                f"?detail=source-record:{snap.source_system_id}:{snap.source_dataset_id}:{snap.source_record_id}",
             )
         )
     return DetailView(title="Evidence for this match", sections=tuple(sections), links=tuple(links))
@@ -3193,7 +3193,10 @@ def register() -> None:
     patterns.register_detail("record-sources", _resolve_record_sources, label="Record sources", any_grant=RECORD_GRANTS)
     patterns.register_detail("record-history", _resolve_record_history, label="Record history", any_grant=RECORD_GRANTS)
     patterns.register_detail("applications", _resolve_applications, label="Applications", any_grant=RECORD_GRANTS)
-    patterns.register_detail("source", _resolve_source, label="Source details", any_grant=SOURCE_GRANTS)
+    # The kind is "source-record" and not "source": the governance screen
+    # registers "source" for the source system itself, and one kind may only
+    # have one resolver.
+    patterns.register_detail("source-record", _resolve_source, label="Source details", any_grant=SOURCE_GRANTS)
     patterns.register_detail("credential", _resolve_credential, label="License or registration", any_grant=MASTER_GRANTS)
     patterns.register_detail("parcel", _resolve_parcel, label="Property", any_grant=MASTER_GRANTS)
     patterns.register_detail("evidence", _resolve_evidence, label="Match evidence", any_grant=STEWARD_GRANTS)

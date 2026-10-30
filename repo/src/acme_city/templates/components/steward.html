@@ -25,7 +25,7 @@
   <span><b>Source</b> {{ summary.name }}</span>
   <span><b>Source last changed</b> {{ ui.info('source_last_changed') }} {{ ui_time(summary.changed) }}</span>
   <span><b>Last received or checked</b> {{ ui_time(summary.received) }}</span>
-  {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source', summary.detail_id, 'View source details') }}</span>{% endif %}
+  {% if summary.may_open and summary.detail_id %}<span>{{ ui.detail_link('source-record', summary.detail_id, 'View source details') }}</span>{% endif %}
 </p>
 {% if summary.warning %}<p class="notice" role="status" data-testid="freshness-warning">{{ summary.warning }}</p>{% endif %}
 {%- endmacro %}

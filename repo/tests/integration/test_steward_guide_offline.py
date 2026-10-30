@@ -5,11 +5,10 @@ Fictional ACME City data only.
 
 from __future__ import annotations
 
-import sys
-import types
 import re
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -18,23 +17,56 @@ from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
+from acme_city.muse.client import MuseClient
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
 
+#: A credential that is not a credential.  The guide has one available and
+#: must never use it.
+FAKE_KEY = "guide-offline-fake-key-not-a-real-credential"
+
+
+class TripwireTransport(httpx.BaseTransport):
+    """A transport stub that records a call and fails the test."""
+
+    def __init__(self) -> None:
+        self.calls: list[httpx.Request] = []
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        self.calls.append(request)
+        raise AssertionError("the rendered guide must never reach a model")
+
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    """Return a hosted-mode client whose Muse imports fail if reached."""
-    class RaisingMuse(types.ModuleType):
-        def __getattr__(self, name: str):
-            raise AssertionError(f"rendered guide reached Muse: {name}")
+def tripwire(monkeypatch: pytest.MonkeyPatch) -> TripwireTransport:
+    """Make every path to the model fail the test.
 
-    monkeypatch.setitem(sys.modules, "acme_city.muse.client", RaisingMuse("acme_city.muse.client"))
+    The transport catches a dispatch that goes straight to the network.  The
+    client is caught too, because the hosted lock refuses a live call before
+    the transport is reached, and a refused call would otherwise be swallowed
+    by the caller and read as a normal answer.
+    """
+    stub = TripwireTransport()
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", stub.handle_request)
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the rendered guide must never reach a model")
+
+    monkeypatch.setattr(MuseClient, "create_response", refuse)
+    return stub
+
+
+@pytest.fixture()
+def client(tmp_path: Path, tripwire: TripwireTransport) -> TestClient:
+    """Return a hosted-mode client whose Muse calls fail the test."""
     settings = Settings.load(
         environ={
             "ACME_DATABASE_URL": f"sqlite:///{tmp_path / 'guide.db'}",
             "ACME_SECRET_KEY": "guide-offline-secret-value",
+            # A fake credential is set: the guide must not need one, and a
+            # missing credential would let a Muse path fall back on its own.
+            "META_API_KEY": FAKE_KEY,
             # The hosted demonstration: the demo deployment with the public
             # demonstration on.  Never the production mode.
             "ACME_DEPLOYMENT_MODE": "demo",
@@ -42,8 +74,8 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
         },
         key_file=tmp_path / "missing.env",
     )
-    # No provider key: the guide must answer without one.
-    assert settings.meta_api_key is None
+    assert settings.meta_api_key is not None
+    assert settings.public_demo
     initialize_database(settings)
     factory = SessionFactory(settings.database_url)
     try:
@@ -65,7 +97,9 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 
 @pytest.mark.parametrize("screen", ("queue", "case", "profile"))
-def test_guide_is_saved_and_repeatable_without_muse(client: TestClient, screen: str) -> None:
+def test_guide_is_saved_and_repeatable_without_muse(
+    client: TestClient, tripwire: TripwireTransport, screen: str
+) -> None:
     """Queue, case, and profile render the same saved guide twice in hosted mode."""
     path = "/steward" if screen == "queue" else "/masters/party_cedarline"
     if screen == "case":
@@ -81,3 +115,5 @@ def test_guide_is_saved_and_repeatable_without_muse(client: TestClient, screen: 
     second_answer = second.text.split(marker, 1)[1].split("</p>", 1)[0]
     assert first_answer == second_answer
     assert "Saved guidance. Live Muse is off." in first.text
+    # No call to the model was made on the way to the saved answer.
+    assert tripwire.calls == []

@@ -49,7 +49,7 @@
         <td class="stw-cell" data-label="Link state">{{ st.source_state(row) }}</td>
         <td class="stw-cell nowrap" data-label="Source last changed">{{ ui_time(row.changed) }}</td>
         <td class="stw-cell nowrap" data-label="Last received">{{ ui_time(row.received) }}</td>
-        <td class="stw-cell stw-cell-action" data-label="Next action">{{ st.source_action(row, csrf_token) }} {{ ui.detail_link('source', row.detail_id, 'Source values') }}</td>
+        <td class="stw-cell stw-cell-action" data-label="Next action">{{ st.source_action(row, csrf_token) }} {{ ui.detail_link('source-record', row.detail_id, 'Source values') }}</td>
       </tr>
       {% else %}
       <tr><td colspan="6" class="muted" data-testid="source-empty">No source record matches.</td></tr>

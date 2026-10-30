@@ -25,8 +25,9 @@ from acme_city.persistence.models import audit, change, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 # The router is imported before the view models on purpose: the detail kinds
-# are registered in import order, and the shared router registers its kinds
-# first, exactly as the application does.
+# are registered when their module is imported, and the shared router imports
+# its kinds first, exactly as the application does.  Every kind has one name,
+# so the order no longer decides which resolver answers.
 from acme_city.ui.router import router as ui_router
 from acme_city.ui import display, steward_views
 
@@ -255,7 +256,7 @@ def test_record_profile_drawer_has_overview_sources_and_history(
 def test_other_drawer_kinds_resolve(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     proposals = seed(environment)
-    source = client.get("/detail/source/erp_finance:business_licensing_register:ERP-BL-00413")
+    source = client.get("/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413")
     assert source.status_code == 200
     for needle in ("Change this in", "Owner", "Steward", "Open recorded issues", "Last source update", "Last received", "Version"):
         assert needle in source.text, needle
@@ -270,19 +271,40 @@ def test_other_drawer_kinds_resolve(client: TestClient, environment: Settings) -
     assert evidence.status_code == 200 and "Agreements" in evidence.text
     assert client.get("/detail/applications/party_cedarline").status_code == 200
     assert client.get("/detail/record/party_nobody").status_code == 404
-    assert client.get("/detail/source/nowhere:nothing").status_code == 404
+    assert client.get("/detail/source-record/nowhere:nothing").status_code == 404
+
+
+def test_the_source_detail_kinds_keep_their_own_resolver(
+    client: TestClient, environment: Settings
+) -> None:
+    """The steward record detail and the governance source detail are separate kinds.
+
+    The two kinds are registered in two modules, so the order the modules are
+    imported in must not decide which resolver answers.
+    """
+    seed(environment)
+    choose(client, "persona_data_steward")
+    record = client.get(
+        "/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413"
+    )
+    assert record.status_code == 200
+    assert "Accepted values" in record.text
+    choose(client, "persona_city_administrator")
+    system = client.get("/detail/source/erp_finance")
+    assert system.status_code == 200
+    assert "Stored records" in system.text
 
 
 def test_drawer_refusals_carry_no_data(client: TestClient, environment: Settings) -> None:
     seed(environment)
     # No persona: 401.  The Applicant and the Permit Reviewer hold no source or master grant: 403.
-    assert client.get("/detail/source/permitting:applicant_profiles:PER-AP-0003").status_code == 401
+    assert client.get("/detail/source-record/permitting:applicant_profiles:PER-AP-0003").status_code == 401
     for actor, path in (
-        ("persona_applicant", "/detail/source/permitting:applicant_profiles:PER-AP-0003"),
+        ("persona_applicant", "/detail/source-record/permitting:applicant_profiles:PER-AP-0003"),
         ("persona_applicant", "/detail/credential/cred_license_cedarline"),
         ("persona_applicant", "/detail/parcel/parcel_1001"),
         ("persona_permit_reviewer", "/detail/credential/cred_license_cedarline"),
-        ("persona_permit_reviewer", "/detail/source/erp_finance:business_licensing_register:ERP-BL-00413"),
+        ("persona_permit_reviewer", "/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00413"),
     ):
         choose(client, actor)
         response = client.get(path)
@@ -347,7 +369,7 @@ def test_stored_keys_read_as_words_and_timestamps_as_dates(client: TestClient) -
     assert "erp_finance:business_licensing_register" not in text_of(licenses)
     assert "ERP/Finance: Business licences" in licenses
     # The full identifiers stay in the details.
-    detail = client.get("/detail/source/erp_finance:business_licensing_register:ERP-BL-00412").text
+    detail = client.get("/detail/source-record/erp_finance:business_licensing_register:ERP-BL-00412").text
     assert "erp_finance" in detail and "business_licensing_register" in detail and "2026-09-02 08:30:00 UTC" in detail
 
 
@@ -517,7 +539,7 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert 'data-result="agrees"' in works
     # The similarly named organization stays visible as its own record, with a link to its source.
     assert 'data-testid="similar-note"' in q4 and "Cedarline Coffee Roasters LLC" in q4
-    assert 'data-detail-kind="source"' in q4
+    assert 'data-detail-kind="source-record"' in q4
     # Evidence comes before the score, the score is explained, and no percentage is invented.
     assert q4.index("Agreements") < q4.index('data-testid="score-line"')
     assert "It adds up from" in q4 and "does not state the probability" in q4
@@ -842,7 +864,7 @@ def test_the_source_details_show_the_accepted_values(
     choose(client, "persona_data_steward")
     seed(environment)
     html = client.get(
-        "/source-records?detail=source:erp_finance:business_licensing_register:ERP-BL-00413"
+        "/source-records?detail=source-record:erp_finance:business_licensing_register:ERP-BL-00413"
     ).text
     assert "Accepted values" in html
     assert "License number" in html
