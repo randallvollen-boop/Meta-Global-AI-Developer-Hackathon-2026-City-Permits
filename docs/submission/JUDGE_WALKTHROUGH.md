@@ -31,7 +31,7 @@ As **Applicant**, open `/apply`.
 
 As **Agent Operator**, open `/agent/intake`.
 
-- Do: Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case. Then open Steward assistant (/agent/steward_assist) and press Wake agent there too, so the Data Steward can ask it for recommendations.
+- Do: Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case. Then go back to Agents, click Steward assistant under Agent status, and press Wake agent there too, so the Data Steward can ask it for recommendations.
 - Look for: The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.
 
 ## 5. Clear a case for review
