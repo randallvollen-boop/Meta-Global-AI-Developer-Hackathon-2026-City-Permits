@@ -97,7 +97,7 @@ My permits, Start an application, Help and Home.
     next 20** and **Process one** are disabled while it sleeps ("The agent is
     asleep, so the run buttons are off. Use Wake agent above to turn them on.");
     the seven-step run is recorded and **All runs**, then **View run**, shows
-    each step. The page does not refresh itself, so I reload it after an action.
+    each step. The page updates in place after each action.
 - As an Agent Operator, I want to run the adjudication agent on the cases in
   review, so that each has a deterministic recommendation before a reviewer
   looks at it.

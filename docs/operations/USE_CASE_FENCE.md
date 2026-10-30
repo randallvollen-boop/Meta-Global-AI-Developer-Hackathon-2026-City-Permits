@@ -13,9 +13,9 @@ between runs.
 
 Two behaviors of the screens matter while you follow along. Most action
 buttons sit under a **Start** control: press **Start**, fill the form, then
-press the button inside it. And a page does not refresh itself after an
-action, so reload it after each action to see the new state (the agent screens
-have a **Refresh** link for the same purpose).
+press the button inside it. And after an accepted action the page updates in
+place and keeps the open tab, panels and typed values, so there is no need to
+reload (the agent screens also have a **Refresh** link).
 
 ## 1. Reset and start the app
 
@@ -59,7 +59,7 @@ Both cases now wait. Nothing has been triaged.
 2. Click **Intake agent**. The state reads **asleep**, **Process next 20** is
    disabled, and the page says "The agent is asleep, so the run buttons are
    off. Use Wake agent above to turn them on."
-3. Press **Wake agent** and reload the page. The state reads **awake**, the
+3. Press **Wake agent**. The state reads **awake**, the
    button becomes **Put agent to sleep**, and "At a glance" shows **Waiting 2**,
    **Processed 0**, **Needs human 0**, **Errors 0**. Under "Cases waiting for
    the agent" the table lists `SYN-APP-014` and `SYN-APP-015`, each with a
@@ -74,7 +74,7 @@ Both cases now wait. Nothing has been triaged.
 
 ## 4. As Agent Operator, run the intake agent
 
-1. Press **Process next 20** (or **Process one** beside each case) and reload.
+1. Press **Process next 20** (or **Process one** beside each case).
    "At a glance" now shows **Waiting 0**, **Processed 2**, **Needs human 0**,
    **Errors 0**, and "Recent results" lists one run for each case with the
    result **Completed** and "7 step(s)".
@@ -113,7 +113,7 @@ Both cases now wait. Nothing has been triaged.
 ## 6. As Agent Operator, wake the adjudication agent
 
 1. Switch to **Agent Operator** and open **Adjudication agent**.
-2. Press **Wake agent** and reload. The state reads **awake**. "At a glance"
+2. Press **Wake agent**. The state reads **awake**. "At a glance"
    shows **In review 2**, **Recommended 0**, **Awaiting confirmation 0**,
    **Held for a person 0**.
 3. Press **Show the processing steps**. The diagram shows the five steps: Rule
@@ -121,7 +121,7 @@ Both cases now wait. Nothing has been triaged.
 
 ## 7. As Agent Operator, run the adjudication agent
 
-1. Press **Process next 20** and reload. "At a glance" shows **In review 2**,
+1. Press **Process next 20**. "At a glance" shows **In review 2**,
    **Recommended 2**, **Awaiting confirmation 2**, **Held for a person 0**.
    "Waiting for a person" lists `SYN-APP-015` with **approve** and
    `SYN-APP-014` with **deny**.
@@ -156,7 +156,8 @@ Both cases now wait. Nothing has been triaged.
 
 1. Still as **Permit Reviewer**, open the rear-fence case. On the **People &
    property** tab, press **Start** under **Confirm parcel** and submit it. The
-   approval is blocked until the reviewer confirms the parcel. Reload the case.
+   approval is blocked until the reviewer confirms the parcel. The page updates
+   in place.
 2. Press **Start** under **Write a comment (applicant-visible or internal)**,
    write "The rear fence complies with DF-2. The gate must open inward." and
    leave **Who may read it** on *Visible to the applicant*. Press **Write the

@@ -68,7 +68,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Let the agent route the work",
         "Agent Operator",
         "/agent/intake",
-        "Press Wake agent. If the page still reads asleep, reload it. Then press Process next 20, or Process one beside your case. Reload, open All runs, and press View run on the row for your case.",
+        "Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case.",
         "The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.",
     ),
     Step(
@@ -82,7 +82,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Decide a case",
         "Permit Reviewer",
         "/queue/review",
-        "Open the case from step 3. On the People & property tab, press Start under Confirm parcel and submit it. Reload the case page: it does not refresh itself after an action. On the Review tab, press Start under Run application checks and submit it, then reload again. Press Start under Record review decision, choose Approve, write a rationale and submit it. Then try Issue permit.",
+        "Open the case from step 3. On the People & property tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write a rationale and submit it. Then try Issue permit.",
         "Deciding and issuing are separate. After the approval, Issue permit is refused (the permit may not be issued yet) until the fee is assessed, paid and reconciled on the Reconciliation screen, so a refusal is expected.",
     ),
     Step(
