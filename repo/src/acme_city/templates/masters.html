@@ -17,13 +17,13 @@
   {% endfor %}
 </nav>
 
-{% if tab == 'properties' or (tab == 'people' and tabs|length > 1) %}{% set query = collection.query if tab == 'properties' else '' %}{% include "components/property_search.html" %}{% endif %}
+{% if tab == 'people' and tabs|length > 1 %}{% set query = '' %}{% include "components/property_search.html" %}{% endif %}
 
 {{ st.source_summary(summary) }}
 
 {% if tab == 'people' %}
 <section class="panel" aria-labelledby="people-heading">
-  <h2 id="people-heading">People and organizations</h2>
+  <h2 id="people-heading"{% if tabs|length == 1 %} class="visually-hidden"{% endif %}>People and organizations</h2>
   <p class="muted">These are canonical identities. Open one to inspect its selected values, sources, and open questions.</p>
   <form class="filters toolbar" method="get" action="{{ collection_path }}" data-testid="applicant-search">
     {% if collection.kind != 'all' %}<input type="hidden" name="kind" value="{{ collection.kind }}">{% endif %}

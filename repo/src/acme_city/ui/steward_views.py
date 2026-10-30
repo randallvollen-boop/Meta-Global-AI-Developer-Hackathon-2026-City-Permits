@@ -502,21 +502,34 @@ def credentials_collection(
 
 
 def open_issue_lines(session: Session, party_id: str) -> list[dict[str, str]]:
-    """Return the open data issues of one record in plain words, with a link."""
+    """Return the open data issues of one record in plain words, with a link.
+
+    Each line names its kind: an ``identity`` line questions the identity of
+    the record, a ``correction`` line asks a source to change a value, and an
+    ``issue`` line is a recorded issue routed to its owner.
+    """
     lines: list[dict[str, str]] = []
     for row in session.execute(
         select(change.GovernanceIssue).where(
             change.GovernanceIssue.subject_id == party_id, change.GovernanceIssue.status == "open"
         )
     ).scalars():
-        lines.append({"text": row.description, "href": f"/steward/issues/issue/{row.id}"})
+        lines.append(
+            {"text": row.description, "href": f"/steward/issues/issue/{row.id}", "kind": "issue"}
+        )
     for row in session.execute(
         select(change.ChangeCase).where(
             change.ChangeCase.target_id == party_id,
             change.ChangeCase.status.notin_(("closed", "rejected", "published")),
         )
     ).scalars():
-        lines.append({"text": row.title, "href": f"/steward/issues/case/{row.id}"})
+        lines.append(
+            {
+                "text": row.title,
+                "href": f"/steward/issues/case/{row.id}",
+                "kind": "identity" if row.change_kind == "identity" else "correction",
+            }
+        )
     snapshots = {
         row.source_snapshot_id: row
         for row in session.execute(select(source.SourceSnapshot)).scalars()
@@ -531,6 +544,7 @@ def open_issue_lines(session: Session, party_id: str) -> list[dict[str, str]]:
             {
                 "text": f"Source record {snap.source_record_id} may match this record",
                 "href": f"/steward/issues/link/{proposal.id}",
+                "kind": "identity",
             }
         )
     return lines
@@ -653,7 +667,11 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
         "applications": applications,
         "issues": issues,
         "trusted_values": trusted_values,
-        "identity_status": "Open data issue" if issues else "No open identity issue",
+        "identity_status": (
+            "Authority needs review"
+            if any(line["kind"] == "identity" for line in issues)
+            else "Identity linked"
+        ),
         "credential_status": ", ".join(credential_states) or "No credential recorded",
         "sources": sources,
         "source_summary": summary,

@@ -268,14 +268,19 @@ def test_the_profile_puts_selected_values_before_statuses_on_a_phone(
     login(persona)
     page.goto(f"{server.base_url}{path}", wait_until="load")
     selected = page.locator('[data-testid="trusted-values-overview"]')
-    statuses = page.locator('[data-testid="profile-status-overview"]')
     identity = page.locator('[data-testid="profile-overview"]')
-    assert selected.count() == statuses.count() == identity.count() == 1
+    assert selected.count() == identity.count() == 1
     body = page.content()
     assert body.index('data-testid="trusted-values-overview"') < body.index(
-        'data-testid="profile-status-overview"'
-    ) < body.index('data-testid="profile-overview"')
-    assert page.locator('[data-testid="identity-status"]').inner_text().strip()
+        'data-testid="profile-overview"'
+    )
+    # The status section that repeated the header is gone.  The identity list
+    # holds the identity and the credentials as two separate rows.
+    assert page.locator('[data-testid="profile-status-overview"]').count() == 0
+    assert page.locator('[data-testid="identity-status"]').inner_text().strip() in (
+        "Identity linked",
+        "Authority needs review",
+    )
     assert page.locator('[data-testid="credential-status-summary"]').inner_text().strip()
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, selected)
@@ -314,4 +319,70 @@ def test_the_saved_guide_opens_without_overflow_on_a_phone(
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, guide)
     assert_not_covered(page, page.locator("main h1").first)
+    assert page.recorded_errors == []
+
+
+def test_the_queue_guide_holds_no_link_back_to_the_queue(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The guide of the queue holds no link back to the queue."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    assert guide.locator("a").count() == 0
+    assert page.recorded_errors == []
+
+
+def test_the_case_guide_link_opens_the_section_it_names(
+    viewport_390, server: BrowserServer, login, cedarline
+) -> None:
+    """A link of the case guide lands on the question it names."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="load")
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="steward-guide"]')
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    link = guide.locator("a", has_text="See the comparison")
+    assert link.count() == 1
+    assert link.get_attribute("href") == "#q3"
+    link.click()
+    assert page.url.endswith("#q3")
+    assert page.locator("#q3").is_visible()
+    assert page.recorded_errors == []
+
+
+def test_the_profile_guide_link_opens_the_section_it_names(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """A link of the profile guide lands on the section it names."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/masters/party_cedarline", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    link = guide.locator("a", has_text="See the identity")
+    assert link.count() == 1
+    assert link.get_attribute("href") == "#identity-heading"
+    link.click()
+    assert page.url.endswith("#identity-heading")
+    assert page.locator("#identity-heading").is_visible()
+    assert page.recorded_errors == []
+
+
+def test_the_profile_guide_off_the_overview_links_nowhere(
+    viewport_390, server: BrowserServer, login
+) -> None:
+    """The profile guide holds no link to a section the other views do not have."""
+    page = viewport_390
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/masters/party_cedarline?view=sources", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    assert guide.locator("a").count() == 0
     assert page.recorded_errors == []

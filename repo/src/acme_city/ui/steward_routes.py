@@ -24,6 +24,7 @@ navigation uses.  ``HANDLERS`` holds the lane's interface actions, which
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -73,10 +74,20 @@ def _may_read_source(session: Session, actor: ActorContext) -> bool:
     )
 
 
-def _guide(screen: str, *, state: str = "", task: str = "", evidence: tuple[str, ...] = ()) -> Any:
+#: The guide screen of each kind of focused case.  A kind with no saved words
+#: of its own reads the plain "no guidance" answer.
+CASE_GUIDE_SCREENS = {
+    "link": "match_case",
+    "parcel": "parcel_case",
+    "case": "source_correction",
+    "linked": "match_case",
+}
+
+
+def _guide(screen: str, *, evidence: tuple[str, ...] = ()) -> Any:
     """Build saved guidance from facts the screen already shows."""
     return steward_guide.build(
-        steward_guide.GuideContext(screen=screen, state=state, task=task, evidence=evidence)
+        steward_guide.GuideContext(screen=screen, evidence=evidence)
     )
 
 
@@ -245,6 +256,13 @@ def _profile_page(
     if view not in ("overview", "sources", "history"):
         view = "overview"
     base = f"/{screen}/{party_id}"
+    guide = _guide(
+        "record_profile", evidence=tuple(item["label"] for item in detail["evidence"]),
+    )
+    if view != "overview":
+        # The identity and the related records are on the overview only, so the
+        # guide holds no link to them on the other views.
+        guide = replace(guide, links=())
     context = page_context(
         request,
         session,
@@ -264,10 +282,7 @@ def _profile_page(
         model_runs=[],
         history=profile["history"],
         actions=actions,
-        guide=_guide(
-            "record_profile", state=profile["identity_status"], task=profile["name"],
-            evidence=tuple(item["label"] for item in detail["evidence"]),
-        ),
+        guide=guide,
         denied_action_explanations=view_models.denied_action_explanations(actions),
         back_href="/masters" if nav_screen == "masters" else "/applicants",
         may_read_source=_may_read_source(session, resolved),
@@ -354,7 +369,7 @@ def ui_steward_review(
         confirmation=confirmation,
         queue=queue,
         actions=actions,
-        guide=_guide("queue", state=str(queue["filter"]), task=f"{queue['matched']} task(s) match the current view"),
+        guide=_guide("queue"),
         denied_action_explanations=view_models.denied_action_explanations(actions),
         quiet_feedback=True,
     )
@@ -409,8 +424,7 @@ def ui_steward_case(
         title=f"Data issue: {case['title']}",
         case=case,
         guide=_guide(
-            "match_case" if kind == "link" else "parcel_case" if kind == "parcel" else "source_correction",
-            state=str(case["summary"]["status_label"]), task=str(case["summary"]["task"]),
+            CASE_GUIDE_SCREENS.get(kind, kind),
             evidence=tuple(case["evidence"]),
         ),
         case_path=case_path,

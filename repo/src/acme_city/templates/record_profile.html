@@ -50,15 +50,6 @@
   {% endif %}
 </section>
 
-<section class="panel stw-status-overview" aria-labelledby="status-overview-heading" data-testid="profile-status-overview">
-  <h2 id="status-overview-heading">Status at a glance</h2>
-  <dl class="pair-list">
-    <dt>Identity status</dt><dd data-testid="identity-status">{{ p.identity_status }}</dd>
-    <dt>Record status</dt><dd>{{ p.record_status }}</dd>
-    <dt>Credential status</dt><dd data-testid="credential-status-summary">{{ p.credential_status }}</dd>
-  </dl>
-</section>
-
 <section class="panel" aria-labelledby="identity-heading" data-testid="profile-overview">
   <h2 id="identity-heading">Identity</h2>
   <dl class="pair-list">
@@ -66,6 +57,8 @@
     {% if p.legal_name and p.legal_name != p.name %}<dt>Legal name</dt><dd>{{ p.legal_name }}</dd>{% endif %}
     <dt>Type</dt><dd>{{ p.type }}</dd>
     <dt>Record status {{ ui.info('party_record_status') }}</dt><dd>{{ p.record_status }}</dd>
+    <dt>Identity</dt><dd data-testid="identity-status">{{ p.identity_status }}</dd>
+    <dt>Credentials</dt><dd data-testid="credential-status-summary">{{ p.credential_status }}</dd>
   </dl>
   {% if p.aliases %}
   <h3>Aliases</h3>
@@ -177,16 +170,7 @@
   </table>
   {% if p.trusted_values %}
   <h3>How values were selected</h3>
-  <p class="muted">The overview shows the selected values first. This table keeps their source and state beside the source links.</p>
-  <table class="data-table" data-testid="trusted-view">
-    <caption class="visually-hidden">Values selected by the authority policy</caption>
-    <thead><tr><th scope="col">Field</th><th scope="col">Value</th><th scope="col">Source</th><th scope="col">State</th></tr></thead>
-    <tbody>
-      {% for field in p.trusted_values %}
-      <tr><th scope="row">{{ field.attribute_path|pretty }}</th><td>{{ field.value }}</td><td>{{ field.source_system_id|pretty or 'Not declared' }}</td><td>{{ field.state|pretty }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <p class="muted" data-testid="trusted-view">The <a href="{{ profile_tabs[0].href }}">overview</a> shows the selected values with their source and state.</p>
   {% endif %}
   {% if p.detail.trusted_disagreements %}
   <h3>Unresolved disagreements</h3>

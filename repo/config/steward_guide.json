@@ -21,9 +21,7 @@
         "next_step": "Open the task that blocks an application. Compare the records before you decide.",
         "why_review": "A task is waiting for a person. The matcher only proposed it; it did not decide it."
       },
-      "links": [
-        {"label": "Open the work queue", "href": "/steward"}
-      ]
+      "links": []
     },
     "incoming": {
       "label": "Incoming",

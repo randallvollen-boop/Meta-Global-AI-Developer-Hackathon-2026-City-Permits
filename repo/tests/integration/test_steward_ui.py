@@ -857,6 +857,78 @@ def test_the_link_state_filter_narrows_the_catalogue(
     assert 'data-testid="source-empty"' in empty
 
 
+def guide_answer(html: str) -> str:
+    """Return the words of the guide on a page."""
+    return html.split('data-testid="steward-guide-answer">', 1)[1].split("</p>", 1)[0]
+
+
+def test_the_guide_of_each_case_kind_names_its_own_words(
+    client: TestClient, environment: Settings
+) -> None:
+    """A decided link reads the match words; a recorded issue reads no guidance."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            session.add(
+                registry.Crosswalk(
+                    id="xwalk_guide_linked",
+                    entity_id="party_cedarline",
+                    entity_type="party",
+                    source_system_id="erp_finance",
+                    source_dataset_key="business_licensing_register",
+                    source_record_id="ERP-BL-00413",
+                    link_status="approved",
+                    decision="the license number matches",
+                    decision_actor_id="persona_data_steward",
+                    decided_at=datetime(2026, 9, 14, 15, 20, tzinfo=UTC),
+                )
+            )
+            session.add(
+                change.ChangeCase(
+                    id="case_guide_source",
+                    target_type="party",
+                    target_id="party_cedarline",
+                    change_kind="factual",
+                    correlation_id="corr_guide_source",
+                    title="Correct the trading name of the record",
+                    status="in_review",
+                    destination="Permitting applicant profile",
+                )
+            )
+            session.add(
+                change.GovernanceIssue(
+                    id="issue_guide_recorded",
+                    subject_type="party",
+                    subject_id="party_cedarline",
+                    issue_type="registration",
+                    description="The registration looks out of step with the record",
+                    responsible_queue_id="queue_contractors",
+                    blocking=True,
+                    status="open",
+                )
+            )
+    finally:
+        factory.dispose()
+    # A match to compare reads the words of the match case.
+    match_case = client.get(case_path(client, "ERP-BL-00413"))
+    assert match_case.status_code == 200
+    assert guide_answer(match_case.text).startswith("Compare the record reference")
+    # A decided link is a match that was already applied.
+    linked = client.get("/steward/issues/linked/xwalk_guide_linked")
+    assert linked.status_code == 200
+    assert guide_answer(linked.text).startswith("Compare the record reference")
+    # A source correction keeps the words of the source.
+    source_case = client.get("/steward/issues/case/case_guide_source")
+    assert source_case.status_code == 200
+    assert guide_answer(source_case.text).startswith("The accepted value stays unchanged")
+    # A recorded issue has no saved words of its own.
+    issue = client.get("/steward/issues/issue/issue_guide_recorded")
+    assert issue.status_code == 200
+    assert guide_answer(issue.text) == "This screen has no saved guidance yet."
+
+
 def test_the_source_details_show_the_accepted_values(
     client: TestClient, environment: Settings
 ) -> None:

@@ -135,3 +135,28 @@ def test_the_guide_names_only_the_evidence_the_page_shows(client: TestClient) ->
     profile = client.get("/masters/party_cedarline?view=sources").text
     assert "No evidence is recorded for this record." in profile
     assert "Recorded evidence" not in profile
+
+
+def guide_links(html: str) -> list[str]:
+    """Return the links of the rendered guide."""
+    guide = html.split('data-testid="steward-guide"', 1)[1].split("</details>", 1)[0]
+    return re.findall(r'<a href="([^"]+)"', guide)
+
+
+@pytest.mark.parametrize("screen", ("queue", "case", "profile"))
+def test_every_guide_link_lands_on_a_real_target(client: TestClient, screen: str) -> None:
+    """No link of the guide points at a target the page does not have."""
+    path = "/steward" if screen == "queue" else "/masters/party_cedarline"
+    if screen == "case":
+        queue = client.get("/steward").text
+        match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
+        assert match is not None
+        path = match.group(1).replace("&amp;", "&")
+    html = client.get(path).text
+    for href in guide_links(html):
+        # A link never points back at the page it is read on.
+        assert href != path, href
+        if href.startswith("#"):
+            assert f'id="{href[1:]}"' in html, href
+        else:
+            assert client.get(href).status_code == 200, href

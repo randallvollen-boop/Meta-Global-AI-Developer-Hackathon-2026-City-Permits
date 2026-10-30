@@ -72,7 +72,6 @@ body[data-screen="masters"] .data-table thead th {
    status remain distinct labels rather than one overloaded status. */
 .stw-trusted-overview { margin-bottom: 14px; }
 .stw-trusted-overview .data-table { width: 100%; }
-.stw-status-overview { margin-bottom: 14px; }
 .stw-status-note { margin: 10px 0 0; color: var(--fg-2); font-size: .84rem; }
 .stw-guide { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
 .stw-guide > summary { cursor: pointer; font-weight: 600; }
