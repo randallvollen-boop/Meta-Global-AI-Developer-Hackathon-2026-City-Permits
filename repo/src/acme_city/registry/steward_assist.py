@@ -112,6 +112,19 @@ VERSION_TOKEN_CURRENT_SOURCE = "current_source"
 #: other, rather than that the evidence is incomplete.
 CONFLICT_CHECKS: frozenset[str] = frozenset({"no_identity_conflict"})
 
+#: The parts of the recorded evidence a successful evaluation of the City
+#: always holds.  A part that is missing is not a part that is empty: an
+#: empty list of failures is a success, an absent list is an evaluation
+#: nobody can read.
+RECORDED_EVIDENCE_PARTS: tuple[str, ...] = ("failed_checks", "conflicting", "supporting")
+
+#: The plain words of a master record the registry does not hold.  The
+#: identifier of such a record is machinery, so the words replace it.
+UNNAMED_ENTITY = "a record the City has not matched yet"
+
+#: The plain words of a subject of an unknown kind.
+UNNAMED_SUBJECT = "a record the City could not identify"
+
 #: The plain words of every safety check, so a reason never names an
 #: internal key.
 CHECK_WORDS: dict[str, str] = {
@@ -208,7 +221,12 @@ def _lowered(text: str) -> str:
 
 
 def _entity_label(session: Session, entity_id: str) -> str:
-    """Return the name of the canonical entity an identifier names."""
+    """Return the name of the canonical entity an identifier names.
+
+    An identifier the registry does not hold has no name a person knows, so
+    the name is empty: the caller words the record in plain words instead of
+    repeating an internal identifier.
+    """
     party = session.get(registry.Party, entity_id)
     if party is not None:
         return party.display_name
@@ -217,8 +235,8 @@ def _entity_label(session: Session, entity_id: str) -> str:
         return parcel.source_parcel_number
     address = session.get(registry.Address, entity_id)
     if address is not None:
-        return address.source_string or entity_id
-    return entity_id
+        return address.source_string or ""
+    return ""
 
 
 def _entity_version(session: Session, entity_id: str) -> int:
@@ -498,6 +516,20 @@ def _reevaluate_applied_link(
     return evaluation, candidate
 
 
+def _complete_recorded_evidence(recorded: dict[str, Any]) -> bool:
+    """Whether the recorded evidence of an applied link is a success.
+
+    The policy records every part of its evidence when it applies a link.  A
+    part that is missing is not the same as a part that is empty: an empty
+    list of failures is a success, an absent list is an evaluation nobody
+    can read.  Evidence that names no supporting fact proves nothing, so it
+    is no success either.
+    """
+    if any(part not in recorded for part in RECORDED_EVIDENCE_PARTS):
+        return False
+    return bool(list(recorded.get("supporting") or []))
+
+
 def _recommend_automatic_link(
     session: Session, task: Task, *, settings: Any = None
 ) -> Recommendation:
@@ -509,6 +541,11 @@ def _recommend_automatic_link(
     one the policy wrote.  A fact that disagrees holds the recommendation,
     evidence that is missing leaves it for a person, and a link today's rule
     would not apply is offered for a decision.
+
+    The recommendation is certain only when the recorded evaluation is a
+    complete success and the link is still the one the automation wrote.  A
+    link a person decided since then is left to that person: the assistant
+    keeps it, because a person approved it, but it does not certify it.
     """
     application = session.get(
         registry_automation.RegistryAutomationApplication, task.item_id
@@ -564,13 +601,24 @@ def _recommend_automatic_link(
         and crosswalk.link_status == "approved"
         and crosswalk.entity_id == entity_id
     )
+    # The link the automation wrote: the version it recorded, the status it
+    # set and the actor it acted as.  A link a person decided since then is
+    # not the link of the automation any more, so it is not left out of the
+    # comparison below.
+    applied_state = (
+        crosswalk is not None
+        and int(after.get("version", 0) or 0) == int(crosswalk.version)
+        and str(crosswalk.link_status) == str(after.get("link_status") or "")
+        and str(crosswalk.decision_actor_id or "")
+        == str(application.applied_by_actor_id or "")
+    )
     recheck = (
         _reevaluate_applied_link(
             session,
             snapshot=snapshot,
             family=family,
             entity_id=entity_id,
-            crosswalk_id=application.crosswalk_id or "",
+            crosswalk_id=(application.crosswalk_id or "") if applied_state else "",
         )
         if snapshot is not None and entity_id
         else None
@@ -621,6 +669,20 @@ def _recommend_automatic_link(
             "The link changed since it was applied, "
             "so a person decides whether to keep this link."
         )
+    elif not applied_state:
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_KEEP
+        reason = (
+            "A person decided this link after the automation applied it, "
+            "so the link is left to that person."
+        )
+    elif not _complete_recorded_evidence(recorded):
+        confidence = CONFIDENCE_REVIEW
+        outcome = OUTCOME_KEEP
+        reason = (
+            "The recorded evidence of this applied link is incomplete, "
+            "so a person reads the link."
+        )
     elif recheck is None:
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_KEEP
@@ -662,6 +724,7 @@ def _recommend_automatic_link(
             "crosswalk_version": crosswalk.version if crosswalk is not None else 0,
             "entity_id": entity_id,
             "entity_label": _entity_label(session, entity_id),
+            "entity_version": _entity_version(session, entity_id),
             "source_system": snapshot.source_system_id if snapshot is not None else "",
             "source_dataset": snapshot.source_dataset_id if snapshot is not None else "",
             "source_record_id": snapshot.source_record_id if snapshot is not None else "",
@@ -721,7 +784,8 @@ def _recommend_parcel(
     The parcel the City selected and the line the locator applies decide:
     a parcel may only be proposed for approval when the City itself would
     approve that link, and the score that counts is the score of the parcel
-    that is proposed, never the score of another candidate.
+    that is proposed, never the score of another candidate.  Another parcel
+    that fits the address nearly as well leaves the choice to a person.
     """
     match = session.execute(
         select(gis.ApplicationParcelMatch).where(
@@ -751,9 +815,13 @@ def _recommend_parcel(
     # The candidates of the locator search, and the ones that are not the
     # parcel that is proposed.  A parcel that was looked up by its number did
     # not come from that search, so the search does not decide against it.
+    # A parcel that fits the address nearly as well is a choice for a person:
+    # the line that decides that is the line of the suggest threshold, not
+    # the line the City proposes on.
+    suggest = DEFAULT_THRESHOLDS["address_locator"].suggest
     strong = strong_candidates(found, threshold)
     others = [] if selected is None else [item for item in found if item is not selected]
-    strong_others = strong_candidates(others, threshold)
+    close_others = strong_candidates(others, suggest)
 
     if conflict:
         confidence = CONFIDENCE_HELD
@@ -792,10 +860,10 @@ def _recommend_parcel(
                 "No parcel matched the submitted address closely enough, "
                 "so no parcel fits it."
             )
-    elif strong_others:
+    elif close_others:
         confidence = CONFIDENCE_REVIEW
         outcome = OUTCOME_APPROVE_PARCEL
-        best_other = max(float(item.get("score") or 0.0) for item in strong_others)
+        best_other = max(float(item.get("score") or 0.0) for item in close_others)
         if score is not None and best_other > score:
             reason = (
                 "Another parcel fits the submitted address better, "
@@ -838,7 +906,7 @@ def _recommend_parcel(
             "note": match.note or "",
             "conflict": conflict,
             "auto_apply_threshold": threshold,
-            "suggest_threshold": DEFAULT_THRESHOLDS["address_locator"].suggest,
+            "suggest_threshold": suggest,
             "candidates": [
                 {
                     "parcel_number": str(item.get("parcel_number", "")),
@@ -1030,8 +1098,10 @@ def _subject_label(session: Session, issue: change.GovernanceIssue) -> str:
     """Return the plain name of the record the issue is about.
 
     The name is the one a person knows: the name of the master record, the
-    readable name of the field and the registered name of the dataset.  The
-    internal identifiers stay in the evidence of the recommendation.
+    readable name of the field and the registered name of the dataset.  A
+    record the registry does not hold and a subject of an unknown kind have
+    no such name, so plain words stand in for them.  The internal
+    identifiers stay in the evidence of the recommendation.
     """
     subject = str(issue.subject_id or "")
     if issue.subject_type == "source_dataset":
@@ -1041,11 +1111,11 @@ def _subject_label(session: Session, issue: change.GovernanceIssue) -> str:
         return parts[-1] if parts and parts[-1] else subject
     if issue.subject_type == "canonical_entity":
         entity_id, _, attribute_path = subject.partition(":")
-        label = _entity_label(session, entity_id)
+        label = _entity_label(session, entity_id) or UNNAMED_ENTITY
         if not attribute_path:
             return label
         return f"{label} ({_field_label(attribute_path)})"
-    return subject
+    return UNNAMED_SUBJECT
 
 
 def _request_draft(issue: change.GovernanceIssue, subject: str) -> str:

@@ -68,6 +68,7 @@ AUTOMATIC_LINK_EVIDENCE_KEYS = {
     "crosswalk_version",
     "entity_id",
     "entity_label",
+    "entity_version",
     "source_system",
     "source_dataset",
     "source_record_id",
@@ -829,6 +830,51 @@ def take_the_link_back(settings: Settings, application_id: str) -> None:
         factory.dispose()
 
 
+def approve_the_link_again(settings: Settings, application_id: str) -> None:
+    """Let a person approve the applied link again, with the same target."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            crosswalk = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert crosswalk is not None
+            RegistryService(session).decide(
+                MatchDecisionCommand(
+                    decision="approve",
+                    reason="the fictional steward approves the link again",
+                    source_system_id=crosswalk.source_system_id,
+                    dataset_key=crosswalk.source_dataset_key,
+                    source_record_id=crosswalk.source_record_id,
+                    crosswalk_id=crosswalk.id,
+                    expected_version=crosswalk.version,
+                ),
+                STEWARD,
+            )
+    finally:
+        factory.dispose()
+
+
+def blank_the_recorded_evidence(settings: Settings, application_id: str) -> None:
+    """Take the recorded evidence of an applied link away."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            evaluation = session.get(
+                registry_automation.RegistryAutomationEvaluation, application.evaluation_id
+            )
+            assert evaluation is not None
+            evaluation.evidence = {}
+    finally:
+        factory.dispose()
+
+
 # ------------------------------------------------------------- the applied link
 
 
@@ -842,6 +888,8 @@ def test_an_applied_link_is_kept_with_high_confidence(seeded: Settings) -> None:
             application = session.get(
                 registry_automation.RegistryAutomationApplication, application_id
             )
+            party = session.get(registry.Party, "party_applicant_1")
+            party_version = int(party.version) if party is not None else 0
     finally:
         factory.dispose()
 
@@ -849,6 +897,8 @@ def test_an_applied_link_is_kept_with_high_confidence(seeded: Settings) -> None:
     assert recommendation.confidence == steward_assist.CONFIDENCE_HIGH
     assert recommendation.outcome == steward_assist.OUTCOME_KEEP
     assert recommendation.record_version == application.version
+    assert recommendation.evidence["entity_id"] == "party_applicant_1"
+    assert recommendation.evidence["entity_version"] == party_version
     assert set(recommendation.evidence) == AUTOMATIC_LINK_EVIDENCE_KEYS
 
 
@@ -905,6 +955,30 @@ def test_an_applied_link_without_its_evidence_is_for_review(seeded: Settings) ->
     recommendation = recommend(seeded, "automatic_link", application_id)
     assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
     assert recommendation.outcome == steward_assist.OUTCOME_KEEP
+
+
+def test_an_applied_link_whose_recorded_evidence_is_incomplete_is_for_review(
+    seeded: Settings,
+) -> None:
+    """A link whose recorded evaluation is not a complete success is left to a person."""
+    application_id = applied_link(seeded)
+    blank_the_recorded_evidence(seeded, application_id)
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_KEEP
+    assert "incomplete" in recommendation.reason
+
+
+def test_an_applied_link_a_person_approved_again_is_for_review(seeded: Settings) -> None:
+    """A link a person decided after the automation applied it is left to that person."""
+    application_id = applied_link(seeded)
+    approve_the_link_again(seeded, application_id)
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_KEEP
+    assert "person decided" in recommendation.reason
 
 
 def test_an_applied_link_with_a_conflicting_fact_is_held(seeded: Settings) -> None:
@@ -1044,6 +1118,38 @@ def test_a_parcel_found_by_its_number_is_the_one_proposed(seeded: Settings) -> N
 
 
 def test_several_parcels_that_fit_equally_are_for_review(seeded: Settings) -> None:
+    """Another parcel that fits the address nearly as well leaves the choice to the steward."""
+    runner_up = (
+        LocatorCandidate(
+            address="400 Lantern Row",
+            x=100.0,
+            y=200.0,
+            score=95.0,
+            status="M",
+            address_id="GIS-AD-0400",
+        ),
+        LocatorCandidate(
+            address="402 Lantern Row",
+            x=300.0,
+            y=400.0,
+            score=85.0,
+            status="M",
+            address_id="GIS-AD-0401",
+        ),
+    )
+    locate(seeded, candidates=runner_up, parcels=LANTERN_PARCELS)
+    recommendation = recommend(seeded, "parcel", "app_synth_001")
+
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_APPROVE_PARCEL
+    assert "Several parcels fit" in recommendation.reason
+    assert recommendation.evidence["score"] == 95.0
+    assert len(recommendation.evidence["candidates"]) == 2
+
+
+def test_two_parcels_that_fit_the_address_equally_are_for_review(
+    seeded: Settings,
+) -> None:
     """Two parcels that fit the address equally leave the choice to the steward."""
     tied = (
         LocatorCandidate(
@@ -1340,6 +1446,46 @@ def test_a_drafted_request_names_no_internal_identifier(seeded: Settings) -> Non
     assert "postal_address" not in draft
     assert "Cedarline Coffee Roasters LLC" in draft
     assert "postal address" in draft
+
+
+def test_a_drafted_request_of_an_unmatched_record_names_no_identifier(
+    seeded: Settings,
+) -> None:
+    """The draft of a record the registry does not hold names no identifier."""
+    issue_id = add_issue(
+        seeded,
+        issue_type="unresolved_field_authority",
+        subject_id="party_missing:postal_address",
+        subject_type="canonical_entity",
+        queue_id="queue_businesses",
+    )
+    recommendation = recommend(seeded, "issue", issue_id)
+
+    draft = recommendation.evidence["request_draft"]
+    assert "party_missing" not in draft
+    assert "party_missing:postal_address" not in draft
+    assert "a record the City has not matched yet" in draft
+    assert recommendation.evidence["subject_id"] == "party_missing:postal_address"
+
+
+def test_a_drafted_request_of_an_unknown_subject_names_no_identifier(
+    seeded: Settings,
+) -> None:
+    """The draft of a subject of an unknown kind names no identifier."""
+    issue_id = add_issue(
+        seeded,
+        issue_type="unresolved_field_authority",
+        subject_id="party_missing:postal_address",
+        subject_type="a_kind_the_assistant_does_not_know",
+        queue_id="queue_businesses",
+    )
+    recommendation = recommend(seeded, "issue", issue_id)
+
+    draft = recommendation.evidence["request_draft"]
+    assert "party_missing" not in draft
+    assert "party_missing:postal_address" not in draft
+    assert "a record the City could not identify" in draft
+    assert recommendation.evidence["subject_id"] == "party_missing:postal_address"
 
 
 def test_a_drafted_request_names_the_registered_dataset(seeded: Settings) -> None:

@@ -199,8 +199,9 @@ def _changed_dependencies(
 
     A recommendation of a link depends on the link it would decide on, on the
     source version it read and on the master record it compared.  A
-    recommendation of an applied link depends on the link of the automation
-    and on the source version it read.
+    recommendation of an applied link depends on the link of the automation,
+    on the master record that link points at and on the source version it
+    read.
     """
     kind = recommendation.task_kind
     evidence = dict(recommendation.evidence or {})
@@ -220,12 +221,19 @@ def _changed_dependencies(
             return True
     if kind == "automatic_link":
         captured_id = str(evidence.get("crosswalk_id") or "")
+        entity_id = str(evidence.get("entity_id") or "")
         if captured_id:
             row = session.get(registry.Crosswalk, captured_id)
             if row is None or int(row.version) != int(
                 evidence.get("crosswalk_version") or 0
             ):
                 return True
+            if entity_id and str(row.entity_id) != entity_id:
+                return True
+        if entity_id and _entity_version(session, entity_id) != int(
+            evidence.get("entity_version") or 0
+        ):
+            return True
     if kind in {"link", "automatic_link"}:
         captured = str(evidence.get("source_snapshot_id") or "")
         if captured:

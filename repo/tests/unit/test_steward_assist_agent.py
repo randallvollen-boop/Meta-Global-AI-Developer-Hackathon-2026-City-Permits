@@ -234,6 +234,25 @@ def applied_link(settings: Settings) -> str:
         factory.dispose()
 
 
+def rename_the_target_of_the_applied_link(settings: Settings, application_id: str) -> None:
+    """Change the master record the applied link points at."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            crosswalk = session.get(registry.Crosswalk, application.crosswalk_id)
+            assert crosswalk is not None
+            party = session.get(registry.Party, crosswalk.entity_id)
+            assert party is not None
+            party.display_name = "Tamsin Aldous-Nkemelu"
+            party.version += 1
+    finally:
+        factory.dispose()
+
+
 # ------------------------------------------------------------------- the grants
 
 
@@ -561,6 +580,26 @@ def test_an_applied_link_a_person_changed_is_stale(seeded: Settings) -> None:
             row = assistant.recommendation_for(session, "automatic_link", application_id)
             assert row is not None
             assert assistant.is_stale(session, row) is True
+    finally:
+        factory.dispose()
+
+
+def test_an_applied_link_whose_target_changed_is_stale(seeded: Settings) -> None:
+    """An applied link whose master record changed refuses the recommendation."""
+    wake(seeded)
+    application_id = applied_link(seeded)
+    prepare(seeded, [recommenders.Task("automatic_link", application_id)])
+    rename_the_target_of_the_applied_link(seeded, application_id)
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            row = assistant.recommendation_for(session, "automatic_link", application_id)
+            assert row is not None
+            assert row.evidence["entity_id"] == "party_applicant_1"
+            assert assistant.is_stale(session, row) is True
+            with pytest.raises(ValidationError) as refusal:
+                assistant.refuse_unless_acceptable(session, row)
+            assert str(refusal.value) == assistant.STALE_MESSAGE
     finally:
         factory.dispose()
 
