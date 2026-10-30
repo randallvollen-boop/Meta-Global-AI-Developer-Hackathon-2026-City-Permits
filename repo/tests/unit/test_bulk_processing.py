@@ -17,6 +17,7 @@ import pytest
 from sqlalchemy import select
 
 from acme_city.agents.control import AgentControlService
+from acme_city.agents.policy import current_policy
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
@@ -24,7 +25,7 @@ from acme_city.core.errors import PermissionDeniedError, ValidationError
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import audit, permit
+from acme_city.persistence.models import agent_ops, audit, permit
 from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.permits.bulk import MAX_SELECTION, Selection, process_selected
@@ -298,6 +299,42 @@ def test_the_batch_is_refused_while_the_agent_sleeps(seeded: Settings) -> None:
                 )
             assert "asleep" in str(raised.value)
             assert intake_runs(session) == []
+    finally:
+        factory.dispose()
+
+
+def test_a_batch_refused_by_the_hourly_limit_rolls_back(seeded: Settings) -> None:
+    """The hour is a limit of the whole batch: the batch is refused as a whole."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            wake_the_agent(session)
+            policy = current_policy(session)
+            assert policy is not None
+            policy.runs_per_hour = 2
+            session.flush()
+            first = make_arrival(session)
+            second = make_arrival(session)
+            third = make_arrival(session)
+            operator = context_for(session, "persona_agent_operator")
+            with pytest.raises(ValidationError) as raised:
+                process_selected(
+                    session,
+                    actor=operator,
+                    selections=[
+                        Selection(first.id, first.version),
+                        Selection(second.id, second.version),
+                        Selection(third.id, third.version),
+                    ],
+                )
+            assert "hourly limit" in str(raised.value)
+            # All or nothing: no run, no queued work and no processed case.
+            assert intake_runs(session) == []
+            queued = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert queued == []
+            for case in (first, second, third):
+                session.refresh(case)
+                assert case.status == "submitted"
     finally:
         factory.dispose()
 

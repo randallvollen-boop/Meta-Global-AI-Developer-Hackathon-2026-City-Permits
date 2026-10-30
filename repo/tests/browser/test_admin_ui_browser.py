@@ -14,6 +14,11 @@ from __future__ import annotations
 import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
+from acme_city.ui import admin_tabs
+# The router loads the navigation plugins of the lanes, so the tabs other
+# lanes registered are known here as well.
+from acme_city.ui.router import router as ui_router  # noqa: F401
+
 ADMINISTRATOR = "persona_city_administrator"
 
 #: The five sections of the administration screen.
@@ -169,7 +174,11 @@ def test_the_sections_are_ordinary_links(page, server: BrowserServer, login) -> 
     assert page.locator('[role="tablist"]').count() == 0
     assert page.locator('[role="tab"]').count() == 0
     tabs = page.locator('[data-testid="admin-tab"]')
-    assert tabs.count() == len(SECTIONS)
+    # The row holds the five sections of the screen and the tabs the lanes
+    # registered with admin_tabs.register_admin_tab.
+    assert tabs.count() == len(admin_tabs.ADMIN_TABS)
+    for section in SECTIONS:
+        assert page.locator(f'[data-testid="admin-tab"][data-tab="{section}"]').count() == 1
     # The section that is open is the current page.
     current = page.locator('[data-testid="admin-tab"][aria-current="page"]')
     assert current.count() == 1

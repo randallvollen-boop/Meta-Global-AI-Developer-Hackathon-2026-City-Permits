@@ -1,11 +1,15 @@
 """Field extraction for the intake agent.
 
 The extractor proposes values from the documents that were actually received.
-In replay mode (the default) the proposal is built deterministically from the
-lines the document contains and is then passed through the same validation a
-live model output passes through.  The validation result is reported as it
-was computed: the issues the validator found, and nothing else.  No
-percentage is ever invented.
+The proposal is built deterministically from the lines the document contains
+and is then passed through the same validation a live model output passes
+through.  The validation result is reported as it was computed: the issues the
+validator found, and nothing else.  No percentage is ever invented.
+
+The parsing and the validation are shared by the two engines.  The engine
+decides how the run is labelled: the replay of an earlier run keeps the label
+and the identifier it always had, and the built in logic of the City records
+its own provenance, because it sends no provider call and replays nothing.
 """
 # REQUIRES: AI-03, AI-04, SEC-04
 # A proposed value is written only when the validator accepted it, and the
@@ -25,8 +29,8 @@ from acme_city.muse.validation import validate_extraction_output
 from acme_city.persistence.models import model_run as model_run_models
 from acme_city.persistence.models import permit
 
-#: The document lines the replay extractor reads, and the field each one
-#: proposes.  A line is only read when the document really carries it.
+#: The document lines the extractor reads, and the field each one proposes.
+#: A line is only read when the document really carries it.
 EXTRACTION_PATTERNS: tuple[tuple[str, str], ...] = (
     ("applicant_legal_name", "Applicant name:"),
     ("unit_address", "Site address:"),
@@ -39,29 +43,42 @@ EXTRACTION_PATTERNS: tuple[tuple[str, str], ...] = (
 #: The model the replay labels its run with.
 REPLAY_MODEL = "muse-spark-1.3"
 
+#: The model the built in logic labels its run with.
+BUILTIN_MODEL = "builtin-rules-1"
 
-def replay_extraction(
-    session: Session,
-    application: permit.Application,
-    actor: ActorContext,
-) -> dict[str, Any]:
-    """Run one replay extraction and return what actually happened.
+#: The provenance of a run of the built in logic.
+BUILTIN_MODE = model_run_models.BUILTIN_MODE
 
-    The returned mapping names the run, its mode, the real validation state,
-    the issues the validator reported and the observations that were written.
+#: How each engine labels the run it records.  The replay keeps the label and
+#: the identifier it always had; the built in logic names no provider.
+_ENGINES: dict[str, dict[str, Any]] = {
+    "replay": {
+        "provider": "meta",
+        "model": REPLAY_MODEL,
+        "replay_of_run_id": "intake-document-replay",
+        "response_status": "replayed",
+        "note": "replayed from the received document text; no provider call was sent",
+        "error": "the replayed extraction failed validation",
+    },
+    "builtin": {
+        "provider": "builtin",
+        "model": BUILTIN_MODEL,
+        "replay_of_run_id": None,
+        "response_status": "not_called",
+        "note": "read from the received document text; no provider call was sent",
+        "error": "the built in extraction failed validation",
+    },
+}
+
+
+def _proposals(
+    bundle: VisibleEvidenceBundle,
+) -> tuple[list[dict[str, Any]], tuple[str, int] | None]:
+    """Return the proposed values and the document they were read from.
+
+    The reading is deterministic: a line is only read when the document
+    really carries the marker of the field.
     """
-    bundle = VisibleEvidenceBundle.for_actor(
-        application.id, actor, session=session
-    )
-    if not bundle.documents:
-        return {
-            "run_id": None,
-            "mode": "replay",
-            "state": "skipped",
-            "issues": [],
-            "observations": [],
-        }
-
     observations: list[dict[str, Any]] = []
     source: tuple[str, int] | None = None
     for reference in bundle.documents:
@@ -88,11 +105,41 @@ def replay_extraction(
         if observations:
             source = (reference.document_id, reference.version)
             break
+    return observations, source
+
+
+def _extract(
+    session: Session,
+    application: permit.Application,
+    actor: ActorContext,
+    *,
+    mode: str,
+    agent_run_id: str | None = None,
+) -> dict[str, Any]:
+    """Run one extraction and return what actually happened.
+
+    The returned mapping names the run, its mode, the real validation state,
+    the issues the validator reported and the observations that were written.
+    """
+    engine = _ENGINES[mode]
+    bundle = VisibleEvidenceBundle.for_actor(
+        application.id, actor, session=session
+    )
+    if not bundle.documents:
+        return {
+            "run_id": None,
+            "mode": mode,
+            "state": "skipped",
+            "issues": [],
+            "observations": [],
+        }
+
+    observations, source = _proposals(bundle)
 
     if source is None or not observations:
         return {
             "run_id": None,
-            "mode": "replay",
+            "mode": mode,
             "state": "skipped",
             "issues": [],
             "observations": [],
@@ -110,9 +157,9 @@ def replay_extraction(
     row = model_run_models.ModelRun(
         id=new_id("modelrun"),
         correlation_id=new_id("corr"),
-        mode="replay",
-        provider="meta",
-        model=REPLAY_MODEL,
+        mode=mode,
+        provider=str(engine["provider"]),
+        model=str(engine["model"]),
         prompt_version=config["prompt_version"],
         schema_version=config["schema_version"],
         input_refs={
@@ -127,23 +174,25 @@ def replay_extraction(
                 }
                 for reference in bundle.documents
             ],
+            **({"agent_run_id": agent_run_id} if agent_run_id else {}),
         },
         output=output if outcome.ok else None,
         validation_result={
             **outcome.to_dict(),
             "status": "succeeded" if outcome.ok else "failed",
-            "provider": {"response_id": None, "response_status": "replayed"},
-            "replay_note": (
-                "replayed from the received document text; no provider call was sent"
-            ),
+            "provider": {
+                "response_id": None,
+                "response_status": str(engine["response_status"]),
+            },
+            "replay_note": str(engine["note"]),
         },
         usage={},
         latency_ms=None,
-        error=None if outcome.ok else "the replayed extraction failed validation",
+        error=None if outcome.ok else str(engine["error"]),
         started_at=_now(),
         completed_at=_now(),
         actor_id=actor.actor_id,
-        replay_of_run_id="intake-document-replay",
+        replay_of_run_id=engine["replay_of_run_id"],
     )
     session.add(row)
     session.flush()
@@ -175,11 +224,43 @@ def replay_extraction(
 
     return {
         "run_id": row.id,
-        "mode": "replay",
+        "mode": mode,
         "state": "succeeded" if outcome.ok else "failed",
         "issues": [issue.to_dict() for issue in outcome.issues],
         "observations": written,
     }
+
+
+def replay_extraction(
+    session: Session,
+    application: permit.Application,
+    actor: ActorContext,
+) -> dict[str, Any]:
+    """Run one replay extraction and return what actually happened.
+
+    The returned mapping names the run, its mode, the real validation state,
+    the issues the validator reported and the observations that were written.
+    """
+    return _extract(session, application, actor, mode="replay")
+
+
+def builtin_extraction(
+    session: Session,
+    application: permit.Application,
+    actor: ActorContext,
+    *,
+    agent_run_id: str | None = None,
+) -> dict[str, Any]:
+    """Run one extraction of the built in logic and return what happened.
+
+    The built in logic reads the received document and validates the values it
+    read, exactly as the replay does.  Its run is recorded as ``builtin`` and
+    names the agent run it belongs to, so the operator screens can tell it from
+    a replay and from a provider call.
+    """
+    return _extract(
+        session, application, actor, mode="builtin", agent_run_id=agent_run_id
+    )
 
 
 def _now():
@@ -189,4 +270,11 @@ def _now():
     return utc_now()
 
 
-__all__ = ["EXTRACTION_PATTERNS", "REPLAY_MODEL", "replay_extraction"]
+__all__ = [
+    "BUILTIN_MODE",
+    "BUILTIN_MODEL",
+    "EXTRACTION_PATTERNS",
+    "REPLAY_MODEL",
+    "builtin_extraction",
+    "replay_extraction",
+]

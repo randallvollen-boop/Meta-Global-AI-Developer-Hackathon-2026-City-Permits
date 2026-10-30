@@ -36,7 +36,12 @@ OUTSIDE = (
 )
 
 #: The agent actions of the interface.
-AGENT_ACTIONS = ("agent.toggle", "agent.run.intake", "agent.run.adjudication")
+AGENT_ACTIONS = (
+    "agent.toggle",
+    "agent.run.intake",
+    "agent.run.adjudication",
+    "agent.retry",
+)
 
 #: A screen each persona may open, to read the form token of its session.
 HOME_OF = {

@@ -5,7 +5,7 @@
   <div>
     <h1>{{ title }}</h1>
     {% if screen == 'agents_home' %}
-    <p class="sub muted">Processing is manual. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
+    <p class="sub muted">Processing is {{ summary.processing }}. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
     {% else %}
     <p class="sub muted">Run history will show recorded processing attempts here.</p>
     {% endif %}
@@ -13,7 +13,10 @@
 </div>
 
 {% if screen == 'agents_home' %}
-<section class="panel opr-summary" aria-label="Agent operations summary" data-testid="agent-operator-summary">
+<div class="opr-status-actions">
+  <a href="/agents" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
+</div>
+<section class="panel opr-summary" aria-label="Agent operations summary" data-testid="agent-operator-summary" data-status-refresh>
   <div class="kpis">
     <div class="kpi"><span class="v">{{ summary.waiting }}</span><span class="k">Waiting</span></div>
     <div class="kpi"><span class="v">{{ summary.running }}</span><span class="k">Running</span></div>
@@ -21,7 +24,7 @@
     <div class="kpi"><span class="v">{{ summary.retrying }}</span><span class="k">Retrying</span></div>
   </div>
 </section>
-<section class="panel card opr-agent-list" aria-labelledby="opr-agents-heading">
+<section class="panel card opr-agent-list" aria-labelledby="opr-agents-heading" data-status-refresh>
   <div class="card-h"><h2 id="opr-agents-heading">Agent status</h2></div>
   <div class="card-b">
     {% for agent in summary.states %}
@@ -36,3 +39,5 @@
 </section>
 {% endif %}
 {% endblock %}
+
+{% block extra_js %}<script src="/ui/static/agent-status.js" defer></script>{% endblock %}

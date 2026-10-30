@@ -43,6 +43,7 @@ from acme_city.muse.image_client import (
     describe_image,
     wrap_icon_prompt,
 )
+from acme_city.muse.budget import MuseBudget
 from acme_city.persistence.models import audit, permit
 from acme_city.ui.view_models import allows
 
@@ -329,7 +330,9 @@ def generate_icon(
         )
         raise ValidationError(detail, code="icon_generation_cap")
     wrapped = wrap_icon_prompt(sentence)
-    image_client = client or MuseImageClient(settings)
+    image_client = client or MuseImageClient(
+        settings, budget=MuseBudget(session, settings=settings)
+    )
     result = image_client.generate(wrapped)
     if not result.ok:
         _record_attempt(

@@ -10,6 +10,9 @@ person, the version, the state of the case and the awake state of the
 agent.  The batch is all-or-nothing: it runs inside one savepoint, so a
 failure anywhere in it leaves every case exactly as it was, with no run and
 no audit record of a run.
+
+Each case runs through the shared work queue, so the queue records the
+attempt of every case of the selection.
 """
 # REQUIRES: PER-01, PER-03, AI-03, SEC-02
 # The bulk action has its own grant, refuses an empty selection, checks every
@@ -24,8 +27,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from acme_city.agents.control import AgentControlService, authorize_processing
-from acme_city.agents.intake import IntakeAgent
+from acme_city.agents.control import authorize_processing
+from acme_city.agents.runtime import run_agent
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
@@ -34,6 +37,7 @@ from acme_city.core.errors import ValidationError
 from acme_city.permits.guard import require_mutable, require_not_returned
 from acme_city.permits.queues import awaits_intake
 from acme_city.permits.service import PERMIT_DOMAIN, PermitService
+from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
 
 #: The grant the bulk action needs.
@@ -132,12 +136,10 @@ def process_selected(
         ResourceContext(domain_id=PERMIT_DOMAIN, record_ids=()),
     )
     # The batch runs the intake agent, so the person who may run the agent is
-    # the person who may process the selection.
+    # the person who may process the selection.  The agent must be awake too:
+    # a sleeping agent waits for its cases.
     authorize_processing(session, actor)
     chosen = _normalize(selections)
-
-    # The agent must be awake: a sleeping agent waits for its cases.
-    AgentControlService(session, now=moment).require_awake("intake")
 
     permits = PermitService(session, now=moment)
     checked: list[permit.Application] = []
@@ -181,18 +183,24 @@ def process_selected(
     details: list[dict[str, Any]] = []
     savepoint = session.begin_nested()
     try:
-        agent = IntakeAgent(session, settings=settings, now=moment)
         for application in checked:
-            run = agent.run(application.id, triggered_by=actor.actor_id)
+            result = run_agent(
+                session,
+                application=application,
+                agent_key=agent_models.AGENT_INTAKE,
+                triggered_by=actor.actor_id,
+                settings=settings,
+                now=moment,
+            )
             processed.append(application.id)
-            outcomes.append(run.outcome)
-            run_ids.append(run.id)
+            outcomes.append(result.outcome)
+            run_ids.append(result.run_id)
             details.append(
                 {
                     "application_id": application.id,
                     "reference": application.source_application_number,
-                    "outcome": run.outcome,
-                    "run_id": run.id,
+                    "outcome": result.outcome,
+                    "run_id": result.run_id,
                     "status": application.status,
                 }
             )

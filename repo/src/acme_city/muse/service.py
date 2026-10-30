@@ -49,6 +49,7 @@ from acme_city.core.clock import utc_now
 from acme_city.core.config import Settings
 from acme_city.core.errors import PermissionDeniedError, ValidationError
 from acme_city.core.ids import new_id
+from acme_city.muse.budget import MuseBudget
 from acme_city.muse.client import (
     MAX_OUTPUT_TOKENS,
     MuseClient,
@@ -154,7 +155,8 @@ def live_budget_error(session: Session, settings: Settings) -> str | None:
         select(model_run.ModelRun).where(model_run.ModelRun.mode == "live")
     ).scalars().all()
     for row in rows:
-        if row.error:
+        provider = (row.validation_result or {}).get("provider")
+        if row.error and isinstance(provider, dict) and provider.get("response_status"):
             return (
                 "a previous live run recorded a provider error; no further live call "
                 "is sent"
@@ -270,7 +272,12 @@ class MuseService:
     ) -> None:
         self._session = session
         self._settings = settings
-        self._client = client or MuseClient(settings)
+        # The client of the application reserves one call of the daily
+        # allowance before it dispatches.  A client that is given from the
+        # outside brings its own budget.
+        self._client = client or MuseClient(
+            settings, budget=MuseBudget(session, settings=settings)
+        )
         self._now = now or utc_now()
         self._permissions = PermissionResolver(session, now=self._now)
         self._replay_root = replay_root or (fixture_root() / "replay")

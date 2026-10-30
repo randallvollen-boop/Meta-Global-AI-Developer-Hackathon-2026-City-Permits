@@ -18,6 +18,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.agents.bundle import AGENT_OPERATIONS
+from acme_city.agents.policy import MODE_AUTOMATIC, MODE_MANUAL
+from acme_city.agents.runtime import DEFAULT_MAX_BATCH_SIZE
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
@@ -34,6 +36,10 @@ PERMISSION_MANAGE = "config.manage"
 
 #: The grant that adds a user.
 PERMISSION_MANAGE_USERS = "admin.actor.manage"
+
+#: The bounds of the hourly limit the City may set.
+MIN_RUNS_PER_HOUR = 1
+MAX_RUNS_PER_HOUR = 120
 
 PERMISSION_MANAGE_AGENT_ROLES = "admin.actor.manage"
 MANAGED_AGENT_ROLE_IDS: tuple[str, ...] = (
@@ -315,6 +321,87 @@ class ConfigurationService:
         )
         return row
 
+    # ------------------------------------------------------- processing policy
+
+    def set_processing_policy(
+        self,
+        *,
+        automatic: bool,
+        runs_per_hour: int,
+        reason: str,
+        actor: ActorContext,
+        expected_version: int | None = None,
+    ) -> agent_ops.AgentProcessingPolicy:
+        """Save the processing policy of the City.
+
+        The policy says when the agents work: manually, when a person asks,
+        or automatically as the work arrives.  It is a governed change: it
+        needs the configuration grant, it names a reason and it is audited.  A
+        save that was made against an older version of the policy is refused,
+        so two administrators never overwrite each other in silence.
+
+        The policy never decides anything about a case: it says when the
+        agents may work, not what they decide.
+        """
+        self._permissions.authorize(
+            actor,
+            PERMISSION_MANAGE,
+            ResourceContext(domain_id=None, record_ids=()),
+        )
+        if not str(reason or "").strip():
+            raise ValidationError(
+                "a reason is required when changing the processing settings"
+            )
+        limit = int(runs_per_hour)
+        if not MIN_RUNS_PER_HOUR <= limit <= MAX_RUNS_PER_HOUR:
+            raise ValidationError(
+                f"the hourly limit must be between {MIN_RUNS_PER_HOUR} and "
+                f"{MAX_RUNS_PER_HOUR} run(s)"
+            )
+        mode = MODE_AUTOMATIC if automatic else MODE_MANUAL
+        row = self._session.execute(
+            select(agent_ops.AgentProcessingPolicy).order_by(
+                agent_ops.AgentProcessingPolicy.created_at
+            )
+        ).scalars().first()
+        if row is None:
+            row = agent_ops.AgentProcessingPolicy(
+                id=new_id("agentpolicy"),
+                correlation_id=new_id("corr"),
+                mode=mode,
+                runs_per_hour=limit,
+                max_batch_size=DEFAULT_MAX_BATCH_SIZE,
+                version=1,
+            )
+            self._session.add(row)
+            before_mode = MODE_MANUAL
+        else:
+            if expected_version is not None and row.version != expected_version:
+                raise ValidationError(
+                    "the processing settings changed since they were read; read them "
+                    "again and retry"
+                )
+            before_mode = row.mode
+            row.mode = mode
+            row.runs_per_hour = limit
+            row.version += 1
+        self._session.flush()
+        self._audit.append(
+            action="admin.agent.processing",
+            actor=actor,
+            target_type="agent_processing_policy",
+            target_id=row.id,
+            before_version=row.version - 1 if row.version > 1 else None,
+            after_version=row.version,
+            reason=str(reason).strip(),
+            metadata={
+                "before": before_mode,
+                "after": mode,
+                "runs_per_hour": limit,
+            },
+        )
+        return row
+
     # ------------------------------------------------------------------- users
 
     def set_agent_role_entitlement(
@@ -493,6 +580,10 @@ def permit_type_view(row: permit.PermitType) -> dict[str, Any]:
 
 __all__ = [
     "MANAGED_AGENT_ROLE_IDS",
+    "MAX_RUNS_PER_HOUR",
+    "MIN_RUNS_PER_HOUR",
+    "MODE_AUTOMATIC",
+    "MODE_MANUAL",
     "PERMISSION_MANAGE_AGENT_ROLES",
     "PERMISSION_MANAGE",
     "PERMISSION_MANAGE_USERS",

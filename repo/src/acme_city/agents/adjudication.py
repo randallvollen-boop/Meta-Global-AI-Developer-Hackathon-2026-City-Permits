@@ -85,8 +85,19 @@ class AdjudicationAgent:
 
     # ------------------------------------------------------------------ public
 
-    def run(self, application_id: str, *, triggered_by: str) -> agent_models.AgentRun:
-        """Run the adjudication graph on one application."""
+    def run(
+        self,
+        application_id: str,
+        *,
+        triggered_by: str,
+        work_id: str | None = None,
+    ) -> agent_models.AgentRun:
+        """Run the adjudication graph on one application.
+
+        The ``work_id`` names the row of the work queue this run is the
+        attempt of, so the queue and the run evidence name each other.  A
+        sleeping agent never runs: the operator wakes it first.
+        """
         self._control.require_awake(agent_models.AGENT_ADJUDICATION)
         permits = PermitService(self._session, now=self._now)
         application = permits.load_application(application_id)
@@ -105,7 +116,10 @@ class AdjudicationAgent:
             started_at=self._now,
             finished_at=None,
             outcome="recorded",
-            inputs={"permit_type_id": application.permit_type_id},
+            inputs={
+                "permit_type_id": application.permit_type_id,
+                **({"work_id": work_id} if work_id else {}),
+            },
         )
         self._session.add(run)
         self._session.flush()
@@ -119,14 +133,19 @@ class AdjudicationAgent:
             run_id=run.id,
         )
 
-        rules = self._node_rule_loader(run, application, findings)
-        results = self._node_rule_evaluator(run, application, actor)
-        conditions = self._node_condition_builder(run, results)
-        precedent = self._node_precedent_check(run, application, findings)
-        self._node_disposition(run, application, rules, results, conditions, precedent)
+        # The nodes of the run happen inside a savepoint.  A node that stops
+        # the run saves no business change: the case keeps the revision it
+        # had, and the attempt is recorded as failed, so a person sees what
+        # happened and a retry starts from the same revision.
+        with self._session.begin_nested():
+            rules = self._node_rule_loader(run, application, findings)
+            results = self._node_rule_evaluator(run, application, actor)
+            conditions = self._node_condition_builder(run, results)
+            precedent = self._node_precedent_check(run, application, findings)
+            self._node_disposition(run, application, rules, results, conditions, precedent)
 
-        run.finished_at = utc_now()
-        self._session.flush()
+            run.finished_at = utc_now()
+            self._session.flush()
         return run
 
     def candidates(self) -> list[permit.Application]:
@@ -146,7 +165,8 @@ class AdjudicationAgent:
         rows = self._session.execute(
             select(permit.Application)
             .where(
-                permit.Application.status.in_(["ready_for_review", "under_review"])
+                permit.Application.status.in_(["ready_for_review", "under_review"]),
+                permit.Application.scenario_id.is_(None),
             )
             .order_by(permit.Application.source_application_number)
         ).scalars().all()

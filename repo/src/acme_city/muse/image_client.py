@@ -21,11 +21,12 @@ import binascii
 import json
 import time
 from dataclasses import dataclass
-from typing import Final
+from typing import Any, Final
 
 import httpx
 
 from acme_city.core.config import Settings
+from acme_city.muse.budget import MuseBudgetExceeded
 from acme_city.muse.client import live_call_block_reason, redact_secret
 
 #: The one endpoint an icon generation may call.
@@ -120,10 +121,14 @@ class MuseImageClient:
         *,
         transport: httpx.BaseTransport | None = None,
         timeout_seconds: float = IMAGE_TIMEOUT_SECONDS,
+        budget: Any = None,
     ) -> None:
         self._settings = settings
         self._transport = transport
         self._timeout = timeout_seconds
+        #: The daily allowance of provider calls.  When it is given, one call is
+        #: reserved before the request leaves.
+        self._budget = budget
 
     def generate(self, prompt: str) -> ImageResult:
         """Send one generation request and return what the provider answered.
@@ -147,6 +152,14 @@ class MuseImageClient:
                 ok=False,
                 error="no provider credential is configured for this service",
             )
+        # The daily allowance is checked and reserved here, after the hosted
+        # lock and before the transport: the lock wins, and a day without room
+        # sends nothing.
+        if self._budget is not None:
+            try:
+                self._budget.reserve()
+            except MuseBudgetExceeded as exc:
+                return ImageResult(ok=False, error=str(exc))
         payload = {"model": IMAGE_MODEL, "prompt": prompt, "n": 1}
         headers = {
             "Authorization": f"Bearer {secret}",

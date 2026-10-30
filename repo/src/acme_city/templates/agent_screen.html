@@ -2,20 +2,26 @@
 {% set agent = agent %}
 
 {% block content %}
-<div class="page-head">
+<div class="page-head opr-page-head">
   <div>
     <h1>{{ agent.agent_label }}</h1>
     <p class="sub muted">
-      The agent proposes; a person decides. It sleeps until a City Administrator
-      wakes it, and it only runs when a person asks it to run.
+      The agent proposes; a person decides.
+      {% if agent.policy.mode == 'automatic' and agent.agent_key == 'intake' %}
+      With automatic processing on, an awake agent works new arrivals as they come in.
+      {% else %}
+      It sleeps until someone with the wake grant wakes it, and it runs only
+      when a person asks it to run.
+      {% endif %}
     </p>
   </div>
   <div class="actions">
     <a class="btn ghost" href="/agents">Back to agents</a>
+    <a class="btn ghost" href="/agent/{{ agent.agent_key }}" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
   </div>
 </div>
 
-<section class="panel card" aria-labelledby="agent-state-heading" data-testid="agent-state">
+<section class="panel card" aria-labelledby="agent-state-heading" data-testid="agent-state" data-status-refresh>
   <div class="card-h">
     <h2 id="agent-state-heading">{{ agent.agent_label }} state</h2>
     <span class="right">
@@ -23,6 +29,12 @@
     </span>
   </div>
   <div class="card-b">
+    <dl class="opr-facts">
+      <dt>Processing</dt>
+      <dd data-testid="agent-policy">{{ agent.policy.label }}</dd>
+      <dt>Engine</dt>
+      <dd data-testid="agent-engine">{{ agent.engine }}</dd>
+    </dl>
     {% if agent.can_toggle %}
     <form method="post" action="/ui/actions/agent.toggle" class="action-form" data-testid="agent-toggle-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -36,11 +48,20 @@
         </button>
       </p>
     </form>
+    <p class="muted" data-testid="agent-toggle-note">
+      A woken agent stays awake until a person puts it back to sleep.
+      {% if agent.policy.mode == 'automatic' and agent.agent_key == 'intake' %}
+      With automatic processing on, it works the new arrivals as they come in,
+      as long as it is awake.
+      {% else %}
+      It works only on the cases a person asks it to work on.
+      {% endif %}
+    </p>
     {% else %}
     <p class="lock" data-testid="agent-toggle-locked">
       <svg aria-hidden="true"><use href="#i-lock"/></svg>
-      Only the City Administrator can wake this agent or put it back to sleep.
-      Your persona does not hold the 'agent.toggle' grant.
+      Your role cannot wake this agent or put it back to sleep. The Agent
+      Operator or the City Administrator can.
     </p>
     {% endif %}
     {% if agent.state.changed_by %}
@@ -51,7 +72,7 @@
   </div>
 </section>
 
-<section class="panel" aria-labelledby="agent-kpi-heading">
+<section class="panel" aria-labelledby="agent-kpi-heading" data-status-refresh>
   <h2 id="agent-kpi-heading">At a glance</h2>
   <div class="kpis" data-testid="agent-kpis">
     {% for kpi in agent.kpis %}
@@ -60,33 +81,6 @@
       <span class="k">{{ kpi.label }}</span>
     </div>
     {% endfor %}
-  </div>
-</section>
-
-<section class="panel card" aria-labelledby="agent-pipeline-heading" data-testid="agent-pipeline">
-  <div class="card-h">
-    <h2 id="agent-pipeline-heading">Pipeline</h2>
-    <span class="right faint" style="font-size:.74rem">Columns run in parallel; arrows are dependencies</span>
-  </div>
-  <div class="card-b">
-    <div class="pipe-cols" data-testid="agent-graph">
-      {% for level in agent.graph %}
-      <div class="pipe-col">
-        {% for node in level %}
-        <div class="pipe-node" data-testid="agent-graph-node" data-node-id="{{ node.node_id }}">
-          <span class="lbl">{{ node.label }}</span>
-          <span class="s">{{ node.description }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% if not loop.last %}
-      <div class="pipe-arrow" aria-hidden="true">→</div>
-      {% endif %}
-      {% endfor %}
-    </div>
-    <p class="muted" style="margin-top:10px">
-      Columns run in parallel; arrows are dependencies.
-    </p>
   </div>
 </section>
 
@@ -103,7 +97,7 @@
         <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
         <button type="submit" class="btn sm primary" data-testid="agent-run-all"
                 {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
-          {{ 'Process all waiting' if agent.agent_key == 'intake' else 'Run all' }}
+          Process next {{ agent.batch_limit }}
         </button>
       </form>
       {% endif %}
@@ -113,11 +107,11 @@
     {% if not agent.is_awake %}
     <p class="lock" id="agent-sleep-notice" data-testid="agent-sleep-notice">
       <svg aria-hidden="true"><use href="#i-lock"/></svg>
-      The agent is asleep, so the Run buttons are off.
-      {% if agent.can_toggle %}Use Wake agent above to turn them on.{% else %}Your role cannot wake it; ask a City Administrator.{% endif %}
+      The agent is asleep, so the run buttons are off.
+      {% if agent.can_toggle %}Use Wake agent above to turn them on.{% else %}Your role cannot wake it; ask the Agent Operator.{% endif %}
     </p>
     {% endif %}
-    <table class="data-table" data-testid="agent-waiting-table">
+    <table class="data-table opr-table" data-testid="agent-waiting-table">
       <caption class="visually-hidden">Cases waiting for the agent</caption>
       <thead>
         <tr><th scope="col">Reference</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Review area</th><th scope="col">Run</th></tr>
@@ -125,11 +119,13 @@
       <tbody>
         {% for row in agent.waiting %}
         <tr data-testid="agent-waiting-row" data-application-id="{{ row.application_id }}">
-          <th scope="row"><a href="/permits/{{ row.application_id }}">{{ row.source_application_number }}</a></th>
-          <td>{{ row.permit_type_key }}</td>
-          <td><span class="badge badge-{{ row.status }}">{{ row.status }}</span></td>
-          <td>{{ row.review_area or '-' }}</td>
-          <td>
+          <th scope="row" data-label="Reference">
+            <a href="/agents/cases/{{ row.application_id }}" data-testid="agent-case-link">{{ row.source_application_number }}</a>
+          </th>
+          <td data-label="Type">{{ row.permit_type_key }}</td>
+          <td data-label="Status"><span class="badge badge-{{ row.status }}">{{ row.status }}</span></td>
+          <td data-label="Review area">{{ row.review_area or '-' }}</td>
+          <td data-label="Run">
             {% if agent.can_run %}
             <form method="post" action="/ui/actions/agent.run.{{ agent.agent_key }}" class="action-form" data-testid="agent-run-one-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -138,7 +134,7 @@
               <input type="hidden" name="application_id" value="{{ row.application_id }}">
               <button type="submit" class="btn sm" data-testid="agent-run-one"
                       {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
-                {{ 'Process one' if agent.agent_key == 'intake' else 'Run' }}
+                Process one
               </button>
             </form>
             {% else %}
@@ -156,13 +152,96 @@
   </div>
 </section>
 
+<section class="panel card" aria-labelledby="agent-attention-heading" data-testid="agent-attention">
+  <div class="card-h"><h2 id="agent-attention-heading">Needs attention</h2></div>
+  <div class="card-b">
+    <table class="data-table opr-table" data-testid="agent-failure-table">
+      <caption class="visually-hidden">The work that failed and may be tried again</caption>
+      <thead>
+        <tr><th scope="col">Case</th><th scope="col">State</th><th scope="col">Attempts</th><th scope="col">What happened</th><th scope="col">Try again</th></tr>
+      </thead>
+      <tbody>
+        {% for row in agent.failures %}
+        <tr data-testid="agent-failure-row" data-application-id="{{ row.application_id }}">
+          <td data-label="Case"><a href="/agents/runs/{{ row.work_id }}" data-testid="agent-failure-detail-link">{{ row.reference or row.application_id }}</a></td>
+          <td data-label="State"><span class="badge badge-failed">Failed</span></td>
+          <td data-label="Attempts">{{ row.attempts }}</td>
+          <td data-label="What happened">{{ row.note or 'The run stopped before it finished.' }}</td>
+          <td data-label="Try again">
+            {% if agent.can_run and row.can_retry %}
+            <form method="post" action="/ui/actions/agent.retry" class="action-form" data-testid="agent-retry-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="agent.retry">
+              <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
+              <input type="hidden" name="agent_key" value="{{ agent.agent_key }}">
+              <input type="hidden" name="application_id" value="{{ row.application_id }}">
+              <button type="submit" class="btn sm" data-testid="agent-retry"
+                      {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
+                Try again
+              </button>
+            </form>
+            {% else %}
+            <span class="lock" title="Your persona does not hold the run grant">
+              <svg aria-hidden="true"><use href="#i-lock"/></svg> <span data-testid="agent-retry-no-grant">Your role cannot do this.</span>
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not agent.failures %}
+        <tr><td colspan="5" class="muted" data-testid="agent-failure-empty">No work has failed.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel card" aria-labelledby="agent-history-heading" data-testid="agent-history">
+  <div class="card-h">
+    <h2 id="agent-history-heading">Recent results</h2>
+    <span class="right"><a href="/agents/runs?agent_key={{ agent.agent_key }}" data-testid="agent-history-all">All runs</a></span>
+  </div>
+  <div class="card-b">
+    <table class="data-table opr-table" data-testid="agent-history-table">
+      <caption class="visually-hidden">The recorded runs of this agent</caption>
+      <thead>
+        <tr><th scope="col">When</th><th scope="col">Reference</th><th scope="col">Result</th><th scope="col">Mode</th><th scope="col">Requested by</th><th scope="col">Duration</th><th scope="col">Steps</th></tr>
+      </thead>
+      <tbody>
+        {% for run in agent.history %}
+        <tr data-testid="agent-history-row" data-run-id="{{ run.run_id }}">
+          <td data-label="When">{{ run.started_at }}</td>
+          <th scope="row" data-label="Reference"><a href="/agents/runs/{{ run.run_id }}" data-testid="agent-history-detail-link">{{ run.reference or '-' }}</a></th>
+          <td data-label="Result"><span class="badge badge-{{ run.result }}">{{ run.result }}</span></td>
+          <td data-label="Mode">{{ run.engine_label }}</td>
+          <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
+          <td data-label="Duration">{{ run.duration or '-' }}</td>
+          <td data-label="Steps">
+            <details class="opr-details">
+              <summary>{{ run.nodes|length }} step(s)</summary>
+              <ul class="issue-list" data-testid="agent-run-nodes">
+                {% for node in run.nodes %}
+                <li data-node-id="{{ node.node_id }}" data-status="{{ node.status }}">{{ node.label }}: {{ node.status }}</li>
+                {% endfor %}
+              </ul>
+            </details>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="muted" data-testid="agent-history-empty">This agent has not run yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 {% if agent.agent_key == 'adjudication' %}
 <section class="panel card" aria-labelledby="agent-awaiting-heading" data-testid="agent-awaiting">
   <div class="card-h">
-    <h2 id="agent-awaiting-heading">Awaiting confirmation</h2>
+    <h2 id="agent-awaiting-heading">Waiting for a person</h2>
   </div>
   <div class="card-b">
-    <table class="data-table" data-testid="agent-awaiting-table">
+    <table class="data-table opr-table" data-testid="agent-awaiting-table">
       <caption class="visually-hidden">Recommendations waiting for a person</caption>
       <thead>
         <tr><th scope="col">Reference</th><th scope="col">Recommendation</th><th scope="col">Conditions</th><th scope="col">When</th></tr>
@@ -170,10 +249,10 @@
       <tbody>
         {% for row in agent.awaiting %}
         <tr data-testid="agent-awaiting-row" data-application-id="{{ row.application_id }}">
-          <th scope="row"><a href="/permits/{{ row.application_id }}">{{ row.source_application_number }}</a></th>
-          <td><span class="pill {{ 'ok' if row.proposed_outcome == 'approve' else 'bad' if row.proposed_outcome == 'deny' else 'warn' }}">{{ row.proposed_outcome }}</span></td>
-          <td>{{ row.conditions|join('; ') if row.conditions else '-' }}</td>
-          <td>{{ row.created_at }}</td>
+          <th scope="row" data-label="Reference"><a href="/agents/cases/{{ row.application_id }}">{{ row.source_application_number }}</a></th>
+          <td data-label="Recommendation"><span class="pill {{ 'ok' if row.proposed_outcome == 'approve' else 'bad' if row.proposed_outcome == 'deny' else 'warn' }}">{{ row.proposed_outcome }}</span></td>
+          <td data-label="Conditions">{{ row.conditions|join('; ') if row.conditions else '-' }}</td>
+          <td data-label="When">{{ row.created_at }}</td>
         </tr>
         {% else %}
         <tr><td colspan="4" class="muted" data-testid="agent-awaiting-empty">No recommendation is waiting for a confirmation.</td></tr>
@@ -184,40 +263,40 @@
 </section>
 {% endif %}
 
-<section class="panel card" aria-labelledby="agent-history-heading" data-testid="agent-history">
+<section class="panel card" aria-labelledby="agent-pipeline-heading" data-testid="agent-pipeline">
   <div class="card-h">
-    <h2 id="agent-history-heading">Run history</h2>
+    <h2 id="agent-pipeline-heading">Processing steps</h2>
   </div>
   <div class="card-b">
-    <table class="data-table" data-testid="agent-history-table">
-      <caption class="visually-hidden">Recorded runs of this agent</caption>
-      <thead>
-        <tr><th scope="col">When</th><th scope="col">Reference</th><th scope="col">Result</th><th scope="col">Target</th><th scope="col">Trace</th></tr>
-      </thead>
-      <tbody>
-        {% for run in agent.history %}
-        <tr data-testid="agent-history-row" data-run-id="{{ run.run_id }}">
-          <td>{{ run.started_at }}</td>
-          <th scope="row">{{ run.reference or '-' }}</th>
-          <td><span class="badge badge-{{ run.result }}">{{ run.result }}</span></td>
-          <td>{{ run.triggered_by or '-' }}</td>
-          <td>
-            <ul class="issue-list" data-testid="agent-run-nodes">
-              {% for node in run.nodes %}
-              <li data-node-id="{{ node.node_id }}" data-status="{{ node.status }}">{{ node.label }}: {{ node.status }}</li>
-              {% endfor %}
-            </ul>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="5" class="muted" data-testid="agent-history-empty">This agent has not run yet.</td></tr>
+    <details class="opr-details">
+      <summary>Show the processing steps</summary>
+      <div class="pipe-cols" data-testid="agent-graph">
+        {% for level in agent.graph %}
+        <div class="pipe-col">
+          {% for node in level %}
+          <div class="pipe-node" data-testid="agent-graph-node" data-node-id="{{ node.node_id }}">
+            <span class="lbl">{{ node.label }}</span>
+            <span class="s">{{ node.description }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% if not loop.last %}
+        <div class="pipe-arrow" aria-hidden="true">→</div>
+        {% endif %}
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </details>
+    <p class="muted" style="margin-top:10px">
+      Each group waits for the group before it. The steps of one group run one after the other.
+    </p>
   </div>
 </section>
 
-{% include "components/evidence_panel.html" %}
-
-{% include "components/history_panel.html" %}
+<details class="opr-details opr-evidence">
+  <summary>Evidence and history</summary>
+  {% include "components/evidence_panel.html" %}
+  {% include "components/history_panel.html" %}
+</details>
 {% endblock %}
+
+{% block extra_js %}<script src="/ui/static/agent-status.js" defer></script>{% endblock %}

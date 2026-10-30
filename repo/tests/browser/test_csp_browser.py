@@ -22,6 +22,20 @@ def test_pages_load_under_the_policy_without_violations(page, server: BrowserSer
     assert page.recorded_errors == []
 
 
+def test_agent_status_refresh_loads_under_the_policy(page, server: BrowserServer, login) -> None:
+    """The optional same-origin refresh script is allowed by the real policy."""
+    login("persona_agent_operator")
+    response = page.goto(f"{server.base_url}/agents", wait_until="networkidle")
+    assert response is not None
+    assert "script-src 'self'" in response.headers["content-security-policy"]
+    with page.expect_response(
+        lambda answer: answer.request.method == "GET" and answer.url.endswith("/agents")
+    ) as refreshed:
+        page.locator("[data-testid='agent-status-refresh']").click()
+    assert refreshed.value.status == 200
+    assert page.recorded_errors == []
+
+
 def test_theme_drawer_and_demo_switch_work_under_the_policy(page, server: BrowserServer, login) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/queue", wait_until="networkidle")
