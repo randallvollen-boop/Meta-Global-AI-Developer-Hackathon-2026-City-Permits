@@ -46,6 +46,8 @@ Muse Image support can generate fictional permit type icons through a governed a
 
 * muse-wonder-1.0 worked as a builder: the October 27 interface redesign, the permit type icon feature, and a second build with persona navigation, the ePermit intake portal and the agent triage.
 
+* Local and other frontier models assisted with planning, coding and review.
+
 
 Live Muse is off on the public demo. The guard is in the Muse client and the Render blueprint.
 
