@@ -72,7 +72,10 @@ def main(argv: list[str] | None = None) -> int:
                 applied = seed_automation(session)
     finally:
         factory.dispose()
-    print(f"proposed {len(proposals)} Cedarline candidate links; nothing is decided")
+    if proposals:
+        print(f"proposed {len(proposals)} Cedarline candidate links; nothing is decided")
+    else:
+        print("the Cedarline candidate links are already proposed; nothing is decided")
     if args.automation:
         print(f"applied {len(applied)} links by the linking service; a steward may undo them")
     return 0

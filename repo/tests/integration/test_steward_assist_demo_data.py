@@ -113,14 +113,14 @@ def wake_the_assistant(client: TestClient) -> None:
     choose(client, "persona_data_steward")
 
 
-def test_the_demo_data_holds_three_tasks_of_the_queue(
+def test_the_demo_data_holds_the_tasks_of_the_queue(
     client: TestClient, environment: Settings
 ) -> None:
-    """The queue holds the three tasks of the demonstration."""
+    """The queue holds the tasks of the demonstration."""
     choose(client, "persona_data_steward")
     body = client.get("/steward?filter=needs_review").text
     rows = re.findall(r'data-issue-row[^>]*data-kind="([^"]+)"', body)
-    assert sorted(rows) == ["issue", "link", "link"]
+    assert sorted(rows) == ["issue", "link", "link", "link"]
 
 
 def test_the_assistant_reaches_every_level_on_the_demo_data(
