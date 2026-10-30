@@ -3050,7 +3050,6 @@ def automatic_link_case(
         )
     ).scalar_one_or_none()
     domain_id = contract.domain_id if contract is not None else None
-    crosswalk = session.get(registry.Crosswalk, str(row["crosswalk_id"]))
     open_link = row["status"] == "applied"
     return {
         "kind": "automatic_link",
