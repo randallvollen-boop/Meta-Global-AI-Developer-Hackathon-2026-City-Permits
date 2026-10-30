@@ -136,7 +136,7 @@ def preview_confirmed(settings: Any, items: list[str], presented: str) -> bool:
     list that is shorter, longer or different in any item has another proof,
     so it is not the list of the preview.
     """
-    if not presented:
+    if not presented or not presented.isascii():
         return False
     return hmac.compare_digest(preview_digest(settings, items), presented)
 

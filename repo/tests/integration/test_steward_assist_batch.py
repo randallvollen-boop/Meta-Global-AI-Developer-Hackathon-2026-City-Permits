@@ -448,6 +448,22 @@ def test_a_confirmation_of_a_shorter_list_is_refused(
         factory.dispose()
 
 
+
+def test_a_confirmation_with_a_malformed_proof_is_refused(
+    client: TestClient, environment: Settings
+) -> None:
+    """A proof that is not the text the preview issued is refused, never a server error."""
+    prepare(client)
+    choose(client, "persona_data_steward")
+    items, _ = preview_form(client)
+    response = post_many(
+        client, "steward.assist.batch_accept", items, "/steward/batch", "\u00e9" * 32
+    )
+    assert response.status_code == 422, response.text
+    payload = response.json()
+    assert payload["status"] == "denied"
+    assert "not the list you were shown" in payload["message"]
+
 def test_a_confirmation_of_another_recommendation_is_refused(
     client: TestClient, environment: Settings
 ) -> None:
