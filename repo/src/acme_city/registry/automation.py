@@ -133,9 +133,11 @@ def _link_state(session: Session, snapshot: source.SourceSnapshot) -> dict[str, 
             registry.Crosswalk.source_record_id == snapshot.source_record_id,
         )
     ).scalars().all()
-    approved = [row for row in rows if row.link_status == "approved"]
-    if approved:
-        row = approved[-1]
+    decided = [row for row in rows if row.link_status == "approved"]
+    if not decided:
+        decided = [row for row in rows if row.link_status == "proposed"]
+    if decided:
+        row = decided[-1]
         return {
             "link_status": row.link_status,
             "entity_id": row.entity_id,

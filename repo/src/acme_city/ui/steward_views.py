@@ -2999,6 +2999,15 @@ def _automatic_actions(
                 "hint": "",
             },
             {
+                "name": "expected_version",
+                "label": "Expected link version",
+                "type": "hidden",
+                "value": "" if version is None else str(version),
+                "options": [],
+                "required": False,
+                "hint": "",
+            },
+            {
                 "name": "reason",
                 "label": "Reason",
                 "type": "textarea",
