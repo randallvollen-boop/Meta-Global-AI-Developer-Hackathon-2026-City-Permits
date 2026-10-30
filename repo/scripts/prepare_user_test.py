@@ -21,16 +21,21 @@ START = REPO_ROOT / "scripts" / "start_demo.py"
 STOP = REPO_ROOT / "scripts" / "stop_demo.py"
 WALKTHROUGH = REPO_ROOT / "scripts" / "demo_walkthrough.py"
 MODE_LABELS = {
-    "fresh": "Fresh fictional fixtures; D01 awaits stewardship and review.",
+    "fresh": (
+        "Fresh fictional fixtures; D01 awaits stewardship and review, and three "
+        "tasks of the steward assistant wait in the Data issues queue."
+    ),
     "ready-for-review": "D01 has replay-labelled Muse evidence and approved identity links.",
     "completed-reference": "D01 has a replay-labelled reference chain and an issued simulated permit.",
     "steward-demo": (
         "Fresh fixtures plus three proposed Cedarline links in Data issues: Cedarline "
-        "Coffee Roasters LLC against Cedarline Coffee Works LLC. Nothing is decided."
+        "Coffee Roasters LLC against Cedarline Coffee Works LLC, and the three tasks of "
+        "the steward assistant. Nothing is decided."
     ),
     "steward-automation": (
-        "Fresh fixtures plus three proposed Cedarline links and one link the automatic "
-        "linking applied. The steward may keep that link or undo it with a reason."
+        "Fresh fixtures plus three proposed Cedarline links, one link the automatic "
+        "linking applied and the three tasks of the steward assistant. The steward may "
+        "keep that link or undo it with a reason."
     ),
     "demo-synthetic": (
         "Fresh fixtures plus a flagged synthetic year of permit history for the City view "

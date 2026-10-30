@@ -291,6 +291,9 @@ def test_the_queue_fits_a_phone(viewport_390, server: BrowserServer, login) -> N
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1").first)
     assert_not_covered(page, page.locator('[data-testid="assistant-prepare"]'))
+    # The button of the batch and the agreement figure stay inside too.
+    assert_not_covered(page, page.locator('[data-testid="assistant-batch-preview"]'))
+    assert_not_covered(page, page.locator('[data-testid="agreement-panel"]'))
     assert page.recorded_errors == []
 
 
@@ -305,4 +308,9 @@ def test_the_task_page_fits_a_phone(viewport_390, server: BrowserServer, login) 
     assert_no_horizontal_overflow(viewport_390)
     assert_not_covered(viewport_390, viewport_390.locator("main h1").first)
     assert_not_covered(viewport_390, viewport_390.locator('[data-testid="assistant-accept"]'))
+    # The button of Muse and the note beside it stay inside too.
+    assert_not_covered(viewport_390, viewport_390.locator('[data-testid="assistant-explain"]'))
+    assert_not_covered(
+        viewport_390, viewport_390.locator('[data-testid="assistant-explain-note"]')
+    )
     assert viewport_390.recorded_errors == []

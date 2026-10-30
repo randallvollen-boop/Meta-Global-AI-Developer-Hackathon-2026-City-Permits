@@ -32,6 +32,7 @@ from acme_city.core.config import Settings
 from acme_city.core.errors import AcmeError
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
+from acme_city.fixtures.steward_assist_demo import seed_steward_assistant_demo
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
     current_revision,
@@ -155,11 +156,17 @@ def main(argv: list[str] | None = None) -> int:
     factory = get_session_factory(settings.database_url)
     with transaction(factory) as session:
         result = reset_demo(session, bundle, confirmation=confirmation)
+        # The demonstration of the steward assistant: three tasks of the
+        # queue of the Data Steward, one for each certainty the assistant can
+        # reach.  Nothing is decided here.
+        demo_counts = seed_steward_assistant_demo(session, bundle)
 
     print(f"fixture version: {result.fixture_version}")
     print(f"database target: sqlite ({target.name})")
     for name in sorted(result.counts):
         print(f"  {name}: {result.counts[name]}")
+    for name in sorted(demo_counts):
+        print(f"  {name}: {demo_counts[name]}")
     print(f"total seeded rows: {result.total}")
     return 0
 

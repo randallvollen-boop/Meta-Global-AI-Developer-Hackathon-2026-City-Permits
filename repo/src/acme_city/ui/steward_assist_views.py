@@ -63,6 +63,12 @@ BATCH_GRANT_NOTE = "Your role cannot accept a batch of recommendations."
 #: The days the agreement figure counts.
 AGREEMENT_DAYS = 7
 
+#: The note a steward reads when the assistant prepared nothing lately.
+AGREEMENT_EMPTY_NOTE = (
+    "The steward assistant prepared no recommendation in the last 7 days, so there "
+    "is no agreement to report."
+)
+
 #: The note beside the button of Muse when a live call may not be sent.
 EXPLAIN_OFF_NOTE = (
     "Live Muse is off in this deployment, so the assistant's reason stands."
@@ -103,12 +109,6 @@ def explain_state(session: Any, settings: Any) -> dict[str, Any]:
             ),
         }
     return {"available": True, "note": EXPLAIN_ON_NOTE}
-
-#: The note a steward reads when the assistant prepared nothing lately.
-AGREEMENT_EMPTY_NOTE = (
-    "The steward assistant prepared no recommendation in the last 7 days, so there "
-    "is no agreement to report."
-)
 
 
 def agreement_figure(session: Any) -> dict[str, Any]:

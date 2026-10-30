@@ -396,14 +396,19 @@ def batch_candidates(session: Session) -> list[StewardRecommendation]:
     A batch accepts only what a person may act on without reading further:
     a recommendation the assistant is sure of, on a task whose decision the
     steward can take back.  A cleared recommendation is history and is never
-    offered again.
+    offered again, and a recommendation whose record changed since it was
+    made is not offered either: the steward prepares it again.
     """
     rows = session.execute(
         select(StewardRecommendation)
         .where(StewardRecommendation.cleared.is_(False))
         .order_by(StewardRecommendation.made_at, StewardRecommendation.id)
     ).scalars().all()
-    return [row for row in rows if recommenders.is_batch_eligible(row)]
+    return [
+        row
+        for row in rows
+        if recommenders.is_batch_eligible(row) and not is_stale(session, row)
+    ]
 
 
 def clear(
