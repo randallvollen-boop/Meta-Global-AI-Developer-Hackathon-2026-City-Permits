@@ -24,7 +24,7 @@ from sqlalchemy import select
 
 from acme_city.agents.control import AgentControlService
 from acme_city.agents.intake import INTAKE_AGENT_ID, service_actor
-from acme_city.agents.runtime import run_agent
+from acme_city.agents.runtime import AgentRuntime, run_agent
 from acme_city.agents.worker import WORKER_ACTOR_ID, AgentWorker
 from acme_city.app import create_app
 from acme_city.auth.context import ActorContext
@@ -476,6 +476,68 @@ def test_the_worker_never_works_a_case_a_person_already_worked(
             assert work is not None
             assert work.status == agent_ops.WORK_COMPLETED
             assert work.attempts == 1
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_works_only_the_current_work_of_the_intake_agent(
+    worker_environment: Settings,
+) -> None:
+    """A work row of an old revision and a work row of the other agent wait.
+
+    The identity of a piece of work names the agent, the case and the
+    revision of the case.  The worker works the work of the current
+    revision of the intake agent and nothing else, so the current revision
+    of a case is never worked twice and the adjudication work is never
+    taken by the intake agent.
+    """
+    factory = SessionFactory(worker_environment.database_url)
+    try:
+        with transaction(factory) as session:
+            _automatic(session)
+            _wake(session)
+            application = _arrival(session, worker_environment)
+            application_id = application.id
+            revision = application.revision
+            runtime = AgentRuntime(session)
+            # The work of the current revision of the intake agent.
+            current = runtime.enqueue(application, agent_key=agent_models.AGENT_INTAKE)
+            # The work of the other agent, for the same case.
+            other = runtime.enqueue(application, agent_key=agent_models.AGENT_ADJUDICATION)
+            # The work of an earlier revision of the same case.
+            stale = agent_ops.AgentWorkQueue(
+                id="queue_stale_revision",
+                correlation_id=application.correlation_id or "corr_stale",
+                work_key=f"intake:{application_id}:r{revision - 1}",
+                application_id=application_id,
+                agent_key=agent_models.AGENT_INTAKE,
+                status=agent_ops.WORK_PENDING,
+                attempts=0,
+                version=1,
+            )
+            session.add(stale)
+            session.flush()
+        worker = AgentWorker(factory, settings=worker_environment)
+        assert worker.run_cycle() == 1
+        with factory() as session:
+            runs = session.execute(
+                select(agent_models.AgentRun).where(
+                    agent_models.AgentRun.application_id == application_id
+                )
+            ).scalars().all()
+            assert len(runs) == 1, "the worker worked more than the current work"
+            assert runs[0].agent_key == agent_models.AGENT_INTAKE
+            # The work of the other agent and the work of the old revision
+            # wait for a person.
+            for row in (other, stale):
+                waiting = session.get(agent_ops.AgentWorkQueue, row.id)
+                assert waiting is not None
+                assert waiting.status == agent_ops.WORK_PENDING
+                assert waiting.attempts == 0
+            # The work of the current revision is finished.
+            worked = session.get(agent_ops.AgentWorkQueue, current.id)
+            assert worked is not None
+            assert worked.status == agent_ops.WORK_COMPLETED
     finally:
         factory.dispose()
 

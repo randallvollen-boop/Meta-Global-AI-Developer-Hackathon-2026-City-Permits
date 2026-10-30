@@ -1,5 +1,5 @@
 {
   "howto": {
-    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Run history\" to prepare work. A person still makes permit decisions."
+    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work. A person still makes permit decisions."
   }
 }

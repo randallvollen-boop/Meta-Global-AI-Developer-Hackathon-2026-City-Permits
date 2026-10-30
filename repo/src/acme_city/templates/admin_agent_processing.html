@@ -16,7 +16,8 @@
       Keep agents awake (real time processing)
     </label>
     <p class="muted">
-      Process eligible items automatically as they arrive.
+      Process eligible items automatically as they arrive. The intake agent
+      works them while it is awake.
     </p>
     <label for="opr-runs-per-hour">Maximum runs per hour</label>
     <input id="opr-runs-per-hour" name="runs_per_hour" type="number" min="1" max="120" value="{{ agent_processing.runs_per_hour }}">
@@ -31,7 +32,11 @@
     <p class="muted" data-testid="admin-muse-note">{{ agent_processing.muse_note }}</p>
     <p class="muted" data-testid="admin-worker-note">{{ agent_processing.worker_note }}</p>
     <p class="muted" data-testid="admin-eligible-count">
-      {{ agent_processing.eligible_count }} eligible case(s) will be scheduled when this setting is saved.
+      {% if agent_processing.automatic %}
+      {{ agent_processing.eligible_count }} eligible case(s) will be scheduled once the intake agent is awake.
+      {% else %}
+      {{ agent_processing.eligible_count }} eligible case(s) are waiting for the intake agent.
+      {% endif %}
     </p>
     <label for="opr-processing-reason">Reason for change</label>
     <input id="opr-processing-reason" name="reason" required>

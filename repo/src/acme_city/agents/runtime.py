@@ -419,14 +419,8 @@ class AgentRuntime:
         self._session.flush()
 
     def counts(self) -> dict[str, int]:
-        """Return how many pieces of work hold each status.
-
-        ``retrying`` counts the waiting work that was already tried once: it
-        is the work that waits for another attempt.
-        """
-        rows = self._session.execute(
-            select(agent_ops.AgentWorkQueue.status, agent_ops.AgentWorkQueue.attempts)
-        ).all()
+        """Return how many pieces of work hold each status."""
+        rows = self._session.execute(select(agent_ops.AgentWorkQueue.status)).all()
         counts = {
             agent_ops.WORK_PENDING: 0,
             agent_ops.WORK_RUNNING: 0,
@@ -434,12 +428,8 @@ class AgentRuntime:
             agent_ops.WORK_FAILED: 0,
             agent_ops.WORK_HELD: 0,
         }
-        retrying = 0
-        for status, attempts in rows:
+        for (status,) in rows:
             counts[status] = counts.get(status, 0) + 1
-            if status == agent_ops.WORK_PENDING and attempts > 0:
-                retrying += 1
-        counts["retrying"] = retrying
         return counts
 
 
