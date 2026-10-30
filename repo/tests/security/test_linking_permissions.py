@@ -49,11 +49,9 @@ OUTSIDE = (
     "persona_agent_operator",
 )
 
-#: The grants the Data Steward holds to authorize the automation.
-#:
-#: The preview permission is not among them: the reserved automation screen is
-#: gated on it, and STW-19 grants it together with the route it builds.
+#: The grants the Data Steward holds to read and authorize the automation.
 AUTOMATION_GRANTS = (
+    "registry.automation.preview",
     "registry.automation.activate",
     "registry.automation.enqueue",
     "registry.automation.pause",
@@ -191,10 +189,9 @@ def test_the_service_identity_may_not_open_the_reserved_steward_screens(
 ) -> None:
     """The service is not a steward: it opens neither reserved steward screen.
 
-    The reserved screens are the automation controls and the new master
-    screen.  The service holds no automation grant and no master creation
-    grant, so both stay closed to it.  It never receives a session, so it
-    reaches no screen of the interface at all.
+    The automation screen is closed because the service lacks its preview
+    grant. The new master screen is closed because it lacks the creation
+    grant. It never receives a session, so it reaches no interface screen.
     """
     service = actor_for(session, SERVICE)
     for key in ("steward_automation", "steward_new_master"):
@@ -279,7 +276,7 @@ def test_no_other_persona_may_authorize_the_automation(
 
 
 def test_a_forged_role_does_not_authorize_the_automation(session: Session) -> None:
-    """A client-supplied role never authorizes an action."""
+    """Persisted grants, rather than a role string, authorize an action."""
     resolver = PermissionResolver(session)
     forged = ActorContext(
         actor_id="persona_permit_reviewer",
@@ -289,6 +286,17 @@ def test_a_forged_role_does_not_authorize_the_automation(session: Session) -> No
     )
     assert not resolver.allows(
         forged, "registry.automation.activate", ResourceContext(domain_id="applicants")
+    )
+    steward_without_roles = ActorContext(
+        actor_id=STEWARD,
+        role_ids=frozenset(),
+        domain_scope=frozenset(),
+        record_scope=frozenset(),
+    )
+    assert resolver.allows(
+        steward_without_roles,
+        "registry.automation.activate",
+        ResourceContext(domain_id="applicants"),
     )
 
 
