@@ -390,3 +390,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The navigation expectations lost the `ORDER` table, which repeated `PRIMARY` word for word: a persona module that lists no screen of its own now takes the order of its agent screens as given, which is the order the operator's navigation renders. The Agents home and the run history carry the 390 pixel overflow and coverage checks.
 - No rule text, replay fixture, acceptance test, persona, grant or live Muse setting changed. Nothing pushed, merged or published.
 
+
+## 2026-10-29 - Steward queue and guide lane (`lane/steward-queue-guide`)
+
+- STW-12: the intake queue and the early resolution board use the shell of the work queue: the search, the compact filter disclosure, the saved views and one row per case. Every case names its next step before the detailed signals. The processing controls stay gated on the run grant, so the Data Steward sees no selection checkbox and a locked control that says why. The sleeping agent message points at the Agent Operator.
+- ADB-16: the early resolution rows read in sentence case, name the step that follows and show what the applicant must supply. The membership, the grouping, the order and the findings are unchanged, and the board is still a Data Steward screen.
+- STW-15: the saved guide opens on master records, source records, the intake queue, the early resolution board and the activity, beside the work queue, the focused case and the record profile. The guide of the early resolution board is new in `config/steward_guide.json`.
+- STW-31A: the steward help names the labels the pages really show. The rejection action is named as it reads, and it names the record it turns down. A new how-to guide covers the queue, the source records, the activity and the incoming work.
+- STW-32: the phone and keyboard evidence of the steward screens, the incoming screens included.
+- The guide is built in `config/steward_guide.json` and in the lane's own modules. No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
