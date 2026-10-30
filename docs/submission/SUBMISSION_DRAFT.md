@@ -16,11 +16,13 @@ An applicant can choose from seventeen fictional permit types, locate a property
 
 ### Agent operator
 
-The Agent Operator is the only persona that wakes and runs the intake and adjudication agents. The operator opens the Agents home, wakes or puts an agent to sleep, runs one case or a batch of waiting cases, reads the run history and retries a failed run. The intake agent is a seven node graph and the adjudication agent is a five node graph, and each run records its nodes. The agents prepare a case and leave a recommendation. They never decide, price or issue a permit. Waiting work sits in a durable queue, and the City Administrator sets the processing policy under Administration, Agent processing. Optional automatic processing exists and is off on the hosted demo.
+The Agent Operator is the only persona that wakes and runs the intake and adjudication agents, and the only one that wakes the steward assistant. The operator opens the Agents home, wakes or puts an agent to sleep, runs one case or a batch of waiting cases, reads the run history and retries a failed run. The intake agent is a seven node graph and the adjudication agent is a five node graph, and each run records its nodes. The agents prepare a case and leave a recommendation. They never decide, price or issue a permit. Waiting work sits in a durable queue, and the City Administrator sets the processing policy under Administration, Agent processing. Optional automatic processing exists and is off on the hosted demo.
 
 ### Data steward
 
 A data steward works the Data issues workspace, which has a guide, and the early resolution queue. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
+
+Once the Agent Operator wakes it, the steward assistant works the Data issues queue when the steward asks, up to 20 tasks per press of Prepare recommendations. For each task it gathers the evidence and proposes a decision with a High, Review or Held level and a one line reason. The steward reads the evidence and presses Accept recommendation, which is refused if the record changed since, or decides the task another way. A held recommendation can never be accepted. Accept all high-confidence shows the exact list before anything is accepted, and skips and names any item that changed. An agreement figure shows how many recommendations the steward accepted unchanged in the last 7 days. Explain with Muse rewrites the reason in plain words without changing the decision; it is off on the hosted demo.
 
 ### Permit reviewer
 
@@ -67,7 +69,7 @@ Before the event only the reference requirements package existed (received 2026-
 
 * The intake and adjudication agents, a durable agent work queue, and optional automatic processing (off on the hosted demo).
 
-* The steward Data issues workspace and guide, and automatic linking, which is built and paused on the hosted demo.
+* The steward Data issues workspace and guide, the steward assistant with its batch preview and agreement figure, and automatic linking, which is built and paused on the hosted demo.
 
 * The lifecycle and walkthrough pages, and demo video draft 8 on the persona page.
 
@@ -107,9 +109,9 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 3. As Applicant, start a fictional deck or fence application, save it, submit it, and open its tracker.
 
-4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent.
+4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent. Wake the steward assistant too.
 
-5. As Data Steward, open Data issues and inspect the evidence behind proposed record and parcel links.
+5. As Data Steward, open Data issues, press Prepare recommendations, and inspect the evidence behind each recommendation and the proposed record and parcel links.
 
 6. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
 

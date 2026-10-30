@@ -31,6 +31,29 @@
           "Open \"More tools\", then \"Early resolution\", to see the cases that wait for a person, grouped by the finding that puts them there."
         ],
         "result": "Every decision is recorded with its evidence, and the queue, the source records and the activity show what happened next."
+      },
+      {
+        "slug": "use-the-steward-assistant",
+        "title": "Use the steward assistant",
+        "summary": "Let the assistant gather the evidence and propose a decision, then accept, change or ignore it.",
+        "who": "Data Steward",
+        "persona_ids": [
+          "persona_data_steward"
+        ],
+        "screen_label": "Data issues",
+        "screen_href": "/steward",
+        "steps": [
+          "The Agent Operator wakes the assistant on its \"Steward assistant\" screen. While it sleeps, \"Prepare recommendations\" is off and the note says \"The Agent Operator must wake it.\"",
+          "Open \"Data issues\" and click \"Prepare recommendations\". The assistant works on up to 20 tasks per press. It never runs on a timer or on its own.",
+          "Read the pill on each row: \"High\" when the assistant is sure, \"Review\" when you should read the evidence first, \"Held\" when the facts disagree and only a person may settle it. A one-line reason sits under the record.",
+          "Open a task. The panel \"The steward assistant\" shows the pill, the reason and the evidence it rests on. On a task with no recommendation yet, click \"Get recommendation\".",
+          "Edit the \"Reason\" if you wish, then click \"Accept recommendation\". The decision is recorded with your name. A held recommendation is never accepted, and if the record changed since it was prepared you are asked to prepare it again.",
+          "Click \"Explain with Muse\" to have Muse rewrite the reason in plain words. It never changes the decision or its certainty. While live Muse is off the button is off and a note beside it says why.",
+          "Click \"Clear recommendation\" to set a recommendation aside and decide the task with the six questions below it.",
+          "Back on \"Data issues\", click \"Accept all high-confidence (N)\". A page lists exactly the recommendations the batch would accept. Click the button \"Accept these\" with the count to confirm that list. An item that changed since the list was made is skipped and named, never accepted silently.",
+          "Read \"Agreement with the assistant\". It gives the share you accepted unchanged and the counts behind it, over the last 7 days."
+        ],
+        "result": "The assistant prepares; you decide. Every accepted recommendation is a decision of record in your name, and the agreement figure shows how often you took its advice unchanged."
       }
     ]
   }

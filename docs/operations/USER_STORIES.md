@@ -104,6 +104,13 @@ My permits, Start an application, Help and Home.
   - Acceptance: **Adjudication agent** runs **Process next 20** or **Process
     one** and the five-step run is recorded; the recommendation waits for a
     person. I record no permit decision.
+- As an Agent Operator, I want to wake and sleep the steward assistant, so
+  that the Data Steward can ask it for recommendations only when the City
+  allows it.
+  - Acceptance: **Steward assistant** (`/agent/steward_assist`) has **Wake
+    agent** / **Put agent to sleep** and counts the recommendations as High,
+    Review and Held. It runs only when the steward presses a button, never on
+    a timer. I cannot press the steward's buttons: they return 403 for me.
 
 ## Data Steward
 
@@ -132,6 +139,33 @@ My permits, Start an application, Help and Home.
   that proposed values never silently become submitted facts.
   - Acceptance: in the Permit workspace, **Accept or correct extracted …**
     records the decision; correcting requires a value and a reason.
+- As a Data Steward, I want the steward assistant to gather the evidence and
+  propose a decision for each task, so that I start from the facts and still
+  decide every task myself.
+  - Acceptance: once the Agent Operator has woken it, **Prepare
+    recommendations** on **Data issues** works up to 20 tasks per press, and
+    **Get recommendation** works one task. Each row gets a **High**, **Review**
+    or **Held** pill and a one-line reason. On the task page **Accept
+    recommendation** records the decision in my name; it is refused when the
+    record changed since the recommendation was prepared, and a held
+    recommendation is never accepted. While the assistant sleeps the buttons
+    are off and the note says the Agent Operator must wake it.
+- As a Data Steward, I want to accept the recommendations the assistant is
+  sure of in one batch, after seeing the exact list, so that easy tasks go
+  quickly without anything being accepted unseen.
+  - Acceptance: **Accept all high-confidence (N)** opens a preview of the N
+    recommendations; **Accept these N recommendations** accepts exactly that
+    list. An item that changed after the preview is skipped and named. With
+    nothing high-confidence the button is off and says why.
+- As a Data Steward, I want to see how often I accept the assistant's
+  recommendation unchanged, so that I can judge how far to trust it.
+  - Acceptance: **Agreement with the assistant** on **Data issues** shows the
+    share and "N accepted unchanged of M prepared in the last 7 days".
+- As a Data Steward, I want Muse to explain a recommendation in plain words,
+  so that its reason is easy to read.
+  - Acceptance: **Explain with Muse** rewrites the reason and never changes
+    the decision or its certainty. While live Muse is off the button is off
+    and the note beside it says so; the assistant's reason stands.
 - As a Data Steward, I want the navigation to hide screens outside my grants,
   so that the menu lists only screens the server allows.
   - Acceptance: Steward navigation lists Data issues, Master records, Source

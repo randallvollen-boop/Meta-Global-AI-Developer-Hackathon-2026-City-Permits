@@ -68,15 +68,15 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Let the agent route the work",
         "Agent Operator",
         "/agent/intake",
-        "Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case.",
+        "Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case. Then open Steward assistant (/agent/steward_assist) and press Wake agent there too, so the Data Steward can ask it for recommendations.",
         "The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.",
     ),
     Step(
         "Clear a case for review",
         "Data Steward",
         "/steward",
-        "In Data issues, open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a decision note and submit it. Then open the Check the person identity issue from the ACME ePermit Portal source, press Start under Confirm link to Tamsin Aldous, write a decision note and submit it.",
-        "Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.",
+        "In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a decision note and submit it. Then open the Check the person identity issue from the ACME ePermit Portal source, press Start under Confirm link to Tamsin Aldous, write a decision note and submit it.",
+        "The assistant only proposes: Accept recommendation and Accept all high-confidence (N), which shows the exact list first, record the decision in your name. Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.",
     ),
     Step(
         "Decide a case",

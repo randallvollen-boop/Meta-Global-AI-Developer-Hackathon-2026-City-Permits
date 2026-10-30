@@ -80,7 +80,7 @@ Replay evidence is always labelled `replay` and does not satisfy a live-provider
 
 ### D02 false friend
 
-Open **Data issues** as Data Steward (the steward-demo prepare mode below puts the Cedarline comparisons in the queue). Open the issue for `ERP-BL-00413` and compare it with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
+Open **Data issues** as Data Steward (every reset puts the Cedarline comparisons in the queue; see the steward demonstration below). Open the issue for `ERP-BL-00413` and compare it with the existing Cedarline records. The similarly named organization remains a separate canonical party. Reject or leave unsupported links unresolved.
 
 ### D06 source correction
 
@@ -102,13 +102,22 @@ uv run python scripts/prepare_user_test.py --mode demo-synthetic
 
 This resets the fictional fixtures and loads the synthetic year of permits (the same loader the hosted demo uses, with its default seed and count unless you pass `--synthetic-seed` and `--synthetic-count`). Steps 8 and 9 of the judge walkthrough (`docs/submission/JUDGE_WALKTHROUGH.md`), the City view at `/insight/city` and the resident search at `/city/community`, need it. The mode is a prepare mode; it does not start the server. Start the app afterwards with `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`.
 
-## Cedarline steward demonstration
+## Steward assistant demonstration
 
 ```bash
 uv run python scripts/prepare_user_test.py --mode steward-demo
 ```
 
-This adds three *proposed* links to **Data issues** (Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413`) so the queue holds the Cedarline comparison: Cedarline Coffee Roasters LLC (alias Cedar Line Coffee Roasters) against Cedarline Coffee Works LLC, a different license number and a different unit. Nothing is decided. Choose **Data Steward**, open **Data issues**, open the `ERP-BL-00413` issue and read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. The mode is a prepare mode; the default reset and every acceptance fixture hold no steward issue.
+Every reset now builds the steward demonstration, so `--mode fresh` holds the same tasks; this mode is kept as a named way to prepare them. **Data issues** holds five tasks the steward assistant can work on, none of them decided:
+
+- four *proposed* links: Permitting `PER-AP-0003`, ERP `ERP-BL-00412` and `ERP-BL-00413` (the Cedarline comparison: Cedarline Coffee Roasters LLC, alias Cedar Line Coffee Roasters, against Cedarline Coffee Works LLC, a different license number and a different unit), and ERP `ERP-BL-00710`, the business license of Quarry Lane Imports LLC;
+- one open issue where two versions of the Quarry Lane Imports LLC record disagree.
+
+Choose **Agent Operator**, open **Steward assistant** and press **Wake agent**. Then choose **Data Steward**, open **Data issues** and press **Prepare recommendations** (up to 20 tasks per press). The rows show all three levels: **High** on the three links the source ties to one master record, **Review** on `ERP-BL-00413`, which fits two master records almost equally well, and **Held** on the conflicting issue, which only a person may settle. Each row has a one-line reason.
+
+Open the `ERP-BL-00413` task. The assistant panel shows the evidence and **Accept recommendation**, **Clear recommendation** and **Explain with Muse** (off while live Muse is off, with a note). Read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. Back on **Data issues**, **Accept all high-confidence (3)** opens the list of the three High links; **Accept these 3 recommendations** accepts exactly that list, and an item that changed in between is skipped and named. **Agreement with the assistant** then reads "N accepted unchanged of M prepared in the last 7 days".
+
+On the hosted demo (the `ready-for-review` seed) the two Cedarline links the walkthrough approves, `PER-AP-0003` and `ERP-BL-00412`, are already decided, so Quarry Lane Imports LLC (`ERP-BL-00710`) is the High task.
 
 ## Automatic linking demonstration
 
@@ -125,7 +134,7 @@ The settings screen says that this deployment runs the automation paused, becaus
 ## Prepared states
 
 ```bash
-# Reset only; all D01 work remains open
+# Reset only; all D01 work remains open and the steward demonstration tasks wait in Data issues
 uv run python scripts/prepare_user_test.py --mode fresh
 
 # Reset plus the synthetic year of permits (judge walkthrough steps 8 and 9)

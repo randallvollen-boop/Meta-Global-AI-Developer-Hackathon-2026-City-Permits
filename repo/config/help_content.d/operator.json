@@ -1,6 +1,6 @@
 {
   "howto": {
-    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work. A person still makes permit decisions.",
+    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\", \"Steward assistant\" and \"Agent runs\" to prepare work. A person still makes permit decisions.",
     "guides": [
       {
         "slug": "run-the-agents",
@@ -19,6 +19,7 @@
           "In the table \"Cases waiting for the agent\" click \"Process one\" on a case, or click the Process next 20 button to work the first 20 waiting cases. Read the message at the top.",
           "Read \"Needs attention\" for work that failed, and click \"Try again\" on a row to run it again. Read \"Recent results\" for the result, the mode, who asked and the steps of each run.",
           "For the Adjudication agent do the same on its own screen. The recommendations it makes appear under \"Recommendations waiting for a person\". Only a person decides.",
+          "The \"Steward assistant\" has its own screen too. Wake it there so the Data Steward can press \"Prepare recommendations\". It works only when the steward asks; its counts read High, Review and Held.",
           "Open \"Agent runs\" in the left menu. Narrow the list with Agent, State, Processing mode and Date, then click \"Apply filters\". Click \"Clear filters\" to start again.",
           "Click \"View run\" on a row to open \"Run detail\". Read \"Processing steps\", \"Provenance\" and \"Recorded business changes\". A failed run offers \"Retry\", which needs the agent to be awake.",
           "When you have finished, go back to each agent and click \"Put agent to sleep\"."
