@@ -84,3 +84,10 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 ## Planned content
 
 The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections are planned content only. They claim no result, and nothing in them is built, published or submitted.
+
+## Revision 2026-10-29, permit life cycle section
+
+- New section `#lifecycle` with a state diagram and a table of every move. It is generated into `page/body.src.html`, between the LIFECYCLE markers, by `repo/scripts/build_lifecycle_diagram.py`, from `repo/src/acme_city/permits/lifecycle_map.py`. Regenerate it before a rebuild whenever the life cycle changes. Do not hand-edit between the markers.
+- Two builder failures already in the sources were fixed: the Scene 7 card now uses the "Randy Vollen" byline, and the deployment row no longer names the signing-key variable. Both had tripped the page denylist.
+- `page/page.json` keeps the committed relative `output`. The kit builder needs an absolute path, so set it to an absolute worktree path for the build and restore it afterwards.
+- Open: `check/verify_page.py` fails on 8 figures that predate this revision (02, 1080, 18, 2.0, 300, 503, 60, 600). Each needs a sourced line in `facts.md` or a rewording. The AVA Library copy was not replaced in this revision.
