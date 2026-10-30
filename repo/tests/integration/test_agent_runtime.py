@@ -162,6 +162,15 @@ def _acceptance_application_ids() -> set[str]:
     return found
 
 
+def _controlled_case(session) -> permit.Application:
+    """Return one seeded case of the controlled demonstration."""
+    row = session.execute(
+        select(permit.Application).where(permit.Application.scenario_id == "D01")
+    ).scalars().first()
+    assert row is not None
+    return row
+
+
 def test_the_queue_records_one_piece_of_work_with_a_status_and_an_attempt_count(
     environment: Settings,
 ) -> None:
@@ -570,13 +579,74 @@ def test_the_batch_limit_is_read_from_the_stored_policy(environment: Settings) -
     factory = SessionFactory(environment.database_url)
     try:
         with factory() as session:
-            limit = batch_limit(session)
             policy = current_policy(session)
             assert policy is not None
-            assert limit.max_batch_size == policy.max_batch_size
-            assert limit.runs_per_hour == policy.runs_per_hour
+            # The stored values are not the defaults, so a limit that ignores
+            # the policy cannot pass this test.
+            policy.max_batch_size = 7
+            policy.runs_per_hour = 11
+            session.flush()
+            limit = batch_limit(session)
+            assert limit.max_batch_size == 7
+            assert limit.runs_per_hour == 11
             assert limit.runs_this_hour == 0
-            assert limit.remaining_runs == policy.runs_per_hour
+            assert limit.remaining_runs == 11
+    finally:
+        factory.dispose()
+
+
+def test_a_controlled_case_is_never_worked(environment: Settings) -> None:
+    """A case of the fixed demonstration is never an arrival and is never worked."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            _wake(session)
+            application = _controlled_case(session)
+            status = application.status
+            version = application.version
+            with pytest.raises(ValidationError) as raised:
+                run_agent(
+                    session,
+                    application=application,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+            assert "controlled demonstration case" in str(raised.value)
+            # The case is exactly as it was, and no work was queued for it.
+            session.refresh(application)
+            assert application.status == status
+            assert application.version == version
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert rows == []
+            runs = session.execute(select(agent_models.AgentRun)).scalars().all()
+            assert runs == []
+    finally:
+        factory.dispose()
+
+
+def test_a_sleeping_agent_is_refused_before_the_work_is_queued(
+    environment: Settings,
+) -> None:
+    """A sleeping agent waits for its cases instead of failing a piece of work."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = _arrival(session, environment)
+            with pytest.raises(ValidationError) as raised:
+                run_agent(
+                    session,
+                    application=application,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=environment,
+                )
+            assert "asleep" in str(raised.value)
+            # No work was queued and no attempt was counted.
+            rows = session.execute(select(agent_ops.AgentWorkQueue)).scalars().all()
+            assert rows == []
+            runs = session.execute(select(agent_models.AgentRun)).scalars().all()
+            assert runs == []
     finally:
         factory.dispose()
 
@@ -586,11 +656,18 @@ def test_a_manual_run_never_calls_the_model_provider(
 ) -> None:
     """A hosted demonstration with a key still runs on the built in logic."""
 
-    def refuse(*args: object, **kwargs: object) -> None:
+    calls: list[str] = []
+
+    def record_client_call(*args: object, **kwargs: object) -> None:
+        calls.append("the model provider")
         raise AssertionError("a manual run must not call the model provider")
 
-    monkeypatch.setattr(MuseClient, "create_response", refuse)
-    monkeypatch.setattr(MuseImageClient, "generate", refuse)
+    def record_image_call(*args: object, **kwargs: object) -> None:
+        calls.append("the image provider")
+        raise AssertionError("a manual run must not call the model provider")
+
+    monkeypatch.setattr(MuseClient, "create_response", record_client_call)
+    monkeypatch.setattr(MuseImageClient, "generate", record_image_call)
     factory = SessionFactory(hosted_environment.database_url)
     try:
         with factory() as session:
@@ -607,6 +684,9 @@ def test_a_manual_run_never_calls_the_model_provider(
             work = session.get(agent_ops.AgentWorkQueue, result.work_id)
             assert work is not None
             assert work.status == result.status
+            # The provider was never reached.  The calls are recorded, so a
+            # run that reached the provider fails this test.
+            assert calls == []
     finally:
         factory.dispose()
 

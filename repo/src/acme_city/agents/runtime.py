@@ -16,7 +16,9 @@ outcome.
 
 A manual run is bounded twice: by the batch size of the stored processing
 policy and by the runs the hour still allows.  A manual run uses the built in
-deterministic logic: it never calls the model provider.
+deterministic logic: it never calls the model provider.  A controlled case of
+the demonstration is never worked, and a run of a sleeping agent is refused
+before any work is queued.
 """
 # REQUIRES: PER-01, PER-04
 # The queue is durable, one piece of work has one identity, two workers
@@ -393,9 +395,21 @@ def run_agent(
 
     The agent is named by its key, never by the request.  The run uses the
     built in deterministic logic, so it never calls the model provider.
+
+    Two things are checked before any work is queued.  The case must not be a
+    controlled case of the demonstration: a case that carries a scenario id is
+    the fixed fixture of the demonstration, not an arrival, and it is never
+    worked.  The agent must be awake: a sleeping agent waits for its cases
+    instead of leaving a failed piece of work behind.
     """
     from acme_city.agents.adjudication import AdjudicationAgent
+    from acme_city.agents.control import AgentControlService
     from acme_city.agents.intake import IntakeAgent
+
+    if application.scenario_id is not None:
+        raise ValidationError(
+            "this is a controlled demonstration case; agents do not run on it"
+        )
 
     if agent_key == agent_models.AGENT_INTAKE:
         agent: Any = IntakeAgent(session, settings=settings, now=now)
@@ -409,6 +423,7 @@ def run_agent(
 
     limit = batch_limit(session, now=now)
     require_hour_room(limit)
+    AgentControlService(session, now=now).require_awake(agent_key)
     return AgentRuntime(session, now=now).execute(
         application, agent_key=agent_key, runner=runner
     )
@@ -427,11 +442,13 @@ def run_batch(
 
     The batch is bounded by the batch size of the stored policy and by the
     runs the hour still allows.  The cases are the ones that waited when the
-    request arrived: a case that arrives later waits for the next batch.
+    request arrived: a case that arrives later waits for the next batch.  A
+    controlled case of the demonstration is never named by a batch.
     """
     limit = batch_limit(session, now=now)
     require_hour_room(limit)
-    chosen = list(cases)[: min(limit.max_batch_size, limit.remaining_runs)]
+    eligible = [case for case in cases if case.scenario_id is None]
+    chosen = eligible[: min(limit.max_batch_size, limit.remaining_runs)]
     return tuple(
         run_agent(
             session,

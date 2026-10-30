@@ -31,6 +31,17 @@ def _run_the_intake_agent(page, server) -> None:
     assert answered.value.json()["status"] == "accepted"
 
 
+def _wake_the_agent(page, server, agent_key: str) -> None:
+    """Wake one agent on its own screen."""
+    page.goto(f"{server.base_url}/agent/{agent_key}", wait_until="domcontentloaded")
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.toggle" in answer.url
+    ) as answered:
+        page.click("[data-testid='agent-toggle']")
+    assert answered.value.json()["status"] == "accepted"
+    page.reload(wait_until="domcontentloaded")
+
+
 def test_role_permissions_fit_at_390(viewport_390, login) -> None:
     page = viewport_390
     login("persona_city_administrator")
@@ -106,6 +117,92 @@ def test_the_operator_wakes_and_runs_the_agent_at_390(viewport_390, server, logi
     assert payload["message"] == "The intake agent ran on 1 waiting case(s)."
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1"))
+
+
+def test_the_operator_processes_one_waiting_case_at_390(
+    viewport_390, server, login
+) -> None:
+    """The row button works one case, and the case leaves the waiting list."""
+    page = viewport_390
+    login("persona_agent_operator")
+    response = page.request.post(
+        f"{server.base_url}/api/intake/simulate",
+        data=json.dumps({"scenario": "deck-high"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.ok, response.text()
+    _wake_the_agent(page, server, "intake")
+    row = page.locator("[data-testid='agent-waiting-row']").first
+    application_id = row.get_attribute("data-application-id")
+    assert application_id
+    button = page.locator("[data-testid='agent-run-one']").first
+    assert button.is_enabled()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, button)
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.run.intake" in answer.url
+    ) as answered:
+        button.click()
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert payload["message"] == f"The intake agent ran on {application_id}."
+    # The case was worked, so it does not wait for the agent any more.
+    page.reload(wait_until="domcontentloaded")
+    assert page.locator("[data-testid='agent-waiting-empty']").is_visible()
+    assert_no_horizontal_overflow(page)
+
+
+def test_the_operator_runs_the_adjudication_batch_at_390(
+    viewport_390, server, login
+) -> None:
+    """The batch of the adjudication agent runs the cases that are in review."""
+    page = viewport_390
+    login("persona_agent_operator")
+    # A case arrives and the intake agent works it, so it waits for review.
+    _run_the_intake_agent(page, server)
+    _wake_the_agent(page, server, "adjudication")
+    row = page.locator("[data-testid='agent-waiting-row']").first
+    application_id = row.get_attribute("data-application-id")
+    assert application_id
+    button = page.locator("[data-testid='agent-run-all']")
+    assert button.is_enabled()
+    assert button.inner_text().strip() == "Process next 20"
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, button)
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.run.adjudication" in answer.url
+    ) as answered:
+        button.click()
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert payload["message"] == "The adjudication agent ran on 1 case(s)."
+    assert payload["affected"] == [application_id]
+    assert_no_horizontal_overflow(page)
+
+
+def test_the_operator_runs_one_case_in_review_at_390(
+    viewport_390, server, login
+) -> None:
+    """The row button of the adjudication agent works one case in review."""
+    page = viewport_390
+    login("persona_agent_operator")
+    _run_the_intake_agent(page, server)
+    _wake_the_agent(page, server, "adjudication")
+    row = page.locator("[data-testid='agent-waiting-row']").first
+    application_id = row.get_attribute("data-application-id")
+    assert application_id
+    button = page.locator("[data-testid='agent-run-one']").first
+    assert button.is_enabled()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, button)
+    with page.expect_response(
+        lambda answer: "/ui/actions/agent.run.adjudication" in answer.url
+    ) as answered:
+        button.click()
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert payload["message"] == f"The adjudication agent ran on {application_id}."
+    assert_no_horizontal_overflow(page)
 
 
 def test_the_run_history_shows_the_recorded_runs_at_390(viewport_390, server, login) -> None:
