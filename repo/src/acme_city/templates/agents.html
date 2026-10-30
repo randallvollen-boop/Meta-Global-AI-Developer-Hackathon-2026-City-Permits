@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-head opr-page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    {% if screen == 'agents_home' %}
+    <p class="sub muted">Processing is manual. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
+    {% else %}
+    <p class="sub muted">Run history will show recorded processing attempts here.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if screen == 'agents_home' %}
+<section class="panel opr-summary" aria-label="Agent operations summary" data-testid="agent-operator-summary">
+  <div class="kpis">
+    <div class="kpi"><span class="v">{{ summary.waiting }}</span><span class="k">Waiting</span></div>
+    <div class="kpi"><span class="v">{{ summary.running }}</span><span class="k">Running</span></div>
+    <div class="kpi"><span class="v">{{ summary.failed }}</span><span class="k">Failed</span></div>
+    <div class="kpi"><span class="v">{{ summary.retrying }}</span><span class="k">Retrying</span></div>
+  </div>
+</section>
+<section class="panel card opr-agent-list" aria-labelledby="opr-agents-heading">
+  <div class="card-h"><h2 id="opr-agents-heading">Agent status</h2></div>
+  <div class="card-b">
+    {% for agent in summary.states %}
+    <p><a href="/agent/{{ agent.key }}">{{ agent.label }}</a><span class="muted"> {{ agent.mode }}</span></p>
+    {% endfor %}
+    <p><a href="/queue/intake" data-testid="opr-process-selected">Process selected cases</a></p>
+  </div>
+</section>
+{% else %}
+<section class="panel card opr-run-stub" data-testid="agent-runs-stub">
+  <div class="card-b"><p>No run history filter is available yet.</p></div>
+</section>
+{% endif %}
+{% endblock %}

@@ -17,6 +17,14 @@ import argparse
 import sys
 from pathlib import Path
 
+# This script can be called by an installed virtual environment whose editable
+# package points at another checkout.  Always reset with the source adjacent to
+# this script, even when the caller deliberately supplies a minimal environment.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
 from sqlalchemy import inspect, select
 from sqlalchemy.engine import make_url
 

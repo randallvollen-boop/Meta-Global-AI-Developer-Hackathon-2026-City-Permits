@@ -319,7 +319,7 @@ def test_portal_case_flows_through_intake_and_applicant_sees_only_own_parcel(cli
     # application" button) was redundant with the City website, so it now redirects there.
     landing = client.get("/queue", follow_redirects=False)
     assert landing.status_code == 303 and landing.headers["location"] == "/city/"
-    choose(client, "persona_city_administrator")
+    choose(client, "persona_agent_operator")
     token_value = token(client, "/agent/intake")
     toggled = client.post(
         "/ui/actions/agent.toggle",
@@ -327,7 +327,6 @@ def test_portal_case_flows_through_intake_and_applicant_sees_only_own_parcel(cli
         follow_redirects=False,
     )
     assert toggled.status_code == 303
-    choose(client, "persona_data_steward")
     ran = client.post(
         "/ui/actions/agent.run.intake",
         data={"csrf_token": token(client, "/agent/intake"), "next": "/agent/intake"},

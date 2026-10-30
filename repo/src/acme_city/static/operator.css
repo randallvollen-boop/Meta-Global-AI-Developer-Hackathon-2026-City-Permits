@@ -1,1 +1,13 @@
 /* Agent operator screens. Every selector starts with .opr- or body[data-screen=...] for agent screens. */
+
+.opr-page-head { margin-bottom: 1rem; }
+.opr-summary .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.opr-agent-list p { display: flex; justify-content: space-between; gap: .5rem; }
+.opr-role-permissions { display: grid; gap: .75rem; }
+.opr-role-permissions form { display: grid; gap: .5rem; max-width: 44rem; }
+.opr-checkbox { font-weight: 600; }
+
+@media (max-width: 520px) {
+  .opr-summary .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opr-role-permissions .data-table { display: block; overflow-x: auto; max-width: 100%; }
+}

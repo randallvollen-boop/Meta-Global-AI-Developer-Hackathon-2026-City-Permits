@@ -94,7 +94,10 @@ def context_for(session, actor_id: str) -> ActorContext:
 
 
 def make_arrival(session) -> permit.Application:
-    """Submit one case that arrived from outside the City."""
+    """Submit one case that arrived from outside the City.
+
+    The Data Steward records the arrival; the Agent Operator processes it.
+    """
     service = PermitService(session)
     steward = context_for(session, "persona_data_steward")
     view = service.submit(
@@ -131,7 +134,7 @@ def intake_runs(session) -> list[agent_models.AgentRun]:
     )
 
 
-def test_only_the_steward_may_process_a_selection(seeded: Settings) -> None:
+def test_only_the_operator_may_process_a_selection(seeded: Settings) -> None:
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
@@ -139,6 +142,7 @@ def test_only_the_steward_may_process_a_selection(seeded: Settings) -> None:
             arrival = make_arrival(session)
             selection = [Selection(arrival.id, arrival.version)]
             for actor_id in (
+                "persona_data_steward",
                 "persona_permit_reviewer",
                 "persona_city_administrator",
                 "persona_applicant",
@@ -161,9 +165,9 @@ def test_an_empty_selection_is_refused_and_never_falls_through(
         with factory() as session:
             wake_the_agent(session)
             make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError) as raised:
-                process_selected(session, actor=steward, selections=[])
+                process_selected(session, actor=operator, selections=[])
             assert "choose at least one case" in str(raised.value)
             # Nothing was processed: the action never became "process all".
             assert intake_runs(session) == []
@@ -176,10 +180,10 @@ def test_a_selection_is_bounded_to_fifty_cases(seeded: Settings) -> None:
     try:
         with factory() as session:
             wake_the_agent(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             selection = [Selection(f"app_fake_{index}", 1) for index in range(51)]
             with pytest.raises(ValidationError) as raised:
-                process_selected(session, actor=steward, selections=selection)
+                process_selected(session, actor=operator, selections=selection)
             assert str(MAX_SELECTION) in str(raised.value)
     finally:
         factory.dispose()
@@ -191,10 +195,10 @@ def test_a_repeated_case_is_processed_once(seeded: Settings) -> None:
         with factory() as session:
             wake_the_agent(session)
             arrival = make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             result = process_selected(
                 session,
-                actor=steward,
+                actor=operator,
                 selections=[
                     Selection(arrival.id, arrival.version),
                     Selection(arrival.id, arrival.version),
@@ -212,11 +216,11 @@ def test_a_case_named_at_two_versions_is_refused(seeded: Settings) -> None:
         with factory() as session:
             wake_the_agent(session)
             arrival = make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError):
                 process_selected(
                     session,
-                    actor=steward,
+                    actor=operator,
                     selections=[
                         Selection(arrival.id, arrival.version),
                         Selection(arrival.id, arrival.version + 1),
@@ -234,11 +238,11 @@ def test_a_stale_version_refuses_the_whole_batch(seeded: Settings) -> None:
             wake_the_agent(session)
             first = make_arrival(session)
             second = make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError):
                 process_selected(
                     session,
-                    actor=steward,
+                    actor=operator,
                     selections=[
                         Selection(first.id, first.version),
                         Selection(second.id, second.version + 5),
@@ -262,11 +266,11 @@ def test_a_case_that_does_not_wait_refuses_the_whole_batch(
             # for the intake agent.
             second.status = "ready_for_review"
             session.flush()
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError):
                 process_selected(
                     session,
-                    actor=steward,
+                    actor=operator,
                     selections=[
                         Selection(first.id, first.version),
                         Selection(second.id, second.version),
@@ -285,11 +289,11 @@ def test_the_batch_is_refused_while_the_agent_sleeps(seeded: Settings) -> None:
     try:
         with factory() as session:
             arrival = make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError) as raised:
                 process_selected(
                     session,
-                    actor=steward,
+                    actor=operator,
                     selections=[Selection(arrival.id, arrival.version)],
                 )
             assert "asleep" in str(raised.value)
@@ -307,10 +311,10 @@ def test_the_batch_processes_every_selected_case_and_is_audited(
             wake_the_agent(session)
             first = make_arrival(session)
             second = make_arrival(session)
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             result = process_selected(
                 session,
-                actor=steward,
+                actor=operator,
                 selections=[
                     Selection(first.id, first.version),
                     Selection(second.id, second.version),
@@ -325,7 +329,7 @@ def test_the_batch_processes_every_selected_case_and_is_audited(
                 )
             ).scalars().all()
             assert len(events) == 1
-            assert events[0].actor_id == "persona_data_steward"
+            assert events[0].actor_id == "persona_agent_operator"
             metadata = dict(events[0].metadata_json or {})
             assert metadata["selection_size"] == 2
             assert sorted(metadata["application_ids"]) == sorted(

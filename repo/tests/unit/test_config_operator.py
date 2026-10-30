@@ -36,3 +36,6 @@ def test_operator_overrides_only_contain_set_names() -> None:
     assert operator_env_overrides({"ACME_AGENT_WORKER_ENABLED": "off"}) == {
         "agent_worker_enabled": False
     }
+    assert operator_env_overrides({"ACME_MUSE_LIVE_CALLS_ALLOWED": "true"}) == {
+        "muse_live_calls_allowed": True
+    }

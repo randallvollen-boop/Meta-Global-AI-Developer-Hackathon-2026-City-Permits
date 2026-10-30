@@ -17,6 +17,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.agents.bundle import AGENT_OPERATIONS
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
@@ -26,12 +27,22 @@ from acme_city.core.errors import NotFoundError, ValidationError
 from acme_city.core.ids import new_id
 from acme_city.documents.service import ALLOWED_DOCUMENT_TYPES
 from acme_city.persistence.models import governance, permit
+from acme_city.persistence.models import agent_ops
 
 #: The grant that changes the configuration.
 PERMISSION_MANAGE = "config.manage"
 
 #: The grant that adds a user.
 PERMISSION_MANAGE_USERS = "admin.actor.manage"
+
+PERMISSION_MANAGE_AGENT_ROLES = "admin.actor.manage"
+MANAGED_AGENT_ROLE_IDS: tuple[str, ...] = (
+    "agent_operator",
+    "permit_reviewer",
+    "intake_clerk",
+    "domain_steward",
+    "domain_mdm_steward",
+)
 
 #: The persona roles a user may be given.
 PERSONA_ROLES: dict[str, str] = {
@@ -306,6 +317,70 @@ class ConfigurationService:
 
     # ------------------------------------------------------------------- users
 
+    def set_agent_role_entitlement(
+        self,
+        *,
+        role_id: str,
+        can_run_agents: bool,
+        reason: str,
+        actor: ActorContext,
+    ) -> agent_ops.AgentRoleEntitlement:
+        """Set one managed agent-operation bundle for a staff role.
+
+        The existing administrator-management grant is the explicit boundary
+        for this Users and roles control.  The role id is server validated and
+        never accepted as authority from a browser.
+        """
+        self._permissions.authorize(
+            actor,
+            PERMISSION_MANAGE_AGENT_ROLES,
+            ResourceContext(domain_id=None, record_ids=()),
+        )
+        if role_id not in MANAGED_AGENT_ROLE_IDS:
+            raise ValidationError("that role cannot receive the agent operations bundle")
+        if not str(reason or "").strip():
+            raise ValidationError("a reason is required when changing role permissions")
+        row = self._session.execute(
+            select(agent_ops.AgentRoleEntitlement).where(
+                agent_ops.AgentRoleEntitlement.role_id == role_id
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            row = agent_ops.AgentRoleEntitlement(
+                id=new_id("agentrole"),
+                correlation_id=new_id("corr"),
+                role_id=role_id,
+                can_run_agents=bool(can_run_agents),
+                version=1,
+                changed_by=actor.actor_id,
+                changed_at=self._now,
+            )
+            self._session.add(row)
+            before = False
+        else:
+            before = bool(row.can_run_agents)
+            row.can_run_agents = bool(can_run_agents)
+            row.version += 1
+            row.changed_by = actor.actor_id
+            row.changed_at = self._now
+        self._session.flush()
+        self._audit.append(
+            action="admin.role.permissions",
+            actor=actor,
+            target_type="agent_role_entitlement",
+            target_id=row.id,
+            before_version=row.version - 1 if row.version > 1 else None,
+            after_version=row.version,
+            reason=str(reason).strip(),
+            metadata={
+                "role_id": role_id,
+                "before": before,
+                "after": bool(can_run_agents),
+                "bundle": list(AGENT_OPERATIONS),
+            },
+        )
+        return row
+
     def add_user(
         self,
         *,
@@ -417,6 +492,8 @@ def permit_type_view(row: permit.PermitType) -> dict[str, Any]:
 
 
 __all__ = [
+    "MANAGED_AGENT_ROLE_IDS",
+    "PERMISSION_MANAGE_AGENT_ROLES",
     "PERMISSION_MANAGE",
     "PERMISSION_MANAGE_USERS",
     "PERSONA_ROLES",
