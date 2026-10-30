@@ -527,7 +527,13 @@ def process_job(
         snapshot.source_snapshot_id,
     )
     thresholds = _thresholds(policy, family)
-    best: tuple[candidates.Candidate, PolicyDecision, float, tuple[str, ...]] | None = None
+    best: tuple[
+        candidates.Candidate,
+        PolicyDecision,
+        float,
+        tuple[str, ...],
+        registry_automation.RegistryAutomationEvaluation,
+    ] | None = None
     for candidate in candidate_set.candidates[:MAX_EVALUATIONS_PER_JOB]:
         checks = safety_checks(
             session,
@@ -551,7 +557,7 @@ def process_job(
             next_best_score=next_best,
             thresholds=thresholds,
         )
-        _record_evaluation(
+        recorded = _record_evaluation(
             session,
             job=job,
             snapshot=snapshot,
@@ -564,7 +570,13 @@ def process_job(
             checks=checks,
         )
         if best is None or candidate.score > best[2]:
-            best = (candidate, evaluation.decision, candidate.score, evaluation.reasons)
+            best = (
+                candidate,
+                evaluation.decision,
+                candidate.score,
+                evaluation.reasons,
+                recorded,
+            )
 
     if best is None:
         return JobOutcome(
@@ -574,7 +586,7 @@ def process_job(
             attempts=job.attempts,
             note="no candidate was found for this record",
         )
-    candidate, decision, score, reasons = best
+    candidate, decision, score, reasons, recorded = best
     if decision is PolicyDecision.IGNORE:
         return JobOutcome(
             job_id=job.id,
@@ -595,6 +607,23 @@ def process_job(
             attempts=job.attempts,
             note="a person decides: " + ", ".join(reasons),
         )
+    if policy.mode != "active":
+        return JobOutcome(
+            job_id=job.id,
+            status=JOB_COMPLETED,
+            decision=PolicyDecision.SUGGEST.value,
+            entity_id=candidate.entity_id,
+            score=score,
+            attempts=job.attempts,
+            note="the policy records suggestions only, so a person decides",
+        )
+    application = automation.apply_evaluation(
+        session,
+        evaluation=recorded,
+        policy=policy,
+        actor=service_actor(),
+        now=moment,
+    )
     return JobOutcome(
         job_id=job.id,
         status=JOB_COMPLETED,
@@ -602,7 +631,7 @@ def process_job(
         entity_id=candidate.entity_id,
         score=score,
         attempts=job.attempts,
-        note="the link is eligible for automatic application",
+        note=f"the link was applied and waits for a review: {application.id}",
     )
 
 

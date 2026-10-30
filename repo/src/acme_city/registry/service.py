@@ -23,6 +23,7 @@ from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.clock import utc_now
 from acme_city.core.errors import (
+    ConflictError,
     NotFoundError,
     ValidationError,
 )
@@ -41,6 +42,7 @@ from acme_city.registry.provenance import (
     current_accepted_snapshot,
 )
 from acme_city.registry.schemas import (
+    AutomaticLinkCommand,
     CrosswalkView,
     MatchDecisionCommand,
     MatchEvidenceView,
@@ -48,7 +50,15 @@ from acme_city.registry.schemas import (
     MatchProposalView,
     TrustedView,
 )
-from acme_city.persistence.models import change, finance, governance, permit, registry, source
+from acme_city.persistence.models import (
+    change,
+    finance,
+    governance,
+    permit,
+    registry,
+    registry_automation,
+    source,
+)
 
 #: The link states a crosswalk may carry.
 LINK_STATUSES: tuple[str, ...] = (
@@ -373,6 +383,139 @@ class RegistryService:
         )
         return VersionedResult(value=view, version=view.version, audit_event_id=event.id)
 
+    def apply_automatic_link(
+        self,
+        command: AutomaticLinkCommand,
+        actor: ActorContext,
+        *,
+        policy: registry_automation.RegistryAutomationPolicy,
+    ) -> VersionedResult[CrosswalkView]:
+        """Apply one eligible link under the active policy of the City.
+
+        The service never applies a link on its own authority.  The acting
+        service identity holds the narrow registry grant, and the active
+        policy is the authorization of the steward who activated it, so the
+        audit event names both.
+
+        A link that a person already decided is never replaced, and a link
+        that is already approved for the same entity is left as it is.
+        """
+        domain_id = self._domain_for(command.source_system_id, command.dataset_key)
+        self._permissions.authorize(
+            actor,
+            PROPOSE_ACTION,
+            ResourceContext(
+                domain_id=domain_id,
+                record_type="source_record",
+                record_ids=(command.source_record_id,),
+            ),
+        )
+        if policy.mode != "active":
+            raise ValidationError(
+                "the policy of the City does not apply links right now"
+            )
+        if command.dataset_key not in (policy.source_scopes or []):
+            raise ValidationError(
+                "the policy of the City does not cover this source dataset"
+            )
+        entity_type = self._entity_type_of(command.entity_id)
+        if entity_type is None:
+            raise ValidationError("the canonical entity of this link does not exist")
+        rows = self._crosswalk_rows(command.source_system_id, command.source_record_id)
+        approved = [row for row in rows if row.link_status == "approved"]
+        if any(row.entity_id != command.entity_id for row in approved):
+            raise ConflictError(
+                "an approved link of this record points at another entity, so it is "
+                "not replaced"
+            )
+        already = next(
+            (row for row in approved if row.entity_id == command.entity_id), None
+        )
+        if already is not None:
+            event = self._audit.append(
+                action="registry.crosswalk.apply_automatic",
+                actor=actor,
+                target_type="source_record",
+                target_id=command.source_record_id,
+                before_version=already.version,
+                after_version=already.version,
+                reason="the link was already applied",
+                references=[already.id, command.entity_id, policy.id],
+                metadata={
+                    "policy_version": policy.version,
+                    "authorized_by_actor_id": policy.recorded_by_actor_id,
+                    "already_applied": True,
+                },
+            )
+            return VersionedResult(
+                value=crosswalk_view(already),
+                version=already.version,
+                audit_event_id=event.id,
+            )
+
+        self._ensure_canonical_entity(
+            command.entity_id, entity_type, self._entity_label(command.entity_id)
+        )
+        crosswalk = next((row for row in rows if row.link_status == "proposed"), None)
+        if crosswalk is None:
+            crosswalk = registry.Crosswalk(
+                id=new_id("crosswalk"),
+                entity_id=command.entity_id,
+                entity_type=entity_type,
+                source_system_id=command.source_system_id,
+                source_dataset_key=command.dataset_key,
+                source_record_id=command.source_record_id,
+                link_status="proposed",
+                decision=None,
+                decision_actor_id=None,
+                decided_at=None,
+                expected_version=None,
+                valid_from=None,
+                valid_to=None,
+                superseded_by_crosswalk_id=None,
+                scenario_id=None,
+            )
+            self._session.add(crosswalk)
+            self._session.flush()
+        before_version = crosswalk.version
+        crosswalk.link_status = "approved"
+        crosswalk.decision = (
+            command.reason or "the policy of the City applied this link"
+        )
+        crosswalk.decision_actor_id = actor.actor_id
+        crosswalk.decided_at = self._now
+        crosswalk.expected_version = before_version
+        crosswalk.valid_from = self._now
+        crosswalk.valid_to = None
+        crosswalk.version = before_version + 1
+        self._session.flush()
+        self._supersede_other_approved(crosswalk)
+        self._register_revalidation(
+            crosswalk,
+            actor,
+            assignee_actor_id=policy.recorded_by_actor_id,
+        )
+        event = self._audit.append(
+            action="registry.crosswalk.apply_automatic",
+            actor=actor,
+            target_type="source_record",
+            target_id=command.source_record_id,
+            before_version=before_version,
+            after_version=crosswalk.version,
+            reason=crosswalk.decision,
+            references=[crosswalk.id, command.entity_id, policy.id],
+            metadata={
+                "policy_version": policy.version,
+                "authorized_by_actor_id": policy.recorded_by_actor_id,
+                "source_dataset_key": command.dataset_key,
+            },
+        )
+        return VersionedResult(
+            value=crosswalk_view(crosswalk),
+            version=crosswalk.version,
+            audit_event_id=event.id,
+        )
+
     def defer(
         self,
         *,
@@ -601,8 +744,10 @@ class RegistryService:
         actor: ActorContext,
         *,
         previous_entity_id: str | None = None,
+        assignee_actor_id: str | None = None,
     ) -> None:
         """Register the revalidation work a new or corrected link creates."""
+        assignee = assignee_actor_id or actor.actor_id
         entity_ids = tuple({crosswalk.entity_id, previous_entity_id or crosswalk.entity_id})
         dependents = affected_dependents(self._session, entity_ids=entity_ids)
         total = sum(len(items) for items in dependents.values())
@@ -624,7 +769,7 @@ class RegistryService:
                     change.ReviewTask(
                         id=new_id("task"),
                         change_case_id=None,
-                        assignee_actor_id=actor.actor_id,
+                        assignee_actor_id=assignee,
                         task_type="crosswalk_revalidation",
                         target_type=consumer_type,
                         target_id=consumer_id,
@@ -643,7 +788,7 @@ class RegistryService:
                     f"the link of {crosswalk.source_record_id!r} changed; the dependent records "
                     "have to be reviewed before their decisions are relied on"
                 ),
-                assigned_actor_id=actor.actor_id,
+                assigned_actor_id=assignee,
                 status="open",
                 scenario_id=crosswalk.scenario_id,
             )

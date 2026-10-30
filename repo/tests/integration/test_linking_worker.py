@@ -19,11 +19,13 @@ from sqlalchemy import select
 from acme_city.agents import linking
 from acme_city.auth.context import ActorContext
 from acme_city.core.config import Settings
+from acme_city.core.errors import ConflictError
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
 from acme_city.ingestion.service import IngestionService
-from acme_city.persistence.models import registry, registry_automation, source
+from acme_city.persistence.models import audit, change, registry, registry_automation, source
+from acme_city.registry import automation
 from acme_city.registry.automation import enqueue_accepted_snapshot
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
@@ -472,5 +474,255 @@ def test_the_worker_only_covers_the_datasets_of_the_policy(
         _add_policy(factory, source_scopes=["contractor_register"])
         _ingest(factory)
         assert len(_jobs(factory)) == 0
+    finally:
+        factory.dispose()
+
+
+# ----------------------------------------------------------- the application
+
+
+class _Rollback(Exception):
+    """Raised inside a transaction to undo everything it wrote."""
+
+
+def _eligible_evaluation(
+    factory: SessionFactory,
+    *,
+    entity_id: str = "party_applicant_1",
+    decision: str = "auto_apply",
+) -> str:
+    """Record an evaluation of one candidate and return its identifier."""
+    job = _jobs(factory)[0]
+    with transaction(factory) as session:
+        snapshot = session.get(source.SourceSnapshot, job.source_snapshot_id)
+        assert snapshot is not None
+        evaluation = registry_automation.RegistryAutomationEvaluation(
+            id="autoeval_test",
+            job_id=job.id,
+            source_snapshot_id=snapshot.source_snapshot_id,
+            policy_id="policy_worker_1",
+            target_family="owner_party",
+            target_entity_id=entity_id,
+            score=0.70,
+            score_scale=linking.SCORE_SCALE,
+            decision=decision,
+            evidence={
+                "reasons": ["eligible"],
+                "failed_checks": [],
+                "compared_fields": ["party_ref"],
+                "supporting": [],
+                "conflicting": [],
+                "matcher_version": "registry-candidates-v1",
+            },
+        )
+        session.add(evaluation)
+    return evaluation.id
+
+
+def test_the_application_writes_the_link_the_audit_and_the_review_task(
+    seeded: Settings,
+) -> None:
+    """One application writes the link, the trail and the review item together."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory)
+        evaluation_id = _eligible_evaluation(factory)
+        with transaction(factory) as session:
+            evaluation = session.get(
+                registry_automation.RegistryAutomationEvaluation, evaluation_id
+            )
+            assert evaluation is not None
+            policy = session.get(
+                registry_automation.RegistryAutomationPolicy, "policy_worker_1"
+            )
+            assert policy is not None
+            application = automation.apply_evaluation(
+                session,
+                evaluation=evaluation,
+                policy=policy,
+                actor=linking.service_actor(),
+            )
+            application_id = application.id
+
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "PER-AP-0001"
+                )
+            ).scalars().all()
+            assert len(links) == 1
+            link = links[0]
+            assert link.link_status == "approved"
+            assert link.entity_id == "party_applicant_1"
+            assert link.decision_actor_id == linking.LINKING_ACTOR_ID
+            assert link.decided_at is not None
+
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert len(applications) == 1
+            recorded = applications[0]
+            assert recorded.id == application_id
+            assert recorded.crosswalk_id == link.id
+            assert recorded.status == "applied"
+            assert recorded.applied_by_actor_id == linking.LINKING_ACTOR_ID
+            assert recorded.before_state["link_status"] == "none"
+            assert recorded.after_state["entity_id"] == "party_applicant_1"
+            assert recorded.after_state["link_status"] == "approved"
+
+            events = session.execute(
+                select(audit.AuditEvent).where(
+                    audit.AuditEvent.action == automation.APPLY_ACTION
+                )
+            ).scalars().all()
+            assert len(events) == 1
+            event = events[0]
+            assert event.actor_id == linking.LINKING_ACTOR_ID
+            assert event.metadata_json["authorized_by_actor_id"] == "persona_data_steward"
+            assert event.metadata_json["policy_version"] == 1
+            assert link.id in (event.references or [])
+
+            tasks = session.execute(
+                select(change.ReviewTask).where(
+                    change.ReviewTask.task_type == automation.REVIEW_TASK_TYPE
+                )
+            ).scalars().all()
+            assert len(tasks) == 1
+            assert tasks[0].target_id == link.id
+            assert tasks[0].assignee_actor_id == "persona_data_steward"
+            assert tasks[0].status == "open"
+    finally:
+        factory.dispose()
+
+
+def test_the_application_is_written_in_one_transaction(seeded: Settings) -> None:
+    """Nothing of an undone application is left behind."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory)
+        evaluation_id = _eligible_evaluation(factory)
+        with pytest.raises(_Rollback):
+            with transaction(factory) as session:
+                evaluation = session.get(
+                    registry_automation.RegistryAutomationEvaluation, evaluation_id
+                )
+                assert evaluation is not None
+                policy = session.get(
+                    registry_automation.RegistryAutomationPolicy, "policy_worker_1"
+                )
+                assert policy is not None
+                automation.apply_evaluation(
+                    session,
+                    evaluation=evaluation,
+                    policy=policy,
+                    actor=linking.service_actor(),
+                )
+                raise _Rollback()
+
+        with transaction(factory) as session:
+            links = session.execute(
+                select(registry.Crosswalk).where(
+                    registry.Crosswalk.source_record_id == "PER-AP-0001"
+                )
+            ).scalars().all()
+            assert links == []
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert applications == []
+            events = session.execute(
+                select(audit.AuditEvent).where(
+                    audit.AuditEvent.action == automation.APPLY_ACTION
+                )
+            ).scalars().all()
+            assert events == []
+            tasks = session.execute(
+                select(change.ReviewTask).where(
+                    change.ReviewTask.task_type == automation.REVIEW_TASK_TYPE
+                )
+            ).scalars().all()
+            assert tasks == []
+    finally:
+        factory.dispose()
+
+
+def test_an_approved_link_of_another_entity_is_never_replaced(
+    seeded: Settings,
+) -> None:
+    """A decision of a person is not replaced by the automation."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory)
+        evaluation_id = _eligible_evaluation(factory)
+        with transaction(factory) as session:
+            session.add(
+                registry.Crosswalk(
+                    id="crosswalk_manual",
+                    entity_id="party_applicant_2",
+                    entity_type="party",
+                    source_system_id="permitting",
+                    source_dataset_key="applicant_profiles",
+                    source_record_id="PER-AP-0001",
+                    link_status="approved",
+                    decision="the steward decided this link",
+                    decision_actor_id="persona_data_steward",
+                    decided_at=datetime(2026, 10, 29, 11, 0, tzinfo=UTC),
+                    expected_version=None,
+                    valid_from=datetime(2026, 10, 29, 11, 0, tzinfo=UTC),
+                    valid_to=None,
+                    superseded_by_crosswalk_id=None,
+                    scenario_id=None,
+                )
+            )
+        with pytest.raises(ConflictError):
+            with transaction(factory) as session:
+                evaluation = session.get(
+                    registry_automation.RegistryAutomationEvaluation, evaluation_id
+                )
+                assert evaluation is not None
+                policy = session.get(
+                    registry_automation.RegistryAutomationPolicy, "policy_worker_1"
+                )
+                assert policy is not None
+                automation.apply_evaluation(
+                    session,
+                    evaluation=evaluation,
+                    policy=policy,
+                    actor=linking.service_actor(),
+                )
+        with transaction(factory) as session:
+            link = session.get(registry.Crosswalk, "crosswalk_manual")
+            assert link is not None
+            assert link.entity_id == "party_applicant_2"
+            assert link.link_status == "approved"
+            assert link.decision == "the steward decided this link"
+    finally:
+        factory.dispose()
+
+
+def test_the_worker_suggests_until_the_family_can_be_taken_back(
+    seeded: Settings,
+) -> None:
+    """A family without a tested reversal is never applied on its own."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        _add_policy(factory)
+        _ingest(factory)
+        with transaction(factory) as session:
+            report = linking.run_once(session)
+        assert report.processed[0].decision == "suggest"
+        with transaction(factory) as session:
+            evaluation = session.execute(
+                select(registry_automation.RegistryAutomationEvaluation)
+            ).scalar_one()
+            assert evaluation.decision == "suggest"
+            assert "undo_supported" in evaluation.evidence["failed_checks"]
+            applications = session.execute(
+                select(registry_automation.RegistryAutomationApplication)
+            ).scalars().all()
+            assert applications == []
     finally:
         factory.dispose()

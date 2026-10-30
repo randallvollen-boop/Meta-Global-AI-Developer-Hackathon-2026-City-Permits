@@ -92,8 +92,47 @@ class MatchDecisionCommand(RegistryModel):
     scenario_id: str | None = None
 
 
+class AutomaticLinkCommand(RegistryModel):
+    """Ask the registry to apply one eligible link to a canonical entity."""
+
+    source_system_id: str
+    dataset_key: str
+    source_record_id: str
+    entity_id: str
+    reason: str = ""
+
+
+class AutomaticApplicationView(RegistryModel):
+    """One link the service applied and the evidence of that decision.
+
+    The view names the service that applied the link and the steward whose
+    policy authorized it, so the trail never shows an unnamed decision.
+    """
+
+    application_id: str
+    evaluation_id: str
+    crosswalk_id: str | None = None
+    entity_id: str
+    entity_type: str = "party"
+    source_system_id: str
+    source_dataset_key: str | None = None
+    source_record_id: str
+    status: str = "applied"
+    score: float | None = None
+    score_scale: str = ""
+    decision: str = ""
+    policy_version: int | None = None
+    applied_by_actor_id: str
+    authorized_by_actor_id: str | None = None
+    applied_at: datetime
+    reviewed_by_actor_id: str | None = None
+    reviewed_at: datetime | None = None
+    review_note: str | None = None
+    reasons: list[str] = Field(default_factory=list)
+    failed_checks: list[str] = Field(default_factory=list)
+
+
 class CrosswalkView(RegistryModel):
-    """One source-to-canonical link and the decision that produced it."""
 
     crosswalk_id: str
     entity_id: str
@@ -143,6 +182,8 @@ class TrustedView(RegistryModel):
 
 
 __all__ = [
+    "AutomaticApplicationView",
+    "AutomaticLinkCommand",
     "CrosswalkView",
     "DECISION_OUTCOMES",
     "MatchDecisionCommand",
