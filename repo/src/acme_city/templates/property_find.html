@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
-<div class="page-head"><div><h1>Find a property</h1><p class="sub">Type an address. The city locator (simulated ArcGIS) corrects it to the closest official address and names the parcel, the number the city uses to identify a property.</p></div></div>
+<div class="page-head"><div><h1>Find a property</h1><p class="sub">Type an address. The city locator (simulated ArcGIS) corrects it to the closest official address and names the parcel, the number the city uses to identify a property.</p></div><div class="actions">{{ ui.general_help_button() }}</div></div>
 
 <section class="panel" aria-labelledby="find-heading">
   <h2 id="find-heading">Search</h2>

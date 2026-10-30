@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -6,6 +7,7 @@
     <h1>Review queue</h1>
     <p class="sub">The cases that are with the Permit Reviewer, by review area, and the decisions that were recorded recently.</p>
   </div>
+  <div class="actions">{{ ui.help_button('review_queue') }}</div>
 </div>
 
 <nav class="tabs" aria-label="Review areas" data-testid="review-areas">

@@ -1,4 +1,5 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
 {% block content %}
 <section class="city-hero" aria-labelledby="hero-h">
   <div class="city-wrap">
@@ -7,6 +8,7 @@
       <div>
         <h1 id="hero-h">Welcome to the City of Acme</h1>
         <p>Pay a bill, check collection days, find a park, or apply for a permit.</p>
+        <p>{{ ui.general_help_button() }}</p>
       </div>
       <p><a class="city-cta" href="/city/permits" data-testid="hero-permits">Apply for a permit <svg aria-hidden="true"><use href="#c-arrow"/></svg></a></p>
     </div>

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
-<div class="page-head"><div><h1>Town map</h1><p class="sub">The fictional town of ACME City, drawn from the simulated parcel, address-point and street layers. No outside tiles. {{ town.simulated_label }}</p></div></div>
+<div class="page-head"><div><h1>Town map</h1><p class="sub">The fictional town of ACME City, drawn from the simulated parcel, address-point and street layers. No outside tiles. {{ town.simulated_label }}</p></div><div class="actions">{{ ui.general_help_button() }}</div></div>
 
 <section class="panel" aria-labelledby="map-search-heading">
   <h2 id="map-search-heading">Search the map</h2>

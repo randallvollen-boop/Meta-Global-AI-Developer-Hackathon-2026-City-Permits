@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 {% import "components/steward_guide.html" as guide_ui with context %}
 
 {# The automatic linking settings of the Data Steward.
@@ -13,6 +14,7 @@
     <h1>Automatic linking</h1>
     <p class="sub">The policy that lets the city link source records to master records on its own. A steward decides whether it runs, and every link it applies is reviewed by a person.</p>
   </div>
+  <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
 {{ guide_ui.panel(guide) }}

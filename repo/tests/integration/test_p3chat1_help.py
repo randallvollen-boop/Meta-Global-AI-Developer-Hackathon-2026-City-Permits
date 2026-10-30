@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from acme_city.app import create_app
+from acme_city.applicant_help.config import load_config
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
@@ -28,6 +29,9 @@ from acme_city.persistence.session import SessionFactory, initialize_database, t
 from acme_city.ui.router import router as ui_router
 
 FENCE_QUESTION = "Do I need a permit for a 6 ft fence?"
+
+#: The sentence the panel shows when no published text matches a question.
+NO_MATCH_TEXT = load_config().no_match_text
 
 
 @pytest.fixture()
@@ -221,6 +225,35 @@ def test_an_unknown_question_gets_the_explicit_no_match(
             assert turns[0].answer["paragraphs"] == []
     finally:
         factory.dispose()
+
+
+def test_the_no_match_text_is_printed_once(client: TestClient) -> None:
+    """The no-match sentence is shown once in the turn, not twice."""
+    choose(client, "persona_applicant")
+    location = ask(client, "/apply", "purple monkey dishwasher")
+    page = client.get("/apply", params={"help": conversation_of(location)}).text
+    turn = re.search(r'<li data-testid="help-turn".*?</li>', page, re.S)
+    assert turn is not None
+    assert turn.group(0).count(NO_MATCH_TEXT) == 1
+    assert page.count('data-testid="help-no-match"') == 1
+
+
+def test_a_citation_shows_the_readable_label_of_the_passage(
+    client: TestClient,
+) -> None:
+    """The citation names the passage, not the identifier of the record."""
+    choose(client, "persona_applicant")
+    location = ask(client, "/apply", FENCE_QUESTION)
+    page = client.get("/apply", params={"help": conversation_of(location)}).text
+    summaries = re.findall(
+        r'<summary data-testid="help-citation">(.*?)</summary>', page, re.S
+    )
+    assert summaries
+    for summary in summaries:
+        # The raw identifier of the passage is not what the applicant reads.
+        assert not re.search(r"(rule|lifecycle|service_target)\.[A-Za-z0-9]", summary)
+    # The readable label of the quoted rule is there.
+    assert "ACME Code §14-305: Fence height, front yard" in page
 
 
 def test_ask_the_city_creates_a_help_request(client: TestClient, environment: Settings) -> None:

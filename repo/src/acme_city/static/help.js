@@ -30,6 +30,15 @@
     }
   }
 
+  function citationLabel(citation) {
+    /* The readable label of the passage, never its raw identifier. */
+    var label = citation.title || citation.source_id || "";
+    if (citation.citation && label.indexOf(citation.citation) === -1) {
+      label = label + ": " + citation.citation;
+    }
+    return label;
+  }
+
   function renderTurns(panel, payload) {
     var region = panel.querySelector("[data-help-conversation]");
     if (!region) return;
@@ -41,34 +50,70 @@
       var turn = turns[i];
       var item = document.createElement("li");
       item.setAttribute("data-testid", "help-turn");
-      item.setAttribute("data-outcome", turn.outcome);
+      item.setAttribute("data-outcome", turn.outcome || "");
+      item.setAttribute("data-mode", turn.mode || "");
       var question = document.createElement("p");
       question.className = "help-question-text";
       question.textContent = turn.question;
       item.appendChild(question);
-      var label = document.createElement("p");
-      label.className = "muted";
-      label.setAttribute("data-testid", "help-answer-label");
-      label.textContent = turn.label;
-      item.appendChild(label);
-      if (turn.paragraphs && turn.paragraphs.length) {
+      var paragraphs = turn.paragraphs || [];
+      if (paragraphs.length) {
+        var label = document.createElement("p");
+        label.className = "muted";
+        label.setAttribute("data-testid", "help-answer-label");
+        label.textContent = turn.label;
+        item.appendChild(label);
+      }
+      if (turn.declined_text) {
+        var declined = document.createElement("p");
+        declined.setAttribute("data-testid", "help-declined");
+        declined.setAttribute("data-reason", turn.reason || "");
+        var head = document.createElement("strong");
+        head.textContent = "The assistant did not answer.";
+        declined.appendChild(head);
+        declined.appendChild(
+          document.createTextNode(
+            " " +
+              turn.declined_text +
+              " You can ask the City below" +
+              (paragraphs.length
+                ? "; the rule text that matches your words is shown here instead"
+                : "") +
+              "."
+          )
+        );
+        item.appendChild(declined);
+      }
+      if (paragraphs.length) {
         var citations = document.createElement("ul");
         citations.className = "help-citations";
         citations.setAttribute("data-testid", "help-citations");
-        for (var j = 0; j < turn.paragraphs.length; j++) {
-          var paragraph = turn.paragraphs[j];
+        for (var j = 0; j < paragraphs.length; j++) {
+          var paragraph = paragraphs[j];
           var entry = document.createElement("li");
-          var details = document.createElement("details");
-          var summary = document.createElement("summary");
-          summary.setAttribute("data-testid", "help-citation");
-          summary.textContent = paragraph.source_id;
-          if (paragraph.citation) summary.textContent += " — " + paragraph.citation;
-          details.appendChild(summary);
-          var quote = document.createElement("blockquote");
-          quote.setAttribute("data-testid", "help-quote");
-          quote.textContent = paragraph.quote;
-          details.appendChild(quote);
-          entry.appendChild(details);
+          if (paragraph.text && paragraph.text !== paragraph.quote) {
+            var said = document.createElement("p");
+            said.setAttribute("data-testid", "help-paragraph-text");
+            said.textContent = paragraph.text;
+            entry.appendChild(said);
+          }
+          var sources =
+            paragraph.citations && paragraph.citations.length
+              ? paragraph.citations
+              : [paragraph];
+          for (var k = 0; k < sources.length; k++) {
+            var citation = sources[k];
+            var details = document.createElement("details");
+            var summary = document.createElement("summary");
+            summary.setAttribute("data-testid", "help-citation");
+            summary.textContent = citationLabel(citation);
+            details.appendChild(summary);
+            var quote = document.createElement("blockquote");
+            quote.setAttribute("data-testid", "help-quote");
+            quote.textContent = citation.quote;
+            details.appendChild(quote);
+            entry.appendChild(details);
+          }
           citations.appendChild(entry);
         }
         item.appendChild(citations);
@@ -77,6 +122,12 @@
         none.setAttribute("data-testid", "help-no-match");
         none.textContent = panel.getAttribute("data-help-no-match") || "";
         item.appendChild(none);
+      }
+      if (turn.created_at) {
+        var stamp = document.createElement("p");
+        stamp.className = "muted";
+        stamp.textContent = turn.created_at;
+        item.appendChild(stamp);
       }
       list.appendChild(item);
     }

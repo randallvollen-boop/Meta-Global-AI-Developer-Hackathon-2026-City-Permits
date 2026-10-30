@@ -4,6 +4,8 @@
 
    ui.info('glossary_key')                    P1  ⓘ popover beside a label
    ui.help_button('screen_key')               P2  ? button for a page header
+   ui.general_help_button()                   P2  ? button for a screen that
+                                              has no topic of its own
    ui.detail_link('kind', id, 'label')        P3  link that opens the drawer
    ui.drawer()                                P3  the one mount point, in a layout
 
@@ -30,6 +32,11 @@
 {%- if ui_screen_help(screen) -%}
 <a class="ui-help" href="{{ ui_detail_href(request, 'help', screen) }}" data-ui-detail data-detail-kind="help" data-detail-id="{{ screen }}" aria-haspopup="dialog" aria-label="Help for this screen" title="Help for this screen" data-testid="ui-help"><span aria-hidden="true">?</span></a>
 {%- endif -%}
+{%- endmacro %}
+
+{# A screen with no help topic of its own offers the general help. #}
+{% macro general_help_button() -%}
+<a class="ui-help" href="/help" aria-label="Help" title="Help" data-testid="ui-help"><span aria-hidden="true">?</span></a>
 {%- endmacro %}
 
 {% macro drawer_inner(st) -%}

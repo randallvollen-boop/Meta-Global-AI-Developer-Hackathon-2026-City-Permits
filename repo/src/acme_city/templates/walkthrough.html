@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 {% from "components/open_as.html" import open_as %}
 
 {% block content %}
@@ -7,6 +8,7 @@
     <h1>Walkthrough</h1>
     <p class="sub">{{ walkthrough.steps|length }} steps, about ten minutes. The button on each step switches to the persona who does that job and opens the real screen, so every check the app makes still applies. Steps 6 and 7 go together.</p>
   </div>
+  <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
 <ol class="guide-steps" data-testid="walkthrough-steps">

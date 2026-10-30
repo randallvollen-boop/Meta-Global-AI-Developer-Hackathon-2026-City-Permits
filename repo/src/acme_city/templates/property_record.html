@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 
 {% block content %}
 {% set parcel = record.parcel %}
@@ -12,6 +13,7 @@
     <h1>Property record: {{ record.site_address or record.parcel_number }}</h1>
     <p class="sub">The parcel number identifies the property. Addresses, units, owner, zoning and every permit are linked to it.</p>
   </div>
+  <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
 {% include "components/property_search.html" %}

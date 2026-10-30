@@ -176,10 +176,15 @@ def run_view(session: Session, turn: Any, label: str) -> dict[str, Any] | None:
     }
 
 
-def turn_view(turn: Any) -> dict[str, Any]:
-    """Return the view of one turn of the conversation."""
+def turn_view(turn: Any, config: Any = None) -> dict[str, Any]:
+    """Return the view of one turn of the conversation.
+
+    ``config`` is the help configuration.  When it is given, the view also
+    carries the sentence of a refusal, so that the panel and the script show
+    the same words for a turn the assistant declined.
+    """
     answer = dict(turn.answer or {})
-    return {
+    view = {
         "turn_id": turn.id,
         "question": turn.question,
         "created_at": turn.created_at.isoformat() if turn.created_at else "",
@@ -190,15 +195,18 @@ def turn_view(turn: Any) -> dict[str, Any]:
         "cannot_answer": bool(answer.get("cannot_answer")),
         "reason": str(answer.get("reason", "")),
         "sources": list(turn.sources or []),
+        "declined_text": "",
     }
+    if config is not None:
+        view["declined_text"] = (
+            config.refusal_text(view["reason"]) if view["outcome"] == "unanswerable" else ""
+        )
+    return view
 
 
 def _turn_with_run(session: Session, turn: Any, config: Any) -> dict[str, Any]:
     """Return the view of a turn with the source line of its run."""
-    view = turn_view(turn)
-    view["declined_text"] = (
-        config.refusal_text(view["reason"]) if view["outcome"] == "unanswerable" else ""
-    )
+    view = turn_view(turn, config)
     view["run"] = run_view(session, turn, view["label"])
     return view
 

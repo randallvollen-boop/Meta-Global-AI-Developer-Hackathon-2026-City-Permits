@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 {% set agent = agent %}
 
 {% block content %}
@@ -18,6 +19,7 @@
   <div class="actions">
     <a class="btn ghost" href="/agents">Back to agents</a>
     <a class="btn ghost" href="/agent/{{ agent.agent_key }}" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
+    {{ ui.help_button('agent_intake' if agent.agent_key == 'intake' else 'agent_adjudication') }}
   </div>
 </div>
 
@@ -61,7 +63,7 @@
     <p class="lock" data-testid="agent-toggle-locked">
       <svg aria-hidden="true"><use href="#i-lock"/></svg>
       Your role cannot wake this agent or put it back to sleep. The Agent
-      Operator or the City Administrator can.
+      Operator can.
     </p>
     {% endif %}
     {% if agent.state.changed_by %}

@@ -110,7 +110,8 @@ def _answer_payload(service: ApplicantHelpService, result: Any) -> dict[str, Any
         "escalation": service.escalation_state(conversation),
         "answer": result.answer.to_dict(),
         "turns": [
-            help_views.turn_view(turn) for turn in service.turns(conversation)
+            help_views.turn_view(turn, service.config)
+            for turn in service.turns(conversation)
         ],
         "help_requests": [
             {

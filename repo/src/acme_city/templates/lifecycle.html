@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 {% from "components/open_as.html" import open_as %}
 
 {% block content %}
@@ -7,6 +8,7 @@
     <h1>Permit life cycle</h1>
     <p class="sub">Every status a permit application can hold and every move between them: {{ lifecycle.statuses|length }} statuses, {{ lifecycle.move_count }} moves. Each move names who makes it, from the grants the personas are seeded with. The counts are the cases stored in this demonstration.</p>
   </div>
+  <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
 <section class="panel guide-section" aria-labelledby="main-path-heading">

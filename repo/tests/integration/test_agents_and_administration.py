@@ -8,6 +8,7 @@ governed, audited action.
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -20,7 +21,7 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.portal_intake.scenarios import PERMIT_TYPE_KEYS, build_scenario
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import agent_ops, audit, permit
+from acme_city.persistence.models import agent_ops, audit, governance, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -163,6 +164,52 @@ def test_only_the_operator_sees_the_wake_button(client: TestClient) -> None:
 
     choose(client, "persona_data_steward")
     assert client.get("/agent/intake").status_code == 403
+
+
+def test_the_lock_note_names_the_persona_that_may_wake_the_agent(
+    client: TestClient, environment: Settings
+) -> None:
+    """The lock note names the persona the wake grant really belongs to.
+
+    The wake grant is ``agent.toggle`` and the Agent Operator holds it alone.
+    The note must not name a persona that is refused the action.
+    """
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            # A persona that may open the agent screen but does not hold the
+            # wake grant: it sees the locked toggle.
+            session.add(
+                governance.ActorGrant(
+                    id="agrant_reviewer_run_intake",
+                    actor_id="persona_permit_reviewer",
+                    permission_id="agent.run.intake",
+                    domain_id="permits",
+                    record_scope=[],
+                    effective_from=datetime(2026, 1, 1, tzinfo=UTC),
+                    source="test",
+                )
+            )
+    finally:
+        factory.dispose()
+
+    choose(client, "persona_permit_reviewer")
+    screen = client.get("/agent/intake")
+    assert screen.status_code == 200, screen.text
+    body = screen.text
+    assert 'data-testid="agent-toggle-locked"' in body
+    note = re.search(
+        r'data-testid="agent-toggle-locked">(.*?)</p>', body, re.S
+    )
+    assert note is not None
+    words = " ".join(note.group(1).split())
+    assert "The Agent Operator can." in words
+    assert "City Administrator" not in words
+
+    # The Agent Operator holds the grant, so the wake button is there.
+    choose(client, "persona_agent_operator")
+    operator = client.get("/agent/intake").text
+    assert 'data-testid="agent-toggle"' in operator
 
 
 def test_the_agent_screen_shows_its_kpis_and_graph(client: TestClient) -> None:

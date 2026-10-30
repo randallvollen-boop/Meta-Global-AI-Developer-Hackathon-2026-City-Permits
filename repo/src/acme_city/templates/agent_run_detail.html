@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
 {% set view = view %}
 
 {% block content %}
@@ -7,7 +8,7 @@
     <h1>Run detail</h1>
     <p class="sub muted">Recorded attempt evidence. A run records preparation only. A person makes permit decisions.</p>
   </div>
-  <div class="actions"><a class="btn ghost" href="/agents/runs" data-testid="agent-run-detail-back">Back to run history</a></div>
+  <div class="actions"><a class="btn ghost" href="/agents/runs" data-testid="agent-run-detail-back">Back to run history</a>{{ ui.general_help_button() }}</div>
 </div>
 
 {% if view.missing %}

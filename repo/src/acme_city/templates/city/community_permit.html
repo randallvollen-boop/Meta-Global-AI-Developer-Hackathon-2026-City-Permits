@@ -1,10 +1,12 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
 {% block content %}
 <div class="city-wrap city-page community-record-page">
   <p class="community-back-link"><a href="{{ back_url }}" data-testid="community-back">{{ 'Back to search results' if has_return_context else 'Back to community permits' }}</a></p>
 
   <h1 class="community-record-address">{{ record.address }}</h1>
   <p class="city-lede community-record-type" data-field="permit_type">{{ record.permit_type }}</p>
+  <p>{{ ui.general_help_button() }}</p>
   <p class="community-record-reference">
     {{ 'Permit number' if record.permit_number else 'Application number' }} <span data-field="reference">{{ record.reference }}</span>
     {% if record.synthetic %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}

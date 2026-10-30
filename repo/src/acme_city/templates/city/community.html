@@ -1,10 +1,12 @@
 {% extends "city/layout.html" %}
+{% import "_ui.html" as ui with context %}
 {% block content %}
 {% set return_q = lookup.query if lookup else '' %}
 {% set return_type = summary.type %}
 <div class="city-wrap city-page community-page">
   <h1>Permits in my community</h1>
   <p class="city-lede">Find public permit records by address, street, or permit number.</p>
+  <p>{{ ui.general_help_button() }}</p>
   {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some of the permits below are generated demonstration data. None of them is a real permit.</p>{% endif %}
 
   <section class="community-search-panel" aria-labelledby="community-search-heading">

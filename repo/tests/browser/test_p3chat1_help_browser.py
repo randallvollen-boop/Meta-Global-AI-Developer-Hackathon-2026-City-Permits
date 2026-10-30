@@ -21,6 +21,9 @@ PLACEMENTS = (
 
 FENCE_QUESTION = "Do I need a permit for a 6 ft fence?"
 
+#: A question the recorded answer of the assistant declines.
+DECLINE_QUESTION = "Will my fence permit be approved?"
+
 
 def sign_in(context, server: BrowserServer, actor_id: str):
     """Return a signed-in page of a browser context."""
@@ -146,4 +149,22 @@ def test_a_suggested_question_fills_the_box_with_javascript(
     page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
     page.locator('[data-testid="help-suggestion"]').first.click()
     assert page.locator('[data-testid="help-question"]').input_value() == FENCE_QUESTION
+    assert page.recorded_errors == []
+
+
+def test_a_declined_question_shows_the_refusal_with_javascript(
+    page, server: BrowserServer, login
+) -> None:
+    """The refusal of the assistant is shown in place, as it is without it."""
+    login("persona_applicant")
+    page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+    page.locator('[data-testid="help-question"]').fill(DECLINE_QUESTION)
+    page.locator('[data-testid="help-submit"]').click()
+    page.wait_for_selector('[data-testid="help-declined"]', state="visible")
+    declined = page.locator('[data-testid="help-declined"]').first
+    assert "The assistant did not answer." in declined.inner_text()
+    assert "This needs a person at the City" in declined.inner_text()
+    assert declined.get_attribute("data-reason") == "needs_a_person"
+    # The rule text that matches the question is shown as well.
+    assert page.locator('[data-testid="help-citation"]').count() >= 1
     assert page.recorded_errors == []
