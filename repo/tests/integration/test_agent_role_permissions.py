@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from acme_city.app import create_app
+from acme_city.agents.bundle import AGENT_OPERATIONS
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.configuration.service import ConfigurationService
@@ -212,3 +213,70 @@ def test_the_reviewer_runs_only_while_city_worker_is_on(
     _set_city_worker(settings, False)
     assert client.get(path).status_code == 403
 
+
+def test_the_city_worker_bundle_carries_the_operator_domains(settings: Settings) -> None:
+    """The managed bundle is the operator's bundle, with the same domains."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            service = ConfigurationService(session)
+            admin = _actor("persona_city_administrator")
+            service.set_agent_role_entitlement(
+                role_id="permit_reviewer", can_run_agents=True, reason="Coverage", actor=admin
+            )
+        with factory() as session:
+            operator = {
+                grant.action: grant.domain_id
+                for grant in PermissionResolver(session).grants_for("persona_agent_operator")
+            }
+            worker = {
+                grant.action: grant.domain_id
+                for grant in PermissionResolver(session).grants_for("persona_permit_reviewer")
+            }
+        assert set(AGENT_OPERATIONS) <= set(worker)
+        for action in AGENT_OPERATIONS:
+            assert worker[action] == operator[action], action
+    finally:
+        factory.dispose()
+
+
+def test_the_reviewer_opens_the_agent_screens_while_city_worker_is_on(
+    client: TestClient, settings: Settings
+) -> None:
+    """The agent screens and the menu agree: the reviewer opens both while on."""
+    _choose(client, "persona_permit_reviewer")
+    for path in ("/agents", "/agents/runs"):
+        assert client.get(path).status_code == 403
+    _set_city_worker(settings, True)
+    for path in ("/agents", "/agents/runs"):
+        assert client.get(path).status_code == 200, path
+    _set_city_worker(settings, False)
+    for path in ("/agents", "/agents/runs"):
+        assert client.get(path).status_code == 403, path
+
+
+def test_a_demo_reset_restores_the_operator_only_run_grants(settings: Settings) -> None:
+    """A reset puts the agent-operation grants back to the operator alone."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            service = ConfigurationService(session)
+            admin = _actor("persona_city_administrator")
+            service.set_agent_role_entitlement(
+                role_id="permit_reviewer", can_run_agents=True, reason="Coverage", actor=admin
+            )
+        with factory() as session:
+            assert _can_run(session, "persona_permit_reviewer")
+        bundle = FixtureBundle.load()
+        with transaction(factory) as session:
+            reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
+        with factory() as session:
+            assert _can_run(session, "persona_agent_operator")
+            for actor_id in (
+                "persona_permit_reviewer",
+                "persona_data_steward",
+                "persona_city_administrator",
+            ):
+                assert not _can_run(session, actor_id), actor_id
+    finally:
+        factory.dispose()

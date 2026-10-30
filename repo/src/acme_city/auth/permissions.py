@@ -23,19 +23,10 @@ from acme_city.core.clock import utc_now
 from acme_city.core.errors import PermissionDeniedError
 from acme_city.persistence.models import governance
 
-_MANAGED_AGENT_ACTIONS = frozenset(
-    {
-        "agent.toggle",
-        "agent.run.intake",
-        "agent.run.adjudication",
-        "permit.intake.process_selected",
-        "agent.ops.read",
-    }
-)
-
 
 def _managed_agent_grants(session: Session, actor_id: str) -> tuple[Grant, ...]:
     """Return the operational bundle enabled for an actor's entitled roles."""
+    from acme_city.agents.bundle import AGENT_OPERATION_DOMAINS, AGENT_OPERATIONS
     from acme_city.persistence.models import agent_ops
 
     entitled = session.execute(
@@ -52,12 +43,12 @@ def _managed_agent_grants(session: Session, actor_id: str) -> tuple[Grant, ...]:
     if entitled is None:
         return ()
     grants: list[Grant] = []
-    for action in sorted(_MANAGED_AGENT_ACTIONS):
+    for action in sorted(AGENT_OPERATIONS):
         grants.append(
             Grant(
                 permission_id=action,
                 action=action,
-                domain_id="permits" if action != "agent.toggle" else None,
+                domain_id=AGENT_OPERATION_DOMAINS[action],
                 record_scope=frozenset(),
                 sensitive=False,
             )

@@ -28,10 +28,10 @@ def seed_operator_defaults(session, bundle):
     session.add(
         agent_ops.AgentProcessingPolicy(
             id="agentpolicy_default", correlation_id="corr_agentpolicy_default",
-            mode=str(policy.get("mode", "manual")),
-            runs_per_hour=int(policy.get("runs_per_hour", 60)),
-            max_batch_size=int(policy.get("max_batch_size", 20)),
-            version=1, changed_by=None, changed_at=now,
+            mode=str(policy["mode"]),
+            runs_per_hour=int(policy["runs_per_hour"]),
+            max_batch_size=int(policy["max_batch_size"]),
+            version=1,
         )
     )
     return {

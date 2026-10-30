@@ -26,8 +26,6 @@ def upgrade() -> None:
         sa.Column("mode", sa.String(length=16), nullable=False, server_default="manual"),
         sa.Column("runs_per_hour", sa.Integer(), nullable=False, server_default="60"),
         sa.Column("max_batch_size", sa.Integer(), nullable=False, server_default="20"),
-        sa.Column("changed_by", sa.String(length=64), nullable=True),
-        sa.Column("changed_at", acme_city.persistence.types.UTCDateTime(), nullable=True),
         sa.Column("id", sa.String(length=64), nullable=False),
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
         sa.Column("correlation_id", sa.String(length=64), nullable=False),

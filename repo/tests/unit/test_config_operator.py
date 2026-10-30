@@ -31,16 +31,11 @@ def test_operator_env_override_takes_effect(tmp_path: Path) -> None:
     assert settings.agent_worker_enabled is False
 
 
-def test_operator_run_ceiling_is_configurable(tmp_path: Path) -> None:
-    settings = _load(tmp_path, ACME_AGENT_RUNS_PER_HOUR_MAX="90")
-    assert settings.agent_runs_per_hour_max == 90
-
-
 def test_operator_overrides_only_contain_set_names() -> None:
     assert operator_env_overrides({}) == {}
     assert operator_env_overrides({"ACME_AGENT_WORKER_ENABLED": "off"}) == {
         "agent_worker_enabled": False
     }
-    assert operator_env_overrides({"ACME_AGENT_RUNS_PER_HOUR_MAX": "120"}) == {
-        "agent_runs_per_hour_max": 120
+    assert operator_env_overrides({"ACME_MUSE_LIVE_CALLS_ALLOWED": "true"}) == {
+        "muse_live_calls_allowed": True
     }

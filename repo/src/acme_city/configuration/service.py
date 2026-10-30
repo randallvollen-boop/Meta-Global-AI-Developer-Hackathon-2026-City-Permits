@@ -17,6 +17,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.agents.bundle import AGENT_OPERATIONS
 from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext, ResourceContext
 from acme_city.auth.permissions import PermissionResolver
@@ -41,13 +42,6 @@ MANAGED_AGENT_ROLE_IDS: tuple[str, ...] = (
     "intake_clerk",
     "domain_steward",
     "domain_mdm_steward",
-)
-MANAGED_AGENT_PERMISSION_IDS: tuple[str, ...] = (
-    "agent.toggle",
-    "agent.run.intake",
-    "agent.run.adjudication",
-    "permit.intake.process_selected",
-    "agent.ops.read",
 )
 
 #: The persona roles a user may be given.
@@ -382,7 +376,7 @@ class ConfigurationService:
                 "role_id": role_id,
                 "before": before,
                 "after": bool(can_run_agents),
-                "bundle": list(MANAGED_AGENT_PERMISSION_IDS),
+                "bundle": list(AGENT_OPERATIONS),
             },
         )
         return row
@@ -499,7 +493,6 @@ def permit_type_view(row: permit.PermitType) -> dict[str, Any]:
 
 __all__ = [
     "MANAGED_AGENT_ROLE_IDS",
-    "MANAGED_AGENT_PERMISSION_IDS",
     "PERMISSION_MANAGE_AGENT_ROLES",
     "PERMISSION_MANAGE",
     "PERMISSION_MANAGE_USERS",

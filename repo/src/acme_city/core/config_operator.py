@@ -13,7 +13,6 @@ from pydantic import BaseModel
 
 ENV_AGENT_WORKER_ENABLED = "ACME_AGENT_WORKER_ENABLED"
 ENV_MUSE_LIVE_CALLS_ALLOWED = "ACME_MUSE_LIVE_CALLS_ALLOWED"
-ENV_AGENT_RUNS_PER_HOUR_MAX = "ACME_AGENT_RUNS_PER_HOUR_MAX"
 
 _TRUE = {"1", "true", "yes", "on"}
 
@@ -27,7 +26,6 @@ class OperatorSettings(BaseModel):
 
     agent_worker_enabled: bool = False
     muse_live_calls_allowed: bool = False
-    agent_runs_per_hour_max: int = 120
 
 
 def operator_env_overrides(environ: Mapping[str, str]) -> dict[str, Any]:
@@ -37,15 +35,12 @@ def operator_env_overrides(environ: Mapping[str, str]) -> dict[str, Any]:
         overrides["agent_worker_enabled"] = _flag(environ[ENV_AGENT_WORKER_ENABLED])
     if ENV_MUSE_LIVE_CALLS_ALLOWED in environ:
         overrides["muse_live_calls_allowed"] = _flag(environ[ENV_MUSE_LIVE_CALLS_ALLOWED])
-    if ENV_AGENT_RUNS_PER_HOUR_MAX in environ:
-        overrides["agent_runs_per_hour_max"] = int(environ[ENV_AGENT_RUNS_PER_HOUR_MAX])
     return overrides
 
 
 __all__ = [
     "ENV_AGENT_WORKER_ENABLED",
     "ENV_MUSE_LIVE_CALLS_ALLOWED",
-    "ENV_AGENT_RUNS_PER_HOUR_MAX",
     "OperatorSettings",
     "operator_env_overrides",
 ]

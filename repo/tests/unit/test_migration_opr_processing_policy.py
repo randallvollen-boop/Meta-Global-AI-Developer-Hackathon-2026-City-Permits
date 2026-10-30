@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, inspect
 
 from acme_city.core.config import Settings
 from acme_city.persistence.session import initialize_database
+from tests.support.migration_head import migration_head
 
 
 def test_opr_processing_policy_migration_creates_the_policy_table(tmp_path: Path) -> None:
@@ -18,7 +19,7 @@ def test_opr_processing_policy_migration_creates_the_policy_table(tmp_path: Path
         },
         key_file=tmp_path / "missing.env",
     )
-    assert initialize_database(settings) == "opr_processing_policy"
+    assert initialize_database(settings) == migration_head()
     engine = create_engine(settings.database_url, future=True)
     try:
         with engine.connect() as connection:
@@ -26,3 +27,5 @@ def test_opr_processing_policy_migration_creates_the_policy_table(tmp_path: Path
     finally:
         engine.dispose()
     assert {"mode", "runs_per_hour", "max_batch_size", "version"} <= columns
+    # Nothing writes the change columns of the policy, so the table has none.
+    assert not {"changed_by", "changed_at"} & columns
