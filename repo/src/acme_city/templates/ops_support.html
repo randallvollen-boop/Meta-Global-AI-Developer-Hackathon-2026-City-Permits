@@ -44,7 +44,7 @@
       {% if r.reference and not r.archived %}<p class="adm-support-destination">The applicant can read this reply. It will also appear on the case.</p>{% endif %}
       {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change.</p>{% endif %}
       {% if not r.reference %}<p class="adm-support-destination">This reply appears in the applicant’s help history.</p>{% endif %}
-      <p><button type="submit" class="btn primary" data-testid="help-answer" aria-label="Send reply to {{ r.applicant }}">Send reply</button></p>
+      <p><button type="submit" class="btn primary" data-testid="help-answer" aria-label="Send reply to {{ r.applicant }}{% if r.reference %} on {{ r.reference }}{% else %} for request {{ r.request_id }}{% endif %}">Send reply</button></p>
     </form>
     {% else %}
     <p data-testid="help-request-reply"><strong>Reply:</strong> {{ r.reply }} <span class="muted">(answered {{ r.answered_at }})</span></p>

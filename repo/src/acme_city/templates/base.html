@@ -68,7 +68,7 @@
     <div class="brand"><div class="brand-mark"><a href="{{ brand_href }}">AC</a></div><div><b><a href="{{ brand_href }}">ACME City</a></b><span>Permit workspace</span></div></div>
     {% if navigation %}
     <nav class="nav app-nav" aria-label="Screens">
-      <div class="nav-label">Workspace</div>
+      <div class="nav-label adm-nav-label">Workspace</div>
       <ul>
         {% for item in navigation if item.group != "secondary" %}
         <li>{% if item.href %}<a href="{{ item.href }}" data-screen-key="{{ item.key }}"{% if item.key == screen %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span>{% if item.count %}<span class="count">{{ item.count }}</span>{% endif %}</a>{% else %}<span class="nav-disabled" data-screen-key="{{ item.key }}" aria-disabled="true" title="Open a case from the work queue first"><svg aria-hidden="true"><use href="#i-{{ screen_icons.get(item.key, 'file') }}"/></svg><span>{{ item.label }}</span></span>{% endif %}</li>

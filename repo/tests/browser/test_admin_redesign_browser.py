@@ -11,9 +11,30 @@ that a generation is not available.
 
 from __future__ import annotations
 
+import pytest
+
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 ADMINISTRATOR = "persona_city_administrator"
+
+PERSONA_HOMES = (
+    ("persona_applicant", "/city/", "Welcome to the City of Acme"),
+    ("persona_data_steward", "/queue", "Work queue"),
+    ("persona_permit_reviewer", "/queue", "Work queue"),
+    ("persona_city_administrator", "/overview", "Planning overview"),
+    ("persona_agent_operator", "/agents", "Agents"),
+)
+
+
+@pytest.mark.parametrize(("actor_id", "home", "heading"), PERSONA_HOMES)
+def test_every_persona_opens_its_home_on_desktop_without_errors(
+    page, server: BrowserServer, login, actor_id: str, home: str, heading: str
+) -> None:
+    """ADA-17: the five demo personas each reach an error-free desktop home."""
+    login(actor_id)
+    assert page.url.split("?", 1)[0].rstrip("/").endswith(home.rstrip("/")), page.url
+    assert page.locator("main h1").inner_text().strip() == heading
+    assert page.recorded_errors == []
 
 
 def test_the_appearance_section_fits_a_phone_and_keeps_the_saved_icons(

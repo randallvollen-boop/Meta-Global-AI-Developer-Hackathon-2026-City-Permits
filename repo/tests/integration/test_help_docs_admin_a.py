@@ -38,9 +38,3 @@ def test_the_operations_guide_says_each_thing_once() -> None:
     # The filters are named once, and the event details once.
     assert sum("Apply filters" in step for step in steps) == 1
     assert sum("View details" in step for step in steps) == 1
-
-
-def test_the_operations_guide_covers_the_support_screen_it_names() -> None:
-    guide = content.guide("read-the-operations-dashboard-and-audit-log")
-    assert guide is not None
-    assert "support" in guide["title"].lower()

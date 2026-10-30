@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -27,9 +28,11 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.permissions import PermissionResolver
 from acme_city.core.config import Settings
+from acme_city.core.ids import new_id
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.help_docs import content
+from acme_city.persistence.models import audit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import (
     SessionFactory,
@@ -471,7 +474,17 @@ class _Screen(HTMLParser):
 @pytest.fixture(scope="module")
 def help_request(settings):
     """One help request the administrator can answer."""
-    return seed_help_request(settings)
+    return seed_help_request(settings, application_id="app_d05")
+
+
+@pytest.fixture()
+def another_help_request(settings):
+    """A second request from the same applicant, for a different case."""
+    return seed_help_request(
+        settings,
+        application_id="app_synth_001",
+        question="What happens after the first review?",
+    )
 
 
 @pytest.fixture()
@@ -500,20 +513,39 @@ def test_the_overview_counts_the_further_applications_as_words(administrator) ->
     assert "further applications are counted" in body
 
 
-def test_the_help_names_the_labels_the_screens_show(administrator) -> None:
+def test_the_help_names_the_labels_the_screens_show(
+    administrator, settings, help_request
+) -> None:
+    from acme_city.fixtures.synthetic import load_synthetic_year
+
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            load_synthetic_year(session, seed=20261028, count=1)
+            session.add(
+                audit.AuditEvent(
+                    id=new_id("audit"),
+                    correlation_id=new_id("corr"),
+                    occurred_at=datetime(2026, 10, 28, 12, 0, tzinfo=UTC),
+                    actor_id="persona_city_administrator",
+                    actor_role_ids=[],
+                    action="test.help_label_render",
+                    target_type="application",
+                    target_id="app_d05",
+                    outcome="accepted",
+                )
+            )
+    finally:
+        factory.dispose()
+
     guide = content.guide("read-the-operations-dashboard-and-audit-log")
-    bodies = [administrator.get(path).text for path in SCREENS.values()]
-    sources = [
-        (TEMPLATES / name).read_text(encoding="utf-8")
-        for names in SCREEN_TEMPLATES.values()
-        for name in names
+    bodies = [
+        administrator.get(path).text
+        for path in (*SCREENS.values(), "/ops/dashboard?synthetic=include")
     ]
     for step in guide["steps"]:
         for label in re.findall(r'"([^"]+)"', step):
-            found = any(label in body for body in bodies) or any(
-                label in source for source in sources
-            )
-            assert found, label
+            assert any(label in body for body in bodies), label
 
 
 def test_every_control_of_the_six_screens_has_a_name(administrator) -> None:
@@ -559,12 +591,15 @@ def test_the_row_actions_of_the_overview_name_the_record_they_act_on(
 
 
 def test_the_reply_button_of_the_support_screen_names_its_request(
-    administrator, help_request
+    administrator, help_request, another_help_request
 ) -> None:
     page = _Screen(administrator.get("/ops/support").text)
     replies = [button for button in page.buttons if button[0] == "Send reply"]
-    assert replies, "the seeded request shows a reply button"
+    assert len(replies) == 2, "the two seeded requests show reply buttons"
+    labels = []
     for text, attributes in replies:
         label = attributes.get("aria-label", "")
         assert label.startswith(text), label
         assert label != text, label
+        labels.append(label)
+    assert len(labels) == len(set(labels)), labels
