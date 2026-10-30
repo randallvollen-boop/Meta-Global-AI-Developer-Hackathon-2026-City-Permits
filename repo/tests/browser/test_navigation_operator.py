@@ -1,7 +1,7 @@
 """The browser navigation tests of the agent operator lane.
 
 The agent operator lane adds its navigation browser tests here; ``test_navigation.py``
-is frozen.  Empty until the lane adds a test.
+is frozen.
 """
 # REQUIRES: UX-01
 
@@ -15,6 +15,12 @@ from conftest import assert_no_horizontal_overflow, assert_not_covered
 OPERATOR_SCREENS = (
     ("/agent/intake", "Intake agent"),
     ("/agent/adjudication", "Adjudication agent"),
+)
+
+#: The operational home of the operator and the run history it opens.
+AGENT_OPERATIONS_SCREENS = (
+    ("/agents", "Agents"),
+    ("/agents/runs", "Run history"),
 )
 
 OUTSIDE = (
@@ -42,6 +48,19 @@ def test_operator_agent_screens_render_at_390_without_covered_controls(
     page = viewport_390
     login("persona_agent_operator")
     for path, title in OPERATOR_SCREENS:
+        response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        assert response is not None
+        assert response.status == 200, path
+        assert page.title().startswith(title), path
+        assert_no_horizontal_overflow(page)
+        assert_not_covered(page, page.locator("main h1"))
+    assert page.recorded_errors == []
+
+
+def test_the_agents_home_and_run_history_fit_at_390(viewport_390, server, login) -> None:
+    page = viewport_390
+    login("persona_agent_operator")
+    for path, title in AGENT_OPERATIONS_SCREENS:
         response = page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert response is not None
         assert response.status == 200, path

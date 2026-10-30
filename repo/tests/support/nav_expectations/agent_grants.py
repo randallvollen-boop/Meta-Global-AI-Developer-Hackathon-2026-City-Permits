@@ -3,7 +3,8 @@
 All agent-screen authorization of every persona lives here, so the operator
 lane changes who opens an agent screen without editing another persona's
 module.  An agent screen is placed in a persona's group at its canonical
-``SCREENS`` position (see ``__init__.py``).
+``SCREENS`` position; a persona whose module lists no screen of its own
+takes the order given here (see ``__init__.py``).
 
 The intake queue is not an agent screen: it is the Data Steward's own screen
 and stays in ``steward.py``.  The Agent Operator opens it with the execution
@@ -24,17 +25,13 @@ AGENT_SCREENS: frozenset[str] = frozenset(
 #: The wake and run grants belong to the Agent Operator alone.  OPR-3 grants
 #: the intake-queue read permission to the Permit Reviewer and City
 #: Administrator, so their rendered navigation also includes that queue.
+#: The order of the Agent Operator's list is the order of its four
+#: destinations, with the operational summary as its home (OPR-16).
 PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_applicant": (),
     "persona_data_steward": (),
     "persona_permit_reviewer": ("intake_queue",),
     "persona_city_administrator": ("intake_queue",),
-    "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
-}
-
-#: A persona may deliberately order its agent-only navigation differently from
-#: the global screen catalogue.  OPR-16 makes the operational summary its home.
-ORDER: dict[str, tuple[str, ...]] = {
     "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
 }
 

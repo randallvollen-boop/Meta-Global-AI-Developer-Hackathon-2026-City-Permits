@@ -38,12 +38,16 @@ def _load(name: str) -> ModuleType | None:
         return None
 
 
-def _place(
-    group: tuple[str, ...], agent_keys: tuple[str, ...], ordered_keys: tuple[str, ...] | None = None
-) -> list[str]:
-    """Insert each agent screen before the first entry that follows it in ``SCREENS``."""
+def _place(group: tuple[str, ...], agent_keys: tuple[str, ...]) -> list[str]:
+    """Insert each agent screen before the first entry that follows it in ``SCREENS``.
+
+    A persona module that lists no screen of its own takes the order of its
+    agent screens as given: the Agent Operator's home comes first.
+    """
     order = {screen["key"]: index for index, screen in enumerate(view_models.SCREENS)}
     placed = list(group)
+    if not placed:
+        return list(agent_keys)
     for key in agent_keys:
         rank = order[key]
         position = next(
@@ -51,12 +55,6 @@ def _place(
             len(placed),
         )
         placed.insert(position, key)
-    if ordered_keys is not None:
-        if set(ordered_keys) != set(agent_keys):
-            raise ValueError("agent_grants.py order must contain exactly the persona's agent screens")
-        positions = [index for index, key in enumerate(placed) if key in agent_grants.AGENT_SCREENS]
-        for position, key in zip(positions, ordered_keys, strict=True):
-            placed[position] = key
     return placed
 
 
@@ -71,9 +69,8 @@ def _aggregate() -> dict[str, dict[str, list[str]]]:
         stray = sorted(listed & agent_grants.AGENT_SCREENS)
         if stray:
             raise ValueError(f"{name}.py lists agent screens {stray}; they go in agent_grants.py")
-        order = agent_grants.ORDER.get(actor_id)
         grouping[actor_id] = {
-            "primary": _place(module.PRIMARY, agent_grants.PRIMARY.get(actor_id, ()), order),
+            "primary": _place(module.PRIMARY, agent_grants.PRIMARY.get(actor_id, ())),
             "secondary": _place(module.SECONDARY, agent_grants.SECONDARY.get(actor_id, ())),
         }
     unknown = sorted((set(agent_grants.PRIMARY) | set(agent_grants.SECONDARY)) - set(grouping))
