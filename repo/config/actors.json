@@ -205,6 +205,17 @@
         "agent.toggle",
         "permit.intake.process_selected"
       ]
+    },
+    {
+      "role_id": "linking_agent",
+      "label": "Linking agent (service identity)",
+      "boundary": "Links source records to master records under an active steward policy. It never decides, never issues and never creates a master.",
+      "permission_ids": [
+        "agent.run.linking",
+        "records.document.view",
+        "registry.crosswalk.propose",
+        "registry.provenance.view"
+      ]
     }
   ],
   "personas": [
@@ -626,6 +637,71 @@
           "permission_id": "permit.finding.waive",
           "domains": [
             "permits"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.automation.activate",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.automation.enqueue",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.automation.pause",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.automation.review",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.automation.undo",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
           ],
           "record_scope": [],
           "source": "explicit"
@@ -2367,6 +2443,67 @@
           "domains": [
             "permits",
             "building_rules"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        }
+      ],
+      "permission_resolution": "explicit_server_permission_grants; never trust role strings in a client request"
+    },
+    {
+      "actor_id": "service_linking_agent",
+      "label": "ACME linking agent (service identity)",
+      "selectable": false,
+      "fictional": true,
+      "active_when_seeded": true,
+      "role_ids": [
+        "linking_agent"
+      ],
+      "domain_scope": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses"
+      ],
+      "system_scope": [],
+      "record_scope": [],
+      "grants": [
+        {
+          "permission_id": "agent.run.linking",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "records.document.view",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.crosswalk.propose",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "registry.provenance.view",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
           ],
           "record_scope": [],
           "source": "explicit"
