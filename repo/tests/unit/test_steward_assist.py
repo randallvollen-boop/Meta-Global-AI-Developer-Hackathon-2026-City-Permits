@@ -970,6 +970,53 @@ def test_an_applied_link_whose_recorded_evidence_is_incomplete_is_for_review(
     assert "incomplete" in recommendation.reason
 
 
+def change_the_recorded_evidence(
+    settings: Settings, application_id: str, part: str, value: object
+) -> None:
+    """Replace one part of the recorded evidence of an applied link (``...`` removes it)."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.get(
+                registry_automation.RegistryAutomationApplication, application_id
+            )
+            assert application is not None
+            evaluation = session.get(
+                registry_automation.RegistryAutomationEvaluation, application.evaluation_id
+            )
+            assert evaluation is not None
+            evidence = dict(evaluation.evidence or {})
+            assert part in evidence
+            if value is ...:
+                del evidence[part]
+            else:
+                evidence[part] = value
+            evaluation.evidence = evidence
+    finally:
+        factory.dispose()
+
+
+@pytest.mark.parametrize(
+    ("part", "value"),
+    [
+        ("failed_checks", None),
+        ("conflicting", None),
+        ("reasons", ...),
+    ],
+)
+def test_an_applied_link_whose_recorded_check_results_are_unreadable_is_for_review(
+    seeded: Settings, part: str, value: object
+) -> None:
+    """A null list of failures, or no recorded explanation, is no success."""
+    application_id = applied_link(seeded)
+    change_the_recorded_evidence(seeded, application_id, part, value)
+
+    recommendation = recommend(seeded, "automatic_link", application_id)
+    assert recommendation.confidence == steward_assist.CONFIDENCE_REVIEW
+    assert recommendation.outcome == steward_assist.OUTCOME_KEEP
+    assert "incomplete" in recommendation.reason
+
+
 def test_an_applied_link_a_person_approved_again_is_for_review(seeded: Settings) -> None:
     """A link a person decided after the automation applied it is left to that person."""
     application_id = applied_link(seeded)

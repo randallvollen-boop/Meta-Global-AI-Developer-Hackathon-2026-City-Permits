@@ -113,10 +113,15 @@ VERSION_TOKEN_CURRENT_SOURCE = "current_source"
 CONFLICT_CHECKS: frozenset[str] = frozenset({"no_identity_conflict"})
 
 #: The parts of the recorded evidence a successful evaluation of the City
-#: always holds.  A part that is missing is not a part that is empty: an
-#: empty list of failures is a success, an absent list is an evaluation
-#: nobody can read.
-RECORDED_EVIDENCE_PARTS: tuple[str, ...] = ("failed_checks", "conflicting", "supporting")
+#: always holds, each as a list.  A part that is missing is not a part that
+#: is empty: an empty list of failures is a success, an absent or null list
+#: is an evaluation nobody can read.
+RECORDED_EVIDENCE_PARTS: tuple[str, ...] = (
+    "failed_checks",
+    "conflicting",
+    "supporting",
+    "reasons",
+)
 
 #: The plain words of a master record the registry does not hold.  The
 #: identifier of such a record is machinery, so the words replace it.
@@ -525,9 +530,9 @@ def _complete_recorded_evidence(recorded: dict[str, Any]) -> bool:
     can read.  Evidence that names no supporting fact proves nothing, so it
     is no success either.
     """
-    if any(part not in recorded for part in RECORDED_EVIDENCE_PARTS):
+    if any(not isinstance(recorded.get(part), list) for part in RECORDED_EVIDENCE_PARTS):
         return False
-    return bool(list(recorded.get("supporting") or []))
+    return bool(recorded["supporting"])
 
 
 def _recommend_automatic_link(
