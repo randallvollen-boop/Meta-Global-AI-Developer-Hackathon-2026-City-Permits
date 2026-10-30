@@ -173,6 +173,7 @@ def _collections_page(
         collection_path=base_path if tab == "people" else "/masters",
         summary=summary,
         help_screen="masters" if may_masters else "applicants",
+        guide=_guide("master_collection"),
         quiet_feedback=True,
     )
     return render(request, "masters.html", context)
@@ -471,6 +472,7 @@ def ui_source_records(
         title="Source records",
         catalogue=catalogue,
         help_screen="source_records",
+        guide=_guide("source_record"),
         quiet_feedback=True,
     )
     return render(request, "source_records.html", context)
@@ -495,6 +497,7 @@ def ui_activity(
         title="Activity",
         activity=steward_views.activity(session, resolved, page=page),
         help_screen="activity",
+        guide=_guide("activity"),
         quiet_feedback=True,
     )
     return render(request, "activity.html", context)
@@ -540,6 +543,7 @@ def ui_intake_queue(
         title="Intake queue",
         queue=queue,
         agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
+        guide=_guide("incoming"),
         # The processing control is a gate of two grants: the execution grant
         # that names the action and the run grant of the intake agent.  The
         # person who may run the agent is the person who may process the
@@ -578,6 +582,7 @@ def ui_early_resolution(
         screen="early_resolution",
         title="Early resolution",
         board=board,
+        guide=_guide("early_resolution"),
     )
     return render(request, "early_resolution.html", context)
 

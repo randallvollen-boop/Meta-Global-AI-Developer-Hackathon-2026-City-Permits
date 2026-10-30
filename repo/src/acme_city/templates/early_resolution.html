@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -9,6 +10,8 @@
   </div>
   <div class="actions">{{ ui.help_button('early_resolution') }}</div>
 </div>
+
+{{ guide_ui.panel(guide) }}
 
 <div class="kpis" data-testid="early-resolution-kpis">
   <div class="card kpi"><div class="k">Cases to resolve</div><div class="v num">{{ board.total_cases }}</div><div class="s">in needs information</div></div>

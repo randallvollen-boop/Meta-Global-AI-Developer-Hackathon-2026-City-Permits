@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
 {% import "components/steward.html" as st with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -11,7 +12,9 @@
   <div class="actions">{{ ui.help_button(help_screen) }}</div>
 </div>
 
-<nav class="tabs master-tabs stw-master-tabs" aria-label="Master record collections" data-testid="master-tabs">
+{{ guide_ui.panel(guide) }}
+
+<nav class="tabs master-tabs stw-master-tabs" id="master-tabs" aria-label="Master record collections" data-testid="master-tabs">
   {% for item in tabs %}
   <a href="{{ item.href }}" data-testid="master-tab" data-tab="{{ item.key }}"{% if item.active %} aria-current="page" aria-selected="true"{% else %} aria-selected="false"{% endif %}>{{ item.label }} <span class="n">{{ item.count }}</span></a>
   {% endfor %}

@@ -30,6 +30,7 @@ SCREENS = (
     "activity",
     "automation_settings",
     "automatic_link",
+    "early_resolution",
     "incoming",
     "master_collection",
     "match_case",

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% import "components/steward_guide.html" as guide_ui with context %}
 
 {% block content %}
 <div class="page-head">
@@ -9,6 +10,8 @@
   </div>
   <div class="actions">{{ ui.help_button('intake_queue') }}</div>
 </div>
+
+{{ guide_ui.panel(guide) }}
 
 <form class="stw-search" method="get" action="/queue/intake" role="search" data-testid="intake-search">
   <input type="hidden" name="tab" value="{{ queue.filters.tab }}">

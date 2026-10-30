@@ -31,7 +31,18 @@
         "why_review": "The application has not been through intake yet. A person reads the findings and acts."
       },
       "links": [
-        {"label": "Open the incoming queue", "href": "/queue/intake"}
+        {"label": "See what the figures mean", "href": "#intake-definitions"}
+      ]
+    },
+    "early_resolution": {
+      "label": "Early resolution",
+      "guidance": "These cases wait for a person. The recorded finding says what is missing, and the case moves on when a person resolves it.",
+      "prompts": {
+        "next_step": "Open the case and resolve the recorded finding. The finding names what the applicant or the City must supply.",
+        "why_review": "The intake agent recorded the finding. It did not resolve it, and it did not decide the case."
+      },
+      "links": [
+        {"label": "See the groups", "href": "#early-resolution-groups"}
       ]
     },
     "match_case": {
@@ -89,7 +100,7 @@
         "next_step": "Search for the record you need, then open it to see its sources and open questions."
       },
       "links": [
-        {"label": "Open the master records", "href": "/masters"}
+        {"label": "See the collections", "href": "#master-tabs"}
       ]
     },
     "record_profile": {

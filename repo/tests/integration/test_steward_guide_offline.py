@@ -96,17 +96,25 @@ def client(tmp_path: Path, tripwire: TripwireTransport) -> TestClient:
         yield test_client
 
 
-@pytest.mark.parametrize("screen", ("queue", "case", "profile"))
+#: The screens of the steward that carry the saved guide, and the address of
+#: each one.
+GUIDE_SCREENS: dict[str, str] = {
+    "queue": "/steward",
+    "profile": "/masters/party_cedarline",
+    "masters": "/masters",
+    "sources": "/source-records",
+    "incoming": "/queue/intake",
+    "early_resolution": "/queue/early-resolution",
+    "activity": "/activity",
+}
+
+
+@pytest.mark.parametrize("screen", sorted(GUIDE_SCREENS))
 def test_guide_is_saved_and_repeatable_without_muse(
     client: TestClient, tripwire: TripwireTransport, screen: str
 ) -> None:
-    """Queue, case, and profile render the same saved guide twice in hosted mode."""
-    path = "/steward" if screen == "queue" else "/masters/party_cedarline"
-    if screen == "case":
-        queue = client.get("/steward").text
-        match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
-        assert match is not None
-        path = match.group(1).replace("&amp;", "&")
+    """Every guide screen renders the same saved guide twice in hosted mode."""
+    path = GUIDE_SCREENS[screen]
     first = client.get(path)
     second = client.get(path)
     assert first.status_code == second.status_code == 200
@@ -116,6 +124,25 @@ def test_guide_is_saved_and_repeatable_without_muse(
     assert first_answer == second_answer
     assert "Saved guidance. Live Muse is off." in first.text
     # No call to the model was made on the way to the saved answer.
+    assert tripwire.calls == []
+
+
+def test_the_focused_case_renders_the_same_saved_guide_twice(
+    client: TestClient, tripwire: TripwireTransport
+) -> None:
+    """The case renders the same saved guide twice in hosted mode."""
+    queue = client.get("/steward").text
+    match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
+    assert match is not None
+    path = match.group(1).replace("&amp;", "&")
+    first = client.get(path)
+    second = client.get(path)
+    assert first.status_code == second.status_code == 200
+    marker = 'data-testid="steward-guide-answer">'
+    first_answer = first.text.split(marker, 1)[1].split("</p>", 1)[0]
+    second_answer = second.text.split(marker, 1)[1].split("</p>", 1)[0]
+    assert first_answer == second_answer
+    assert "Saved guidance. Live Muse is off." in first.text
     assert tripwire.calls == []
 
 
@@ -143,18 +170,28 @@ def guide_links(html: str) -> list[str]:
     return re.findall(r'<a href="([^"]+)"', guide)
 
 
-@pytest.mark.parametrize("screen", ("queue", "case", "profile"))
+@pytest.mark.parametrize("screen", sorted(GUIDE_SCREENS))
 def test_every_guide_link_lands_on_a_real_target(client: TestClient, screen: str) -> None:
     """No link of the guide points at a target the page does not have."""
-    path = "/steward" if screen == "queue" else "/masters/party_cedarline"
-    if screen == "case":
-        queue = client.get("/steward").text
-        match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
-        assert match is not None
-        path = match.group(1).replace("&amp;", "&")
+    path = GUIDE_SCREENS[screen]
     html = client.get(path).text
     for href in guide_links(html):
         # A link never points back at the page it is read on.
+        assert href != path, href
+        if href.startswith("#"):
+            assert f'id="{href[1:]}"' in html, href
+        else:
+            assert client.get(href).status_code == 200, href
+
+
+def test_the_guide_link_of_the_case_lands_on_a_real_target(client: TestClient) -> None:
+    """No link of the guide of the case points at a target it does not have."""
+    queue = client.get("/steward").text
+    match = re.search(r'href="(/steward/issues/link/[^\"]+)', queue)
+    assert match is not None
+    path = match.group(1).replace("&amp;", "&")
+    html = client.get(path).text
+    for href in guide_links(html):
         assert href != path, href
         if href.startswith("#"):
             assert f'id="{href[1:]}"' in html, href
