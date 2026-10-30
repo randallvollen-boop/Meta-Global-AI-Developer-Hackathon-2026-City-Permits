@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
+from acme_city.core.errors import ValidationError
 from acme_city.ui.router import ActionContext, Outcome, _guard, page_context, render, ui_actor
 from acme_city.agents.summary import operator_summary
 from acme_city.ui.agent_views import agent_case, run_history
@@ -24,6 +25,58 @@ router = APIRouter(tags=["agents"])
 
 #: The interface actions of the lane, keyed by their stable identifier.
 ACTIONS: dict[str, Callable[[ActionContext], Outcome]] = {}
+
+#: The values a form field may hold for a true answer.
+TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
+
+
+def _agent_processing(ctx: ActionContext) -> Outcome:
+    """Save the processing policy of the City.
+
+    The policy says when the agents work.  It never says what a case
+    decides: the people of the City still review every recommendation.
+
+    The daily allowance of provider calls is a setting of the deployment,
+    not a setting of the City, so a request that tries to raise it is
+    refused.  On a hosted demonstration the provider lock wins over any
+    configuration.
+    """
+    from acme_city.configuration.service import ConfigurationService
+    from acme_city.muse.client import live_call_block_reason
+
+    cap = ctx.integer("muse_daily_call_cap")
+    if cap is not None and cap > 0:
+        blocked = live_call_block_reason(ctx.settings)
+        if blocked is not None:
+            raise ValidationError(
+                "the live Muse calls of this deployment are locked, so the daily "
+                "allowance stays at 0"
+            )
+        raise ValidationError(
+            "the daily allowance of provider calls is a setting of the deployment, "
+            "so it cannot be changed here"
+        )
+    runs_per_hour = ctx.integer("runs_per_hour")
+    if runs_per_hour is None:
+        raise ValidationError("the hourly limit of the agents is required")
+    row = ConfigurationService(ctx.session).set_processing_policy(
+        automatic=ctx.text("keep_awake").lower() in TRUE_VALUES,
+        runs_per_hour=runs_per_hour,
+        reason=ctx.text("reason"),
+        actor=ctx.actor,
+        expected_version=ctx.integer("expected_version"),
+    )
+    return Outcome(
+        message="The processing settings were saved.",
+        destination="Agent processing",
+        state=row.mode,
+        target_type="agent_processing_policy",
+        target_id=row.id,
+        after_version=row.version,
+    )
+
+
+ACTIONS["admin.agent.processing"] = _agent_processing
 
 
 def _role_permissions(ctx: ActionContext) -> Outcome:

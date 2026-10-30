@@ -7,6 +7,12 @@
 .opr-role-permissions form { display: grid; gap: .5rem; max-width: 44rem; }
 .opr-checkbox { font-weight: 600; }
 
+/* The Agent processing tab of the administration screen. */
+.opr-processing { display: grid; gap: .6rem; max-width: 44rem; }
+.opr-processing-form { display: grid; gap: .5rem; }
+.opr-processing-form input[type="number"] { max-width: 9rem; }
+.opr-processing .opr-facts { margin: .3rem 0; }
+
 /* The filters of the run history. */
 .opr-filters { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: flex-end; margin-bottom: 1rem; }
 .opr-filters label { display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; color: var(--fg-2); }

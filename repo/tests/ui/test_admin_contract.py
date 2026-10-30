@@ -24,6 +24,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = REPO_ROOT / "src" / "acme_city" / "templates"
 BASELINE = Path(__file__).resolve().parent / "admin_testid_baseline.json"
 
+#: The five sections the administration screen is built of.
+BUILT_IN_SECTIONS = ("permit-types", "appearance", "users", "reason-codes", "log")
+
 
 def _baseline() -> dict:
     """Return the recorded baseline of the administration hooks."""
@@ -84,13 +87,9 @@ def test_every_registered_tab_renders_a_template_that_exists() -> None:
 
 def test_the_five_sections_keep_their_keys() -> None:
     keys = [tab.key for tab in sorted(admin_tabs.ADMIN_TABS.values(), key=lambda t: t.order)]
-    assert keys[:5] == [
-        "permit-types",
-        "appearance",
-        "users",
-        "reason-codes",
-        "log",
-    ]
+    # The five sections keep their keys and their order.  A lane may register
+    # a tab of its own between them.
+    assert [key for key in keys if key in BUILT_IN_SECTIONS] == list(BUILT_IN_SECTIONS)
 
 
 def test_the_baseline_covers_the_hook_families_of_the_screen() -> None:

@@ -285,3 +285,51 @@ def test_the_agent_screens_fit_at_390_for_a_city_worker(viewport_390, server, lo
         assert page.locator("[data-testid='agent-run-all']").is_visible()
         assert_no_horizontal_overflow(page)
         assert_not_covered(page, page.locator("[data-testid='agent-waiting']"))
+
+
+def test_the_administrator_saves_the_processing_settings(page, server, login) -> None:
+    """The City Administrator ticks the box, saves it and sees it saved."""
+    login("persona_city_administrator")
+    page.goto(f"{server.base_url}/admin?tab=agent_processing", wait_until="domcontentloaded")
+    assert page.locator("[data-testid='admin-agent-processing']").is_visible()
+    # The tab of the administration screen carries the current section.
+    tab = page.locator("[data-tab='agent_processing']")
+    assert tab.get_attribute("aria-current") == "page"
+    # The deployment sends no provider call, so the allowance reads zero.
+    assert page.locator("[data-testid='admin-muse-cap']").inner_text().strip() == "0"
+    assert page.locator("[data-testid='admin-engine']").inner_text().strip() == (
+        "Built in logic"
+    )
+    checkbox = page.locator("input[name='keep_awake']")
+    assert not checkbox.is_checked()
+    checkbox.check()
+    page.fill("#opr-runs-per-hour", "42")
+    page.fill("#opr-processing-reason", "Evening coverage")
+    with page.expect_response(
+        lambda response: "/ui/actions/admin.agent.processing" in response.url
+        and response.request.method == "POST"
+    ) as answered:
+        page.click("[data-testid='admin-agent-processing-save']")
+    response = answered.value
+    assert response.status == 200, response.text()
+    payload = response.json()
+    assert payload["status"] == "accepted", payload
+    assert payload["message"] == "The processing settings were saved."
+    # The saved state is the one the server holds, not the state of the form.
+    page.reload(wait_until="domcontentloaded")
+    assert page.locator("input[name='keep_awake']").is_checked()
+    assert page.locator("[data-testid='admin-processing-mode']").inner_text().strip() == (
+        "Automatic processing"
+    )
+    assert page.locator("#opr-runs-per-hour").input_value() == "42"
+
+
+def test_the_agent_processing_tab_fits_at_390(viewport_390, server, login) -> None:
+    """The tab of the administration screen reads well on a phone."""
+    page = viewport_390
+    login("persona_city_administrator")
+    page.goto(f"{server.base_url}/admin?tab=agent_processing", wait_until="domcontentloaded")
+    assert page.locator("[data-testid='admin-agent-processing']").is_visible()
+    assert_no_horizontal_overflow(page)
+    assert_not_covered(page, page.locator("[data-testid='admin-processing-mode']"))
+    assert_not_covered(page, page.locator("[data-testid='admin-agent-processing-save']"))
