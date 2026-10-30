@@ -5,16 +5,14 @@ provider path.  A call is reserved before it is dispatched, so a call that
 fails or times out still counts, and a restart reads the same counter instead
 of handing out a fresh allowance.
 
-The day is the UTC day: the allowance is spent at midnight UTC.  The moment
-the allowance is renewed is part of the record, so a screen can say when the
-next day starts.
+The day is the UTC day: the allowance is spent at midnight UTC.
 """
 # REQUIRES: AI-01, AI-03
 # The provider boundary reserves one call of the daily allowance before it dispatches.
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, update
@@ -25,10 +23,6 @@ from acme_city.core.clock import utc_now
 from acme_city.core.ids import new_id
 from acme_city.muse.client import MuseRequestError
 from acme_city.persistence.models import agent_ops
-
-#: The timezone the day of the allowance is counted in.
-BUDGET_TIMEZONE = timezone.utc
-
 
 class MuseBudgetExceeded(MuseRequestError):
     """The daily allowance of provider calls is used up.
@@ -74,14 +68,7 @@ class MuseBudget:
 
     def day(self) -> str:
         """Return the day the allowance is counted in."""
-        return self._moment().astimezone(BUDGET_TIMEZONE).date().isoformat()
-
-    def reset_at(self) -> datetime:
-        """Return the moment the allowance is renewed."""
-        today = self._moment().astimezone(BUDGET_TIMEZONE).date()
-        return datetime.combine(
-            today + timedelta(days=1), time.min, tzinfo=BUDGET_TIMEZONE
-        )
+        return self._moment().astimezone(timezone.utc).date().isoformat()
 
     def used(self) -> int:
         """Return the number of calls the day already reserved."""
@@ -91,10 +78,6 @@ class MuseBudget:
             )
         ).scalar_one_or_none()
         return 0 if row is None else int(row.calls_used)
-
-    def remaining(self) -> int:
-        """Return the number of calls the day still allows."""
-        return max(0, self.cap - self.used())
 
     # -------------------------------------------------------------- reservation
 
@@ -132,7 +115,6 @@ class MuseBudget:
 
 
 __all__ = [
-    "BUDGET_TIMEZONE",
     "MuseBudget",
     "MuseBudgetExceeded",
 ]

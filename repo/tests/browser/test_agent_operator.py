@@ -403,3 +403,29 @@ def test_the_operator_retries_the_failed_work(page, server, login) -> None:
     assert page.locator("[data-testid='agent-failure-row']").count() == 0
     assert page.locator("[data-testid='agent-waiting-empty']").is_visible()
     assert_no_horizontal_overflow(page)
+
+
+def test_the_desktop_history_and_case_links_open_their_destinations(page, server, login) -> None:
+    """Every history route leads to a usable operator screen on desktop."""
+    login("persona_agent_operator")
+    response = page.request.post(
+        f"{server.base_url}/api/intake/simulate",
+        data=json.dumps({"scenario": "deck-high"}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.ok, response.text()
+    page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
+    page.locator("[data-testid='agent-case-link']").first.click()
+    assert page.locator("[data-testid='agent-case-summary']").is_visible()
+    page.locator("[data-testid='agent-case-back']").click()
+    assert page.locator("[data-testid='agent-run-history']").is_visible()
+    _run_the_intake_agent(page, server)
+    page.locator("[data-testid='agent-history-all']").click()
+    selected = page.locator("[data-testid='run-filter-agent']")
+    assert selected.input_value() == "intake"
+    page.locator("[data-testid='agent-run-case-link']").first.click()
+    assert page.locator("[data-testid='agent-case-summary']").is_visible()
+    page.locator("[data-testid='agent-case-back']").click()
+    assert page.locator("[data-testid='agent-run-history']").is_visible()
+    page.get_by_role("link", name="Back to agents").click()
+    assert page.locator("h1").inner_text().strip() == "Agents"

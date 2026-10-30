@@ -12,7 +12,7 @@ refuses every live call, even when the day still has room.
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -20,10 +20,14 @@ import pytest
 
 from acme_city.core.clock import utc_now
 from acme_city.core.config import Settings
+from acme_city.applicant_help import assist as applicant_assist
+from acme_city.applicant_help.sources import SourceBundle
 from acme_city.muse.budget import MuseBudget, MuseBudgetExceeded
 from acme_city.muse.client import MuseClient, MuseLiveCallBlocked
 from acme_city.muse.image_client import MuseImageClient
-from acme_city.persistence.models import agent_ops
+from acme_city.muse.service import live_budget_error
+from acme_city.persistence.models import agent_ops, model_run
+from acme_city.policy import muse as policy_muse
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 
 CREDENTIAL = "test-muse-budget-key-not-a-real-credential"
@@ -78,7 +82,6 @@ def test_an_exhausted_budget_refuses_the_call_before_the_transport(tmp_path: Pat
             budget = MuseBudget(session, settings=settings)
             budget.reserve()
             assert budget.used() == 1
-            assert budget.remaining() == 0
             client = MuseClient(settings, transport=stub, budget=budget)
             with pytest.raises(MuseBudgetExceeded):
                 client.create_response(payload_for(settings))
@@ -98,7 +101,6 @@ def test_the_hosted_lock_wins_over_the_budget(tmp_path: Path) -> None:
     try:
         with transaction(factory) as session:
             budget = MuseBudget(session, settings=settings)
-            assert budget.remaining() == 10
             client = MuseClient(settings, transport=stub, budget=budget)
             with pytest.raises(MuseLiveCallBlocked):
                 client.create_response(payload_for(settings))
@@ -120,7 +122,6 @@ def test_a_call_with_room_is_sent_and_costs_one_call(tmp_path: Path) -> None:
             response = client.create_response(payload_for(settings))
             assert response.error is None
             assert budget.used() == 1
-            assert budget.remaining() == 1
         assert len(stub.calls) == 1
     finally:
         factory.dispose()
@@ -168,7 +169,6 @@ def test_a_restart_does_not_reset_the_allowance(tmp_path: Path) -> None:
             with restarted() as session:
                 budget = MuseBudget(session, settings=settings)
                 assert budget.used() == 1
-                assert budget.remaining() == 0
         finally:
             restarted.dispose()
     finally:
@@ -189,30 +189,7 @@ def test_the_day_rolls_over_at_midnight_utc(tmp_path: Path) -> None:
             )
             assert tomorrow.day() != today.day()
             assert tomorrow.used() == 0
-            assert tomorrow.remaining() == 1
-            # The allowance is renewed at midnight UTC.
-            assert tomorrow.reset_at().hour == 0
-    finally:
-        factory.dispose()
-
-
-def test_two_callers_never_take_the_same_call(tmp_path: Path) -> None:
-    """The allowance of the day is never larger than the cap."""
-    settings = build_settings(tmp_path, ACME_MUSE_DAILY_CALL_CAP="2")
-    factory = SessionFactory(settings.database_url)
-    try:
-        with transaction(factory) as session:
-            budget = MuseBudget(session, settings=settings)
-            budget.reserve()
-            budget.reserve()
-            assert budget.used() == 2
-            with pytest.raises(MuseBudgetExceeded):
-                budget.reserve()
-            assert budget.used() == 2
-            # The row of the day is the only row there is.
-            rows = session.query(agent_ops.MuseDailyBudget).all()
-            assert len(rows) == 1
-            assert rows[0].day == budget.day()
+            assert tomorrow.cap == 1
     finally:
         factory.dispose()
 
@@ -232,6 +209,55 @@ def test_a_cap_of_zero_sends_no_call_at_all(tmp_path: Path) -> None:
             result = image.generate("a wooden deck")
             assert result.ok is False
             assert "allowance" in (result.error or "")
+        assert stub.calls == []
+    finally:
+        factory.dispose()
+
+
+@pytest.mark.parametrize("path", ("applicant_help", "policy"))
+def test_each_text_provider_path_obeys_a_zero_daily_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: str
+) -> None:
+    """The application entry points build clients with the shared allowance."""
+    settings = build_settings(
+        tmp_path,
+        ACME_MUSE_DAILY_CALL_CAP="0",
+        ACME_APPLICANT_ASSIST_LIVE_ENABLED="true",
+        ACME_POLICY_ASSIST_LIVE_ENABLED="true",
+    )
+    factory = SessionFactory(settings.database_url)
+    stub = RecordingTransport()
+
+    def client_with_recording_transport(client_settings, **kwargs):
+        return MuseClient(client_settings, transport=stub, **kwargs)
+
+    module = applicant_assist if path == "applicant_help" else policy_muse
+    monkeypatch.setattr(module, "MuseClient", client_with_recording_transport)
+    try:
+        with transaction(factory) as session:
+            if path == "applicant_help":
+                result = applicant_assist.dispatch_assist(
+                    session,
+                    settings,
+                    bundle=SourceBundle(
+                        passages=(),
+                        bundle_hash="budget-probe",
+                        content_hash="budget-probe",
+                        basis_at=utc_now(),
+                    ),
+                    question="What does this permit need?",
+                    context={},
+                )
+            else:
+                result = policy_muse.dispatch(
+                    session,
+                    settings,
+                    task="policy_propose",
+                    basis={},
+                    payload=payload_for(settings),
+                )
+            assert result.error is not None
+            assert "allowance" in result.error
         assert stub.calls == []
     finally:
         factory.dispose()
@@ -269,5 +295,47 @@ def test_the_counter_of_the_day_is_one_row(tmp_path: Path) -> None:
             assert len(rows) == 1
             assert rows[0].day == budget.day()
             assert rows[0].calls_used == 2
+    finally:
+        factory.dispose()
+
+
+def test_a_daily_cap_refusal_does_not_stop_the_next_day(tmp_path: Path) -> None:
+    """A refusal before dispatch is not a provider error on the next day."""
+    settings = build_settings(
+        tmp_path,
+        ACME_MUSE_DAILY_CALL_CAP="1",
+        ACME_MUSE_LIVE_CALL_CAP="10",
+    )
+    factory = SessionFactory(settings.database_url)
+    yesterday = datetime(2026, 10, 29, 23, 59, tzinfo=UTC)
+    tomorrow = yesterday + timedelta(minutes=2)
+    try:
+        with transaction(factory) as session:
+            budget = MuseBudget(session, settings=settings, now=yesterday)
+            budget.reserve()
+            with pytest.raises(MuseBudgetExceeded):
+                budget.reserve()
+            # This is the row the service records for the refusal.  It has no
+            # provider response because no request left the process.
+            session.add(
+                model_run.ModelRun(
+                    id="modelrun_daily_cap_refusal",
+                    correlation_id="corr_daily_cap_refusal",
+                    mode="live",
+                    provider="meta",
+                    model="muse-spark-test",
+                    prompt_version="test",
+                    schema_version="test",
+                    started_at=yesterday,
+                    completed_at=yesterday,
+                    validation_result={"status": "failed", "provider": {}},
+                    error="the daily allowance of 1 provider call(s) is used up",
+                )
+            )
+            session.flush()
+            assert live_budget_error(session, settings) is None
+            renewed = MuseBudget(session, settings=settings, now=tomorrow)
+            renewed.reserve()
+            assert renewed.used() == 1
     finally:
         factory.dispose()

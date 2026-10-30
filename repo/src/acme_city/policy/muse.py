@@ -68,6 +68,7 @@ from acme_city.muse.client import (
     ProviderResponse,
     summarize_request,
 )
+from acme_city.muse.budget import MuseBudget
 from acme_city.muse.payloads import fixture_root
 from acme_city.muse.schemas import (
     DEFAULT_MUSE_MODEL,
@@ -498,7 +499,9 @@ def dispatch(
         blocked = live_budget_error(session, settings)
         if blocked is not None:
             return Dispatch(error=blocked, mode="live", provider_error=True)
-        muse_client = client if client is not None else MuseClient(settings)
+        muse_client = client if client is not None else MuseClient(
+            settings, budget=MuseBudget(session, settings=settings)
+        )
         try:
             response: ProviderResponse = muse_client.create_response(dict(payload or {}))
         except MuseRequestError as exc:
@@ -1059,7 +1062,7 @@ class PolicyMuseService:
         if sent.response_id or sent.response_status:
             validation_result["provider"] = {
                 "response_id": sent.response_id,
-                "status": sent.response_status,
+                "response_status": sent.response_status,
             }
         row = model_run.ModelRun(
             id=new_id("modelrun"),

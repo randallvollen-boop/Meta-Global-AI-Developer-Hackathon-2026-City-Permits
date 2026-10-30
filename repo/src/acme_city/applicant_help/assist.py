@@ -54,6 +54,7 @@ from acme_city.muse.client import (
     ProviderResponse,
     summarize_request,
 )
+from acme_city.muse.budget import MuseBudget
 from acme_city.muse.payloads import fixture_root
 from acme_city.muse.schemas import (
     APPLICANT_ASSIST_PROMPT_VERSION,
@@ -353,7 +354,9 @@ def _dispatch_live(
         return AssistDispatch(
             output=None, error=blocked, mode="live", provider_error=True, dispatched=True
         )
-    muse_client = client if client is not None else MuseClient(settings)
+    muse_client = client if client is not None else MuseClient(
+        settings, budget=MuseBudget(session, settings=settings)
+    )
     payload = build_assist_payload(bundle, question, model=allowed_model(settings))
     try:
         response: ProviderResponse = muse_client.create_response(payload)

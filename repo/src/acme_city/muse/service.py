@@ -155,7 +155,8 @@ def live_budget_error(session: Session, settings: Settings) -> str | None:
         select(model_run.ModelRun).where(model_run.ModelRun.mode == "live")
     ).scalars().all()
     for row in rows:
-        if row.error:
+        provider = (row.validation_result or {}).get("provider")
+        if row.error and isinstance(provider, dict) and provider.get("response_status"):
             return (
                 "a previous live run recorded a provider error; no further live call "
                 "is sent"

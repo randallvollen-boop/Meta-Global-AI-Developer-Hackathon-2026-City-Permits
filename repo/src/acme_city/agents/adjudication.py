@@ -163,7 +163,8 @@ class AdjudicationAgent:
         rows = self._session.execute(
             select(permit.Application)
             .where(
-                permit.Application.status.in_(["ready_for_review", "under_review"])
+                permit.Application.status.in_(["ready_for_review", "under_review"]),
+                permit.Application.scenario_id.is_(None),
             )
             .order_by(permit.Application.source_application_number)
         ).scalars().all()

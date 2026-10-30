@@ -214,7 +214,7 @@
           <th scope="row" data-label="Reference">{{ run.reference or '-' }}</th>
           <td data-label="Result"><span class="badge badge-{{ run.result }}">{{ run.result }}</span></td>
           <td data-label="Mode">{{ run.engine_label }}</td>
-          <td data-label="Requested by">{{ run.triggered_by or '-' }}</td>
+          <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
           <td data-label="Duration">{{ run.duration or '-' }}</td>
           <td data-label="Steps">
             <details class="opr-details">

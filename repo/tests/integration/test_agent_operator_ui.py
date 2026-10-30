@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from acme_city.agents.adjudication import AdjudicationAgent
 from acme_city.agents.policy import current_policy
 from acme_city.app import create_app
 from acme_city.core.config import Settings
@@ -22,7 +23,9 @@ from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models import agent_ops, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
+from acme_city.ui import agent_views
 from acme_city.ui.router import router as ui_router
+from acme_city.ui.view_models import actor_label
 
 
 def _seed(settings: Settings) -> None:
@@ -41,8 +44,6 @@ def _seed(settings: Settings) -> None:
             reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
     finally:
         factory.dispose()
-
-
 @pytest.fixture()
 def environment(tmp_path: Path) -> Settings:
     settings = Settings.load(
@@ -198,6 +199,115 @@ def test_a_controlled_case_is_refused_by_a_direct_run(
             assert queued == []
     finally:
         factory.dispose()
+
+
+def test_adjudication_excludes_controlled_cases_from_the_waiting_list(
+    client: TestClient, environment: Settings
+) -> None:
+    """Protected demonstration cases are not actionable agent work."""
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            controlled = session.execute(
+                select(permit.Application).where(permit.Application.scenario_id == "D02")
+            ).scalars().first()
+            assert controlled is not None
+            controlled.status = "ready_for_review"
+            application_id = controlled.id
+            assert application_id not in {
+                row.id for row in AdjudicationAgent(session).candidates()
+            }
+    finally:
+        factory.dispose()
+    page = client.get("/agent/adjudication")
+    assert page.status_code == 200
+    assert f'data-application-id="{application_id}"' not in page.text
+
+
+def test_a_built_in_agent_run_uses_neutral_workspace_copy_and_person_label(
+    client: TestClient, environment: Settings
+) -> None:
+    """The workspace and recent results distinguish built in work from Muse."""
+    simulated = client.post("/api/intake/simulate", json={"scenario": "deck-high"})
+    assert simulated.status_code == 200, simulated.text
+    application_id = simulated.json()["results"][0]["application_id"]
+    woke = act(
+        client,
+        "agent.toggle",
+        {"agent_key": "intake", "mode": "awake"},
+        "/agent/intake",
+    )
+    assert woke["status"] == "accepted", woke
+    ran = act(
+        client,
+        "agent.run.intake",
+        {"application_id": application_id},
+        "/agent/intake",
+    )
+    assert ran["status"] == "accepted", ran
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            operator_label = actor_label(session, "persona_agent_operator")
+    finally:
+        factory.dispose()
+    recent = client.get("/agent/intake")
+    history_row = re.search(
+        r'<tr data-testid="agent-history-row".*?</tr>', recent.text, re.DOTALL
+    )
+    assert history_row
+    assert operator_label in history_row.group(0)
+    assert "persona_agent_operator" not in history_row.group(0)
+    assert client.post(
+        "/api/session/select", json={"actor_id": "persona_data_steward"}
+    ).status_code == 200
+    workspace = client.get(f"/permits/{application_id}")
+    assert workspace.status_code == 200, workspace.text
+    assert "Suggested fields from Muse" not in workspace.text
+    assert "Muse extraction" not in workspace.text
+    assert "Muse proposes values" not in workspace.text
+    assert "Suggested fields" in workspace.text
+    assert "Built in extraction" in workspace.text
+    assert "Built in logic" in workspace.text
+
+
+def test_run_history_pagination_links_follow_the_next_and_previous_pages(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The compact pager preserves the selected agent filter in both directions."""
+    application_ids: list[str] = []
+    for _ in range(2):
+        simulated = client.post("/api/intake/simulate", json={"scenario": "deck-high"})
+        assert simulated.status_code == 200, simulated.text
+        application_ids.append(simulated.json()["results"][0]["application_id"])
+    woke = act(
+        client,
+        "agent.toggle",
+        {"agent_key": "intake", "mode": "awake"},
+        "/agent/intake",
+    )
+    assert woke["status"] == "accepted", woke
+    for application_id in application_ids:
+        ran = act(
+            client,
+            "agent.run.intake",
+            {"application_id": application_id},
+            "/agent/intake",
+        )
+        assert ran["status"] == "accepted", ran
+    monkeypatch.setattr(agent_views, "RUN_PAGE_SIZE", 1)
+    first = client.get("/agents/runs?agent_key=intake")
+    assert first.status_code == 200
+    match = re.search(r'href="([^"]+)" data-testid="run-page-next"', first.text)
+    assert match, first.text
+    second = client.get(match.group(1))
+    assert second.status_code == 200
+    assert 'data-testid="run-page-previous"' in second.text
+    match = re.search(r'href="([^"]+)" data-testid="run-page-previous"', second.text)
+    assert match, second.text
+    returned = client.get(match.group(1))
+    assert returned.status_code == 200
+    assert "Page 1 of 2" in returned.text
 
 
 def test_the_administrator_opens_the_agent_processing_tab(

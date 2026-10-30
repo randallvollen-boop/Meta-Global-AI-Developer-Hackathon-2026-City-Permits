@@ -156,7 +156,11 @@ def agent_screen(
         for row in applications
         if row.status == "needs_information" and row.scenario_id is None
     ]
-    in_review = [row for row in applications if row.status in IN_REVIEW_STATUSES]
+    in_review = [
+        row
+        for row in applications
+        if row.status in IN_REVIEW_STATUSES and row.scenario_id is None
+    ]
     pending_ids = {row.application_id for row in pending}
     awaiting = [
         row for row in in_review if row.id not in pending_ids
@@ -241,6 +245,7 @@ def agent_screen(
             "detail": run.outcome_detail or "",
             "target": run.application_id or "",
             "triggered_by": run.triggered_by or "",
+            "triggered_label": _actor_label(session, run.triggered_by),
             "duration": _duration(run),
             "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
             "nodes": nodes_by_run.get(run.id, []),
