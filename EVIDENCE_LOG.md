@@ -267,3 +267,14 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `scripts/check_owned_hunks.py --lane steward-queue-guide --base main --head HEAD` -> "every hunk is inside the lane's own functions"; `--actor-only` -> "only actor-id literals change".
 - Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2333 passed in 711.69s (11:51).
 - No live provider call was made. The guide answered from saved words in hosted mode with a credential set, and the tripwire recorded no call.
+
+## 2026-10-29 - Steward queue and guide lane, review 4 evidence
+
+- Focused runs in the worktree with `PYTHONPATH=src` and the project venv:
+  - `tests/browser/test_steward_workspace_browser.py`, `tests/browser/test_steward_browser.py` and `tests/browser/test_navigation_steward.py` -> 52 passed: the Resolve button, the Search button, a tab, the help link of both new screens and the guide link of both new screens are clicked and the landing page of each is read.
+  - `tests/regression/test_admin_early_resolution.py` -> 9 passed: the membership and the order of the board as a list, the sentence case finding label, the severity words, the duty of the applicant, the absence of a case that does not wait and the group of the primary finding.
+  - `tests/integration/test_help_docs_steward.py` and `tests/integration/test_help_docs.py` -> 47 passed: every label a steward step quotes is in the element that holds it.
+  - `tests/regression/test_admin_early_resolution.py`, `tests/regression/test_steward_selector_contract.py`, `tests/integration/test_help_docs_steward.py`, `tests/integration/test_help_docs.py`, `tests/integration/test_steward_guide_offline.py`, `tests/integration/test_steward_ui.py`, `tests/integration/test_p3b_queues.py`, `tests/unit/test_steward_guide.py`, `tests/unit/test_steward_queue_views.py`, `tests/unit/test_stylesheet_scopes.py` and `tests/api/test_steward_workspace.py` -> 201 passed.
+- The label test of the steward help was checked against a wrong element on purpose: the check failed, so it reads the element and not the page.
+- No live provider call was made. No fixture, rule text, replay fixture, acceptance test, persona or grant changed.
+- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2341 passed in 725.99s (12:05).

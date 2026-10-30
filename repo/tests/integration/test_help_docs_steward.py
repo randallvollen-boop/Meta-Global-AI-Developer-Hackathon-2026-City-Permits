@@ -113,26 +113,33 @@ def quoted_labels(*slugs: str) -> set[str]:
     return labels
 
 
-#: The page each quoted label of the steward help is read on.
-LABELS: dict[str, str] = {
-    "Data issues": "/steward",
-    "Search records": "/steward",
-    "More filters": "/steward",
-    "Apply filters": "/steward",
-    "Muse guide": "/steward",
-    "Saved guidance. Live Muse is off.": "/steward",
-    "Needs review": "/steward",
-    "Review match": "/source-records",
-    "Source records": "/source-records",
-    "Activity": "/activity",
-    "Intake queue": "/queue/intake",
-    "Process selected with agent": "/queue/intake",
-    "Early resolution": "/queue/early-resolution",
-    "5. What will this action do?": "case",
-    "6. What happened?": "case",
-    "Reject match proposed for": "case",
-    "Start": "case",
-    "Confirm link to Cedarline Coffee Works LLC": "case with a candidate",
+#: The page each quoted label of the steward help is read on, and the chain of
+#: elements that hold the label on that page.  A holder is a fragment of the
+#: start tag of an element, such as a test id or a class, and the elements are
+#: looked up from the outside in.  The label is checked in the element that
+#: holds it, not anywhere on the page.
+LABELS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "Data issues": ("/steward", ('data-screen-key="steward"',)),
+    "Search records": ("/steward", ('data-testid="queue-search"', '<label for="queue-query">')),
+    "More filters": ("/steward", ('data-testid="queue-filters"', "<summary>")),
+    "Apply filters": ("/steward", ('data-testid="queue-filter-submit"',)),
+    "Muse guide": ("/steward", ('data-testid="steward-guide"', "<summary>")),
+    "Saved guidance. Live Muse is off.": ("/steward", ('data-testid="steward-guide-mode"',)),
+    "Needs review": ("/steward", ('data-testid="issue-status"',)),
+    "Review match": ("/source-records", ('data-testid="source-action"',)),
+    "Source records": ("/source-records", ('data-screen-key="source_records"',)),
+    "Activity": ("/activity", ('data-screen-key="activity"',)),
+    "Intake queue": ("/queue/intake", ('data-screen-key="intake_queue"',)),
+    "Process selected with agent": ("/queue/intake", ('data-testid="intake-bulk-submit"',)),
+    "Early resolution": ("/queue/early-resolution", ('data-screen-key="early_resolution"',)),
+    "5. What will this action do?": ("case", ('data-testid="case-q5"', "<h2")),
+    "6. What happened?": ("case", ('data-testid="case-q6"', "<h2")),
+    "Reject match proposed for": ("case", ('class="action-label act-title"',)),
+    "Start": ("case", ('class="btn sm primary act-open"',)),
+    "Confirm link to Cedarline Coffee Works LLC": (
+        "case with a candidate",
+        ('class="action-label act-title"',),
+    ),
 }
 
 
@@ -150,6 +157,57 @@ def page_of(client: TestClient, path: str) -> str:
     return client.get(path).text
 
 
+def _elements(html: str, holder: str) -> list[tuple[int, int, int, int]]:
+    """Return the elements of ``html`` whose start tag holds ``holder``.
+
+    Every element is returned as the start of its tag, the end of its start
+    tag, the start of its end tag and the end of its end tag.
+    """
+    spans: list[tuple[int, int, int, int]] = []
+    position = 0
+    while True:
+        index = html.find(holder, position)
+        if index == -1:
+            return spans
+        position = index + len(holder)
+        start = html.rfind("<", 0, index)
+        if start == -1:
+            continue
+        match = re.match(r"<([a-zA-Z0-9]+)", html[start:])
+        if match is None:
+            continue
+        tag = match.group(1)
+        open_end = html.index(">", start) + 1
+        depth = 1
+        cursor = open_end
+        pattern = re.compile(rf"<(/?){tag}\b[^>]*>")
+        while depth:
+            closing = pattern.search(html, cursor)
+            if closing is None:
+                return spans
+            cursor = closing.end()
+            depth += -1 if closing.group(1) == "/" else 1
+        spans.append((start, open_end, closing.start(), cursor))
+
+
+def element_texts(html: str, holders: tuple[str, ...]) -> list[str]:
+    """Return the text of the elements that match the chain of holders."""
+    if not holders:
+        return []
+    outer = _elements(html, holders[0])
+    if len(holders) == 1:
+        return [
+            re.sub(r"<[^>]+>", " ", html[open_end:close_start])
+            for _, open_end, close_start, _ in outer
+        ]
+    texts: list[str] = []
+    for start, _, _, end in outer:
+        inner = html[start:end]
+        for _, open_end, close_start, _ in _elements(inner, holders[1]):
+            texts.append(re.sub(r"<[^>]+>", " ", inner[open_end:close_start]))
+    return texts
+
+
 def test_every_quoted_label_of_the_steward_help_is_checked() -> None:
     """Every label a steward step quotes has a page that shows it."""
     quoted = quoted_labels(QUEUE_GUIDE, EXAMPLE_GUIDE)
@@ -161,9 +219,11 @@ def test_every_quoted_label_of_the_steward_help_is_checked() -> None:
 def test_every_quoted_label_is_found_on_its_page(
     client: TestClient, label: str
 ) -> None:
-    """The label a step quotes is on the page the step names."""
-    path = LABELS[label]
-    assert label in page_of(client, path), (label, path)
+    """The label a step quotes is in the element of the page that holds it."""
+    path, holders = LABELS[label]
+    texts = element_texts(page_of(client, path), holders)
+    assert texts, (label, path, holders)
+    assert any(label in text for text in texts), (label, path, holders)
 
 
 def test_the_rejection_action_names_the_record_it_rejects(

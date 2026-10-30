@@ -399,3 +399,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - STW-31A: the steward help names the labels the pages really show. The rejection action is named as it reads, and it names the record it turns down. A new how-to guide covers the queue, the source records, the activity and the incoming work.
 - STW-32: the phone and keyboard evidence of the steward screens, the incoming screens included.
 - The guide is built in `config/steward_guide.json` and in the lane's own modules. No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
+
+## 2026-10-29 - Steward queue and guide lane, review 4 fixes (`lane/steward-queue-guide`)
+
+- The visible controls of the two new screens are clicked in a browser test: the "Resolve" button of the early resolution board opens the permit workspace of the case it names, the "Search" button of the intake queue searches the cases, a tab of the queue opens the saved view it names, the help link of both screens opens the help of that screen in the drawer, and the guide link of both screens lands on the section it names.
+- The early resolution board is asserted as it reads: a row names the finding in sentence case with its severity ("Missing document · Blocking" and "Duplicate · Needs a person") and the duty of the applicant ("Applicant must: Send a signed site plan."). The membership and the order of the board are compared as a list, so the order of the groups is proven and not the order of the references.
+- The board test that says no case that does not wait is on the board now asserts both references without a condition, and the group of a case is compared with the primary finding of that case instead of with a fragment of the row.
+- The steward help labels are checked in the element that holds them, the navigation entry, the summary, the button or the action label, and not anywhere on the page.
+- The steward help overlay says "waits for a person", "the queue can be sent to a colleague" and "off for this role". The shared `config/help_content.json` is untouched.
+- No fixture, rule text, replay fixture, acceptance test, persona or grant changed, no assertion was weakened, and no new binary was added.

@@ -585,3 +585,119 @@ def test_the_filters_of_the_incoming_queue_work_with_the_keyboard(
     assert "priority=high" in page.url
     assert page.locator('[data-testid="intake-priority-filter"]').input_value() == "high"
     assert page.recorded_errors == []
+
+
+def test_the_resolve_button_of_the_board_opens_the_case(
+    page, server: BrowserServer, login, waiting_case
+) -> None:
+    """The Resolve button of the early resolution board opens the case it names."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/early-resolution", wait_until="load")
+    resolve = page.locator('[data-testid="resolve-case"]')
+    assert resolve.count() == 1
+    resolve.click()
+    page.wait_for_load_state("domcontentloaded")
+    assert "/permits/" in page.url
+    assert waiting_case in page.locator("main").inner_text()
+    assert page.recorded_errors == []
+
+
+def test_the_search_button_of_the_incoming_queue_searches_the_cases(
+    page, server: BrowserServer, login
+) -> None:
+    """The Search button of the incoming queue searches the cases."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    page.locator('[data-testid="intake-search-input"]').fill("no such case")
+    page.locator('[data-testid="intake-search-submit"]').click()
+    page.wait_for_url("**/queue/intake?*")
+    assert "q=no+such+case" in page.url
+    assert page.locator('[data-testid="intake-empty"]').count() == 1
+    assert page.recorded_errors == []
+
+
+def test_a_tab_of_the_incoming_queue_opens_the_view_it_names(
+    page, server: BrowserServer, login
+) -> None:
+    """A tab of the incoming queue opens the saved view it names."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    tab = page.locator('[data-testid="intake-tab"][data-tab="archived"]')
+    assert tab.count() == 1
+    tab.click()
+    page.wait_for_url("**/queue/intake?*")
+    assert "tab=archived" in page.url
+    assert page.locator('[data-testid="intake-count"]').is_visible()
+    assert (
+        page.locator('[data-testid="intake-tab"][data-tab="archived"]').get_attribute(
+            "aria-selected"
+        )
+        == "true"
+    )
+    assert page.recorded_errors == []
+
+
+def test_the_help_link_of_the_incoming_queue_opens_its_help(
+    page, server: BrowserServer, login
+) -> None:
+    """The help link of the incoming queue opens the help of that screen."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    page.locator('[data-testid="ui-help"]').click()
+    drawer = page.locator("#ui-drawer")
+    drawer.wait_for(state="visible")
+    assert (
+        drawer.locator('[data-testid="ui-drawer-title"]').inner_text()
+        == "Help: Intake queue"
+    )
+    assert "what this screen is for" in drawer.inner_text().lower()
+    assert page.recorded_errors == []
+
+
+def test_the_help_link_of_the_early_resolution_board_opens_its_help(
+    page, server: BrowserServer, login, waiting_case
+) -> None:
+    """The help link of the early resolution board opens the help of that screen."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/early-resolution", wait_until="load")
+    page.locator('[data-testid="ui-help"]').click()
+    drawer = page.locator("#ui-drawer")
+    drawer.wait_for(state="visible")
+    assert (
+        drawer.locator('[data-testid="ui-drawer-title"]').inner_text()
+        == "Help: Early resolution"
+    )
+    assert "what this screen is for" in drawer.inner_text().lower()
+    assert page.recorded_errors == []
+
+
+def test_the_guide_link_of_the_early_resolution_board_opens_the_groups(
+    page, server: BrowserServer, login, waiting_case
+) -> None:
+    """The guide link of the early resolution board lands on the groups it names."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/early-resolution", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    link = guide.locator("a", has_text="See the groups")
+    assert link.count() == 1
+    link.click()
+    assert page.url.endswith("#early-resolution-groups")
+    assert page.locator("#early-resolution-groups").is_visible()
+    assert page.recorded_errors == []
+
+
+def test_the_guide_link_of_the_incoming_queue_opens_the_figures(
+    page, server: BrowserServer, login
+) -> None:
+    """The guide link of the incoming queue lands on the figures it names."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/queue/intake", wait_until="load")
+    guide = page.locator('[data-testid="steward-guide"]')
+    guide.locator("summary").click()
+    link = guide.locator("a", has_text="See what the figures mean")
+    assert link.count() == 1
+    link.click()
+    assert page.url.endswith("#intake-definitions")
+    assert page.locator("#intake-definitions").is_visible()
+    assert page.recorded_errors == []

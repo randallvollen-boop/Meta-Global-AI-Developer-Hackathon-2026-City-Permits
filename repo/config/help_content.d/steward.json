@@ -12,7 +12,7 @@
       {
         "slug": "work-the-queue-and-the-incoming-work",
         "title": "Work the queue and the incoming work",
-        "summary": "Find the work that waits for you and follow the cases that need a person.",
+        "summary": "Find the work that waits for a person and follow the cases that need a decision.",
         "who": "Data Steward",
         "persona_ids": [
           "persona_data_steward"
@@ -21,13 +21,13 @@
         "screen_href": "/steward",
         "steps": [
           "Open \"Data issues\" in the left menu. The queue starts on the tasks that need a person.",
-          "Search with \"Search records\". The search travels in the address of the page, so you can send the queue to a colleague.",
+          "Search with \"Search records\". The search travels in the address of the page, so the queue can be sent to a colleague.",
           "Open \"More filters\" to narrow the queue by record type or by source, then click \"Apply filters\". The count beside each filter covers the same tasks as the rows.",
           "Open a task. Its summary names the record, the source, the status and the next step before the comparison.",
           "Read the \"Muse guide\" panel above the task. It answers from saved words: \"Saved guidance. Live Muse is off.\"",
           "Open \"Source records\" to see what each source system sent. Each row names the one action its link state asks for, such as \"Review match\".",
           "Open \"Activity\" to see who acted, what was recorded and when.",
-          "Open \"Intake queue\" to see the cases the City has in front of it. Every case names its next step. \"Process selected with agent\" is off for your role, because an Agent Operator wakes the agent and runs it.",
+          "Open \"Intake queue\" to see the cases the City has in front of it. Every case names its next step. \"Process selected with agent\" is off for this role, because an Agent Operator wakes the agent and runs it.",
           "Open \"Early resolution\" to see the cases that wait for a person, grouped by the finding that puts them there."
         ],
         "result": "Every decision is recorded with its evidence, and the queue, the source records and the activity show what happened next."
