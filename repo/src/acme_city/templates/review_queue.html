@@ -111,9 +111,6 @@
   <div class="card-b">
     <p class="muted" data-testid="review-definitions">{{ queue.definitions.in_review }}</p>
     <p class="muted" data-testid="review-recent-definitions">{{ queue.definitions.recent }}</p>
-    {% if can_run and not agent_awake %}
-    <p class="lock" data-testid="review-agent-locked">The adjudication agent is asleep. A City Administrator wakes it on the Adjudication agent screen; until then the run button on a case is locked.</p>
-    {% endif %}
   </div>
 </section>
 {% endblock %}

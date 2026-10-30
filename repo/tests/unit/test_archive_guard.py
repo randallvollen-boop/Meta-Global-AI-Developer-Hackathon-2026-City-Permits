@@ -188,7 +188,7 @@ def test_an_archived_case_refuses_the_intake_agent(seeded: Settings) -> None:
         with factory() as session:
             application = archived_case(session)
             AgentControlService(session).set_mode(
-                "intake", "awake", context_for(session, "persona_city_administrator")
+                "intake", "awake", context_for(session, "persona_agent_operator")
             )
             from acme_city.agents.intake import IntakeAgent
 
@@ -206,7 +206,7 @@ def test_an_archived_case_refuses_the_adjudication_agent(seeded: Settings) -> No
         with factory() as session:
             application = archived_case(session, status="ready_for_review")
             AgentControlService(session).set_mode(
-                "adjudication", "awake", context_for(session, "persona_city_administrator")
+                "adjudication", "awake", context_for(session, "persona_agent_operator")
             )
             from acme_city.agents.adjudication import AdjudicationAgent
 
@@ -421,15 +421,15 @@ def test_an_archived_case_refuses_the_bulk_intake_processing(
         with factory() as session:
             application = archived_case(session)
             AgentControlService(session).set_mode(
-                "intake", "awake", context_for(session, "persona_city_administrator")
+                "intake", "awake", context_for(session, "persona_agent_operator")
             )
             from acme_city.permits.bulk import Selection, process_selected
 
-            steward = context_for(session, "persona_data_steward")
+            operator = context_for(session, "persona_agent_operator")
             with pytest.raises(ValidationError) as error:
                 process_selected(
                     session,
-                    actor=steward,
+                    actor=operator,
                     selections=[Selection(application.id, application.version)],
                 )
             assert "archived" in str(error.value)

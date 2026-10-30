@@ -48,10 +48,10 @@ def test_the_dispatch_ui_action_needs_the_transition_grant(audit_client, pick) -
     )
     assert refused.status_code == 403, refused.text
     pick(audit_client, "persona_data_steward")
-    token = _csrf(audit_client, "/agent/intake")
+    token = _csrf(audit_client, "/steward")
     allowed = audit_client.post(
         "/ui/actions/change.dispatch",
-        data={"csrf_token": token, "action_id": "change.dispatch", "next": "/agent/intake"},
+        data={"csrf_token": token, "action_id": "change.dispatch", "next": "/steward"},
         headers={"Accept": "application/json"},
         follow_redirects=False,
     )

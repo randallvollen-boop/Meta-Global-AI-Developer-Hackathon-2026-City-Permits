@@ -1,5 +1,40 @@
-"""Reset seed data of the agent operator lane.
+"""Reset seed data of the agent operator lane."""
 
-The lane registers its hooks here with
-:func:`acme_city.fixtures.reset.register_seed`.  None is registered yet.
-"""
+from __future__ import annotations
+
+from acme_city.fixtures.reset import register_seed
+from acme_city.persistence.models import agent_ops
+
+
+@register_seed
+def seed_operator_defaults(session, bundle):
+    """Seed the managed entitlement and manual-processing defaults."""
+    now = bundle.demo.assignment_epoch
+    entitlements = {
+        "agent_operator": True,
+        "permit_reviewer": False,
+        "intake_clerk": False,
+        "domain_steward": False,
+        "domain_mdm_steward": False,
+    }
+    for role_id, enabled in entitlements.items():
+        session.add(
+            agent_ops.AgentRoleEntitlement(
+                id=f"agentrole_{role_id}", correlation_id=f"corr_agentrole_{role_id}", role_id=role_id,
+                can_run_agents=enabled, version=1, changed_by=None, changed_at=now,
+            )
+        )
+    policy = bundle.demo.agent_processing
+    session.add(
+        agent_ops.AgentProcessingPolicy(
+            id="agentpolicy_default", correlation_id="corr_agentpolicy_default",
+            mode=str(policy["mode"]),
+            runs_per_hour=int(policy["runs_per_hour"]),
+            max_batch_size=int(policy["max_batch_size"]),
+            version=1,
+        )
+    )
+    return {
+        "agent_role_entitlements": len(entitlements),
+        "agent_processing_policies": 1,
+    }

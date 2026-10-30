@@ -457,8 +457,16 @@ def ui_intake_queue(
         title="Intake queue",
         queue=queue,
         agent_awake=agent_views.agent_state(session, "intake")["mode"] == "awake",
-        can_process=view_models.holds_grant(
-            session, resolved, "permit.intake.process_selected", "permits"
+        # The processing control is a gate of two grants: the execution grant
+        # that names the action and the run grant of the intake agent.  The
+        # person who may run the agent is the person who may process the
+        # selected cases; a persona that may only read the queue sees the
+        # locked control and the reason it is locked.
+        can_process=(
+            view_models.holds_grant(
+                session, resolved, "permit.intake.process_selected", "permits"
+            )
+            and view_models.holds_grant(session, resolved, "agent.run.intake", "permits")
         ),
     )
     return render(request, "intake_queue.html", context)
