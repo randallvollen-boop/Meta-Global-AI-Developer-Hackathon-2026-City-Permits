@@ -126,6 +126,22 @@
     },
     {
       "actor_id": "persona_data_steward",
+      "permission_id": "registry.automation.preview",
+      "change": "add",
+      "domains": [
+        "applicants",
+        "permits",
+        "contractors",
+        "businesses",
+        "parcels",
+        "addresses"
+      ],
+      "record_scope": [],
+      "slice": "STW-19",
+      "reason": "The Data Steward reads the settings of the automation and previews the policy before it is activated."
+    },
+    {
+      "actor_id": "persona_data_steward",
       "permission_id": "registry.automation.review",
       "change": "add",
       "domains": [

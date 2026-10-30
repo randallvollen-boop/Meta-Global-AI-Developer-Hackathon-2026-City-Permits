@@ -681,6 +681,19 @@
           "source": "explicit"
         },
         {
+          "permission_id": "registry.automation.preview",
+          "domains": [
+            "applicants",
+            "permits",
+            "contractors",
+            "businesses",
+            "parcels",
+            "addresses"
+          ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
           "permission_id": "registry.automation.review",
           "domains": [
             "applicants",

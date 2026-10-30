@@ -171,8 +171,17 @@ def test_every_screen_grant_is_in_the_catalog() -> None:
 
 def _has_route(client: TestClient, href: str) -> bool:
     """Whether the application serves ``href`` or a path below it."""
-    paths = [getattr(route, "path", "") for route in client.app.routes]
-    return any(path == href or path.startswith(href + "/") for path in paths)
+    def includes(routes) -> bool:
+        for route in routes:
+            path = getattr(route, "path", "")
+            if path == href or path.startswith(href + "/"):
+                return True
+            nested = getattr(route, "original_router", None)
+            if nested is not None and includes(nested.routes):
+                return True
+        return False
+
+    return includes(client.app.routes)
 
 
 def test_a_reserved_screen_is_reachable_only_once_its_route_exists(
@@ -383,14 +392,16 @@ def test_a_secondary_item_renders_the_more_tools_group(client: TestClient) -> No
     )
     assert desktop is not None and mobile is not None
     assert "More tools" in desktop.group(0) and "More tools" in mobile.group(0)
-    # The last two entries of the steward are under More tools and nowhere else.
-    for key, href in (("intake_queue", "/queue/intake"), ("early_resolution", "/queue/early-resolution")):
+    # The dummy profile moves the last two accessible steward entries under
+    # More tools. STW-19 appends its now-routable automation screen.
+    for key, href in (("early_resolution", "/queue/early-resolution"), ("steward_automation", "/steward/automation")):
         assert f'data-screen-key="{key}"' in desktop.group(0)
         assert html.count(f'data-screen-key="{key}"') == 1
         assert f'href="{href}"' in mobile.group(0)
     primary = re.search(r'<nav class="nav app-nav".*?<ul>(.*?)</ul>', html, re.S)
     assert primary is not None and 'data-screen-key="queue"' in primary.group(1)
-    assert 'data-screen-key="intake_queue"' not in primary.group(1)
+    for key in ("early_resolution", "steward_automation"):
+        assert f'data-screen-key="{key}"' not in primary.group(1)
     # The profile the lane registered is back, so the steward keeps its own
     # group, and a persona without a profile still shows none.
     select_persona(client, "persona_permit_reviewer")

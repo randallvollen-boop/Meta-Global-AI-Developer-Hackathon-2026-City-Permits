@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% import "components/steward_guide.html" as guide_ui with context %}
+
+{# The automatic linking settings of the Data Steward.
+
+   The page reports what the automation does right now, the thresholds of the
+   policy, a preview of the accepted source records and the two controls that
+   change the policy.  Every figure it shows is a recorded one. #}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Automatic linking</h1>
+    <p class="sub">The policy that lets the city link source records to master records on its own. A steward decides whether it runs, and every link it applies is reviewed by a person.</p>
+  </div>
+</div>
+
+{{ guide_ui.panel(guide) }}
+
+<section class="panel stwa-panel" aria-labelledby="automation-status-heading" data-testid="automation-status">
+  <h2 id="automation-status-heading">Status</h2>
+  <p class="stwa-status" data-testid="automation-status-line">{{ automation.status }}</p>
+  <p class="muted" data-testid="automation-status-reason">{{ automation.reason }}</p>
+  <dl class="stwa-facts">
+    <div>
+      <dt>Running mode</dt>
+      <dd data-testid="automation-running-mode">{{ automation.running_mode }}</dd>
+    </div>
+    <div>
+      <dt>Policy</dt>
+      <dd data-testid="automation-policy">{% if automation.policy %}Version {{ automation.policy.version }}, {{ automation.policy.mode_label }}, activated by {{ automation.policy.actor }} on {{ automation.policy.activated_at }}.{% else %}No policy is active yet.{% endif %}</dd>
+    </div>
+    <div>
+      <dt>Source scope</dt>
+      <dd data-testid="automation-scope">{% if automation.policy %}{{ automation.scope_labels|join(', ') if automation.scope_labels else 'no source dataset' }}{% else %}every eligible dataset{% endif %}</dd>
+    </div>
+    <div>
+      <dt>Last completed run</dt>
+      <dd data-testid="automation-last-run">{{ automation.last_run_text }}</dd>
+    </div>
+  </dl>
+  {% if automation.policy %}
+  <p class="muted" data-testid="automation-policy-reason">The reason of the steward: {{ automation.policy.reason }}</p>
+  {% endif %}
+</section>
+
+<section class="panel stwa-panel" aria-labelledby="automation-thresholds-heading">
+  <h2 id="automation-thresholds-heading">Thresholds</h2>
+  <p class="muted">The score the matcher records for a candidate, from 0 to 1. A score is not a decision.</p>
+  <table class="data-table stwa-table" data-testid="automation-thresholds">
+    <caption class="visually-hidden">The suggestion threshold and the automatic application threshold of every record type</caption>
+    <thead>
+      <tr>
+        <th scope="col">Record type</th>
+        <th scope="col">Suggest at</th>
+        <th scope="col">Apply at</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in automation.thresholds %}
+      <tr>
+        <th scope="row" class="stwa-cell" data-label="Record type">{{ row.label }}</th>
+        <td class="stwa-cell" data-label="Suggest at">{{ row.suggest }}</td>
+        <td class="stwa-cell" data-label="Apply at">{{ row.auto_apply }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel stwa-panel" aria-labelledby="automation-preview-heading">
+  <h2 id="automation-preview-heading">Preview the policy</h2>
+  <p class="muted">The preview reads the recorded score of every accepted source record in the scope. It changes nothing, and it decides nothing.</p>
+  <p>
+    <a class="button btn" href="/steward/automation?preview=1" data-testid="automation-preview-button">Preview the policy</a>
+    {% if preview %}<a class="button button-quiet btn" href="/steward/automation" data-testid="automation-preview-close">Close the preview</a>{% endif %}
+  </p>
+  {% if preview %}
+  <p class="muted" data-testid="automation-preview-count">{{ preview.shown }} of {{ preview.total }} accepted records are shown.</p>
+  <table class="data-table stwa-table" data-testid="automation-preview">
+    <caption class="visually-hidden">The recorded score of every accepted source record and what the thresholds read</caption>
+    <thead>
+      <tr>
+        <th scope="col">Source record</th>
+        <th scope="col">Dataset</th>
+        <th scope="col">Candidate</th>
+        <th scope="col">Score</th>
+        <th scope="col">Reading</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in preview.rows %}
+      <tr>
+        <th scope="row" class="stwa-cell" data-label="Source record">{{ row.record }}</th>
+        <td class="stwa-cell" data-label="Dataset">{{ row.label }}</td>
+        <td class="stwa-cell" data-label="Candidate">{{ row.candidate if row.candidate else 'none' }}</td>
+        <td class="stwa-cell" data-label="Score">{{ row.score_text }}</td>
+        <td class="stwa-cell" data-label="Reading">{{ row.reading }}<span class="stwa-note">{{ row.reason }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">The identity checks and a person decide every link. Nothing is applied on its own in this release.</p>
+  {% endif %}
+</section>
+
+<section class="panel stwa-panel" aria-labelledby="automation-activate-heading">
+  <h2 id="automation-activate-heading">Activate a policy</h2>
+  {% if automation.can_activate %}
+  <p class="muted">A new policy version replaces the previous one. It affects the records that are ingested later; the links that exist stay as they are.</p>
+  <form method="post" action="/ui/actions/registry.automation.activate" class="action-form" data-testid="automation-activate-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="/steward/automation">
+    <input type="hidden" name="expected_version" value="{{ automation.policy_version }}">
+    <p class="field">
+      <label for="automation-mode">Mode</label>
+      <select id="automation-mode" name="mode" data-testid="automation-mode">
+        {% for key, label in automation.modes %}
+        <option value="{{ key }}"{% if key == automation.mode %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <fieldset class="stwa-scope">
+      <legend>Source scope</legend>
+      {% for dataset in automation.datasets %}
+      <p class="field">
+        <label for="automation-scope-{{ dataset.key }}"><input id="automation-scope-{{ dataset.key }}" type="checkbox" name="source_scope" value="{{ dataset.key }}" data-testid="automation-scope-{{ dataset.key }}"{% if dataset.key in automation.scope %} checked{% endif %}> {{ dataset.label }}</label>
+      </p>
+      {% endfor %}
+    </fieldset>
+    <p class="field">
+      <label for="automation-reason">Reason</label>
+      <textarea id="automation-reason" name="reason" rows="2" required data-testid="automation-activate-reason"></textarea>
+    </p>
+    <p><button type="submit" class="button button-primary btn primary" data-testid="automation-activate">Activate the policy</button></p>
+  </form>
+  {% else %}
+  <p class="muted" data-testid="automation-activate-denied">Your persona may not activate a policy.</p>
+  {% endif %}
+</section>
+
+<section class="panel stwa-panel" aria-labelledby="automation-pause-heading">
+  <h2 id="automation-pause-heading">Pause automatic linking</h2>
+  {% if automation.can_pause %}
+  <p class="muted">Pausing stops new work from being queued. The links that were applied stay as they are, and a person can reverse them one by one.</p>
+  <form method="post" action="/ui/actions/registry.automation.pause" class="action-form" data-testid="automation-pause-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="/steward/automation">
+    <input type="hidden" name="expected_version" value="{{ automation.policy_version }}">
+    <p class="field">
+      <label for="automation-pause-reason">Reason</label>
+      <textarea id="automation-pause-reason" name="reason" rows="2" required data-testid="automation-pause-reason"></textarea>
+    </p>
+    <p><button type="submit" class="button btn" data-testid="automation-pause">Pause automatic linking</button></p>
+  </form>
+  {% else %}
+  <p class="muted" data-testid="automation-pause-denied">Your persona may not pause the automation.</p>
+  {% endif %}
+</section>
+{% endblock %}
