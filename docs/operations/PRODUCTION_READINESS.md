@@ -159,7 +159,7 @@ Effort follows the review: S is under 2 hours, M about half a day, L a day or mo
 | Monitoring and alerts | Structured redacted logs, request identifiers, metrics for latency, errors, storage, outbox age, AI failures and backup age, an assigned operator | L |
 | AI cost reservations | Atomic attempted-call, token and cost reservations, bounded input, per-user limits, a reset for the circuit breaker, provider data approval and retention rules | L |
 | Accessibility audit | WCAG (Web Content Accessibility Guidelines) 2.2 AA review with keyboard, screen reader, zoom and contrast checks | L |
-| Production business authority | A separate bootstrap with approved rules, fees and real role holders; the demo banner and footer text in `base.html` still say "fictional demonstration" | L, needs outside approval |
+| Production business authority | A separate bootstrap with approved rules, fees and real role holders; the demo banner is gone, but the footer lines in `base.html` and in the City frame still call the service a fictional demonstration | L, needs outside approval |
 | Rate limiting | The app has per-process limits for the public demo (off by default, see `DEPLOY_RENDER.md`). Production still needs shared or edge limits for sign-in, uploads and expensive actions | M |
 | CSRF (cross-site request forgery) checks on cookie-authenticated JSON writes | Uniform origin or token checks beyond the interface forms | M |
 | Remaining queue queries | The work queue still issues several queries per application for blockers and next actions; add scope filters and pagination | M |

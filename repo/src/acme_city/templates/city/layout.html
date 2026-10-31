@@ -34,7 +34,8 @@
 </defs></svg>
 <a class="skip-link" href="#main">Skip to the main content</a>
 
-<div class="city-demo" role="note" data-testid="city-demo-banner">{{ portal_text.disclosure_strip }}</div>
+{# The demonstration disclosure.  It is one line and it shows once. #}
+{% include "_public_demo_notice.html" %}
 
 <header class="city-header">
   <div class="city-wrap city-header-row">
@@ -99,9 +100,8 @@
 
 <footer class="city-footer">
   <div class="city-wrap">
-    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="{{ '/apply/help/panel' if portal_page else '/city/contact' }}">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
+    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
     <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
-    <p class="city-footer-note">1 Example Plaza, Acme (fictional address) &middot; (555) 010-0100 &middot; Weekdays, 8:30 a.m. to 4:30 p.m.</p>
   </div>
 </footer>
 

@@ -193,7 +193,7 @@ def plant_request(settings, reference):
 # ------------------------------------------------------------------ chrome
 
 
-def test_portal_chrome_header_nav_account_strip_and_footer(client) -> None:
+def test_portal_chrome_header_nav_account_and_footer(client) -> None:
     choose(client)
     for path, active in (("/apply/track", "My permits"), ("/apply", "Start an application")):
         page = client.get(path).text
@@ -204,14 +204,16 @@ def test_portal_chrome_header_nav_account_strip_and_footer(client) -> None:
         assert nav.count('aria-current="page"') == 1
         assert f'data-testid="applicant-name">{APPLICANT_NAME}<' in page
         assert 'data-testid="sign-out"' in page and 'action="/ui/end"' in page
-        strip = page.split('data-testid="city-demo-banner">')[1].split("</div>")[0]
-        assert strip == content.content()["disclosure_strip"]
-        assert "Fictional demonstration" in strip and "synthetic" in strip
+        # The City frame carries no disclosure strip (city frame, S2): the
+        # demonstration is one sentence in the footer.
+        assert 'data-testid="city-demo-banner"' not in page
+        assert content.content()["footer_note"] in page
         # the extra "Fictional demonstration" text under the logo is gone
         assert "<small>Fictional demonstration</small>" not in page
         footer = page.split('data-testid="city-footer-links"')[1].split("</p>")[0]
         for label in ("City of Acme", "Accessibility", "Privacy", "Help"):
             assert label in footer
+        assert 'href="/city/contact"' in footer
         assert "Demo controls" in page and 'data-testid="demo-switch"' in page
     help_page = client.get("/apply/help/panel").text
     assert re.search(r'aria-current="page">Help</a>', help_page.split("applicant-nav")[1])
@@ -247,7 +249,9 @@ def test_city_home_keeps_the_permit_action_and_the_community_link(client) -> Non
     page = client.get("/city/").text
     assert 'data-testid="hero-permits"' in page and 'href="/city/permits"' in page
     assert 'data-testid="tile-community"' in page and 'href="/city/community"' in page
-    assert page.index('class="city-hero"') < page.index("city-tiles") < page.index("News and notices")
+    assert page.index('class="city-hero"') < page.index("city-tiles")
+    # The news column is gone (city frame, S2).
+    assert "News and notices" not in page
 
 
 def test_permits_entry_has_two_actions_what_youll_need_and_a_help_link(client) -> None:

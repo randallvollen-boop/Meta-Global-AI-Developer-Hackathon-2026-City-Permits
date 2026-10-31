@@ -398,8 +398,9 @@ def test_public_demo_notice_shows_on_chooser_and_city_home_when_on(make_client) 
     for path in ("/select", "/city/"):
         body = client.get(path).text
         assert 'data-testid="public-demo-notice"' in body, path
-        assert "This is a public demonstration with fictional data. It resets every night." in body
-        assert "Don't enter real personal information." in body
+        # One line, once (city frame, S2).
+        assert body.count('data-testid="public-demo-notice"') == 1, path
+        assert "Fictional data. Resets nightly." in body
         assert "—" not in body.split('data-testid="public-demo-notice"')[1][:300]
 
 

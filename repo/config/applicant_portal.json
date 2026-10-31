@@ -3,8 +3,7 @@
   "scope": "acme_city",
   "fictional_demo": true,
   "note": "Wording of the applicant screens (City permits entry, chooser, form, receipt, My permits). Fictional ACME demonstration text. It states no fee, limit or timing of its own: limits come from the published rules, timings from the permit type, and every sentence describes only what the application really does.",
-  "disclosure_strip": "Fictional demonstration · All people, addresses and permit records are synthetic.",
-  "footer_note": "Fictional City of Acme website for a software demonstration. Every person, address, rule, fee, phone number and permit record shown here is synthetic. The City of Acme does not exist and nothing here is connected to a real city or to a real source system. The Demo controls button is only for ease of switching users in this demonstration. In a real deployment people would sign in through the City's front door and their role would come from that sign-in.",
+  "footer_note": "Fictional City of Acme website for a software demonstration; every person, address, rule, fee and permit record shown here is synthetic.",
   "what_you_need": [
     {"key": "contact", "title": "Contact details", "text": "Your name and an email address. A phone number is optional."},
     {"key": "property", "title": "The property", "text": "The address of the property where the work will happen."},

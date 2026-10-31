@@ -80,11 +80,14 @@ def test_the_demo_notice_is_visible_on_every_persona_home(
     landed = page.url.split("?")[0].rstrip("/")
     assert landed.endswith(home.rstrip("/")), page.url
     if actor_id == "persona_applicant":
-        # The Applicant lands on the City website, which carries its own notice.
-        notice = page.locator('[data-testid="city-demo-banner"]')
-        assert notice.count() == 1
-        assert notice.is_visible()
-        assert "Fictional" in notice.inner_text()
+        # Changed deliberately (city frame, S2): the City website carries no
+        # banner; the disclosure is one line in the footer.
+        assert page.locator('[data-testid="city-demo-banner"]').count() == 0
+        footer = page.locator('[data-testid="city-footer-note"]')
+        assert footer.count() == 1
+        assert footer.is_visible()
+        text = " ".join(footer.inner_text().split())
+        assert text.startswith("Fictional City of Acme website"), text
     else:
         # Changed deliberately (staff frame, S1): the staff screens carry no
         # banner; the disclosure is one line in the footer.
@@ -105,7 +108,10 @@ def test_the_city_website_shows_its_notice_without_overflow(
     page = viewport_390
     login("persona_applicant")
     page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
-    notice = page.locator('[data-testid="city-demo-banner"]')
+    # Changed deliberately (city frame, S2): the banner is gone; the
+    # disclosure is one line in the footer.
+    assert page.locator('[data-testid="city-demo-banner"]').count() == 0
+    notice = page.locator('[data-testid="city-footer-note"]')
     assert notice.count() == 1
     assert notice.is_visible()
     assert "Fictional" in notice.inner_text()
