@@ -507,13 +507,12 @@ print("no provider call")
 
 
 def test_the_city_website_carries_no_switcher(browser, server: BrowserServer) -> None:
-    """The public City site carries no persona switcher."""
+    """A signed-out visitor to the public City site sees no persona menu."""
     context = browser.new_context(viewport={"width": 390, "height": 844})
     page = context.new_page()
     try:
         page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
-        # Changed deliberately (persona switcher, S4): the switcher is a staff
-        # control, so the public City site carries none.
+        # Signed out, the City header holds no persona menu (S4).
         assert page.locator('[data-testid="demo-switch"]').count() == 0
         assert page.locator("[data-demo-persona]").count() == 0
         assert page.locator(".demo-switch").count() == 0

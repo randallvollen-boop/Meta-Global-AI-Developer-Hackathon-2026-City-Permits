@@ -1,5 +1,6 @@
 {# The City of Acme website frame.  Also the frame of the applicant permit
    pages, which render inside it.  No staff application chrome appears here. #}
+{% from "_persona_menu.html" import persona_menu with context %}
 {% set active = active_nav if active_nav is defined else 'permits' %}
 {% set on_chooser = request.url.path.rstrip('/') == '/apply' %}
 {% set path = request.url.path.rstrip('/') %}
@@ -45,13 +46,7 @@
     <div class="city-header-tools">
     <a class="city-help-link" href="/help" data-testid="help-link"{% if active == 'help' %} aria-current="page"{% endif %}>Help<span class="city-help-more"> and guides</span></a>
     {% if is_applicant %}
-    <details class="city-account" data-testid="applicant-account">
-      <summary class="city-account-trigger" aria-label="Account: {{ shown_name }}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg><span class="city-account-name" data-testid="applicant-name">{{ shown_name }}</span></summary>
-      <div class="city-account-panel">
-        <p class="city-account-line">Signed in as <strong>{{ shown_name }}</strong></p>
-        <form method="post" action="/ui/end"><button type="submit" class="city-signout" data-testid="sign-out">Sign out</button></form>
-      </div>
-    </details>
+    {{ persona_menu(actor, personas, name=shown_name, name_testid='applicant-name', wrapper_testid='applicant-account') }}
     {% else %}
     <p class="city-hours">City Hall (555) 010-0100</p>
     {% endif %}

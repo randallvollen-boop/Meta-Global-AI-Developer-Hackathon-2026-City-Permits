@@ -214,9 +214,9 @@ def test_portal_chrome_header_nav_account_and_footer(client) -> None:
         for label in ("City of Acme", "Accessibility", "Privacy", "Help"):
             assert label in footer
         assert 'href="/city/contact"' in footer
-        # Changed deliberately (persona switcher, S4): the switcher is a staff
-        # control, so the permit application carries none.
-        assert "data-demo-persona" not in page
+        # Changed deliberately (persona menu on City pages, S4): the header
+        # menu offers the five personas; Sign out lives inside it.
+        assert page.count("data-demo-persona=") == 5
     help_page = client.get("/apply/help/panel").text
     assert re.search(r'aria-current="page">Help</a>', help_page.split("applicant-nav")[1])
 
@@ -650,8 +650,10 @@ def test_internal_comments_findings_and_staff_never_appear_on_my_permits(client,
         "chooser": client.get("/apply").text,
     }
     for name, text in pages.items():
-        # Changed deliberately (persona switcher, S4): the permit application
-        # carries no persona list, so the whole page is checked.
+        # Changed deliberately (persona menu on City pages, S4): the header menu
+        # lists the persona names by design, so the menu is cut out and the rest
+        # of the page is checked.
+        text = re.sub(r'<details class="account-menu".*?</details>', "", text, flags=re.S)
         for secret in secrets:
             assert secret not in text, (name, secret)
     # what the applicant is meant to read is there, in the list and in recent activity

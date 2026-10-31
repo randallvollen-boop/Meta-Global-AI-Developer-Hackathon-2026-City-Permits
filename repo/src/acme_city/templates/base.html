@@ -3,6 +3,7 @@
    The navigation holds the eight required screens.  The footer states that
    every record on the screen is fictional.  The feedback region reports the
    outcome of the last action of the acting persona. #}
+{% from "_persona_menu.html" import persona_menu with context %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,32 +93,7 @@
         <a class="top-help-link" href="/help" data-testid="help-link"{% if screen == 'help' %} aria-current="page"{% endif %}>Help</a>
         {% set demo_clock = scenario_clock() %}{% if demo_clock %}<span class="demo-date" data-testid="demo-date">{{ demo_clock.label }} <span class="info-tip" tabindex="0" role="note" aria-label="{{ demo_clock.help }}" title="{{ demo_clock.help }}">&#9432;</span></span>{% endif %}
         {% if actor %}
-        <details class="account-menu" data-testid="persona-select">
-          <summary class="account-trigger" data-testid="persona-trigger" aria-label="Demo controls: switch user, now {{ actor.label }}">
-            <span class="dot" style="background:{{ persona_dots.get(actor.label, 'var(--accent)') }}"></span>
-            <span class="account-name" data-testid="acting-persona">{{ actor.label }}{% if actor.department %} <span class="account-dept">&middot; {{ actor.department }}</span>{% endif %}</span>
-          </summary>
-          <div class="account-panel">
-            <p class="account-line">Signed in as <strong>{{ actor.label }}</strong>{% if actor.department %}<br><span class="muted">{{ actor.department }}</span>{% endif %}</p>
-            {% if personas %}
-            <p class="account-switch-label">Demo controls</p>
-            <ul class="account-personas" data-testid="demo-switch">
-              {% for persona in personas %}
-              <li>
-                <form method="post" action="/ui/actor">
-                  <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-                  <input type="hidden" name="next" value="{{ '/city/' if persona.label == 'Applicant' else '/queue' }}">
-                  <button type="submit" class="account-persona" data-demo-persona="{{ persona.actor_id }}"{% if actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
-                </form>
-              </li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-            <form method="post" action="/ui/end" class="persona-end">
-              <button type="submit" class="button button-quiet btn sm" data-testid="sign-out">Sign out</button>
-            </form>
-          </div>
-        </details>
+        {{ persona_menu(actor, personas) }}
         {% else %}
         <p class="persona-current"><a class="button btn" href="/select">Choose a persona</a></p>
         {% endif %}

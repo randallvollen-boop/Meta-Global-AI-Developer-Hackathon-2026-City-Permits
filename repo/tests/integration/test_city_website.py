@@ -135,14 +135,23 @@ def test_switcher_lists_exactly_five_personas(client: TestClient) -> None:
 
 
 @pytest.mark.parametrize("path", ["/city/", "/apply", "/city/community"])
-def test_the_city_site_carries_no_switcher(client: TestClient, path: str) -> None:
-    # Changed deliberately (persona switcher, S4): the switcher is a staff
-    # control now; the public City website and the permit application carry
-    # none.
+def test_the_city_site_carries_the_persona_menu_for_a_signed_in_persona(
+    client: TestClient, path: str
+) -> None:
+    # Changed deliberately (persona menu on City pages, S4): the walkthrough
+    # moves from the Applicant to the staff personas, so the City header offers
+    # the same Demo controls menu as the staff header.
     choose(client, "persona_applicant")
     text = client.get(path).text
-    assert "data-demo-persona" not in text, path
-    assert "Demo controls" not in text, path
+    assert 'data-testid="persona-trigger"' in text, path
+    assert len(re.findall(r'data-demo-persona="', text)) == 5, path
+    assert "Demo controls" in text, path
+
+
+def test_the_city_site_shows_no_menu_when_signed_out(client: TestClient) -> None:
+    text = client.get("/city/").text
+    assert "data-demo-persona" not in text
+    assert 'data-testid="persona-trigger"' not in text
 
 
 def test_staff_pages_still_render_and_portal_stays_blocked(client: TestClient) -> None:
@@ -198,8 +207,8 @@ def test_the_staff_layout_says_the_switcher_is_for_demonstration_only(client: Te
     # carries a banner any more, so the sentence that explains the switcher
     # lives in the switcher itself.  The long note is cut (demo controls, S3):
     # the control announces itself as a demonstration control and nothing else.
-    # The switcher is a staff control (persona switcher, S4), so the City
-    # website carries none.
+    # A staff persona is not the signed-in applicant, so the City website
+    # header shows it no menu.
     assert 'data-testid="demo-switch"' in staff
     assert "Demo controls" in staff
     assert "Demonstration control for switching users" not in staff
@@ -273,8 +282,10 @@ def test_the_toast_is_anchored_to_the_top_right() -> None:
     assert "top:" in toast and "right:" in toast and "bottom:" not in toast
     assert 'toast-top-right' in (css.parent / "templates/base.html").read_text()
     # Changed deliberately (persona switcher, S4): the switcher is the chip in
-    # the top bar of the frame, not a floating control in a corner.
-    assert 'data-testid="persona-trigger"' in (css.parent / "templates/base.html").read_text()
+    # the top bar of the frame, not a floating control in a corner.  Its markup
+    # is the shared persona menu that base.html imports.
+    assert 'data-testid="persona-trigger"' in (css.parent / "templates/_persona_menu.html").read_text()
+    assert "persona_menu(" in (css.parent / "templates/base.html").read_text()
     assert "demo-corner-bottom-left" not in (css.parent / "templates/base.html").read_text()
 
 

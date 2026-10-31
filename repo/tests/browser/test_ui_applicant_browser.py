@@ -50,9 +50,10 @@ def test_no_horizontal_scroll_and_no_switcher_at_both_widths(browser, server: Br
             for path in SCREENS:
                 page.goto(f"{server.base_url}{path}", wait_until="networkidle")
                 assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (width, path)
-                # Changed deliberately (persona switcher, S4): the City frame
-                # carries no switcher, so nothing floats over the pages.
-                assert page.locator("[data-demo-persona]").count() == 0, (width, path)
+                # Changed deliberately (persona menu on City pages, S4): the
+                # City header holds the Demo controls menu, closed; nothing
+                # floats over the pages.
+                assert page.locator(".city-header [data-demo-persona]").count() == 5, (width, path)
                 assert page.locator(".demo-switch").count() == 0, (width, path)
         finally:
             context.close()

@@ -86,9 +86,75 @@ def test_the_bottom_left_overlay_is_gone(page, server: BrowserServer, login) -> 
     assert page.locator("text=Open the City website home").count() == 0
 
 
-def test_the_public_city_site_carries_no_switcher(page, server: BrowserServer, login) -> None:
-    """The City website shows no persona switcher."""
+def test_the_city_header_carries_the_menu_for_the_applicant(
+    page, server: BrowserServer, login
+) -> None:
+    """On the City site the applicant sees the Demo controls chip and menu."""
     login("persona_applicant")
     page.goto(f"{server.base_url}/city/", wait_until="load")
-    assert page.locator("[data-demo-persona]").count() == 0
+    trigger = page.locator('.city-header [data-testid="persona-trigger"]')
+    assert trigger.is_visible()
+    assert "Demo controls" in trigger.get_attribute("aria-label")
+    trigger.click()
+    menu = page.locator('.city-header [data-testid="demo-switch"]')
+    assert menu.is_visible()
+    assert menu.locator("[data-demo-persona]").count() == 5
+    assert page.locator('.city-header [data-testid="sign-out"]').is_visible()
     assert page.locator(".demo-switch").count() == 0
+
+
+@pytest.mark.parametrize(("actor_id", "home"), PERSONAS)
+def test_each_city_menu_item_switches_and_lands_on_its_home(
+    page, server: BrowserServer, login, actor_id: str, home: str
+) -> None:
+    """From the City site, every persona item switches and opens that home."""
+    login("persona_applicant")
+    page.goto(f"{server.base_url}/city/", wait_until="load")
+    page.locator('.city-header [data-testid="persona-trigger"]').click()
+    page.locator(f'.city-header [data-demo-persona="{actor_id}"]').click()
+    page.wait_for_url(f"{server.base_url}{home}*")
+    assert page.url.split("?")[0].endswith(home), page.url
+    assert page.evaluate("() => fetch('/api/session').then(r => r.json()).then(j => j.actor_id)") == actor_id
+
+
+def test_the_city_menu_works_with_the_keyboard(page, server: BrowserServer, login) -> None:
+    """The City chip opens with the keyboard and a persona is chosen with it."""
+    login("persona_applicant")
+    page.goto(f"{server.base_url}/city/", wait_until="load")
+    page.locator('.city-header [data-testid="persona-trigger"]').focus()
+    page.keyboard.press("Enter")
+    assert page.locator('.city-header [data-testid="demo-switch"]').is_visible()
+    page.keyboard.press("Tab")
+    first = page.locator('.city-header [data-demo-persona="persona_applicant"]')
+    assert first.evaluate("element => element === document.activeElement")
+    page.locator('.city-header [data-demo-persona="persona_permit_reviewer"]').focus()
+    page.keyboard.press("Enter")
+    page.wait_for_url(f"{server.base_url}/queue*")
+    assert "Permit Reviewer" in page.locator('[data-testid="acting-persona"]').inner_text()
+
+
+@pytest.mark.parametrize(("width", "height"), ((1280, 800), (390, 844)))
+def test_the_city_menu_fits_the_screen(
+    page, server: BrowserServer, login, width: int, height: int
+) -> None:
+    """The City chip and its menu fit a desktop and a 390 px phone."""
+    login("persona_applicant")
+    page.set_viewport_size({"width": width, "height": height})
+    page.goto(f"{server.base_url}/city/", wait_until="load")
+    assert_no_horizontal_overflow(page)
+    page.locator('.city-header [data-testid="persona-trigger"]').click()
+    assert_no_horizontal_overflow(page)
+    menu = page.locator('.city-header [data-testid="demo-switch"]')
+    box = menu.bounding_box()
+    assert box is not None
+    assert box["x"] >= 0 and box["x"] + box["width"] <= width, box
+    assert box["y"] >= 0 and box["y"] + box["height"] <= height, box
+    for index in range(5):
+        assert menu.locator("[data-demo-persona]").nth(index).is_visible()
+
+
+def test_a_signed_out_city_visitor_sees_no_menu(page, server: BrowserServer) -> None:
+    """Without a session the City header offers no persona menu."""
+    page.goto(f"{server.base_url}/city/", wait_until="load")
+    assert page.locator('[data-testid="persona-trigger"]').count() == 0
+    assert page.locator("[data-demo-persona]").count() == 0

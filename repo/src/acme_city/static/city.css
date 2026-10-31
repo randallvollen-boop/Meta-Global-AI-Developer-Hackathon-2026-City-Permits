@@ -115,17 +115,12 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
   --amber-bg: #fff4d6; --amber-line: #e0b24a; --amber-fg: #5c3f00;
 }
 
-/* Account menu in the navy header. */
-.city-account { position: relative; }
-.city-account-trigger { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 99px; color: #fff; font-weight: 600; font-size: .92rem; }
-.city-account-trigger::-webkit-details-marker { display: none; }
-.city-account-trigger svg { width: 18px; height: 18px; flex: none; }
-.city-account-trigger:hover { background: rgba(255,255,255,.1); }
-.city-account-trigger:focus-visible, .city-signout:focus-visible { outline: 3px solid var(--city-gold); outline-offset: 2px; }
-.city-account-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 14rem; background: #fff; color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: 0 8px 24px rgba(18,48,79,.2); }
-.city-account-line { margin: 0 0 8px; font-size: .88rem; }
-.city-signout { font: inherit; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: #f3f6f9; color: var(--fg); }
-.city-signout:hover { background: #e6ecf2; }
+/* The demo persona menu in the navy header: the shared chip of app.css, fitted
+   to the City header. */
+.city-header-tools .account-trigger { padding: 6px 12px; font-size: .92rem; border-color: rgba(255,255,255,.35); }
+.city-header-tools .account-trigger:focus-visible { outline: 3px solid var(--city-gold); outline-offset: 2px; }
+.city-header-tools .account-name { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.city-header-tools .account-panel { color: var(--fg); max-width: calc(100vw - 32px); }
 
 /* Gold primary button used on the applicant screens. */
 .city .btn.gold, .city a.btn.gold { background: var(--city-gold); border-color: var(--city-gold); color: #1a1200; font-weight: 700; text-decoration: none; }
@@ -271,7 +266,6 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
 .track-find .field { max-width: 420px; }
 .track-row { display: flex; gap: 8px; }
 .track-row input { flex: 1; min-width: 0; }
-.city-account-name { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 900px) {
   .chooser-layout, .form-layout, .tracker-layout { grid-template-columns: minmax(0, 1fr); }
@@ -284,7 +278,8 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
   .receipt-facts dd { margin-bottom: 8px; }
   .receipt .ref.big { font-size: 1.5rem; }
   .step-label { font-size: .8rem; }
-  .city-account-name { max-width: 8ch; }
+  .city-header-tools .account-name { max-width: 6ch; }
+  .city-header-tools .account-trigger { padding: 6px 9px; gap: 6px; }
   .type-cards.compact { grid-template-columns: minmax(0, 1fr); }
   .portal-form input.num { width: 8ch; }
 }

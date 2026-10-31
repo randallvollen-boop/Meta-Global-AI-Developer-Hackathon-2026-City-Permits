@@ -2,7 +2,8 @@
 
 The demo switcher is a header control now: the chip in the top right names the
 persona that acts, and its menu offers the five personas.  The bottom-left
-overlay is gone, and the public City website carries no switcher at all.
+overlay is gone.  The City website header carries the same menu for a signed-in
+persona and nothing for a signed-out visitor.
 """
 # REQUIRES: UX-01, PER-04
 
@@ -34,7 +35,7 @@ PERSONAS = (
 #: The staff pages the Data Steward can open.
 STAFF_PAGES = ("/steward", "/masters", "/source-records", "/activity", "/queue")
 
-#: The public City pages, which carry no switcher.
+#: The public City pages, which carry the menu for a signed-in persona.
 CITY_PAGES = ("/city/", "/city/community", "/city/permits", "/apply")
 
 
@@ -144,13 +145,80 @@ def test_the_bottom_left_overlay_is_gone(client: TestClient, path: str) -> None:
     assert "Open the City website home" not in body, path
 
 
+def city_header_of(body: str) -> str:
+    """Return the markup of the City header."""
+    match = re.search(r'<header class="city-header">(.*?)</header>', body, re.S)
+    assert match is not None, "the page carries no City header"
+    return match.group(0)
+
+
 @pytest.mark.parametrize("path", CITY_PAGES)
-def test_the_public_city_site_carries_no_switcher(client: TestClient, path: str) -> None:
-    """The City website and the permit application carry no switcher."""
+def test_the_city_header_carries_the_persona_menu_for_the_applicant(
+    client: TestClient, path: str
+) -> None:
+    """A signed-in persona sees the Demo controls menu in the City header."""
     choose(client, "persona_applicant")
     body = client.get(path).text
-    assert "data-demo-persona" not in body, path
+    header = city_header_of(body)
+    assert 'data-testid="persona-trigger"' in header, path
+    assert 'data-testid="demo-switch"' in header, path
+    assert "Demo controls" in header, path
+    menu = menu_of(header)
+    assert len(re.findall(r'data-demo-persona="', menu)) == 5, path
+    current = re.search(r'data-demo-persona="([^"]+)"[^>]*aria-current="true"', menu)
+    assert current is not None and current.group(1) == "persona_applicant", path
+    # Sign out lives inside the menu, and the old floating overlay stays gone.
+    assert header.count('data-testid="sign-out"') == 1, path
+    assert header.index('data-testid="sign-out"') > header.index('data-testid="demo-switch"'), path
     assert 'class="demo-switch' not in body, path
+
+
+@pytest.mark.parametrize(("actor_id", "label", "home"), PERSONAS)
+def test_every_city_menu_item_switches_to_that_personas_home(
+    client: TestClient, actor_id: str, label: str, home: str
+) -> None:
+    """Each item of the City menu posts the persona and lands on its home."""
+    choose(client, "persona_applicant")
+    menu = menu_of(city_header_of(client.get("/city/").text))
+    form = re.search(
+        rf'<form method="post" action="/ui/actor">(?:(?!</form>).)*?'
+        rf'data-demo-persona="{actor_id}"(?:(?!</form>).)*?</form>',
+        menu,
+        re.S,
+    )
+    assert form is not None, actor_id
+    target = re.search(r'name="next" value="([^"]+)"', form.group(0))
+    assert target is not None
+    response = client.post(
+        "/ui/actor",
+        data={"actor_id": actor_id, "next": target.group(1)},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303, response.text[:200]
+    assert response.headers["location"].split("?")[0] == home, response.headers["location"]
+    assert client.get("/api/session").json()["actor_id"] == actor_id
+
+
+def test_the_city_menu_and_the_staff_menu_share_one_markup() -> None:
+    """The menu is one shared template, not a copy in each frame."""
+    templates = ROOT / "src" / "acme_city" / "templates"
+    shared = (templates / "_persona_menu.html").read_text(encoding="utf-8")
+    assert 'data-testid="demo-switch"' in shared
+    for name in ("base.html", "city/layout.html"):
+        text = (templates / name).read_text(encoding="utf-8")
+        assert "persona_menu(" in text, name
+        assert 'data-testid="demo-switch"' not in text, name
+        assert "data-demo-persona" not in text, name
+
+
+@pytest.mark.parametrize("path", CITY_PAGES)
+def test_a_signed_out_city_visitor_sees_no_menu(settings: Settings, path: str) -> None:
+    """Without a session the City header offers no persona menu."""
+    with TestClient(create_app(settings)) as visitor:
+        body = visitor.get(path, follow_redirects=True).text
+    assert 'data-testid="persona-trigger"' not in body, path
+    assert "data-demo-persona" not in body, path
+    assert 'data-testid="demo-switch"' not in body, path
 
 
 # -------------------------------------------------------------- the copy

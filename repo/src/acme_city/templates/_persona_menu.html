@@ -1,0 +1,32 @@
+{# The demo persona menu: the chip that names the persona that acts, and the
+   menu that switches persona or signs out.  One markup for the staff header
+   (base.html) and the City header (city/layout.html).  `name` is the text on
+   the chip when it differs from the persona label (the applicant's own name). #}
+{% macro persona_menu(actor, personas, name='', name_testid='acting-persona', wrapper_testid='persona-select') %}
+<details class="account-menu" data-testid="{{ wrapper_testid }}">
+  <summary class="account-trigger" data-testid="persona-trigger" aria-label="Demo controls: switch user, now {{ actor.label }}">
+    <span class="dot" style="background:{{ persona_dots.get(actor.label, 'var(--accent)') }}"></span>
+    <span class="account-name" data-testid="{{ name_testid }}">{{ name or actor.label }}{% if actor.department %} <span class="account-dept">&middot; {{ actor.department }}</span>{% endif %}</span>
+  </summary>
+  <div class="account-panel">
+    <p class="account-line">Signed in as <strong>{{ name or actor.label }}</strong>{% if actor.department %}<br><span class="muted">{{ actor.department }}</span>{% endif %}</p>
+    {% if personas %}
+    <p class="account-switch-label">Demo controls</p>
+    <ul class="account-personas" data-testid="demo-switch">
+      {% for persona in personas %}
+      <li>
+        <form method="post" action="/ui/actor">
+          <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
+          <input type="hidden" name="next" value="{{ '/city/' if persona.label == 'Applicant' else '/queue' }}">
+          <button type="submit" class="account-persona" data-demo-persona="{{ persona.actor_id }}"{% if actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <form method="post" action="/ui/end" class="persona-end">
+      <button type="submit" class="button button-quiet btn sm" data-testid="sign-out">Sign out</button>
+    </form>
+  </div>
+</details>
+{% endmacro %}
