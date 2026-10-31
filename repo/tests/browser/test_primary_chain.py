@@ -104,6 +104,8 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
     )
     assert "Recorded the reviewer decision" in message
     page.reload(wait_until="domcontentloaded")
+    # The decision history is a closed disclosure; the current decision stays above it.
+    page.locator('[data-testid="decision-history"] > summary').click()
     assert "approved" in page.locator('[data-testid="decision-table"]').inner_text()
 
     login("persona_city_administrator")

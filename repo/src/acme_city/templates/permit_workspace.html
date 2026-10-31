@@ -601,8 +601,6 @@
         {% endif %}
 
         {% if detail.issued %}
-        <details data-testid="issuance-more">
-          <summary>More details</summary>
         <section data-testid="stage-permit">
           <h2>Permit issuance</h2>
 
@@ -615,11 +613,8 @@
       {% else %}
       <p class="muted" data-testid="issued-empty">Nothing has been issued for this case.</p>
       {% endfor %}
-    
-
 
         </section>
-        </details>
         {% endif %}
 
         {% if detail.proposed %}

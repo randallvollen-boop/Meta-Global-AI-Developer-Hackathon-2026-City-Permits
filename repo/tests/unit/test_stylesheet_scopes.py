@@ -66,6 +66,12 @@ PERSONA_MENU_ADDED = (
 )
 
 
+#: The reviewer screens (R1-R3) dropped the sticky right rail on purpose; the
+#: workspace is one column now (".ws" lost its narrow-screen rule).  No selector was added.
+REVIEWER_SLIM_REMOVED = (".rail > *", ".rail", ".ws")
+REVIEWER_SLIM_ADDED: tuple[str, ...] = ()
+
+
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
 
@@ -150,14 +156,21 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
     # the rule for the "More details" disclosure.  Those selectors changed on
     # purpose and are compared apart; every other selector must still be
     # exactly what it was before the insight move.
-    old = [selector for selector in old if selector not in STAFF_FRAME_REMOVED]
+    old = [
+        selector
+        for selector in old
+        if selector not in STAFF_FRAME_REMOVED
+        and selector not in REVIEWER_SLIM_REMOVED
+    ]
     new = [
         selector
         for selector in new
         if selector not in STAFF_FRAME_REMOVED
+        and selector not in REVIEWER_SLIM_REMOVED
         and selector not in STAFF_FRAME_ADDED
         and selector not in PERSONA_MENU_ADDED
         and selector not in AGENT_INBOX_ADDED
+        and selector not in REVIEWER_SLIM_ADDED
     ]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])
