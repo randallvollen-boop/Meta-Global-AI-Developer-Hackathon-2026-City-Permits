@@ -506,58 +506,44 @@ print("no provider call")
 """
 
 
-def test_the_demo_switch_offers_the_five_personas(browser, server: BrowserServer) -> None:
-    """The switch names the five personas and keeps its own label."""
+def test_the_city_website_carries_no_switcher(browser, server: BrowserServer) -> None:
+    """The public City site carries no persona switcher."""
     context = browser.new_context(viewport={"width": 390, "height": 844})
     page = context.new_page()
     try:
         page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
-        switch = page.locator('[data-testid="demo-switch"]')
-        assert switch.count() == 1
-        summary = switch.locator("summary")
-        # the visible label stays as it is, and the control still says what it does
-        assert summary.inner_text().strip() == "Demo controls"
-        assert "switch user" in (summary.get_attribute("aria-label") or "")
-        buttons = switch.locator("button[data-demo-persona]")
-        assert len(DEMO_PERSONAS) == 5
-        assert buttons.count() == len(DEMO_PERSONAS)
-        labels = buttons.evaluate_all(
-            "buttons => buttons.map(b => b.childNodes[0].textContent.trim())"
-        )
-        assert labels == [label for _, label in DEMO_PERSONAS]
-        assert sorted(labels) == sorted(PERSONA_PROFILE_LABELS)
-        # the closed switch covers nothing of the resident page
+        # Changed deliberately (persona switcher, S4): the switcher is a staff
+        # control, so the public City site carries none.
+        assert page.locator('[data-testid="demo-switch"]').count() == 0
+        assert page.locator("[data-demo-persona]").count() == 0
+        assert page.locator(".demo-switch").count() == 0
+        # the resident page is covered by nothing
         assert_not_covered(page, page.locator('[data-testid="community-q"]'))
     finally:
         context.close()
 
 
 @pytest.mark.parametrize("actor_id,label", DEMO_PERSONAS)
-def test_the_demo_switch_works_at_390_pixels(
+def test_every_persona_acts_on_the_public_pages(
     browser, server: BrowserServer, actor_id: str, label: str
 ) -> None:
-    """Every persona can be chosen from the switch, and the public pages still work."""
+    """Every persona can be chosen on the landing page, and acts on the public pages."""
     context = browser.new_context(viewport={"width": 390, "height": 844})
     page = context.new_page()
     try:
-        page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
-        switch = page.locator('[data-testid="demo-switch"]')
-        # the closed switch covers nothing of the resident page
-        assert_not_covered(page, page.locator('[data-testid="community-q"]'))
+        # Changed deliberately (persona switcher, S4): a persona is chosen on
+        # the landing page, which carries the five personas.
+        page.goto(f"{server.base_url}/select", wait_until="networkidle")
+        page.locator(f'button[data-persona="{actor_id}"]').click()
+        page.wait_for_load_state("networkidle")
 
-        switch.locator("summary").click()
-        assert switch.locator(".demo-switch-panel").is_visible()
-        with page.expect_navigation(wait_until="networkidle"):
-            switch.locator(f'button[data-demo-persona="{actor_id}"]').click()
+        # the staff frame names the persona that acts
+        chip = page.locator('[data-testid="acting-persona"]')
+        if chip.count():
+            assert label in chip.inner_text(), label
 
         # the chosen persona acts on the public pages too
         page.goto(f"{server.base_url}/city/community?q=Acme", wait_until="networkidle")
-        switch = page.locator('[data-testid="demo-switch"]')
-        switch.locator("summary").click()
-        current = switch.locator(".demo-switch-current").inner_text().strip()
-        assert current == f"Now acting as {label}"
-        switch.locator("summary").click()
-
         assert page.locator('[data-testid="community-result-total"]').is_visible()
         assert page.locator(CARD_LINK).count() >= 1
         assert_no_horizontal_overflow(page)

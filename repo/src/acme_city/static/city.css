@@ -63,11 +63,6 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .city-tile strong { font: 700 1.1rem var(--f-display); color: var(--city-navy); }
 .city-tile span { color: var(--fg-2); font-size: .92rem; }
 .city-tile-main { border-color: var(--city-gold); border-width: 2px; background: #fffaf0; }
-.city-news ul { list-style: none; margin: 0; padding: 0; }
-.city-news li { padding: 12px 0; border-bottom: 1px solid var(--line); }
-.city-news time { display: block; font-size: .78rem; font-weight: 700; color: var(--fg-3); text-transform: uppercase; letter-spacing: .05em; }
-.city-news strong { display: block; color: var(--city-navy); }
-.city-news p { margin: 2px 0 0; color: var(--fg-2); font-size: .92rem; }
 
 .city-page { padding-top: 8px; }
 .city-lede { font-size: 1.1rem; color: var(--fg-2); max-width: 62ch; }
@@ -141,7 +136,7 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .city-cta-quiet { background: #fff; color: var(--city-navy) !important; border: 2px solid var(--city-navy); }
 .city-cta-quiet:hover { background: var(--accent-soft); }
 
-/* Toasts: top-right, under the header, never in the bottom-left corner of Demo controls. */
+/* Toasts: top-right, under the header. */
 .city .toast.city-toast { top: 148px; right: 16px; left: auto; max-width: min(420px, calc(100vw - 32px)); z-index: 45; animation: city-toast-out .3s ease 9s forwards; }
 @keyframes city-toast-out { to { opacity: 0; visibility: hidden; transform: translateY(-12px); } }
 @media (max-width: 760px) { .city .toast.city-toast { top: 164px; right: 16px; } }

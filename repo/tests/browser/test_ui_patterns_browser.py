@@ -154,7 +154,7 @@ def test_drawer_does_not_cover_toast_or_demo_controls(
         assert box["x"] <= 1 and box["width"] >= viewport[0] - 1
     else:
         assert 400 <= box["width"] <= 500
-    for selector in (".demo-switch > summary", "#toast"):
+    for selector in ('[data-testid="persona-trigger"]', "#toast"):
         other = page.locator(selector).bounding_box()
         assert other is not None, selector
         assert not overlaps(box, other), selector
@@ -175,7 +175,7 @@ def test_the_audit_event_row_and_its_drawer_fit_a_phone(page, server, login) -> 
     assert row.locator('[data-testid="audit-action-label"]').inner_text().strip()
     assert row.locator('[data-testid="audit-outcome-label"]').inner_text().strip()
     assert_no_horizontal_overflow(page)
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, row.locator('[data-detail-kind="audit-event"]'))
     row.locator('[data-detail-kind="audit-event"]').click()
     drawer = page.locator('[data-testid="ui-drawer"]')

@@ -328,7 +328,9 @@ COVERING_LAYERS = '.mobile-nav, [data-testid="demo-switch"]'
 
 #: Centre the element, then report every fixed layer that overlaps it or takes
 #: the hit at its centre.  A layer that contains the element, or that the
-#: element contains, is not a cover.
+#: element contains, is not a cover.  A layer that is not painted (a closed
+#: disclosure) is not a cover either: the browser still reports the box it
+#: would take, but nothing of it is on the screen.
 _COVER_PROBE = """([element, selector]) => {
   element.scrollIntoView({block: "center", inline: "nearest"});
   const box = element.getBoundingClientRect();
@@ -348,6 +350,7 @@ _COVER_PROBE = """([element, selector]) => {
     if (layer.contains(element) || element.contains(layer)) continue;
     const style = getComputedStyle(layer);
     if (style.display === "none" || style.visibility === "hidden") continue;
+    if (layer.checkVisibility && !layer.checkVisibility()) continue;
     const other = layer.getBoundingClientRect();
     const width = Math.min(box.right, other.right) - Math.max(box.left, other.left);
     const height = Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top);

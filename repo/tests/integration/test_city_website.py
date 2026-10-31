@@ -125,14 +125,24 @@ def test_portal_pages_use_city_layout_without_staff_nav(client: TestClient) -> N
     assert 'name="csrf_token"' in client.get("/apply/deck_fence").text
 
 
-@pytest.mark.parametrize("path", ["/city/", "/apply", "/queue"])
-def test_switcher_lists_exactly_five_personas(client: TestClient, path: str) -> None:
-    choose(client, "persona_applicant" if path == "/apply" else "persona_data_steward")
-    text = client.get(path).text
+def test_switcher_lists_exactly_five_personas(client: TestClient) -> None:
+    choose(client, "persona_data_steward")
+    text = client.get("/queue").text
     assert 'data-testid="demo-switch"' in text
     ids = re.findall(r'data-demo-persona="([^"]+)"', text)
     assert sorted(ids) == sorted(("persona_applicant", *STAFF, "persona_agent_operator"))
-    assert "Demo controls" in text  # renamed from "Demo: switch user" (bottom-left Demo controls button)
+    assert "Demo controls" in text
+
+
+@pytest.mark.parametrize("path", ["/city/", "/apply", "/city/community"])
+def test_the_city_site_carries_no_switcher(client: TestClient, path: str) -> None:
+    # Changed deliberately (persona switcher, S4): the switcher is a staff
+    # control now; the public City website and the permit application carry
+    # none.
+    choose(client, "persona_applicant")
+    text = client.get(path).text
+    assert "data-demo-persona" not in text, path
+    assert "Demo controls" not in text, path
 
 
 def test_staff_pages_still_render_and_portal_stays_blocked(client: TestClient) -> None:
@@ -180,7 +190,7 @@ def test_the_old_in_app_applicant_landing_redirects_to_the_city_site(client: Tes
     assert client.get("/apply/track").status_code == 200
 
 
-def test_both_layouts_say_the_switcher_is_for_demonstration_only(client: TestClient) -> None:
+def test_the_staff_layout_says_the_switcher_is_for_demonstration_only(client: TestClient) -> None:
     choose(client, "persona_data_steward")
     staff = client.get("/queue").text
     city = client.get("/city/").text
@@ -188,11 +198,13 @@ def test_both_layouts_say_the_switcher_is_for_demonstration_only(client: TestCli
     # carries a banner any more, so the sentence that explains the switcher
     # lives in the switcher itself.  The long note is cut (demo controls, S3):
     # the control announces itself as a demonstration control and nothing else.
-    for page in (staff, city):
-        assert 'data-testid="demo-switch"' in page
-        assert "Demo controls" in page
-        assert "Demonstration control for switching users" not in page
-        assert "role would come from that sign-in" not in page
+    # The switcher is a staff control (persona switcher, S4), so the City
+    # website carries none.
+    assert 'data-testid="demo-switch"' in staff
+    assert "Demo controls" in staff
+    assert "Demonstration control for switching users" not in staff
+    assert "role would come from that sign-in" not in staff
+    assert "data-demo-persona" not in city
     assert "Fictional ACME City demonstration." in staff
     assert "Fictional City of Acme website" in city
 
@@ -254,15 +266,16 @@ def test_a_refused_screen_keeps_the_navigation_and_offers_home(client: TestClien
     assert "Administration</h1>" not in page
 
 
-def test_the_toast_and_the_demo_control_are_anchored_to_different_corners() -> None:
+def test_the_toast_is_anchored_to_the_top_right() -> None:
     css = (Path(__file__).resolve().parents[2] / "src/acme_city/static")
-    app, demo = (css / "app.css").read_text(), (css / "demo-switch.css").read_text()
+    app = (css / "app.css").read_text()
     toast = re.search(r"\n\.toast \{([^}]*)\}", app).group(1)
-    control = re.search(r"\n\.demo-switch \{([^}]*)\}", demo).group(1)
     assert "top:" in toast and "right:" in toast and "bottom:" not in toast
-    assert "bottom:" in control and "left:" in control and "right:" not in control
     assert 'toast-top-right' in (css.parent / "templates/base.html").read_text()
-    assert 'demo-corner-bottom-left' in (css.parent / "templates/_demo_switch.html").read_text()
+    # Changed deliberately (persona switcher, S4): the switcher is the chip in
+    # the top bar of the frame, not a floating control in a corner.
+    assert 'data-testid="persona-trigger"' in (css.parent / "templates/base.html").read_text()
+    assert "demo-corner-bottom-left" not in (css.parent / "templates/base.html").read_text()
 
 
 def test_the_top_bar_names_the_account_and_signs_out(client: TestClient) -> None:

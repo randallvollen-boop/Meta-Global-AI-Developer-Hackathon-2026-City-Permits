@@ -37,7 +37,6 @@ PERSONAS = (
 COPY_FILES = (
     ROOT / "config" / "help_content.json",
     ROOT / "src" / "acme_city" / "templates" / "help.html",
-    ROOT / "src" / "acme_city" / "templates" / "_demo_switch.html",
 )
 
 
@@ -63,7 +62,7 @@ def client(settings: Settings) -> TestClient:
 def switcher_of(body: str) -> str:
     """Return the markup of the demo switch on a rendered page."""
     match = re.search(
-        r'<details class="demo-switch[^"]*"[^>]*data-testid="demo-switch"[^>]*>(.*?)</details>',
+        r'<ul class="account-personas"[^>]*data-testid="demo-switch"[^>]*>(.*?)</ul>',
         body,
         re.S,
     )
@@ -90,22 +89,24 @@ def forms_of(markup: str) -> dict[str, tuple[str, str]]:
 def test_the_switcher_names_the_five_personas_and_the_current_one(
     client: TestClient,
 ) -> None:
-    """The panel lists every persona and says who is acting now."""
-    markup = switcher_of(client.get("/queue").text)
-    assert "Now acting as <strong>Data Steward</strong>" in markup
+    """The menu lists every persona and says who is acting now."""
+    body = client.get("/queue").text
+    markup = switcher_of(body)
+    assert "Signed in as <strong>Data Steward</strong>" in body
     assert len(re.findall(r'data-demo-persona="', markup)) == 5
-    assert 'aria-label="Demo controls: switch user"' in markup
-    assert "<span>Demo controls</span>" in markup
+    assert 'aria-label="Demo controls: switch user, now Data Steward"' in body
+    assert "Demo controls" in body
 
 
 def test_the_switcher_carries_no_long_note_and_no_home_link(
     client: TestClient,
 ) -> None:
     """The demonstration note and the City home link are gone."""
-    markup = switcher_of(client.get("/queue").text)
-    assert "Demonstration control for switching users" not in markup
-    assert "In a real deployment" not in markup
-    assert "Open the City website home" not in markup
+    body = client.get("/queue").text
+    markup = switcher_of(body)
+    assert "Demonstration control for switching users" not in body
+    assert "In a real deployment" not in body
+    assert "Open the City website home" not in body
     assert 'href="/city/"' not in markup
 
 

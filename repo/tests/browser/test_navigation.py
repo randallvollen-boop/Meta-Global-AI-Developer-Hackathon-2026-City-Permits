@@ -301,7 +301,9 @@ def test_the_queue_fits_a_phone_and_no_fixed_layer_covers_it(
     assert page.viewport_size == {"width": 390, "height": 844}
     assert_no_horizontal_overflow(page)
     assert page.locator(".mobile-nav").is_visible()
-    assert page.locator('[data-testid="demo-switch"]').is_visible()
+    # Changed deliberately (persona switcher, S4): the switcher is the chip in
+    # the top bar, not a floating control in the corner.
+    assert page.locator('[data-testid="persona-trigger"]').is_visible()
     assert_not_covered(page, page.locator("main h1").first)
     # Changed deliberately (steward restyle, STW-2): the Data Steward groups
     # its secondary tools under More tools, so the bar entry that is checked is

@@ -75,8 +75,8 @@ def h1(html: str) -> str:
 def test_the_visible_label_and_the_aria_label_are_kept(client: TestClient) -> None:
     client.post("/api/session/select", json={"actor_id": "persona_data_steward"})
     page = client.get("/queue").text
-    assert "<span>Demo controls</span>" in page
-    assert 'aria-label="Demo controls: switch user"' in page
+    assert "Demo controls" in page
+    assert 'aria-label="Demo controls: switch user, now Data Steward"' in page
     assert 'data-testid="demo-switch"' in page
     assert len(re.findall(r"data-demo-persona=", page)) == 5
     assert page.count('action="/ui/actor"') == 5

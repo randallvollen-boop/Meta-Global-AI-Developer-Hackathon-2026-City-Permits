@@ -1,9 +1,8 @@
-"""The demo switcher at 390 by 844 with the panel open."""
+"""The demo switcher in the top bar of the staff frame, at 390 by 844."""
 # REQUIRES: UX-01
 
 from __future__ import annotations
 
-import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 PERSONAS = (
@@ -14,51 +13,29 @@ PERSONAS = (
     "persona_city_administrator",
 )
 
-#: The home each persona lands on after the switch.
-HOMES = {
-    "persona_applicant": "/city/",
-    "persona_agent_operator": "/agents",
-    "persona_data_steward": "/steward",
-    "persona_permit_reviewer": "/queue",
-    "persona_city_administrator": "/overview",
-}
 
-
-@pytest.mark.parametrize("actor_id", ["persona_data_steward", "persona_applicant"])
 def test_open_switch_fits_five_choices_at_390(
-    viewport_390, server: BrowserServer, login, actor_id: str
+    viewport_390, server: BrowserServer, login
 ) -> None:
     page = viewport_390
-    login(actor_id)
-    page.locator(".demo-switch > summary").click()
+    login("persona_data_steward")
+    # Changed deliberately (persona switcher, S4): the switcher is the chip in
+    # the top bar, and its menu opens under the header.
+    page.locator('[data-testid="persona-trigger"]').click()
     buttons = page.locator("[data-demo-persona]")
     assert buttons.count() == 5
     assert [buttons.nth(i).get_attribute("data-demo-persona") for i in range(5)] == list(PERSONAS)
     for i in range(5):
         assert buttons.nth(i).is_visible()
     assert_no_horizontal_overflow(page)
-    # The open panel sits above the bottom bar of the staff app.
+    # The open menu sits above the bottom bar of the staff app.
     nav = page.locator(".mobile-nav")
-    if actor_id == "persona_data_steward":
-        assert nav.is_visible()
-    if nav.count() and nav.is_visible():
-        panel = page.locator(".demo-switch-panel").bounding_box()
-        bar = nav.bounding_box()
-        assert panel is not None and bar is not None
-        assert panel["y"] + panel["height"] <= bar["y"] + 1
-        # The mobile bar covers neither the open button nor the choices.
-        assert_not_covered(page, page.locator(".demo-switch > summary"))
-        assert_not_covered(page, buttons.nth(0))
-        assert_not_covered(page, buttons.nth(4))
-
-
-@pytest.mark.parametrize("actor_id", PERSONAS)
-def test_each_persona_button_switches_and_lands_on_its_home(
-    server: BrowserServer, page, login, actor_id: str
-) -> None:
-    """Clicking a persona names it as the acting persona and opens its home."""
-    login("persona_data_steward")
-    page.locator(".demo-switch > summary").click()
-    page.locator(f'[data-demo-persona="{actor_id}"]').click()
-    page.wait_for_url(f"{server.base_url}{HOMES[actor_id]}*")
-    assert page.url.split("?")[0].endswith(HOMES[actor_id]), page.url
+    assert nav.is_visible()
+    panel = page.locator('[data-testid="demo-switch"]').bounding_box()
+    bar = nav.bounding_box()
+    assert panel is not None and bar is not None
+    assert panel["y"] + panel["height"] <= bar["y"] + 1
+    # The mobile bar covers neither the chip nor the choices.
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
+    assert_not_covered(page, buttons.nth(0))
+    assert_not_covered(page, buttons.nth(4))

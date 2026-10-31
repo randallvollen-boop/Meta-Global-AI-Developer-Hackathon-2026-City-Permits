@@ -101,13 +101,16 @@ def test_the_incoming_screens_open_from_more_tools_on_a_phone(
 def test_the_demo_switch_stays_reachable_on_a_phone(
     viewport_390, server: BrowserServer, login
 ) -> None:
-    """The demo switcher is on the phone and opens the personas."""
+    """The persona menu is on the phone and opens the personas."""
     page = viewport_390
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="load")
-    switch = page.locator('[data-testid="demo-switch"]')
-    assert switch.count() == 1
-    switch.locator("summary").click()
-    assert switch.locator("form").count() >= 4
-    assert_not_covered(page, switch.locator("summary"))
+    # Changed deliberately (persona switcher, S4): the switcher is the chip in
+    # the top bar, and its menu holds the five personas.
+    chip = page.locator('[data-testid="persona-trigger"]')
+    assert chip.count() == 1
+    chip.click()
+    menu = page.locator('[data-testid="demo-switch"]')
+    assert menu.locator("form").count() >= 4
+    assert_not_covered(page, chip)
     assert page.recorded_errors == []

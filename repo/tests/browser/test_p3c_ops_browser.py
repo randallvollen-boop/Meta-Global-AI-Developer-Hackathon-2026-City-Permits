@@ -116,7 +116,7 @@ def test_the_dashboard_fits_a_phone_and_keeps_the_figures_readable(
         assert len(definition) > 20
 
     # Neither the mobile bar nor the demo switch covers the scope.
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, page.locator('[data-testid="ops-scope-statement"]'))
     assert page.recorded_errors == []
 
@@ -161,7 +161,7 @@ def test_the_checks_screen_shows_the_result_first_and_fits_a_phone(
     assert page.locator('[data-testid="check-row"]').count() == 8
 
     # Neither the mobile bar nor the demo switch covers the controls.
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, page.locator('[data-testid="checks-run"]'))
     assert page.recorded_errors == []
 

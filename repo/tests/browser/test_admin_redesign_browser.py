@@ -74,7 +74,7 @@ def test_the_appearance_section_fits_a_phone_and_keeps_the_saved_icons(
         assert disabled == 0
 
     # Neither the mobile bar nor the demo switch covers the icons.
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, page.locator('[data-testid="permit-type-current-icon"]').first)
     assert page.recorded_errors == []
 
@@ -114,5 +114,5 @@ def test_the_planning_overview_fits_a_phone_and_leads_with_attention(
     page.keyboard.press("Escape")
     drawer.wait_for(state="hidden")
 
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert page.recorded_errors == []

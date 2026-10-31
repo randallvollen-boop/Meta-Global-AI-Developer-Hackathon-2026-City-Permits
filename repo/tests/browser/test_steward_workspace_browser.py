@@ -157,8 +157,8 @@ def test_the_bar_and_the_demo_switch_stay_reachable(
     page.goto(f"{server.base_url}/steward", wait_until="load")
     entries = page.locator(".mobile-nav > a")
     assert entries.count() == 4
-    assert page.locator('[data-testid="demo-switch"]').is_visible()
-    assert_not_covered(page, page.locator('[data-testid="demo-switch"] > summary'))
+    assert page.locator('[data-testid="persona-trigger"]').is_visible()
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, page.locator("main h1").first)
     assert page.recorded_errors == []
 

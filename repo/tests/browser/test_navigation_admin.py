@@ -120,16 +120,20 @@ def test_the_city_website_shows_its_notice_without_overflow(
 
 
 @pytest.mark.parametrize("actor_id,_home", PERSONA_HOMES)
-def test_the_mobile_bar_and_the_demo_switch_do_not_meet_on_every_persona_home(
+def test_the_mobile_bar_and_the_persona_menu_do_not_meet_on_every_persona_home(
     viewport_390, server: BrowserServer, login, actor_id: str, _home: str
 ) -> None:
     page = viewport_390
     login(actor_id)
     bar = page.locator(".mobile-nav")
-    switch = page.locator(".demo-switch")
-    if bar.count():
-        assert not _overlap(_rect(page, ".mobile-nav"), _rect(page, ".demo-switch"))
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    chip = page.locator('[data-testid="persona-trigger"]')
+    # Changed deliberately (persona switcher, S4): the staff frame carries the
+    # switcher in the top bar and the City frame carries none.
+    if chip.count():
+        assert not _overlap(_rect(page, ".mobile-nav"), _rect(page, '[data-testid="persona-trigger"]'))
+        assert_not_covered(page, chip)
+    else:
+        assert page.locator(".demo-switch").count() == 0
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
 

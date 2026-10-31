@@ -53,8 +53,8 @@ def test_theme_drawer_and_demo_switch_work_under_the_policy(page, server: Browse
     before = page.evaluate("document.documentElement.getAttribute('data-theme')")
     page.locator("#theme-toggle").click()
     assert page.evaluate("document.documentElement.getAttribute('data-theme')") != before
-    # Open the demo controls and switch persona: a form post to the same origin.
-    page.locator('[data-testid="demo-switch"] summary').click()
+    # Open the persona menu and switch persona: a form post to the same origin.
+    page.locator('[data-testid="persona-trigger"]').click()
     page.locator('button[data-demo-persona="persona_permit_reviewer"]').click()
     page.wait_for_url(f"{server.base_url}/queue")
     assert "Permit Reviewer" in page.locator('[data-testid="acting-persona"]').inner_text()

@@ -39,7 +39,7 @@ def _sign_in(page, server: BrowserServer) -> None:
     page.wait_for_url(f"{server.base_url}/city/")
 
 
-def test_no_horizontal_scroll_and_demo_controls_stay_clear_at_both_widths(browser, server: BrowserServer) -> None:
+def test_no_horizontal_scroll_and_no_switcher_at_both_widths(browser, server: BrowserServer) -> None:
     for width, height in ((1280, 900), (390, 844)):
         context = browser.new_context(viewport={"width": width, "height": height})
         page = context.new_page()
@@ -50,15 +50,16 @@ def test_no_horizontal_scroll_and_demo_controls_stay_clear_at_both_widths(browse
             for path in SCREENS:
                 page.goto(f"{server.base_url}{path}", wait_until="networkidle")
                 assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (width, path)
-                demo = _rect(page, ".demo-switch > summary")
-                assert demo["l"] >= 0 and demo["b"] <= height, (width, path)
-                assert demo["l"] < width / 2 and demo["t"] > height / 2, (width, path, demo)
+                # Changed deliberately (persona switcher, S4): the City frame
+                # carries no switcher, so nothing floats over the pages.
+                assert page.locator("[data-demo-persona]").count() == 0, (width, path)
+                assert page.locator(".demo-switch").count() == 0, (width, path)
         finally:
             context.close()
         assert errors == [], (width, errors)
 
 
-def test_a_toast_is_top_right_under_the_header_and_clear_of_demo_controls(browser, server: BrowserServer) -> None:
+def test_a_toast_is_top_right_under_the_header(browser, server: BrowserServer) -> None:
     for width, height in ((1280, 900), (390, 844)):
         context = browser.new_context(viewport={"width": width, "height": height})
         page = context.new_page()
@@ -67,13 +68,8 @@ def test_a_toast_is_top_right_under_the_header_and_clear_of_demo_controls(browse
             page.goto(f"{server.base_url}/apply/track?tab=active&saved=DRAFT-TEST", wait_until="networkidle")
             toast = _rect(page, ".city-toast")
             header = _rect(page, ".city-header")
-            demo = _rect(page, ".demo-switch > summary")
-            assert not _overlap(toast, demo), (width, toast, demo)
             assert toast["t"] >= header["b"] - 1, (width, toast, header)
             assert toast["r"] > width / 2 and toast["r"] <= width, (width, toast)
-            page.locator(".demo-switch > summary").click()
-            panel = _rect(page, ".demo-switch-panel")
-            assert panel["b"] <= demo["t"] and panel["l"] >= 0 and panel["r"] <= width
         finally:
             context.close()
 

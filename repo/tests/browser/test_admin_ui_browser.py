@@ -210,7 +210,7 @@ def test_every_section_fits_a_phone(page, server: BrowserServer, login, section:
     assert box is not None
     assert box["x"] >= 0 and box["x"] + box["width"] <= 390, box
     # Neither the mobile bar nor the demo switch covers the navigation.
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert_not_covered(page, page.locator('[data-testid="admin-tab"][aria-current="page"]'))
     assert page.recorded_errors == []
 
@@ -231,7 +231,7 @@ def test_the_permit_type_register_fits_a_phone_and_opens_its_settings(
     assert settings.locator('[data-testid="admin-document-toggle"]').count() > 0
     assert "Changes apply to new applications." in settings.inner_text()
     assert_no_horizontal_overflow(page)
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert page.recorded_errors == []
 
 
@@ -241,7 +241,7 @@ def test_users_and_reason_codes_fit_a_phone(page, server: BrowserServer, login, 
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(f"{server.base_url}/admin?tab={section}", wait_until="domcontentloaded")
     assert_no_horizontal_overflow(page)
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     if section == "users":
         people = page.locator('[data-testid="admin-person-row"]')
         personas_before = people.locator('[data-testid="admin-demo-persona"]').count()

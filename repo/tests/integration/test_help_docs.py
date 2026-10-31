@@ -210,7 +210,10 @@ def test_the_tutorial_page_renders_one_link_per_step(client: TestClient) -> None
     steps = sum(len(section["steps"]) for section in content.tutorial()["sections"])
     assert page.count('data-testid="tutorial-step"') == steps
     assert page.count('data-testid="tutorial-go"') == steps
-    assert "Demo controls" in page
+    # Changed deliberately (demo controls, S3 and persona switcher, S4): the
+    # tutorial points at the list of personas and never names a corner.
+    assert "list of personas" in page
+    assert "bottom left" not in page
     assert "Recorded replay" in page and "stored answer shown again" in page
 
 

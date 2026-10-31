@@ -176,5 +176,5 @@ def test_support_leads_with_requests_and_names_the_reply_destination(page, serve
     open_request = page.locator('[data-testid="help-request-card"][data-status="open"]').first
     assert "The applicant can read this reply." in open_request.inner_text()
     assert_no_horizontal_overflow(page)
-    assert_not_covered(page, page.locator(".demo-switch > summary"))
+    assert_not_covered(page, page.locator('[data-testid="persona-trigger"]'))
     assert page.recorded_errors == []
