@@ -320,6 +320,7 @@ def test_the_case_summary_shows_the_work_of_the_agent_at_390(viewport_390, serve
     summary = page.locator("[data-testid='agent-case-summary']")
     assert summary.is_visible()
     assert page.locator("[data-testid='agent-case-reference']").inner_text().strip()
+    page.locator("[data-testid='agent-case-more'] > summary").click()
     assert page.locator("[data-testid='agent-case-revision']").inner_text().strip()
     assert page.locator("[data-testid='agent-case-engine']").inner_text().strip() == (
         "Built in logic"
@@ -336,6 +337,7 @@ def test_the_agent_screens_fit_at_390_for_the_operator(viewport_390, server, log
     for path in ("/agent/intake", "/agent/adjudication"):
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
         assert page.locator("[data-testid='agent-state']").is_visible()
+        page.locator("[data-testid='agent-more-details'] > summary").click()
         assert page.locator("[data-testid='agent-policy']").inner_text().strip()
         assert page.locator("[data-testid='agent-engine']").inner_text().strip()
         assert_no_horizontal_overflow(page)
@@ -355,7 +357,8 @@ def test_the_agent_screens_fit_at_390_for_the_operator(viewport_390, server, log
     assert answered.value.json()["status"] == "accepted"
     login("persona_agent_operator")
     page.goto(f"{server.base_url}/agent/intake", wait_until="domcontentloaded")
-    assert "an awake agent works new arrivals" in page.inner_text("body")
+    page.locator("[data-testid='agent-more-details'] > summary").click()
+    assert "Automatic" in page.locator("[data-testid='agent-policy']").inner_text()
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("[data-testid='agent-state']"))
 
@@ -467,6 +470,7 @@ def test_the_operator_retries_the_failed_work(page, server, login) -> None:
     assert page.locator("[data-testid='agent-run-detail-state']").inner_text().strip() == (
         "Failed"
     )
+    page.locator("[data-testid='agent-run-detail-more'] > summary").click()
     assert "Not started" in page.locator(
         "[data-testid='agent-run-detail-provenance']"
     ).inner_text()
@@ -530,6 +534,7 @@ def test_the_agent_screen_retries_the_failed_work_and_opens_the_attempts(
     assert page.locator("[data-testid='agent-run-detail-state']").inner_text().strip() == (
         "Failed"
     )
+    page.locator("[data-testid='agent-run-detail-more'] > summary").click()
     assert "Built in logic" in page.locator(
         "[data-testid='agent-run-detail-provenance']"
     ).inner_text()
@@ -549,6 +554,7 @@ def test_the_agent_screen_retries_the_failed_work_and_opens_the_attempts(
     assert page.locator("[data-testid='agent-failure-row']").count() == 0
     assert page.locator("[data-testid='agent-waiting-empty']").is_visible()
     # The history of the agent leads to the attempt that worked.
+    page.locator("[data-testid='agent-more-details'] > summary").click()
     page.locator("[data-testid='agent-history-detail-link']").first.click()
     page.wait_for_load_state("domcontentloaded")
     assert page.locator("[data-testid='agent-run-detail']").is_visible()
@@ -592,6 +598,7 @@ def test_the_desktop_history_and_case_links_open_their_destinations(page, server
     page.locator("[data-testid='agent-case-back']").click()
     assert page.locator("[data-testid='agent-run-history']").is_visible()
     _run_the_intake_agent(page, server)
+    page.locator("[data-testid='agent-more-details'] > summary").click()
     page.locator("[data-testid='agent-history-all']").click()
     selected = page.locator("[data-testid='run-filter-agent']")
     assert selected.input_value() == "intake"

@@ -89,10 +89,12 @@ def test_an_agent_screen_links_back_to_the_agents_home(page, server, login) -> N
         assert page.locator("main h1").inner_text().strip() == "Agents"
 
 
-def test_the_agents_home_links_to_the_selected_cases(page, server, login) -> None:
-    """The operator reaches "Process selected" from the Agents home."""
+def test_the_agents_home_has_no_process_selected_link_and_the_queue_still_opens(
+    page, server, login
+) -> None:
+    """The Agents home lists the agents only; the intake queue keeps its bulk button."""
     login("persona_agent_operator")
     page.goto(f"{server.base_url}/agents", wait_until="domcontentloaded")
-    page.click("[data-testid='opr-process-selected']")
-    page.wait_for_url(f"{server.base_url}/queue/intake")
+    assert page.locator("[data-testid='opr-process-selected']").count() == 0
+    page.goto(f"{server.base_url}/queue/intake", wait_until="domcontentloaded")
     assert page.locator("[data-testid='intake-bulk-submit']").is_visible()

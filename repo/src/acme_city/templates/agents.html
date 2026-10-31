@@ -3,18 +3,10 @@
 
 {% block content %}
 <div class="page-head opr-page-head">
-  <div>
-    <h1>{{ title }}</h1>
-    {% if screen == 'agents_home' %}
-    <p class="sub muted">Processing is {{ summary.processing }}. {{ summary.engine }} is active. Live Muse calls are off in this demo.</p>
-    {% else %}
-    <p class="sub muted">Run history will show recorded processing attempts here.</p>
-    {% endif %}
-  </div>
+  <div><h1>{{ title }}</h1></div>
   <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
-{% if screen == 'agents_home' %}
 <div class="opr-status-actions">
   <a href="/agents" data-testid="agent-status-refresh" data-status-refresh-link>Refresh</a>
 </div>
@@ -31,14 +23,8 @@
     {% for agent in summary.states %}
     <p><a href="/agent/{{ agent.key }}" data-testid="agent-status-link" data-agent-key="{{ agent.key }}">{{ agent.label }}</a><span class="muted"> {{ agent.mode }}</span></p>
     {% endfor %}
-    <p><a href="/queue/intake" data-testid="opr-process-selected">Process selected cases</a></p>
   </div>
 </section>
-{% else %}
-<section class="panel card opr-run-stub" data-testid="agent-runs-stub">
-  <div class="card-b"><p>No run history filter is available yet.</p></div>
-</section>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}<script src="/ui/static/agent-status.js" defer></script>{% endblock %}

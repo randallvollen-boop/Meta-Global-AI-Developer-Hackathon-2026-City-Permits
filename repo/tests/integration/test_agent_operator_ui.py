@@ -333,7 +333,8 @@ def test_run_detail_shows_the_recorded_attempt_and_its_provenance(
     assert 'data-testid="agent-run-detail"' in detail.text
     assert 'data-testid="agent-run-detail-provenance"' in detail.text
     assert "Built in logic" in detail.text
-    assert "Only a failed attempt can be retried." in detail.text
+    # A run that did not fail offers no retry.
+    assert "agent-run-detail-retry" not in detail.text
 
 
 def _fail_an_attempt(
@@ -558,14 +559,19 @@ def test_the_administrator_saves_the_processing_settings(
     assert "City Administrator" in page.text
 
 
-def test_the_agent_screen_copy_follows_the_processing_policy(
+def test_the_agent_screen_policy_follows_the_processing_mode(
     client: TestClient, admin_client: TestClient
 ) -> None:
-    """The screen says what the worker does, in the mode the City chose."""
+    """The screen's Processing fact follows the mode the City chose."""
+
+    def policy(body: str) -> str:
+        found = re.search(r'data-testid="agent-policy">(.*?)</dd>', body, re.S)
+        assert found is not None
+        return " ".join(found.group(1).split())
+
     manual = client.get("/agent/intake")
     assert manual.status_code == 200, manual.text
-    assert "a person asks it to run" in manual.text
-    assert "an awake agent works new arrivals" not in manual.text
+    manual_policy = policy(manual.text)
     act(
         admin_client,
         "admin.agent.processing",
@@ -579,13 +585,7 @@ def test_the_agent_screen_copy_follows_the_processing_policy(
     )
     automatic = client.get("/agent/intake")
     assert automatic.status_code == 200, automatic.text
-    assert "an awake agent works new arrivals" in automatic.text
-    # The adjudication agent is never worked on its own, so its screen keeps
-    # saying that a person runs it.
-    adjudication = client.get("/agent/adjudication")
-    assert adjudication.status_code == 200, adjudication.text
-    assert "a person asks it to run" in adjudication.text
-    assert "an awake agent works new arrivals" not in adjudication.text
+    assert policy(automatic.text) != manual_policy
 
 
 def test_a_stale_save_of_the_processing_settings_is_refused(

@@ -6,10 +6,6 @@
 <div class="page-head opr-page-head">
   <div>
     <h1>{{ title }}</h1>
-    <p class="sub muted">
-      Every recorded attempt of the agents, newest first. The counts are the ones the
-      database holds. A run shows the engine that produced it.
-    </p>
   </div>
   <div class="actions">
     <a class="btn ghost" href="/agents">Back to agents</a>
@@ -34,6 +30,8 @@
       {% endfor %}
     </select>
   </label>
+  <details class="opr-details" data-testid="run-more-filters"{% if view.filters.engine or view.filters.day %} open{% endif %}>
+    <summary>More filters</summary>
   <label>Processing mode
     <select name="engine" data-testid="run-filter-engine">
       <option value="">Every mode</option>
@@ -45,6 +43,7 @@
   <label>Date
     <input type="date" name="day" value="{{ view.filters.day }}" data-testid="run-filter-day">
   </label>
+  </details>
   <button type="submit" class="btn" data-testid="run-filter-apply">Apply filters</button>
   <a href="/agents/runs" data-testid="run-filter-clear">Clear filters</a>
 </form>
@@ -76,7 +75,7 @@
           <td data-label="Started">{{ run.started_at }}</td>
           <td data-label="Case">{{ run.reference or run.application_id or '-' }}</td>
           <td data-label="Agent">{{ run.agent_label }}</td>
-          <td data-label="State"><span class="badge badge-{{ run.state }}">{{ run.state_label }}</span></td>
+          <td data-label="State"><span class="badge badge-{{ run.state }}"><span class="run-dot" aria-hidden="true" data-testid="agent-run-dot" style="display:inline-block;width:.6rem;height:.6rem;border-radius:50%;margin-right:.35rem;background:var(--{{ 'bad' if run.state == 'failed' else 'ok' if run.state == 'completed' else 'warn' }})"></span>{{ run.state_label }}</span></td>
           <td data-label="Processing mode">{{ run.engine_label }}</td>
           <td data-label="Requested by">{{ run.triggered_label or run.triggered_by or '-' }}</td>
           <td data-label="Duration">{{ run.duration or '-' }}</td>

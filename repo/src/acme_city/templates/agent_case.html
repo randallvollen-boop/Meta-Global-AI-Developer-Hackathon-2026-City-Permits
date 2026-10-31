@@ -6,14 +6,6 @@
 <div class="page-head opr-page-head">
   <div>
     <h1>{% if view.missing %}Case not found{% else %}Case {{ view.reference }}{% endif %}</h1>
-    <p class="sub muted">
-      {% if view.missing %}
-      This case does not exist in the demonstration.
-      {% else %}
-      The operational picture of the case: its revision, the state of the
-      processing, the findings and the recorded runs.
-      {% endif %}
-    </p>
   </div>
   <div class="actions">
     <a class="btn ghost" href="/agents/runs" data-testid="agent-case-back">Back to run history</a>
@@ -34,8 +26,6 @@
     <dl class="opr-facts">
       <dt>Reference</dt>
       <dd data-testid="agent-case-reference">{{ view.reference }}</dd>
-      <dt>Revision</dt>
-      <dd data-testid="agent-case-revision">{{ view.revision }}</dd>
       <dt>Status</dt>
       <dd data-testid="agent-case-status">{{ view.status }}</dd>
       <dt>Type</dt>
@@ -44,11 +34,18 @@
       <dd>{{ view.review_area or '-' }}</dd>
       <dt>Processing state</dt>
       <dd data-testid="agent-case-state">{{ view.state_label or 'Not queued yet' }}</dd>
-      <dt>Attempts</dt>
-      <dd data-testid="agent-case-attempts">{{ view.attempts }}</dd>
-      <dt>Processing mode</dt>
-      <dd data-testid="agent-case-engine">{{ view.engine_label }}</dd>
     </dl>
+    <details class="opr-details" data-testid="agent-case-more">
+      <summary>More details</summary>
+      <dl class="opr-facts">
+        <dt>Revision</dt>
+        <dd data-testid="agent-case-revision">{{ view.revision }}</dd>
+        <dt>Attempts</dt>
+        <dd data-testid="agent-case-attempts">{{ view.attempts }}</dd>
+        <dt>Processing mode</dt>
+        <dd data-testid="agent-case-engine">{{ view.engine_label }}</dd>
+      </dl>
+    </details>
     {% if view.note %}
     <p class="muted" data-testid="agent-case-note">{{ view.note }}</p>
     {% endif %}
@@ -79,6 +76,7 @@
   </div>
 </section>
 
+<details class="opr-details" data-testid="agent-case-runs-details"><summary>Recorded runs</summary>
 <section class="panel card" aria-labelledby="agent-case-runs-heading">
   <div class="card-h"><h2 id="agent-case-runs-heading">Recorded runs</h2></div>
   <div class="card-b">
@@ -111,5 +109,6 @@
     </table>
   </div>
 </section>
+</details>
 {% endif %}
 {% endblock %}
