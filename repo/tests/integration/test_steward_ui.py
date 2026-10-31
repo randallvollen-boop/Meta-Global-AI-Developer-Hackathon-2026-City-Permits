@@ -552,7 +552,7 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     # A separate-event note keeps the permit visible.
     q2 = html.split('data-question="2"')[1].split('data-question="3"')[0]
     assert "No permit decision has been made" in q2
-    assert "does not decide any permit" in html.split('data-question="6"')[1]
+    assert "Does not decide the permit." in html.split('data-question="6"')[1]
 
 
 def test_missing_values_read_no_comparison(client: TestClient, environment: Settings) -> None:

@@ -188,6 +188,8 @@ def test_the_button_of_muse_is_off_without_a_credential(
     login("persona_data_steward")
     open_case(page, server)
     click_action(page, "assistant-recommend", "steward.assist.recommend")
+    # The button of Muse sits behind the disclosure of the panel.
+    page.locator('[data-testid="assistant-more"] > summary').click()
     page.wait_for_selector('[data-testid="assistant-explain"]')
     assert page.locator('[data-testid="assistant-explain"]').is_disabled()
     note = page.locator('[data-testid="assistant-explain-note"]')
@@ -255,6 +257,8 @@ def test_the_task_page_clears_the_recommendation_with_a_click(
     login("persona_data_steward")
     open_case(page, server)
     click_action(page, "assistant-recommend", "steward.assist.recommend")
+    # The button that clears the recommendation sits behind the disclosure.
+    page.locator('[data-testid="assistant-more"] > summary').click()
     page.wait_for_selector('[data-testid="assistant-clear"]')
     message = click_action(page, "assistant-clear", "steward.assist.clear")
     assert "cleared" in message.lower()
@@ -309,6 +313,7 @@ def test_the_task_page_fits_a_phone(viewport_390, server: BrowserServer, login) 
     assert_not_covered(viewport_390, viewport_390.locator("main h1").first)
     assert_not_covered(viewport_390, viewport_390.locator('[data-testid="assistant-accept"]'))
     # The button of Muse and the note beside it stay inside too.
+    viewport_390.locator('[data-testid="assistant-more"] > summary').click()
     assert_not_covered(viewport_390, viewport_390.locator('[data-testid="assistant-explain"]'))
     assert_not_covered(
         viewport_390, viewport_390.locator('[data-testid="assistant-explain-note"]')

@@ -114,6 +114,15 @@ def prepare(client: TestClient) -> None:
     assert response.json()["status"] == "accepted", response.text
 
 
+def href_of(body: str, testid: str) -> str:
+    """Return the address one link of a rendered page points at."""
+    match = re.search(r'<a[^>]*data-testid="' + testid + r'"[^>]*>', body)
+    assert match is not None, testid
+    href = re.search(r'href="([^"]+)"', match.group(0))
+    assert href is not None, match.group(0)
+    return href.group(1)
+
+
 def head_texts(body: str, table: str) -> list[str]:
     """Return the column heads of one table of a rendered page."""
     part = body.split(f'data-testid="{table}"')[1].split("</thead>")[0]
@@ -214,8 +223,26 @@ def test_the_queue_carries_no_explainer_of_the_batch(client: TestClient) -> None
     assert "You confirm the list before anything is accepted" not in body
 
 
+def test_the_row_action_opens_the_task_it_names(client: TestClient) -> None:
+    """The action of a row opens the task of that row."""
+    choose(client, STEWARD)
+    body = client.get("/steward").text
+    action = href_of(body, "issue-action")
+    response = client.get(action)
+    assert response.status_code == 200
+    assert 'data-testid="case-q1"' in response.text
+
+
+def test_the_clear_filters_link_empties_the_filters(client: TestClient) -> None:
+    """The link that clears the filters returns to the unfiltered queue."""
+    choose(client, STEWARD)
+    body = client.get("/steward?record_type=match").text
+    page = client.get(href_of(body, "queue-filter-clear")).text
+    assert 'data-testid="queue-filter-clear"' not in page
+    assert "Every record type" in page
+
+
 def test_the_disabled_accept_all_button_says_why(client: TestClient) -> None:
-    """A batch with nothing in it is a disabled button and a reason beside it."""
     choose(client, STEWARD)
     body = client.get("/steward").text
     button = re.search(
@@ -278,6 +305,16 @@ def test_the_preview_keeps_the_fields_that_skip_a_changed_item(
     digest = re.search(r'name="preview_digest" value="([^"]+)"', preview)
     assert digest is not None, preview[:400]
     assert digest.group(1)
+
+
+def test_the_preview_of_the_policy_opens_and_closes(client: TestClient) -> None:
+    """The button of the preview shows the table, and the link closes it."""
+    choose(client, STEWARD)
+    body = client.get("/steward/automation").text
+    preview = client.get(href_of(body, "automation-preview-button")).text
+    assert 'data-testid="automation-preview"' in preview
+    closed = client.get(href_of(preview, "automation-preview-close")).text
+    assert 'data-testid="automation-preview"' not in closed
 
 
 def test_the_batch_page_states_the_rule_in_one_line(client: TestClient) -> None:

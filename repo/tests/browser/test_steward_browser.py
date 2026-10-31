@@ -118,6 +118,8 @@ def test_data_issues_and_a_focused_case_at_both_widths(page, server: BrowserServ
     ).click()
     page.wait_for_selector('[data-question="6"]')
     assert page.locator('[data-testid="candidate"]').count() == 2
+    # The note on the similar name sits behind the disclosure of the evidence.
+    page.locator('[data-testid="case-q4-details"] > summary').click()
     assert page.locator('[data-testid="similar-note"]').is_visible()
     previews = page.locator('[data-testid="action-preview"]')
     assert previews.count() >= 4

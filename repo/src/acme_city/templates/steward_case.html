@@ -48,7 +48,7 @@
     </span>
   </div>
   <div class="card-b">
-    <p class="muted">The assistant gathers the evidence and proposes a decision. It never decides: you read the evidence and accept the recommendation, change it or ignore it.</p>
+    <p class="muted">The assistant gathers the evidence and proposes; you decide.</p>
     {% if not case.assistant.awake %}
     <p class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
       <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ case.assistant.sleep_note }}
@@ -60,16 +60,6 @@
       {% if rec.made_while_awake %}<span class="pill plain nowrap" data-testid="assistant-awake-note">{{ rec.awake_note }}</span>{% endif %}
     </p>
     <p data-testid="assistant-reason">{{ rec.reason }}</p>
-    {% if rec.muse_reason %}
-    <p data-testid="assistant-muse-reason"><span class="muted">In plain words:</span> {{ rec.muse_reason }}</p>
-    {% endif %}
-    {% if rec.evidence %}
-    <dl class="stw-facts" data-testid="assistant-evidence">
-      {% for item in rec.evidence %}
-      <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>
-      {% endfor %}
-    </dl>
-    {% endif %}
     {% if rec.held %}
     <p class="notice" data-testid="assistant-held-note">This recommendation is held for a person, so it cannot be accepted. The facts disagree; decide it with the controls below.</p>
     {% endif %}
@@ -97,27 +87,40 @@
         {% else %}The decision is recorded with your name, as the decision of record.{% endif %}
       </p>
     </form>
-    <form method="post" action="/ui/actions/steward.assist.clear" class="action-form" data-testid="assistant-clear-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="action_id" value="steward.assist.clear">
-      <input type="hidden" name="next" value="{{ case_path }}">
-      <input type="hidden" name="task_kind" value="{{ case.kind }}">
-      <input type="hidden" name="task_id" value="{{ case.id }}">
-      <p><button type="submit" class="button button-quiet btn" data-testid="assistant-clear">Clear recommendation</button></p>
-    </form>
-    <form method="post" action="/ui/actions/steward.assist.explain" class="action-form" data-testid="assistant-explain-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="action_id" value="steward.assist.explain">
-      <input type="hidden" name="next" value="{{ case_path }}">
-      <input type="hidden" name="recommendation_id" value="{{ rec.id }}">
-      <p>
-        <button type="submit" class="button btn" data-testid="assistant-explain"
-                {% if not case.assistant.can_explain %}disabled aria-describedby="assistant-explain-note"{% endif %}>
-          Explain with Muse
-        </button>
-      </p>
-      <p class="muted" id="assistant-explain-note" data-testid="assistant-explain-note">{{ case.assistant.explain_note }}</p>
-    </form>
+    <details class="stw-disclosure" data-testid="assistant-more">
+      <summary>More details</summary>
+      {% if rec.muse_reason %}
+      <p data-testid="assistant-muse-reason"><span class="muted">In plain words:</span> {{ rec.muse_reason }}</p>
+      {% endif %}
+      {% if rec.evidence %}
+      <dl class="stw-facts" data-testid="assistant-evidence">
+        {% for item in rec.evidence %}
+        <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>
+        {% endfor %}
+      </dl>
+      {% endif %}
+      <form method="post" action="/ui/actions/steward.assist.clear" class="action-form" data-testid="assistant-clear-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action_id" value="steward.assist.clear">
+        <input type="hidden" name="next" value="{{ case_path }}">
+        <input type="hidden" name="task_kind" value="{{ case.kind }}">
+        <input type="hidden" name="task_id" value="{{ case.id }}">
+        <p><button type="submit" class="button button-quiet btn" data-testid="assistant-clear">Clear recommendation</button></p>
+      </form>
+      <form method="post" action="/ui/actions/steward.assist.explain" class="action-form" data-testid="assistant-explain-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action_id" value="steward.assist.explain">
+        <input type="hidden" name="next" value="{{ case_path }}">
+        <input type="hidden" name="recommendation_id" value="{{ rec.id }}">
+        <p>
+          <button type="submit" class="button btn" data-testid="assistant-explain"
+                  {% if not case.assistant.can_explain %}disabled aria-describedby="assistant-explain-note"{% endif %}>
+            Explain with Muse
+          </button>
+        </p>
+        <p class="muted" id="assistant-explain-note" data-testid="assistant-explain-note">{{ case.assistant.explain_note }}</p>
+      </form>
+    </details>
     {% else %}
     <p class="muted" data-testid="assistant-empty">No recommendation has been prepared for this task yet.</p>
     {% endif %}
@@ -173,7 +176,7 @@
 <section class="panel" aria-labelledby="q3" data-question="3" data-testid="case-q3">
   <h2 id="q3">3. What are we comparing?</h2>
   {% if c.kind == 'link' %}
-  <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to. A missing value reads “No comparison”; nothing is filled in.</p>
+  <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to.</p>
   {% if c.candidates|length > 1 %}
   <form class="stw-chooser stw-filter-form" method="get" action="{{ request.url.path }}" data-testid="candidate-chooser">
     {% if back_href %}<input type="hidden" name="back" value="{{ back_href }}">{% endif %}
@@ -188,7 +191,6 @@
     </p>
     <p><button type="submit" class="button btn" data-testid="candidate-choose">Show this record</button></p>
   </form>
-  <p class="muted">Choosing a record only changes what the page shows. The link changes when you decide.</p>
   {% endif %}
   {% for cand in c.candidates %}
   <div class="candidate" data-testid="candidate" data-entity="{{ cand.entity_id }}"{% if cand.selected %} data-selected="true"{% endif %}>
@@ -237,83 +239,85 @@
 
 <li>
 <section class="panel" aria-labelledby="q4" data-question="4" data-testid="case-q4">
-  <h2 id="q4">4. What supports the decision? {{ ui.info('match_evidence') }}</h2>
-  {% if c.kind == 'link' %}
-  {% for cand in c.candidates %}
-  <div class="evidence-block" data-testid="evidence-block" data-entity="{{ cand.entity_id }}">
-    <h3>{{ cand.name }} <span class="muted" data-testid="evidence-source">{{ cand.evidence_source }}</span></h3>
-    <div class="ev">
-      <div class="ev-col">
-        <h4><span class="pill ok">Agreements</span></h4>
-        {% for item in cand.agreements %}<div class="ev-item sup" data-testid="agreement"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No agreement found.</p>{% endfor %}
+  <h2 id="q4">4. What supports the decision?</h2>
+  <details class="stw-disclosure" data-testid="case-q4-details">
+    <summary>More details</summary>
+    {% if c.kind == 'link' %}
+    {% for cand in c.candidates %}
+    <div class="evidence-block" data-testid="evidence-block" data-entity="{{ cand.entity_id }}">
+      <h3>{{ cand.name }} <span class="muted" data-testid="evidence-source">{{ cand.evidence_source }}</span></h3>
+      <div class="ev">
+        <div class="ev-col">
+          <h4><span class="pill ok">Agreements</span></h4>
+          {% for item in cand.agreements %}<div class="ev-item sup" data-testid="agreement"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No agreement found.</p>{% endfor %}
+        </div>
+        <div class="ev-col">
+          <h4><span class="pill bad">Conflicts</span></h4>
+          {% for item in cand.conflicts %}<div class="ev-item con" data-testid="conflict"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No conflict found.</p>{% endfor %}
+        </div>
       </div>
-      <div class="ev-col">
-        <h4><span class="pill bad">Conflicts</span></h4>
-        {% for item in cand.conflicts %}<div class="ev-item con" data-testid="conflict"><span><b>{{ item.field|pretty }}</b>: {{ item.method }}</span></div>{% else %}<p class="muted">No conflict found.</p>{% endfor %}
-      </div>
+      {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
+      <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
+        It is an ordering aid built from the evidence above. It does not state the probability of a match.
+      </p>
+      {% if cand.score_parts %}
+      <details class="stw-disclosure" data-testid="how-matching-works">
+        <summary>How matching works</summary>
+        <p>It adds up from:
+        {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>
+      </details>
+      {% endif %}
     </div>
-    {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
-    <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
-      It is an ordering aid built from the evidence above. It does not state the probability of a match.
+    {% endfor %}
+    {% if c.similar_note %}<p class="notice" data-testid="similar-note">{{ c.similar_note }}</p>{% endif %}
+    <p>
+      {{ ui.detail_link('evidence', c.evidence_detail_id, 'Evidence details') }}
+      · {{ ui.detail_link('source-record', c.source_record.summary.detail_id, 'View source record') }}
+      · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received or checked {{ ui_time(c.source_record.summary.received) }}</span>
     </p>
-    {% if cand.score_parts %}
-    <details class="stw-disclosure" data-testid="how-matching-works">
-      <summary>How matching works</summary>
-      <p>It adds up from:
-      {% for part in cand.score_parts %}{{ part.text }} ({{ part.weight }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>
-    </details>
+    <p data-testid="provenance"><span class="pill {{ 'muse' if c.provenance.run_id else 'plain' }}">{{ c.provenance.label }}</span> <span class="muted">{{ c.provenance.detail }}</span>{% if c.provenance.run_id %} {{ ui.detail_link('muse-run', c.provenance.run_id, 'Run details') }}{% endif %}</p>
+    {% elif c.kind == 'parcel' and c.parcel %}
+    <div class="prop-grid">
+      <dl class="prop-facts">
+        <dt>Standardized address</dt><dd>{{ c.parcel.matched_address or 'none chosen' }}</dd>
+        <dt>Parcel number</dt><dd class="mono">{{ c.parcel.parcel_number or 'none' }}</dd>
+        <dt>Locator score and status</dt><dd>{% if c.parcel.score is not none %}{{ '%g' % c.parcel.score }}{% else %}no score{% endif %}, {{ c.parcel.status_word }}</dd>
+        {% if c.parcel.parcel %}<dt>Parcel</dt><dd>zoning {{ c.parcel.parcel.zoning }}, flood zone {{ c.parcel.parcel.flood_zone }}, owner {{ c.parcel.parcel.owner }}</dd>{% endif %}
+      </dl>
+      <div class="prop-map">{{ c.parcel.inset|safe }}</div>
+    </div>
+    {% if c.parcel.note %}<p class="muted">{{ c.parcel.note }}</p>{% endif %}
+    <table class="data-table"><caption class="visually-hidden">Locator candidates</caption>
+      <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
+      <tbody>{% for cand in c.parcel.candidates %}<tr><th scope="row">{{ cand.address }}</th><td>{{ '%g' % cand.score }}</td><td class="mono">{{ cand.parcel_number or '-' }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No candidate.</td></tr>{% endfor %}</tbody>
+    </table>
+    {% elif c.kind == 'case' %}
+    <p>Destination: <b>{{ c.destination }}</b>. State: <b>{{ c.state_label }}</b>.</p>
+    {% if c.case_evidence %}<ul class="plain-list">{% for item in c.case_evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No evidence was attached to this request.</p>{% endif %}
+    {% elif c.kind == 'automatic_link' %}
+    <p>The policy applied this link from the recorded score and the identity checks. The score orders the candidates; it is not a probability.</p>
+    <table class="data-table stwa-table" data-testid="automatic-evidence">
+      <caption class="visually-hidden">The comparison evidence of the automatic link</caption>
+      <thead>
+        <tr>
+          <th scope="col">Field</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in c.automatic.supporting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Supports the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
+        {% for item in c.automatic.conflicting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Contradicts the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
+        {% if not c.automatic.supporting and not c.automatic.conflicting %}<tr><td colspan="3" class="muted">No comparison evidence was recorded.</td></tr>{% endif %}
+      </tbody>
+    </table>
+    {% if c.automatic.reasons %}<p class="muted" data-testid="automatic-reasons">The decision: {{ c.automatic.reasons|join(', ') }}.</p>{% endif %}
+    {% if c.automatic.failed_checks %}<p class="muted" data-testid="automatic-failed-checks">The checks that did not pass: {{ c.automatic.failed_checks|join(', ') }}.</p>{% endif %}
+    <p class="muted" data-testid="automatic-applied-by">Applied by the linking service on {{ c.automatic.applied_at_text }}.</p>
+    {% else %}
+    <p class="muted">No further evidence is recorded for this issue.</p>
     {% endif %}
-  </div>
-  {% endfor %}
-  {% if c.similar_note %}<p class="notice" data-testid="similar-note">{{ c.similar_note }}</p>{% endif %}
-  <p>
-    {{ ui.detail_link('evidence', c.evidence_detail_id, 'Evidence details') }}
-    · {{ ui.detail_link('source-record', c.source_record.summary.detail_id, 'View source record') }}
-    · <span class="muted">Source last changed {{ ui_time(c.source_record.summary.changed) }}; last received or checked {{ ui_time(c.source_record.summary.received) }}</span>
-  </p>
-  <p data-testid="provenance"><span class="pill {{ 'muse' if c.provenance.run_id else 'plain' }}">{{ c.provenance.label }}</span> <span class="muted">{{ c.provenance.detail }}</span>{% if c.provenance.run_id %} {{ ui.detail_link('muse-run', c.provenance.run_id, 'Run details') }}{% endif %}</p>
-  {% elif c.kind == 'parcel' and c.parcel %}
-  <div class="prop-grid">
-    <dl class="prop-facts">
-      <dt>Standardized address</dt><dd>{{ c.parcel.matched_address or 'none chosen' }}</dd>
-      <dt>Parcel number</dt><dd class="mono">{{ c.parcel.parcel_number or 'none' }}</dd>
-      <dt>Locator score and status</dt><dd>{% if c.parcel.score is not none %}{{ '%g' % c.parcel.score }}{% else %}no score{% endif %}, {{ c.parcel.status_word }}</dd>
-      {% if c.parcel.parcel %}<dt>Parcel</dt><dd>zoning {{ c.parcel.parcel.zoning }}, flood zone {{ c.parcel.parcel.flood_zone }}, owner {{ c.parcel.parcel.owner }} (synthetic)</dd>{% endif %}
-    </dl>
-    <div class="prop-map">{{ c.parcel.inset|safe }}</div>
-  </div>
-  {% if c.parcel.note %}<p class="muted">{{ c.parcel.note }}</p>{% endif %}
-  <table class="data-table"><caption class="visually-hidden">Locator candidates</caption>
-    <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
-    <tbody>{% for cand in c.parcel.candidates %}<tr><th scope="row">{{ cand.address }}</th><td>{{ '%g' % cand.score }}</td><td class="mono">{{ cand.parcel_number or '-' }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No candidate.</td></tr>{% endfor %}</tbody>
-  </table>
-  <p class="muted">The Address locator is a deterministic simulation; no model was used.</p>
-  {% elif c.kind == 'case' %}
-  <p>Destination: <b>{{ c.destination }}</b>. State: <b>{{ c.state_label }}</b>.</p>
-  {% if c.case_evidence %}<ul class="plain-list">{% for item in c.case_evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">No evidence was attached to this request.</p>{% endif %}
-  {% elif c.kind == 'automatic_link' %}
-  <p>The policy applied this link from the recorded score and the identity checks. The score orders the candidates; it is not a probability.</p>
-  <table class="data-table stwa-table" data-testid="automatic-evidence">
-    <caption class="visually-hidden">The comparison evidence of the automatic link</caption>
-    <thead>
-      <tr>
-        <th scope="col">Field</th>
-        <th scope="col">Direction</th>
-        <th scope="col">Detail</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in c.automatic.supporting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Supports the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
-      {% for item in c.automatic.conflicting %}<tr><th scope="row" class="stwa-cell" data-label="Field">{{ item.field }}</th><td class="stwa-cell stwa-direction" data-label="Direction">Contradicts the link</td><td class="stwa-cell" data-label="Detail">{{ item.detail }}</td></tr>{% endfor %}
-      {% if not c.automatic.supporting and not c.automatic.conflicting %}<tr><td colspan="3" class="muted">No comparison evidence was recorded.</td></tr>{% endif %}
-    </tbody>
-  </table>
-  {% if c.automatic.reasons %}<p class="muted" data-testid="automatic-reasons">The decision: {{ c.automatic.reasons|join(', ') }}.</p>{% endif %}
-  {% if c.automatic.failed_checks %}<p class="muted" data-testid="automatic-failed-checks">The checks that did not pass: {{ c.automatic.failed_checks|join(', ') }}.</p>{% endif %}
-  <p class="muted" data-testid="automatic-applied-by">Applied by the linking service on {{ c.automatic.applied_at_text }}. The policy of the Data Steward authorized it.</p>
-  {% else %}
-  <p class="muted">No further evidence is recorded for this issue.</p>
-  {% endif %}
+  </details>
 </section>
 </li>
 
@@ -356,30 +360,33 @@
   {% else %}
   <p class="muted" data-testid="case-pending">Nothing has been decided yet.</p>
   {% endif %}
-  {% if c.kind == 'case' %}
-  <h3>Source commands and their acknowledgement</h3>
-  <table class="data-table" data-testid="command-table">
-    <caption class="visually-hidden">Commands sent to a source and their acknowledgement</caption>
-    <thead><tr><th scope="col">Operation</th><th scope="col">Source</th><th scope="col">Expected version</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
-    <tbody>
-      {% for cmd in c.commands %}<tr data-testid="command-row"><td>{{ cmd.operation }}</td><td>{{ cmd.source }}</td><td>{{ cmd.expected or '-' }}</td><td>{{ cmd.accepted or '-' }}</td><td class="nowrap">{{ cmd.status }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No command has been sent to a source.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-  <h3>Publication deliveries</h3>
-  <table class="data-table" data-testid="delivery-table">
-    <caption class="visually-hidden">Publication deliveries and their acknowledgements</caption>
-    <thead><tr><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Acknowledged</th><th scope="col">Last error</th></tr></thead>
-    <tbody>
-      {% for d in c.deliveries %}<tr data-testid="delivery-row"><td>{{ d.destination }}</td><td class="nowrap">{{ d.status }}</td><td>{{ d.attempts }}</td><td>{{ ui_time(d.acknowledged, '-') }}</td><td>{{ d.error }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No publication is pending.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-  {% endif %}
-  {% if c.events %}
-  <ul class="timeline-list" data-testid="case-events">
-    {% for e in c.events %}<li><span class="nowrap">{{ ui_time(e.when) }}</span> · {{ e.who }} · {{ e.what }}{% if e.note %} · {{ e.note }}{% endif %}{% if e.outcome == 'denied' %} <span class="pill bad">Refused</span>{% endif %}</li>{% endfor %}
-  </ul>
-  {% endif %}
   <p class="notice" data-testid="separate-note">{{ c.separate_note }}</p>
+  <details class="stw-disclosure" data-testid="case-q6-details">
+    <summary>More details</summary>
+    {% if c.kind == 'case' %}
+    <h3>Source commands and their acknowledgement</h3>
+    <table class="data-table" data-testid="command-table">
+      <caption class="visually-hidden">Commands sent to a source and their acknowledgement</caption>
+      <thead><tr><th scope="col">Operation</th><th scope="col">Source</th><th scope="col">Expected version</th><th scope="col">Accepted version</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        {% for cmd in c.commands %}<tr data-testid="command-row"><td>{{ cmd.operation }}</td><td>{{ cmd.source }}</td><td>{{ cmd.expected or '-' }}</td><td>{{ cmd.accepted or '-' }}</td><td class="nowrap">{{ cmd.status }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No command has been sent to a source.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <h3>Publication deliveries</h3>
+    <table class="data-table" data-testid="delivery-table">
+      <caption class="visually-hidden">Publication deliveries and their acknowledgements</caption>
+      <thead><tr><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Acknowledged</th><th scope="col">Last error</th></tr></thead>
+      <tbody>
+        {% for d in c.deliveries %}<tr data-testid="delivery-row"><td>{{ d.destination }}</td><td class="nowrap">{{ d.status }}</td><td>{{ d.attempts }}</td><td>{{ ui_time(d.acknowledged, '-') }}</td><td>{{ d.error }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No publication is pending.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% if c.events %}
+    <ul class="timeline-list" data-testid="case-events">
+      {% for e in c.events %}<li><span class="nowrap">{{ ui_time(e.when) }}</span> · {{ e.who }} · {{ e.what }}{% if e.note %} · {{ e.note }}{% endif %}{% if e.outcome == 'denied' %} <span class="pill bad">Refused</span>{% endif %}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </details>
 </section>
 </li>
 

@@ -54,6 +54,11 @@ def open_details(page) -> None:
     page.locator('[data-testid="automation-more"] > summary').click()
 
 
+def open_evidence(page) -> None:
+    """Open the disclosure that holds the evidence of the link."""
+    page.locator('[data-testid="case-q4-details"] > summary').click()
+
+
 def apply_one_link(server: BrowserServer) -> None:
     """Prepare the demonstration: one link the automatic linking applied."""
     factory = SessionFactory(server.settings.database_url)
@@ -288,6 +293,8 @@ def test_the_case_shows_the_evidence_of_the_applied_link(
     page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
         '[data-testid="issue-link"]'
     ).click()
+    # The evidence of the link sits behind the disclosure of the fourth question.
+    open_evidence(page)
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     assert page.locator('[data-testid="case-q4"]').count() == 1
     assert "0.70" in page.locator('[data-testid="case-q3"]').inner_text()
@@ -312,6 +319,7 @@ def test_the_steward_undoes_the_applied_link(
     page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
         '[data-testid="issue-link"]'
     ).click()
+    open_evidence(page)
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     message = submit_action("registry.automation.undo", {"reason": UNDO_REASON})
     assert "was taken back" in message
@@ -345,6 +353,7 @@ def test_the_steward_keeps_the_applied_link(
     page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
         '[data-testid="issue-link"]'
     ).click()
+    open_evidence(page)
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     message = submit_action(
         "registry.automation.review", {"note": "The master record is right."}
@@ -376,6 +385,7 @@ def test_the_applied_link_fits_a_phone(viewport_390, server: BrowserServer, logi
     page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
         '[data-testid="issue-link"]'
     ).click()
+    open_evidence(page)
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1").first)
@@ -395,6 +405,7 @@ def test_the_applied_link_case_stays_inside_a_desktop_window(
     page.locator('[data-issue-row][data-testid="automatic-link"]').locator(
         '[data-testid="issue-link"]'
     ).click()
+    open_evidence(page)
     page.wait_for_selector('[data-testid="automatic-evidence"]')
     overflow = page.evaluate(
         "() => document.documentElement.scrollWidth - window.innerWidth"

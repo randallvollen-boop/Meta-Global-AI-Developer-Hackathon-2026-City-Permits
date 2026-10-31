@@ -73,6 +73,11 @@ from acme_city.ui.patterns import DetailContext, DetailForbidden, DetailView, Ro
 
 PAGE_SIZE = 50
 
+#: The one line every focused case ends with.  A case of the Data Steward
+#: settles an identity, a parcel or a correction; the permit is decided
+#: elsewhere, and the case says so in one line.
+SEPARATE_NOTE = "Does not decide the permit."
+
 #: The datasets whose records a steward can link to a master record.
 LINKABLE_DATASETS = frozenset(
     {
@@ -2566,9 +2571,7 @@ def link_case(
         "result": result,
         "events": events,
         "target_ids": {row.id for row in rows} | {record_id},
-        "separate_note": (
-            "Resolving this identity issue does not decide any permit. The Permit Reviewer decides permits separately."
-        ),
+        "separate_note": SEPARATE_NOTE,
         "decided_status": decided.link_status if decided is not None else "",
     }
 
@@ -2690,7 +2693,7 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
         "result": result,
         "events": events,
         "target_ids": {match.id, application_id},
-        "separate_note": "Approving a parcel link is an identity decision. The Permit Reviewer confirms the parcel, and decides the permit separately.",
+        "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
     }
 
@@ -2821,7 +2824,7 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
         else {"text": display.pretty(case.status), "who": view_models.actor_label(session, case.approver_actor_id), "when": None, "note": ""},
         "events": events,
         "target_ids": {case.id},
-        "separate_note": "A source correction request is not a permit decision.",
+        "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
     }
 
@@ -2857,7 +2860,7 @@ def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dic
         "result": None,
         "events": _events_for(session, [row.id, row.subject_id], ("change.", "registry.", "source.")),
         "target_ids": {row.id},
-        "separate_note": "Resolving a data issue is separate from deciding a permit.",
+        "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
     }
 
@@ -3121,7 +3124,7 @@ def automatic_link_case(
         },
         "events": _events_for(session, [row["record"]], ("registry.crosswalk",)),
         "target_ids": {application.id, row["crosswalk_id"]},
-        "separate_note": "Reviewing an automatic link is separate from deciding a permit.",
+        "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
     }
 
@@ -3153,7 +3156,7 @@ def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Cros
         },
         "events": _events_for(session, [crosswalk.source_record_id], ("registry.crosswalk",)),
         "target_ids": {crosswalk.id, crosswalk.source_record_id},
-        "separate_note": "Resolving an identity issue is separate from deciding a permit.",
+        "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
     }
 
@@ -3507,6 +3510,7 @@ register()
 __all__ = [
     "MASTER_TABS",
     "QUEUE_FILTERS",
+    "SEPARATE_NOTE",
     "activity",
     "collect_issues",
     "compare_with_party",
