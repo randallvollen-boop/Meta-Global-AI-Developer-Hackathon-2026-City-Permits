@@ -30,7 +30,7 @@ All limits count requests per minute for one client address. A setting of `0` sw
 | `ACME_RATE_LIMIT_ALL_PER_MINUTE` | 300 | Every request except `/readyz`, `/healthz` and `/ui/static` |
 | `ACME_RATE_LIMIT_WRITE_PER_MINUTE` | 60 | Requests that are not GET, HEAD or OPTIONS |
 | `ACME_RATE_LIMIT_SESSION_PER_MINUTE` | 20 | Persona and session switches (`/ui/actor`, `/ui/end`, `/api/session/select`, `DELETE /api/session`) |
-| `ACME_RATE_LIMIT_UPLOAD_PER_MINUTE` | 10 | Multipart (file upload) requests |
+| `ACME_RATE_LIMIT_UPLOAD_PER_MINUTE` | 20 | Multipart (file upload) requests, except the applicant form's background check (`POST /apply/<type_key>/check`), which writes nothing and counts as a read |
 | `ACME_MUSE_LIVE_CALL_CAP` | 2 | Live Muse calls in total since the data was last rebuilt, across every visitor and every Muse button (see Live Muse below) |
 | `ACME_MUSE_DAILY_CALL_CAP` | not set (code default 10) | Provider calls per day, shared by every path that can reach the provider |
 | `ACME_MUSE_IMAGE_DAILY_CAP` | 10 | Live Muse image calls per day |

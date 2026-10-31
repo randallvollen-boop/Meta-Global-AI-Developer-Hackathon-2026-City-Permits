@@ -161,6 +161,25 @@ def test_classification_of_requests() -> None:
         assert classify("GET", exempt, "") == []
 
 
+def test_the_form_background_check_counts_as_a_read() -> None:
+    # The applicant form checks itself after every pause in typing and the
+    # server writes nothing, so the check is a read: it must not spend the
+    # upload allowance that the real submission needs.
+    assert classify("POST", "/apply/fence/check", "multipart/form-data; boundary=x") == ["all"]
+    assert classify("POST", "/apply/deck_fence/check", "multipart/form-data; boundary=x") == ["all"]
+    assert classify("POST", "/apply/fence/check/", "multipart/form-data; boundary=x") == ["all"]
+    submitted = classify("POST", "/apply/fence", "multipart/form-data; boundary=x")
+    assert "upload" in submitted and "write" in submitted
+    # Only the check path is a read; a real submission and every near miss
+    # still count as a change and as an upload.
+    assert classify("POST", "/apply/fence/checklist", "multipart/form-data; boundary=x") == [
+        "all", "write", "upload",
+    ]
+    assert classify("POST", "/apply/fence/check/extra", "multipart/form-data; boundary=x") == [
+        "all", "write", "upload",
+    ]
+
+
 # ------------------------------------------------------- the four limits
 
 
@@ -221,6 +240,32 @@ def test_upload_limit_counts_only_multipart_requests(make_client) -> None:
     blocked = client.post(path, data={"document_type": "site_plan"}, files=files)
     assert blocked.status_code == 429 and blocked.json()["code"] == "rate_limited"
     assert 429 not in statuses(client, 5, "POST", "/api/session/select", json={"actor_id": PERSONAS[0]})
+
+
+def test_the_form_background_check_does_not_spend_the_upload_allowance(make_client) -> None:
+    client = make_client(ACME_RATE_LIMIT_UPLOAD_PER_MINUTE="2")
+    client.post("/ui/actor", data={"actor_id": PERSONAS[0]}, follow_redirects=False)
+    files = {"file__site_plan": ("sketch.txt", b"fictional site sketch", "text/plain")}
+    # Three background checks, as the browser sends them while the person types.
+    checks = [
+        client.post("/apply/deck_fence/check", data={"intent": "update"}, files=files).status_code
+        for _ in range(3)
+    ]
+    assert 429 not in checks
+    assert checks == [200, 200, 200], checks
+    # The real submission still has its upload to spend, twice over.
+    first = client.post("/apply/deck_fence", data={"intent": "submit"}, files=files)
+    assert first.status_code != 429
+    second = client.post("/apply/deck_fence", data={"intent": "submit"}, files=files)
+    assert second.status_code != 429
+
+
+def test_the_form_background_check_still_counts_against_the_request_limit(make_client) -> None:
+    client = make_client(ACME_RATE_LIMIT_ALL_PER_MINUTE="2")
+    files = {"file__site_plan": ("sketch.txt", b"fictional site sketch", "text/plain")}
+    path = "/apply/deck_fence/check"
+    assert client.post(path, data={"intent": "update"}, files=files).status_code != 429
+    assert client.post(path, data={"intent": "update"}, files=files).status_code == 429
 
 
 def test_a_refused_request_spends_no_tokens_from_the_other_limits(make_client) -> None:
@@ -484,7 +529,7 @@ def test_blueprint_limits_match_the_documented_defaults() -> None:
         ("ACME_RATE_LIMIT_ALL_PER_MINUTE", "300"),
         ("ACME_RATE_LIMIT_WRITE_PER_MINUTE", "60"),
         ("ACME_RATE_LIMIT_SESSION_PER_MINUTE", "20"),
-        ("ACME_RATE_LIMIT_UPLOAD_PER_MINUTE", "10"),
+        ("ACME_RATE_LIMIT_UPLOAD_PER_MINUTE", "20"),
         ("ACME_MUSE_LIVE_CALL_CAP", "2"),
         ("ACME_MUSE_IMAGE_DAILY_CAP", "10"),
         ("ACME_COOKIE_SECURE", "1"),

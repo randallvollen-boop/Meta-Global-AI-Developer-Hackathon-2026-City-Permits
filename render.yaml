@@ -69,7 +69,7 @@ services:
       - key: ACME_RATE_LIMIT_SESSION_PER_MINUTE
         value: "20"
       - key: ACME_RATE_LIMIT_UPLOAD_PER_MINUTE
-        value: "10"
+        value: "20"
       # Largest request body, in bytes (25 MB).
       - key: ACME_MAX_REQUEST_BYTES
         value: "26214400"
