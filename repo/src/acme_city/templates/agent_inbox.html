@@ -1,0 +1,49 @@
+{# The incoming cases the intake agent has not worked yet: generated and seeded alike. #}
+<section class="panel card agent-inbox" aria-labelledby="agent-inbox-heading" data-testid="agent-inbox" data-status-refresh>
+  <div class="card-h">
+    <h2 id="agent-inbox-heading">Incoming</h2>
+    <span class="right"><a href="/agent/intake" data-testid="agent-inbox-all">{{ inbox.waiting|length }} waiting</a></span>
+  </div>
+  <div class="card-b">
+    {% if not inbox.is_awake %}
+    <p class="lock" id="agent-inbox-sleep" data-testid="agent-inbox-sleep">
+      <svg aria-hidden="true"><use href="#i-lock"/></svg>
+      The agent is asleep, so the run buttons are off.
+      {% if inbox.can_toggle %}Wake it on the <a href="/agent/intake">Intake agent</a> screen.{% else %}Your role cannot wake it; ask the Agent Operator.{% endif %}
+    </p>
+    {% endif %}
+    <table class="data-table opr-table" data-testid="agent-inbox-table">
+      <caption class="visually-hidden">Cases waiting for the intake agent</caption>
+      <thead>
+        <tr><th scope="col">Reference</th><th scope="col">Type</th><th scope="col">Process</th></tr>
+      </thead>
+      <tbody>
+        {% for row in inbox.waiting[:10] %}
+        <tr data-testid="agent-inbox-row" data-application-id="{{ row.application_id }}">
+          <th scope="row" data-label="Reference"><a href="/agents/cases/{{ row.application_id }}" data-testid="agent-inbox-case-link">{{ row.source_application_number }}</a></th>
+          <td data-label="Type">{{ row.permit_type_key }}</td>
+          <td data-label="Process">
+            {% if inbox.can_run %}
+            <form method="post" action="/ui/actions/agent.run.intake" class="action-form" data-testid="agent-inbox-process-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action_id" value="agent.run.intake">
+              <input type="hidden" name="next" value="/agents">
+              <input type="hidden" name="application_id" value="{{ row.application_id }}">
+              <button type="submit" class="btn sm" data-testid="agent-inbox-process"
+                      {% if not inbox.is_awake %}disabled aria-describedby="agent-inbox-sleep"{% endif %}>Process</button>
+            </form>
+            {% else %}
+            <span class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg> <span data-testid="agent-inbox-no-grant">Your role cannot do this.</span></span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted" data-testid="agent-inbox-empty">Nothing is waiting.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if inbox.waiting|length > 10 %}
+    <p class="muted" data-testid="agent-inbox-more">Showing 10 of {{ inbox.waiting|length }}. <a href="/agent/intake">See all</a></p>
+    {% endif %}
+  </div>
+</section>

@@ -19,7 +19,7 @@ from acme_city.auth.router import get_session
 from acme_city.core.errors import ValidationError
 from acme_city.ui.router import ActionContext, Outcome, _guard, page_context, render, ui_actor
 from acme_city.agents.summary import operator_summary
-from acme_city.ui.agent_views import agent_case, run_detail, run_history
+from acme_city.ui.agent_views import agent_case, agent_screen, run_detail, run_history
 
 router = APIRouter(tags=["agents"])
 
@@ -165,6 +165,8 @@ def agents_home(
     context = page_context(
         request, session, resolved, screen="agents_home", title="Agents",
         summary=operator_summary(session),
+        # The cases waiting for the intake agent, as the Incoming list.
+        inbox=agent_screen(session, resolved, "intake"),
     )
     return render(request, "agents.html", context)
 

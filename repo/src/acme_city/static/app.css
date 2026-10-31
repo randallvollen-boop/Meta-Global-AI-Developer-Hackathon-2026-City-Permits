@@ -945,3 +945,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
   letter-spacing: 0.04em; color: var(--fg-2);
 }
 .persona-text form { margin-top: 0.25rem; }
+
+/* The Incoming list on the Agents screen. */
+.agent-inbox .card-b > .lock { margin-top: 0; }
+.agent-inbox .action-form { margin: 0; }

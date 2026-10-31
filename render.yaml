@@ -46,6 +46,9 @@ services:
         value: auto
       - key: ACME_DEMO_SEED_ON_START
         value: "1"
+      # Sample intake cases the seed adds, so the agents' Incoming list has work.
+      - key: ACME_DEMO_GENERATED_COUNT
+        value: "8"
       - key: ACME_PUBLIC_DEMO
         value: "1"
       # Live Muse is off unless a person turns it on (DEPLOY_RENDER.md).
