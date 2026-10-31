@@ -2,93 +2,92 @@
 {% import "_ui.html" as ui with context %}
 {% import "components/admin_patterns.html" as adm with context %}
 
-{# The planning overview of the City Administrator.
-
-   What needs attention comes first, then the versions that are not published.
-   The property and the source sections follow, compact, and the other screens
-   of the City are quiet links at the end.  Every count is counted from the
-   stored records. #}
-
 {% block content %}
 <div class="page-head">
   <div>
     <h1>Planning overview</h1>
-    <p class="sub">
-      What needs attention, what has been proposed and where the data comes from.
-      Every figure is counted from the stored records.
-    </p>
+    <p class="sub">What needs attention, what has been proposed and where the data comes from.</p>
   </div>
   <div class="actions">{{ ui.help_button('overview') }}</div>
 </div>
-
-<p class="adm-scope-note" data-testid="overview-scope">
-  {{ overview.scope_label }}
-</p>
 
 <div class="adm-summary" data-testid="overview-cards">
   <section class="adm-summary-item adm-summary-item--attention" aria-labelledby="overview-attention-heading">
     <h2 class="adm-summary-label" id="overview-attention-heading">{{ overview.attention.label }}</h2>
     <p class="adm-summary-value num" data-testid="overview-attention-count">{{ overview.attention.count }}</p>
-    <p class="adm-summary-definition">{{ overview.attention.definition }}</p>
+    <details>
+      <summary>More details</summary>
+      <p class="adm-summary-definition" data-testid="overview-card-definition">{{ overview.attention.definition }}</p>
+    </details>
     <a class="adm-summary-link" href="{{ overview.attention.href }}">Open the work queue</a>
   </section>
 
   <section class="adm-summary-item" aria-labelledby="overview-changes-heading">
     <h2 class="adm-summary-label" id="overview-changes-heading">{{ overview.changes.label }}</h2>
     <p class="adm-summary-value num" data-testid="overview-changes-count">{{ overview.changes.count }}</p>
-    <p class="adm-summary-definition">{{ overview.changes.definition }}</p>
+    <details>
+      <summary>More details</summary>
+      <p class="adm-summary-definition" data-testid="overview-card-definition">{{ overview.changes.definition }}</p>
+    </details>
     <a class="adm-summary-link" href="{{ overview.changes.href }}">Open rules and fees</a>
   </section>
 
   <section class="adm-summary-item" aria-labelledby="overview-property-heading">
     <h2 class="adm-summary-label" id="overview-property-heading">{{ overview.property.label }}</h2>
     <p class="adm-summary-value num" data-testid="overview-property-count">{{ overview.property.count }}</p>
-    <p class="adm-summary-definition">{{ overview.property.definition }}</p>
+    <details>
+      <summary>More details</summary>
+      <p class="adm-summary-definition" data-testid="overview-card-definition">{{ overview.property.definition }}</p>
+    </details>
     <a class="adm-summary-link" href="{{ overview.property.href }}">Open the property master</a>
   </section>
 
   <section class="adm-summary-item" aria-labelledby="overview-sources-heading">
     <h2 class="adm-summary-label" id="overview-sources-heading">{{ overview.sources.label }}</h2>
     <p class="adm-summary-value num" data-testid="overview-sources-count">{{ overview.sources.count }}</p>
-    <p class="adm-summary-definition">{{ overview.sources.definition }}</p>
+    <details>
+      <summary>More details</summary>
+      <p class="adm-summary-definition" data-testid="overview-card-definition">{{ overview.sources.definition }}</p>
+    </details>
     <a class="adm-summary-link" href="{{ overview.sources.href }}">Open governance and sources</a>
   </section>
 </div>
 
-<div class="adm-overview-columns">
-  <section class="panel adm-overview-section" aria-labelledby="overview-attention-list-heading">
-    <h2 id="overview-attention-list-heading">{{ overview.attention.label }}</h2>
-    <div class="tbl-wrap">
-    <table class="data-table adm-overview-table" data-testid="overview-attention-table">
-      <caption class="visually-hidden">Sample applications that need attention</caption>
-      <thead>
-        <tr>
-          <th scope="col">Application</th><th scope="col">Why it needs attention</th><th scope="col">Open</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in overview.attention.entries %}
-        <tr data-testid="overview-attention-row" data-application-id="{{ item.application_id }}">
-          <th scope="row">{{ item.reference }}</th>
-          <td>
-            {{ adm.field_label('Why it needs attention') }}
-            {{ item.reason }}
-            {% if item.more_note %}<span class="adm-note">{{ item.more_note }}</span>{% endif %}
-          </td>
-          <td>{{ adm.field_label('Open') }}<a class="btn sm" href="{{ item.href }}" aria-label="Open the case {{ item.reference }}">Open the case</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" class="muted">No sample application needs attention.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    </div>
-    {% if overview.attention.more %}
-    {% set more = overview.attention.more %}
-    <p class="muted">{{ more }} further application{{ 's are' if more != 1 else ' is' }} counted; open the work queue to see {{ 'them all' if more != 1 else 'it' }}.</p>
-    {% endif %}
-  </section>
+<section class="panel adm-overview-section" aria-labelledby="overview-attention-list-heading">
+  <h2 id="overview-attention-list-heading">{{ overview.attention.label }}</h2>
+  <div class="tbl-wrap">
+  <table class="data-table adm-overview-table" data-testid="overview-attention-table">
+    <caption class="visually-hidden">Sample applications that need attention</caption>
+    <thead>
+      <tr>
+        <th scope="col">Application</th><th scope="col">Why it needs attention</th><th scope="col">Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in overview.attention.entries %}
+      <tr data-testid="overview-attention-row" data-application-id="{{ item.application_id }}">
+        <th scope="row">{{ item.reference }}</th>
+        <td>
+          {{ adm.field_label('Why it needs attention') }}
+          {{ item.reason }}
+          {% if item.more_note %}<span class="adm-note">{{ item.more_note }}</span>{% endif %}
+        </td>
+        <td>{{ adm.field_label('Open') }}<a class="btn sm" href="{{ item.href }}" aria-label="Open the case {{ item.reference }}">Open the case</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">No sample application needs attention.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if overview.attention.more %}
+  {% set more = overview.attention.more %}
+  <p class="muted">{{ more }} further application{{ 's are' if more != 1 else ' is' }} counted; open the work queue to see {{ 'them all' if more != 1 else 'it' }}.</p>
+  {% endif %}
+</section>
 
+<details data-testid="overview-changes-more">
+  <summary>More details</summary>
   <section class="panel adm-overview-section" aria-labelledby="overview-changes-list-heading">
     <h2 id="overview-changes-list-heading">{{ overview.changes.label }}</h2>
     <div class="tbl-wrap">
@@ -114,15 +113,16 @@
       </tbody>
     </table>
     </div>
-    <p class="muted" data-testid="overview-approval-policy">{{ overview.changes.approval_policy.line }} {{ ui.info('approval_policy') }}</p>
     {% if overview.changes.more %}
     {% set more = overview.changes.more %}
     <p class="muted">{{ more }} further version{{ 's are' if more != 1 else ' is' }} counted; open rules and fees to see {{ 'them all' if more != 1 else 'it' }}.</p>
     {% endif %}
   </section>
-</div>
+</details>
+<p class="muted" data-testid="overview-approval-policy">{{ overview.changes.approval_policy.line }} {{ ui.info('approval_policy') }}</p>
 
-<div class="adm-overview-columns">
+<details data-testid="overview-property-more">
+  <summary>More details</summary>
   <section class="panel adm-overview-section" aria-labelledby="overview-property-list-heading">
     <h2 id="overview-property-list-heading">{{ overview.property.label }}</h2>
     <p class="muted">
@@ -161,7 +161,10 @@
     <p class="muted">{{ more }} further application{{ 's are' if more != 1 else ' is' }} counted; open the property master to see {{ 'them all' if more != 1 else 'it' }}.</p>
     {% endif %}
   </section>
+</details>
 
+<details data-testid="overview-sources-more">
+  <summary>More details</summary>
   <section class="panel adm-overview-section" aria-labelledby="overview-sources-list-heading">
     <h2 id="overview-sources-list-heading">{{ overview.sources.label }}</h2>
     <div class="tbl-wrap">
@@ -188,19 +191,25 @@
     </div>
     <p class="muted">{{ ui.info('source_freshness') }}</p>
   </section>
-</div>
+</details>
 
-<section class="panel adm-overview-section" aria-labelledby="overview-related-heading">
-  <h2 id="overview-related-heading">Other screens of the City</h2>
-  <ul class="adm-related" data-testid="overview-related">
-    {% for item in overview.related %}
-    <li>
-      <a href="{{ item.href }}">{{ item.label }}</a>
-      <span class="muted">{{ item.note }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
+<details data-testid="overview-related-more">
+  <summary>More details</summary>
+  <section class="panel adm-overview-section" aria-labelledby="overview-related-heading">
+    <h2 id="overview-related-heading">Other screens of the City</h2>
+    <ul class="adm-related" data-testid="overview-related">
+      {% for item in overview.related %}
+      <li>
+        <a href="{{ item.href }}">{{ item.label }}</a>
+        <span class="muted">{{ item.note }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</details>
 
-{% include "components/evidence_panel.html" %}
+<details data-testid="overview-evidence-more">
+  <summary>More details</summary>
+  {% include "components/evidence_panel.html" %}
+</details>
 {% endblock %}

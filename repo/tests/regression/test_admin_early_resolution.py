@@ -174,7 +174,9 @@ def test_the_data_steward_opens_the_board(client: TestClient) -> None:
     choose(client, "persona_data_steward")
     response = client.get("/queue/early-resolution")
     assert response.status_code == 200, response.text
-    assert 'data-testid="early-resolution-kpis"' in response.text
+    # Changed deliberately (demo polish, R3): the KPI row is gone.
+    assert 'id="early-resolution-groups"' in response.text
+    assert 'data-testid="early-resolution-kpis"' not in response.text
 
 
 def test_the_board_holds_the_cases_that_wait_for_a_person(

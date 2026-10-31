@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>Review queue</h1>
-    <p class="sub">The cases that are with the Permit Reviewer, by review area, and the decisions that were recorded recently.</p>
+    <p class="sub">Cases with the Permit Reviewer, by review area.</p>
   </div>
   <div class="actions">{{ ui.help_button('review_queue') }}</div>
 </div>
@@ -29,8 +29,6 @@
       <tr>
         <th scope="col">Reference</th>
         <th scope="col">Type</th>
-        <th scope="col">Area</th>
-        <th scope="col">Owner</th>
         <th scope="col">Recommendation</th>
         <th scope="col">Age</th>
       </tr>
@@ -40,79 +38,77 @@
       <tr class="row" data-testid="review-row" data-area="{{ row.review_area }}">
         <td><span class="ref"><a href="{{ row.href }}">{{ row.reference }}</a></span><div class="t2">{{ row.applicant_name }}</div></td>
         <td>{{ row.permit_type_label }}</td>
-        <td>{{ row.review_area or 'unassigned' }}</td>
-        <td>{{ row.owner_label or 'Unassigned' }}</td>
         <td>
           {% if row.recommendation %}
           <span class="pill {{ 'ok' if row.recommendation.proposed_outcome == 'approve' else 'bad' if row.recommendation.proposed_outcome == 'deny' else 'warn' }}"
                 data-testid="review-recommendation">{{ row.recommendation.proposed_outcome }}</span>
           <span class="pill plain" data-testid="review-recommendation-status">{{ row.recommendation.status }}</span>
           {% if row.recommendation.stale %}<span class="pill warn" data-testid="review-recommendation-stale">stale</span>{% endif %}
-          {% if row.recommendation.conditions %}
-          <ul class="issue-list" data-testid="review-recommendation-conditions">
-            {% for condition in row.recommendation.conditions %}<li>{{ condition }}</li>{% endfor %}
-          </ul>
-          {% endif %}
           {% else %}
           <span class="muted" data-testid="review-recommendation-none">The adjudication agent has not run on this case.</span>
           {% endif %}
+          <details data-testid="review-row-more">
+            <summary>More details</summary>
+            <p data-testid="review-row-area">Area: {{ row.review_area or 'unassigned' }}</p>
+            <p data-testid="review-row-owner">Owner: {{ row.owner_label or 'Unassigned' }}</p>
+            {% if row.recommendation and row.recommendation.conditions %}
+            <ul class="issue-list" data-testid="review-recommendation-conditions">
+              {% for condition in row.recommendation.conditions %}<li>{{ condition }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </details>
         </td>
         <td>{% if row.age_days is not none %}<span class="age">{{ row.age_days }}d</span>{% else %}-{% endif %}</td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted" data-testid="review-empty">No case is in review in this area.</td></tr>
+      <tr><td colspan="4" class="muted" data-testid="review-empty">No case is in review in this area.</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
 </section>
 
-<section class="card">
-  <div class="card-h"><h2>Recent decisions</h2></div>
-  <div class="card-b">
-    <div class="tbl-wrap">
-    <table class="data-table" data-testid="recent-decisions">
-      <caption class="visually-hidden">The decisions of record that were recorded recently</caption>
-      <thead>
-        <tr>
-          <th scope="col">Reference</th>
-          <th scope="col">Type</th>
-          <th scope="col">Outcome</th>
-          <th scope="col">Conditions</th>
-          <th scope="col">Decided by</th>
-          <th scope="col">When</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for decision in queue.recent_decisions %}
-        <tr class="row" data-testid="recent-decision" data-outcome="{{ decision.outcome }}">
-          <td><span class="ref"><a href="{{ decision.href }}">{{ decision.reference }}</a></span></td>
-          <td>{{ decision.permit_type_label }}</td>
-          <td><span class="badge badge-{{ decision.outcome }}">{{ decision.outcome_label }}</span></td>
-          <td>
-            {% if decision.conditions %}
-            <ul class="issue-list" data-testid="recent-decision-conditions">
-              {% for condition in decision.conditions %}<li>{{ condition }}</li>{% endfor %}
-            </ul>
-            {% else %}<span class="muted">none</span>{% endif %}
-          </td>
-          <td>{{ decision.decided_by_actor_id }}</td>
-          <td class="t2">{{ decision.decided_at }}</td>
-        </tr>
-        {% else %}
-        <tr><td colspan="6" class="muted" data-testid="recent-decisions-empty">No decision has been recorded yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<details data-testid="review-more">
+  <summary>More details</summary>
+  <section class="card">
+    <div class="card-h"><h2>Recent decisions</h2></div>
+    <div class="card-b">
+      <div class="tbl-wrap">
+      <table class="data-table" data-testid="recent-decisions">
+        <caption class="visually-hidden">The decisions of record that were recorded recently</caption>
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Type</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Conditions</th>
+            <th scope="col">When</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for decision in queue.recent_decisions %}
+          <tr class="row" data-testid="recent-decision" data-outcome="{{ decision.outcome }}">
+            <td><span class="ref"><a href="{{ decision.href }}">{{ decision.reference }}</a></span></td>
+            <td>{{ decision.permit_type_label }}</td>
+            <td><span class="badge badge-{{ decision.outcome }}">{{ decision.outcome_label }}</span></td>
+            <td>
+              {% if decision.conditions %}
+              <ul class="issue-list" data-testid="recent-decision-conditions">
+                {% for condition in decision.conditions %}<li>{{ condition }}</li>{% endfor %}
+              </ul>
+              {% else %}<span class="muted">none</span>{% endif %}
+            </td>
+            <td class="t2">{{ decision.decided_at }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="muted" data-testid="recent-decisions-empty">No decision has been recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
     </div>
-  </div>
-</section>
-
-<section class="panel card">
-  <div class="card-h"><h2>What these figures mean</h2></div>
-  <div class="card-b">
-    <p class="muted" data-testid="review-definitions">{{ queue.definitions.in_review }}</p>
-    <p class="muted" data-testid="review-recent-definitions">{{ queue.definitions.recent }}</p>
-  </div>
-</section>
+  </section>
+  <p class="muted" data-testid="review-definitions">{{ queue.definitions.in_review }}</p>
+  <p class="muted" data-testid="review-recent-definitions">{{ queue.definitions.recent }}</p>
+</details>
 {% endblock %}

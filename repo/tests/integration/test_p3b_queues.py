@@ -166,7 +166,9 @@ def test_the_data_steward_opens_the_early_resolution_board(
     response = client.get("/queue/early-resolution")
     assert response.status_code == 200, response.text
     assert "Early resolution" in response.text
-    assert 'data-testid="early-resolution-kpis"' in response.text
+    # Changed deliberately (demo polish, R3): the KPI row is gone.
+    assert 'id="early-resolution-groups"' in response.text
+    assert 'data-testid="early-resolution-kpis"' not in response.text
 
 
 def test_the_permit_reviewer_opens_the_review_queue(client: TestClient) -> None:

@@ -1,5 +1,5 @@
 {
-  "note": "The selector and form contract of the admin-b screens, taken before the redesign. A hook may move to another place of the same template, but it must not disappear, and a form may not change its destination or the name of a field it sends.",
+  "note": "The selector and form contract of the admin-b screens, taken before the redesign. A hook may move to another place of the same template, but it must not disappear, and a form may not change its destination or the name of a field it sends. R3 removed early-resolution-kpis and group-findings on purpose: the KPI row and the duplicate findings list are gone from the early resolution screen.",
   "screens": {
     "policy_scenarios": {
       "template": "src/acme_city/templates/policy_scenarios.html",
@@ -505,10 +505,8 @@
     "early_resolution": {
       "template": "src/acme_city/templates/early_resolution.html",
       "hooks": [
-        "early-resolution-kpis",
         "early-resolution-group",
         "group-count",
-        "group-findings",
         "group-table",
         "early-resolution-case",
         "resolve-case",

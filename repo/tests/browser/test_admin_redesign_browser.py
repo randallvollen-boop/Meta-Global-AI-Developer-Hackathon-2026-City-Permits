@@ -104,6 +104,7 @@ def test_the_planning_overview_fits_a_phone_and_leads_with_attention(
     assert order == sorted(order)
 
     # The property context still opens in the shared drawer on a phone.
+    page.locator('[data-testid="overview-property-more"] > summary').click()
     link = page.locator('[data-detail-kind="property-context"]').first
     link.scroll_into_view_if_needed()
     assert_not_covered(page, link)

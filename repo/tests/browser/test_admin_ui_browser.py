@@ -47,6 +47,7 @@ def test_the_overview_counts_come_with_their_definition(
     definition = page.locator('[data-testid="overview-attention-count"]').locator(
         "xpath=ancestor::section[1]"
     )
+    definition.locator("> details > summary").click()
     assert "Sample applications" in definition.inner_text()
 
 
@@ -56,6 +57,7 @@ def test_the_property_context_opens_in_the_shared_flyout(
     login(ADMINISTRATOR)
     drawer = page.locator("#ui-drawer")
     assert drawer.is_hidden()
+    page.locator('[data-testid="overview-property-more"] > summary').click()
     link = page.locator('[data-detail-kind="property-context"]').first
     link.click()
     drawer.wait_for(state="visible")
@@ -92,6 +94,7 @@ def test_the_demo_moment_opens_the_draft_and_takes_the_next_step(
     login(ADMINISTRATOR)
     # The draft is reachable from the overview.
     page.goto(f"{server.base_url}/overview", wait_until="domcontentloaded")
+    page.locator('[data-testid="overview-changes-more"] > summary').click()
     row = page.locator('[data-testid="overview-changes-row"]').first
     assert "CT-2@2" in row.inner_text()
     row.locator("a").first.click()

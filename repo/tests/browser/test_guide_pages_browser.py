@@ -34,6 +34,10 @@ def test_guide_pages_fit_390px_for_every_persona_and_signed_out(
     response = page.goto(f"{server.base_url}{path}", wait_until="networkidle")
     assert response is not None and response.ok
     assert_no_horizontal_overflow(page)
+    if path == "/lifecycle":
+        summaries = page.locator('details:has([data-testid="lifecycle-example"]) > summary')
+        for index in range(summaries.count()):
+            summaries.nth(index).click()
     controls = page.locator(CONTROLS)
     assert controls.count() >= 1
     for index in range(controls.count()):
@@ -62,6 +66,9 @@ def test_lifecycle_examples_open_the_permit_workspace(page, server: BrowserServe
     targets = [buttons.nth(i).get_attribute("data-next") for i in range(buttons.count())]
     for target in targets:
         page.goto(f"{server.base_url}/lifecycle", wait_until="domcontentloaded")
+        page.locator(
+            f'details:has([data-testid="lifecycle-example"][data-next="{target}"]) > summary'
+        ).click()
         page.locator(f'[data-testid="lifecycle-example"][data-next="{target}"]').click()
         page.wait_for_load_state("domcontentloaded")
         assert urlparse(page.url).path == target

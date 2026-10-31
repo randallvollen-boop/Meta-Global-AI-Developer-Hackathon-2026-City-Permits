@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Permit life cycle</h1>
-    <p class="sub">Every status a permit application can hold and every move between them: {{ lifecycle.statuses|length }} statuses, {{ lifecycle.move_count }} moves. Each move names who makes it, from the grants the personas are seeded with. The counts are the cases stored in this demonstration.</p>
+    <p class="sub">Every status a case can hold, and who can move it.</p>
   </div>
   <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
@@ -25,7 +25,6 @@
   <article class="panel guide-status guide-kind-{{ st.kind }}" id="status-{{ st.key }}" data-testid="lifecycle-status" data-status="{{ st.key }}">
     <header class="guide-status-head">
       <h3>{{ st.label }}</h3>
-      <span class="pill" data-testid="lifecycle-count">{{ st.count }} {{ 'case' if st.count == 1 else 'cases' }}</span>
     </header>
     <p>{{ st.meaning }}</p>
     {% if st.moves %}
@@ -34,19 +33,25 @@
       <li data-testid="lifecycle-move">
         <strong>{{ mv.action }}</strong> leads to {% if mv.target_key == 'previous' %}{{ mv.target }}{% else %}<a href="#status-{{ mv.target_key }}">{{ mv.target }}</a>{% endif %}.
         <span class="guide-who">By {{ mv.who|join(', ') if mv.who else 'no persona in this demonstration' }}, in {{ mv.where }}.</span>
-        {% if mv.note %}<span class="muted">{{ mv.note }}</span>{% endif %}
       </li>
       {% endfor %}
     </ul>
     {% elif st.kind == 'end' %}
     <p class="muted">No further move.</p>
     {% endif %}
-    {% if st.example and lifecycle.case_persona.actor_id %}
-    <div class="guide-example">
-      <span>Example: <span class="mono">{{ st.example.reference }}</span></span>
-      {{ open_as(lifecycle.case_persona.actor_id, lifecycle.case_persona.label, '/permits/' ~ st.example.id, 'lifecycle-example') }}
-    </div>
-    {% endif %}
+    <details data-testid="lifecycle-more">
+      <summary>More details</summary>
+      <p><span class="pill" data-testid="lifecycle-count">{{ st.count }} {{ 'case' if st.count == 1 else 'cases' }}</span></p>
+      {% for mv in st.moves if mv.note %}
+      <p data-testid="lifecycle-note"><strong>{{ mv.action }}.</strong> {{ mv.note }}</p>
+      {% endfor %}
+      {% if st.example and lifecycle.case_persona.actor_id %}
+      <div class="guide-example">
+        <span>Example: <span class="mono">{{ st.example.reference }}</span></span>
+        {{ open_as(lifecycle.case_persona.actor_id, lifecycle.case_persona.label, '/permits/' ~ st.example.id, 'lifecycle-example') }}
+      </div>
+      {% endif %}
+    </details>
   </article>
   {% endfor %}
 </section>

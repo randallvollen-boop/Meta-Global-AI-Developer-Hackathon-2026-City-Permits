@@ -89,7 +89,7 @@ def test_the_incoming_screens_open_from_more_tools_on_a_phone(
     more.locator("summary").click()
     for path, marker in (
         ("/queue/intake", '[data-testid="intake-table"]'),
-        ("/queue/early-resolution", '[data-testid="early-resolution-kpis"]'),
+        ("/queue/early-resolution", "#early-resolution-groups"),
     ):
         page.goto(f"{server.base_url}{path}", wait_until="load")
         assert page.locator(marker).count() == 1, path

@@ -2,7 +2,13 @@
 {% import "_ui.html" as ui with context %}
 
 {% block content %}
-<div class="page-head"><div><h1>Town map</h1><p class="sub">The fictional town of ACME City, drawn from the simulated parcel, address-point and street layers. No outside tiles. {{ town.simulated_label }}</p></div><div class="actions">{{ ui.general_help_button() }}</div></div>
+<div class="page-head">
+  <div>
+    <h1>Town map</h1>
+    <p class="sub">Search an address and open its parcel.</p>
+  </div>
+  <div class="actions">{{ ui.general_help_button() }}</div>
+</div>
 
 <section class="panel" aria-labelledby="map-search-heading">
   <h2 id="map-search-heading">Search the map</h2>
@@ -40,33 +46,35 @@
     {{ town.svg|safe }}
     <div class="map-card" data-testid="map-card" aria-live="polite" hidden></div>
   </div>
-  <p class="muted">Without JavaScript this is a static map: each parcel is a link to its property record. With JavaScript you can pan, zoom and click a parcel for its card.</p>
-  {{ town.legend|safe }}
 </section>
 
 {% if subject %}
 <section class="panel" aria-labelledby="map-subject-heading" data-testid="map-subject">
   <h2 id="map-subject-heading">Highlighted parcel {{ subject.parcel_number }}</h2>
-  <p>{{ subject.site_address }}, zoning {{ subject.parcel.zoning }}, owner {{ subject.parcel.owner }} (synthetic). <a href="/property/{{ subject.parcel_number }}">Open property record</a></p>
+  <p>{{ subject.site_address }}, zoning {{ subject.parcel.zoning }}, owner {{ subject.parcel.owner }}. <a href="/property/{{ subject.parcel_number }}">Open property record</a></p>
 </section>
 {% endif %}
 
-<section class="panel" aria-labelledby="map-table-heading">
-  <h2 id="map-table-heading">Parcel table</h2>
-  <p class="muted">The same information as the map, as text.</p>
-  <table class="data-table" data-testid="map-parcel-table">
-    <caption class="visually-hidden">Every parcel of the map</caption>
-    <thead><tr><th scope="col">Parcel</th><th scope="col">Site address</th><th scope="col">Zoning</th><th scope="col">Applications</th></tr></thead>
-    <tbody>
-      {% for item in town.parcels %}
-      <tr data-parcel-row="{{ item.number }}"{% if item.role %} class="is-{{ item.role }}"{% endif %}>
-        <th scope="row"><a class="mono" href="{{ item.href }}">{{ item.number }}</a>{% if item.role == 'subject' %} <span class="pill plain">highlighted</span>{% endif %}</th>
-        <td>{{ item.site_address or '-' }}</td>
-        <td>{{ item.zoning or '-' }}</td>
-        <td>{% for app in item.applications %}<a href="/permits/{{ app.application_id }}">{{ app.number }}</a> ({{ app.status|replace('_', ' ') }}){% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+<details data-testid="map-more">
+  <summary>More details</summary>
+  {{ town.legend|safe }}
+  <section class="panel" aria-labelledby="map-table-heading">
+    <h2 id="map-table-heading">Parcel table</h2>
+    <p class="muted">The same information as the map, as text.</p>
+    <table class="data-table" data-testid="map-parcel-table">
+      <caption class="visually-hidden">Every parcel of the map</caption>
+      <thead><tr><th scope="col">Parcel</th><th scope="col">Site address</th><th scope="col">Zoning</th><th scope="col">Applications</th></tr></thead>
+      <tbody>
+        {% for item in town.parcels %}
+        <tr data-parcel-row="{{ item.number }}"{% if item.role %} class="is-{{ item.role }}"{% endif %}>
+          <th scope="row"><a class="mono" href="{{ item.href }}">{{ item.number }}</a>{% if item.role == 'subject' %} <span class="pill plain">highlighted</span>{% endif %}</th>
+          <td>{{ item.site_address or '-' }}</td>
+          <td>{{ item.zoning or '-' }}</td>
+          <td>{% for app in item.applications %}<a href="/permits/{{ app.application_id }}">{{ app.number }}</a> ({{ app.status|replace('_', ' ') }}){% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</details>
 {% endblock %}

@@ -96,7 +96,16 @@ def test_the_planning_overview_names_the_scope_of_its_counts(
 ) -> None:
     select_persona(client, "persona_city_administrator")
     response = client.get("/overview")
-    assert "Sample applications · synthetic" in response.text
+    # Changed deliberately (demo polish, R3): the scope banner is gone.
+    assert 'data-testid="overview-scope"' not in response.text
+    assert "Sample applications · synthetic" not in response.text
+    for label in (
+        "Applications needing attention",
+        "Applications with property details",
+        "Unpublished rule and fee versions",
+        "Simulated source systems",
+    ):
+        assert label in response.text, label
 
 
 def test_the_planning_overview_leads_with_attention_and_the_unpublished_versions(
