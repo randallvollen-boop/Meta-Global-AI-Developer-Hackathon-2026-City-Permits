@@ -127,10 +127,11 @@ def test_the_mobile_bar_and_the_persona_menu_do_not_meet_on_every_persona_home(
     login(actor_id)
     bar = page.locator(".mobile-nav")
     chip = page.locator('[data-testid="persona-trigger"]')
-    # Changed deliberately (persona switcher, S4): the staff frame carries the
-    # switcher in the top bar and the City frame carries none.
+    # Changed deliberately (persona switcher, S4): both frames carry the
+    # switcher in the top bar; only the staff frame has the mobile bar.
     if chip.count():
-        assert not _overlap(_rect(page, ".mobile-nav"), _rect(page, '[data-testid="persona-trigger"]'))
+        if bar.count():
+            assert not _overlap(_rect(page, ".mobile-nav"), _rect(page, '[data-testid="persona-trigger"]'))
         assert_not_covered(page, chip)
     else:
         assert page.locator(".demo-switch").count() == 0
