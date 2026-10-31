@@ -289,7 +289,7 @@ def test_a_synthetic_case_opens_with_a_badge_and_a_synthetic_history(client, set
         factory.dispose()
     client.post("/api/session/select", json={"actor_id": "persona_permit_reviewer"})
     body = client.get(f"/permits/{application_id}").text
-    assert 'data-testid="synthetic-badge"' in body
+    assert 'data-testid="synthetic-badge"' not in body
     assert 'data-testid="synthetic-history-panel"' in body
     assert "Synthetic history" in body
     assert 'data-testid="history-panel"' not in body  # nobody acted, so there is no audit history

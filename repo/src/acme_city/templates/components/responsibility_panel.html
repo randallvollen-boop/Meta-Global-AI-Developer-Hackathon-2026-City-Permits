@@ -9,35 +9,10 @@
    unknown, never as a number of issues. #}
 <section class="panel panel-responsibility" aria-labelledby="responsibility-heading" data-testid="responsibility-panel">
   <h2 id="responsibility-heading">Responsibility</h2>
-  <p class="muted">{{ responsibility.domain_label }} ({{ responsibility.domain_id }})</p>
   <dl class="responsibility-grid">
     <div class="responsibility-item">
       <dt>Owner</dt>
       <dd data-testid="responsibility-owner">{{ responsibility.owner_label }}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Steward</dt>
-      <dd data-testid="responsibility-steward">{{ responsibility.steward_label }}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Source</dt>
-      <dd data-testid="responsibility-source">{{ responsibility.source_label or 'not declared' }}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Change this in</dt>
-      <dd data-testid="responsibility-change-this-in">{{ responsibility.change_this_in or 'not declared' }}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Source last changed</dt>
-      <dd data-testid="responsibility-last-source-update">{% if responsibility.last_source_update %}{{ readable(responsibility.last_source_update) }}{% else %}Freshness information unavailable{% endif %}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Last received or checked</dt>
-      <dd data-testid="responsibility-last-received">{% if responsibility.last_received %}{{ readable(responsibility.last_received) }}{% else %}Freshness information unavailable{% endif %}</dd>
-    </div>
-    <div class="responsibility-item">
-      <dt>Version</dt>
-      <dd data-testid="responsibility-version">{{ responsibility.version if responsibility.version is not none else 'unknown' }}</dd>
     </div>
     <div class="responsibility-item">
       <dt>Open recorded issues</dt>
@@ -55,11 +30,37 @@
     {% endfor %}
   </ul>
   {% endif %}
-  {% if responsibility.queue_label %}
-  <p class="muted" data-testid="responsibility-queue">
-    Queue {{ responsibility.queue }} ({{ responsibility.queue_label }}).
-    First review target: {{ responsibility.response_target }}. This is a configured
-    demonstration target and makes no service promise.
-  </p>
-  {% endif %}
+  <details data-testid="responsibility-more">
+    <summary>More details</summary>
+    <p class="muted">{{ responsibility.domain_label }} ({{ responsibility.domain_id }})</p>
+    <dl class="responsibility-grid">
+      <div class="responsibility-item">
+        <dt>Steward</dt>
+        <dd data-testid="responsibility-steward">{{ responsibility.steward_label }}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Source</dt>
+        <dd data-testid="responsibility-source">{{ responsibility.source_label or 'not declared' }}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Change this in</dt>
+        <dd data-testid="responsibility-change-this-in">{{ responsibility.change_this_in or 'not declared' }}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Source last changed</dt>
+        <dd data-testid="responsibility-last-source-update">{% if responsibility.last_source_update %}{{ readable(responsibility.last_source_update) }}{% else %}Freshness information unavailable{% endif %}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Last received or checked</dt>
+        <dd data-testid="responsibility-last-received">{% if responsibility.last_received %}{{ readable(responsibility.last_received) }}{% else %}Freshness information unavailable{% endif %}</dd>
+      </div>
+      <div class="responsibility-item">
+        <dt>Version</dt>
+        <dd data-testid="responsibility-version">{{ responsibility.version if responsibility.version is not none else 'unknown' }}</dd>
+      </div>
+    </dl>
+    {% if responsibility.queue_label %}
+    <p class="muted" data-testid="responsibility-queue">This is a configured demonstration target and makes no service promise.</p>
+    {% endif %}
+  </details>
 </section>

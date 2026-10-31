@@ -19,7 +19,6 @@
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
       {% if detail.permit_type.icon %}<img class="type-ic" src="{{ detail.permit_type.icon.url }}" alt="" data-testid="permit-type-icon">{% endif %}
       <span class="pill {{ state_tones.get(detail.current.status, 'info') }}" data-testid="case-stage">{{ rv.header.stage }}</span>
-      {% if detail.synthetic %}<span class="badge-synthetic" data-testid="synthetic-badge">synthetic data</span>{% endif %}
     </div>
     <h1 data-testid="case-title">{{ rv.header.project_type }}</h1>
     <p class="sub" data-testid="case-address">{{ rv.header.address or 'Property address not recorded' }}{% if rv.header.submitted_address and rv.header.submitted_address != rv.header.address %} <span class="muted">(submitted as &ldquo;{{ rv.header.submitted_address }}&rdquo;)</span>{% endif %}</p>
@@ -41,31 +40,11 @@
   <div class="actions"><a class="btn ghost" href="{{ rv.header.back_href }}" data-testid="back-link">{{ rv.header.back_label }}</a> {{ ui.detail_link('case-tech', app.application_id, 'Technical details') }} {{ ui.help_button('permit') }}</div>
 </div>
 
-{% if actor and actor.label == 'Applicant' %}
-<section class="card hero-track" data-testid="applicant-tracker">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <span class="ref">{{ app.source_application_number }}</span>
-    <h2>{{ detail.permit_type.label }}</h2>
-    <span class="pill {{ state_tones.get(detail.current.status, 'info') }}" style="margin-left:auto">{{ detail.current.status }}</span>
-  </div>
-  <div class="track">
-    {% for step in detail.tracker %}
-    <div class="tstep {{ step.state }}"><div class="b"></div><div class="l">{{ step.label }}</div><div class="s">{{ 'Done' if step.state == 'done' else 'Now' if step.state == 'current' else ' ' }}</div></div>
-    {% endfor %}
-  </div>
-  <div class="next-box">
-    <span class="ic"><svg aria-hidden="true"><use href="#i-clock"/></svg></span>
-    <div>
-      <b>What happens next</b>
-      <p class="muted" style="margin-top:2px">{{ detail.next_step_text }}. Nothing here approves, prices or issues a permit. A reviewer decides, and a fee is assessed only after a decision.</p>
-    </div>
-  </div>
-</section>
-{% endif %}
-
-<section class="card" data-testid="case-pipeline">
+<details data-testid="case-pipeline">
+  <summary>More details</summary>
+  <section class="card">
   <div class="card-b">
-    <div class="card-h" style="padding:0 0 14px"><h2>Where this case is</h2><span class="right faint" style="font-size:.74rem">Server-recorded state</span></div>
+    <div class="card-h" style="padding:0 0 14px"><h2>Where this case is</h2></div>
     <div class="pipe">
       {% for step in detail.pipeline %}
       <div class="step {{ step.state }}">
@@ -76,7 +55,8 @@
       {% endfor %}
     </div>
   </div>
-</section>
+  </section>
+</details>
 
 
 <div class="ws">
@@ -129,7 +109,7 @@
             <b>{{ rv.ai.total }} suggested field{{ '' if rv.ai.total == 1 else 's' }}</b> &middot; {{ rv.ai.review_text }} &middot; <span class="pill {{ run.mode }}">{{ rv.ai.source_label }}</span>
             &middot; <a href="#fields-block">Values</a> &middot; <a href="#evidence-block">Source evidence</a> &middot; {{ ui.detail_link('muse-run', rv.ai.run_id, 'Run details') }}
           </p>
-          <p class="notice" data-testid="ai-not-review"><svg aria-hidden="true"><use href="#i-spark"/></svg>A successful extraction is not a review. Suggested fields are proposals; nothing here says the application passed its checks.</p>
+          <p class="notice" data-testid="ai-not-review"><svg aria-hidden="true"><use href="#i-spark"/></svg>A successful extraction is not a review.</p>
           {% else %}
           <p class="muted">No Muse extraction is recorded for this case.</p>
           {% endif %}
@@ -145,6 +125,8 @@
             <p class="muted">No suggested field is recorded for the latest run.</p>
             {% endif %}
           </div>
+          <details data-testid="muse-more">
+          <summary>More details</summary>
           <div data-testid="muse-panel">
           <h3>Extraction checks {{ ui.info('extraction_checks') }}</h3>
           {% if run %}
@@ -174,16 +156,16 @@
           {% if run.latency_ms is not none %}<span>Latency <b>{{ run.latency_ms }} ms</b></span>{% endif %}
         </div>
         {% if run.error %}<p class="notice" style="margin-top:12px"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ run.error }}</p>{% endif %}
-        {% if run.mode != 'builtin' %}<p class="notice" style="margin-top:12px"><svg aria-hidden="true"><use href="#i-spark"/></svg>Muse proposes values. A steward accepts or corrects them; the reviewer decides.</p>{% endif %}
 
           {% else %}
                   <div data-testid="muse-empty">
           <h3>No Muse run recorded</h3>
-          <p class="muted">No model run is stored for this case yet, so there is no run to replay. A replay is only a visual playback of a recorded run and never sends a request.</p>
+          <p class="muted">No model run is stored for this case yet.</p>
         </div>
         {% endif %}
 
           </div>
+          </details>
         </section>
 
         <section data-testid="application-checks">
@@ -195,13 +177,9 @@
           {% if detail.evaluation %}Rule checks: {{ detail.evaluation.outcome }}. {% else %}Rule checks: not run yet. {% endif %}
           {{ detail.blockers|length }} blocker{{ '' if detail.blockers|length == 1 else 's' }} still prevent{{ 's' if detail.blockers|length == 1 else '' }} a decision:
           {% for blocker in detail.blockers %}<a href="#application-blockers">{{ blocker.code }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
-          The rule checks do not test these links.
         </p>
         {% endif %}
         <div class="issues">
-          {% for blocker in detail.blockers %}
-          <div class="issue bad"{% if loop.first %} id="application-blockers"{% endif %}><span class="ic"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><div><div class="t">{{ blocker.code }}<span class="pill bad">Blocker</span></div><div class="d">{{ blocker.detail }}</div><div class="fix"><b>Next</b>Resolve this blocker, then run the application checks again.</div></div></div>
-          {% endfor %}
           {% if detail.evaluation %}
             {% for result in detail.evaluation.results %}
             <div class="issue {{ 'ok' if result.status in ('pass', 'passed') else 'warn' if result.status not in ('fail', 'failed', 'violation') else 'bad' }}"><span class="ic"><svg aria-hidden="true"><use href="#i-{{ 'check' if result.status in ('pass', 'passed') else 'alert' }}"/></svg></span><div><div class="t">{{ result.rule_id }}<span class="pill {{ 'ok' if result.status in ('pass', 'passed') else 'warn' }}">{{ result.status }}</span></div><div class="d">{{ result.wording }} Observed: {{ result.observed_value or 'none recorded' }} · Citation {{ result.citation }}</div>{% if result.status not in ('pass', 'passed') %}<div class="fix"><b>Next</b>Reviewer confirms the recorded value against the citation.</div>{% endif %}</div></div>
@@ -242,6 +220,8 @@
         <p class="muted" data-testid="evaluation-empty">This case has not been evaluated yet.</p>
         {% endif %}
         {% if detail.evaluations|length > 1 %}
+        <details data-testid="earlier-evaluations">
+        <summary>More details</summary>
         <h3>Earlier evaluations</h3>
         <table class="data-table" data-testid="evaluation-history">
           <caption class="visually-hidden">Earlier evaluations of this case</caption>
@@ -258,13 +238,14 @@
             {% endfor %}
           </tbody>
         </table>
+        </details>
         {% endif %}
 
         <h3>Blockers</h3>
         {% if detail.blockers %}
-        <ul class="issue-list" data-testid="blockers">
+        <ul class="issue-list" id="application-blockers" data-testid="blockers">
           {% for blocker in detail.blockers %}
-          <li><span class="badge badge-blocking">{{ blocker.code }}</span> {{ blocker.detail }}</li>
+          <li><span class="badge badge-blocking">{{ blocker.code }}</span> <span class="pill bad">Blocker</span> {{ blocker.detail }}</li>
           {% endfor %}
         </ul>
         {% else %}
@@ -274,6 +255,8 @@
           </div>
         </section>
 
+        <details data-testid="agent-more">
+          <summary>More details</summary>
         <section data-testid="agent-section">
           <h2>Agent findings and runs</h2>
       {% if detail.findings %}
@@ -378,6 +361,7 @@
       {% endif %}
 
         </section>
+        </details>
 
         <section data-testid="stage-decision">
           <h2>Decision {{ ui.info('review_decision') }}</h2>
@@ -392,7 +376,6 @@
             <dt>Reason <span class="pill plain">Internal record</span></dt><dd>{{ d.reason or 'none recorded' }}</dd>
             <dt>Conditions</dt><dd>{% if d.conditions %}<ul>{% for c in d.conditions %}<li>{{ c }}</li>{% endfor %}</ul>{% else %}none{% endif %}</dd>
           </dl>
-          <p class="muted">Applicant-facing explanations are written as comments marked &ldquo;Visible to the applicant&rdquo; (Activity tab). The reason above is an internal record.</p>
           {% endif %}
       {% if detail.current_recommendation %}
       {% set rec = detail.current_recommendation %}
@@ -492,15 +475,17 @@
       </div>
       {% endif %}
       {% if detail.recommendations %}
+      <details data-testid="advisory-more">
+        <summary>More details</summary>
       <h3>Advisory recommendation</h3>
       <ul class="issue-list" data-testid="recommendations">
         {% for recommendation in detail.recommendations %}
         <li>
           Proposed outcome {{ recommendation.proposed_outcome }} ({{ recommendation.status }}).
-          A recommendation never supplies the reviewer identity and never decides.
         </li>
         {% endfor %}
       </ul>
+      </details>
       {% endif %}
       {% if detail.current_decision %}
       <div class="value-band value-current" data-testid="value-current">
@@ -517,6 +502,8 @@
       {% else %}
       <p class="muted" data-testid="decision-empty">No reviewer decision is recorded yet.</p>
       {% endif %}
+      <details data-testid="decision-history">
+        <summary>More details</summary>
       <table class="data-table" data-testid="decision-table">
         <caption class="visually-hidden">Recorded reviewer decisions</caption>
         <thead><tr><th scope="col">Decided</th><th scope="col">Who</th><th scope="col">Outcome</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
@@ -534,6 +521,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </details>
 
           {% else %}
           <p class="muted" data-testid="decision-empty">No reviewer decision is recorded yet.</p>
@@ -547,6 +535,8 @@
         </section>
 
         {% if detail.finance.assessment or detail.finance.allocations %}
+        <details data-testid="fee-more">
+          <summary>More details</summary>
         <section data-testid="stage-fee">
           <h2>Fee assessment and payment</h2>
 
@@ -607,9 +597,12 @@
 
 
         </section>
+        </details>
         {% endif %}
 
         {% if detail.issued %}
+        <details data-testid="issuance-more">
+          <summary>More details</summary>
         <section data-testid="stage-permit">
           <h2>Permit issuance</h2>
 
@@ -626,9 +619,12 @@
 
 
         </section>
+        </details>
         {% endif %}
 
         {% if detail.proposed %}
+        <details data-testid="corrections-more">
+          <summary>More details</summary>
         <section data-testid="stage-proposed">
           <h2>Proposed corrections</h2>
 
@@ -649,8 +645,12 @@
 
 
         </section>
+        </details>
         {% else %}
+        <details data-testid="corrections-more">
+          <summary>More details</summary>
         <p class="muted" data-testid="proposed-empty">No correction is proposed for this case.</p>
+        </details>
         {% endif %}
 
         <section class="review-actions" data-testid="review-actions" aria-labelledby="review-actions-heading">
@@ -669,7 +669,6 @@
                 </span>
                 <span class="btn sm primary act-open" aria-label="Start: Record review decision">Start</span>
               </summary>
-              <p class="muted">Approve, approve with conditions or deny. Every outcome needs a rationale; a denial needs a denial reason code.</p>
               <form method="post" action="/ui/actions/permit.decide" class="action-form" data-testid="decision-form-inner">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action_id" value="permit.decide">
@@ -750,7 +749,6 @@
             {% if detail.can_decide and detail.current_decision and detail.current_decision.stale %}
             <details class="action act-card" data-testid="reconfirm-form" data-action-id="permit.reconfirm" data-permitted="true">
               <summary>Reconfirm the decision</summary>
-              <p class="muted">The case changed since the decision was recorded. A reconfirmation is a new decision version against the current evaluation; it keeps the conditions unless you change them.</p>
               <form method="post" action="/ui/actions/permit.reconfirm" class="action-form" data-testid="reconfirm-form-inner">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action_id" value="permit.reconfirm">
@@ -938,7 +936,6 @@
             {% if detail.lifecycle.can_restore %}
             <details class="action act-card" data-testid="restore-form">
               <summary>Restore the application</summary>
-              <p class="muted">The application returns to the status it held. A stale approval or recommendation stays stale.</p>
               <form method="post" action="/ui/actions/permit.case.restore" class="action-form" data-testid="restore-form-inner">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action_id" value="permit.case.restore">
@@ -1010,10 +1007,11 @@
             {% endfor %}
           </tbody>
         </table>
-        <p class="muted">Uploader and content hash are in each document's history.</p>
 
+        <details data-testid="documents-more">
+          <summary>More details</summary>
         <h2>Revisions</h2>
-        <p class="muted" data-testid="revision-note">Results are shown for the current revision only. A result for an earlier revision is history, never current.</p>
+        <p class="muted" data-testid="revision-note">Results are shown for the current revision only.</p>
         <ol class="revisions" data-testid="revision-list">
           {% for rev in rv.revisions|reverse %}
           <li data-testid="revision-row" data-current="{{ 'true' if rev.is_current else 'false' }}">
@@ -1044,9 +1042,12 @@
         </table>
 
         {% include "components/evidence_panel.html" %}
+        </details>
       </div>
 
       <div class="card-b tab-panel" id="panel-people" role="tabpanel" aria-labelledby="tab-people" data-testid="people-panel">
+    <details data-testid="people-more">
+      <summary>More details</summary>
     <section aria-labelledby="identity-heading">
       <h2 id="identity-heading">People</h2>
       <table class="data-table" data-testid="identity-parties">
@@ -1088,12 +1089,15 @@
         </tbody>
       </table>
     </section>
+    </details>
 
 
         {% include "components/property_card.html" %}
       </div>
 
       <div class="card-b tab-panel" id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" data-testid="timeline-panel">
+        <details data-testid="activity-more">
+          <summary>More details</summary>
         <h2>Comments</h2>
         <div data-testid="comments-panel">
         {% if detail.comments %}
@@ -1114,12 +1118,13 @@
         {% if detail.synthetic %}
         <section class="panel" data-testid="synthetic-history-panel">
           <h2>Synthetic history</h2>
-          <p class="muted">This case is generated demonstration data. No person or agent acted on it, so there is no audit history; these dates are the stored facts of the generated record.</p>
+          <p class="muted">No person or agent acted on this case, so there is no audit history.</p>
           <ul>{% for item in detail.synthetic_history %}<li>{{ item.when }}: {{ item.what }}</li>{% endfor %}</ul>
         </section>
         {% else %}
         {% include "components/history_panel.html" %}
         {% endif %}
+        </details>
 
       </div>
     </section>
