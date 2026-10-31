@@ -8,7 +8,7 @@
 <div class="page-head">
   <div>
     <h1>Data issues</h1>
-    <p class="sub">Record matches and source problems that need a person to decide. The matcher and Muse propose; you decide.</p>
+    <p class="sub">The matcher and Muse propose; you decide.</p>
   </div>
   <div class="actions">
     {% if assistant.may_run %}
@@ -39,13 +39,13 @@
   </div>
 </div>
 
-{% if assistant.may_run %}
-<p class="muted" id="assistant-batch-note" data-testid="assistant-batch-note">
-  {% if batch.count %}The batch accepts the {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}
-  the assistant is sure of, and only the ones whose decision you can take back.
-  You confirm the list before anything is accepted.
-  {% else %}{{ batch.empty_note }}{% endif %}
+{% if assistant.may_run and not assistant.awake %}
+<p class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
+  <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ assistant.sleep_note }}
 </p>
+{% endif %}
+{% if assistant.may_run and not batch.count %}
+<p class="muted" id="assistant-batch-note" data-testid="assistant-batch-note">{{ batch.empty_note }}</p>
 {% endif %}
 
 <section class="panel card stw-agreement" aria-labelledby="agreement-heading" data-testid="agreement-panel">
@@ -54,10 +54,7 @@
     {% if agreement.total %}
     <p data-testid="agreement-figure">
       <span class="pill plain nowrap" data-testid="agreement-share">{{ agreement.share }}</span>
-      <span class="muted" data-testid="agreement-note">{{ agreement.note }}</span>
-    </p>
-    <p class="muted" data-testid="agreement-counts">
-      {{ agreement.accepted }} accepted unchanged of {{ agreement.total }} prepared in the last {{ agreement.days }} days.
+      <span class="muted" data-testid="agreement-counts">{{ agreement.accepted }} accepted unchanged of {{ agreement.total }} prepared in the last {{ agreement.days }} days.</span>
     </p>
     {% else %}
     <p class="muted" data-testid="agreement-empty">{{ agreement.note }}</p>
@@ -65,31 +62,9 @@
   </div>
 </section>
 
-{% if assistant.may_run %}
-<p class="muted" data-testid="assistant-prepare-note">
-  The steward assistant prepares the evidence and a proposed decision for the
-  {{ assistant.tasks }} task{{ '' if assistant.tasks == 1 else 's' }} that need
-  review, up to {{ assistant.bound }} per press. You decide every one of them.
-  {% if not assistant.awake %}
-  <span class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
-    <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ assistant.sleep_note }}
-  </span>
-  {% endif %}
-</p>
-{% endif %}
-
 {{ guide_ui.panel(guide) }}
 
 {% if confirmation %}<p class="case-confirmation" role="status" data-testid="queue-confirmation">{{ confirmation }}</p>{% endif %}
-
-<form class="queue-search stw-search" method="get" action="/steward" role="search" data-testid="queue-search">
-  <label for="queue-query">Search records</label>
-  <input type="search" id="queue-query" name="q" value="{{ queue.query }}" placeholder="Name, address, or reference" data-testid="queue-search-input">
-  {% if queue.filter != 'needs_review' %}<input type="hidden" name="filter" value="{{ queue.filter }}">{% endif %}
-  {% if queue.record_type %}<input type="hidden" name="record_type" value="{{ queue.record_type }}">{% endif %}
-  {% if queue.source %}<input type="hidden" name="source" value="{{ queue.source }}">{% endif %}
-  <button type="submit" class="button btn" data-testid="queue-search-submit">Search</button>
-</form>
 
 <nav class="tabs issue-filters" aria-label="Data issue filters" data-testid="issue-filters">
   {% for f in queue.filters %}
@@ -97,8 +72,16 @@
   {% endfor %}
 </nav>
 
-<details class="queue-filters stw-filters" data-testid="queue-filters"{% if queue.record_type or queue.source %} open{% endif %}>
+<details class="queue-filters stw-filters" data-testid="queue-filters"{% if queue.query or queue.record_type or queue.source %} open{% endif %}>
   <summary>More filters</summary>
+  <form class="queue-search stw-search" method="get" action="/steward" role="search" data-testid="queue-search">
+    <label for="queue-query">Search records</label>
+    <input type="search" id="queue-query" name="q" value="{{ queue.query }}" placeholder="Name, address, or reference" data-testid="queue-search-input">
+    {% if queue.filter != 'needs_review' %}<input type="hidden" name="filter" value="{{ queue.filter }}">{% endif %}
+    {% if queue.record_type %}<input type="hidden" name="record_type" value="{{ queue.record_type }}">{% endif %}
+    {% if queue.source %}<input type="hidden" name="source" value="{{ queue.source }}">{% endif %}
+    <button type="submit" class="button btn" data-testid="queue-search-submit">Search</button>
+  </form>
   <form class="queue-filter-form stw-filter-form" method="get" action="/steward" data-testid="queue-filter-form">
     {% if queue.filter != 'needs_review' %}<input type="hidden" name="filter" value="{{ queue.filter }}">{% endif %}
     {% if queue.query %}<input type="hidden" name="q" value="{{ queue.query }}">{% endif %}
@@ -136,14 +119,8 @@
     <caption class="visually-hidden">Data issues: {{ (queue.filters|selectattr('active')|first).label }}</caption>
     <thead>
       <tr>
-        <th scope="col">Issue</th>
+        <th scope="col">Task</th>
         <th scope="col">Record</th>
-        <th scope="col">Affected application</th>
-        <th scope="col">Source</th>
-        <th scope="col">Status</th>
-        {% if queue.show_assignment %}<th scope="col">Assigned</th>{% endif %}
-        {% if queue.show_age %}<th scope="col">Age</th>{% endif %}
-        {% if queue.show_priority %}<th scope="col">Priority</th>{% endif %}
         <th scope="col">Action</th>
       </tr>
     </thead>
@@ -152,16 +129,10 @@
       <tr class="stw-row" data-issue-row data-testid="{{ row.legacy_testid }}" data-kind="{{ row.kind }}" data-status="{{ row.status_key }}" data-link-status="{{ row.link_status }}" data-recommendation="{{ row.recommendation_confidence }}">
         <th scope="row" class="stw-cell stw-cell-task" data-label="Task"><a href="{{ row.href }}" data-testid="issue-link">{{ row.task }}</a>{% if row.recommendation_label %}<span class="pill {{ row.recommendation_pill }} nowrap" data-testid="recommendation-pill">{{ row.recommendation_label }}</span>{% endif %}</th>
         <td class="stw-cell stw-cell-record" data-label="Record">{% if row.record_ref %}{% set parts = row.record_ref.split(':', 1) %}{{ ui.detail_link(parts[0], parts[1], row.record) }}{% else %}{{ row.record }}{% endif %}{% if row.title %}<span class="stw-reason" data-testid="issue-reason">{{ row.title }}</span>{% endif %}{% if row.recommendation_reason %}<span class="stw-reason" data-testid="recommendation-reason">{{ row.recommendation_reason }}</span>{% endif %}</td>
-        <td class="stw-cell" data-label="Affected application">{{ st.affected(row.applications) }}</td>
-        <td class="stw-cell" data-label="Source">{{ row.source }}{% if row.source_reference %}<span class="stw-reference" data-testid="issue-reference">{{ row.source_reference }}</span>{% endif %}</td>
-        <td class="stw-cell nowrap" data-label="Status"><span class="pill {{ 'ok' if row.status_key == 'resolved' else 'warn' if row.status_key == 'awaiting_source' else 'bad' }}" data-testid="issue-status">{{ row.status }}</span></td>
-        {% if queue.show_assignment %}<td class="stw-cell" data-label="Assigned">{{ row.assignee or 'Unassigned' }}</td>{% endif %}
-        {% if queue.show_age %}<td class="stw-cell nowrap" data-label="Age">{{ row.age }}</td>{% endif %}
-        {% if queue.show_priority %}<td class="stw-cell nowrap" data-label="Priority">{{ row.priority }}</td>{% endif %}
-        <td class="stw-cell stw-cell-action"><a class="button button-quiet btn sm" href="{{ row.href }}" data-testid="issue-action">{{ row.action_label }}</a></td>
+        <td class="stw-cell stw-cell-action" data-label="Action"><a class="button button-quiet btn sm" href="{{ row.href }}" data-testid="issue-action">{{ row.action_label }}</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="{{ 6 + (1 if queue.show_assignment else 0) + (1 if queue.show_age else 0) + (1 if queue.show_priority else 0) }}" class="muted" data-testid="queue-empty">
+      <tr><td colspan="3" class="muted" data-testid="queue-empty">
         {% if queue.query or queue.record_type or queue.source %}No task matches the search and the filters.
         {% elif queue.filter == 'needs_review' %}Nothing needs review. Compare a source record below to start a match.
         {% elif queue.filter == 'assigned_to_me' %}Nothing is assigned to you.
@@ -174,19 +145,50 @@
   {{ st.pager(queue.paging) }}
 </section>
 
-<section class="panel card" aria-labelledby="by-record-heading" data-testid="work-by-source-record">
-  <div class="card-h"><h2 id="by-record-heading">Work from a source record</h2></div>
-  <div class="card-b act">
-    <p class="muted">Know the source record already? Compare it with the master records, or record a decision on it directly. Opening an issue above shows the evidence first, with the values prefilled.</p>
-    <p class="muted req-legend">* Required</p>
-    {% for item in actions if not item.application_id %}
-      {{ forms.action_form(item, csrf_token, '/steward') }}
-    {% endfor %}
-    {% if denied_action_explanations %}
-    <ul class="denied-list" data-testid="denied-actions">
-      {% for denied in denied_action_explanations %}<li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>{% endfor %}
-    </ul>
-    {% endif %}
-  </div>
-</section>
+{% if queue.rows %}
+<details class="stw-disclosure" data-testid="queue-details">
+  <summary>More details</summary>
+  <table class="data-table issue-table stw-queue-table" data-testid="issue-details-table">
+    <caption class="visually-hidden">The other facts of every task</caption>
+    <thead>
+      <tr>
+        <th scope="col">Task</th>
+        <th scope="col">Affected application</th>
+        <th scope="col">Source</th>
+        <th scope="col">Status</th>
+        {% if queue.show_assignment %}<th scope="col">Assigned</th>{% endif %}
+        {% if queue.show_age %}<th scope="col">Age</th>{% endif %}
+        {% if queue.show_priority %}<th scope="col">Priority</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in queue.rows %}
+      <tr class="stw-row" data-issue-detail-row>
+        <th scope="row" class="stw-cell stw-cell-task" data-label="Task">{{ row.task }}</th>
+        <td class="stw-cell" data-label="Affected application">{{ st.affected(row.applications) }}</td>
+        <td class="stw-cell" data-label="Source">{{ row.source }}{% if row.source_reference %}<span class="stw-reference" data-testid="issue-reference">{{ row.source_reference }}</span>{% endif %}</td>
+        <td class="stw-cell nowrap" data-label="Status"><span class="pill {{ 'ok' if row.status_key == 'resolved' else 'warn' if row.status_key == 'awaiting_source' else 'bad' }}" data-testid="issue-status">{{ row.status }}</span></td>
+        {% if queue.show_assignment %}<td class="stw-cell" data-label="Assigned">{{ row.assignee or 'Unassigned' }}</td>{% endif %}
+        {% if queue.show_age %}<td class="stw-cell nowrap" data-label="Age">{{ row.age }}</td>{% endif %}
+        {% if queue.show_priority %}<td class="stw-cell nowrap" data-label="Priority">{{ row.priority }}</td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endif %}
+
+<details class="stw-disclosure" data-testid="work-by-source-record">
+  <summary>Work from a source record</summary>
+  <p class="muted">Know the source record already? Compare it with the master records, or record the decision here.</p>
+  <p class="muted req-legend">* Required</p>
+  {% for item in actions if not item.application_id %}
+    {{ forms.action_form(item, csrf_token, '/steward') }}
+  {% endfor %}
+  {% if denied_action_explanations %}
+  <ul class="denied-list" data-testid="denied-actions">
+    {% for denied in denied_action_explanations %}<li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</details>
 {% endblock %}

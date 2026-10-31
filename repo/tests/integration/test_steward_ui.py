@@ -459,8 +459,11 @@ def test_queue_columns_and_filters_use_real_counts(client: TestClient, environme
     body = client.get("/steward").text
     assert counts(body) == {"needs_review": 5, "assigned_to_me": 1, "awaiting_source": 1, "resolved": 1}
     heads = [re.sub(r"<[^>]+>", "", h).strip() for h in re.findall(r'<th scope="col">(.*?)</th>', body.split('data-testid="issue-table"')[1].split("</thead>")[0], re.S)]
-    assert heads[:5] == ["Issue", "Record", "Affected application", "Source", "Status"]
-    assert "Assigned" in heads  # an assignment exists, so the column appears
+    assert heads == ["Task", "Record", "Action"]
+    # The other facts of a task sit behind the disclosure of the queue.
+    detail_heads = [re.sub(r"<[^>]+>", "", h).strip() for h in re.findall(r'<th scope="col">(.*?)</th>', body.split('data-testid="issue-details-table"')[1].split("</thead>")[0], re.S)]
+    assert detail_heads[:4] == ["Task", "Affected application", "Source", "Status"]
+    assert "Assigned" in detail_heads  # an assignment exists, so the column appears
     assert len(re.findall(r"data-issue-row", body)) == 5
     mine = client.get("/steward?filter=assigned_to_me").text
     assert len(re.findall(r"data-issue-row", mine)) == 1 and "Halcyon trading name" in mine

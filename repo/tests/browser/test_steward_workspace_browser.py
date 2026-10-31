@@ -86,6 +86,8 @@ def test_the_search_reads_the_address_and_the_queue_answers(
     """The search travels in the address, and the queue answers with the rows."""
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")
+    # The search sits behind the disclosure of the filters.
+    page.locator('[data-testid="queue-filters"] > summary').click()
     search = page.locator('[data-testid="queue-search"]')
     assert search.count() == 1
     search.locator('input[name="q"]').fill("notarecord")
@@ -526,6 +528,9 @@ def test_the_queue_is_searched_and_opened_with_the_keyboard(
     """The queue is searched and a task is opened without a mouse."""
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="load")
+    # The search sits behind the disclosure of the filters.
+    page.locator('[data-testid="queue-filters"] > summary').focus()
+    page.keyboard.press("Enter")
     search = page.locator('[data-testid="queue-search-input"]')
     search.focus()
     search.fill("ERP-BL-00413")

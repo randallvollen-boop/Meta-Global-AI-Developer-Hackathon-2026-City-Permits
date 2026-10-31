@@ -49,6 +49,11 @@ LINKED_PAYLOAD = {
 }
 
 
+def open_details(page) -> None:
+    """Open the disclosure of the screen."""
+    page.locator('[data-testid="automation-more"] > summary').click()
+
+
 def apply_one_link(server: BrowserServer) -> None:
     """Prepare the demonstration: one link the automatic linking applied."""
     factory = SessionFactory(server.settings.database_url)
@@ -103,6 +108,7 @@ def test_the_settings_screen_says_the_automation_is_paused(
     status = page.locator('[data-testid="automation-status-line"]')
     assert status.count() == 1
     assert status.inner_text().strip() == "Automatic linking is paused"
+    open_details(page)
     assert (
         page.locator('[data-testid="automation-last-run"]').inner_text().strip()
         == "No run has completed yet."
@@ -119,6 +125,7 @@ def test_the_preview_reads_the_recorded_scores_of_the_accepted_records(
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward/automation", wait_until="load")
     assert page.locator('[data-testid="automation-preview"]').count() == 0
+    open_details(page)
     page.locator('[data-testid="automation-preview-button"]').click()
     page.wait_for_url("**/steward/automation?preview=1")
     table = page.locator('[data-testid="automation-preview"]')
@@ -143,6 +150,7 @@ def test_the_settings_screen_offers_only_the_mode_that_links(
     """
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward/automation", wait_until="load")
+    open_details(page)
     mode = page.locator('[data-testid="automation-mode"]')
     assert mode.count() == 1
     options = mode.locator("option")
@@ -158,6 +166,7 @@ def test_activating_a_policy_records_the_reason_and_the_version(
     """The steward activates a policy with a reason, and the page shows it."""
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward/automation", wait_until="load")
+    open_details(page)
     form = page.locator('[data-testid="automation-activate-form"]')
     form.locator('[data-testid="automation-mode"]').select_option("active")
     form.locator('[data-testid="automation-scope-applicant_profiles"]').check()
@@ -174,6 +183,7 @@ def test_activating_a_policy_records_the_reason_and_the_version(
         "() => document.querySelector('[data-testid=feedback-message]') !== null"
     )
     page.reload(wait_until="load")
+    open_details(page)
     policy = page.locator('[data-testid="automation-policy"]').inner_text()
     assert "Version 1" in policy
     assert "Apply eligible links" in policy
@@ -190,6 +200,7 @@ def test_pausing_the_automation_records_a_paused_policy(
     """The steward pauses the automation with a reason, and the page shows it."""
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward/automation", wait_until="load")
+    open_details(page)
     form = page.locator('[data-testid="automation-pause-form"]')
     form.locator('[data-testid="automation-pause-reason"]').fill(PAUSE_REASON)
     with page.expect_response(
@@ -204,6 +215,7 @@ def test_pausing_the_automation_records_a_paused_policy(
         "() => document.querySelector('[data-testid=feedback-message]') !== null"
     )
     page.reload(wait_until="load")
+    open_details(page)
     policy = page.locator('[data-testid="automation-policy"]').inner_text()
     assert "Version 1" in policy
     assert "Paused" in policy
@@ -232,6 +244,7 @@ def test_the_settings_screen_fits_a_phone(
     assert page.viewport_size == {"width": 390, "height": 844}
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator("main h1").first)
+    open_details(page)
     assert_not_covered(page, page.locator('[data-testid="automation-activate"]'))
     assert_not_covered(page, page.locator('[data-testid="automation-pause"]'))
     assert page.recorded_errors == []

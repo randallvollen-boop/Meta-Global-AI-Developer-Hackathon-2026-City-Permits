@@ -269,8 +269,19 @@ def submit_action(page, server: BrowserServer):
     def perform(action_id: str, fields: dict[str, str] | None = None) -> str:
         details = page.locator(f'details[data-action-id="{action_id}"]').first
         form = details.locator("form.action-form")
-        if not form.is_visible():
-            details.locator("summary").click()
+        button = form.locator('button[type="submit"]')
+        # The control may sit inside a disclosure that is closed, and the page
+        # is read again after an action, so the disclosures above it are
+        # opened until the button of the form is really on the screen.
+        for _ in range(20):
+            if button.is_visible():
+                break
+            for ancestor in details.locator("xpath=ancestor::details[not(@open)]").all():
+                ancestor.locator("summary").first.click()
+            if details.get_attribute("open") is None:
+                details.locator("summary").first.click()
+            page.wait_for_timeout(100)
+        assert button.is_visible(), action_id
         for name, value in (fields or {}).items():
             control = form.locator(f'[name="{name}"]')
             if control.evaluate("element => element.type") == "hidden":
@@ -283,7 +294,7 @@ def submit_action(page, server: BrowserServer):
             lambda response: "/ui/actions/" in response.url
             and response.request.method == "POST"
         ) as answered:
-            form.locator('button[type="submit"]').click()
+            button.click()
         response = answered.value
         payload = response.json()
         page.wait_for_function(

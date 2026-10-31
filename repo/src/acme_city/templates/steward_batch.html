@@ -7,23 +7,14 @@
 <div class="page-head">
   <div>
     <h1>Accept the high-confidence recommendations</h1>
-    <p class="sub">The batch of the Data Steward. Nothing is accepted until you confirm the list.</p>
+    <p class="sub">Nothing is accepted until you confirm this list.</p>
   </div>
   <div class="actions">{{ ui.help_button('steward') }}</div>
 </div>
 
-<section class="panel stw-assistant" aria-labelledby="batch-heading" data-testid="batch-panel">
-  <div class="card-h">
-    <h2 id="batch-heading">The list of this batch</h2>
-  </div>
+<section class="panel stw-assistant" aria-label="The list of this batch" data-testid="batch-panel">
   <div class="card-b">
-    <p class="muted" data-testid="batch-note">
-      These are the {{ batch.count }} recommendation{{ '' if batch.count == 1 else 's' }}
-      the batch would accept. The assistant is sure of every one of them, and
-      each one is a decision you can take back. Nothing is accepted until you
-      confirm the list below. An item that changed since this list was made is
-      skipped and named, never accepted silently.
-    </p>
+    <p class="muted" data-testid="batch-note">Changed items are skipped and named.</p>
     {% if batch.recommendations %}
     <ol class="plain-list" data-testid="batch-items">
       {% for item in batch.recommendations %}
