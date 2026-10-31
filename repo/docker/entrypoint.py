@@ -7,6 +7,8 @@ Environment:
     ACME_FORWARDED_ALLOW_IPS  Proxy addresses uvicorn trusts (default 127.0.0.1).
     ACME_DEMO_SEED_ON_START "1" rebuilds the fictional demonstration data before
                             serving (demo image only; refused in production mode).
+    ACME_DEMO_GENERATED_COUNT  How many sample intake cases the seed adds (default 0,
+                            none).
     ACME_SEED_PORT          Loopback port of the short-lived server the seeding
                             walkthrough uses (default 18266).
 
@@ -17,9 +19,11 @@ With seeding, the demonstration database file is deleted first and rebuilt (the
 reset step creates, migrates and marks it); the upgrade to head then runs as a
 check.  Seeding prepares the same state as the local demonstration: the
 "ready-for-review" case, the synthetic year (seed 20261028, 600 permits) and the
-steward demo.  Each start therefore begins from one labelled fictional dataset.
-A failed step stops the start with a non-zero exit, so the host keeps the
-previous deploy running.
+steward demo.  A fourth step adds the sample intake cases when
+ACME_DEMO_GENERATED_COUNT asks for them; without it the seed is exactly the
+three steps it always was.  Each start therefore begins from one labelled
+fictional dataset.  A failed step stops the start with a non-zero exit, so the
+host keeps the previous deploy running.
 """
 
 from __future__ import annotations
@@ -35,6 +39,8 @@ SCRIPTS = APP_ROOT / "scripts"
 DEFAULT_DATABASE = "sqlite:////app/var/acme_city.db"
 SYNTHETIC_SEED = "20261028"
 SYNTHETIC_COUNT = "600"
+#: The seed the sample intake cases are built from.
+GENERATED_SEED = "20261031"
 _TRUE = frozenset({"1", "true", "yes", "on"})
 
 #: Settings the seeding steps must not inherit: they start a short-lived server on
@@ -66,10 +72,38 @@ def seed_requested(environ: dict[str, str] | None = None) -> bool:
     return env.get("ACME_DEMO_SEED_ON_START", "").strip().lower() in _TRUE
 
 
-def seed_commands(database: str, seed_port: str) -> list[list[str]]:
-    """Return the three seeding commands, in order."""
+def generated_count(environ: dict[str, str] | None = None) -> int:
+    """Return how many sample intake cases the seed adds.
+
+    The demonstration asks for none unless ``ACME_DEMO_GENERATED_COUNT`` says
+    so, so the seed stays the three commands it always was.
+    """
+    env = os.environ if environ is None else environ
+    raw = env.get("ACME_DEMO_GENERATED_COUNT", "").strip()
+    if not raw:
+        return 0
+    try:
+        count = int(raw)
+    except ValueError as error:
+        raise ValueError(
+            "ACME_DEMO_GENERATED_COUNT must be a whole number"
+        ) from error
+    if count < 0:
+        raise ValueError("ACME_DEMO_GENERATED_COUNT cannot be negative")
+    return count
+
+
+def seed_commands(
+    database: str, seed_port: str, generated: int = 0
+) -> list[list[str]]:
+    """Return the seeding commands, in order.
+
+    The first three commands prepare the demonstration as it always was.  A
+    fourth command adds the sample intake cases when the demonstration asks
+    for them; it only adds them, so the steps before it keep their work.
+    """
     python = sys.executable
-    return [
+    commands = [
         [
             python, str(SCRIPTS / "prepare_user_test.py"),
             "--mode", "ready-for-review",
@@ -89,6 +123,18 @@ def seed_commands(database: str, seed_port: str) -> list[list[str]]:
             "--confirm-fictional-demo",
         ],
     ]
+    if generated:
+        commands.append(
+            [
+                python, str(SCRIPTS / "reset_demo.py"),
+                "--database", database,
+                "--generated", str(generated),
+                "--generated-seed", GENERATED_SEED,
+                "--add-generated",
+                "--confirm-fictional-demo",
+            ]
+        )
+    return commands
 
 
 def clear_database(database: str) -> None:
@@ -116,11 +162,19 @@ def seed_demo(environ: dict[str, str] | None = None) -> int:
         print("entrypoint: this image has no demonstration scripts; use the demo target", file=sys.stderr)
         return 2
     database = env.setdefault("ACME_DATABASE_URL", DEFAULT_DATABASE)
+    try:
+        generated = generated_count(env)
+    except ValueError as error:
+        print(f"entrypoint: {error}", file=sys.stderr)
+        return 2
     clear_database(database)
     for name in _SEED_ENV_UNSET:
         env.pop(name, None)
     env.update(_SEED_ENV_OVERRIDES)
-    for command in seed_commands(database, env.get("ACME_SEED_PORT", "18266")):
+    commands = seed_commands(
+        database, env.get("ACME_SEED_PORT", "18266"), generated
+    )
+    for command in commands:
         print(f"entrypoint: seeding step {Path(command[1]).name}", flush=True)
         result = subprocess.run(command, cwd=APP_ROOT, env=env, check=False)
         if result.returncode != 0:
