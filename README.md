@@ -50,7 +50,7 @@ The git history starts on October 27, 2026, with a baseline commit of the overni
 2. Pick a persona with the demo switcher. All five are available.
 3. As Applicant, start a fence or deck application, save it, submit it and open the tracker.
 4. As Agent Operator, open Agents, wake the agents, run the intake agent on a waiting case and then the adjudication agent, and wake the steward assistant.
-5. As Data Steward, open Data issues, press **Prepare recommendations** and read the evidence behind each proposal.
+5. As Data Steward, open Data issues, press **Prepare recommendations**, read the evidence behind each proposal, and accept one with **Accept recommendation**.
 6. As Permit Reviewer, open a case in review, check the facts, and follow the separate decision and issuance steps.
 7. As City Administrator, open the overview, the operations screens and the audit trail, and try a what-if policy scenario.
 
