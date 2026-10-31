@@ -14,8 +14,8 @@
       "ingested_at": "2026-09-21T08:00:00Z",
       "payload": {
         "party_ref": "party_applicant_1",
-        "display_name": "Tamsin Aldous",
-        "contact_email": "t.aldous@example.invalid",
+        "display_name": "Demo Applicant",
+        "contact_email": "demo.applicant@example.invalid",
         "contact_phone": "+1-555-0141",
         "preferred_contact": "email"
       },
@@ -191,7 +191,7 @@
       "payload": {
         "application_number": "SYN-APP-005",
         "permit_type": "com_ti",
-        "display_name": "Tamsin Aldous",
+        "display_name": "Demo Applicant",
         "project_description": "Interior tenant improvement for a small studio space.",
         "valuation": 31000.0,
         "valuation_cents": 3100000,
@@ -199,7 +199,7 @@
         "submitted_site_text": "12 Marrow Creek Road, ACME City",
         "submitted_parcel": "ACME-P-1002",
         "contractor_license": "CR-2026-00188",
-        "contact_email": "t.aldous@example.invalid"
+        "contact_email": "demo.applicant@example.invalid"
       },
       "record_status": "accepted",
       "scenario_id": "D05"
@@ -291,7 +291,7 @@
       "payload": {
         "application_number": "SYN-APP-009",
         "permit_type": "deck_fence",
-        "display_name": "Tamsin Aldous",
+        "display_name": "Demo Applicant",
         "project_description": "Rear deck addition.",
         "structure_kind": "deck",
         "setback_ft": "twenty",
@@ -316,7 +316,7 @@
       "payload": {
         "application_number": "SYN-APP-010",
         "permit_type": "deck_fence",
-        "display_name": "Tamsin Aldous",
+        "display_name": "Demo Applicant",
         "project_description": "Rear deck addition.",
         "structure_kind": "deck",
         "setback_ft": "nan",

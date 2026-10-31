@@ -247,7 +247,7 @@ def rename_the_target_of_the_applied_link(settings: Settings, application_id: st
             assert crosswalk is not None
             party = session.get(registry.Party, crosswalk.entity_id)
             assert party is not None
-            party.display_name = "Tamsin Aldous-Nkemelu"
+            party.display_name = "Demo Applicant Renamed"
             party.version += 1
     finally:
         factory.dispose()

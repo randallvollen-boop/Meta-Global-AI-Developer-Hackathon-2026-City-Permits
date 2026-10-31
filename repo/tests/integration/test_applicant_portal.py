@@ -72,8 +72,8 @@ def token(client: TestClient, path: str) -> str:
 
 
 FENCE_FIELDS = {
-    "applicant_name": "Tamsin Aldous",
-    "applicant_email": "t.aldous@example.invalid",
+    "applicant_name": "Demo Applicant",
+    "applicant_email": "demo.applicant@example.invalid",
     "applicant_phone": "555-0100",
     "address_text": "400 Lantren Row",
     "height_ft": "4",
@@ -559,7 +559,7 @@ def test_an_incomplete_submit_re_renders_with_a_summary_field_errors_and_kept_en
     assert 'aria-invalid="true" aria-describedby="err-f-height_ft"' in page
     assert re.search(r'id="err-f-certification_accepted"[^>]*>.*?Check the certification', page, flags=re.S)
     # what was entered is preserved: values, the stored upload and the sent-separately tick
-    assert 'value="Tamsin Aldous"' in page and 'value="cedar"' in page
+    assert 'value="Demo Applicant"' in page and 'value="cedar"' in page
     assert re.search(r'name="sent_separately__material_spec"[^>]*checked', page)
     assert "sketch.txt" in page and 'data-doc-type="site_plan" data-added="true"' in page
     assert "Nothing has been submitted" in page

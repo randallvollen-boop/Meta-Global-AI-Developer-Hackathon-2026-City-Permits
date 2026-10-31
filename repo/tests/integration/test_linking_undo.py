@@ -34,8 +34,8 @@ from acme_city.ui.router import router as ui_router
 
 PAYLOAD = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous+autolink@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant+autolink@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }

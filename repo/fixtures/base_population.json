@@ -6,8 +6,8 @@
     {
       "party_id": "party_applicant_1",
       "party_type": "person",
-      "display_name": "Tamsin Aldous",
-      "legal_name": "Tamsin Aldous",
+      "display_name": "Demo Applicant",
+      "legal_name": "Demo Applicant",
       "status": "active",
       "scenario_id": "D05"
     },
@@ -115,7 +115,7 @@
       "contact_id": "contact_applicant_1_email",
       "party_id": "party_applicant_1",
       "contact_type": "email",
-      "value": "t.aldous@example.invalid",
+      "value": "demo.applicant@example.invalid",
       "verification_state": "verified",
       "source_record_ref": "permitting:PER-AP-0001",
       "valid_from": "2026-01-05T00:00:00Z",
@@ -516,7 +516,7 @@
         "submitted_parcel": "ACME-P-1002",
         "contractor_license": "CR-2026-00188",
         "organization_name": null,
-        "contact_email": "t.aldous@example.invalid",
+        "contact_email": "demo.applicant@example.invalid",
         "applicant_role": "individual"
       },
       "scenario_id": "D05"
@@ -1119,7 +1119,7 @@
         "submitted_parcel": "ACME-P-1002",
         "contractor_license": "CR-2026-00188",
         "organization_name": null,
-        "contact_email": "t.aldous@example.invalid",
+        "contact_email": "demo.applicant@example.invalid",
         "applicant_role": "individual",
         "applicant_role_snapshot": "individual"
       },

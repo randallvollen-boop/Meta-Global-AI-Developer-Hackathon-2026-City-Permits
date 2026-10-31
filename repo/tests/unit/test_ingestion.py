@@ -24,8 +24,8 @@ from acme_city.persistence.session import (
 
 APPLICANT_PROFILE = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }
@@ -136,7 +136,7 @@ def test_a_changed_version_creates_a_new_immutable_snapshot(seeded: Settings) ->
             session.flush()
             service = IngestionService(session)
             payload = dict(APPLICANT_PROFILE)
-            payload["contact_email"] = "t.aldous+updated@example.invalid"
+            payload["contact_email"] = "demo.applicant+updated@example.invalid"
             result = service.ingest(
                 command(
                     "permitting",
@@ -163,8 +163,8 @@ def test_a_changed_version_creates_a_new_immutable_snapshot(seeded: Settings) ->
                 .order_by(source.SourceSnapshot.source_record_version)
             ).scalars().all()
             assert [row.source_record_version for row in snapshots] == ["3", "4"]
-            assert snapshots[0].raw_payload["contact_email"] == "t.aldous@example.invalid"
-            assert snapshots[1].raw_payload["contact_email"] == "t.aldous+updated@example.invalid"
+            assert snapshots[0].raw_payload["contact_email"] == "demo.applicant@example.invalid"
+            assert snapshots[1].raw_payload["contact_email"] == "demo.applicant+updated@example.invalid"
             jobs = session.execute(
                 select(registry_automation.RegistryAutomationJob)
             ).scalars().all()

@@ -438,7 +438,7 @@ def observe_d05(session: Session) -> ScenarioObservation:
     ).scalar_one()
     first_value = contact.value
     first_version = contact.version
-    contact.value = "t.aldous.new@example.invalid"
+    contact.value = "demo.applicant.new@example.invalid"
     contact.version = contact.version + 1
     session.flush()
     service = PermitService(session)
@@ -594,8 +594,8 @@ def observe_d08(session: Session) -> ScenarioObservation:
     delegate = context_for(session, "service_delegate_steward")
     payload = {
         "party_ref": "party_applicant_1",
-        "display_name": "Tamsin Aldous",
-        "contact_email": "t.aldous@example.invalid",
+        "display_name": "Demo Applicant",
+        "contact_email": "demo.applicant@example.invalid",
         "contact_phone": "+1-555-0141",
         "preferred_contact": "email",
     }

@@ -42,8 +42,8 @@ UNDO_REASON = "The record named the wrong master record."
 #: The payload of the source version the demonstration links.
 LINKED_PAYLOAD = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous+autolink@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant+autolink@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }
@@ -261,7 +261,7 @@ def test_the_applied_link_waits_in_the_queue(page, server: BrowserServer, login)
     row = page.locator('[data-issue-row][data-testid="automatic-link"]')
     assert row.count() == 1
     assert "PER-AP-0001" in row.inner_text()
-    assert "Tamsin Aldous" in row.inner_text()
+    assert "Demo Applicant" in row.inner_text()
     assert page.recorded_errors == []
 
 

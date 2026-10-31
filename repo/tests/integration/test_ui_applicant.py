@@ -16,13 +16,13 @@ from acme_city.applicant_portal import content, permits_view
 from acme_city.core.config import Settings
 from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
-from acme_city.persistence.models import gis, permit
+from acme_city.persistence.models import gis, permit, registry
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
 
 APPLICANT = "persona_applicant"
-APPLICANT_NAME = "Tamsin Aldous"  # the seeded applicant party, party_applicant_1
+APPLICANT_NAME = "Demo Applicant"  # the seeded applicant party, party_applicant_1
 INTERNAL_NOTE = "ZZ-INTERNAL-NOTE-OVERPAID-FEE-WAIVER"
 INTERNAL_FINDING = "ZZ-INTERNAL-FINDING-DUPLICATE-OF-OTHER-CASE"
 VISIBLE_NOTE = "Please send a clearer site sketch showing the fence line."
@@ -81,7 +81,7 @@ def token(client: TestClient, path: str = "/apply/deck_fence") -> str:
 
 FENCE = {
     "applicant_name": APPLICANT_NAME,
-    "applicant_email": "t.aldous@example.invalid",
+    "applicant_email": "demo.applicant@example.invalid",
     "address_text": "400 Lantren Row",
     "structure_kind": "fence",
     "height_ft": "4",
@@ -93,7 +93,7 @@ FENCE = {
 }
 DECK = {
     "applicant_name": APPLICANT_NAME,
-    "applicant_email": "t.aldous@example.invalid",
+    "applicant_email": "demo.applicant@example.invalid",
     "address_text": "400 Lantren Row",
     "structure_kind": "deck",
     "deck_height_ft": "3",
@@ -224,6 +224,20 @@ def test_footer_pages_exist_and_the_city_site_keeps_its_own_nav(client) -> None:
     page = client.get("/city/").text
     assert 'data-testid="applicant-nav"' not in page and 'data-testid="nav-permits"' in page
     assert f'data-testid="applicant-name">{APPLICANT_NAME}<' in page  # the account shows on the City site too
+
+
+def test_the_header_shows_the_generic_applicant_name(client, environment) -> None:
+    """The seeded applicant is the generic "Demo Applicant", and the header says so."""
+    choose(client)
+    page = client.get("/apply/track").text
+    assert 'data-testid="applicant-name">Demo Applicant<' in page
+
+    def read(session):
+        party = session.get(registry.Party, "party_applicant_1")
+        assert party is not None
+        return party.display_name
+
+    assert with_session(environment, read) == "Demo Applicant"
 
 
 # --------------------------------------------------------------- U1 and U2

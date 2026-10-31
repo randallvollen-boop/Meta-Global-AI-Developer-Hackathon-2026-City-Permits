@@ -110,7 +110,7 @@ def test_the_form_placement_prompts_in_its_own_context_and_keeps_the_form(browse
     try:
         page = sign_in(context, server, "persona_applicant")
         page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
-        page.locator("#f-applicant_name").fill("Tamsin Aldous")
+        page.locator("#f-applicant_name").fill("Demo Applicant")
         current = page
         for number, question in enumerate(NONSENSE, start=1):
             current.locator('[data-testid="help-question"]').fill(question)
@@ -126,7 +126,7 @@ def test_the_form_placement_prompts_in_its_own_context_and_keeps_the_form(browse
         result = asked.value
         result.wait_for_load_state("domcontentloaded")
         assert result.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
-        assert page.locator("#f-applicant_name").input_value() == "Tamsin Aldous"  # the form is untouched
+        assert page.locator("#f-applicant_name").input_value() == "Demo Applicant"  # the form is untouched
     finally:
         context.close()
 

@@ -33,8 +33,8 @@ from acme_city.registry.router import router as registry_router
 
 PROFILE = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }
@@ -134,7 +134,7 @@ def test_at05_a_changed_version_is_preserved_as_a_second_snapshot(
         client,
         "PER-AP-AT05-0002",
         "2",
-        {**PROFILE, "contact_email": "t.aldous+second@example.invalid"},
+        {**PROFILE, "contact_email": "demo.applicant+second@example.invalid"},
     )
     assert changed["accepted"] == 1
     snapshots = client.get(
@@ -143,8 +143,8 @@ def test_at05_a_changed_version_is_preserved_as_a_second_snapshot(
     ).json()["snapshots"]
     assert len(snapshots) == 2
     assert {row["source_record_version"] for row in snapshots} == {"1", "2"}
-    assert snapshots[0]["raw_payload"]["contact_email"] == "t.aldous@example.invalid"
-    assert snapshots[1]["raw_payload"]["contact_email"] == "t.aldous+second@example.invalid"
+    assert snapshots[0]["raw_payload"]["contact_email"] == "demo.applicant@example.invalid"
+    assert snapshots[1]["raw_payload"]["contact_email"] == "demo.applicant+second@example.invalid"
 
 
 def test_at05_a_late_version_is_history_only(client: TestClient) -> None:

@@ -107,7 +107,7 @@ def test_the_application_form_keeps_its_fields_when_the_help_form_is_used(
     try:
         page = sign_in(context, server, "persona_applicant")
         page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
-        page.locator("#f-applicant_name").fill("Tamsin Aldous")
+        page.locator("#f-applicant_name").fill("Demo Applicant")
         page.locator("#f-height_ft").fill("4")
         page.locator('[data-testid="help-question"]').fill(FENCE_QUESTION)
         with context.expect_page() as opened:
@@ -117,7 +117,7 @@ def test_the_application_form_keeps_its_fields_when_the_help_form_is_used(
         assert "/apply/help/panel" in answer.url
         assert answer.locator('[data-testid="help-quote"]').count() >= 1
         # The form the applicant typed in still holds what was typed.
-        assert page.locator("#f-applicant_name").input_value() == "Tamsin Aldous"
+        assert page.locator("#f-applicant_name").input_value() == "Demo Applicant"
         assert page.locator("#f-height_ft").input_value() == "4"
     finally:
         context.close()

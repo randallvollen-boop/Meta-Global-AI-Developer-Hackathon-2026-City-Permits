@@ -75,7 +75,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Clear a case for review",
         "Data Steward",
         "/steward",
-        "In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a decision note and submit it. Then open the Check the person identity issue from the ACME ePermit Portal source, press Start under Confirm link to Tamsin Aldous, write a decision note and submit it.",
+        "In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a decision note and submit it. Then open the Check the person identity issue from the ACME ePermit Portal source, press Start under Confirm link to Demo Applicant, write a decision note and submit it.",
         "The assistant only proposes: Accept recommendation and Accept all high-confidence (N), which shows the exact list first, record the decision in your name. Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.",
     ),
     Step(

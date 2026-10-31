@@ -23,8 +23,8 @@ from acme_city.persistence.session import (
 
 PROFILE_PAYLOAD = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }
@@ -149,7 +149,7 @@ def test_an_authorized_write_is_accepted_and_advances_the_version(
     client: TestClient,
 ) -> None:
     select_persona(client, "persona_data_steward")
-    payload = {**PROFILE_PAYLOAD, "contact_email": "t.aldous+new@example.invalid"}
+    payload = {**PROFILE_PAYLOAD, "contact_email": "demo.applicant+new@example.invalid"}
     acknowledgement = write_record(
         client, "permitting", "applicant_profiles", "PER-AP-0001", "3", payload
     )

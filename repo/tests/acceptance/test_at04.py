@@ -23,8 +23,8 @@ from acme_city.persistence.session import SessionFactory, initialize_database, t
 from acme_city.permits.schemas import ReviseApplicationCommand, SubmitApplicationCommand
 from acme_city.permits.service import PermitService
 
-FIRST_CONTACT = "t.aldous@example.invalid"
-SECOND_CONTACT = "t.aldous.second@example.invalid"
+FIRST_CONTACT = "demo.applicant@example.invalid"
+SECOND_CONTACT = "demo.applicant.second@example.invalid"
 
 
 @pytest.fixture()

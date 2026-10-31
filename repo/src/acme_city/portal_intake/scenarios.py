@@ -72,7 +72,7 @@ PERMIT_TYPE_KEYS: tuple[str, ...] = (
 
 #: The applicants the random scenario draws from.
 _RANDOM_APPLICANTS: tuple[tuple[str, str], ...] = (
-    ("Tamsin Aldous", "t.aldous@example.invalid"),
+    ("Demo Applicant", "demo.applicant@example.invalid"),
     ("Quentin Orson", "q.orson@example.invalid"),
     ("Rowan Kepple", "r.kepple@example.invalid"),
     ("Sable Linden", "s.linden@example.invalid"),
@@ -258,8 +258,8 @@ def build_scenario(
             _record(
                 suffix=suffix("FENCE-REAR"),
                 channel="portal",
-                applicant_name="Tamsin Aldous",
-                email="t.aldous@example.invalid",
+                applicant_name="Demo Applicant",
+                email="demo.applicant@example.invalid",
                 facts={
                     "parcel_number": "ACME-P-1001",
                     "project_description": "6 ft rear-yard wood privacy fence",
@@ -280,8 +280,8 @@ def build_scenario(
             _record(
                 suffix=suffix("FENCE-FRONT"),
                 channel="portal",
-                applicant_name="Tamsin Aldous",
-                email="t.aldous@example.invalid",
+                applicant_name="Demo Applicant",
+                email="demo.applicant@example.invalid",
                 facts={
                     "parcel_number": "ACME-P-1001",
                     "project_description": "6 ft front-yard fence",
@@ -329,8 +329,8 @@ def build_scenario(
             _record(
                 suffix=suffix("DECK-HIGH"),
                 channel="email",
-                applicant_name="Tamsin Aldous",
-                email="t.aldous@example.invalid",
+                applicant_name="Demo Applicant",
+                email="demo.applicant@example.invalid",
                 facts={
                     "parcel_number": "ACME-P-1001",
                     "project_description": "3 ft rear deck",
@@ -497,8 +497,8 @@ def build_scenario(
             _record(
                 suffix=suffix(name.upper()),
                 channel="portal",
-                applicant_name="Tamsin Aldous",
-                email="t.aldous@example.invalid",
+                applicant_name="Demo Applicant",
+                email="demo.applicant@example.invalid",
                 facts={
                     "parcel_number": parcel,
                     "project_description": "4 ft side-yard picket fence",

@@ -69,8 +69,8 @@ def client(environment: tuple[Settings, FixtureBundle]) -> TestClient:
 
 PROFILE = {
     "party_ref": "party_applicant_1",
-    "display_name": "Tamsin Aldous",
-    "contact_email": "t.aldous@example.invalid",
+    "display_name": "Demo Applicant",
+    "contact_email": "demo.applicant@example.invalid",
     "contact_phone": "+1-555-0141",
     "preferred_contact": "email",
 }

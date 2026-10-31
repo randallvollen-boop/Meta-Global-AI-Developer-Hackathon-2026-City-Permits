@@ -768,8 +768,8 @@ def deliver_newer_applicant(settings: Settings) -> None:
                             source_record_version="4",
                             payload={
                                 "party_ref": "party_cedarline",
-                                "display_name": "Tamsin Aldous",
-                                "contact_email": "t.aldous@example.invalid",
+                                "display_name": "Demo Applicant",
+                                "contact_email": "demo.applicant@example.invalid",
                                 "contact_phone": "+1-555-0141",
                                 "preferred_contact": "email",
                             },

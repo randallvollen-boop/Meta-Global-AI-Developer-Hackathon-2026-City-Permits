@@ -78,8 +78,8 @@ def test_vc01_the_raw_payload_is_preserved_next_to_the_record(
     assert response.status_code == 200, response.text
     raw = {
         "party_ref": "party_applicant_1",
-        "display_name": "  Tamsin   Aldous  ",
-        "contact_email": "T.ALDOUS@Example.invalid",
+        "display_name": "  Demo   Applicant  ",
+        "contact_email": "DEMO.APPLICANT@Example.invalid",
         "contact_phone": "+1 (555) 0141",
         "preferred_contact": "email",
     }

@@ -149,8 +149,8 @@ def test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route(
             "target_id": "SYN-APP-005",
             "title": "Fictional correction of the contact address",
             "reason": "the applicant typed a different address in the demonstration",
-            "proposed_value": {"contact_email": "t.aldous.new@example.invalid"},
-            "old_value": {"contact_email": "t.aldous@example.invalid"},
+            "proposed_value": {"contact_email": "demo.applicant.new@example.invalid"},
+            "old_value": {"contact_email": "demo.applicant@example.invalid"},
         },
     )
     assert requested.status_code == 200, requested.text
@@ -159,13 +159,13 @@ def test_at02_an_unauthorized_person_is_refused_and_is_offered_the_route(
     assert case["destination"] == "Permitting application workspace"
     assert case["assignee_actor_id"], "the correction has no responsible steward"
     assert case["requester_actor_id"] == "persona_applicant"
-    assert case["old_value"]["contact_email"] == "t.aldous@example.invalid"
-    assert case["proposed_value"]["contact_email"] == "t.aldous.new@example.invalid"
+    assert case["old_value"]["contact_email"] == "demo.applicant@example.invalid"
+    assert case["proposed_value"]["contact_email"] == "demo.applicant.new@example.invalid"
 
     # The offered route is a request, not an edit: nothing changed.
     unchanged = client.get("/api/permits/applications/app_d05")
     assert unchanged.status_code == 200
-    assert unchanged.json()["snapshot"]["contact_email"] == "t.aldous@example.invalid"
+    assert unchanged.json()["snapshot"]["contact_email"] == "demo.applicant@example.invalid"
 
 
 def test_at02_the_correction_is_previewed_before_it_is_approved(

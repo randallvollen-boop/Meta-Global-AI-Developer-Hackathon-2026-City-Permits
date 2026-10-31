@@ -1,7 +1,7 @@
 {
   "note": "sha256 of the protected data inputs. Regenerate only for a deliberate, reviewed change: python tests/regression/test_protected_fixtures_unchanged.py",
   "files": {
-    "fixtures/base_population.json": "dbb784b1dd0c7dbe4efe080ee6e2004dca2c0fab13aa482533ead2766bb1875c",
+    "fixtures/base_population.json": "c0bbaefe5d5f0935126e76cbc3d1f079aafad99332b977bea0f6806043c0cfcb",
     "fixtures/documents/SYN-APP-001-adversarial.txt": "eb987cf985e5f0aaf4adeccaccc5d855f57ad3bd1ab683c2bd4098c0d9fe853d",
     "fixtures/documents/SYN-APP-001-application-v1.txt": "991bea84855bfcbe5f695b2383af58164a03968a8163ebe2580b921baa38fbd5",
     "fixtures/documents/SYN-APP-001-application-v2.txt": "ec6769de78e0cce5139f8c8794b8009842d254f7d183001be93b07592c2adfd7",
@@ -26,7 +26,7 @@
     "fixtures/replay/policy-assist/propose-fence-7ft.json": "1d5ad9c1a59b694219f277a9971e9bcdb589ac0cce02271d7418fc748b2021f1",
     "fixtures/replay/policy-assist/propose-no-permit-shed-unsupported.json": "00f67019e4526c1dce98aebee46df30c27acce2cc1b9221dad465f8b89979f51",
     "fixtures/replay/policy-assist/shed-300-brief-fails-validation.json": "8668492ce87a44ba5dbb987862e62b36f90676ab570c9fd054071bf1f049214e",
-    "fixtures/source_variations.json": "b7526ce26af5b520a172849889d1c966e6dea5b46e75eb2344e5dfcbc3fa4b4a",
+    "fixtures/source_variations.json": "2b96ffb3bb885d4575fda4036730ee138bdaa4989f2fc8ea48fd1c4683a0107d",
     "config/rules_and_fees.json": "b7f95a2a8afa5cf588e102b543c9019c6ee32186c89d5ee498f85e5c5d1a36ed",
     "config/domains.json": "c3b7f650d0651da33b97ad49800da9069352ddb52dcd318361c1c87fe7940942",
     "config/source_contracts.json": "9eca6460537b6ee93a456f6900455ed03864783874808d4b4e44273e95dbef77",

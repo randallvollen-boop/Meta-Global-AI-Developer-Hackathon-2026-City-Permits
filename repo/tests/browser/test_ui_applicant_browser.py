@@ -94,7 +94,7 @@ def test_the_deck_or_fence_choice_swaps_the_question_groups_and_submits(page, se
     page.set_input_files("#file-site_plan", {"name": "sketch.txt", "mimeType": "text/plain", "buffer": b"sketch"})
     assert "sketch.txt" in page.locator('[data-doc-chosen]').first.inner_text()
     page.get_by_label("Deck", exact=True).check()
-    page.fill("#f-applicant_email", "t.aldous@example.invalid")
+    page.fill("#f-applicant_email", "demo.applicant@example.invalid")
     page.fill("#f-address_text", "400 Lantren Row")
     page.fill("#f-deck_height_ft", "3")
     page.fill("#f-deck_setback_ft", "10")

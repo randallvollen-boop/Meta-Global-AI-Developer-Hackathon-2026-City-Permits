@@ -94,8 +94,8 @@ def test_a_replayed_import_stores_no_second_snapshot(seeded: Settings) -> None:
             service = IngestionService(session)
             payload = {
                 "party_ref": "party_applicant_1",
-                "display_name": "Tamsin Aldous",
-                "contact_email": "t.aldous@example.invalid",
+                "display_name": "Demo Applicant",
+                "contact_email": "demo.applicant@example.invalid",
                 "contact_phone": "+1-555-0141",
                 "preferred_contact": "email",
             }
