@@ -1,5 +1,9 @@
 {# The Agent processing tab of the administration screen.  The lane registers
-   the tab with admin_tabs.register_admin_tab; the screen includes it. #}
+   the tab with admin_tabs.register_admin_tab; the screen includes it.
+
+   The story sentence and the three policy fields are the tab.  The provider
+   allowance, the engine, the notes and the waiting count are behind More
+   details: they explain the policy, they do not change it. #}
 <section class="opr-processing" aria-labelledby="opr-processing-heading" data-testid="admin-agent-processing">
   <h2 id="opr-processing-heading">Agent processing</h2>
   <p class="muted">
@@ -15,32 +19,39 @@
       <input type="checkbox" name="keep_awake" value="true" {% if agent_processing.automatic %}checked{% endif %}>
       Keep agents awake (real time processing)
     </label>
-    <p class="muted">
-      Process eligible items automatically as they arrive. The intake agent
-      works them while it is awake.
-    </p>
     <label for="opr-runs-per-hour">Maximum runs per hour</label>
     <input id="opr-runs-per-hour" name="runs_per_hour" type="number" min="1" max="120" value="{{ agent_processing.runs_per_hour }}">
     <dl class="opr-facts">
       <dt>Processing</dt>
       <dd data-testid="admin-processing-mode">{{ agent_processing.mode_label }}</dd>
-      <dt>Live Muse calls per day</dt>
-      <dd data-testid="admin-muse-cap">{{ agent_processing.muse_cap }}</dd>
-      <dt>Current mode</dt>
-      <dd data-testid="admin-engine">{{ agent_processing.engine_label }}</dd>
     </dl>
-    <p class="muted" data-testid="admin-muse-note">{{ agent_processing.muse_note }}</p>
-    <p class="muted" data-testid="admin-worker-note">{{ agent_processing.worker_note }}</p>
-    <p class="muted" data-testid="admin-eligible-count">
-      {% if agent_processing.automatic %}
-      {{ agent_processing.eligible_count }} eligible case(s) will be scheduled once the intake agent is awake.
-      {% else %}
-      {{ agent_processing.eligible_count }} eligible case(s) are waiting for the intake agent.
-      {% endif %}
-    </p>
     <label for="opr-processing-reason">Reason for change</label>
     <input id="opr-processing-reason" name="reason" required>
     <button type="submit" class="btn sm primary" data-testid="admin-agent-processing-save">Save processing settings</button>
   </form>
+  <details class="adm-disclosure" data-testid="admin-agent-processing-more">
+    <summary class="adm-disclosure-summary">More details</summary>
+    <div class="adm-disclosure-body">
+      <p class="muted">
+        Process eligible items automatically as they arrive. The intake agent
+        works them while it is awake.
+      </p>
+      <dl class="opr-facts">
+        <dt>Live Muse calls per day</dt>
+        <dd data-testid="admin-muse-cap">{{ agent_processing.muse_cap }}</dd>
+        <dt>Current mode</dt>
+        <dd data-testid="admin-engine">{{ agent_processing.engine_label }}</dd>
+      </dl>
+      <p class="muted" data-testid="admin-muse-note">{{ agent_processing.muse_note }}</p>
+      <p class="muted" data-testid="admin-worker-note">{{ agent_processing.worker_note }}</p>
+      <p class="muted" data-testid="admin-eligible-count">
+        {% if agent_processing.automatic %}
+        {{ agent_processing.eligible_count }} eligible case(s) will be scheduled once the intake agent is awake.
+        {% else %}
+        {{ agent_processing.eligible_count }} eligible case(s) are waiting for the intake agent.
+        {% endif %}
+      </p>
+    </div>
+  </details>
   <p class="muted" data-testid="admin-processing-change">{{ agent_processing.change_note }}</p>
 </section>

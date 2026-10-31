@@ -198,7 +198,12 @@ def test_the_configuration_log_leads_with_readable_changes(client: TestClient) -
     assert 'data-testid="admin-log-row"' in body
     assert 'data-testid="admin-log-change"' in body
     assert "Retired reason code" in body
-    assert "View values" in body
+    # Changed deliberately (demo polish, AD1): the value before the change and
+    # the value after it are visible columns now, so the nested "View values"
+    # disclosure is gone and the technical key sits behind More details.
+    assert "View values" not in body
+    assert '<th scope="col">Before</th>' in body
+    assert '<th scope="col">After</th>' in body
     assert "Raw action" in body
     assert "config.reason_code.retire" in body
 

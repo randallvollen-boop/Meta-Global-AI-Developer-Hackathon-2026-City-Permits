@@ -1,20 +1,31 @@
-{# The Log tab: the configuration changes, newest first. #}
+{# The Log tab: the configuration changes, newest first.
+
+   The change, the actor and the time are the row.  The value before the
+   change and the value after it are visible columns, because the story asks
+   for a before and an after; only the technical key sits behind More
+   details. #}
 <details class="panel card" data-testid="admin-section" data-section="log" {% if tab == 'log' %}open{% endif %}>
   <summary><strong>Configuration log</strong></summary>
   <div class="card-b">
     <table class="data-table adm-configuration-log" data-testid="admin-configuration-log">
       <caption class="visually-hidden">Configuration changes, newest first</caption>
-      <thead><tr><th scope="col">Change</th><th scope="col">Actor</th><th scope="col">Time</th><th scope="col">Details</th></tr></thead>
+      <thead><tr><th scope="col">Change</th><th scope="col">Actor</th><th scope="col">Time</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
       <tbody>
         {% for entry in admin.configuration_log %}
         <tr data-testid="admin-log-row" data-action="{{ entry.action }}">
-          <th scope="row"><span class="adm-field-label">Change</span><strong data-testid="admin-log-change">{{ entry.action_label }}</strong><span class="adm-log-target">{{ entry.target_label }}{% if entry.target_id %} {{ entry.target_id }}{% endif %}</span></th>
+          <th scope="row">
+            <span class="adm-field-label">Change</span>
+            <strong data-testid="admin-log-change">{{ entry.action_label }}</strong>
+            <span class="adm-log-target">{{ entry.target_label }}{% if entry.target_id %} {{ entry.target_id }}{% endif %}</span>
+            <details class="adm-log-details"><summary>More details</summary><dl><div><dt>Raw action</dt><dd class="mono">{{ entry.action }}</dd></div></dl></details>
+          </th>
           <td><span class="adm-field-label">Actor</span>{{ entry.actor_label }}</td>
           <td><span class="adm-field-label">Time</span><span class="mono">{{ entry.occurred_at }}</span></td>
-          <td><span class="adm-field-label">Details</span><details class="adm-log-details"><summary>View values</summary><dl><div><dt>Raw action</dt><dd class="mono">{{ entry.action }}</dd></div><div><dt>Before</dt><dd>{{ entry.before_display }}</dd></div><div><dt>After</dt><dd>{{ entry.after_display }}</dd></div></dl></details></td>
+          <td><span class="adm-field-label">Before</span><span data-testid="admin-log-before">{{ entry.before_display }}</span></td>
+          <td><span class="adm-field-label">After</span><span data-testid="admin-log-after">{{ entry.after_display }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="muted">No configuration change has been recorded yet.</td></tr>
+        <tr><td colspan="5" class="muted">No configuration change has been recorded yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -820,10 +820,14 @@ def test_city_home_and_rules_fees_show_no_per_type_icon_by_design(
     assert rules.status_code == 200
     for page in (home, rules):
         assert "/permit-type-icons/" not in page.text
-    # The Administration permit-type tab is where all 17 are shown.
-    admin = client.get("/admin?tab=permit-types")
+    # Changed deliberately (demo polish, AD1): the Administration screen is
+    # where all 17 are shown, in the appearance section.  The register of the
+    # permit types names the types.
+    admin = client.get("/admin?tab=appearance")
     for key, url in urls.items():
         assert f'<img class="type-ic" src="{url}"' in admin.text, key
+    register = client.get("/admin?tab=permit-types")
+    assert "/permit-type-icons/" not in register.text
 
 
 def test_work_queue_and_workspace_show_the_icon_of_every_type(

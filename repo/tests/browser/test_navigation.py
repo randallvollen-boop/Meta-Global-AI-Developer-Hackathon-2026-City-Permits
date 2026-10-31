@@ -243,7 +243,16 @@ def test_the_evidence_and_history_panels_stay_present(
     # collection-wide "No evidence is recorded" panel.  Evidence lives in the
     # selected record or case, so those screens are swept as a record's Sources
     # view and as a focused case instead (below).
-    collection_screens = {"/applicants", "/masters", "/steward", "/source-records", "/activity"}
+    # Changed deliberately (demo polish, AD1): the administration screen carries
+    # its history in its Configuration log tab, so it has no panels of its own.
+    collection_screens = {
+        "/applicants",
+        "/masters",
+        "/steward",
+        "/source-records",
+        "/activity",
+        "/admin",
+    }
     for path, _title in SCREENS:
         if path in collection_screens:
             continue

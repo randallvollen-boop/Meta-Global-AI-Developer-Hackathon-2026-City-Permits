@@ -124,7 +124,9 @@ def test_the_appearance_tab_says_that_the_generation_is_off(client: TestClient) 
     page = client.get("/admin?tab=appearance")
     assert page.status_code == 200, page.text[:400]
     assert "Live Muse generation is off." in page.text
-    assert "You can preview and use saved icons." in page.text
+    # Changed deliberately (demo polish, AD1): the notice is one line now, so
+    # the second sentence is gone and the reason follows the first one.
+    assert "You can preview and use saved icons." not in page.text
     assert 'data-testid="icon-generation-unavailable"' in page.text
     assert "external AI provider calls are disabled" in page.text
 

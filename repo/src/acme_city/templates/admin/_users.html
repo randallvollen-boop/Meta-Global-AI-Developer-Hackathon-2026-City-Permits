@@ -1,22 +1,41 @@
-{# The Users tab.  Lanes append parts with admin_tabs.register_users_extra. #}
+{# The Users tab.  Lanes append parts with admin_tabs.register_users_extra.
+
+   The people and the roles are what the tab is for, so they are the visible
+   rows.  The department of a person is behind More details, and the form
+   that adds a user is a closed disclosure, because adding a user is rare. #}
 <details class="panel card" data-testid="admin-section" data-section="users" {% if tab == 'users' %}open{% endif %}>
   <summary><strong>Users and roles</strong></summary>
   <div class="card-b" style="display:grid;gap:16px">
     <h2>People</h2>
     <table class="data-table adm-users-table" data-testid="admin-people">
       <caption class="visually-hidden">People</caption>
-      <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Department</th><th scope="col">Demo access</th></tr></thead>
+      <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Demo access</th></tr></thead>
       <tbody>
         {% for person in admin.people %}
         <tr data-testid="admin-person-row">
           <th scope="row"><span class="adm-field-label">Name</span>{{ person.label }}</th>
           <td><span class="adm-field-label">Role</span>{{ person.role_label }}</td>
-          <td><span class="adm-field-label">Department</span>{{ person.department or 'Not recorded' }}</td>
           <td><span class="adm-field-label">Demo access</span>{% if person.selectable %}<span class="adm-demo-persona" data-testid="admin-demo-persona">Demo persona</span>{% else %}Added user{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <details class="adm-disclosure" data-testid="admin-people-departments">
+      <summary class="adm-disclosure-summary">More details</summary>
+      <div class="adm-disclosure-body">
+        {% set departments = admin.people | selectattr("department") | list %}
+        {% if departments %}
+        <dl class="adm-facts">
+          {% for person in departments %}
+          <div><dt>{{ person.label }}</dt><dd data-testid="admin-person-department">{{ person.department }}</dd></div>
+          {% endfor %}
+        </dl>
+        {% else %}
+        <p class="muted">No department is recorded.</p>
+        {% endif %}
+      </div>
+    </details>
 
     {% for part in admin_users_extras %}{% include part %}{% endfor %}
 
@@ -37,34 +56,37 @@
       </table>
     </details>
 
-    <h3>Add user</h3>
-    {% if admin.can_manage_users %}
-    <form method="post" action="/ui/actions/config.user.add" class="action-form" data-testid="admin-add-user">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="action_id" value="config.user.add">
-      <input type="hidden" name="next" value="/admin?tab=users">
-      <div class="fieldset">
-        <label for="user-name">Name</label>
-        <input id="user-name" name="name" required>
+    <details class="adm-disclosure" data-testid="admin-add-user-panel">
+      <summary class="adm-disclosure-summary">Add user</summary>
+      <div class="adm-disclosure-body">
+        {% if admin.can_manage_users %}
+        <form method="post" action="/ui/actions/config.user.add" class="action-form" data-testid="admin-add-user">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="action_id" value="config.user.add">
+          <input type="hidden" name="next" value="/admin?tab=users">
+          <div class="fieldset">
+            <label for="user-name">Name</label>
+            <input id="user-name" name="name" required>
+          </div>
+          <div class="fieldset">
+            <label for="user-department">Department</label>
+            <input id="user-department" name="department">
+          </div>
+          <div class="fieldset">
+            <label for="user-role">Role</label>
+            <select id="user-role" name="persona_role">
+              <option value="Applicant">Applicant</option>
+              <option value="Data Steward">Data Steward</option>
+              <option value="Permit Reviewer">Permit Reviewer</option>
+              <option value="City Administrator">City Administrator</option>
+            </select>
+          </div>
+          <p><button type="submit" class="btn sm primary" data-testid="admin-add-user-submit">Add user</button></p>
+        </form>
+        {% else %}
+        <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can add a user.</p>
+        {% endif %}
       </div>
-      <div class="fieldset">
-        <label for="user-department">Department</label>
-        <input id="user-department" name="department">
-      </div>
-      <div class="fieldset">
-        <label for="user-role">Role</label>
-        <select id="user-role" name="persona_role">
-          <option value="Applicant">Applicant</option>
-          <option value="Data Steward">Data Steward</option>
-          <option value="Permit Reviewer">Permit Reviewer</option>
-          <option value="City Administrator">City Administrator</option>
-        </select>
-        <span class="hint">The user receives the grant template of that role. Added users do not appear in the persona switcher.</span>
-      </div>
-      <p><button type="submit" class="btn sm primary" data-testid="admin-add-user-submit">Add user</button></p>
-    </form>
-    {% else %}
-    <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can add a user.</p>
-    {% endif %}
+    </details>
   </div>
 </details>

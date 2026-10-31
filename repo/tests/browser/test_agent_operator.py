@@ -390,7 +390,10 @@ def test_the_administrator_saves_the_processing_settings(page, server, login) ->
     # The tab of the administration screen carries the current section.
     tab = page.locator("[data-tab='agent_processing']")
     assert tab.get_attribute("aria-current") == "page"
-    # The deployment sends no provider call, so the allowance reads zero.
+    # The deployment sends no provider call, so the allowance reads zero.  The
+    # allowance and the engine sit behind More details (demo polish, AD1), so
+    # the disclosure is opened before they are read.
+    page.locator("[data-testid='admin-agent-processing-more'] > summary").click()
     assert page.locator("[data-testid='admin-muse-cap']").inner_text().strip() == "0"
     assert page.locator("[data-testid='admin-engine']").inner_text().strip() == (
         "Built in logic"

@@ -1,25 +1,20 @@
 {# The Appearance tab: the icons the City shows, the saved choices and the
    generation, in that order.
 
-   The saved icon comes first because it is the icon the City shows today.
-   The saved icons of a type come next, because choosing one of them is a
-   local change.  The generation comes last, because it is the only part
-   that needs the provider, and the provider is often off. #}
+   The whole tab is collapsed: the icons are not a decision of the
+   administrator, so the section stays closed until it is asked for.  The saved
+   icon comes first because it is the icon the City shows today.  The saved
+   icons of a type come next, because choosing one of them is a local change.
+   The generation comes last, because it is the only part that needs the
+   provider, and the provider is often off. #}
 {% import "_ui.html" as ui with context %}
-<details class="panel card" data-testid="admin-section" data-section="permit-type-icons" {% if tab == 'appearance' %}open{% endif %}>
-  <summary><strong>Permit type icons</strong></summary>
+<details class="panel card" data-testid="admin-section" data-section="permit-type-icons">
+  <summary><strong>Appearance</strong> <span class="ref">permit type icons</span></summary>
   <div class="card-b adm-stack">
-
-    <p class="adm-scope-note">
-      One icon per permit type. The saved icon is the one the City shows on a
-      work queue row and on a permit workspace.
-    </p>
 
     {% if not admin.permit_type_icons.generation.available %}
     <p class="adm-notice" role="note" data-testid="icon-generation-unavailable">
-      <strong>Live Muse generation is off.</strong>
-      You can preview and use saved icons.
-      {{ admin.permit_type_icons.generation.reason }}
+      <strong>Live Muse generation is off.</strong> {{ admin.permit_type_icons.generation.reason }}
     </p>
     {% endif %}
 
@@ -83,7 +78,6 @@
               </div>
               <span class="hint">
                 Each thumbnail shows the source and the date of the icon it holds.
-                Choosing one keeps the choice as text until you save it.
               </span>
             </div>
             <p>
@@ -119,7 +113,6 @@
             {{ admin.permit_type_icons.generation.reason }}
           </p>
           {% endif %}
-          <p class="hint">Generations today for this permit type: {{ admin.permit_type_icons.per_type_counts.get(type.permit_type_id, 0) }}.</p>
         </div>
       </details>
       {% else %}
@@ -154,7 +147,7 @@
         </div>
         <div class="responsibility-item">
           <dt>Provenance</dt>
-          <dd data-testid="icon-provenance">Every icon records its source: a bundled seed asset or a Muse Image generation, with the prompt, the date and who made it. The label is never hidden. {{ ui.info('muse_provenance') }}</dd>
+          <dd data-testid="icon-provenance">Every icon records its source and the date. {{ ui.info('muse_provenance') }}</dd>
         </div>
       </dl>
     </section>

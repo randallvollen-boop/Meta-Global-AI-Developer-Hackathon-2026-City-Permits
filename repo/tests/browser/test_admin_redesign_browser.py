@@ -45,6 +45,14 @@ def test_the_appearance_section_fits_a_phone_and_keeps_the_saved_icons(
     page.goto(f"{server.base_url}/admin?tab=appearance", wait_until="domcontentloaded")
     assert_no_horizontal_overflow(page)
 
+    # The appearance section is collapsed: it opens on request.
+    section = page.locator(
+        '[data-testid="admin-section"][data-section="permit-type-icons"]'
+    )
+    assert section.evaluate("element => element.open") is False
+    section.locator(":scope > summary").click()
+    assert section.evaluate("element => element.open") is True
+
     # Every permit type shows the icon the City uses and its own settings.
     assert page.locator('[data-testid="permit-type-icon-row"]').count() == 17
     assert page.locator('[data-testid="permit-type-current-icon"]').count() == 17

@@ -102,8 +102,9 @@ def test_a_registered_tab_and_users_extra_render_and_unregister(client) -> None:
         # so the part of the Users tab is asked for on the Users tab.
         users_body = choose(client, ADMIN).get("/admin?tab=users").text
         assert '<p data-testid="dummy-users-extra">users extra</p>' in users_body
-        # The extra sits inside the Users tab.
-        users = users_body.split('data-section="users"', 1)[1].split("</details>", 1)[0]
+        # The extra sits inside the Users tab.  One section renders at a time,
+        # so everything after the marker of the Users section is that section.
+        users = users_body.split('data-section="users"', 1)[1]
         assert "dummy-users-extra" in users
         # The section that is not selected is not rendered at all.
         assert 'data-section="permit-types"' not in body

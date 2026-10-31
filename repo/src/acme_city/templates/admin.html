@@ -5,13 +5,8 @@
 <div class="page-head">
   <div>
     <h1>Administration</h1>
-    <p class="sub muted">
-      Permit types, people, reason codes and the configuration log. Every change
-      here is a governed, audited action. Configuration changes take effect for
-      new intake; they never rewrite an already-submitted case.
-    </p>
   </div>
-  <div class="actions"><a class="btn ghost" href="/queue">Back to the work queue</a>{{ ui.help_button('admin') }}</div>
+  <div class="actions">{{ ui.help_button('admin') }}</div>
 </div>
 
 <nav class="tabs adm-tabs" aria-label="Administration sections">
@@ -25,8 +20,4 @@
 {% for name in admin_tabs %}
 {% if name == tab %}{% include admin_tab_templates[loop.index0] %}{% endif %}
 {% endfor %}
-
-{% include "components/evidence_panel.html" %}
-
-{% include "components/history_panel.html" %}
 {% endblock %}

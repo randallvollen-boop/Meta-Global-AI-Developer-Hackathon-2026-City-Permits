@@ -20,7 +20,6 @@
           <div class="fieldset">
             <label for="pt-key">Key</label>
             <input id="pt-key" name="key" required>
-            <span class="hint">Lower case, no spaces, for example <code>patio</code>.</span>
           </div>
           <div class="fieldset">
             <label for="pt-label">Label</label>
@@ -49,17 +48,14 @@
               <option value="no">no</option>
               <option value="yes">yes</option>
             </select>
-            <span class="hint">A permit type that requires a person or a board is always held for one.</span>
           </div>
           <div class="fieldset">
             <label for="pt-fields">Required fields</label>
             <input id="pt-fields" name="required_fields" placeholder="parcel_number project_description">
-            <span class="hint">Separate the field names with spaces or commas.</span>
           </div>
           <div class="fieldset">
             <label for="pt-documents">Required documents</label>
             <input id="pt-documents" name="required_documents" placeholder="site_plan material_spec">
-            <span class="hint">Separate the document names with spaces or commas.</span>
           </div>
           <div class="fieldset">
             <label for="pt-fee">Fee schedule</label>
@@ -94,12 +90,6 @@
         <tr data-testid="admin-permit-type-row" data-permit-type="{{ type.permit_type_key }}">
           <th scope="row">
             <span class="item" style="gap:8px;align-items:center">
-              {% set icon = admin.permit_type_icons.types | selectattr("permit_type_key", "equalto", type.permit_type_key) | first %}
-              {% if icon and icon.current_icon %}
-              <img class="type-ic" src="{{ icon.current_icon.url }}" alt="" style="width:28px;height:28px;border-radius:8px">
-              {% else %}
-              <span class="type-ic line" style="width:28px;height:28px;border-radius:8px"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
-              {% endif %}
               <span>
                 {{ type.label }}
                 <span class="ref">{{ type.permit_type_key }}</span>
