@@ -2,7 +2,7 @@
 
 ## Draft status
 
-This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas, and live Muse is off there.
+This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas.
 
 ## Summary
 
@@ -22,7 +22,7 @@ The Agent Operator is the only persona that wakes and runs the intake and adjudi
 
 A data steward works the Data issues workspace, which has a guide, and the Early resolution screen. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
 
-Once the Agent Operator wakes it, the steward assistant works the Data issues queue when the steward asks, up to 20 tasks per press of Prepare recommendations. For each task it gathers the evidence and proposes a decision with a High, Review or Held level and a one line reason. The steward reads the evidence and presses Accept recommendation, which is refused if the record changed since, or decides the task another way. A held recommendation can never be accepted. Accept all high-confidence shows the exact list before anything is accepted, and skips and names any item that changed. An agreement figure shows how many recommendations the steward accepted unchanged in the last 7 days. Explain with Muse rewrites the reason in plain words without changing the decision; it is off on the hosted demo.
+Once the Agent Operator wakes it, the steward assistant works the Data issues queue when the steward asks, up to 20 tasks per press of Prepare recommendations. For each task it gathers the evidence and proposes a decision with a High, Review or Held level and a one line reason. The steward reads the evidence and presses Accept recommendation, which is refused if the record changed since, or decides the task another way. A held recommendation can never be accepted. Accept all high-confidence shows the exact list before anything is accepted, and skips and names any item that changed. An agreement figure shows how many recommendations the steward accepted unchanged in the last 7 days. Explain with Muse rewrites the reason in plain words without changing the decision.
 
 ### Permit reviewer
 
@@ -38,20 +38,21 @@ Meta Muse Spark can propose structured values from received document text and ca
 
 The applicant help and City policy paths also have bounded Muse support. Muse can draft a cited answer, explain a policy simulation, write a briefing from typed facts, or propose a policy change. The server checks sources, claims, figures, rule citations, and allowed change types. A failed answer is refused. A policy proposal is not saved until an authorized person chooses to save it, and it still follows the normal draft and approval process.
 
-Muse Image support can generate fictional permit type icons through a governed administrator action with daily limits and recorded provenance. The hosted demo keeps live Muse calls off. It uses clearly labelled replay fixtures so visitors can follow the experience without sending a provider request.
+The steward assistant follows the same rule. It prepares its proposals on the Data issues screen, where the steward presses Prepare recommendations and then Accept recommendation or Accept all high-confidence, and Explain with Muse rewrites a reason in plain words without changing the decision.
+
+Muse Image support can generate fictional permit type icons through a governed administrator action with daily limits and recorded provenance.
+
+Live Muse is on for the hosted demo, with a daily allowance of 100 live calls. When the allowance is used up, the app falls back to its recorded answers and says so on screen. [REVIEW: Randall]
 
 ## Models used
 
-* Muse Spark (muse-spark-1.3) is the runtime model. It extracts values from documents, proposes record matches, helps applicants, writes the policy briefing, explains a simulation and proposes policy changes. It makes proposals only, and people decide.
+* Muse Spark is the runtime model. It extracts values from documents, proposes record matches, prepares steward recommendations, helps applicants, writes the policy briefing, explains a simulation and proposes policy changes. It makes proposals only, and people decide.
 
 * Muse Image (muse-image-1.0) made 14 of the 17 permit type icons.
 
 * Muse Wonder (muse-wonder-1.0) worked as a builder: the October 27 interface redesign, the permit type icon feature, and a second build with persona navigation, the ePermit intake portal and the agent triage.
 
 * Local and other frontier models assisted with planning, coding and review.
-
-
-Live Muse is off on the public demo. The guard is in the Muse client and the Render blueprint.
 
 ## What was built during the event
 
@@ -71,21 +72,21 @@ Before the event only the reference requirements package existed (received 2026-
 
 * The steward Data issues workspace and guide, the steward assistant with its batch preview and agreement figure, and automatic linking, which is built and paused on the hosted demo.
 
-* The lifecycle and walkthrough pages, and demo video draft 8 on the persona page.
+* The lifecycle and walkthrough pages, and a demo video on the persona page.
 
 * A production mode that is separate from demo mode, rate limits and security headers.
 
 ## Verification
 
-* 2741 tests are collected. The last recorded full run passed 2726 tests.
+* The full automated suite passes. It covers the acceptance checks, the security checks, the browser checks and the unit tests. [COUNT: re-measure before submission: the number of tests collected and the number that passed.]
 
-* 10 gates run in scripts/run_all_checks.py.
+* 10 gates run in `scripts/run_all_checks.py`.
 
-* 57 requirements map to 39 checks (AT01 to AT20, VC01 to VC08, D01 to D11).
+* 57 requirements map to 39 checks (AT01 to AT20, VC01 to VC08, D01 to D11). The requirements are listed in `repo/docs/REQUIREMENTS_OUTLINE.md` and the checks in `repo/config/check_inventory.json`.
 
-* There are 17 permit types and six simulated subscriber departments.
+* There are 17 permit types and six simulated subscriber departments. They are listed in `repo/config/rules_and_fees.json` and `repo/config/property_subscribers.json`.
 
-## Licence
+## License
 
 All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository is public for transparency, hackathon evaluation and demonstration only.
 
@@ -103,7 +104,7 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 ## How to try it
 
-1. Open https://acme-city-permits.onrender.com. The front door wakes the hosted service, which can take a moment. The data resets at 02:00 UTC each night.
+1. Open https://acme-city-permits.onrender.com. The data resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
 
 2. Use Demo controls to choose a persona. All five are available.
 
@@ -111,10 +112,10 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent. Wake the steward assistant too.
 
-5. As Data Steward, open Data issues, press Prepare recommendations, and inspect the evidence behind each recommendation and the proposed record and parcel links.
+5. As Data Steward, open Data issues, press Prepare recommendations, and inspect the evidence behind each recommendation and the proposed record and parcel links. Accept one with Accept recommendation, or open the list with Accept all high-confidence, and press Explain with Muse for a plain reading of the reason.
 
 6. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
 
-7. As City Administrator, open the "Planning overview", the "Operations dashboard", the "Audit log", "Support", "Governance and sources", "Rules and fees", "Reconciliation" and "Administration" screens, and try a policy what-if. The hosted demo uses replay for Muse paths and does not make live Muse calls.
+7. As City Administrator, open the "Planning overview", the "Operations dashboard", the "Audit log", "Support", "Governance and sources", "Rules and fees", "Reconciliation" and "Administration" screens, and try a policy what-if.
 
 Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme.
