@@ -4,9 +4,22 @@
 
 This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas.
 
+## Track
+
+Startup track: For teams and founders building a real product.
+Judged on technical execution and whether it holds up in production.
+
+The entry is framed around production behaviour: rate limits, caps, audit history, nightly resets, tests and checks. Only features built during the event are shown as judged work.
+
+## Entry requirements
+
+* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits [REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]
+* Accessible three-minute demo video: [link to be added]
+* Live product: https://acme-city-permits.onrender.com
+
 ## Summary
 
-ACME City Permits is a fictional municipal permitting application that follows a permit from intake through identity and property review, application checks, a human decision, fee reconciliation, and permit issuance. It combines registry master data, versioned rules, role based actions, audit history, and bounded Meta Muse proposals while keeping every authoritative decision with a person or deterministic service.
+ACME City Permits is a fictional municipal permitting application. It follows a permit from intake through identity and property review, application checks, a human decision, fee reconciliation, and permit issuance. It combines registry master data, versioned rules, role based actions, audit history, and bounded Meta Muse proposals. Every authoritative decision stays with a person or a deterministic service.
 
 ## What it does
 
@@ -54,27 +67,43 @@ Live Muse is on for the hosted demo, with a daily allowance of 100 live calls. W
 
 * Local and other frontier models assisted with planning, coding and review.
 
+## Production behaviour
+
+* A production mode that is separate from demo mode.
+* Per client address rate limits on all requests, writes, sessions and uploads, with a bounded request size.
+* Security headers on every response, including a content security policy.
+* Server held actors, scoped permissions, record scope, version checks, audit history, and explicit human actions protect every sensitive read and write.
+* Waiting agent work sits in a durable queue. Optional automatic processing is off on the hosted demo.
+* The Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
+* Live Muse calls and Muse Image generation have daily caps.
+* Every governed change is recorded in the audit history.
+* The hosted data is fictional. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
+* Automatic linking of records is built and paused on the hosted demo.
+
+## Architecture
+
+* A Python FastAPI service renders the public site, applicant portal, and staff interface with Jinja templates and small vanilla JavaScript enhancements.
+* SQLAlchemy and Alembic manage one SQLite database that stores applications, master records, source links, decisions, rules, fees, audit records, model runs, and workflow state.
+* Four simulated source adapters represent permitting, geographic information, ERP finance and the ePermit intake portal, which takes five channels (portal, counter scan, email, mail and fax) and records scan quality flags. A database outbox records governed changes and acknowledgments.
+* The Meta Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
+
 ## What was built during the event
 
-Before the event only the reference requirements package existed (received 2026-10-26). There was no application code. The whole application was built during the event. The git history starts on October 27 with a baseline commit of the overnight build of October 26. Work after that baseline includes:
+Before the event only the reference requirements package existed (received 2026-10-26). There was no application code.
+
+The git history starts on October 27 with a baseline commit of the overnight build of October 26. Work after that baseline includes:
 
 * Parity phases 1 to 3 and the Muse Wonder redesign.
-
 * A policy what-if tool. Runs are immutable and hash verified, and a Muse briefing and proposal pass claim checks before anyone sees them.
-
 * The applicant help assistant.
-
 * The City of Acme public website with a community lookup that shows no homeowner names, documents or fees, a town map and a City view.
-
 * ePermit intake with five channels and scan quality flags.
-
 * The intake and adjudication agents, a durable agent work queue, and optional automatic processing (off on the hosted demo).
-
 * The steward Data issues workspace and guide, the steward assistant with its batch preview and agreement figure, and automatic linking, which is built and paused on the hosted demo.
-
 * The lifecycle and walkthrough pages, and a demo video on the persona page.
-
 * A production mode that is separate from demo mode, rate limits and security headers.
+
+The build window is not settled. The participant guide says October 27 to November 4. The event page says October 26. [REVIEW: Randall. Confirm the window before submission.]
 
 ## Verification
 
@@ -88,19 +117,7 @@ Before the event only the reference requirements package existed (received 2026-
 
 ## License
 
-All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository is public for transparency, hackathon evaluation and demonstration only.
-
-## Architecture
-
-* A Python FastAPI service renders the public site, applicant portal, and staff interface with Jinja templates and small vanilla JavaScript enhancements.
-
-* SQLAlchemy and Alembic manage one SQLite database that stores applications, master records, source links, decisions, rules, fees, audit records, model runs, and workflow state.
-
-* Four simulated source adapters represent permitting, geographic information, ERP finance and the ePermit intake portal, which takes five channels (portal, counter scan, email, mail and fax) and records scan quality flags. A database outbox records governed changes and acknowledgments.
-
-* Server held actors, scoped permissions, record scope, version checks, audit history, and explicit human actions protect every sensitive read and write.
-
-* The Meta Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
+All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository will be public at submission, for evaluation and demonstration only. [REVIEW: Randall. Confirm the repository licence wording before submission.] See [LICENSE](../../LICENSE) and [NOTICE](../../NOTICE).
 
 ## How to try it
 
@@ -111,9 +128,7 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 3. As Applicant, start a fictional Residential deck or fence application, save it, submit it, and open its tracker.
 
 4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent. Wake the steward assistant too.
-
 5. As Data Steward, open Data issues, press Prepare recommendations, and inspect the evidence behind each recommendation and the proposed record and parcel links. Accept one with Accept recommendation, or open the list with Accept all high-confidence, and press Explain with Muse for a plain reading of the reason.
-
 6. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
 
 7. As City Administrator, open the "Planning overview", the "Operations dashboard", the "Audit log", "Support", "Governance and sources", "Rules and fees", "Reconciliation" and "Administration" screens, and try a policy what-if.
