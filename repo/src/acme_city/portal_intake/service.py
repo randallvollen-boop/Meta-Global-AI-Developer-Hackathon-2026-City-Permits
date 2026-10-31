@@ -12,6 +12,12 @@ The flow never writes tables directly:
 
 A repeated portal reference is idempotent: the already-created application
 is reported as a duplicate and nothing is created twice.
+
+Two ways in reach this service.  :meth:`IntakeService.simulate` runs one of
+the named scenarios, and :meth:`IntakeService.generate_cases` creates a
+batch of generated records (:mod:`acme_city.portal_intake.generated`).  Both
+can name their run, so a repeated click creates new cases instead of the
+same ones again, and both write their audit rows.
 """
 # REQUIRES: ING-01, ING-02, PER-01
 # Raw staging precedes any application, duplicates are idempotent on the
@@ -19,6 +25,7 @@ is reported as a duplicate and nothing is created twice.
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 from typing import Any
 
@@ -32,6 +39,7 @@ from acme_city.core.errors import ValidationError
 from acme_city.documents.service import DocumentService, StoreDocumentCommand
 from acme_city.ingestion.schemas import IngestCommand, SourceRecordCommand
 from acme_city.ingestion.service import IngestionService
+from acme_city.portal_intake import generated
 from acme_city.portal_intake.scenarios import build_scenario
 from acme_city.portal_intake.schemas import IntakeRecordCommand, IntakeSubmitResult
 from acme_city.permits.schemas import (
@@ -52,6 +60,20 @@ DATASET_KEY = "submitted_applications"
 
 #: Channels the outside application gathers through.
 CHANNELS: tuple[str, ...] = ("portal", "counter_scan", "email", "mail", "fax")
+
+
+def _sequence_start(nonce: str | None) -> int:
+    """Return the scenario sequence number of one run.
+
+    A run without a nonce keeps the first sequence, so the scenario builds
+    the records it always built.  A named run gets a sequence of its own,
+    so its portal references are fresh and a repeated click creates new
+    cases instead of the same ones again.
+    """
+    if nonce is None:
+        return 1
+    digest = hashlib.sha256(str(nonce).encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) % 900_000 + 100
 
 
 class IntakeService:
@@ -227,10 +249,23 @@ class IntakeService:
         )
 
     def simulate(
-        self, scenario: str, *, count: int | None, actor: ActorContext
+        self,
+        scenario: str,
+        *,
+        count: int | None,
+        actor: ActorContext,
+        nonce: str | None = None,
     ) -> list[IntakeSubmitResult]:
-        """Submit one deterministic scenario through the same governed path."""
-        base = build_scenario(scenario, count=count)
+        """Submit one deterministic scenario through the same governed path.
+
+        ``nonce`` names the run.  Two runs of the same scenario with
+        different nonces create new cases, because each run builds its own
+        portal references; a run without a nonce builds the references the
+        scenario always built, so a repeat of it is (correctly) a duplicate.
+        """
+        base = build_scenario(
+            scenario, count=count, sequence_start=_sequence_start(nonce)
+        )
         records = list(base)
         if count is not None and scenario != "random" and count > len(records):
             # Extra records repeat the scenario with fresh portal references;
@@ -260,11 +295,73 @@ class IntakeService:
             target_id=DATASET_KEY,
             reason=f"simulated scenario {scenario!r} ({len(results)} record(s))",
             references=[result.portal_reference for result in results],
-            metadata={"scenario": scenario, "count": len(results)},
+            metadata={
+                "scenario": scenario,
+                "count": len(results),
+                "nonce": nonce or "",
+            },
+        )
+        return results
+
+    def generate_cases(
+        self, seed: int, count: int, *, nonce: str, actor: ActorContext
+    ) -> list[IntakeSubmitResult]:
+        """Create a batch of generated records and submit each of them.
+
+        The records are built by
+        :func:`acme_city.portal_intake.generated.generate_outcomes` and
+        submitted through the same governed path as any other intake record,
+        so every case writes its audit row and waits for the intake agent.
+
+        Two caps are refused here: one call may not build more than
+        :data:`acme_city.portal_intake.generated.MAX_GENERATED_PER_CALL`
+        records, and the demonstration may not hold more than
+        :data:`acme_city.portal_intake.generated.MAX_GENERATED_TOTAL`
+        generated cases.
+        """
+        batch = generated.generate_outcomes(seed, count, nonce=nonce)
+        held = self._generated_case_count()
+        if held + len(batch) > generated.MAX_GENERATED_TOTAL:
+            raise ValidationError(
+                f"the demonstration already holds {held} generated case(s); "
+                f"{len(batch)} more would pass the total of "
+                f"{generated.MAX_GENERATED_TOTAL}"
+            )
+        results = [self.submit_record(item.record, actor) for item in batch]
+        mix: dict[str, int] = {}
+        for item in batch:
+            mix[item.outcome] = mix.get(item.outcome, 0) + 1
+        self._audit.append(
+            action="intake.generate",
+            actor=actor,
+            target_type="source_dataset",
+            target_id=DATASET_KEY,
+            reason=(
+                f"generated {len(batch)} intake record(s) with seed {seed} "
+                f"and nonce {nonce}"
+            ),
+            references=[item.record.portal_reference for item in batch],
+            metadata={"seed": seed, "nonce": nonce, "count": len(batch), "mix": mix},
         )
         return results
 
     # ----------------------------------------------------------------- helpers
+
+    def _generated_case_count(self) -> int:
+        """Return how many generated cases the demonstration already holds."""
+        rows = self._session.execute(
+            select(source.SourceSnapshot.source_record_id).where(
+                source.SourceSnapshot.source_system_id == SOURCE_SYSTEM_ID,
+                source.SourceSnapshot.source_dataset_id == DATASET_KEY,
+            )
+        ).scalars().all()
+        return len(
+            {
+                row
+                for row in rows
+                if row.startswith(generated.GENERATED_REFERENCE_PREFIX)
+            }
+        )
 
     def _existing_application(self, portal_reference: str) -> permit.Application | None:
         rows = self._session.execute(
