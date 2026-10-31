@@ -47,6 +47,12 @@ STAFF_FRAME_ADDED = (
 
 #: The selectors the persona menu (slice S4) added on purpose: the chip in the
 #: top bar and the list of personas that opens under it.
+#: The agents' Incoming list (slice D4) added these on purpose.
+AGENT_INBOX_ADDED = (
+    ".agent-inbox .card-b > .lock",
+    ".agent-inbox .action-form",
+)
+
 PERSONA_MENU_ADDED = (
     ".account-trigger::after",
     ".account-switch-label",
@@ -151,6 +157,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         if selector not in STAFF_FRAME_REMOVED
         and selector not in STAFF_FRAME_ADDED
         and selector not in PERSONA_MENU_ADDED
+        and selector not in AGENT_INBOX_ADDED
     ]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])

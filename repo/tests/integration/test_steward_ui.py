@@ -1010,7 +1010,7 @@ def test_the_activity_leads_with_the_action_and_the_record(
     choose(client, "persona_data_steward")
     seed(environment)
     body = client.get("/activity").text
-    assert "Recorded stewardship decisions and changes." in body
+    # The sub line was removed on purpose (slice O2; tests/unit/test_queues.py).
     rows = activity_rows(body)
     assert len(rows) == 4
     assert all("Candidate links proposed" in row for row in rows)
