@@ -14,7 +14,7 @@ body[data-screen] .demo-switch { bottom: 12px; }
 .demo-switch > summary::-webkit-details-marker { display: none; }
 .demo-switch > summary svg { width: 16px; height: 16px; flex: none; }
 .demo-switch > summary:hover { background: #f1f4f7; }
-.demo-switch > summary:focus-visible, .demo-switch button:focus-visible, .demo-switch a:focus-visible {
+.demo-switch > summary:focus-visible, .demo-switch button:focus-visible {
   outline: 3px solid #1a5fa0; outline-offset: 2px;
 }
 .demo-switch-panel {
@@ -23,7 +23,6 @@ body[data-screen] .demo-switch { bottom: 12px; }
   box-shadow: 0 8px 28px rgba(0,0,0,.25);
 }
 .demo-switch-panel p { margin: 0 0 6px; }
-.demo-switch-note { font-size: 12px; color: #4a5b6b; }
 .demo-switch-current { font-size: 12px; }
 .demo-switch ul { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
 .demo-switch li { margin: 0; }
@@ -36,7 +35,6 @@ body[data-screen] .demo-switch { bottom: 12px; }
 .demo-switch button span { font-weight: 400; font-size: 11.5px; color: #4a5b6b; }
 .demo-switch button:hover { background: #e8eef4; }
 .demo-switch button[aria-current="true"] { border-color: #1a5fa0; background: #e3eef8; }
-.demo-switch a { color: #1a5fa0; font-size: 12px; }
 @media (max-width: 760px) {
   /* Clear the staff app's bottom navigation bar: 78px here (and in max-height below)
      must stay in step with --ui-clear-bottom. */
@@ -45,7 +43,6 @@ body[data-screen] .demo-switch { bottom: 12px; }
   /* Five choices fit between the button and the top of a 390px screen: the panel
      is as wide as the screen allows, scrolls when short, and its buttons are compact. */
   .demo-switch-panel { width: min(320px, calc(100vw - 24px)); max-height: calc(100vh - 78px - 72px); overflow-y: auto; }
-  .demo-switch-note { display: none; }
   .demo-switch ul { gap: 4px; }
   .demo-switch button { padding: 6px 10px; min-height: 44px; }
 }

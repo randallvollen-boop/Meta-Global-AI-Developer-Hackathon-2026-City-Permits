@@ -8,7 +8,6 @@
     <span>Demo controls</span>
   </summary>
   <div class="demo-switch-panel">
-    <p class="demo-switch-note">Demonstration control for switching users. It sits outside the City website and the permit application. In a real deployment people would sign in through the City's front door and their role would come from that sign-in.</p>
     {% if actor %}<p class="demo-switch-current">Now acting as <strong>{{ actor.label }}</strong></p>{% endif %}
     <ul>
       {% for persona in personas %}
@@ -21,7 +20,6 @@
       </li>
       {% endfor %}
     </ul>
-    <a href="/city/">Open the City website home</a>
   </div>
 </details>
 {% endif %}

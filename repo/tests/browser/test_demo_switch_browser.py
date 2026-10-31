@@ -14,6 +14,15 @@ PERSONAS = (
     "persona_city_administrator",
 )
 
+#: The home each persona lands on after the switch.
+HOMES = {
+    "persona_applicant": "/city/",
+    "persona_agent_operator": "/agents",
+    "persona_data_steward": "/steward",
+    "persona_permit_reviewer": "/queue",
+    "persona_city_administrator": "/overview",
+}
+
 
 @pytest.mark.parametrize("actor_id", ["persona_data_steward", "persona_applicant"])
 def test_open_switch_fits_five_choices_at_390(
@@ -41,3 +50,15 @@ def test_open_switch_fits_five_choices_at_390(
         assert_not_covered(page, page.locator(".demo-switch > summary"))
         assert_not_covered(page, buttons.nth(0))
         assert_not_covered(page, buttons.nth(4))
+
+
+@pytest.mark.parametrize("actor_id", PERSONAS)
+def test_each_persona_button_switches_and_lands_on_its_home(
+    server: BrowserServer, page, login, actor_id: str
+) -> None:
+    """Clicking a persona names it as the acting persona and opens its home."""
+    login("persona_data_steward")
+    page.locator(".demo-switch > summary").click()
+    page.locator(f'[data-demo-persona="{actor_id}"]').click()
+    page.wait_for_url(f"{server.base_url}{HOMES[actor_id]}*")
+    assert page.url.split("?")[0].endswith(HOMES[actor_id]), page.url
