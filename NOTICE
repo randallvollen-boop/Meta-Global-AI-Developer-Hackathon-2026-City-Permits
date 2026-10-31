@@ -5,5 +5,9 @@ See LICENSE. No permission is granted to reproduce, modify, redistribute,
 sublicense, host commercially, or sell the software except as expressly
 authorized in writing by Randall Vollen.
 
+Commits 3827ea3 to 5eef256 briefly contained an Apache-2.0 file while the
+repository was private; the project was never published under that license,
+and it was replaced on 2026-10-29.
+
 All people, businesses, parcels, permits, fees and rules in this product are
 fictional.
