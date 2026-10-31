@@ -33,6 +33,18 @@ PREFIXES = {
     "city-community.css": (".community-page", ".community-record-page"),
 }
 
+#: The selectors the staff frame (slice S1) removed on purpose: the demo
+#: banner, the side foot and the build label that stood in it.
+STAFF_FRAME_REMOVED = (".demo-banner", ".side-foot", ".mock-tag")
+
+#: The selectors the staff frame (slice S1) added on purpose: the disclosure
+#: that holds the detail list of the last action.
+STAFF_FRAME_ADDED = (
+    ".feedback-more",
+    ".feedback-more > summary",
+    ".feedback-more > summary:hover",
+)
+
 
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -114,6 +126,16 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
     new = _selectors((STATIC / "app.css").read_text(encoding="utf-8"))
     insight = _selectors((STATIC / "insight.css").read_text(encoding="utf-8"))
     assert insight, "insight.css holds selectors"
+    # The staff frame (slice S1) dropped the banner and the side foot and added
+    # the rule for the "More details" disclosure.  Those selectors changed on
+    # purpose and are compared apart; every other selector must still be
+    # exactly what it was before the insight move.
+    old = [selector for selector in old if selector not in STAFF_FRAME_REMOVED]
+    new = [
+        selector
+        for selector in new
+        if selector not in STAFF_FRAME_REMOVED and selector not in STAFF_FRAME_ADDED
+    ]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])
     assert old == new[:first] + insight + new[first:]

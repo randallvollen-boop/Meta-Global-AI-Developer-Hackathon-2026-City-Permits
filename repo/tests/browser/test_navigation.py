@@ -269,14 +269,17 @@ def test_the_history_panel_stays_present_on_the_record_screens(
         assert page.locator('[data-testid="history-panel"]').count() == 1, path
 
 
-def test_the_banner_states_that_the_data_is_fictional(
+def test_the_footer_states_that_the_data_is_fictional(
     page, server: BrowserServer, login
 ) -> None:
+    # Changed deliberately (staff frame, S1): the banner is gone and the
+    # disclosure is one line in the footer.
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
-    banner = page.locator('[data-testid="demo-banner"]').inner_text()
-    assert "Fictional ACME City demonstration" in banner
-    assert "Westerville" not in banner
+    assert page.locator('[data-testid="demo-banner"]').count() == 0
+    footer = page.locator('[data-testid="app-footer"]').inner_text()
+    assert "Fictional ACME City demonstration" in footer
+    assert "Westerville" not in footer
 
 
 def test_the_queue_fits_a_phone_and_no_fixed_layer_covers_it(

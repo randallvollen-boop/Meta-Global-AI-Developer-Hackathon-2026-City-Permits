@@ -184,9 +184,14 @@ def test_both_layouts_say_the_switcher_is_for_demonstration_only(client: TestCli
     choose(client, "persona_data_steward")
     staff = client.get("/queue").text
     city = client.get("/city/").text
+    # Changed deliberately (staff frame, S1): the staff frame carries no banner
+    # any more, so the "ease of switching" sentence stays on the City website.
+    # Both layouts still say that a real deployment takes the role from a
+    # sign-in, which is what makes the switcher a demonstration control.
     for page in (staff, city):
-        assert "ease of" in page and "sign in" in page and "front door" in page
+        assert "sign in" in page and "front door" in page
         assert "role would come from that sign-in" in page
+    assert "ease of" in city
     assert "Fictional ACME City demonstration." in staff
     assert "Fictional City of Acme website" in city
 

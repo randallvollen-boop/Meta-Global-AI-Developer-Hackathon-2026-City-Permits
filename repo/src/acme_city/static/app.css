@@ -100,10 +100,6 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* ---------- Shell ---------- */
-.demo-banner {
-  background: var(--accent-soft); border-bottom: 1px solid var(--line);
-  padding: 0.55rem 0.9rem; font-size: 0.86rem; color: var(--fg);
-}
 .public-demo-notice {
   margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--accent-soft); color: var(--fg); font-size: 0.92rem;
@@ -141,15 +137,6 @@ button { font: inherit; color: inherit; }
   color: var(--fg-2); border-radius: 99px; padding: 0 7px; line-height: 18px;
 }
 .nav a[aria-current="page"] .count { background: var(--accent); color: var(--accent-fg); }
-.side-foot {
-  margin-top: auto; font-size: .74rem; color: var(--fg-3);
-  padding: 10px 8px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 6px;
-}
-.mock-tag {
-  font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
-  color: var(--fg-3); border: 1px dashed var(--line); padding: 2px 8px;
-  border-radius: 99px; width: fit-content;
-}
 /* legacy nav classes kept for compatibility */
 /* (only for a bare .app-nav; the sidebar .nav.app-nav keeps its own layout) */
 .app-nav:not(.nav) { background: var(--panel); border-bottom: 1px solid var(--line); padding: 0.4rem 0.9rem; }
@@ -648,6 +635,10 @@ textarea.inp { resize: vertical; min-height: 64px; }
 .feedback-empty { border-color: var(--line); background: var(--surface-2); }
 .feedback-title { font-size: 0.9rem; margin: 0 0 0.2rem; }
 .feedback-message { font-weight: 600; }
+/* The detail list of the last action sits behind one disclosure. */
+.feedback-more { margin: 0.4rem 0 0; }
+.feedback-more > summary { cursor: pointer; font-size: 0.82rem; color: var(--fg-2); }
+.feedback-more > summary:hover { color: var(--fg); }
 .feedback-detail, .responsibility-grid, .pair-list {
   display: grid; grid-template-columns: 1fr; gap: 0.2rem 0.8rem; margin: 0.35rem 0 0;
 }

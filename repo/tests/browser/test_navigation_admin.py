@@ -82,21 +82,18 @@ def test_the_demo_notice_is_visible_on_every_persona_home(
     if actor_id == "persona_applicant":
         # The Applicant lands on the City website, which carries its own notice.
         notice = page.locator('[data-testid="city-demo-banner"]')
+        assert notice.count() == 1
+        assert notice.is_visible()
+        assert "Fictional" in notice.inner_text()
     else:
-        notice = page.locator('[data-testid="demo-banner"]')
-    assert notice.count() == 1
-    assert notice.is_visible()
-    text = notice.inner_text()
-    if actor_id != "persona_applicant":
-        assert "Fictional ACME City demonstration. Synthetic records only." in text, text
-        about = notice.locator('[data-testid="demo-about"]')
-        assert about.count() == 1
-        assert not about.evaluate("element => element.open")
-        about.locator("summary").click()
-        assert about.evaluate("element => element.open")
-        assert "not a municipal system" in about.inner_text()
-    else:
-        assert "Fictional" in text, text
+        # Changed deliberately (staff frame, S1): the staff screens carry no
+        # banner; the disclosure is one line in the footer.
+        assert page.locator('[data-testid="demo-banner"]').count() == 0
+        footer = page.locator('[data-testid="app-footer"]')
+        assert footer.count() == 1
+        assert footer.is_visible()
+        text = " ".join(footer.inner_text().split())
+        assert text == "Fictional ACME City demonstration. Synthetic records only.", text
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
 

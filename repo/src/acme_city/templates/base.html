@@ -1,8 +1,8 @@
 {# The shared frame of the ACME City demonstration interface.
 
-   The banner states that every record on the screen is fictional.  The
-   navigation holds the eight required screens.  The feedback region reports
-   the outcome of the last action of the acting persona. #}
+   The navigation holds the eight required screens.  The footer states that
+   every record on the screen is fictional.  The feedback region reports the
+   outcome of the last action of the acting persona. #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,14 +51,6 @@
 </defs></svg>
 <a class="skip-link" href="#main">Skip to the main content</a>
 
-<div class="demo-banner" role="note" data-testid="demo-banner">
-  <strong>Fictional ACME City demonstration. Synthetic records only.</strong>
-  <details data-testid="demo-about">
-    <summary>About this demo</summary>
-    <p>Every person, address, rule, fee, payment and permit shown here is synthetic. This service is not a municipal system and it is not connected to any real city or source system. The persona buttons exist for ease of switching in this demonstration. In a real deployment, people would sign in through the City's front door and their role would come from that sign-in.</p>
-  </details>
-</div>
-
 {# The screen icons, the short mobile labels and the persona dots are the Jinja globals of ui/screen_meta.py. #}
 {# A navigation item whose group is "secondary" is listed under More tools. #}
 {% set brand_href = home.href if home else ui_home_href(actor, navigation) %}
@@ -91,10 +83,6 @@
     {% if agent_status %}
     <p class="agent-status" data-testid="agent-status">{{ agent_status.text }}</p>
     {% endif %}
-    <div class="side-foot">
-      <span class="mock-tag">Fictional data</span>
-      <span>Local candidate · schema 0004</span>
-    </div>
   </aside>
 
   <div class="main">
@@ -124,27 +112,30 @@
       </div>
     </header>
 
+{# The feedback region reports the last action of the acting persona: one
+   sentence for the person, the details behind a disclosure.  Until an action
+   has been performed the region stays for announcements and shows nothing. #}
 {% if feedback %}
 <section id="ui-feedback-region" class="feedback {% if feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
          role="status" aria-live="polite" data-testid="feedback" data-outcome="{{ feedback.outcome }}">
   <h2 class="feedback-title">Last action</h2>
   <p class="feedback-message" data-testid="feedback-message">{{ feedback.reason }}</p>
-  <dl class="feedback-detail">
-    <div><dt>Destination</dt><dd data-testid="feedback-destination">{{ feedback.destination or 'not applicable' }}</dd></div>
-    <div><dt>State</dt><dd data-testid="feedback-state">{{ feedback.state or 'not applicable' }}</dd></div>
-    <div><dt>Pending</dt><dd data-testid="feedback-pending">{% if feedback.pending %}yes, the source or the consumer has not acknowledged yet{% else %}no{% endif %}</dd></div>
-    <div><dt>Version</dt><dd data-testid="feedback-version">{{ feedback.after_version if feedback.after_version is not none else 'not applicable' }}</dd></div>
-    <div><dt>Affected</dt><dd data-testid="feedback-affected">{{ feedback.affected|join(', ') if feedback.affected else 'none' }}</dd></div>
-    <div><dt>Recorded</dt><dd>{{ feedback.occurred_at }}</dd></div>
-  </dl>
+  <details class="feedback-more" data-testid="feedback-more">
+    <summary>More details</summary>
+    <dl class="feedback-detail">
+      <div><dt>Destination</dt><dd data-testid="feedback-destination">{{ feedback.destination or 'not applicable' }}</dd></div>
+      <div><dt>State</dt><dd data-testid="feedback-state">{{ feedback.state or 'not applicable' }}</dd></div>
+      <div><dt>Pending</dt><dd data-testid="feedback-pending">{% if feedback.pending %}yes, the source or the consumer has not acknowledged yet{% else %}no{% endif %}</dd></div>
+      <div><dt>Version</dt><dd data-testid="feedback-version">{{ feedback.after_version if feedback.after_version is not none else 'not applicable' }}</dd></div>
+      <div><dt>Affected</dt><dd data-testid="feedback-affected">{{ feedback.affected|join(', ') if feedback.affected else 'none' }}</dd></div>
+      <div><dt>Recorded</dt><dd>{{ feedback.occurred_at }}</dd></div>
+    </dl>
+  </details>
 </section>
 {% else %}
-{# A steward screen shows no empty "Last action" banner: the live region stays for
-   announcements and a case shows its own short confirmation after an action. #}
-<section id="ui-feedback-region" class="feedback feedback-empty{% if quiet_feedback %} visually-hidden{% endif %}" role="status" aria-live="polite"
+<section id="ui-feedback-region" class="feedback feedback-empty visually-hidden" role="status" aria-live="polite"
          data-testid="feedback" data-outcome="none">
-  {% if not quiet_feedback %}<h2 class="feedback-title">Last action</h2>{% endif %}
-  <p class="feedback-message" data-testid="feedback-message">{% if not quiet_feedback %}No action has been performed in this session yet.{% endif %}</p>
+  <p class="feedback-message" data-testid="feedback-message"></p>
 </section>
 {% endif %}
 
@@ -199,11 +190,7 @@
 </main>
 
 <footer class="app-footer">
-  <p>
-    Fictional ACME City demonstration. The rules, the fee schedule and the
-    permit numbers are synthetic and do not state the law, the fees or the practice
-    of any real jurisdiction.
-  </p>
+  <p data-testid="app-footer">Fictional ACME City demonstration. Synthetic records only.</p>
 </footer>
   </div>
 </div>
