@@ -6,10 +6,7 @@
 {% set state_tones = {"issued": "ok", "approved": "ok", "submitted": "info", "under_review": "info", "ready_for_review": "info", "needs_information": "warn", "open": "warn", "denied": "bad"} %}
 
 <div class="page-head">
-  <div>
-    <h1>Work queue</h1>
-    <p class="sub">Everything waiting on someone, with the issue and the next step in plain words. Open a row to see where it stands.</p>
-  </div>
+  <div><h1>Work queue</h1></div>
   <div class="actions">{{ ui.help_button('queue') }}{% if can_apply %} <a class="btn primary" href="/apply" data-testid="start-application">Start a new application</a>{% endif %}</div>
 </div>
 
@@ -22,8 +19,8 @@
 </nav>
 
 {% if saved_queues %}
+<details class="opr-details" data-testid="saved-queues-details"><summary>Saved queues</summary>
 <section class="card">
-  <div class="card-h"><h2>Saved queues</h2></div>
   <div class="card-b">
     <ul class="issue-list" data-testid="saved-queues">
       {% for link in saved_queues %}
@@ -32,6 +29,7 @@
     </ul>
   </div>
 </section>
+</details>
 {% endif %}
 
 <section class="card">

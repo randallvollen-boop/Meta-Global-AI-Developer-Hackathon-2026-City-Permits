@@ -1480,7 +1480,13 @@ def _permit_intake_process_selected(ctx: ActionContext) -> Outcome:
         target_type="agent",
         target_id="intake",
         affected=result.processed,
-        extra={"detail": ", ".join(f"{item['reference']}: {item['outcome']}" for item in result.details)},
+        extra={
+            "detail": ", ".join(f"{item['reference']}: {item['outcome']}" for item in result.details),
+            "runs": [
+                {"reference": item["reference"], "href": f"/agents/runs/{item['run_id']}"}
+                for item in result.details
+            ],
+        },
     )
 
 
@@ -2913,6 +2919,7 @@ async def run_ui_action(
                 "pending": outcome.pending,
                 "affected": list(outcome.affected),
                 "version": outcome.after_version,
+                "runs": outcome.extra.get("runs", []),
             },
         )
     return RedirectResponse(destination, status_code=303)

@@ -4,10 +4,7 @@
 
 {% block content %}
 <div class="page-head">
-  <div>
-    <h1>Intake queue</h1>
-    <p class="sub">The cases the City has in front of it, in saved views. Search, filter and sort work through the address bar alone.</p>
-  </div>
+  <div><h1>Intake queue</h1></div>
   <div class="actions">{{ ui.help_button('intake_queue') }}</div>
 </div>
 
@@ -131,10 +128,13 @@
           <td class="stw-cell" data-label="Owner">{{ row.owner_label or 'Unassigned' }}</td>
           <td class="stw-cell stw-cell-next" data-label="Next step" data-testid="intake-next-step">{{ row.next_step }}</td>
           <td class="stw-cell stw-cell-signals" data-label="Signals">
+            <details class="opr-details" data-testid="intake-signals"><summary>Signals</summary>
             {% if row.signals.duplicate.state != 'none' %}<div data-testid="signal-duplicate"><span class="badge badge-blocking">duplicate</span> {{ row.signals.duplicate.detail }}</div>{% endif %}
             {% if row.signals.document_quality.flags %}<div data-testid="signal-document-quality"><span class="badge badge-conflicting">document</span> {{ row.signals.document_quality.state }}</div>{% endif %}
             <div data-testid="signal-parcel"><span class="badge badge-submitted">parcel</span> {{ row.signals.parcel.status }}{% if row.signals.parcel.parcel_number %} ({{ row.signals.parcel.parcel_number }}){% endif %}</div>
             <div data-testid="signal-agent"><span class="badge badge-submitted">agent</span> {{ row.signals.agent.state }}</div>
+            </details>
+            {% if can_process and row.signals.agent.state != 'not run' %}<a href="/agents/cases/{{ row.application_id }}" data-testid="intake-run-link">View run</a>{% endif %}
           </td>
           <td class="stw-cell nowrap" data-label="Age">
             {% if row.age_days is not none %}
@@ -151,7 +151,6 @@
     </table>
     </div>
     <div class="toolbar">
-      <p class="muted" style="margin:0">{{ queue.definitions.age }} {{ queue.definitions.target }}</p>
       <p style="margin:0">
         <button type="submit" class="button button-primary btn primary" data-testid="intake-bulk-submit"
                 {% if not can_process or not agent_awake or not queue.rows %}disabled aria-describedby="intake-bulk-reason"{% endif %}>Process selected with agent</button>
@@ -169,16 +168,13 @@
     {% endif %}
   </form>
 </section>
-
-<section class="panel card" id="intake-definitions">
-  <div class="card-h"><h2>What these figures mean</h2></div>
-  <div class="card-b">
-    <p class="muted" data-testid="intake-definitions">{{ queue.definitions.signals }}</p>
-    <ul class="issue-list" data-testid="intake-tab-definitions">
-      {% for tab in queue.tabs %}
-      <li><strong>{{ tab.label }}</strong>: {{ tab.description }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-</section>
+<details class="opr-details" id="intake-definitions">
+  <summary>What these figures mean</summary>
+  <p class="muted" data-testid="intake-definitions">{{ queue.definitions.signals }}</p>
+  <ul class="issue-list" data-testid="intake-tab-definitions">
+    {% for tab in queue.tabs %}
+    <li><strong>{{ tab.label }}</strong>: {{ tab.description }}</li>
+    {% endfor %}
+  </ul>
+</details>
 {% endblock %}

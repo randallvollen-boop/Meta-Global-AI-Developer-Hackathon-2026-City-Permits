@@ -430,3 +430,130 @@ def test_the_tabs_of_the_catalogue_match_the_views_of_the_queue(
             ]
     finally:
         factory.dispose()
+
+
+# ------------------------------------------------------------- the slim pages
+
+import re as _re
+from html.parser import HTMLParser as _HTMLParser
+
+from fastapi.testclient import TestClient as _TestClient
+
+from acme_city.app import create_app as _create_app
+from acme_city.ui.router import router as _ui_router
+
+
+class _Form(_HTMLParser):
+    """Read the bulk form: its hidden fields, checkboxes and submit button."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.inside = False
+        self.fields: dict[str, str] = {}
+        self.selections: list[str] = []
+        self.button: dict[str, str | None] = {}
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "form":
+            self.inside = a.get("data-testid") == "intake-bulk-form"
+        elif self.inside and tag == "input":
+            if a.get("type") == "hidden":
+                self.fields[a["name"]] = a.get("value", "")
+            elif a.get("type") == "checkbox":
+                self.selections.append(a["value"])
+        elif self.inside and tag == "button":
+            self.button = a
+
+    def handle_endtag(self, tag):
+        if tag == "form":
+            self.inside = False
+
+
+def _operator(seeded: Settings, actor: str = "persona_agent_operator"):
+    app = _create_app(seeded)
+    app.include_router(_ui_router)
+    client = _TestClient(app)
+    client.__enter__()
+    assert client.post("/api/session/select", json={"actor_id": actor}).status_code == 200
+    return client
+
+
+def _arrive(seeded: Settings) -> None:
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            make_arrival(session)
+    finally:
+        factory.dispose()
+
+
+def test_the_bulk_button_is_disabled_with_its_reason_while_the_agent_sleeps(
+    seeded: Settings,
+) -> None:
+    _arrive(seeded)
+    client = _operator(seeded)
+    try:
+        page = client.get("/queue/intake").text
+        form = _Form()
+        form.feed(page)
+        assert "disabled" in form.button
+        assert form.button["aria-describedby"] == "intake-bulk-reason"
+        assert 'data-testid="intake-bulk-locked"' in page
+        assert "The intake agent is asleep" in page
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_the_bulk_form_posts_application_id_and_version_and_links_the_runs(
+    seeded: Settings,
+) -> None:
+    _arrive(seeded)
+    client = _operator(seeded)
+    try:
+        toggle = client.get("/agent/intake").text
+        token = _re.search(r'name="csrf_token" value="([^"]+)"', toggle).group(1)
+        woke = client.post(
+            "/ui/actions/agent.toggle",
+            data={"csrf_token": token, "action_id": "agent.toggle", "next": "/agent/intake",
+                  "agent_key": "intake", "mode": "awake"},
+            headers={"Accept": "application/json"}, follow_redirects=False,
+        )
+        assert woke.json()["status"] == "accepted"
+        page = client.get("/queue/intake").text
+        form = _Form()
+        form.feed(page)
+        assert "disabled" not in form.button
+        assert form.selections
+        assert all(_re.fullmatch(r"[^:]+:\d+", value) for value in form.selections)
+        response = client.post(
+            "/ui/actions/permit.intake.process_selected",
+            data={**form.fields, "selection": form.selections[:1]},
+            headers={"Accept": "application/json"}, follow_redirects=False,
+        )
+        body = response.json()
+        assert body["status"] == "accepted", body
+        runs = body["runs"]
+        assert runs and runs[0]["href"].startswith("/agents/runs/")
+        assert client.get(runs[0]["href"]).status_code == 200
+        # The processed case now links to its run from the queue.
+        assert 'data-testid="intake-run-link"' in client.get("/queue/intake").text
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_the_queue_pages_carry_no_sub_text_and_keep_details_collapsed(
+    seeded: Settings,
+) -> None:
+    client = _operator(seeded, "persona_data_steward")
+    try:
+        intake = client.get("/queue/intake").text
+        assert "Search, filter and sort work through the address bar" not in intake
+        assert 'data-testid="intake-signals"' not in intake or "<details" in intake
+        assert 'id="intake-definitions"' in intake
+        activity = client.get("/activity").text
+        assert "Recorded stewardship decisions and changes." not in activity
+        work = client.get("/queue").text
+        assert "Everything waiting on someone" not in work
+    finally:
+        client.__exit__(None, None, None)
