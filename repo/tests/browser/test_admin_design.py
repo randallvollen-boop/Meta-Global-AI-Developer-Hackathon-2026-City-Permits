@@ -144,6 +144,7 @@ def test_the_proposal_review_fits_a_phone(
     """The checked proposal fits a phone and its save control stays reachable."""
     login("persona_city_administrator")
     open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-muse-examples"] > summary').click()
     page.locator('[data-testid="policy-question"]').fill(
         "What if the side and rear yard fence limit were 7 ft?"
     )
@@ -162,6 +163,7 @@ def test_a_refused_proposal_offers_the_way_back(
     """A refused proposal offers the two ways forward and no save."""
     login("persona_city_administrator")
     open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-muse-examples"] > summary').click()
     page.locator('[data-testid="policy-question"]').fill(
         "What if no permit were required for a shed?"
     )
@@ -344,6 +346,7 @@ def test_the_scenarios_list_offers_the_recorded_examples(
     """The recorded questions are choices, and the empty form opens when asked."""
     login("persona_city_administrator")
     open_screen(page, server, "/policy/scenarios")
+    page.locator('[data-testid="policy-muse-examples"] > summary').click()
     choice = page.locator('[data-testid="policy-question-choice"]')
     assert choice.count() == 1
     text = choice.inner_text()

@@ -15,9 +15,8 @@
 </div>
 
 {% if notice %}<p class="feedback feedback-accepted" role="status" data-testid="policy-notice">{{ notice }}</p>{% endif %}
-<p class="muted">* Required &nbsp;·&nbsp; Fields marked (optional) can be left empty.</p>
 
-<div class="admin-b-split">
+<div>
   <section class="card" aria-labelledby="changes-heading" data-testid="policy-changes">
     <h2 id="changes-heading">Your changes</h2>
     <ol data-testid="policy-change-list">
@@ -53,7 +52,7 @@
 
   <section class="card" aria-labelledby="run-heading" id="run-comparison" data-testid="policy-run-panel">
     <h2 id="run-heading">Run comparison</h2>
-    <p class="muted">The run scores the same frozen cases twice: under today's published rules and under this what-if. {% if starting_text %}Starting population from the City view: {{ starting_text }}.{% endif %}</p>
+    <p class="muted">Same cases, published rules against this what-if.{% if starting_text %} Starting population from the City view: {{ starting_text }}.{% endif %}</p>
     <form method="post" action="/policy/scenarios/{{ scenario.id }}/run" data-testid="policy-run-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
       <div class="admin-b-run-main">
@@ -79,12 +78,15 @@
         <p class="field"><label for="run-start">Decided from, for example 2026-01-01 (optional)</label><input id="run-start" name="range_start"></p>
         <p class="field"><label for="run-end">Decided before, for example 2026-12-31 (optional)</label><input id="run-end" name="range_end"></p>
       </details>
-      <p class="muted" data-testid="policy-run-applies">Which settings the run reads depends on the cases you include.</p>
-      <ul class="admin-b-applies" data-testid="policy-run-applies-list">
-        <li><strong>Synthetic year (sample data)</strong>: the seed, the number of cases, and the narrowing by permit type, district and business category.</li>
-        <li><strong>Current applications</strong>: the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
-        <li><strong>Applications decided in a date range</strong>: the dates, and the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
-      </ul>
+      <details>
+        <summary>More details</summary>
+        <p class="muted" data-testid="policy-run-applies">Which settings the run reads depends on the cases you include.</p>
+        <ul class="admin-b-applies" data-testid="policy-run-applies-list">
+          <li><strong>Synthetic year (sample data)</strong>: the seed, the number of cases, and the narrowing by permit type, district and business category.</li>
+          <li><strong>Current applications</strong>: the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
+          <li><strong>Applications decided in a date range</strong>: the dates, and the narrowing by permit type and district. The seed and the number of cases do not apply.</li>
+        </ul>
+      </details>
       {% set blocked = (not can_run) or (not changes) or (check.unsupported) or (check.issues) %}
       <p><button type="submit" class="button btn primary button-primary" data-testid="policy-run-submit"{% if blocked %} disabled aria-describedby="policy-run-reason"{% endif %}>Run comparison</button></p>
       {% if blocked %}
@@ -104,10 +106,10 @@
 
 <section class="card" aria-labelledby="add-heading" id="add-a-change" data-testid="policy-add">
   <h2 id="add-heading">Add a change</h2>
-  <p class="muted">Each change is checked against today's published rules. These kinds are supported.</p>
 
-  <details open>
+  <details>
     <summary>Rule limit</summary>
+    <p class="muted">Each change is checked against today's published rules.</p>
     <p class="muted">Change the limit of a rule, or the way it is compared.</p>
     <form method="post" action="/policy/scenarios/{{ scenario.id }}/save" data-testid="policy-add-threshold">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="expected_version" value="{{ scenario.version }}">
@@ -256,13 +258,13 @@
   </form>
 </details>
 
-<section class="card" aria-labelledby="runs-heading" data-testid="policy-scenario-runs">
+<details class="card" data-testid="policy-scenario-runs">
+  <summary>More details</summary>
   <h2 id="runs-heading">Runs of this what-if</h2>
   <ul>
     {% for r in runs %}<li><a href="/policy/runs/{{ r.id }}">Run of revision {{ r.revision }}</a>: {{ r.population }}{% if r.synthetic %} <span class="badge-synthetic">synthetic data</span>{% endif %}, {{ r.size }} cases, <span class="mono">{{ r.created_at }}</span></li>
     {% else %}<li class="muted">No run yet.</li>{% endfor %}
   </ul>
-</section>
-{% include "components/evidence_panel.html" %}
+</details>
 </div>
 {% endblock %}

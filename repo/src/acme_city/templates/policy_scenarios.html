@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>What-if scenarios</h1>
-    <p class="sub">Compare proposed rules using fictional cases. Published rules stay unchanged.</p>
+    <p class="sub">Published rules stay unchanged.</p>
   </div>
   <div class="actions">
     <a class="button btn" href="#create-whatif" data-testid="policy-create-anchor">Create a what-if</a>
@@ -48,7 +48,7 @@
   {% endif %}
 
   <h3 id="examples">Start from an example</h3>
-  <p class="muted">Each example is a proposed change to a published rule. The what-if is saved beside the live rules and never changes them.</p>
+  <p class="muted">Each example proposes a change and leaves the live rules as they are.</p>
   <ul class="policy-suggestions" data-testid="policy-suggestions">
     {% for item in suggestions %}
     <li>
@@ -85,6 +85,8 @@
     </form>
   </details>
 
+  <details data-testid="policy-muse-examples">
+  <summary>More details</summary>
   <div data-testid="policy-propose">
   <h3>Explore recorded Muse examples</h3>
   <p class="muted" data-testid="policy-propose-mode">{{ propose.mode_note }}</p>
@@ -127,14 +129,15 @@
   <p class="muted" data-testid="policy-propose-guard">Your role cannot do this.</p>
   {% endif %}
   </div>
+  </details>
 </section>
 {% endset %}
 
 {% if scenarios %}{{ saved_work }}{{ creation }}{% else %}{{ creation }}{{ saved_work }}{% endif %}
 
-<section class="card" aria-labelledby="runs-heading" data-testid="policy-recent-runs">
+<details class="card" data-testid="policy-recent-runs">
+  <summary>More details</summary>
   <h2 id="runs-heading">Recent runs</h2>
-  <p class="muted">A run is a kept snapshot. It stays here even after its what-if is deleted.</p>
   <div class="tbl-wrap" role="region" aria-label="Recent runs">
     <table class="data-table admin-b-stack">
       <caption class="visually-hidden">Recent runs</caption>
@@ -153,7 +156,6 @@
       </tbody>
     </table>
   </div>
-</section>
-{% include "components/evidence_panel.html" %}
+</details>
 </div>
 {% endblock %}

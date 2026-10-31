@@ -253,10 +253,16 @@ def test_the_evidence_and_history_panels_stay_present(
         "/activity",
         "/admin",
     }
+    # Changed deliberately (demo polish, AD2): the what-if list drops the
+    # evidence panel. The decision is the saved what-if and the run.
+    no_evidence = {"/policy/scenarios"}
     for path, _title in SCREENS:
         if path in collection_screens:
             continue
         page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        if path in no_evidence:
+            assert page.locator('[data-testid="evidence-panel"]').count() == 0, path
+            continue
         assert page.locator('[data-testid="evidence-panel"]').count() == 1, path
     page.goto(
         f"{server.base_url}/masters/party_cedarline?view=sources", wait_until="domcontentloaded"

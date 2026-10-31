@@ -7,12 +7,15 @@
 <div class="page-head">
   <div>
     <h1>Policy briefing</h1>
-    <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a> · <a href="/policy/scenarios">All scenarios</a></p>
+    <p class="sub"><a href="/policy/runs/{{ run_id }}">Back to the results</a></p>
   </div>
   <div class="actions">
     {{ ui.help_button('policy_briefing') }}
     <a class="button btn primary button-primary" href="/policy/runs/{{ run_id }}/briefing/download?format=html" data-testid="policy-download-html" download>Download HTML</a>
-    <a class="muted" href="/policy/runs/{{ run_id }}/briefing/download?format=md" data-testid="policy-download-md" download>Download Markdown</a>
+    <details>
+      <summary>More details</summary>
+      <a class="muted" href="/policy/runs/{{ run_id }}/briefing/download?format=md" data-testid="policy-download-md" download>Download Markdown</a>
+    </details>
   </div>
 </div>
 
@@ -23,13 +26,13 @@
     <h2>{{ briefing.scenario_name }}</h2>
     <p data-testid="policy-briefing-population">{{ briefing.population_label }} · Revision {{ run.scenario_revision_number }}</p>
     <p class="muted" data-testid="policy-briefing-source">{{ muse.display_source_label }}</p>
-    {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> The cases counted here are generated samples. None of them is a real application.</p>{% endif %}
+    {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> Generated samples.</p>{% endif %}
   </header>
   {% for section in briefing.sections %}
   <section data-testid="policy-briefing-section">
     <h2>{{ section.heading }}</h2>
     {% for p in section.paragraphs %}<p>{{ p }}</p>{% endfor %}
-    {% if briefing.writer == 'muse' and section.fact_ids %}<p class="muted" data-testid="policy-section-cites">Cites: {{ section.fact_ids|join(', ') }}</p>{% endif %}
+    {% if briefing.writer == 'muse' and section.fact_ids %}<details><summary>More details</summary><p class="muted" data-testid="policy-section-cites">Cites: {{ section.fact_ids|join(', ') }}</p></details>{% endif %}
     {% if section.bullets %}<ul>{% for b in section.bullets %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
     {% if section.table %}
     <div class="tbl-wrap"><table class="data-table">
@@ -40,11 +43,11 @@
     {% endif %}
   </section>
   {% endfor %}
-  <p class="muted" data-testid="policy-briefing-footer">{{ briefing.footer }}</p>
 </article>
 
 <details class="card" data-testid="policy-facts">
-  <summary>The facts behind this briefing</summary>
+  <summary>More details</summary>
+  <p class="muted" data-testid="policy-briefing-footer">{{ briefing.footer }}</p>
   <p class="muted">Each figure comes from the saved results for this run.</p>
   <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Facts behind this briefing</caption>
@@ -53,8 +56,9 @@
   </table></div>
 </details>
 
-<details class="card" data-testid="policy-writer"{% if briefing.writer == 'muse' or muse.rejected %} open{% endif %}>
-  <summary>Muse and validation details</summary>
+{% if muse.rejected %}<p>The Muse briefing was not used.</p>{% endif %}
+<details class="card" data-testid="policy-writer">
+  <summary>More details</summary>
   {% if briefing.writer == 'muse' %}
   <p data-testid="policy-writer-muse">This {% if muse.live %}Muse{% else %}recorded Muse{% endif %} briefing passed its checks. {{ muse_source(muse.source) }}</p>
   {% else %}
@@ -85,6 +89,5 @@
 {% else %}
 <p class="muted" data-testid="policy-writer-guard">Your role cannot ask Muse to write the briefing.</p>
 {% endif %}
-{% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

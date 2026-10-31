@@ -14,14 +14,16 @@
 <section class="card" aria-labelledby="question-heading" data-testid="policy-proposal">
   <h2 id="question-heading">Your question</h2>
   <p data-testid="policy-proposal-question">{{ proposal.question }}</p>
-  <p class="muted" data-testid="policy-proposal-source">{{ muse_source(proposal.source) }}</p>
+  <details>
+    <summary>More details</summary>
+    <p class="muted" data-testid="policy-proposal-source">{{ muse_source(proposal.source) }}</p>
+  </details>
 </section>
 
 {% if proposal.accepted %}
 <section class="card" aria-labelledby="changes-heading" data-testid="policy-proposal-changes">
   <h2 id="changes-heading">Proposed changes</h2>
-  <p class="admin-b-state">Checked proposal. No what-if has been saved.</p>
-  <p class="muted">Each change was read and applied on its own to a copy of today's published rules, and the set was applied together. Muse proposes; you decide.</p>
+  <p>Muse proposes; you decide. Nothing is saved until you save it.</p>
   <ol class="admin-b-changes">
     {% for card in cards %}
     <li data-testid="policy-proposal-change">
@@ -43,7 +45,6 @@
       <label for="proposal-name">Name of the what-if <span aria-hidden="true">*</span></label>
       <input id="proposal-name" name="name" maxlength="200" required aria-required="true" value="{{ proposal.name }}" data-testid="policy-proposal-name">
     </p>
-    <p class="muted">* Required</p>
     <p><button type="submit" class="button btn primary button-primary" data-testid="policy-proposal-save">Save the what-if</button></p>
     <p class="muted">This saves a what-if. It does not run it, and it changes no published rule.</p>
   </form>
@@ -54,15 +55,18 @@
 {% else %}
 <section class="card" aria-labelledby="notused-heading" data-testid="policy-proposal-rejected">
   <h2 id="notused-heading">These changes could not be used</h2>
-  <p class="admin-b-state">Nothing was saved. Your question was not answered with a different proposal.</p>
+  <p>Nothing was saved.</p>
   <p class="callout" data-testid="policy-proposal-notice">{{ proposal.notice }}</p>
   {% if proposal.items %}
-  <h3>What was checked</h3>
-  <ol data-testid="policy-proposal-checks">
-    {% for item in proposal.items %}
-    <li>{{ item.description }}{% if item.issues %}: <span class="muted">{{ item.issues|join('; ') }}</span>{% endif %}</li>
-    {% endfor %}
-  </ol>
+  <details>
+    <summary>More details</summary>
+    <h3>What was checked</h3>
+    <ol data-testid="policy-proposal-checks">
+      {% for item in proposal.items %}
+      <li>{{ item.description }}{% if item.issues %}: <span class="muted">{{ item.issues|join('; ') }}</span>{% endif %}</li>
+      {% endfor %}
+    </ol>
+  </details>
   {% endif %}
   {% if proposal.issues and not proposal.items %}
   <ul>{% for i in proposal.issues[:8] %}<li><span class="mono">{{ i.code }}</span> {{ i.message }}</li>{% endfor %}</ul>
@@ -71,6 +75,5 @@
   <p><a class="button btn" href="/policy/scenarios#build-whatif">Build a what-if</a></p>
 </section>
 {% endif %}
-{% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

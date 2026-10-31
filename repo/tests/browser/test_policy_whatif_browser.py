@@ -38,7 +38,7 @@ def test_the_demo_path_fits_a_phone_and_a_desktop(page, server: BrowserServer, l
                     briefing.replace(server.base_url, "")):
             page.goto(f"{server.base_url}{url}", wait_until="domcontentloaded")
             assert overflow(page) <= 1, (width, url, overflow(page))
-            assert page.locator('[data-testid="evidence-panel"]').count() == 1, url
+            assert page.locator('[data-testid="evidence-panel"]').count() == 0, url
     assert page.recorded_errors == []
 
 
@@ -50,6 +50,7 @@ def test_the_results_screen_shows_the_labels_and_the_drawer_works_by_keyboard(
     _editor, run = open_fence_run(page, server)
     assert page.locator('[data-testid="policy-population-label"]').inner_text().startswith("Synthetic year (sample data)")
     assert page.locator('[data-testid="synthetic-badge"]').count() >= 1
+    page.locator('[data-testid="policy-result-more"] > summary').click()
     link = page.locator('[data-detail-kind="policy-run"]').first
     link.focus()
     page.keyboard.press("Enter")
@@ -92,18 +93,21 @@ def test_the_muse_demo_path_fits_a_phone_and_a_desktop(page, server: BrowserServ
         page.locator('[data-testid="policy-run-submit"]').click()
         page.wait_for_url("**/policy/runs/polrun_*")
         run = page.url.split("?")[0]
+        page.locator('[data-testid="policy-explain"] > summary').click()
         page.locator('[data-testid="policy-explain-submit"]').click()
         page.wait_for_selector('[data-testid="policy-explanation"]')
         assert "Recorded replay" in page.locator('[data-testid="policy-explain-source"]').inner_text()
         assert overflow(page) <= 1, (width, "explanation")
         page.goto(f"{run}/briefing", wait_until="domcontentloaded")
         page.locator('[data-testid="policy-write-with-muse"]').click()
+        page.locator('[data-testid="policy-writer"] > summary').click()
         page.wait_for_selector('[data-testid="policy-writer-muse"]')
         source = page.locator('[data-testid="muse-source"]').first.inner_text()
         assert "Recorded replay (a labelled demonstration fixture, not a live Muse answer)" in source
         assert " ms" not in source or " in · " in source
         assert overflow(page) <= 1, (width, "briefing")
         page.goto(f"{server.base_url}/policy/scenarios", wait_until="domcontentloaded")
+        page.locator('[data-testid="policy-muse-examples"] > summary').click()
         page.locator('[data-testid="policy-question"]').fill("What if the side and rear yard fence limit were 7 ft?")
         page.locator('[data-testid="policy-propose-submit"]').click()
         page.wait_for_selector('[data-testid="policy-proposal-changes"]')

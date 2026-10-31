@@ -131,7 +131,7 @@ def _propose(client: TestClient, question: str) -> str:
 
 def test_a_checked_proposal_says_that_nothing_is_saved_yet(client: TestClient) -> None:
     body = _propose(client, RECORDED_QUESTIONS[0])
-    assert "Checked proposal. No what-if has been saved." in body
+    assert "Muse proposes; you decide. Nothing is saved until you save it." in body
     assert "This saves a what-if. It does not run it, and it changes no published rule." in body
     assert 'data-testid="policy-proposal-save"' in body
 
@@ -433,7 +433,7 @@ def test_the_results_and_briefing_use_clear_scenario_and_export_labels(client: T
     assert "before you see it" not in results
     run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
     briefing = client.get(f"/policy/runs/{run_id}/briefing").text
-    assert "All scenarios" in briefing
+    assert "Back to the results" in briefing
     assert "Download HTML" in briefing
     assert "Download Markdown" in briefing
     assert "Download (HTML)" not in briefing
@@ -451,10 +451,11 @@ def test_an_accepted_replay_names_its_source_in_the_briefing_head(client: TestCl
         follow_redirects=True,
     ).text
     assert "Recorded Muse briefing" in replay
-    assert '<details class="card" data-testid="policy-writer" open>' in replay
+    writer = re.search(r'<details class="card" data-testid="policy-writer"[^>]*>', replay)
+    assert writer is not None and "open" not in writer.group(0)
 
 
-def test_a_rejected_replay_keeps_the_saved_results_and_open_writer_details(client: TestClient) -> None:
+def test_a_rejected_replay_keeps_the_saved_results_and_closes_the_writer_details(client: TestClient) -> None:
     results = _results(client, suggestion="shed_condition_300", count="600")
     run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
     page = client.get(f"/policy/runs/{run_id}/briefing")
@@ -464,4 +465,5 @@ def test_a_rejected_replay_keeps_the_saved_results_and_open_writer_details(clien
         follow_redirects=True,
     ).text
     assert "Built from saved results" in replay
-    assert '<details class="card" data-testid="policy-writer" open>' in replay
+    writer = re.search(r'<details class="card" data-testid="policy-writer"[^>]*>', replay)
+    assert writer is not None and "open" not in writer.group(0)
