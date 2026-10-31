@@ -950,6 +950,11 @@ def _source_label(session: Session, source_system_id: str | None) -> str | None:
 # --------------------------------------------------------------------- actions
 
 
+#: The actions a reviewer uses to check, decide and issue. They stay on the
+#: Review tab. Every other permit action sits in More actions.
+_REVIEW_TAB_ACTIONS = frozenset({"permit.evaluate", "permit.decide", "permit.issue"})
+
+
 def action(
     session: Session,
     actor: ActorContext,
@@ -1719,6 +1724,14 @@ def allowed_actions_for(
                 ),
             )
         )
+        # Property actions stay on the property card. The three decision
+        # actions stay on the Review tab. The rest are More actions.
+        for item in actions:
+            if item.get("group") == "property":
+                continue
+            item["group"] = (
+                "review" if item["action_id"] in _REVIEW_TAB_ACTIONS else "more"
+            )
 
     if screen == "steward":
         for proposal in payload.get("parcel_proposals") or []:

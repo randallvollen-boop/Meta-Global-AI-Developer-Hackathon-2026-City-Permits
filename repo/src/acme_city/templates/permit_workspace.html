@@ -24,6 +24,19 @@
     <h1 data-testid="case-title">{{ rv.header.project_type }}</h1>
     <p class="sub" data-testid="case-address">{{ rv.header.address or 'Property address not recorded' }}{% if rv.header.submitted_address and rv.header.submitted_address != rv.header.address %} <span class="muted">(submitted as &ldquo;{{ rv.header.submitted_address }}&rdquo;)</span>{% endif %}</p>
     <p class="sub muted" data-testid="case-reference"><span class="ref">{{ rv.header.reference }}</span> &middot; {{ rv.header.applicant_name or 'Applicant not recorded' }} &middot; Revision {{ rv.header.revision }}</p>
+    <p class="case-record muted" data-testid="case-record">
+      <span data-testid="case-record-summary">
+        Priority <span class="pill plain" data-testid="case-priority">{{ detail.lifecycle.priority }}</span>
+        {% if detail.lifecycle.owner_label %}
+        &middot; owner <span data-testid="case-owner">{{ detail.lifecycle.owner_label }}</span>
+        {% else %}
+        &middot; <span class="muted" data-testid="case-owner">no owner</span>
+        {% endif %}
+        {% if detail.lifecycle.archived %}
+        &middot; <span class="pill warn" data-testid="case-archived">archived</span>
+        {% endif %}
+      </span>
+    </p>
   </div>
   <div class="actions"><a class="btn ghost" href="{{ rv.header.back_href }}" data-testid="back-link">{{ rv.header.back_label }}</a> {{ ui.detail_link('case-tech', app.application_id, 'Technical details') }} {{ ui.help_button('permit') }}</div>
 </div>
@@ -639,6 +652,329 @@
         {% else %}
         <p class="muted" data-testid="proposed-empty">No correction is proposed for this case.</p>
         {% endif %}
+
+        <section class="review-actions" data-testid="review-actions" aria-labelledby="review-actions-heading">
+          <h2 id="review-actions-heading">Actions</h2>
+          <div class="act">
+            {% for item in actions if item.group == 'review' and not (item.action_id == 'permit.decide' and decision_form_shown) %}
+              {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
+            {% endfor %}
+
+            {% if detail.can_decide and detail.evaluation and not detail.current_decision %}
+            <details class="action act-card" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
+              <summary class="act-summary">
+                <span class="act-main">
+                  <span class="action-label act-title">Record review decision</span>
+                  <span class="action-destination act-sub">Records your decision.</span>
+                </span>
+                <span class="btn sm primary act-open" aria-label="Start: Record review decision">Start</span>
+              </summary>
+              <p class="muted">Approve, approve with conditions or deny. Every outcome needs a rationale; a denial needs a denial reason code.</p>
+              <form method="post" action="/ui/actions/permit.decide" class="action-form" data-testid="decision-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.decide">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
+                <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
+                <div class="fieldset">
+                  <label for="decision-outcome">Outcome *</label>
+                  <select id="decision-outcome" name="outcome" required>
+                    <option value="approved">Approve</option>
+                    <option value="approved_with_conditions">Approve with conditions</option>
+                    <option value="denied">Deny</option>
+                  </select>
+                </div>
+                <div class="fieldset">
+                  <label for="decision-conditions">Conditions of approval (one per line)</label>
+                  <textarea id="decision-conditions" name="conditions" rows="3" data-testid="decision-conditions"></textarea>
+                </div>
+                <div class="fieldset">
+                  <label for="decision-reason">Rationale (internal record) *</label>
+                  <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason"></textarea>
+                </div>
+                <div class="fieldset">
+                  <label for="decision-code">Denial reason code</label>
+                  <select id="decision-code" name="reason_code">
+                    <option value="">None (an approval does not need one)</option>
+                    {% for code in detail.lifecycle.reason_codes.denial %}
+                    <option value="{{ code.code }}">{{ code.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <p class="muted">* Required</p>
+                <p><button type="submit" class="btn sm primary" data-testid="decision-submit">Record the decision</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_advance %}
+            <details class="action act-card" data-testid="advance-form">
+              <summary class="act-summary">
+                <span class="act-main">
+                  <span class="action-label act-title">Advance to review</span>
+                  <span class="action-destination act-sub">Moves the case into review when nothing blocking stands in the way.</span>
+                </span>
+                <span class="btn sm primary act-open" aria-label="Start: Advance to review">Start</span>
+              </summary>
+              <p class="muted">The advance is refused while a current, unwaived blocking finding stands in the way.</p>
+              {% if detail.lifecycle.blocking_findings %}
+              <p class="muted" id="advance-blockers-why" data-testid="advance-blockers-why">Advance to review is off until these are cleared or waived:</p>
+              <ul class="issue-list" data-testid="advance-blockers">
+                {% for finding in detail.lifecycle.blocking_findings %}
+                <li>{{ finding.finding_type|replace('_', ' ') }}: {{ finding.message }}</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+              <form method="post" action="/ui/actions/permit.case.advance" class="action-form" data-testid="advance-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.advance">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <p><button type="submit" class="btn sm primary" data-testid="advance-submit"
+                           {% if detail.lifecycle.blocking_findings %}disabled aria-describedby="advance-blockers-why"{% endif %}>Advance to review</button></p>
+              </form>
+            </details>
+            {% endif %}
+          </div>
+        </section>
+
+        <details data-testid="more-actions">
+          <summary>More actions</summary>
+          <div class="act">
+            {% for item in actions if item.group == 'more' and not (item.action_id == 'permit.reconfirm' and (not detail.current_decision or reconfirm_form_shown)) %}
+              {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
+            {% endfor %}
+
+            {% if detail.can_decide and detail.current_decision and detail.current_decision.stale %}
+            <details class="action act-card" data-testid="reconfirm-form" data-action-id="permit.reconfirm" data-permitted="true">
+              <summary>Reconfirm the decision</summary>
+              <p class="muted">The case changed since the decision was recorded. A reconfirmation is a new decision version against the current evaluation; it keeps the conditions unless you change them.</p>
+              <form method="post" action="/ui/actions/permit.reconfirm" class="action-form" data-testid="reconfirm-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.reconfirm">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
+                <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
+                <div class="fieldset">
+                  <label for="reconfirm-outcome">Outcome *</label>
+                  <select id="reconfirm-outcome" name="outcome" required>
+                    <option value="approved">Approve</option>
+                    <option value="approved_with_conditions">Approve with conditions</option>
+                    <option value="denied">Deny</option>
+                  </select>
+                </div>
+                <div class="fieldset">
+                  <label for="reconfirm-conditions">Conditions of approval (one per line)</label>
+                  <textarea id="reconfirm-conditions" name="conditions" rows="3" data-testid="reconfirm-conditions">{% for condition in detail.current_decision.conditions %}{{ condition }}
+{% endfor %}</textarea>
+                </div>
+                <div class="fieldset">
+                  <label for="reconfirm-reason">Rationale (internal record) *</label>
+                  <textarea id="reconfirm-reason" name="reason" rows="3" required data-testid="reconfirm-reason"></textarea>
+                </div>
+                <div class="fieldset">
+                  <label for="reconfirm-code">Denial reason code</label>
+                  <select id="reconfirm-code" name="reason_code">
+                    <option value="">None (an approval does not need one)</option>
+                    {% for code in detail.lifecycle.reason_codes.denial %}
+                    <option value="{{ code.code }}">{{ code.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="reconfirm-submit">Reconfirm the decision</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_comment %}
+            <details class="action act-card" data-testid="comment-form">
+              <summary>Write a comment (applicant-visible or internal)</summary>
+              <form method="post" action="/ui/actions/permit.case.comment" class="action-form" data-testid="comment-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.comment">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="comment-body">Comment</label>
+                  <textarea id="comment-body" name="body" rows="3" required></textarea>
+                </div>
+                <div class="fieldset">
+                  <label for="comment-visibility">Who may read it</label>
+                  <select id="comment-visibility" name="visibility" required>
+                    <option value="applicant">Visible to the applicant</option>
+                    <option value="internal">Internal note</option>
+                  </select>
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="comment-submit">Write the comment</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_return %}
+            <details class="action act-card" data-testid="return-form">
+              <summary>Return to the applicant</summary>
+              <form method="post" action="/ui/actions/permit.case.return" class="action-form" data-testid="return-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.return">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="return-code">Reason code</label>
+                  <select id="return-code" name="reason_code" required>
+                    {% for code in detail.lifecycle.reason_codes.return %}
+                    <option value="{{ code.code }}">{{ code.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="fieldset">
+                  <label for="return-reason">Note for the record</label>
+                  <input id="return-reason" name="reason">
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="return-submit">Return the application</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_request_revisions %}
+            <details class="action act-card" data-testid="revisions-form">
+              <summary>Ask the applicant for revisions</summary>
+              <form method="post" action="/ui/actions/permit.case.request_revisions" class="action-form" data-testid="revisions-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.request_revisions">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="revisions-code">Reason code</label>
+                  <select id="revisions-code" name="reason_code" required>
+                    {% for code in detail.lifecycle.reason_codes.revision %}
+                    <option value="{{ code.code }}">{{ code.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="fieldset">
+                  <label for="revisions-message">Message for the applicant</label>
+                  <textarea id="revisions-message" name="message" rows="3" required></textarea>
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="revisions-submit">Ask for revisions</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_set_priority %}
+            <details class="action act-card" data-testid="priority-form">
+              <summary>Change the priority</summary>
+              <form method="post" action="/ui/actions/permit.case.priority" class="action-form" data-testid="priority-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.priority">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="priority-value">Priority</label>
+                  <select id="priority-value" name="priority" required>
+                    <option value="normal" {% if detail.lifecycle.priority == 'normal' %}selected{% endif %}>Normal</option>
+                    <option value="high" {% if detail.lifecycle.priority == 'high' %}selected{% endif %}>High</option>
+                  </select>
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="priority-submit">Set the priority</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_assign and detail.lifecycle.eligible_owners %}
+            <details class="action act-card" data-testid="assign-form">
+              <summary>Route to a staff member</summary>
+              <form method="post" action="/ui/actions/permit.case.assign" class="action-form" data-testid="assign-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.assign">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="assign-owner">Owner</label>
+                  <select id="assign-owner" name="owner_actor_id" required>
+                    {% for owner in detail.lifecycle.eligible_owners %}
+                    <option value="{{ owner.actor_id }}">{{ owner.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="assign-submit">Route the application</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_archive %}
+            <details class="action act-card" data-testid="archive-form">
+              <summary>Archive the application</summary>
+              <form method="post" action="/ui/actions/permit.case.archive" class="action-form" data-testid="archive-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.archive">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <div class="fieldset">
+                  <label for="archive-code">Reason code</label>
+                  <select id="archive-code" name="reason_code" required>
+                    {% for code in detail.lifecycle.reason_codes.archive %}
+                    <option value="{{ code.code }}">{{ code.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="fieldset">
+                  <label for="archive-reason">Note for the record</label>
+                  <input id="archive-reason" name="reason">
+                </div>
+                <p><button type="submit" class="btn sm primary" data-testid="archive-submit">Archive the application</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if detail.lifecycle.can_restore %}
+            <details class="action act-card" data-testid="restore-form">
+              <summary>Restore the application</summary>
+              <p class="muted">The application returns to the status it held. A stale approval or recommendation stays stale.</p>
+              <form method="post" action="/ui/actions/permit.case.restore" class="action-form" data-testid="restore-form-inner">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action_id" value="permit.case.restore">
+                <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
+                <input type="hidden" name="application_id" value="{{ app.application_id }}">
+                <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
+                <p><button type="submit" class="btn sm primary" data-testid="restore-submit">Restore the application</button></p>
+              </form>
+            </details>
+            {% endif %}
+
+            {% if denied_action_explanations %}
+            <ul class="denied-list" data-testid="denied-actions">
+              {% for denied in denied_action_explanations %}
+              <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </details>
+
+        <details data-testid="fee-preview">
+          <summary>Fee preview</summary>
+          <div class="fee">
+            {% if detail.fee_lines %}
+              {% for line in detail.fee_lines %}
+              <div class="fee-row"><span class="muted">{{ line.description or line.fee_code }}</span><span>{{ line.amount }} {{ line.currency }}</span></div>
+              {% endfor %}
+              <div class="fee-row tot"><span>Total assessed</span><span>{{ detail.fee_total }}</span></div>
+            {% elif detail.finance.assessment %}
+              <div class="fee-row tot"><span>Total assessed</span><span>{{ detail.finance.assessment.assessed_total }} {{ detail.finance.assessment.currency }}</span></div>
+            {% else %}
+              <p class="muted">No fee has been assessed yet. A fee is assessed only after a reviewer decision, from the recorded schedule.</p>
+            {% endif %}
+          </div>
+        </details>
       </div>
 
       <div class="card-b tab-panel" id="panel-documents" role="tabpanel" aria-labelledby="tab-documents" data-testid="documents-panel">
@@ -790,325 +1126,5 @@
 
   </div>
 
-  <aside class="rail">
-    <section class="card" aria-labelledby="permit-actions-heading">
-      <div class="card-h"><h2 id="permit-actions-heading">Actions</h2><span class="right"><span class="pill plain">{{ actor.label if actor else '' }}</span></span></div>
-      <div class="card-b act">
-        {% for item in actions if item.group != 'property' and not (item.action_id == 'permit.reconfirm' and (not detail.current_decision or reconfirm_form_shown)) and not (item.action_id == 'permit.decide' and decision_form_shown) %}
-          {{ forms.action_form(item, csrf_token) }}
-        {% endfor %}
-        {% if denied_action_explanations %}
-        <ul class="denied-list" data-testid="denied-actions">
-          {% for denied in denied_action_explanations %}
-          <li><strong>{{ denied.label }}</strong>: {{ denied.reason }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </div>
-    </section>
-
-    <section class="card" data-testid="case-record">
-      <div class="card-h"><h2>Case record</h2></div>
-      <div class="card-b act">
-        <p class="muted" data-testid="case-record-summary">
-          Priority <span class="pill plain" data-testid="case-priority">{{ detail.lifecycle.priority }}</span>
-          {% if detail.lifecycle.owner_label %}
-          &middot; owner <span data-testid="case-owner">{{ detail.lifecycle.owner_label }}</span>
-          {% else %}
-          &middot; <span class="muted" data-testid="case-owner">no owner</span>
-          {% endif %}
-          {% if detail.lifecycle.archived %}
-          &middot; <span class="pill warn" data-testid="case-archived">archived</span>
-          {% endif %}
-        </p>
-
-        {% if detail.can_decide and detail.evaluation and not detail.current_decision %}
-        <details class="action act-card" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
-          <summary>Record review decision</summary>
-          <p class="muted">Approve, approve with conditions or deny. Every outcome needs a rationale; a denial needs a denial reason code.</p>
-          <form method="post" action="/ui/actions/permit.decide" class="action-form" data-testid="decision-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.decide">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
-            <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
-            <div class="fieldset">
-              <label for="decision-outcome">Outcome *</label>
-              <select id="decision-outcome" name="outcome" required>
-                <option value="approved">Approve</option>
-                <option value="approved_with_conditions">Approve with conditions</option>
-                <option value="denied">Deny</option>
-              </select>
-            </div>
-            <div class="fieldset">
-              <label for="decision-conditions">Conditions of approval (one per line)</label>
-              <textarea id="decision-conditions" name="conditions" rows="3" data-testid="decision-conditions"></textarea>
-            </div>
-            <div class="fieldset">
-              <label for="decision-reason">Rationale (internal record) *</label>
-              <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason"></textarea>
-            </div>
-            <div class="fieldset">
-              <label for="decision-code">Denial reason code</label>
-              <select id="decision-code" name="reason_code">
-                <option value="">None (an approval does not need one)</option>
-                {% for code in detail.lifecycle.reason_codes.denial %}
-                <option value="{{ code.code }}">{{ code.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <p class="muted">* Required</p>
-            <p><button type="submit" class="btn sm primary" data-testid="decision-submit">Record the decision</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.can_decide and detail.current_decision and detail.current_decision.stale %}
-        <details class="action act-card" data-testid="reconfirm-form" data-action-id="permit.reconfirm" data-permitted="true">
-          <summary>Reconfirm the decision</summary>
-          <p class="muted">The case changed since the decision was recorded. A reconfirmation is a new decision version against the current evaluation; it keeps the conditions unless you change them.</p>
-          <form method="post" action="/ui/actions/permit.reconfirm" class="action-form" data-testid="reconfirm-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.reconfirm">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_application_version" value="{{ detail.current.version }}">
-            <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
-            <div class="fieldset">
-              <label for="reconfirm-outcome">Outcome *</label>
-              <select id="reconfirm-outcome" name="outcome" required>
-                <option value="approved">Approve</option>
-                <option value="approved_with_conditions">Approve with conditions</option>
-                <option value="denied">Deny</option>
-              </select>
-            </div>
-            <div class="fieldset">
-              <label for="reconfirm-conditions">Conditions of approval (one per line)</label>
-              <textarea id="reconfirm-conditions" name="conditions" rows="3" data-testid="reconfirm-conditions">{% for condition in detail.current_decision.conditions %}{{ condition }}
-{% endfor %}</textarea>
-            </div>
-            <div class="fieldset">
-              <label for="reconfirm-reason">Rationale (internal record) *</label>
-              <textarea id="reconfirm-reason" name="reason" rows="3" required data-testid="reconfirm-reason"></textarea>
-            </div>
-            <div class="fieldset">
-              <label for="reconfirm-code">Denial reason code</label>
-              <select id="reconfirm-code" name="reason_code">
-                <option value="">None (an approval does not need one)</option>
-                {% for code in detail.lifecycle.reason_codes.denial %}
-                <option value="{{ code.code }}">{{ code.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="reconfirm-submit">Reconfirm the decision</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_comment %}
-        <details class="action act-card" data-testid="comment-form">
-          <summary>Write a comment (applicant-visible or internal)</summary>
-          <form method="post" action="/ui/actions/permit.case.comment" class="action-form" data-testid="comment-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.comment">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="comment-body">Comment</label>
-              <textarea id="comment-body" name="body" rows="3" required></textarea>
-            </div>
-            <div class="fieldset">
-              <label for="comment-visibility">Who may read it</label>
-              <select id="comment-visibility" name="visibility" required>
-                <option value="applicant">Visible to the applicant</option>
-                <option value="internal">Internal note</option>
-              </select>
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="comment-submit">Write the comment</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_return %}
-        <details class="action act-card" data-testid="return-form">
-          <summary>Return to the applicant</summary>
-          <form method="post" action="/ui/actions/permit.case.return" class="action-form" data-testid="return-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.return">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="return-code">Reason code</label>
-              <select id="return-code" name="reason_code" required>
-                {% for code in detail.lifecycle.reason_codes.return %}
-                <option value="{{ code.code }}">{{ code.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="fieldset">
-              <label for="return-reason">Note for the record</label>
-              <input id="return-reason" name="reason">
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="return-submit">Return the application</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_advance %}
-        <details class="action act-card" data-testid="advance-form">
-          <summary>Advance to review</summary>
-          <p class="muted">The advance is refused while a current, unwaived blocking finding stands in the way.</p>
-          {% if detail.lifecycle.blocking_findings %}
-          <p class="muted" id="advance-blockers-why" data-testid="advance-blockers-why">Advance to review is off until these are cleared or waived:</p>
-          <ul class="issue-list" data-testid="advance-blockers">
-            {% for finding in detail.lifecycle.blocking_findings %}
-            <li>{{ finding.finding_type|replace('_', ' ') }}: {{ finding.message }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-          <form method="post" action="/ui/actions/permit.case.advance" class="action-form" data-testid="advance-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.advance">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <p><button type="submit" class="btn sm primary" data-testid="advance-submit"
-                       {% if detail.lifecycle.blocking_findings %}disabled aria-describedby="advance-blockers-why"{% endif %}>Advance to review</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_request_revisions %}
-        <details class="action act-card" data-testid="revisions-form">
-          <summary>Ask the applicant for revisions</summary>
-          <form method="post" action="/ui/actions/permit.case.request_revisions" class="action-form" data-testid="revisions-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.request_revisions">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="revisions-code">Reason code</label>
-              <select id="revisions-code" name="reason_code" required>
-                {% for code in detail.lifecycle.reason_codes.revision %}
-                <option value="{{ code.code }}">{{ code.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="fieldset">
-              <label for="revisions-message">Message for the applicant</label>
-              <textarea id="revisions-message" name="message" rows="3" required></textarea>
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="revisions-submit">Ask for revisions</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_set_priority %}
-        <details class="action act-card" data-testid="priority-form">
-          <summary>Change the priority</summary>
-          <form method="post" action="/ui/actions/permit.case.priority" class="action-form" data-testid="priority-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.priority">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="priority-value">Priority</label>
-              <select id="priority-value" name="priority" required>
-                <option value="normal" {% if detail.lifecycle.priority == 'normal' %}selected{% endif %}>Normal</option>
-                <option value="high" {% if detail.lifecycle.priority == 'high' %}selected{% endif %}>High</option>
-              </select>
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="priority-submit">Set the priority</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_assign and detail.lifecycle.eligible_owners %}
-        <details class="action act-card" data-testid="assign-form">
-          <summary>Route to a staff member</summary>
-          <form method="post" action="/ui/actions/permit.case.assign" class="action-form" data-testid="assign-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.assign">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="assign-owner">Owner</label>
-              <select id="assign-owner" name="owner_actor_id" required>
-                {% for owner in detail.lifecycle.eligible_owners %}
-                <option value="{{ owner.actor_id }}">{{ owner.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="assign-submit">Route the application</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_archive %}
-        <details class="action act-card" data-testid="archive-form">
-          <summary>Archive the application</summary>
-          <form method="post" action="/ui/actions/permit.case.archive" class="action-form" data-testid="archive-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.archive">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <div class="fieldset">
-              <label for="archive-code">Reason code</label>
-              <select id="archive-code" name="reason_code" required>
-                {% for code in detail.lifecycle.reason_codes.archive %}
-                <option value="{{ code.code }}">{{ code.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="fieldset">
-              <label for="archive-reason">Note for the record</label>
-              <input id="archive-reason" name="reason">
-            </div>
-            <p><button type="submit" class="btn sm primary" data-testid="archive-submit">Archive the application</button></p>
-          </form>
-        </details>
-        {% endif %}
-
-        {% if detail.lifecycle.can_restore %}
-        <details class="action act-card" data-testid="restore-form">
-          <summary>Restore the application</summary>
-          <p class="muted">The application returns to the status it held. A stale approval or recommendation stays stale.</p>
-          <form method="post" action="/ui/actions/permit.case.restore" class="action-form" data-testid="restore-form-inner">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action_id" value="permit.case.restore">
-            <input type="hidden" name="next" value="/permits/{{ app.application_id }}">
-            <input type="hidden" name="application_id" value="{{ app.application_id }}">
-            <input type="hidden" name="expected_version" value="{{ detail.current.version }}">
-            <p><button type="submit" class="btn sm primary" data-testid="restore-submit">Restore the application</button></p>
-          </form>
-        </details>
-        {% endif %}
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-h"><h2>Fee preview</h2></div>
-      <div class="card-b fee">
-        {% if detail.fee_lines %}
-          {% for line in detail.fee_lines %}
-          <div class="fee-row"><span class="muted">{{ line.description or line.fee_code }}</span><span>{{ line.amount }} {{ line.currency }}</span></div>
-          {% endfor %}
-          <div class="fee-row tot"><span>Total assessed</span><span>{{ detail.fee_total }}</span></div>
-        {% elif detail.finance.assessment %}
-          <div class="fee-row tot"><span>Total assessed</span><span>{{ detail.finance.assessment.assessed_total }} {{ detail.finance.assessment.currency }}</span></div>
-        {% else %}
-          <p class="muted">No fee has been assessed yet. A fee is assessed only after a reviewer decision, from the recorded schedule.</p>
-        {% endif %}
-        <p class="faint" style="font-size:.72rem">These are synthetic ACME fee rules and form no real tariff.</p>
-      </div>
-    </section>
-  </aside>
 </div>
 {% endblock %}

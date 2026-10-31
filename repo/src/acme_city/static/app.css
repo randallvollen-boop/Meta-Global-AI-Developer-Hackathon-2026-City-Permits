@@ -323,7 +323,7 @@ tr:last-child td { border-bottom: 0; }
 .data-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.6rem; font-size: .84rem; }
 .panel { overflow-x: auto; }
 section.panel, .card { min-width: 0; }
-main > *, .ws-main > *, .rail > * { min-width: 0; }
+main > *, .ws-main > * { min-width: 0; }
 .data-table th, .data-table td {
   border: 0; border-bottom: 1px solid var(--line-soft); padding: 11px 12px;
   text-align: left; vertical-align: top; overflow-wrap: anywhere; text-transform: none; letter-spacing: normal;
@@ -355,10 +355,9 @@ main > *, .ws-main > *, .rail > * { min-width: 0; }
 .step .val { font-size: .76rem; color: var(--fg-2); padding-left: 34px; }
 .step .who { font-size: .7rem; color: var(--fg-3); padding-left: 34px; }
 
-/* Workspace grid */
-.ws { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 18px; align-items: start; }
+/* Workspace: one column. Decision actions sit on the Review tab. */
+.ws { display: block; }
 .ws-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.rail { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 14px; }
 
 /* Facts */
 .facts { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px 18px; }
@@ -677,8 +676,6 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
 
 @media (max-width: 520px) { .icongen { grid-template-columns: minmax(0,1fr); justify-items: start; } }
 @media (max-width: 1100px) {
-  .ws { grid-template-columns: minmax(0,1fr); }
-  .rail { position: static; }
   .facts, .facts-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .run { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .rnode::after { display: none; }

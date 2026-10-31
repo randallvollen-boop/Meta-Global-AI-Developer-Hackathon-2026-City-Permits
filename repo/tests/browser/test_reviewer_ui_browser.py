@@ -45,9 +45,11 @@ def test_workspace_tabs_switch_and_the_drawer_opens(page, server: BrowserServer,
     assert page.locator('[data-testid="document-table"]').is_visible()
     page.locator('#tab-review').click()
     assert page.locator('[data-testid="next-action"]').is_visible()
-    # The next action and the actions rail stay visible on every tab.
-    page.locator('#tab-activity').click()
+    # Run application checks lives on the Review tab. There is no side rail.
+    assert page.locator("aside.rail").count() == 0
     assert page.locator('details[data-action-id="permit.evaluate"]').is_visible()
+    page.locator('#tab-activity').click()
+    assert page.locator('details[data-action-id="permit.evaluate"]').is_hidden()
     page.locator('[data-detail-kind="case-tech"]').first.click()
     page.locator("#ui-drawer").wait_for(state="visible")
     assert "app_synth_001" in page.locator("#ui-drawer").inner_text()
