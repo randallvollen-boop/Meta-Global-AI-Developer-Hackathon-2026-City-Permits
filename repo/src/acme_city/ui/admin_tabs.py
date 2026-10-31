@@ -138,14 +138,38 @@ for _order, (_key, _label) in enumerate(
     register_admin_tab(_key, _label, f"admin/_{_key.replace('-', '_')}.html", order=_order * 10)
 
 
+#: The key of the tab that creates the sample cases of the demonstration.
+SAMPLE_DATA_TAB_KEY = "sample-data"
+
+
+def sample_data_context(session: Session, actor: ActorContext) -> dict[str, Any]:
+    """Return the template variables of the sample-data tab."""
+    from acme_city.ui.view_models import sample_data
+
+    return {"sample_data": sample_data(session, actor)}
+
+
+#: The tab that creates the sample cases.  It belongs to the demonstration
+#: only, so the router keeps it out of a production deployment.
+register_admin_tab(
+    SAMPLE_DATA_TAB_KEY,
+    "Sample data",
+    "admin/_sample_data.html",
+    context_fn=sample_data_context,
+    order=50,
+)
+
+
 __all__ = [
     "ADMIN_TABS",
     "ADMIN_USERS_EXTRAS_PROVIDERS",
     "AdminTab",
     "RequiredGrant",
+    "SAMPLE_DATA_TAB_KEY",
     "UsersExtra",
     "register_admin_tab",
     "register_users_extra",
+    "sample_data_context",
     "unregister_admin_tab",
     "unregister_users_extra",
     "visible_tabs",

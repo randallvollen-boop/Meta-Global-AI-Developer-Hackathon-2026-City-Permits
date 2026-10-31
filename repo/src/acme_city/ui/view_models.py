@@ -1018,6 +1018,87 @@ def denied_action_explanations(actions: list[dict[str, Any]]) -> list[dict[str, 
     ]
 
 
+#: The grant a persona holds to create the sample cases of the demonstration.
+SAMPLE_DATA_PERMISSION = "config.manage"
+
+#: The action that creates the sample cases.
+SAMPLE_DATA_ACTION_ID = "intake.generate"
+
+#: The label of the button that creates the sample cases.
+SAMPLE_DATA_LABEL = "Create sample data"
+
+#: The number of cases the button offers when the count is not filled in.
+SAMPLE_DATA_DEFAULT_COUNT = 6
+
+#: The seed of the generated cases.  It is fixed, so every run holds the same
+#: mix of outcomes; the nonce of the run is what makes the cases new.
+SAMPLE_DATA_SEED = 20261031
+
+
+def generated_case_count(session: Session) -> int:
+    """Return how many generated sample cases the demonstration holds."""
+    from acme_city.portal_intake import generated
+    from acme_city.portal_intake.service import DATASET_KEY, SOURCE_SYSTEM_ID
+
+    rows = session.execute(
+        select(source.SourceSnapshot.source_record_id).where(
+            source.SourceSnapshot.source_system_id == SOURCE_SYSTEM_ID,
+            source.SourceSnapshot.source_dataset_id == DATASET_KEY,
+        )
+    ).scalars().all()
+    return len(
+        {
+            row
+            for row in rows
+            if row.startswith(generated.GENERATED_REFERENCE_PREFIX)
+        }
+    )
+
+
+def sample_data(session: Session, actor: ActorContext) -> dict[str, Any]:
+    """Return the state of the sample-data tab of the administration screen.
+
+    The button is offered to a persona that holds the configuration grant and
+    to a demonstration that still has room under the total cap.  When it is
+    not offered, the reason says why, and the reason is shown beside the
+    disabled button.
+    """
+    from acme_city.portal_intake import generated
+
+    held = generated_case_count(session)
+    room = max(generated.MAX_GENERATED_TOTAL - held, 0)
+    holds = allows(session, actor, SAMPLE_DATA_PERMISSION)
+    if not holds:
+        reason = (
+            f"your persona does not hold the {SAMPLE_DATA_PERMISSION!r} grant; "
+            "only the City Administrator creates sample cases"
+        )
+    elif room == 0:
+        plural = "case" if held == 1 else "cases"
+        reason = (
+            f"the demonstration already holds {held} sample {plural}, the whole "
+            f"allowance of {generated.MAX_GENERATED_TOTAL}"
+        )
+    else:
+        reason = ""
+    return {
+        "action_id": SAMPLE_DATA_ACTION_ID,
+        "path": f"/ui/actions/{SAMPLE_DATA_ACTION_ID}",
+        "label": SAMPLE_DATA_LABEL,
+        "description": (
+            "Create sample permit cases. Each one waits for the intake agent, "
+            "and a person still decides every case."
+        ),
+        "permitted": bool(holds) and room > 0,
+        "reason": reason,
+        "held": held,
+        "remaining": room,
+        "max_per_call": generated.MAX_GENERATED_PER_CALL,
+        "max_total": generated.MAX_GENERATED_TOTAL,
+        "default_count": SAMPLE_DATA_DEFAULT_COUNT,
+    }
+
+
 def _field(
     name: str,
     label: str,

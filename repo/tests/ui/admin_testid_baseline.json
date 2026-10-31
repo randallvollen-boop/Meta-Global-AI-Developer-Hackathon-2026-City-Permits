@@ -63,6 +63,18 @@
         "data-section"
       ]
     },
+    "admin/_sample_data.html": {
+      "testids": [
+        "admin-sample-data-counts",
+        "admin-sample-data-form",
+        "admin-sample-data-reason",
+        "admin-sample-data-submit",
+        "admin-section"
+      ],
+      "attributes": [
+        "data-section"
+      ]
+    },
     "admin/_reason_codes.html": {
       "testids": [
         "admin-add-reason-code",

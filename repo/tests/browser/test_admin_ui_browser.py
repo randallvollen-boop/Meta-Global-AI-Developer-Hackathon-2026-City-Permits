@@ -256,3 +256,20 @@ def test_users_and_reason_codes_fit_a_phone(page, server: BrowserServer, login, 
         assert "Existing records keep this code." in page.locator(".adm-retire-confirm").first.inner_text()
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
+
+
+def test_the_administrator_creates_sample_data(page, server: BrowserServer, login) -> None:
+    """The button creates the sample cases the demonstration needs."""
+    login(ADMINISTRATOR)
+    page.goto(f"{server.base_url}/admin?tab=sample-data", wait_until="domcontentloaded")
+    assert page.locator('[data-testid="admin-sample-data-submit"]').is_visible()
+    page.fill("#sample-data-count", "3")
+    with page.expect_response(
+        lambda response: "/ui/actions/intake.generate" in response.url
+        and response.request.method == "POST"
+    ) as answered:
+        page.click("[data-testid='admin-sample-data-submit']")
+    payload = answered.value.json()
+    assert payload["status"] == "accepted", payload
+    assert len(payload["affected"]) == 3, payload
+    assert page.recorded_errors == []

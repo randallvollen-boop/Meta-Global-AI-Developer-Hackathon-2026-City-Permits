@@ -1,0 +1,41 @@
+{# The Sample data tab: the button that creates the sample cases of the
+   demonstration.
+
+   The cases are fictional, they wait for the intake agent, and a person still
+   decides every one of them.  The button is disabled when the persona may
+   not create them or when the demonstration holds its whole allowance; the
+   reason is shown beside it. #}
+<details class="panel card" data-testid="admin-section" data-section="sample-data" {% if tab == 'sample-data' %}open{% endif %}>
+  <summary><strong>Sample data</strong></summary>
+  <div class="card-b adm-stack">
+
+    <p class="muted">{{ sample_data.description }}</p>
+
+    {% if sample_data.permitted %}
+    <form method="post" action="{{ sample_data.path }}" class="action-form" data-testid="admin-sample-data-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="action_id" value="{{ sample_data.action_id }}">
+      <input type="hidden" name="next" value="/admin?tab=sample-data">
+      <div class="fieldset">
+        <label for="sample-data-count">How many cases</label>
+        <input id="sample-data-count" name="count" type="number" min="1" max="{{ sample_data.max_per_call }}" value="{{ sample_data.default_count }}" required>
+      </div>
+      <p><button type="submit" class="btn sm primary" data-testid="admin-sample-data-submit">{{ sample_data.label }}</button></p>
+    </form>
+    {% else %}
+    <p>
+      <button type="button" class="btn sm primary" data-testid="admin-sample-data-submit" disabled aria-describedby="admin-sample-data-reason">{{ sample_data.label }}</button>
+      <span class="hint" id="admin-sample-data-reason" data-testid="admin-sample-data-reason">{{ sample_data.reason }}</span>
+    </p>
+    {% endif %}
+
+    <p class="muted" data-testid="admin-sample-data-counts">
+      At most {{ sample_data.max_per_call }} cases at a time, {{ sample_data.max_total }} in all.
+      {% if sample_data.held == 0 %}
+      No sample case exists yet.
+      {% else %}
+      {{ sample_data.held }} sample case{% if sample_data.held != 1 %}s{% endif %} exist now.
+      {% endif %}
+    </p>
+  </div>
+</details>

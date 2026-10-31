@@ -18,6 +18,7 @@ from types import SimpleNamespace
 import hmac
 import json
 from urllib.parse import urlencode
+from uuid import uuid4
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -112,7 +113,12 @@ router.mount(STATIC_PREFIX, StaticFiles(directory=str(STATIC_ROOT)), name="ui-st
 
 #: Interface actions that exist only in the demonstration (simulators).  In
 #: production mode they are neither listed nor accepted.
-PRODUCTION_BLOCKED_ACTIONS: frozenset[str] = frozenset({"intake.simulate"})
+PRODUCTION_BLOCKED_ACTIONS: frozenset[str] = frozenset(
+    {"intake.simulate", "intake.generate"}
+)
+
+#: The most records one simulated scenario may post through the interface.
+MAX_SIMULATED_COUNT = 50
 
 #: The name of the field that carries the CSRF token of a form.
 CSRF_FIELD = "csrf_token"
@@ -1101,6 +1107,10 @@ def ui_administration(
     # section to show.  ``admin_tabs`` holds the registered tabs and the parts
     # of the Users tab.
     tabs = _admin_tabs.visible_tabs(session, resolved)
+    if settings.is_production:
+        # The sample-data tab belongs to the demonstration: a production
+        # deployment neither shows it nor accepts the action.
+        tabs = [entry for entry in tabs if entry.key != _admin_tabs.SAMPLE_DATA_TAB_KEY]
     keys = [entry.key for entry in tabs]
     context = page_context(
         request,
@@ -2263,10 +2273,19 @@ def _intake_simulate(ctx: ActionContext) -> Outcome:
     from acme_city.portal_intake.service import IntakeService
 
     count = ctx.integer("count")
+    if count is not None and (count < 1 or count > MAX_SIMULATED_COUNT):
+        raise ValidationError(
+            f"one simulation may post at most {MAX_SIMULATED_COUNT} permits; "
+            f"{count} were asked for"
+        )
     service = IntakeService(ctx.session, settings=ctx.settings)
-    results = service.simulate(
-        ctx.text("scenario"), count=count, actor=ctx.actor
-    )
+    try:
+        results = service.simulate(
+            ctx.text("scenario"), count=count, actor=ctx.actor
+        )
+    except ValueError as error:
+        # An unknown scenario is a refusal, not a crash.
+        raise ValidationError(str(error)) from error
     created = [r.source_application_number for r in results if r.status == "created"]
     return Outcome(
         message=(
@@ -2279,6 +2298,54 @@ def _intake_simulate(ctx: ActionContext) -> Outcome:
         target_type="source_dataset",
         target_id="submitted_applications",
         extra={"results": [r.model_dump(mode="json") for r in results]},
+    )
+
+
+def _intake_generate(ctx: ActionContext) -> Outcome:
+    """Create a batch of sample cases and submit each of them.
+
+    The nonce of the run is made here, so every click creates new cases
+    instead of the same ones again.  The cap of one call and the cap of the
+    demonstration are enforced before anything is written.
+    """
+    from acme_city.auth.permissions import PermissionResolver, ResourceContext
+    from acme_city.portal_intake.generated import MAX_GENERATED_PER_CALL
+    from acme_city.portal_intake.service import IntakeService
+
+    PermissionResolver(ctx.session).authorize(
+        ctx.actor,
+        view_models.SAMPLE_DATA_PERMISSION,
+        ResourceContext(domain_id=None, record_ids=()),
+    )
+    asked = ctx.integer("count")
+    count = view_models.SAMPLE_DATA_DEFAULT_COUNT if asked is None else asked
+    if count < 1 or count > MAX_GENERATED_PER_CALL:
+        raise ValidationError(
+            f"one click may create at most {MAX_GENERATED_PER_CALL} cases; "
+            f"{count} were asked for"
+        )
+    nonce = uuid4().hex[:12]
+    service = IntakeService(ctx.session, settings=ctx.settings)
+    results = service.generate_cases(
+        seed=view_models.SAMPLE_DATA_SEED,
+        count=count,
+        nonce=nonce,
+        actor=ctx.actor,
+    )
+    created = [
+        item.source_application_number for item in results if item.status == "created"
+    ]
+    plural = "case" if len(created) == 1 else "cases"
+    return Outcome(
+        message=(
+            f"Created {len(created)} sample {plural}. They wait for the intake agent."
+        ),
+        destination="ACME ePermit Portal (simulated) intake",
+        state="created",
+        affected=tuple(created),
+        target_type="source_dataset",
+        target_id="submitted_applications",
+        extra={"results": [item.model_dump(mode="json") for item in results]},
     )
 
 
@@ -2663,6 +2730,7 @@ def _parcel_find(ctx: ActionContext) -> Outcome:
 #: Every explicit action of the interface, keyed by its stable identifier.
 ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "intake.simulate": _intake_simulate,
+    "intake.generate": _intake_generate,
     "agent.toggle": _agent_toggle,
     "agent.run.intake": lambda ctx: _agent_run(ctx, "intake"),
     "agent.run.adjudication": lambda ctx: _agent_run(ctx, "adjudication"),

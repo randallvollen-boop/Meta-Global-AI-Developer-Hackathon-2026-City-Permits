@@ -103,6 +103,7 @@ def test_production_starts_against_an_unmarked_database(tmp_path: Path) -> None:
         ("GET", "/sim/arcgis/rest/services/ACME", {}),
         ("GET", "/sim/arcgis/rest/services/ACME/Parcels/FeatureServer", {}),
         ("POST", "/ui/actions/intake.simulate", {"data": {"scenario": "random"}}),
+        ("POST", "/ui/actions/intake.generate", {"data": {"count": "3"}}),
         ("GET", "/docs", {}),
         ("GET", "/openapi.json", {}),
         ("GET", "/lifecycle", {}),
