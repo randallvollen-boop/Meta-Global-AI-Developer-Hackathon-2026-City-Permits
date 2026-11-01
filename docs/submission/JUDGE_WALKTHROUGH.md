@@ -10,7 +10,7 @@ The permit life cycle behind these steps is at `/lifecycle`: every status, every
 
 Open `/select`.
 
-- Do: Play the video above the persona cards. It runs under three minutes.
+- Do: Open the video below the persona cards and play it. It runs under three minutes.
 - Look for: Five personas, each a fictional person with one job. Every record in the app is fictional.
 
 ## 2. Read the permit life cycle

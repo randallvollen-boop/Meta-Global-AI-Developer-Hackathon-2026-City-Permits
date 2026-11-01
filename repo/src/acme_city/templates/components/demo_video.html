@@ -1,13 +1,19 @@
 {# The demonstration video on the persona selector.
 
-   It never plays on its own and loads nothing until the play button is
-   pressed.  The captions are part of the picture.  At picture lock the cut
-   is swapped by replacing static/video/demo-video.mp4. #}
+   It sits below the persona cards as a title card.  The player is inside a
+   disclosure, so nothing of the video loads until the card is opened.  At
+   picture lock the cut is swapped by replacing static/video/demo-video.mp4. #}
 <figure class="demo-video" data-testid="demo-video">
-  <figcaption class="demo-video-caption">A short tour of the app, from the first permit request to the shared record.</figcaption>
-  <video controls preload="none" playsinline width="1280" height="720"
-         poster="/ui/static/video/demo-video-poster.jpg" data-testid="demo-video-player">
-    <source src="/ui/static/video/demo-video.mp4" type="video/mp4">
-    <a href="/ui/static/video/demo-video.mp4">Download the tour video (MP4, 8 MB)</a>
-  </video>
+  <details class="video-title" data-testid="demo-video-details">
+    <summary class="video-title-summary" data-testid="demo-video-title">
+      <span class="video-title-text">
+        <strong>Watch the 3-minute tour</strong>
+        <span class="video-title-note">A short video of the app, from the first permit request to the shared record.</span>
+      </span>
+    </summary>
+    <video controls preload="none" playsinline width="1280" height="720"
+           poster="/ui/static/video/demo-video-poster.jpg" data-testid="demo-video-player">
+      <source src="/ui/static/video/demo-video.mp4" type="video/mp4">
+    </video>
+  </details>
 </figure>

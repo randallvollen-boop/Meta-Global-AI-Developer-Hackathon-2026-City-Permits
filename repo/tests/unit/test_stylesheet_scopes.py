@@ -101,6 +101,23 @@ AGENT_DAG_ADDED = (
 REVIEWER_SLIM_REMOVED = (".rail > *", ".rail", ".ws")
 REVIEWER_SLIM_ADDED: tuple[str, ...] = ()
 
+#: The landing (slice L1) rewrote the persona cards on purpose: the visible
+#: "Who / What they do / Try first" labels are gone (the sentences are now the
+#: hover text and the accessible description of the card), the grid gained the
+#: row of five, and the landing gained the line under the heading, the guide
+#: links and the video title card.
+LANDING_REMOVED = (".persona-k", ".persona-cards")
+LANDING_ADDED = (
+    ".landing-line",
+    ".landing-links",
+    ".persona-cards",
+    ".video-title-summary",
+    ".video-title-summary:hover",
+    ".video-title-summary:focus-visible",
+    ".video-title-text",
+    ".video-title-note",
+)
+
 
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -191,6 +208,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         for selector in old
         if selector not in STAFF_FRAME_REMOVED
         and selector not in REVIEWER_SLIM_REMOVED
+        and selector not in LANDING_REMOVED
     ]
     new = [
         selector
@@ -202,10 +220,19 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         and selector not in AGENT_INBOX_ADDED
         and selector not in AGENT_DAG_ADDED
         and selector not in REVIEWER_SLIM_ADDED
+        and selector not in LANDING_ADDED
     ]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])
     assert old == new[:first] + insight + new[first:]
+
+
+def test_the_landing_grid_is_a_row_of_five_on_a_desktop() -> None:
+    """The persona cards stand in one row of five on a wide screen."""
+    text = (STATIC / "app.css").read_text(encoding="utf-8")
+    assert ".persona-cards" in text
+    assert "repeat(5, minmax(0, 1fr))" in text
+    assert "repeat(2, minmax(0, 1fr))" in text
 
 
 def test_base_and_city_layout_link_the_new_files_in_order() -> None:

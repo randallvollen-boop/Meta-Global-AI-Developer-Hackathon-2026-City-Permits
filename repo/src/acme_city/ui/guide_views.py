@@ -47,7 +47,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Watch the tour (optional)",
         "",
         "/select",
-        "Play the video above the persona cards. It runs under three minutes.",
+        "Open the video below the persona cards and play it. It runs under three minutes.",
         "Five personas, each a fictional person with one job. Every record in the app is fictional.",
     ),
     Step(

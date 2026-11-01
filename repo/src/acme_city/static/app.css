@@ -965,23 +965,39 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .demo-date { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-2); white-space: nowrap; }
 .demo-date .info-tip { cursor: help; }
 
-/* Persona selector: one card per persona with who they are and what they do. */
+/* The landing: one short line, the five personas in one row on a desktop and
+   the video behind a title card below them. */
+.landing-line { margin: 0 0 1rem; color: var(--fg-2); max-width: 70ch; }
+.landing-links { margin: 0.75rem 0 0; }
+
+/* Persona selector: one card per persona.  The card names the persona; the
+   sentences that say who they are, what they do and where to start are the
+   hover text and the accessible description of the card. */
 .persona-cards { list-style: none; padding-left: 0; display: grid; gap: 0.75rem; font-size: 0.92rem; }
 @media (min-width: 720px) { .persona-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .persona-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .persona-card {
-  display: flex; gap: 0.75rem; align-items: flex-start; min-width: 0;
+  display: grid; gap: 0.4rem; justify-items: start; align-content: start; min-width: 0;
   border: 1px solid var(--line); border-radius: var(--radius);
   background: var(--surface); padding: 0.75rem;
 }
-.persona-icon { flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.persona-icon { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 .persona-text { display: grid; gap: 0.35rem; min-width: 0; }
 .persona-name { font-size: 1.05rem; margin: 0; }
 .persona-text p { margin: 0; }
-.persona-k {
-  display: block; font-size: 0.72rem; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--fg-2);
-}
 .persona-text form { margin-top: 0.25rem; }
+
+/* The video title card on the landing.  The player sits inside a disclosure,
+   so nothing of the video loads until the card is opened. */
+.video-title-summary {
+  display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface-2); padding: 0.6rem 0.8rem;
+}
+.video-title-summary:hover { border-color: var(--accent); }
+.video-title-summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.video-title-text { display: grid; gap: 0.1rem; }
+.video-title-note { color: var(--fg-2); font-size: 0.9rem; }
 
 /* The Incoming list on the Agents screen. */
 .agent-inbox .card-b > .lock { margin-top: 0; }

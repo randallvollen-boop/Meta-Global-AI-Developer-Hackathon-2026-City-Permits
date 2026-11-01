@@ -103,7 +103,9 @@
 
 {# The feedback region reports the last action of the acting persona: one
    sentence for the person, the details behind a disclosure.  Until an action
-   has been performed the region stays for announcements and shows nothing. #}
+   has been performed the region stays for announcements and shows nothing.
+   The landing has no action to report, so it carries no region at all. #}
+{% if screen != 'select' %}
 {% if feedback %}
 <section id="ui-feedback-region" class="feedback {% if feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
          role="status" aria-live="polite" data-testid="feedback" data-outcome="{{ feedback.outcome }}">
@@ -127,6 +129,7 @@
   <p class="feedback-message" data-testid="feedback-message"></p>
 </section>
 {% endif %}
+{% endif %}
 
 <main id="main">
   {% if moved_notice %}<p class="notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
@@ -141,36 +144,32 @@
   {% endif %}
 
   {% if screen == 'select' %}
-  <section class="panel card" aria-labelledby="select-heading">
+  <section class="panel card landing" aria-labelledby="select-heading">
     <div class="card-b">
     <h1 id="select-heading">Choose a persona</h1>
     {% include "_public_demo_notice.html" %}
-    <p>
-      Each persona is a fictional person who plays one job in the city permit
-      process. Pick one to see the app as they see it. Switch at any time with
-      the persona menu in the top right. A service identity is never selectable, and the browser
-      never sends a role: the server resolves the acting persona and its grants.
-    </p>
-    {% include "components/demo_video.html" %}
-    <p data-testid="guide-links">First visit? <a href="/walkthrough">Follow the walkthrough</a> or <a href="/lifecycle">see the permit life cycle</a>.</p>
+    <p class="landing-line" data-testid="select-line">Five fictional people, one job each. Pick one to see the app as they see it, and switch at any time with the persona menu in the top right.</p>
     <ul class="persona-list persona-cards" data-testid="persona-list">
       {% for persona in personas %}
-      <li class="persona-card" data-testid="persona-card">
+      <li class="persona-card" data-testid="persona-card" title="{{ persona.summary }}">
         {% if persona.icon %}<img class="persona-icon" src="{{ persona.icon }}" alt="" width="64" height="64" loading="lazy">{% endif %}
         <div class="persona-text">
           <h2 class="persona-name">{{ persona.label }}</h2>
-          {% if persona.who %}<p class="persona-who"><span class="persona-k">Who</span> {{ persona.who }}</p>{% endif %}
-          {% if persona.does %}<p class="persona-does"><span class="persona-k">What they do</span> {{ persona.does }}</p>{% endif %}
-          {% if persona.start %}<p class="persona-start"><span class="persona-k">Try first</span> {{ persona.start }}</p>{% endif %}
+          <p class="persona-who visually-hidden" id="persona-who-{{ persona.actor_id }}">{{ persona.who }}</p>
+          <p class="persona-does visually-hidden" id="persona-does-{{ persona.actor_id }}">{{ persona.does }}</p>
+          <p class="persona-start visually-hidden" id="persona-start-{{ persona.actor_id }}">{{ persona.start }}</p>
           <form method="post" action="/ui/actor">
             <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-            <input type="hidden" name="next" value="/queue">
-            <button type="submit" class="button btn" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}">Continue as {{ persona.label }}</button>
+            <input type="hidden" name="next" value="{{ persona.next }}">
+            <button type="submit" class="button btn" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}"
+                    aria-describedby="persona-who-{{ persona.actor_id }} persona-does-{{ persona.actor_id }} persona-start-{{ persona.actor_id }}">Continue as {{ persona.label }}</button>
           </form>
         </div>
       </li>
       {% endfor %}
     </ul>
+    {% include "components/demo_video.html" %}
+    <p class="landing-links" data-testid="guide-links">First visit? <a href="/walkthrough">Follow the walkthrough</a> or <a href="/lifecycle">see the permit life cycle</a>.</p>
     </div>
   </section>
   {% endif %}
