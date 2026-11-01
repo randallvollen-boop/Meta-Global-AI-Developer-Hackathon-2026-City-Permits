@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
@@ -19,7 +20,13 @@ from acme_city.auth.router import get_session
 from acme_city.core.errors import ValidationError
 from acme_city.ui.router import ActionContext, Outcome, _guard, page_context, render, ui_actor
 from acme_city.agents.summary import operator_summary
-from acme_city.ui.agent_views import agent_case, agent_screen, run_detail, run_history
+from acme_city.ui.agent_views import (
+    agent_case,
+    agent_screen,
+    run_detail,
+    run_history,
+    run_progress,
+)
 
 router = APIRouter(tags=["agents"])
 
@@ -221,6 +228,37 @@ def agent_run_detail(
     if view.get("missing"):
         return render(request, "agent_run_detail.html", context, status_code=404)
     return render(request, "agent_run_detail.html", context)
+
+
+@router.get("/agents/runs/{run_id}/dag", operation_id="ui_agent_run_dag")
+def agent_run_dag(
+    request: Request,
+    run_id: str,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+):
+    """Return the step graph of one attempt, as the fragment the script reads.
+
+    The fragment is the graph of the recorded run and nothing else: no state
+    of the agent, no figure and no name of a person.  A persona that may not
+    read the operations screens is refused, and an attempt that does not
+    exist answers that it is not available.
+    """
+    from acme_city.ui.router import templates
+
+    resolved, refused = _guard(request, session, actor, "agent_runs")
+    if refused is not None:
+        return refused
+    progress = run_progress(session, run_id)
+    if progress is None:
+        return HTMLResponse(
+            "This recorded run is not available.", status_code=404
+        )
+    module = templates.env.get_template("components/agent_dag.html").module
+    return HTMLResponse(
+        str(module.agent_dag(progress["levels"], progress["run_id"])),
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/agents/cases/{application_id}", operation_id="ui_agent_case")

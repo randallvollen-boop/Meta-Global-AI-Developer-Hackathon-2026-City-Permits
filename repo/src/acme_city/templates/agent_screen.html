@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/agent_dag.html" import agent_progress with context %}
 {% set agent = agent %}
 
 {% block content %}
@@ -72,6 +73,7 @@
       {% if agent.can_toggle %}Use Wake agent above to turn them on.{% else %}Your role cannot wake it; ask the Agent Operator.{% endif %}
     </p>
     {% endif %}
+    {{ agent_progress(agent.progress) }}
     {% if agent.agent_key != 'steward_assist' %}
     <table class="data-table opr-table" data-testid="agent-waiting-table">
       <caption class="visually-hidden">Cases waiting for the agent</caption>

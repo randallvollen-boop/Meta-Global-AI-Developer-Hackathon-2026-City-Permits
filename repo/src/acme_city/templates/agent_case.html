@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/agent_dag.html" import agent_progress with context %}
 {% set view = view %}
 
 {% block content %}
@@ -51,6 +52,10 @@
     {% endif %}
   </div>
 </section>
+
+{% if view.progress %}
+{{ agent_progress(view.progress) }}
+{% endif %}
 
 <section class="panel card" aria-labelledby="agent-case-findings-heading">
   <div class="card-h"><h2 id="agent-case-findings-heading">Findings</h2></div>

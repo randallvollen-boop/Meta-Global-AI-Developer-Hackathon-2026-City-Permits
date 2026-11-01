@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui with context %}
+{% from "components/agent_dag.html" import agent_dag with context %}
 {% set view = view %}
 
 {% block content %}
@@ -40,10 +41,7 @@
 <section class="panel card opr-run-detail" aria-labelledby="run-steps-heading">
   <div class="card-h"><h2 id="run-steps-heading">Processing steps</h2></div>
   <div class="card-b">
-    <ol class="issue-list" data-testid="agent-run-detail-steps">
-      {% for node in view.nodes %}<li data-node-id="{{ node.node_id }}">{{ node.label }}: {{ node.status }}{% if node.note %}. {{ node.note }}{% endif %}</li>
-      {% else %}<li>No processing steps were recorded.</li>{% endfor %}
-    </ol>
+    {{ agent_dag(view.levels, view.run_id) }}
   </div>
 </section>
 

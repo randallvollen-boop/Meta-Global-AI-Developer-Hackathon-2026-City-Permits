@@ -418,13 +418,13 @@ main > *, .ws-main > * { min-width: 0; }
 /* The step graph of an agent: a column of cards per dependency level. */
 .agent-progress { margin: 0 0 0.6rem; }
 .agent-progress-status { margin: 0 0 0.5rem; font-size: .82rem; color: var(--fg-2); }
-.agent-dag { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
-.agent-dag-col { flex: 1 1 170px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.agent-dag { display: flex; align-items: stretch; gap: 8px; flex-wrap: nowrap; overflow-x: auto; }
+.agent-dag-col { flex: 1 0 170px; min-width: 170px; display: grid; gap: 8px; align-content: start; }
 .agent-dag-node .agent-dag-label { font-weight: 600; font-size: .8rem; }
 .agent-dag-state { margin: 0; font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 .agent-dag-note { margin: 0; }
 .agent-dag .rnode::after { display: none; }
-.agent-dag-arrow { align-self: center; color: var(--fg-3); font-size: 1.1rem; }
+.agent-dag-arrow { flex: 0 0 auto; align-self: center; color: var(--fg-3); font-size: 1.1rem; }
 .agent-dag-legend { margin: 0.5rem 0 0; font-size: .72rem; color: var(--fg-3); }
 .agent-dag-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 /* The clear state is the one the run strip already has; the other states

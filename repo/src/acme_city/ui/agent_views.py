@@ -121,6 +121,69 @@ def _run_nodes(session: Session, run_id: str) -> list[dict[str, Any]]:
     ]
 
 
+def _ago(when: datetime | None) -> str:
+    """Return how long ago something happened, in the words of the operator."""
+    if when is None:
+        return ""
+    seconds = int((utc_now() - when).total_seconds())
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    days = hours // 24
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _progress_view(
+    agent_key: str,
+    run: agent_models.AgentRun | None,
+    nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Return the step graph of one run and the line that names it.
+
+    The graph joins the nodes of the agent graph to the rows the run
+    recorded, so every card shows the state the run gave that step.  A step
+    the run never reached is idle.
+    """
+    recorded = {node["node_id"]: node for node in nodes}
+    levels = graphs.levels_with_states(agent_key, recorded)
+    total = sum(len(level) for level in levels)
+    if run is None:
+        return {
+            "run_id": "",
+            "levels": levels,
+            "status_line": "Latest run: none yet.",
+            "state": "",
+            "steps": 0,
+            "total": total,
+        }
+    state_label = RUN_STATE_LABELS.get(run.outcome, run.outcome)
+    line = f"Latest run: {state_label}, {len(recorded)} of {total} steps"
+    ago = _ago(run.started_at)
+    if ago:
+        line = f"{line}, {ago}"
+    return {
+        "run_id": run.id,
+        "levels": levels,
+        "status_line": line,
+        "state": run.outcome,
+        "steps": len(recorded),
+        "total": total,
+    }
+
+
+def run_progress(session: Session, run_id: str) -> dict[str, Any] | None:
+    """Return the step graph of one attempt, or nothing when it is unknown."""
+    run = session.get(agent_models.AgentRun, run_id)
+    if run is None:
+        return None
+    return _progress_view(run.agent_key, run, _run_nodes(session, run.id))
+
+
 def _pending_recommendations(session: Session) -> list[permit.Recommendation]:
     """Return the pending recommendations of every case."""
     return list(
@@ -252,6 +315,10 @@ def agent_screen(
         }
         for run in runs[:RECENT_RESULT_COUNT]
     ]
+    latest = runs[0] if runs else None
+    progress = _progress_view(
+        agent_key, latest, nodes_by_run.get(latest.id, []) if latest else []
+    )
 
     return {
         "agent_key": agent_key,
@@ -270,6 +337,9 @@ def agent_screen(
         "engine": BUILTIN_ENGINE_LABEL,
         "kpis": kpis,
         "graph": _graph_view(agent_key),
+        # The step graph of the latest run of this agent, under the buttons
+        # that start a run.
+        "progress": progress,
         "waiting": waiting_rows,
         "failures": failures,
         "awaiting": awaiting_rows,
@@ -593,6 +663,7 @@ def run_detail(session: Session, actor: ActorContext, run_id: str) -> dict[str, 
             ).scalars().all()
         )
     model_runs = _linked_model_runs(session, [run])
+    nodes = _run_nodes(session, run.id)
     return {
         "missing": False,
         "run_id": run.id,
@@ -612,7 +683,11 @@ def run_detail(session: Session, actor: ActorContext, run_id: str) -> dict[str, 
         "state_label": RUN_STATE_LABELS.get(run.outcome, run.outcome),
         "detail": run.outcome_detail or "No additional detail was recorded.",
         "engine_label": ENGINE_LABELS.get(_engine_of(run), _engine_of(run)),
-        "nodes": _run_nodes(session, run.id),
+        "nodes": nodes,
+        # The step graph of this attempt, with the state of every step.
+        "levels": graphs.levels_with_states(
+            run.agent_key, {node["node_id"]: node for node in nodes}
+        ),
         "model_runs": model_runs,
         "findings": [
             {
@@ -670,6 +745,8 @@ def _failed_work_detail(
         "detail": work.note or "The work stopped before an agent run was created.",
         "engine_label": "Not started",
         "nodes": [],
+        # No step ran, so the graph of the agent stands in grey.
+        "levels": graphs.levels_with_states(work.agent_key, {}),
         "model_runs": [],
         "findings": [],
         "previous": None,
@@ -736,6 +813,12 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
             .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
         ).scalars().all()
     )
+    latest = runs[0] if runs else None
+    progress = (
+        _progress_view(latest.agent_key, latest, _run_nodes(session, latest.id))
+        if latest is not None
+        else None
+    )
     return {
         "application_id": application.id,
         "missing": False,
@@ -749,6 +832,8 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
         "attempts": work.attempts if work is not None else 0,
         "note": work.note or "" if work is not None else "",
         "engine_label": BUILTIN_ENGINE_LABEL,
+        # The step graph of the latest run on this case.
+        "progress": progress,
         "findings": [
             {
                 "finding_id": row.id,
@@ -907,5 +992,6 @@ __all__ = [
     "agent_screen",
     "agent_state",
     "run_history",
+    "run_progress",
     "sidebar_status",
 ]
