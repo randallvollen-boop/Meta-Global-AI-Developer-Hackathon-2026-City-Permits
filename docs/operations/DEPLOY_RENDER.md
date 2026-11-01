@@ -2,7 +2,7 @@
 
 This is the single runbook for the hosted demonstration: first setup, every later deploy, the smoke check, live Muse for judging, the nightly reset and rollback. Other documents point here.
 
-This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. The custom domain `permits.vollendata.com` is the intended address; it did not respond when last checked, so do not rely on it. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
+This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. There is no custom domain. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
 
 The blueprint is `render.yaml` at the repository root. It was written and tested without calling Render, so Render reports any field it does not accept when the Blueprint is created.
 
@@ -69,10 +69,7 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 
    Apply the Blueprint. The first build and start take a few minutes. `ACME_SECRET_KEY` is generated once by Render and stays the same across deploys.
 
-5. **Add the custom domain.**
-   1. In Render, open `acme-city-permits`, then Settings, then Custom Domains, and add `permits.vollendata.com`. Render shows the hostname to point at, in the form `acme-city-permits.onrender.com` (use the exact name Render shows).
-   2. In Netlify, open Domains, then `vollendata.com`, then DNS records, and add a record of type CNAME, name `permits`, value the Render hostname. Leave other records unchanged. The Domain Name System (DNS) records for the domain stay in Netlify.
-   3. Back in Render, press Verify on the custom domain. Render issues and renews the TLS certificate itself once the CNAME resolves. It can take several minutes. The `onrender.com` address keeps working in the meantime.
+5. **Address.** There is no custom domain. The site uses the Render address `https://acme-city-permits.onrender.com` (Randall, 2026-11-01). Nothing to do; go on to step 6.
 
 6. **Set the deploy hook for the nightly reset.**
    1. In Render, open `acme-city-permits`, then Settings, then Deploy Hook, and copy the URL.
