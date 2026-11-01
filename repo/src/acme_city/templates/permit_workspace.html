@@ -23,6 +23,10 @@
     <h1 data-testid="case-title">{{ rv.header.project_type }}</h1>
     <p class="sub" data-testid="case-address">{{ rv.header.address or 'Property address not recorded' }}{% if rv.header.submitted_address and rv.header.submitted_address != rv.header.address %} <span class="muted">(submitted as &ldquo;{{ rv.header.submitted_address }}&rdquo;)</span>{% endif %}</p>
     <p class="sub muted" data-testid="case-reference"><span class="ref">{{ rv.header.reference }}</span> &middot; {{ rv.header.applicant_name or 'Applicant not recorded' }} &middot; Revision {{ rv.header.revision }}</p>
+    {% if detail.presubmit_flag %}
+    <p class="pill warn" data-testid="presubmit-flag">{{ detail.presubmit_flag.label }}</p>
+    <p data-testid="presubmit-reason">The applicant said: {{ detail.presubmit_flag.reason }}</p>
+    {% endif %}
     <p class="case-record muted" data-testid="case-record">
       <span data-testid="case-record-summary">
         Priority <span class="pill plain" data-testid="case-priority">{{ detail.lifecycle.priority|pretty }}</span>

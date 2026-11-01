@@ -771,6 +771,28 @@ class IntakeAgent:
         """Route the case to early resolution or to review."""
         node = graphs.node_for('intake', graphs.INTAKE_ROUTER)
         row = self._begin(run, node)
+        # An override is a known issue a person still has to clear.  Cases
+        # without one take the same route they did before.
+        override = application.presubmit_override
+        if isinstance(override, dict) and str(override.get("reason") or "").strip():
+            from acme_city.applicant_portal.presubmit import FLAG
+
+            reason = " ".join(str(override.get("reason") or "").split())
+            sentences = [
+                str(item.get("sentence") or "").strip()
+                for item in (override.get("issues") or [])
+                if isinstance(item, dict) and str(item.get("sentence") or "").strip()
+            ]
+            message = f"{FLAG}. The applicant said: {reason}."
+            if sentences:
+                message = f"{message} {' '.join(sentences)}"
+            findings.add(
+                finding_type="judgment",
+                message=message,
+                applicant_must="A person at the City reviews these known issues.",
+                severity="block",
+                source_node=graphs.INTAKE_ROUTER,
+            )
         routed = kernel.route(findings.findings, application.review_area)
         application.status = routed.status
         outcome = routed.outcome

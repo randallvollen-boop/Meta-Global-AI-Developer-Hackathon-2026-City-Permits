@@ -3366,6 +3366,19 @@ def _agent_trace(session: Session, application_id: str) -> list[dict[str, Any]]:
     return trace
 
 
+def _presubmit_flag(application: permit.Application) -> dict[str, str] | None:
+    """Return the reviewer flag, or None when the applicant did not override."""
+    raw = application.presubmit_override
+    if not isinstance(raw, dict):
+        return None
+    reason = " ".join(str(raw.get("reason") or "").split())
+    if not reason:
+        return None
+    from acme_city.applicant_portal.presubmit import FLAG
+
+    return {"label": FLAG, "reason": reason}
+
+
 def permit_workspace(
     session: Session, actor: ActorContext, application_id: str
 ) -> dict[str, Any]:
@@ -3797,6 +3810,7 @@ def permit_workspace(
     workspace["reviewer"] = reviewer_views.workspace_extras(
         session, actor, application, workspace
     )
+    workspace["presubmit_flag"] = _presubmit_flag(application)
     return workspace
 
 

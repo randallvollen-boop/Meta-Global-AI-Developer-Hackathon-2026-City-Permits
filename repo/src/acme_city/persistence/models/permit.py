@@ -144,6 +144,9 @@ class Application(IdMixin, VersionMixin, CorrelationMixin, CreatedAtMixin, Base)
     )
     #: The synthetic population the row belongs to, for example ``synthetic-year-v1``.
     synthetic_population: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    #: Set only when the applicant chose Submit anyway.  The reason, the issues
+    #: and the time.  Empty on every other case, so evaluation inputs are unchanged.
+    presubmit_override: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "status IN ('draft', 'submitted', 'needs_information', 'revisions_requested', "

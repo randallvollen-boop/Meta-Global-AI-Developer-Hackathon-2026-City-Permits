@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from acme_city.applicant_portal import content as portal_content
 from acme_city.applicant_portal import forms, permits_view
+from acme_city.applicant_portal.presubmit import ANYWAY_WHY, override_record
 from acme_city.applicant_portal.service import (
     MAX_UPLOAD_BYTES,
     UPLOAD_EXTENSIONS,
@@ -87,7 +88,7 @@ def _portal_guard(
     return resolved, None
 
 #: Names the form posts that are not application fields.
-_RESERVED = {CSRF_FIELD, "intent", "draft", "certification_accepted", "next"}
+_RESERVED = {CSRF_FIELD, "intent", "draft", "certification_accepted", "next", "override_reason"}
 
 
 class _Incomplete(Exception):
@@ -96,6 +97,14 @@ class _Incomplete(Exception):
 
 class _Rejected(Exception):
     """A file was refused; the draft is kept and nothing is submitted."""
+
+
+class _Held(Exception):
+    """A complete application still has a Must fix."""
+
+    def __init__(self, review: dict[str, Any], error: str = "") -> None:
+        self.review = review
+        self.error = error
 
 
 def _upload_rules() -> str:
@@ -157,6 +166,7 @@ def _form_context(
     error: str = "",
     notice: str = "",
     upload_problems: dict[str, str] | None = None,
+    review: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     values = spec.with_defaults(values)
     documents = service.draft_documents(draft)
@@ -190,6 +200,7 @@ def _form_context(
         document_purposes={
             doc_type: portal_content.document_purpose(doc_type) for doc_type, _label in spec.documents
         },
+        review=review,
     )
 
 
@@ -627,6 +638,78 @@ async def ui_portal_check(
     return JSONResponse(state)
 
 
+def _posted_types(form: Any, draft_types: set[str]) -> set[str]:
+    """Return document types the request already has, without storing a new file."""
+    have = set(draft_types)
+    have |= {str(key)[len("have__"):] for key in form.keys() if str(key).startswith("have__")}
+    return have
+
+
+def _run_review(
+    request: Request,
+    service: PortalService,
+    spec: forms.FormSpec,
+    values: dict[str, str],
+    actor: ActorContext,
+    *,
+    certification_accepted: bool,
+    declared: set[str],
+    uploaded_types: set[str],
+    documents: dict[str, Any],
+    muse: bool,
+    posted_files: list[tuple[str, str, bytes]] | None = None,
+) -> dict[str, Any]:
+    """Run the rules layer.  Muse runs only for Check my application."""
+    return service.presubmit_review(
+        spec,
+        values,
+        actor=actor,
+        certification_accepted=certification_accepted,
+        sent_separately=declared,
+        uploaded_types=uploaded_types,
+        documents=documents,
+        posted_files=posted_files or (),
+        muse=muse,
+        muse_client=getattr(request.app.state, "presubmit_muse_client", None),
+    )
+
+
+@router.post("/apply/{type_key}/review", operation_id="ui_portal_review")
+async def ui_portal_review(
+    type_key: str,
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+    form: Any = Depends(posted_form),
+) -> Any:
+    """Return the pre-submit panel.  This writes no case."""
+    resolved, refused = _portal_guard(request, session, actor)
+    if refused is not None:
+        return refused
+    service = _service(request, session)
+    spec = service.form(type_key)
+    row = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
+    documents = service.draft_documents(row)
+    posted = await _files(form, spec)
+    have = _posted_types(form, set(documents))
+    for doc_type, _filename, _content in posted:
+        have.add(doc_type)
+    review = _run_review(
+        request,
+        service,
+        spec,
+        _values(form, spec),
+        resolved,
+        certification_accepted=str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"},
+        declared=_declared(form, spec),
+        uploaded_types=have,
+        documents=documents,
+        muse=True,
+        posted_files=posted,
+    )
+    return JSONResponse(review)
+
+
 @router.post("/apply/{type_key}", operation_id="ui_portal_post")
 async def ui_portal_post(
     type_key: str,
@@ -652,7 +735,9 @@ async def ui_portal_post(
     intent = str(form.get("intent", "update"))
     declared = _declared(form, spec)
     attempted = False
+    held = False
     draft = None
+    review: dict[str, Any] | None = None
     error_text = ""
     notice = ""
     upload_problems: dict[str, str] = {}
@@ -667,7 +752,8 @@ async def ui_portal_post(
             if service.remove_upload(draft, removing, resolved):
                 labels = dict(spec.documents)
                 notice = f"Removed the file for {labels[removing][:1].lower() + labels[removing][1:]}. Your other entries are kept in a draft."
-        for doc_type, filename, content in await _files(form, spec):
+        posted = await _files(form, spec)
+        for doc_type, filename, content in posted:
             try:
                 service.store_upload(draft, doc_type, filename, content, resolved)
             except ValidationError as problem:
@@ -677,11 +763,24 @@ async def ui_portal_post(
             session.commit()
             error_text = next(iter(upload_problems.values()))
             raise _Rejected
-        if intent == "submit":
+        documents = service.draft_documents(draft)
+        if intent == "review":
+            review = _run_review(
+                request, service, spec, values, resolved,
+                certification_accepted=certification_accepted,
+                declared=declared,
+                uploaded_types=set(documents),
+                documents=documents,
+                muse=True,
+                posted_files=posted,
+            )
+            session.commit()
+            notice = notice or "Checked the application. Nothing has been submitted."
+        elif intent in {"submit", "override"}:
             incomplete = service.completeness(
                 spec,
                 values,
-                set(service.draft_documents(draft)),
+                set(documents),
                 certification_accepted=certification_accepted,
                 sent_separately=declared,
             )
@@ -692,19 +791,42 @@ async def ui_portal_post(
                 attempted = True
                 notice = "Nothing has been submitted. Your entries are kept in a draft."
                 raise _Incomplete
+            # Submit itself does not ask the assistant.  Check my application does.
+            review = _run_review(
+                request, service, spec, values, resolved,
+                certification_accepted=certification_accepted,
+                declared=declared,
+                uploaded_types=set(documents),
+                documents=documents,
+                muse=False,
+            )
+            reason = " ".join(str(form.get("override_reason", "") or "").split())
+            override = None
+            if review["must_fix"]:
+                if intent != "override" or not reason:
+                    session.commit()
+                    raise _Held(review, "" if intent != "override" else ANYWAY_WHY)
+                override = override_record(review, reason, recorded_at=service._now.isoformat())
             application = service.submit(
-                spec, values, certification_accepted, draft, resolved, sent_separately=declared
+                spec, values, certification_accepted, draft, resolved,
+                sent_separately=declared, override=override,
             )
             session.commit()
             return RedirectResponse(
                 f"/apply/submitted/{application.source_application_number}", status_code=303
             )
-        session.commit()
-        if intent == "save":
-            return RedirectResponse(
-                f"/apply/track?tab=drafts&saved={draft.reference}", status_code=303
-            )
-        notice = notice or "Your changes are kept in a draft. Nothing has been submitted."
+        else:
+            session.commit()
+            if intent == "save":
+                return RedirectResponse(
+                    f"/apply/track?tab=drafts&saved={draft.reference}", status_code=303
+                )
+            notice = notice or "Your changes are kept in a draft. Nothing has been submitted."
+    except _Held as held_error:
+        review = held_error.review
+        held = True
+        if held_error.error:
+            error_text = held_error.error
     except (_Incomplete, _Rejected):
         pass
     except AcmeError as error:
@@ -720,6 +842,8 @@ async def ui_portal_post(
         request, session, resolved, service, spec,
         values=values, certification_accepted=certification_accepted, draft=draft,
         sent_separately=declared, attempted=attempted, error=error_text, notice=notice,
-        upload_problems=upload_problems,
+        upload_problems=upload_problems, review=review,
     )
-    return render(request, "portal_form.html", context, status_code=422 if (error_text or attempted) else 200)
+    return render(
+        request, "portal_form.html", context, status_code=422 if (error_text or attempted or held) else 200
+    )

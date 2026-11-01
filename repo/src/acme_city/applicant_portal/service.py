@@ -15,7 +15,7 @@ import hashlib
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -130,6 +130,15 @@ def checked_upload(filename: str, content: bytes) -> tuple[str, str]:
     if not magic:
         raise ValidationError("the file content does not match its file type")
     return extension, media_type
+
+
+def plain_excerpt(filename: str, content: bytes) -> str:
+    """Return the text of a plain-text upload.  Other files are named only."""
+    extension = Path(filename or "").suffix.lower()
+    if UPLOAD_EXTENSIONS.get(extension) != "text/plain":
+        return "Text is not included for this file."
+    return bytes(content).decode("utf-8", errors="replace")[:4000]
+
 
 class PortalService:
     """Reads the forms and writes drafts, uploads and submissions."""
@@ -390,7 +399,13 @@ class PortalService:
 
         text = text.strip()
         if not text:
-            return {"found": False, "message": "", "alternatives": []}
+            return {
+                "found": False,
+                "message": "",
+                "alternatives": [],
+                "parcel_matched": False,
+                "locator_available": True,
+            }
         try:
             locator = get_locator(self._settings)
             candidates = locator.find_candidates(text, 5)
@@ -399,12 +414,16 @@ class PortalService:
                 "found": False,
                 "message": "The address service is not available. You can still submit; the City will find the property.",
                 "alternatives": [],
+                "parcel_matched": False,
+                "locator_available": False,
             }
         if not candidates:
             return {
                 "found": False,
                 "message": "We could not find that address in the city locator. Check the spelling, or submit it and the City will find the property.",
                 "alternatives": [],
+                "parcel_matched": False,
+                "locator_available": True,
             }
         top = candidates[0]
         parcel = locator.parcel_at(top.x, top.y)
@@ -412,12 +431,15 @@ class PortalService:
             {"address": item.address, "score": item.score} for item in candidates[1:4]
         ]
         strong = [item for item in candidates if item.score >= 90]
+        parcel_number = parcel.parcel_number if parcel else ""
         return {
             "found": True,
             "address": top.address,
             "score": top.score,
             "status": top.status,
-            "parcel_number": parcel.parcel_number if parcel else "",
+            "parcel_number": parcel_number,
+            "parcel_matched": bool(parcel_number),
+            "locator_available": True,
             "exact": top.address.lower().startswith(text.lower().split(",")[0].strip()),
             "ambiguous": len(strong) != 1,
             "alternatives": alternatives,
@@ -590,6 +612,159 @@ class PortalService:
             )
         return removed
 
+    # ------------------------------------------------------------ draft facts
+
+    def _draft_facts(
+        self,
+        spec: forms.FormSpec,
+        values: dict[str, str],
+        state: dict[str, Any],
+        located: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Return the facts a submission stores, from the typed values."""
+        values = spec.with_defaults(values)
+        parcel_number = located.get("parcel_number", "") if located.get("found") else ""
+        address = str(values.get("address_text") or "").strip()
+        facts: dict[str, Any] = {}
+        for field in spec.fields:
+            if not spec.applies(field, values):
+                continue
+            raw = values.get(field.key, "")
+            if field.kind == "number" and str(raw).strip():
+                number = float(str(raw).replace(",", ""))
+                facts[field.fact] = int(number) if number.is_integer() else number
+            elif field.kind == "checkbox":
+                facts[field.fact] = str(raw or "").lower() in {"on", "true", "1", "yes"}
+            else:
+                facts[field.fact] = str(raw).strip()
+        facts.update(spec.constant_facts)
+        facts["submitted_site_text"] = address
+        if parcel_number:
+            facts["parcel_number"] = parcel_number
+            facts["submitted_parcel"] = parcel_number
+        if "property_address" in (self._type_row(spec.type_key).required_fields or []):
+            facts["property_address"] = address
+        if str(values.get("business_name") or "").strip():
+            facts["business_name"] = str(values.get("business_name") or "").strip()
+        facts["certification_accepted"] = bool(state.get("certification_accepted"))
+        if state.get("sent_separately"):
+            facts[DECLARED_SEPARATELY_FACT] = list(state["sent_separately"])
+        facts["applicant_phone"] = str(values.get("applicant_phone") or "").strip()
+        return facts
+
+    def _document_excerpts(self, documents: dict[str, Any]) -> list[dict[str, str]]:
+        """Return text the assistant may read.  Other files are named only."""
+        excerpts: list[dict[str, str]] = []
+        for doc_type, row in documents.items():
+            media = str(getattr(row, "media_type", "") or "")
+            text = "Text is not included for this file."
+            if media == "text/plain":
+                try:
+                    text = Path(row.file_ref).read_text(encoding="utf-8", errors="replace")[:4000]
+                except OSError:
+                    text = "Text is not included for this file."
+            excerpts.append({"document_type": str(doc_type), "text": text})
+        return excerpts
+
+    def presubmit_review(
+        self,
+        spec: forms.FormSpec,
+        values: dict[str, str],
+        *,
+        actor: ActorContext,
+        certification_accepted: bool = False,
+        sent_separately: set[str] | frozenset[str] | None = None,
+        uploaded_types: set[str] | None = None,
+        documents: dict[str, Any] | None = None,
+        posted_files: Sequence[tuple[str, str, bytes]] | None = None,
+        muse: bool = False,
+        muse_client: Any = None,
+    ) -> dict[str, Any]:
+        """Run the rules layer on unsaved facts.  Muse runs only when asked.
+
+        No case row is written.  ``held`` is true only when the application is
+        otherwise complete and a rule fails or the address matches no parcel.
+        """
+        from acme_city.applicant_portal.presubmit import (
+            ASSISTANT_OFFLINE,
+            group_review,
+        )
+        from acme_city.muse.service import MuseService
+        from acme_city.permits.service import PermitService
+
+        self._authorize(actor)
+        values = spec.with_defaults(values)
+        declared = set(sent_separately or ())
+        have = set(uploaded_types or ())
+        state = self.completeness(
+            spec,
+            values,
+            have,
+            certification_accepted=certification_accepted,
+            sent_separately=declared,
+        )
+        located = self.locate(str(values.get("address_text") or ""))
+        facts = self._draft_facts(spec, values, state, located)
+        results, rule_set, _inputs = PermitService(self._session, now=self._now).rule_results(
+            spec.type_key,
+            facts,
+            basis_at=self._now,
+        )
+        review = group_review(
+            results,
+            rule_set,
+            located,
+            address_text=str(values.get("address_text") or ""),
+        )
+        review["held"] = bool(review["must_fix"]) and bool(state["can_submit"])
+        if not muse:
+            return review
+
+        rule_items = [
+            item
+            for group in ("must_fix", "should_check", "looks_good")
+            for item in review[group]
+            if item.get("kind") == "rule"
+        ]
+        # A file the applicant just attached replaces the copy kept on the draft.
+        excerpts = {
+            item["document_type"]: item
+            for item in self._document_excerpts(documents or {})
+        }
+        for doc_type, filename, content in posted_files or ():
+            excerpts[str(doc_type)] = {
+                "document_type": str(doc_type),
+                "text": plain_excerpt(filename, content),
+            }
+        outcome = {
+            "assistant": "offline",
+            "assistant_note": ASSISTANT_OFFLINE,
+            "feedback": {},
+            "validation_issues": [],
+        }
+        if self._settings is not None:
+            outcome = MuseService(
+                self._session,
+                self._settings,
+                client=muse_client,
+                now=self._now,
+            ).presubmit_feedback(
+                actor=actor,
+                items=rule_items,
+                documents=list(excerpts.values()),
+            )
+        review["assistant"] = outcome["assistant"]
+        review["assistant_note"] = outcome["assistant_note"]
+        review["validation_issues"] = list(outcome.get("validation_issues") or [])
+        notes = outcome.get("feedback") or {}
+        if notes:
+            for group in ("must_fix", "should_check", "looks_good"):
+                for item in review[group]:
+                    note = notes.get(item.get("rule_id") or "")
+                    if note:
+                        item["feedback"] = note
+        return review
+
     # ------------------------------------------------------------------ submit
 
     def submit(
@@ -601,6 +776,7 @@ class PortalService:
         actor: ActorContext,
         *,
         sent_separately: set[str] | frozenset[str] | None = None,
+        override: dict[str, Any] | None = None,
     ) -> permit.Application:
         """Submit a complete application with its certification accepted through the existing path."""
         from acme_city.portal_intake.schemas import IntakeRecordCommand
@@ -625,35 +801,7 @@ class PortalService:
 
         located = self.locate(values.get("address_text", ""))
         parcel_number = located.get("parcel_number", "") if located.get("found") else ""
-        facts: dict[str, Any] = {}
-        for field in spec.fields:
-            if not spec.applies(field, values):
-                # A question that does not apply to this project is never stored.
-                continue
-            raw = values.get(field.key, "")
-            if field.kind == "number" and str(raw).strip():
-                number = float(str(raw).replace(",", ""))
-                facts[field.fact] = int(number) if number.is_integer() else number
-            elif field.kind == "checkbox":
-                facts[field.fact] = str(raw or "").lower() in {"on", "true", "1", "yes"}
-            else:
-                facts[field.fact] = str(raw).strip()
-        facts.update(spec.constant_facts)
-        facts["submitted_site_text"] = values["address_text"].strip()
-        if parcel_number:
-            facts["parcel_number"] = parcel_number
-            facts["submitted_parcel"] = parcel_number
-        if "property_address" in (
-            self._type_row(spec.type_key).required_fields or []
-        ):
-            facts["property_address"] = values["address_text"].strip()
-        if values.get("business_name", "").strip():
-            facts["business_name"] = values["business_name"].strip()
-        facts["certification_accepted"] = True
-        if state["sent_separately"]:
-            # A declaration only: no document row, file or audit event says it arrived.
-            facts[DECLARED_SEPARATELY_FACT] = list(state["sent_separately"])
-        facts["applicant_phone"] = values.get("applicant_phone", "").strip()
+        facts = self._draft_facts(spec, values, state, located)
 
         record = IntakeRecordCommand(
             channel="portal",
@@ -707,6 +855,19 @@ class PortalService:
             references=[draft.reference, result.source_application_number or ""],
         )
         assert application is not None
+        if override and str(override.get("reason") or "").strip():
+            # The row was just created.  The override is not a new revision.
+            application.presubmit_override = dict(override)
+            self._session.flush()
+            self._audit.append(
+                action="application.presubmit_override",
+                actor=actor,
+                target_type="application",
+                target_id=application.id,
+                reason=str(override.get("reason") or ""),
+                metadata={"flag": str(override.get("flag") or "")},
+                correlation_id=application.correlation_id,
+            )
         return application
 
     # ------------------------------------------------------------------- track

@@ -203,6 +203,44 @@ def test_saving_a_draft_lands_on_the_drafts_tab(client: TestClient) -> None:
     assert 'data-tab="drafts"' in landing.text
 
 
+def test_check_my_application_shows_the_three_groups(client: TestClient) -> None:
+    """Click test: Check my application."""
+    response = post_form(
+        client,
+        {**FENCE, "height_ft": "6", "location": "front"},
+        files=FILES,
+        intent="review",
+    )
+    assert response.status_code == 200, response.text
+    page = response.text
+    for label in ("Must fix", "Should check", "Looks good"):
+        assert label in page
+    must_fix = page.split('data-testid="must-fix"')[1].split("</section>")[0]
+    assert "ACME Code §14-305" in must_fix
+    assert "Front yard fence is above the 4 ft maximum." in must_fix
+    assert "Use 4 or less." in must_fix
+    assert "The assistant is offline." in page
+    submit = re.search(r'<button[^>]*data-testid="submit-application"[^>]*>', page)
+    assert submit is not None and "disabled" in submit.group(0)
+    assert 'aria-describedby="submit-held-why"' in submit.group(0)
+    assert "Fix the items under Must fix, or use Submit anyway." in page
+    anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', page)
+    assert anyway is not None and "disabled" in anyway.group(0)
+    assert 'aria-describedby="submit-anyway-why"' in anyway.group(0)
+    assert "Enter why submit now." in page
+    assert "Why submit now" in page
+
+
+def test_the_first_page_has_no_presubmit_panel(client: TestClient) -> None:
+    """The groups appear only after a check."""
+    page = client.get(f"/apply/{TYPE_KEY}").text
+    assert "Must fix" not in page
+    assert "Check my application" in page
+    assert 'data-testid="check-application"' in page
+    button = re.search(r'<button[^>]*data-testid="submit-application"[^>]*>', page)
+    assert button is not None and "disabled" not in button.group(0)
+
+
 def test_removing_a_file_leaves_the_other_one(client: TestClient) -> None:
     """Click test: the Remove button of a document row."""
     first = post_form(client, FENCE, files=FILES)

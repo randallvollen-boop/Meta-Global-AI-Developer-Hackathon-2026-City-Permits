@@ -42,10 +42,11 @@ EXEMPT_PREFIXES: Final = ("/ui/static", "/readyz", "/healthz")
 SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS"})
 #: Requests that switch or end a persona session.
 SESSION_PATHS: Final = frozenset({"/ui/actor", "/ui/end", "/api/session/select", "/api/session"})
-#: The applicant form's background check.  It repeats after every pause in
-#: typing and the server writes nothing, so it counts as a read: it must not
-#: spend the upload allowance that a real submission needs.
-FORM_CHECK_PATH: Final = re.compile(r"^/apply/[a-z0-9_-]+/check/?$")
+#: The applicant form's background check and its pre-submit review.  Both
+#: repeat while the applicant is still editing and the server writes no case,
+#: so each counts as a read: neither spends the upload allowance a real
+#: submission needs.
+FORM_CHECK_PATH: Final = re.compile(r"^/apply/[a-z0-9_-]+/(?:check|review)/?$")
 MAX_TRACKED_CLIENTS: Final = 20_000
 
 LIMIT_ALL: Final = "all"
@@ -150,7 +151,7 @@ def classify(method: str, path: str, content_type: str) -> list[str]:
     if path.startswith(EXEMPT_PREFIXES):
         return []
     if method == "POST" and FORM_CHECK_PATH.fullmatch(path):
-        return [LIMIT_ALL]  # the form's background check is a read, not an upload
+        return [LIMIT_ALL]  # the form's background check and pre-submit review are reads
     limits = [LIMIT_ALL]
     if method not in SAFE_METHODS:
         limits.append(LIMIT_WRITE)

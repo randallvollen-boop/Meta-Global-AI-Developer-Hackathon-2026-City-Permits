@@ -247,6 +247,30 @@ def test_upload_limit_counts_only_multipart_requests(make_client) -> None:
     assert 429 not in statuses(client, 5, "POST", "/api/session/select", json={"actor_id": PERSONAS[0]})
 
 
+def test_the_presubmit_review_counts_as_a_read() -> None:
+    """Repeated checks of an unsaved application are reads, same as /check."""
+    assert classify("POST", "/apply/deck_fence/review", "multipart/form-data; boundary=x") == ["all"]
+    assert classify("POST", "/apply/fence/review/", "multipart/form-data; boundary=x") == ["all"]
+    assert classify("POST", "/apply/fence/review/extra", "multipart/form-data; boundary=x") == [
+        "all", "write", "upload",
+    ]
+
+
+def test_repeated_presubmit_reviews_do_not_spend_the_upload_allowance(make_client) -> None:
+    client = make_client(ACME_RATE_LIMIT_UPLOAD_PER_MINUTE="2")
+    client.post("/ui/actor", data={"actor_id": PERSONAS[0]}, follow_redirects=False)
+    files = {"file__site_plan": ("sketch.txt", b"fictional site sketch", "text/plain")}
+    reviews = [
+        client.post("/apply/deck_fence/review", data={"intent": "review"}, files=files).status_code
+        for _ in range(3)
+    ]
+    assert reviews == [200, 200, 200], reviews
+    first = client.post("/apply/deck_fence", data={"intent": "submit"}, files=files)
+    assert first.status_code != 429
+    second = client.post("/apply/deck_fence", data={"intent": "submit"}, files=files)
+    assert second.status_code != 429
+
+
 def test_the_form_background_check_does_not_spend_the_upload_allowance(make_client) -> None:
     client = make_client(ACME_RATE_LIMIT_UPLOAD_PER_MINUTE="2")
     client.post("/ui/actor", data={"actor_id": PERSONAS[0]}, follow_redirects=False)

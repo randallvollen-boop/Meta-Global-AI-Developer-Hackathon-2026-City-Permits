@@ -177,7 +177,8 @@
         }).catch(function () { /* the server still checks on submit */ });
     }
     // After a refused Submit the errors stay up; each one clears as the person fixes it.
-    // Nothing turns red before that, and Submit is never disabled.
+    // Completeness never disables Submit.  Only a Must fix on a complete application does,
+    // and only after Check my application or a refused Submit.
     function renderNeeds(state) {
       if (!summary) { return; }
       var anchors = {};
@@ -197,6 +198,165 @@
       });
       var any = Object.keys(anchors).length > 0;
       summary.hidden = !any;
+    }
+    function syncAnyway() {
+      var box = document.getElementById("override-reason");
+      var button = form.querySelector("[data-testid='submit-anyway']");
+      var why = document.getElementById("submit-anyway-why");
+      if (!box || !button) { return; }
+      var ready = box.value.trim().length > 0;
+      button.disabled = !ready;
+      if (ready) {
+        button.removeAttribute("aria-describedby");
+        if (why) { why.hidden = true; }
+      } else {
+        button.setAttribute("aria-describedby", "submit-anyway-why");
+        if (why) { why.hidden = false; }
+      }
+    }
+    function ensureOverride() {
+      var wrap = form.querySelector("[data-override]");
+      if (!wrap) {
+        wrap = document.createElement("div");
+        wrap.setAttribute("data-override", "");
+        var label = document.createElement("label");
+        label.htmlFor = "override-reason";
+        label.textContent = "Why submit now";
+        var box = document.createElement("textarea");
+        box.id = "override-reason";
+        box.name = "override_reason";
+        box.setAttribute("data-testid", "why-submit-now");
+        box.maxLength = 500;
+        var button = document.createElement("button");
+        button.type = "submit";
+        button.name = "intent";
+        button.value = "override";
+        button.className = "btn";
+        button.setAttribute("data-testid", "submit-anyway");
+        button.disabled = true;
+        button.setAttribute("aria-describedby", "submit-anyway-why");
+        button.textContent = "Submit anyway";
+        var why = document.createElement("p");
+        why.id = "submit-anyway-why";
+        why.setAttribute("data-testid", "submit-anyway-why");
+        why.textContent = "Enter why submit now.";
+        wrap.appendChild(label);
+        wrap.appendChild(box);
+        wrap.appendChild(button);
+        wrap.appendChild(why);
+        var save = form.querySelector("[data-testid='save-draft']");
+        if (save && save.parentNode) { save.parentNode.insertBefore(wrap, save); }
+        else { form.appendChild(wrap); }
+      }
+      wrap.hidden = false;
+      var bound = document.getElementById("override-reason");
+      if (bound && !bound.getAttribute("data-bound")) {
+        bound.setAttribute("data-bound", "1");
+        bound.addEventListener("input", syncAnyway);
+      }
+      syncAnyway();
+    }
+    function applyHold(review) {
+      if (!submit) { return; }
+      if (review.held) {
+        submit.disabled = true;
+        var why = document.getElementById("submit-held-why");
+        if (!why) {
+          why = document.createElement("p");
+          why.id = "submit-held-why";
+          why.setAttribute("data-testid", "submit-held-why");
+          why.textContent = "Fix the items under Must fix, or use Submit anyway.";
+          submit.insertAdjacentElement("afterend", why);
+        }
+        why.hidden = false;
+        submit.setAttribute("aria-describedby", "submit-held-why");
+        ensureOverride();
+      } else {
+        submit.disabled = false;
+        submit.removeAttribute("aria-describedby");
+        var heldWhy = document.getElementById("submit-held-why");
+        if (heldWhy) { heldWhy.hidden = true; }
+        var wrap = form.querySelector("[data-override]");
+        if (wrap) { wrap.hidden = true; }
+      }
+    }
+    function groupSection(review, key) {
+      var section = document.createElement("section");
+      section.setAttribute("data-testid", key.replace("_", "-"));
+      var title = document.createElement("h2");
+      title.textContent = (review.labels && review.labels[key]) || "";
+      section.appendChild(title);
+      var items = review[key] || [];
+      if (!items.length) {
+        var none = document.createElement("p");
+        none.textContent = "None.";
+        section.appendChild(none);
+        return section;
+      }
+      items.forEach(function (item) {
+        var row = document.createElement("p");
+        row.setAttribute("data-testid", "presubmit-item");
+        row.textContent = item.sentence || "";
+        if (item.feedback) {
+          var note = document.createElement("span");
+          note.setAttribute("data-testid", "presubmit-feedback");
+          note.textContent = " " + item.feedback;
+          row.appendChild(note);
+        }
+        section.appendChild(row);
+      });
+      return section;
+    }
+    function renderReview(review) {
+      var root = form.querySelector("[data-presubmit-root]");
+      if (!root) { return; }
+      root.hidden = false;
+      root.setAttribute("data-testid", "presubmit-panel");
+      root.textContent = "";
+      ["must_fix", "should_check", "looks_good"].forEach(function (key) {
+        root.appendChild(groupSection(review, key));
+      });
+      if (review.assistant_note) {
+        var note = document.createElement("p");
+        note.setAttribute("data-testid", "assistant-note");
+        note.textContent = review.assistant_note;
+        root.appendChild(note);
+      }
+      applyHold(review);
+    }
+    function reviewData() {
+      // The files stay on the request so the assistant can read a text file.
+      // The review path is a read, so this does not spend the upload allowance.
+      var data = new FormData(form);
+      data.delete("csrf_token");
+      data.set("intent", "review");
+      return data;
+    }
+    function runReview() {
+      if (!window.fetch || !window.FormData) { return; }
+      fetch(form.getAttribute("data-review-url"), {
+        method: "POST",
+        body: reviewData(),
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (review) { if (review) { renderReview(review); } })
+        .catch(function () { /* the form still posts when this script is absent */ });
+    }
+    form.addEventListener("submit", function (event) {
+      var button = event.submitter;
+      if (!button || button.getAttribute("data-testid") !== "check-application") { return; }
+      if (!window.fetch || !window.FormData) { return; }
+      event.preventDefault();
+      runReview();
+    });
+    var existingReason = document.getElementById("override-reason");
+    if (existingReason) {
+      if (!existingReason.getAttribute("data-bound")) {
+        existingReason.setAttribute("data-bound", "1");
+        existingReason.addEventListener("input", syncAnyway);
+      }
+      syncAnyway();
     }
     if (summary) { summary.focus(); }
     function setPill(row, input) {
