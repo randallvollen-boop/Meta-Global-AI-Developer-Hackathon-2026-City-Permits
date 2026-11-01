@@ -592,14 +592,16 @@ def test_the_record_page_shows_the_dates_as_readable_time(client, sensitive_case
     assert re.search(r'datetime="\d{4}-\d{2}-\d{2}"', submitted.group(1))
 
 
-def test_the_record_page_links_back_at_the_top_and_the_bottom(client, sensitive_case) -> None:
+def test_the_record_page_links_back_at_the_top(client, sensitive_case) -> None:
+    """The record page carries one back link, above the record.
+
+    The duplicate back link at the bottom of the page was removed with the
+    slimming of the record (AD4); the link back to the search stays.
+    """
     body = client.get(f"/city/community/permit/{sensitive_case['reference']}").text
     assert 'data-testid="community-back"' in body
-    assert 'data-testid="community-back-bottom"' in body
     assert body.index('data-testid="community-back"') < body.index("<h1")
-    assert body.index('data-testid="community-back-bottom"') > body.index(
-        'data-testid="community-record"'
-    )
+    assert 'data-testid="community-back-bottom"' not in body
 
 
 def test_the_record_page_says_what_it_does_not_show(client, sensitive_case) -> None:

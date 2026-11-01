@@ -6,7 +6,7 @@
 <div class="page-head">
   <div>
     <h1>Walkthrough</h1>
-    <p class="sub">{{ walkthrough.steps|length }} steps, about ten minutes. The button on each step switches to the persona who does that job and opens the real screen, so every check the app makes still applies. Steps 6 and 7 go together.</p>
+    <p class="sub">{{ walkthrough.steps|length }} steps, about ten minutes. Steps 6 and 7 go together.</p>
   </div>
   <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
@@ -17,7 +17,10 @@
     <h2><span class="guide-step-n">{{ step.number }}</span> {{ step.title }}</h2>
     {% if step.persona %}<p class="guide-persona">As {{ step.persona }}</p>{% endif %}
     <p><span class="guide-k">Do</span> {{ step.do }}</p>
-    <p><span class="guide-k">Look for</span> {{ step.look_for }}</p>
+    <details class="guide-more">
+      <summary>More details</summary>
+      <p><span class="guide-k">Look for</span> {{ step.look_for }}</p>
+    </details>
     {% if step.actor_id %}
     {{ open_as(step.actor_id, step.persona, step.path, 'walkthrough-open') }}
     {% else %}

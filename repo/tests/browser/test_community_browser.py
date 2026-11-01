@@ -34,8 +34,10 @@ LIST_STATES = (
 #: the search button when the search is too short, the notice itself when
 #: nothing matched.  Every state names one element, so the fixed mobile
 #: navigation and the demo switch are checked against all of them.
+#: The recently submitted cards sit behind a disclosure (AD4), so the state
+#: without a search names the summary of that disclosure.
 LIST_STATE_TARGETS: dict[str, str] = {
-    "/city/community": '[data-testid="community-recent"] .community-card-link',
+    "/city/community": '[data-testid="community-recent"] summary',
     "/city/community?q=Acme": '[data-testid="community-result-table"] .community-card-link',
     "/city/community?q=ab": '[data-testid="community-search"]',
     "/city/community?q=zzqqq": '[data-testid="community-no-results"]',
@@ -95,6 +97,9 @@ def test_the_overview_fits_a_phone_and_keeps_the_district_table(viewport_390, se
     assert_no_horizontal_overflow(page)
     overview = page.locator('[data-testid="community-map-section"]')
     assert overview.count() == 1
+    # The overview sits behind a disclosure (AD4); it opens on request.
+    assert page.locator('[data-testid="community-district-table"]').is_visible() is False
+    page.locator('[data-testid="community-map-section"] > summary').click()
     assert page.locator('[data-testid="community-district-table"]').is_visible()
     assert page.locator('[data-testid="community-legend"]').is_visible()
     assert page.locator('[data-testid="community-overview-submit"]').is_visible()
@@ -106,6 +111,7 @@ def test_the_overview_filter_narrows_the_district_table(browser, server: Browser
     page = context.new_page()
     try:
         page.goto(f"{server.base_url}/city/community", wait_until="networkidle")
+        page.locator('[data-testid="community-map-section"] > summary').click()
         values = [
             option.get_attribute("value")
             for option in page.locator('[data-testid="community-type"] option').all()

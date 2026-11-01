@@ -7,7 +7,7 @@
   <h1>Permits in my community</h1>
   <p class="city-lede">Find public permit records by address, street, or permit number.</p>
   <p>{{ ui.general_help_button() }}</p>
-  {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some of the permits below are generated demonstration data. None of them is a real permit.</p>{% endif %}
+  {% if summary.synthetic_present %}<p data-testid="community-synthetic-note"><span class="badge-synthetic">synthetic data</span> Some records are generated demonstration data.</p>{% endif %}
 
   <section class="community-search-panel" aria-labelledby="community-search-heading">
     <h2 id="community-search-heading" class="visually-hidden">Find a permit record</h2>
@@ -18,7 +18,7 @@
       </label>
       <button type="submit" class="city-cta" data-testid="community-search">Search permits</button>
       {% if return_q %}<a class="community-clear" href="{{ community_url('', return_type) }}" data-testid="community-clear-search">Clear search</a>{% endif %}
-      <p class="community-hint" id="community-q-hint">Enter at least three characters. Use a fictional ACME City address.</p>
+      <p class="community-hint" id="community-q-hint">Enter at least three characters.</p>
     </form>
   </section>
 
@@ -40,18 +40,16 @@
     {% endif %}
   </section>
   {% elif summary.recent %}
-  <section class="community-recent" id="community-recent" aria-labelledby="recent-h" data-testid="community-recent">
-    <h2 id="recent-h">Recently submitted</h2>
+  <details class="community-recent" id="community-recent" data-testid="community-recent">
+    <summary id="recent-h">Recently submitted</summary>
     <ul class="community-cards">
       {% for r in summary.recent %}{% include "city/_community_permit_card.html" %}{% endfor %}
     </ul>
-  </section>
+  </details>
   {% endif %}
 
-  <p class="community-note" data-testid="community-district-note">A district is the zoning district of the parcel the permit is for. It is not a neighborhood and not a council district.</p>
-
-  <section class="community-overview" aria-labelledby="map-h" data-testid="community-map-section">
-    <h2 id="map-h">Permits across ACME City</h2>
+  <details class="community-overview" data-testid="community-map-section">
+    <summary id="map-h">Permits across ACME City</summary>
     <p class="community-overview-scope" data-testid="community-overview-scope">Counts by zoning district. This overview covers the city. It does not use the address search.</p>
     <form method="get" action="/city/community" class="insight-filters community-overview-form">
       <input type="hidden" name="q" value="{{ return_q }}">
@@ -63,7 +61,7 @@
       </label>
       <button type="submit" class="city-cta" data-testid="community-overview-submit">Update overview</button>
     </form>
-    <p data-testid="community-total">Public permits shown: <strong>{{ summary.total.display }}</strong>. A total under 3 is shown as “fewer than 3” to protect privacy.</p>
+    <p data-testid="community-total">Public permits shown: <strong>{{ summary.total.display }}</strong>.</p>
     <div class="map-wrap" data-testid="community-map">{{ summary.map_svg|safe }}</div>
     <ul class="insight-legend community-legend" data-testid="community-legend">
       {% for item in summary.legend %}<li><span class="key {{ 'hatch' if loop.first else 's' ~ loop.index0 }}" aria-hidden="true"></span>{{ item }}</li>{% endfor %}
@@ -75,11 +73,13 @@
       <tbody>{% for d in summary.districts %}<tr data-district="{{ d.code }}"><th scope="row">{{ d.code }}</th><td>{{ d.total.display }}</td></tr>{% endfor %}</tbody>
     </table>
     <p class="community-note" data-testid="community-suppression-note">Counts below 3 appear as “fewer than 3”. This includes zero.</p>
-  </section>
+    <p class="community-note" data-testid="community-district-note">A district is the zoning district of the parcel the permit is for. It is not a neighborhood and not a council district.</p>
+  </details>
 
   <details class="community-privacy" data-testid="community-privacy">
     <summary>About these public records</summary>
     <p>This page shows public facts only. It leaves out the names and contact details of residents, and all documents, notes, fees and findings.</p>
+    <p>A count under three is shown as “fewer than 3”, so one household cannot be picked out.</p>
     <p>Received, in review, approved, denied and issued permits are counted. Drafts, withdrawn and returned applications are not shown.</p>
     <p>The map and the district table cover the whole city. They do not use the address search.</p>
   </details>

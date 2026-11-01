@@ -29,14 +29,20 @@ HELP_SCREENS = (
     ("persona_applicant", "/city/"),
     ("persona_applicant", "/city/permits"),
     ("persona_applicant", "/city/community"),
-    ("persona_applicant", "/city/trash-recycling"),
-    ("persona_applicant", "/city/community/permit/SYN-APP-012"),
     ("persona_applicant", "/lifecycle"),
     ("persona_applicant", "/walkthrough"),
     # The applicant screens of the permit portal carry the button too.
     ("persona_applicant", "/apply"),
     ("persona_applicant", "/apply/deck_fence"),
     ("persona_applicant", "/apply/track"),
+)
+
+#: The public pages that carry no help button of their own after the
+#: slimming (AD4).  The help of the City frame is in the header instead, so
+#: a resident can still open it.
+CITY_HELP_SCREENS = (
+    ("persona_applicant", "/city/trash-recycling"),
+    ("persona_applicant", "/city/community/permit/SYN-APP-012"),
 )
 
 
@@ -62,4 +68,21 @@ def test_every_screen_carries_the_help_button(
         button.click()
         page.wait_for_url(lambda url: url.endswith("/help"))
         assert page.locator('[data-testid="help-page"]').count() == 1, path
+    assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("actor_id,path", CITY_HELP_SCREENS)
+def test_the_public_pages_offer_the_help_of_the_city_frame(
+    page, server: BrowserServer, login, actor_id: str, path: str
+) -> None:
+    """The public pages without a help button still open the help of the City frame."""
+    login(actor_id)
+    page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+    assert page.locator('[data-testid="ui-help"]').count() == 0, path
+    link = page.locator('[data-testid="help-link"]')
+    assert link.count() == 1, path
+    assert link.is_visible(), path
+    link.click()
+    page.wait_for_url(lambda url: url.endswith("/help"))
+    assert page.locator('[data-testid="help-page"]').count() == 1, path
     assert page.recorded_errors == []

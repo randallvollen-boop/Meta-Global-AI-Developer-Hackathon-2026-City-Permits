@@ -1,22 +1,20 @@
 {% extends "city/layout.html" %}
 {% import "_ui.html" as ui with context %}
 {% block content %}
-<div class="city-wrap city-two city-page">
+<div class="city-wrap city-page">
   <article>
     <h1>{{ page.title }}</h1>
     <p class="city-lede">{{ page.intro }}</p>
-    <p>{{ ui.general_help_button() }}</p>
     {% for section in page.sections %}
     <section>
       <h2>{{ section.heading }}</h2>
       <ul>{% for item in section["items"] %}<li>{{ item }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
+    <details class="city-aside">
+      <summary>{{ page.aside.heading }}</summary>
+      {% for line in page.aside.lines %}<p>{{ line }}</p>{% endfor %}
+    </details>
   </article>
-  <aside class="city-aside" aria-label="Related information">
-    <h2>{{ page.aside.heading }}</h2>
-    {% for line in page.aside.lines %}<p>{{ line }}</p>{% endfor %}
-    <p><a href="/city/permits">Looking for permits?</a></p>
-  </aside>
 </div>
 {% endblock %}

@@ -113,7 +113,7 @@ Run it after every deploy and every rollback. Use the `onrender.com` address.
    | Permit Reviewer | `/queue` |
    | City Administrator | `/overview` |
 
-4. Press Demo controls at the bottom left and confirm it switches between the personas.
+4. Press Demo controls in the top right and confirm it switches between the personas.
 
 ## Live Muse for judging
 

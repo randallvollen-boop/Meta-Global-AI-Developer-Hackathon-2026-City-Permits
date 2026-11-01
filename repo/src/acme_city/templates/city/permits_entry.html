@@ -18,7 +18,7 @@
   <section class="city-entry city-entry-main" aria-labelledby="entry-h" data-testid="permits-entry">
     <h2 id="entry-h">What would you like to do?</h2>
     {% if not applicant and not is_applicant %}<p class="action-denied" role="alert">The applicant account is not available.</p>{% endif %}
-    {% if actor and not is_applicant %}<p class="muted">You are currently acting as <strong>{{ actor.label }}</strong>. In this demonstration these buttons switch to the fictional applicant.</p>{% endif %}
+    {% if actor and not is_applicant %}<p class="muted">You are acting as <strong>{{ actor.label }}</strong>; these buttons switch to the fictional applicant.</p>{% endif %}
     <div class="city-actions" data-testid="permits-actions">
       {{ go('Start an application', permits_home, 'permits-start', true) }}
       {{ go('Track or resume an application', track_home, 'permits-track', false) }}
@@ -26,10 +26,12 @@
   </section>
 
   <section class="city-entry" aria-labelledby="need-h" data-testid="permits-need">
-    <h2 id="need-h">What you'll need</h2>
-    <ul class="city-need">
-      {% for item in what_you_need %}<li data-testid="need-item"><strong>{{ item.title }}</strong><span>{{ item.text }}</span></li>{% endfor %}
-    </ul>
+    <details>
+      <summary id="need-h">What you'll need</summary>
+      <ul class="city-need">
+        {% for item in what_you_need %}<li data-testid="need-item"><strong>{{ item.title }}</strong><span>{{ item.text }}</span></li>{% endfor %}
+      </ul>
+    </details>
     <p class="muted">Questions before you start? <a href="{{ help_href }}" data-testid="permits-help-link">Contact permit services</a>.</p>
   </section>
 

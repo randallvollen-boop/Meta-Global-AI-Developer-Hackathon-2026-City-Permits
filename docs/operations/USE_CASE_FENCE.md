@@ -52,7 +52,7 @@ Both cases now wait. Nothing has been triaged.
 
 ## 3. As Agent Operator, wake the intake agent
 
-1. Switch to **Agent Operator** (Demo controls at the bottom left, or the
+1. Switch to **Agent Operator** (Demo controls in the top right, or the
    persona selector). The left navigation lists **Agents**, **Intake agent**,
    **Adjudication agent** and **Agent runs**. The **Agents** page shows both
    agents as **asleep** and 2 cases waiting.
