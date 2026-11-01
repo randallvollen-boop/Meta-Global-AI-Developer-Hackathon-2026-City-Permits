@@ -8,9 +8,8 @@ takes the order given here (see ``__init__.py``).
 
 The intake queue is not an agent screen: it is the Data Steward's own screen
 and stays in ``steward.py``.  The Agent Operator opens it with the execution
-grant that lets it process the selected cases, and that grant is not a menu
-entry of its own: the queue is reached from the "Process selected cases" link
-on the Agents home.
+grant that lets it process the selected cases, and it is the one screen of
+its own under More tools.
 """
 
 from __future__ import annotations
@@ -24,14 +23,15 @@ AGENT_SCREENS: frozenset[str] = frozenset(
 #:
 #: The wake and run grants belong to the Agent Operator alone.  OPR-3 grants
 #: the intake-queue read permission to the Permit Reviewer and City
-#: Administrator, so their rendered navigation also includes that queue.
+#: Administrator.  The City Administrator lists the queue under More tools;
+#: the Permit Reviewer may open it but does not list it.
 #: The order of the Agent Operator's list is the order of its four
 #: destinations, with the operational summary as its home (OPR-16).
 PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_applicant": (),
     "persona_data_steward": (),
-    "persona_permit_reviewer": ("intake_queue",),
-    "persona_city_administrator": ("intake_queue",),
+    "persona_permit_reviewer": (),
+    "persona_city_administrator": (),
     "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
 }
 
@@ -41,12 +41,12 @@ PRIMARY: dict[str, tuple[str, ...]] = {
 #: no other persona opens an agent screen any more.
 SECONDARY: dict[str, tuple[str, ...]] = {
     "persona_data_steward": (),
+    "persona_city_administrator": ("intake_queue",),
 }
 
 #: Screens a persona may open for an authorized action but which are not menu
-#: destinations.  The intake queue is one of them: the Agent Operator holds
-#: the execution grant and opens the queue from the "Process selected cases"
-#: link on the Agents home, not from the four-destination navigation.
+#: destinations.  The Permit Reviewer may open People & organizations and the
+#: Intake queue, but no reviewer task uses them.
 UNLISTED_OPEN_SCREENS: dict[str, frozenset[str]] = {
-    "persona_agent_operator": frozenset({"intake_queue"}),
+    "persona_permit_reviewer": frozenset({"applicants", "intake_queue"}),
 }

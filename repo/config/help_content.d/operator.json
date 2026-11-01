@@ -1,6 +1,6 @@
 {
   "howto": {
-    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work, and reaches the \"Steward assistant\" from \"Agents\". A person still makes permit decisions.",
+    "intro": "Each guide covers one task in 5 to 10 steps. The labels are the ones on the screens. Guides for your own role are listed first. The Agent Operator uses \"Agents\", \"Intake agent\", \"Adjudication agent\" and \"Agent runs\" to prepare work, reaches the \"Steward assistant\" from \"Agents\" and the \"Intake queue\" from \"More tools\". A person still makes permit decisions.",
     "guides": [
       {
         "slug": "run-the-agents",
@@ -16,7 +16,7 @@
           "Open \"Agents\" in the left menu. A line at the top says whether processing is manual, which engine is active and that live Muse calls are off. Under \"Agent status\" each agent reads asleep or awake.",
           "Click \"Intake agent\" in the left menu or under \"Agent status\". The state box shows Processing and Engine. The Process next 20 button and \"Process one\" are off while the agent is asleep.",
           "Click \"Wake agent\". The state reads awake and the button now reads \"Put agent to sleep\". A woken agent stays awake until a person puts it back to sleep.",
-          "In the table \"Cases waiting for the agent\" click \"Process one\" on a case, or click the Process next 20 button to work the first 20 waiting cases. Read the message at the top.",
+          "In the table \"Cases waiting for the agent\" click \"Process one\" on a case, or click the Process next 20 button to work the first 20 waiting cases. Read the message at the top. To work a selection of the cases that arrived, open \"More tools\" in the left menu, then \"Intake queue\", select the cases and press \"Process selected with agent\".",
           "Read \"Needs attention\" for work that failed, and click \"Try again\" on a row to run it again. Read \"Recent results\" for the result, the mode, who asked and the steps of each run.",
           "For the Adjudication agent do the same on its own screen. The recommendations it makes appear under \"Recommendations waiting for a person\". Only a person decides.",
           "On \"Agents\", under \"Agent status\", click \"Steward assistant\" and click \"Wake agent\" so the Data Steward can press \"Prepare recommendations\". It works only when the steward asks; its counts read High, Review and Held.",

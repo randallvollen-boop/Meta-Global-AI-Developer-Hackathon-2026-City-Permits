@@ -17,10 +17,10 @@ OPERATOR_SCREENS = (
     ("/agent/adjudication", "Adjudication agent"),
 )
 
-#: The operational home of the operator and the run history it opens.
+#: The operational home of the operator and the runs it opens.
 AGENT_OPERATIONS_SCREENS = (
     ("/agents", "Agents"),
-    ("/agents/runs", "Run history"),
+    ("/agents/runs", "Agent runs"),
 )
 
 OUTSIDE = (
@@ -33,10 +33,16 @@ OUTSIDE = (
 def test_operator_navigation_has_four_visible_destinations_at_390(viewport_390, login) -> None:
     page = viewport_390
     login("persona_agent_operator")
-    links = page.locator(".mobile-nav a")
+    links = page.locator(".mobile-nav > a")
     assert links.count() == 4
     assert [links.nth(index).get_attribute("href") for index in range(4)] == [
         "/agents", "/agent/intake", "/agent/adjudication", "/agents/runs",
+    ]
+    # The intake queue is the fifth screen: the operator holds the grant that
+    # runs a selected batch, so the queue that lists the cases is reachable.
+    more = page.locator('.mobile-nav [data-testid="nav-more-mobile"] a')
+    assert [more.nth(index).get_attribute("href") for index in range(more.count())] == [
+        "/queue/intake",
     ]
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, page.locator(".mobile-nav"))

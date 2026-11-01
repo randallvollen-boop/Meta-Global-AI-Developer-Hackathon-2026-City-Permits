@@ -19,15 +19,31 @@ _OPERATOR_SCREENS: tuple[str, ...] = (
     "agents_home", "agent_intake", "agent_adjudication", "agent_runs",
 )
 
+#: The intake queue, where the operator processes a selected batch of waiting
+#: cases.  It sits under More tools: the operator opens it for one action.
+_OPERATOR_SECONDARY_SCREENS: tuple[str, ...] = ("intake_queue",)
+
 #: The screen of the steward assistant.  The Agent Operator wakes and sleeps
 #: the assistant there; the Data Steward never opens it.
 STEWARD_ASSIST_SCREEN = "agent_steward_assist"
 
 
 def _operator_navigation(items: list[dict]) -> list[dict]:
-    """Limit the operator to the four operational destinations."""
+    """Limit the operator to the four operational destinations.
+
+    The intake queue is the fifth: the operator holds the grant that runs a
+    selected batch, so the queue that lists the cases is under More tools.
+    """
     by_key = {item["key"]: item for item in items}
-    return [by_key[key] for key in _OPERATOR_SCREENS if key in by_key]
+    navigation = [by_key[key] for key in _OPERATOR_SCREENS if key in by_key]
+    for key in _OPERATOR_SECONDARY_SCREENS:
+        item = by_key.get(key)
+        if item is None:
+            continue
+        entry = dict(item)
+        entry["group"] = "secondary"
+        navigation.append(entry)
+    return navigation
 
 
 def register() -> None:

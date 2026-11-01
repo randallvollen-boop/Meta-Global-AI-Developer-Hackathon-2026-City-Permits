@@ -540,7 +540,10 @@ def _guard(
                 "a business approval."
             ),
             code="permission_denied",
-            back="/queue",
+            # The way back is the home of the acting persona, so a persona
+            # that cannot open the work queue is not sent to a screen it may
+            # not open either.
+            back=view_models.home_for(session, actor)["href"],
         )
     return actor, None
 

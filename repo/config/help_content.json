@@ -242,8 +242,8 @@
             "href": "/policy/scenarios"
           },
           {
-            "do": "Open \"More tools\" in the left menu, then open \"City view\", \"Operations\", \"Audit log\", \"Support\" and \"Checks\".",
-            "see": "Each page loads. Operations shows the figures, and the Audit log shows what each person and system did.",
+            "do": "Open \"More tools\" in the left menu, then open \"City view\", \"Operations dashboard\", \"Audit log\", \"Support\" and \"Checks\".",
+            "see": "Each page loads. The Operations dashboard shows the figures, and the Audit log shows what each person and system did.",
             "href": "/ops/dashboard"
           }
         ]
@@ -314,7 +314,7 @@
           "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded demo answer\".",
           "Open a citation, such as ACME Code §14-306, and click \"Show the rule text\" to read the rule the answer relies on.",
           "If the assistant did not answer, the panel says so and shows the rule text that matches your words.",
-          "To reach a person, click \"Contact the City\" in the footer of any page, type under \"Your question\" and click \"Send my question\".",
+          "To reach a person, open \"Contact the City\" from the menu of the City website, type under \"Your question\" and click \"Send my question\".",
           "Find your request, and the City's answer to it, on the contact page and under \"More details\" in the panel."
         ],
         "result": "The assistant explains the published rules and never decides a permit. A person at the City answers the request you send."
@@ -327,10 +327,10 @@
         "persona_ids": [
           "persona_permit_reviewer"
         ],
-        "screen_label": "Work queue",
-        "screen_href": "/queue",
+        "screen_label": "Review queue",
+        "screen_href": "/queue/review",
         "steps": [
-          "Open \"Work queue\" and click \"Open application\" on a case, or open \"Review queue\" and click the reference of a case.",
+          "Open \"Review queue\" and click the reference of a case. The queue holds the cases with the Permit Reviewer and the recommendation of each one.",
           "Read the tabs \"Documents\", \"People & property\", \"Activity\" and \"Review\".",
           "Under Actions click \"Run application checks\", then \"Start\", and submit the form.",
           "Read the rule results and any blockers on the page. A blocker is an open question, such as an identity link, that must be settled first.",
@@ -436,10 +436,10 @@
         "persona_ids": [
           "persona_city_administrator"
         ],
-        "screen_label": "Operations",
+        "screen_label": "Operations dashboard",
         "screen_href": "/ops/dashboard",
         "steps": [
-          "Open \"More tools\" in the left menu, then click \"Operations\".",
+          "Open \"More tools\" in the left menu, then click \"Operations dashboard\".",
           "Read \"Figures\" and \"Decisions recorded, by outcome\". Every figure is a count or a mean over stored rows. No model is used.",
           "Under \"Synthetic data\" click \"Include the synthetic history (labelled)\" to add the sample year, or \"Leave the synthetic history out\" to remove it.",
           "Open \"More tools\" in the left menu, then click \"Audit log\".",

@@ -1,9 +1,9 @@
 """The navigation grouping of the Agent Operator.  Owned by the operator lane.
 
 The operator holds the agent operations bundle (``agents/bundle.py``).  Its
-only screen outside the agent screens is the intake queue, opened by
-permit.intake.process_selected.  The agent screens it may open are listed in
-``agent_grants.py``.
+own screens are the four agent screens, listed in ``agent_grants.py``.  The
+intake queue is its fifth screen: it holds the grant that runs a selected
+batch, so the queue that lists the cases is under More tools.
 """
 
 from __future__ import annotations
@@ -14,4 +14,4 @@ ACTOR_ID = "persona_agent_operator"
 PRIMARY: tuple[str, ...] = ()
 
 #: The screens under More tools.
-SECONDARY: tuple[str, ...] = ()
+SECONDARY: tuple[str, ...] = ("intake_queue",)

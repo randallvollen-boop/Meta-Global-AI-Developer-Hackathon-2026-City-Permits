@@ -23,21 +23,21 @@ PERSONA_HOMES: tuple[tuple[str, str], ...] = (
 #: The screens the Administrator opens every day.
 BAR_SCREENS: tuple[str, ...] = (
     "overview",
+    "rules",
+    "reconciliation",
+    "governance",
+    "admin",
+)
+
+#: The screens under More tools.
+MORE_SCREENS: tuple[str, ...] = (
     "queue",
     "masters",
     "permit",
     "steward",
     "source_records",
     "activity",
-    "rules",
-    "reconciliation",
-    "governance",
-    "admin",
     "intake_queue",
-)
-
-#: The screens under More tools.
-MORE_SCREENS: tuple[str, ...] = (
     "insight_city",
     "policy_scenarios",
     "ops_dashboard",

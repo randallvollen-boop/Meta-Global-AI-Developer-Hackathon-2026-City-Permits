@@ -16,6 +16,7 @@ PLUGIN_MODULES: tuple[str, ...] = (
     "acme_city.ui.steward_nav",
     "acme_city.ui.admin_nav",
     "acme_city.ui.agent_nav",
+    "acme_city.ui.reviewer_nav",
     "acme_city.ui.agent_admin_views",
 )
 

@@ -41,17 +41,16 @@ SCREEN_ICONS: dict[str, str] = {
     "agent_runs": "clock",
     "agent_case": "file",
     "steward_automation": "link",
-    "steward_new_master": "building",
 }
 
 #: The short label of each screen in the mobile navigation.  An unknown key
 #: shows the full label.
 SCREEN_SHORT: dict[str, str] = {
-    "queue": "Queue",
+    "queue": "Work queue",
     "applicants": "People",
     "masters": "Masters",
     "permit": "Permit",
-    "steward": "Issues",
+    "steward": "Data issues",
     "rules": "Rules",
     "reconciliation": "Reconcile",
     "governance": "Governance",
@@ -73,7 +72,6 @@ SCREEN_SHORT: dict[str, str] = {
     "agent_runs": "Runs",
     "agent_case": "Cases",
     "steward_automation": "Automation",
-    "steward_new_master": "New master",
 }
 
 #: The colour of the dot beside each persona label.  An unknown label shows
