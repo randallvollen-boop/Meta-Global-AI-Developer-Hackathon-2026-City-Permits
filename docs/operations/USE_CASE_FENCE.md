@@ -32,12 +32,12 @@ City Administrator.
 ## 2. As City Administrator, simulate the two fence cases
 
 1. Click **City Administrator**. The left navigation lists Planning overview,
-   Work queue, Master records, Permit workspace, Data issues, Source records,
-   Activity, Rules and fees, Reconciliation, **Governance and sources**,
-   **Administration** and Intake queue, and under More tools: City view,
-   What-if, Operations, Audit log, Support and Checks. It has no **Intake
-   agent** or **Adjudication agent** entry; the Administrator opens a 403 on
-   those screens.
+   Rules and fees, Reconciliation, **Governance and sources** and
+   **Administration**. Under More tools it lists Work queue, Master records,
+   Permit workspace, Data issues, Source records, Activity, Intake queue,
+   City view, What-if, Operations dashboard, Audit log, Support and Checks. It
+   has no **Intake agent** or **Adjudication agent** entry; the Administrator
+   opens a 403 on those screens.
 2. Click **Governance and sources** in the left navigation.
 3. Under Next actions, press **Start** on **Simulate incoming permits**, set
    **Scenario** to `fence-front-too-tall`, and press **Simulate incoming
@@ -54,8 +54,9 @@ Both cases now wait. Nothing has been triaged.
 
 1. Switch to **Agent Operator** (Demo controls in the top right, or the
    persona selector). The left navigation lists **Agents**, **Intake agent**,
-   **Adjudication agent** and **Agent runs**. The **Agents** page shows both
-   agents as **asleep** and 2 cases waiting.
+   **Adjudication agent** and **Agent runs**, and under More tools the
+   **Intake queue**, where a selected batch is processed with the agent. The
+   **Agents** page shows both agents as **asleep** and 2 cases waiting.
 2. Click **Intake agent**. The state reads **asleep**, **Process next 20** is
    disabled, and the page says "The agent is asleep, so the run buttons are
    off. Use Wake agent above to turn them on."
@@ -125,8 +126,8 @@ Both cases now wait. Nothing has been triaged.
    **Recommended 2**, **Awaiting confirmation 2**, **Held for a person 0**.
    "Waiting for a person" lists `SYN-APP-015` with **approve** and
    `SYN-APP-014` with **deny**.
-2. Switch to **Permit Reviewer**. The navigation lists Work queue, People &
-   organizations, Permit workspace, Intake queue and Review queue. The Review
+2. Switch to **Permit Reviewer**. The navigation lists Work queue, Permit
+   workspace and Review queue. The Review
    queue shows **deny pending** for the front-yard case and **approve pending**
    for the rear-yard case. The Permit Reviewer cannot open the agent screens;
    `/agent/intake` returns 403.
@@ -198,7 +199,8 @@ Both cases now wait. Nothing has been triaged.
 
 ## 11. The City queues
 
-1. Switch to **Data Steward** and open **Intake queue** (the left navigation).
+1. Switch to **Data Steward** and open **Intake queue** (under More tools in
+   the left navigation).
    The saved views are **Active**, **Awaiting agent**, **Needs information**,
    **In review**, **Archived** and **Closed**, each with its count. The two
    fence cases are in **Active** and **In review** until they are decided; the

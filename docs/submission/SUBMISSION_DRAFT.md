@@ -16,21 +16,21 @@ An applicant can choose from seventeen fictional permit types, locate a property
 
 ### Agent operator
 
-The Agent Operator is the only persona that wakes and runs the intake and adjudication agents, and the only one that wakes the steward assistant. The operator opens the Agents home, wakes or puts an agent to sleep, runs one case or a batch of waiting cases, reads the run history and retries a failed run. The intake agent is a seven node graph and the adjudication agent is a five node graph, and each run records its nodes. The agents prepare a case and leave a recommendation. They never decide, price or issue a permit. Waiting work sits in a durable queue, and the City Administrator sets the processing policy under Administration, Agent processing. Optional automatic processing exists and is off on the hosted demo.
+The Agent Operator is the only persona that wakes and runs the intake and adjudication agents, and the only one that wakes the steward assistant. The operator opens the Agents home, wakes or puts an agent to sleep, runs one case or a batch of waiting cases, opens Agent runs to read a run and retries a failed run. The intake agent is a seven node graph and the adjudication agent is a five node graph, and each run records its nodes. The agents prepare a case and leave a recommendation. They never decide, price or issue a permit. Waiting work sits in a durable queue, and the City Administrator sets the processing policy under Administration, Agent processing. Optional automatic processing exists and is off on the hosted demo.
 
 ### Data steward
 
-A data steward works the Data issues workspace, which has a guide, and the early resolution queue. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
+A data steward works the Data issues workspace, which has a guide, and the Early resolution screen. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect master records, source records, provenance, and change activity. These actions do not approve a permit.
 
 Once the Agent Operator wakes it, the steward assistant works the Data issues queue when the steward asks, up to 20 tasks per press of Prepare recommendations. For each task it gathers the evidence and proposes a decision with a High, Review or Held level and a one line reason. The steward reads the evidence and presses Accept recommendation, which is refused if the record changed since, or decides the task another way. A held recommendation can never be accepted. Accept all high-confidence shows the exact list before anything is accepted, and skips and names any item that changed. An agreement figure shows how many recommendations the steward accepted unchanged in the last 7 days. Explain with Muse rewrites the reason in plain words without changing the decision; it is off on the hosted demo.
 
 ### Permit reviewer
 
-A permit reviewer works the review queue, checks the property and application facts, and reads the rule based recommendation the adjudication agent leaves. The reviewer can confirm or revert that recommendation, record the decision of record, add conditions, request revisions, and issue a permit only after the required links, decision, fee assessment, payment allocation, and reconciliation are complete.
+A permit reviewer works the Review queue, checks the property and application facts, and reads the rule-based recommendation the adjudication agent leaves. The reviewer can confirm or revert that recommendation, record the decision of record, add conditions, request revisions, and issue a permit only after the required links, decision, fee assessment, payment allocation, and reconciliation are complete.
 
 ### City administrator
 
-A city administrator sees the planning overview, operations measures, audit history, support requests, source governance, rules, fee schedules, users, access, appearance, and reconciliation. The administrator can simulate incoming applications, set the agent processing policy, manage fictional configuration, run invariant checks, and create governed policy drafts. Configuration authority does not grant permit decision authority.
+A city administrator sees the "Planning overview", the "Operations dashboard", the "Audit log", "Support", "Governance and sources", "Rules and fees", "Reconciliation" and "Administration", the last with its tabs for the users and roles, the appearance and the configuration. The administrator can simulate incoming applications, set the agent processing policy, manage fictional configuration, run the checks on the Checks screen, and create governed policy drafts. Configuration authority does not grant permit decision authority.
 
 ## How it uses Meta Muse
 
@@ -42,11 +42,11 @@ Muse Image support can generate fictional permit type icons through a governed a
 
 ## Models used
 
-* muse-spark-1.3 is the runtime model. It extracts values from documents, proposes record matches, helps applicants, writes the policy briefing, explains a simulation and proposes policy changes. It makes proposals only, and people decide.
+* Muse Spark (muse-spark-1.3) is the runtime model. It extracts values from documents, proposes record matches, helps applicants, writes the policy briefing, explains a simulation and proposes policy changes. It makes proposals only, and people decide.
 
-* muse-image-1.0 made 14 of the 17 permit type icons.
+* Muse Image (muse-image-1.0) made 14 of the 17 permit type icons.
 
-* muse-wonder-1.0 worked as a builder: the October 27 interface redesign, the permit type icon feature, and a second build with persona navigation, the ePermit intake portal and the agent triage.
+* Muse Wonder (muse-wonder-1.0) worked as a builder: the October 27 interface redesign, the permit type icon feature, and a second build with persona navigation, the ePermit intake portal and the agent triage.
 
 * Local and other frontier models assisted with planning, coding and review.
 
@@ -105,9 +105,9 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 1. Open https://acme-city-permits.onrender.com. The front door wakes the hosted service, which can take a moment. The data resets at 02:00 UTC each night.
 
-2. Use the demo switcher to choose a persona. All five are available.
+2. Use Demo controls to choose a persona. All five are available.
 
-3. As Applicant, start a fictional deck or fence application, save it, submit it, and open its tracker.
+3. As Applicant, start a fictional Residential deck or fence application, save it, submit it, and open its tracker.
 
 4. As Agent Operator, wake the agents and run the intake agent on a waiting case, then the adjudication agent. Wake the steward assistant too.
 
@@ -115,6 +115,6 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 6. As Permit Reviewer, open a case in review, inspect the checks and recommendation, then follow the separate decision and issuance steps.
 
-7. As City Administrator, open the planning overview, operations, governance, rules, reconciliation, support, audit and agent processing screens, and try a policy what-if. The hosted demo uses replay for Muse paths and does not make live Muse calls.
+7. As City Administrator, open the "Planning overview", the "Operations dashboard", the "Audit log", "Support", "Governance and sources", "Rules and fees", "Reconciliation" and "Administration" screens, and try a policy what-if. The hosted demo uses replay for Muse paths and does not make live Muse calls.
 
 Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme.

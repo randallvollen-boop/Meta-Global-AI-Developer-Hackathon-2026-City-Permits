@@ -172,10 +172,10 @@ screen is also a 403). Order and labels are canonical for everyone.
 | Persona | Screens |
 |---|---|
 | Applicant | Work queue, People & organizations, Permit workspace, and the City of Acme website |
-| Agent Operator | Agents (home), Intake agent, Adjudication agent, Agent runs |
+| Agent Operator | Agents (home), Intake agent, Adjudication agent and Agent runs in the bar; the Intake queue under More tools |
 | Data Steward | Data issues (home), Master records, Source records and Activity in the bar; Work queue, Permit workspace, Rules and fees, Intake queue, Early resolution and Steward automation under More tools |
-| Permit Reviewer | Work queue, People & organizations, Permit workspace, Intake queue and Review queue |
-| City Administrator | Planning overview (home), Work queue, Master records, Permit workspace, Data issues, Source records, Activity, Rules and fees, Reconciliation, Governance and sources and Administration in the bar; City view, What-if, Operations, Audit log, Support and Checks under More tools |
+| Permit Reviewer | Work queue, Permit workspace and Review queue |
+| City Administrator | Planning overview (home), Rules and fees, Reconciliation, Governance and sources and Administration in the bar; Work queue, Master records, Permit workspace, Data issues, Source records, Activity, Intake queue, City view, What-if, Operations dashboard, Audit log, Support and Checks under More tools |
 
 ## The life of a case
 

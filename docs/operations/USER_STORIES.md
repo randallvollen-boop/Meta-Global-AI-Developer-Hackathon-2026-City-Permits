@@ -26,14 +26,16 @@ or run an agent.
 ## Applicant
 
 The Applicant uses the City website, not the staff app. The navigation lists
-My permits, Start an application, Help and Home.
+My permits, Start an application and Help. The Help link opens Ask about your
+permit, the assistant that answers questions about a permit. Home is the
+first entry of the City website menu.
 
 - As an Applicant, I want to see only my own cases, so that I never see
   another applicant's records.
   - Acceptance: sign in as Applicant; **My permits** (`/apply/track`) lists
     only my applications. The page of another applicant's case returns 404
     ("That application is not available to you") and the API returns 403. The
-    staff screens return 403.
+    staff queue sends the applicant back to the City website.
 - As an Applicant, I want the tracker and "What happens next" on my case, so
   that I know what the city is waiting for.
   - Acceptance: open **My permits** and select an application; the tracker
@@ -94,7 +96,7 @@ My permits, Start an application, Help and Home.
     awake/asleep state with **Wake agent** / **Put agent to sleep**; the change
     is audited as `agent.toggle`. A persona without `agent.toggle` sees a lock
     line instead. The navigation lists Agents, Intake agent, Adjudication agent
-    and Agent runs.
+    and Agent runs, and the Intake queue under More tools.
 - As an Agent Operator, I want to run the intake agent when it is awake, so
   that incoming cases are processed the way the City decided they should be.
   - Acceptance: **Intake agent** shows whether the agent is awake; **Process
@@ -183,7 +185,9 @@ My permits, Start an application, Help and Home.
   recommendation before I look at them, so that I start from the rule results.
   - Acceptance: the Agent Operator runs the adjudication agent; the **Review
     queue** shows each case's recommendation (for example "deny pending"). The
-    reviewer cannot wake or run an agent: the agent screens return 403.
+    reviewer's navigation holds Work queue, Permit workspace and Review
+    queue. The reviewer cannot wake or run an agent: the agent screens return
+    403.
 - As a Permit Reviewer, I want the recommendation card at the Decision step,
   so that I see the outcome, the rule rows with their citations, the
   conditions of approval and the pipeline trace before I decide.
@@ -213,6 +217,13 @@ My permits, Start an application, Help and Home.
 
 ## City Administrator
 
+- As a City Administrator, I want the navigation to hold only the screens I
+  work in, so that the menu is short and every screen stays reachable.
+  - Acceptance: the bar holds Planning overview, Rules and fees,
+    Reconciliation, Governance and sources and Administration. More tools
+    holds Work queue, Master records, Permit workspace, Data issues, Source
+    records, Activity, Intake queue, City view, What-if, Operations
+    dashboard, Audit log, Support and Checks.
 - As a City Administrator, I want to set the agent policy and see which roles
   may wake and run the agents, so that the City decides who controls
   automation without the Administrator running it.
@@ -220,9 +231,10 @@ My permits, Start an application, Help and Home.
     (keep agents awake, maximum runs per hour, the processing mode) and "The
     policy says when the agents work. People still review the recommendations
     and make the permit decisions." **Administration** → **Users and roles**
-    has the table "Roles that can wake and run agents" with **Save role
-    permissions**. The Administrator has no **Wake agent** or **Process next 20**
-    button: the agent screens return 403 for this persona.
+    shows the table "Role permissions" with the column "Can wake and run
+    agents" and **Save role permissions**. The Administrator has no **Wake
+    agent** or **Process next 20** button: the agent screens return 403 for
+    this persona.
 - As a City Administrator, I want to simulate incoming permits from the
   outside portal, so that I can watch data arrive and wait for the agent.
   - Acceptance: **Governance and sources** → **Simulate incoming permits**
