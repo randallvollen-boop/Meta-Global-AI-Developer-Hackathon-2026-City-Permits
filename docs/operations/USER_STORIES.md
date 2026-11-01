@@ -268,7 +268,7 @@ first entry of the City website menu.
 
 - As a City Administrator, I want an operations dashboard, so that I can see how
   permit work is going without trusting a number I cannot check.
-  - Acceptance: **Operations** shows active cases, average age, early-incomplete share,
+  - Acceptance: **Operations dashboard** shows active cases, average age, early-incomplete share,
     agent-processed cases, decisions recorded and cases that need a person, each with its
     definition, three charts with a table beside each, and the synthetic history left out
     or labelled.

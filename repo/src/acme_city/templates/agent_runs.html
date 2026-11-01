@@ -94,7 +94,7 @@
   </div>
 </section>
 
-<nav class="opr-pager" aria-label="Run history pages">
+<nav class="opr-pager" aria-label="Agent runs pages">
   {% if view.page > 1 %}
   <a href="/agents/runs?{{ view.query }}{% if view.query %}&{% endif %}page={{ view.page - 1 }}" data-testid="run-page-previous">Previous page</a>
   {% endif %}
