@@ -175,7 +175,7 @@
         <td>{{ error.error_code }}</td>
         <td>{{ error.message }}</td>
         <td>{{ error.responsible_queue_id or 'unassigned' }}</td>
-        <td>{{ error.status }}</td>
+        <td>{{ error.status|pretty }}</td>
       </tr>
       {% else %}
       <tr><td colspan="6" class="muted">No record is quarantined.</td></tr>

@@ -174,7 +174,7 @@
           <div data-testid="findings-panel">
         {% if detail.blockers %}
         <p class="notice" role="status" data-testid="checks-summary">
-          {% if detail.evaluation %}Rule checks: {{ detail.evaluation.outcome }}. {% else %}Rule checks: not run yet. {% endif %}
+          {% if detail.evaluation %}Rule checks: {{ detail.evaluation.outcome_label }}. {% else %}Rule checks: not run yet. {% endif %}
           {{ detail.blockers|length }} blocker{{ '' if detail.blockers|length == 1 else 's' }} still prevent{{ 's' if detail.blockers|length == 1 else '' }} a decision:
           {% for blocker in detail.blockers %}<a href="#application-blockers">{{ blocker.code }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
         </p>
@@ -401,7 +401,7 @@
           <ul class="issue-list" data-testid="recommendation-citations">
             {% for ref in rec.evidence_refs %}
             <li data-rule-id="{{ ref.rule_id }}" data-status="{{ ref.status }}">
-              {{ ref.rule_id }}: {{ ref.status }}, observed {{ ref.observed_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, limit {{ ref.limit_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, {{ ref.citation }}
+              {{ ref.rule_id }}: {{ ref.status|pretty }}, observed {{ ref.observed_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, limit {{ ref.limit_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, {{ ref.citation }}
             </li>
             {% endfor %}
           </ul>
@@ -607,7 +607,7 @@
       {% for entry in detail.issued %}
       <div class="value-band value-issued" data-testid="value-issued">
         <span class="badge badge-issued">issued value</span>
-        {{ entry.permit_number }} ({{ entry.status }}, {{ entry.issued_at }},
+        {{ entry.permit_number }} ({{ entry.status|pretty }}, {{ entry.issued_at }},
         artifact {{ entry.artifact_hash }}).
       </div>
       {% else %}
@@ -626,7 +626,7 @@
       {% for proposal in detail.proposed %}
       <div class="value-band value-proposed" data-testid="value-proposed">
         <span class="badge badge-proposed">proposed correction</span>
-        {{ proposal.title }}: {{ proposal.status }}
+        {{ proposal.title }}: {{ proposal.status|pretty }}
       </div>
       <dl class="pair-list">
         <dt>Current</dt><dd>{{ proposal.old_value }}</dd>
