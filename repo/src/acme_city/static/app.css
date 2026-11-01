@@ -414,6 +414,46 @@ main > *, .ws-main > * { min-width: 0; }
 .rnode.running .st svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .rnode:not(:last-child)::after { content: ""; position: absolute; right: -10px; top: 50%; width: 10px; height: 2px; background: var(--line); }
+
+/* The step graph of an agent: a column of cards per dependency level. */
+.agent-progress { margin: 0 0 0.6rem; }
+.agent-progress-status { margin: 0 0 0.5rem; font-size: .82rem; color: var(--fg-2); }
+.agent-dag { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+.agent-dag-col { flex: 1 1 170px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.agent-dag-node .agent-dag-label { font-weight: 600; font-size: .8rem; }
+.agent-dag-state { margin: 0; font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.agent-dag-note { margin: 0; }
+.agent-dag .rnode::after { display: none; }
+.agent-dag-arrow { align-self: center; color: var(--fg-3); font-size: 1.1rem; }
+.agent-dag-legend { margin: 0.5rem 0 0; font-size: .72rem; color: var(--fg-3); }
+.agent-dag-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+/* The clear state is the one the run strip already has; the other states
+   are named here, and every state names itself in words as well. */
+.agent-dag-node.ok .agent-dag-state { color: var(--ok); }
+.agent-dag-node.warn {
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
+  background: color-mix(in srgb, var(--warn-soft) 45%, var(--surface));
+}
+.agent-dag-node.warn .st { background: var(--warn); color: var(--surface); }
+.agent-dag-node.warn .agent-dag-state { color: var(--warn); }
+.agent-dag-node.block {
+  border-color: color-mix(in srgb, var(--bad) 55%, var(--line));
+  background: color-mix(in srgb, var(--bad-soft) 45%, var(--surface));
+}
+.agent-dag-node.block .st { background: var(--bad); color: var(--surface); }
+.agent-dag-node.block .agent-dag-state { color: var(--bad); }
+.agent-dag-node.idle { border-color: var(--line); background: var(--surface-2); }
+.agent-dag-node.idle .st { background: var(--surface-2); color: var(--fg-3); }
+.agent-dag-node.idle .agent-dag-state { color: var(--fg-3); }
+.agent-dag-node.pending .agent-dag-state { color: var(--fg-3); }
+.agent-dag-node.running .agent-dag-state { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  /* A reader who asked for less motion gets a dot, not a spinner. */
+  .agent-dag-node.running .st svg { display: none; }
+  .agent-dag-node.running .st::after {
+    content: ""; display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+  }
+}
 .checks { display: flex; flex-wrap: wrap; gap: 4px; }
 .run-meta {
   display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .76rem; color: var(--fg-2);

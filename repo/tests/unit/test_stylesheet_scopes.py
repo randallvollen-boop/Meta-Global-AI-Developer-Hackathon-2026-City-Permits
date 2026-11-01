@@ -65,6 +65,36 @@ PERSONA_MENU_ADDED = (
     ".account-persona:focus-visible",
 )
 
+#: The selectors the step graph of the agents (slice P1) added on purpose:
+#: the columns of cards, the states of a card and the line that names a run.
+AGENT_DAG_ADDED = (
+    ".agent-progress",
+    ".agent-progress-status",
+    ".agent-dag",
+    ".agent-dag-col",
+    ".agent-dag-node .agent-dag-label",
+    ".agent-dag-state",
+    ".agent-dag-note",
+    ".agent-dag .rnode::after",
+    ".agent-dag-arrow",
+    ".agent-dag-legend",
+    ".agent-dag-dot",
+    ".agent-dag-node.ok .agent-dag-state",
+    ".agent-dag-node.warn",
+    ".agent-dag-node.warn .st",
+    ".agent-dag-node.warn .agent-dag-state",
+    ".agent-dag-node.block",
+    ".agent-dag-node.block .st",
+    ".agent-dag-node.block .agent-dag-state",
+    ".agent-dag-node.idle",
+    ".agent-dag-node.idle .st",
+    ".agent-dag-node.idle .agent-dag-state",
+    ".agent-dag-node.pending .agent-dag-state",
+    ".agent-dag-node.running .agent-dag-state",
+    ".agent-dag-node.running .st svg",
+    ".agent-dag-node.running .st::after",
+)
+
 
 #: The reviewer screens (R1-R3) dropped the sticky right rail on purpose; the
 #: workspace is one column now (".ws" lost its narrow-screen rule).  No selector was added.
@@ -170,6 +200,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         and selector not in STAFF_FRAME_ADDED
         and selector not in PERSONA_MENU_ADDED
         and selector not in AGENT_INBOX_ADDED
+        and selector not in AGENT_DAG_ADDED
         and selector not in REVIEWER_SLIM_ADDED
     ]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.

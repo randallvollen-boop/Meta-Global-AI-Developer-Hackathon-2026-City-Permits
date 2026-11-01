@@ -1,0 +1,45 @@
+{# The step graph of one agent.
+
+   The columns are the dependency levels of the agent graph and every card is
+   one of its steps.  A card carries the state the recorded run gave that
+   step: clear, needs human or blocking, or the grey of a step that has not
+   run.  The state is a word as well as a colour, so the graph reads without
+   colour.  The arrows between the columns are dependencies and are hidden
+   from a reader of the screen. #}
+{% macro agent_dag(levels, run_id='') -%}
+<div class="agent-dag" data-testid="agent-dag"{% if run_id %} data-run-id="{{ run_id }}"{% endif %}>
+  {%- for level in levels %}
+  <div class="agent-dag-col" data-level="{{ loop.index }}" data-testid="agent-dag-level">
+    {%- for node in level %}
+    <div class="rnode agent-dag-node {{ node.state }}" data-testid="agent-dag-node" data-node-id="{{ node.node_id }}"
+         data-level="{{ node.level }}" data-state="{{ node.state }}">
+      <div class="h">
+        <span class="agent-dag-label">{{ node.label }}</span>
+        <span class="st" aria-hidden="true">{% if node.icon %}<svg><use href="{{ node.icon }}"/></svg>{% else %}<span class="agent-dag-dot"></span>{% endif %}</span>
+      </div>
+      <p class="agent-dag-state">{{ node.state_word }}</p>
+      {%- if node.note %}
+      <p class="d agent-dag-note">{{ node.note }}</p>
+      {%- endif %}
+    </div>
+    {%- endfor %}
+  </div>
+  {%- if not loop.last %}
+  <div class="agent-dag-arrow" aria-hidden="true">→</div>
+  {%- endif %}
+  {%- endfor %}
+</div>
+<p class="agent-dag-legend">Steps run left to right; each column waits for the one before it.</p>
+{%- endmacro %}
+
+{# The step graph of a run, with the line that names the run above it. #}
+{% macro agent_progress(progress) -%}
+<section class="agent-progress" data-testid="agent-progress" data-run-progress=""
+         data-run-id="{{ progress.run_id }}">
+  {%- if progress.status_line %}
+  <p class="agent-progress-status" data-testid="agent-progress-status" aria-live="polite"
+     data-final-status="{{ progress.status_line }}">{{ progress.status_line }}</p>
+  {%- endif %}
+  {{ agent_dag(progress.levels, progress.run_id) }}
+</section>
+{%- endmacro %}

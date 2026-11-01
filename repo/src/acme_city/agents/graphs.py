@@ -13,6 +13,7 @@ never disagree.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 #: The node identifiers of the intake agent.
 INTAKE_CLASSIFIER = "classifier"
@@ -203,6 +204,67 @@ def levels_of(agent_key: str) -> list[list[GraphNode]]:
     return [grouped[level] for level in sorted(grouped)]
 
 
+#: The states a recorded node of a run may hold.
+RECORDED_STATES: tuple[str, ...] = ("ok", "warn", "block")
+
+#: The word that names each state of a node.  The colour is never the only
+#: signal, so every state has a word as well.
+NODE_STATE_WORDS: dict[str, str] = {
+    "idle": "Not run",
+    "ok": "Clear",
+    "warn": "Needs human",
+    "block": "Blocking",
+}
+
+#: The icon that marks each state of a node.  The symbols live in the shared
+#: frame; a node that has not run has no icon, only its word.
+NODE_STATE_ICONS: dict[str, str] = {
+    "ok": "#i-check",
+    "warn": "#i-alert",
+    "block": "#i-x",
+    "running": "#i-loader",
+}
+
+
+def state_word(state: str) -> str:
+    """Return the word that names one state of a node."""
+    return NODE_STATE_WORDS.get(state, NODE_STATE_WORDS["idle"])
+
+
+def levels_with_states(
+    agent_key: str, recorded: dict[str, Any] | None = None
+) -> list[list[dict[str, Any]]]:
+    """Return the levels of one graph with the recorded state of every node.
+
+    ``recorded`` maps a node identifier to the recorded row of that node: a
+    mapping with a ``status`` (one of ``ok``, ``warn`` and ``block``) and a
+    ``note``.  A node without a recorded row is idle, so the graph of an
+    agent that has not run yet stands in grey.
+    """
+    recorded = recorded or {}
+    levels: list[list[dict[str, Any]]] = []
+    for level in levels_of(agent_key):
+        nodes: list[dict[str, Any]] = []
+        for node in level:
+            row = recorded.get(node.node_id) or {}
+            status = str(row.get("status") or "")
+            state = status if status in RECORDED_STATES else "idle"
+            nodes.append(
+                {
+                    "node_id": node.node_id,
+                    "label": node.label,
+                    "level": node.level,
+                    "description": node.description,
+                    "state": state,
+                    "state_word": state_word(state),
+                    "icon": NODE_STATE_ICONS.get(state, ""),
+                    "note": str(row.get("note") or ""),
+                }
+            )
+        levels.append(nodes)
+    return levels
+
+
 __all__ = [
     "ADJUDICATION_GRAPH",
     "ADJUDICATION_CONDITION_BUILDER",
@@ -218,6 +280,9 @@ __all__ = [
     "INTAKE_FIELD_EXTRACTOR",
     "INTAKE_GRAPH",
     "INTAKE_ROUTER",
+    "NODE_STATE_ICONS",
+    "NODE_STATE_WORDS",
+    "RECORDED_STATES",
     "STEWARD_ASSIST_EVIDENCE",
     "STEWARD_ASSIST_GRAPH",
     "STEWARD_ASSIST_PROPOSAL",
@@ -225,4 +290,6 @@ __all__ = [
     "GraphNode",
     "graph_for",
     "levels_of",
+    "levels_with_states",
+    "state_word",
 ]
