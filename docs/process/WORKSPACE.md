@@ -16,7 +16,7 @@ This is the internal map of the ACME City Permits workspace. It is a working not
 | `CITY_PERMIT_ALIGNMENT.md` | Product, architecture, screen, workflow and acceptance alignment |
 | `docs/process/` | Process notes, including this map |
 | `docs/submission/` | The submission draft and the judge walkthrough |
-| `docs/operations/` | The deploy runbook, the production readiness note, the runbook, the user stories and the fence use case |
+| `docs/operations/` | The deploy runbook, the production readiness note, the runbook, the user stories, the fence use case and the plan for assistants through the Model Context Protocol (MCP) |
 | `docs/solution-architecture/acme-city-permits/` | The standard architecture fact sheet, the progress status, the page build and its checks |
 | `docs/build-story/` | The engine ledger and the screens captured along the way |
 | `repo/` | The application implementation, the fixtures, the migrations, the tests and the plans |
