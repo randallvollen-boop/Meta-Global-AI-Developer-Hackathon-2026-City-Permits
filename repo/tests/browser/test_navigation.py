@@ -255,7 +255,17 @@ def test_the_evidence_and_history_panels_stay_present(
     }
     # Changed deliberately (demo polish, AD2): the what-if list drops the
     # evidence panel. The decision is the saved what-if and the run.
-    no_evidence = {"/policy/scenarios"}
+    # Changed deliberately (demo polish, AD3): insight, rules and the
+    # operations screens drop the panel too.
+    no_evidence = {
+        "/policy/scenarios",
+        "/insight/city",
+        "/rules",
+        "/ops/dashboard",
+        "/ops/audit",
+        "/ops/support",
+        "/ops/checks",
+    }
     for path, _title in SCREENS:
         if path in collection_screens:
             continue

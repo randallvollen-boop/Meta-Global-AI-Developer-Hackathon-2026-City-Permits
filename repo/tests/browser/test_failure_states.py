@@ -111,6 +111,8 @@ def test_the_browser_refuses_an_incomplete_form_before_it_reaches_the_server(
         if "/ui/actions/rule.draft" in request.url
         else None,
     )
+    # Changed deliberately (demo polish, AD3): draft a new version is closed.
+    page.locator('details.panel:has([data-action-id="rule.draft"]) > summary').click()
     details = page.locator('details[data-action-id="rule.draft"]').first
     details.locator("summary").click()
     form = details.locator("form.action-form")

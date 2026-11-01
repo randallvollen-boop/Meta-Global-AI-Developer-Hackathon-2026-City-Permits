@@ -96,6 +96,8 @@ def test_one_administrator_takes_the_fence_change_from_what_if_to_published(
         confirm=True,
     )
     page.goto(version_url, wait_until="domcontentloaded")
+    # Changed deliberately (demo polish, AD3): states and history are closed.
+    page.locator('[data-testid="rules-version-more"] > summary').click()
     approval = page.locator('[data-testid="selected-version-states"]').inner_text()
     assert "Approved by the author (single-administrator policy)" in approval
     history = page.locator('[data-testid="selected-version-history"]').inner_text()
@@ -111,6 +113,7 @@ def test_one_administrator_takes_the_fence_change_from_what_if_to_published(
     )
     page.goto(version_url, wait_until="domcontentloaded")
     assert "published" in page.locator('[data-testid="selected-version"] .badge').first.inner_text().lower()
+    page.locator('[data-testid="rules-version-more"] > summary').click()
     history = page.locator('[data-testid="selected-version-history"]').inner_text()
     assert "Published by the author (single-administrator policy)" in history
 

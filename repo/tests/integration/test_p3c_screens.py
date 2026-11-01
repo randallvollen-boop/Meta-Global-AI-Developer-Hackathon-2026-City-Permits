@@ -213,8 +213,8 @@ def test_the_checks_screen_leads_with_the_recorded_result(client) -> None:
     choose(client, ADMIN)
     post_action(client, "ops.checks.run", {"expected_version": "0"})
     page = client.get("/ops/checks").text
-    # The screen says what the checks do before it offers the action.
-    assert "Check the stored records for consistency." in page
+    # Changed deliberately (demo polish, AD3): one line says what a run does.
+    assert "Running checks does not change permits or fees." in page
     assert "permits or fees." in page
     # The recorded result comes before the results themselves.
     assert page.index('data-testid="checks-result"') < page.index('data-testid="checks-counts"')
@@ -226,8 +226,10 @@ def test_the_checks_screen_leads_with_the_recorded_result(client) -> None:
     # The technical identifier sits in the run details.
     assert 'data-testid="checks-run-id"' in page
     assert page.count('data-testid="check-row"') == 8
-    # The run is recorded, and the screen says so without counting the rows.
-    assert "is recorded in the audit log" in page
+    # Changed deliberately (demo polish, AD3): the audit-record sentence is gone
+    # and the run details stay closed.
+    assert "is recorded in the audit log" not in page
+    assert '<details class="adm-disclosure" data-testid="checks-details">' in page
 
 
 def test_the_checks_screen_keeps_the_reason_of_every_result(client) -> None:

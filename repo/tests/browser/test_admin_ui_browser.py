@@ -83,7 +83,9 @@ def test_the_rules_register_opens_the_selected_version_with_its_diff(
     assert "250000" in text
     assert "300000" in text
     assert "overlap" in text.lower()
-    assert "initial submission time" in text
+    # Changed deliberately (demo polish, AD3): applicability sits behind More details.
+    page.locator('[data-testid="rules-version-more"] > summary').click()
+    assert "initial submission time" in selected.inner_text()
     assert page.recorded_errors == []
 
 

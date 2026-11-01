@@ -117,7 +117,10 @@ def test_the_unfiltered_total_is_a_count_over_the_stored_applications(client, se
     assert stored == len(rows) < 13 + SYNTHETIC_COUNT  # archived cases are not activity
     assert "Permits: applications that have been submitted" in body  # the definition is printed
     assert "District: the zoning district" in body
-    assert "Exceptions: a variance request" in body
+    # Changed deliberately (demo polish, AD3): the per-section exception
+    # definition is gone. The headline definitions stay beside the map.
+    assert "Exceptions: a variance request" not in body
+    assert 'data-testid="insight-map-section"' in body
 
 
 @pytest.mark.parametrize("type_key", ["deck_fence", "shed", "sign", "zoning_variance"])

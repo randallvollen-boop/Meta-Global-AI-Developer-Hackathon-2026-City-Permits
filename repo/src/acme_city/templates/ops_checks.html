@@ -12,10 +12,7 @@
 <div class="page-head">
   <div>
     <h1>Checks</h1>
-    <p class="sub">
-      Check the stored records for consistency. Running checks does not change
-      permits or fees.
-    </p>
+    <p class="sub">Running checks does not change permits or fees.</p>
   </div>
   <div class="actions">{{ ui.help_button('ops_checks') }}</div>
 </div>
@@ -31,10 +28,6 @@
       <span class="muted">{% if runs_version %}{{ runs_version }} earlier run{{ 's are' if runs_version != 1 else ' is' }} recorded.{% else %}No run is recorded yet.{% endif %}</span>
     </p>
   </form>
-  <p class="adm-scope-note">
-    A run is recorded in the audit log: one record of the run itself with its
-    counts, and one record of the action that started it.
-  </p>
 </section>
 
 {% if checks.has_run %}
@@ -80,15 +73,10 @@
     <div><dt>{{ item.label }}</dt><dd class="mono"{% if item.testid %} data-testid="{{ item.testid }}"{% endif %}>{{ item.value }}</dd></div>
     {% endfor %}
   </dl>
-  <p class="adm-scope-note">
-    The run identifier is the name of the recorded run. Open the audit log to
-    read the record of the run itself.
-  </p>
   {% endset %}
   {{ adm.disclosure('Run details', run_details, 'checks-details') }}
 </section>
 {% else %}
 <p class="muted" data-testid="checks-empty">No run has been recorded yet. Press "Run checks" to run them.</p>
 {% endif %}
-{% include "components/evidence_panel.html" %}
 {% endblock %}

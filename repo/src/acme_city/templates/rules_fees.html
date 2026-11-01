@@ -14,7 +14,6 @@
 <div class="page-head">
   <div>
     <h1>Rules and fees</h1>
-    <p class="sub">Fictional ACME rules and fees. They do not govern a real jurisdiction.</p>
   </div>
   <div class="actions">{{ ui.help_button('rules') }}</div>
 </div>
@@ -32,7 +31,10 @@
   {% endfor %}
 </nav>
 
-{% include "components/responsibility_panel.html" %}
+<details class="card" data-testid="rules-responsibility">
+  <summary>More details</summary>
+  {% include "components/responsibility_panel.html" %}
+</details>
 
 {% if catalogue.policy_drafts %}
 <section class="panel" aria-labelledby="policy-drafts-heading" data-testid="policy-drafts">
@@ -55,6 +57,8 @@
   </h2>
   <p class="muted">{{ catalogue.row_count_label }}</p>
   {% if catalogue.view == 'history' %}
+  <details data-testid="rule-history">
+    <summary>More details</summary>
   <div class="tbl-wrap">
   <table class="data-table" data-testid="rule-history-table">
     <caption class="visually-hidden">The recorded lifecycle events of the versions</caption>
@@ -79,9 +83,7 @@
     </tbody>
   </table>
   </div>
-  <p class="muted">
-    The history is the append only record of what happened to each version.
-  </p>
+  </details>
   {% else %}
   <div class="tbl-wrap">
   <table class="data-table admin-b-stack admin-b-rules-register" data-testid="rule-table">
@@ -95,8 +97,6 @@
         <th scope="col">{{ catalogue.date_column_label }}</th>
         <th scope="col">Next action</th>
         <th scope="col">Assigned approver</th>
-        <th scope="col">Approved by</th>
-        <th scope="col">Approved on</th>
       </tr>
     </thead>
     <tbody>
@@ -116,19 +116,35 @@
           {% endif %}
         </td>
         <td data-label="Assigned approver">{{ row.assigned_approver }}</td>
-        <td data-label="Approved by">{{ row.approved_by }}</td>
-        <td data-label="Approved on">{{ row.approved_on }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="9" class="muted">No version is stored in this view.</td></tr>
+      <tr><td colspan="7" class="muted">No version is stored in this view.</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
-  <p class="muted">
-    Internal keys and full timestamps are in the details of the selected version.
-    {{ ui.info('version_date_basis') }}
-  </p>
+  <details data-testid="rules-approvers">
+    <summary>More details</summary>
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="rule-approvers-table">
+      <caption class="visually-hidden">Who approved each version</caption>
+      <thead>
+        <tr><th scope="col">Title</th><th scope="col">Approved by</th><th scope="col">Approved on</th></tr>
+      </thead>
+      <tbody>
+        {% for row in catalogue.rows %}
+        <tr>
+          <th scope="row">{{ row.title }}</th>
+          <td>{{ row.approved_by }}</td>
+          <td>{{ row.approved_on }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted">No version is stored in this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
   {% endif %}
 </section>
 
@@ -140,6 +156,40 @@
     <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
   </div>
   <div class="card-b" style="display:grid;gap:14px">
+
+    <h3 id="version-diff">What changed</h3>
+    <p class="muted" data-testid="selected-diff-baseline">Compared with {{ selected.comparison.diff_baseline }}</p>
+    {% if selected.diff %}
+    <div class="tbl-wrap">
+    <table class="data-table" data-testid="selected-version-diff">
+      <caption class="visually-hidden">The fields that differ between the two stored version records</caption>
+      <thead>
+        <tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr>
+      </thead>
+      <tbody>
+        {% for change in selected.diff %}
+        <tr data-testid="diff-row" data-field="{{ change.field }}">
+          <th scope="row">{{ change.label }}</th>
+          <td class="mono">{{ change.before or '(not set)' }}</td>
+          <td class="mono">{{ change.after or '(not set)' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="muted" data-testid="selected-version-diff-empty">{{ selected.diff_note }}</p>
+    {% endif %}
+
+    <h3>Recorded reason</h3>
+    <p data-testid="selected-version-reason">{{ selected.reason }}</p>
+
+    {% if selected.overlap_warning %}
+    <p class="notice" role="status" data-testid="selected-version-overlap">{{ selected.overlap_warning }}</p>
+    {% endif %}
+
+    <details data-testid="rules-version-more">
+    <summary>More details</summary>
 
     <div class="tbl-wrap">
     <table class="data-table" data-testid="selected-version-states">
@@ -189,42 +239,10 @@
     </table>
     </div>
 
-    <h3 id="version-diff">What changed</h3>
-    <p class="muted" data-testid="selected-diff-baseline">Compared with {{ selected.comparison.diff_baseline }}</p>
-    {% if selected.diff %}
-    <div class="tbl-wrap">
-    <table class="data-table" data-testid="selected-version-diff">
-      <caption class="visually-hidden">The fields that differ between the two stored version records</caption>
-      <thead>
-        <tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr>
-      </thead>
-      <tbody>
-        {% for change in selected.diff %}
-        <tr data-testid="diff-row" data-field="{{ change.field }}">
-          <th scope="row">{{ change.label }}</th>
-          <td class="mono">{{ change.before or '(not set)' }}</td>
-          <td class="mono">{{ change.after or '(not set)' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    </div>
-    <p class="muted">Diffed against {{ selected.compared_with }}, the stored version before this one. Nothing here is invented.</p>
-    {% else %}
-    <p class="muted" data-testid="selected-version-diff-empty">{{ selected.diff_note }}</p>
-    {% endif %}
-
-    <h3>Recorded reason</h3>
-    <p data-testid="selected-version-reason">{{ selected.reason }}</p>
-
     <h3>Supporting material</h3>
     <dl class="kv" data-testid="selected-version-supporting">
       {% for item in selected.supporting %}<div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>{% endfor %}
     </dl>
-
-    {% if selected.overlap_warning %}
-    <p class="notice" role="status" data-testid="selected-version-overlap">{{ selected.overlap_warning }}</p>
-    {% endif %}
 
     <h3>Which applications use it</h3>
     <p class="muted" data-testid="selected-version-applicability">{{ selected.applicability.basis_text }}</p>
@@ -266,6 +284,7 @@
       </tbody>
     </table>
     </div>
+    </details>
 
     <h3>Next authorized action</h3>
     <p data-testid="selected-version-next-action">
@@ -302,14 +321,12 @@
 {% endif %}
 
 {% if catalogue.draft_action %}
-<section class="panel card" aria-labelledby="rules-draft-heading">
-  <div class="card-h"><h2 id="rules-draft-heading">Draft a new version</h2></div>
+<details class="panel card" data-testid="rules-draft">
+  <summary>Draft a new version</summary>
   <div class="card-b act">
     {{ forms.action_form(catalogue.draft_action, csrf_token, request.url.path) }}
   </div>
-</section>
+</details>
 {% endif %}
-
-{% include "components/evidence_panel.html" %}
 </div>
 {% endblock %}

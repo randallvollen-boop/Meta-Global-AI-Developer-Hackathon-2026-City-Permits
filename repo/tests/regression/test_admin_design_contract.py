@@ -158,12 +158,16 @@ def test_governance_rules_and_city_copy_is_plain_and_fictional(client: TestClien
     assert "Records needing attention" in governance
 
     rules = client.get("/rules?tab=rules&view=published").text
-    assert "Fictional ACME rules and fees. They do not govern a real jurisdiction." in rules
+    # Changed deliberately (demo polish, AD3): the fictional subtitle is gone.
+    assert "Fictional ACME rules and fees. They do not govern a real jurisdiction." not in rules
     assert "what-if" not in rules
     assert "append-only" not in rules
 
     city = client.get("/insight/city").text
-    assert "Fictional ACME City permit records by district, type, outcome and business category." in city
+    # Changed deliberately (demo polish, AD3): the subtitle is one synthetic line.
+    assert "Fictional ACME City permit records by district, type, outcome and business category." not in city
+    assert 'data-testid="synthetic-note"' in city
+    assert ("not real permits" in city) or ("No synthetic data is loaded" in city)
     assert 'data-testid="filter-apply">Apply</button>' in city
     assert "Business categories" in city
     assert "Permit records" in city

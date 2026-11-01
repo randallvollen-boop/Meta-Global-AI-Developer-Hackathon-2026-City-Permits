@@ -6,13 +6,12 @@
 <div class="page-head">
   <div>
     <h1>Audit log</h1>
-    <p class="sub">See who changed a record and what happened. Newest records appear first.</p>
   </div>
   <div class="actions">{{ ui.help_button('ops_audit') }}</div>
 </div>
 
 <form method="get" action="/ops/audit" class="ops-filters" data-testid="audit-filters">
-  <label>Actor type {{ ui.info('ops_actor_type') }}
+  <label>Actor type
     <select name="actor_type" data-testid="audit-filter-actor-type">
       <option value="">Any actor type</option>
       {% for t in v.actor_types %}<option value="{{ t.key }}"{% if v.filters.actor_type == t.key %} selected{% endif %}>{{ t.label }}</option>{% endfor %}
@@ -45,7 +44,8 @@
         <th scope="row"><span class="adm-field-label">Event</span><strong data-testid="audit-action-label">{{ r.action_label }}</strong></th>
         <td><span class="adm-field-label">Actor</span>{{ r.actor_label or r.actor_id or 'none' }}<br><span class="ops-badge {{ r.actor_type }}" data-testid="audit-actor-type">{{ r.actor_type_label }}</span></td>
         <td><span class="adm-field-label">Record</span>{% if r.target_type %}{% if r.href %}<a href="{{ r.href }}" data-testid="audit-record-link">{{ r.target_label }}</a>{% else %}<span data-testid="audit-record-text">{{ r.target_label }}</span>{% endif %}{% else %}<span class="muted">No record</span>{% endif %}</td>
-        <td><span class="adm-field-label">Result</span><span data-testid="audit-outcome-label">{{ r.outcome_label }}</span>{% if r.basis %}<br><span data-testid="audit-basis">{{ r.basis }}</span>{% endif %}</td>
+        {# The basis of the outcome is in the drawer behind View details. #}
+        <td><span class="adm-field-label">Result</span><span data-testid="audit-outcome-label">{{ r.outcome_label }}</span></td>
         <td><span class="adm-field-label">Time and details</span><span class="mono">{{ r.occurred_at }}</span><br>{{ ui.detail_link('audit-event', r.event_id, 'View details') }}</td>
       </tr>
       {% else %}
@@ -62,5 +62,4 @@
   <span>Page {{ v.page }} of {{ v.pages }}</span>
   {% if v.page < v.pages %}<a href="/ops/audit?{{ q }}page={{ v.page + 1 }}" data-testid="audit-next" rel="next">Older</a>{% else %}<span class="muted">Older</span>{% endif %}
 </nav>
-{% include "components/evidence_panel.html" %}
 {% endblock %}

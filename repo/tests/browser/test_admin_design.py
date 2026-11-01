@@ -471,6 +471,8 @@ def test_city_charts_use_theme_tokens_in_light_and_dark(
     """Chart paint follows theme tokens while labels and tables remain present."""
     login("persona_city_administrator")
     open_screen(page, server, "/insight/city")
+    # Changed deliberately (demo polish, AD3): submissions over time are closed.
+    page.locator('[data-testid="insight-trend"] > summary').click()
     bar = page.locator(".insight-bars rect").first
     light_fill = bar.evaluate("element => getComputedStyle(element).fill")
     page.evaluate("document.documentElement.dataset.theme = 'dark'")

@@ -10,14 +10,11 @@
   <div class="actions">{{ ui.help_button('ops_support') }}</div>
 </div>
 
-<p class="muted">* Required</p>
-
-<div class="adm-support-layout">
+<div>
 {% if can_answer %}
 <section class="card adm-support-requests" aria-labelledby="requests-h" data-testid="support-requests">
   <div class="card-b">
   <h2 id="requests-h">Requests</h2>
-  <p class="muted">Each request shows the question and the conversation at the time the applicant asked. Later private conversation is not shown here.</p>
   <p class="adm-support-status-links">
     <a href="{{ support_open_href }}" data-testid="support-filter-open"{% if request_status == 'open' %} aria-current="page"{% endif %}>Open</a>
     <a href="{{ support_answered_href }}" data-testid="support-filter-answered"{% if request_status == 'answered' %} aria-current="page"{% endif %}>Answered</a>
@@ -27,7 +24,8 @@
     <h3 data-testid="help-request-question">{{ r.question }}</h3>
     <p>{{ r.applicant }}{% if r.reference %} <span class="muted">|</span> <span class="mono">{{ r.reference }}</span>{% endif %}<br><span class="muted">Sent {{ r.created_at }}</span></p>
     {% if r.snapshot %}
-    <details><summary>Conversation at time of request ({{ r.snapshot|length }})</summary>
+    <details data-testid="help-request-snapshot-details"><summary>Conversation at time of request ({{ r.snapshot|length }})</summary>
+      <p class="muted">The question and the conversation at the time the applicant asked. Later private conversation is not shown here.</p>
       <ol data-testid="help-request-snapshot">{% for t in r.snapshot %}<li>{{ t.question }} <span class="muted">({{ t.outcome }}{% if t.label %}; {{ t.label }}{% endif %})</span></li>{% endfor %}</ol>
     </details>
     {% endif %}
@@ -41,9 +39,12 @@
         <label for="reply-{{ r.request_id }}">Your reply <span aria-hidden="true">*</span></label>
         <textarea id="reply-{{ r.request_id }}" name="reply" rows="3" maxlength="2000" required aria-required="true" data-testid="help-reply"></textarea>
       </p>
-      {% if r.reference and not r.archived %}<p class="adm-support-destination">The applicant can read this reply. It will also appear on the case.</p>{% endif %}
-      {% if r.archived %}<p class="adm-support-destination" data-testid="help-archived-note">This reply stays on the help request. The archived case will not change.</p>{% endif %}
-      {% if not r.reference %}<p class="adm-support-destination">This reply appears in the applicant’s help history.</p>{% endif %}
+      <p class="adm-support-destination"{% if r.archived %} data-testid="help-archived-note"{% else %} data-testid="help-destination"{% endif %}>
+        {%- if r.archived -%}This reply stays on the help request. The archived case will not change.
+        {%- elif r.reference -%}The applicant can read this reply. It will also appear on the case.
+        {%- else -%}This reply appears in the applicant’s help history.
+        {%- endif -%}
+      </p>
       <p><button type="submit" class="btn primary" data-testid="help-answer" aria-label="Send reply to {{ r.applicant }}{% if r.reference %} on {{ r.reference }}{% else %} for request {{ r.request_id }}{% endif %}">Send reply</button></p>
     </form>
     {% else %}
@@ -80,7 +81,6 @@
     <ul data-testid="support-comments">
       {% for c in lookup.comments %}<li data-testid="support-comment"><span class="mono">{{ c.created_at }}</span> {{ c.body }}</li>{% else %}<li class="muted">No comment was written for the applicant.</li>{% endfor %}
     </ul>
-    <p class="muted">Internal notes are never shown on this screen.</p>
   </div>
   {% elif lookup_done %}
   <p data-testid="support-lookup-none">No application has the reference "{{ reference }}".</p>
@@ -90,7 +90,8 @@
 {% endif %}
 
 {% if can_record %}
-<section class="card" aria-labelledby="record-h" data-testid="support-record">
+<details class="card" data-testid="support-record">
+  <summary>More details</summary>
   <div class="card-b">
   <h2 id="record-h">Record assistance</h2>
   <form method="post" action="/ui/actions/support.case.record" data-testid="support-record-form">
@@ -117,12 +118,13 @@
     </tbody>
   </table></div>
   </div>
-</section>
+</details>
 {% endif %}
 </div>
 </div>
 
-<section class="card" aria-labelledby="faq-h" data-testid="support-faq">
+<details class="card" data-testid="support-faq">
+  <summary>More details</summary>
   <div class="card-b">
   <h2 id="faq-h">Common questions</h2>
   <dl>{% for f in faq %}<dt><strong>{{ f.question }}</strong></dt><dd>{{ f.answer }}</dd>{% endfor %}</dl>
@@ -130,6 +132,5 @@
   <p data-testid="support-contact">{{ contact.desk }} {{ contact.phone }}</p>
   <p class="callout" data-testid="support-emergency">{{ contact.emergency }}</p>
   </div>
-</section>
-{% include "components/evidence_panel.html" %}
+</details>
 {% endblock %}

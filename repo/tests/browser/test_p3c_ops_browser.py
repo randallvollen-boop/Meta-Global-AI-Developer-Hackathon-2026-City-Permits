@@ -70,19 +70,20 @@ def test_the_dashboard_prints_six_figures_with_definitions_and_three_charts(page
     assert page.locator('[data-testid="chart-status-table"]').count() == 1
 
 
-def test_the_breakdowns_show_a_chart_on_a_desktop_and_a_table_on_a_phone(
+def test_the_breakdowns_keep_the_table_visible_and_the_chart_closed(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_city_administrator")
-    # A wide screen shows the chart and keeps the table behind its summary.
+    # Changed deliberately (demo polish, AD3): the data table stays visible
+    # and the chart stays closed until its summary is opened, on both sizes.
     page.set_viewport_size({"width": 1280, "height": 900})
     page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
-    assert page.locator('[data-testid="chart-status-chart"] svg').is_visible()
-    assert not page.locator('[data-testid="chart-status-table"]').is_visible()
+    assert not page.locator('[data-testid="chart-status-chart"] svg').is_visible()
+    assert page.locator('[data-testid="chart-status-table"]').is_visible()
     assert page.locator('[data-testid="chart-channel-chart"]').count() == 1
     assert page.locator('[data-testid="chart-channel-table"]').count() == 1
 
-    # A phone shows the readable table and keeps the chart in its disclosure.
+    # A phone shows the same table and keeps the chart in its disclosure.
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(f"{server.base_url}/ops/dashboard", wait_until="domcontentloaded")
     assert_no_horizontal_overflow(page)
@@ -221,9 +222,12 @@ def test_the_administrator_answers_and_the_applicant_reads_the_reply(browser, se
 def test_a_support_case_is_recorded_and_listed(page, server: BrowserServer, login) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
+    # Changed deliberately (demo polish, AD3): record assistance is closed.
+    page.locator('[data-testid="support-record"] > summary').click()
     page.locator('[data-testid="case-channel"]').select_option("counter")
     page.locator('[data-testid="case-summary"]').fill("A visitor asked how fences are measured.")
     page.locator('[data-testid="case-record"]').click()
+    page.locator('[data-testid="support-record"] > summary').click()
     page.wait_for_selector('[data-testid="support-case-row"]')
     assert "A visitor asked how fences are measured." in page.locator('[data-testid="support-cases"]').inner_text()
     assert page.recorded_errors == []
