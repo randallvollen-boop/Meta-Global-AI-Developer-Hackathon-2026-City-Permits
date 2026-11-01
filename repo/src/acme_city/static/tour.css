@@ -1,0 +1,31 @@
+/* The guided tour: a ring around the control of the step and a panel that
+   carries the caption and the controls.  The panel never covers the ring. */
+
+.tour-overlay { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+
+.tour-ring {
+  position: fixed; border: 3px solid var(--accent, #1f5f8b); border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(9, 16, 24, .3); pointer-events: none;
+}
+
+.tour-panel {
+  position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
+  width: min(40rem, calc(100vw - 2rem)); max-height: 60vh; overflow-y: auto;
+  background: var(--surface, #fff); color: var(--fg, #142230);
+  border: 1px solid var(--line, #dde3e9); border-radius: var(--radius, 10px);
+  box-shadow: var(--shadow, 0 4px 14px rgba(20, 34, 48, .1));
+  padding: 0.9rem 1rem; pointer-events: auto;
+}
+
+.tour-count { margin: 0; font-size: .78rem; letter-spacing: .04em; color: var(--fg-2, #4a5b6b); }
+.tour-title { margin: .15rem 0 .35rem; font-size: 1.1rem; }
+.tour-caption { margin: 0 0 .5rem; font-size: .95rem; }
+.tour-warning { margin: 0 0 .5rem; font-size: .88rem; color: var(--warn, #a5650b); }
+.tour-note { margin: 0 0 .5rem; font-size: .85rem; color: var(--fg-2, #4a5b6b); }
+
+.tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; }
+.tour-controls .btn { font-size: .88rem; }
+
+@media (max-width: 720px) {
+  .tour-panel { bottom: 4.5rem; max-height: 50vh; }
+}

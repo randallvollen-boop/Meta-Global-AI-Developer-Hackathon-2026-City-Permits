@@ -1,0 +1,84 @@
+{
+  "version": "1",
+  "title": "Take the tour",
+  "note": "The guided tour of one permit, from the application to the public record. The tour only opens screens and points at controls; it never changes a record. Each step names the walkthrough step of the same story.",
+  "steps": [
+    {
+      "id": "apply",
+      "walkthrough_step": 3,
+      "title": "Apply for a permit",
+      "persona": "Applicant",
+      "actor_id": "persona_applicant",
+      "path": "/apply",
+      "target": "[data-testid=\"type-card\"]",
+      "permission": "application.submit",
+      "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
+    },
+    {
+      "id": "agent",
+      "walkthrough_step": 4,
+      "title": "Let the agent route the work",
+      "persona": "Agent Operator",
+      "actor_id": "persona_agent_operator",
+      "path": "/agent/intake",
+      "target": "[data-testid=\"agent-toggle\"]",
+      "permission": "agent.run.intake",
+      "caption": "The intake agent reads each new application and routes it to the right queue. It never decides: a person does that."
+    },
+    {
+      "id": "steward",
+      "walkthrough_step": 5,
+      "title": "Clear a case for review",
+      "persona": "Data Steward",
+      "actor_id": "persona_data_steward",
+      "path": "/steward",
+      "target": "[data-testid=\"assistant-prepare\"]",
+      "permission": "registry.crosswalk.propose",
+      "caption": "The steward assistant prepares a recommendation; the Data Steward records the decision. The parcel link and the identity link must both be cleared before a reviewer may approve."
+    },
+    {
+      "id": "reviewer",
+      "walkthrough_step": 6,
+      "title": "Decide a case",
+      "persona": "Permit Reviewer",
+      "actor_id": "persona_permit_reviewer",
+      "path": "/queue",
+      "target": "[data-testid=\"queue-item\"]",
+      "permission": "permit.decide",
+      "caption": "The reviewer's queue holds the cases with the City. Open one, run the application checks, record the decision with its reason, then issue the permit."
+    },
+    {
+      "id": "audit",
+      "walkthrough_step": 7,
+      "title": "Check the record of the decision",
+      "persona": "City Administrator",
+      "actor_id": "persona_city_administrator",
+      "path": "/ops/audit",
+      "target": "[data-testid=\"audit-filter-apply\"]",
+      "permission": "ops.audit_log.view",
+      "caption": "Every action is recorded. Filter the log for the recorded permit decision and open its details."
+    },
+    {
+      "id": "insight",
+      "walkthrough_step": 8,
+      "title": "See the city at a glance",
+      "persona": "City Administrator",
+      "actor_id": "persona_city_administrator",
+      "path": "/insight/city",
+      "target": "[data-testid=\"filter-apply\"]",
+      "permission": "insight.city.view",
+      "caption": "The City view: the counts, the map, and the definition printed beside each figure."
+    },
+    {
+      "id": "public",
+      "walkthrough_step": 9,
+      "title": "Look up permits as a resident",
+      "persona": "",
+      "actor_id": "",
+      "path": "/city/community",
+      "target": "[data-testid=\"community-q\"]",
+      "permission": "",
+      "caption": "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees."
+    }
+  ]
+}
