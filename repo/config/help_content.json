@@ -55,7 +55,7 @@
           },
           {
             "do": "Click \"Start an application\".",
-            "see": "The page \"What are you trying to do?\" lists the permit types as cards.",
+            "see": "The page \"Start an application\" lists the permit types as cards.",
             "href": "/apply"
           },
           {

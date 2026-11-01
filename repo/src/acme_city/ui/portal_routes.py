@@ -18,12 +18,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from acme_city.applicant_help import views as help_views
-from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_portal import content as portal_content
 from acme_city.applicant_portal import forms, permits_view
 from acme_city.applicant_portal.service import (
@@ -208,36 +206,6 @@ def _service(request: Request, session: Session) -> PortalService:
     return PortalService(session, settings=request.app.state.settings)
 
 
-def _help_service(request: Request, session: Session) -> ApplicantHelpService:
-    """Return the help service of the portal."""
-    return ApplicantHelpService(session, settings=request.app.state.settings)
-
-
-def _help_panel(
-    request: Request,
-    session: Session,
-    actor: ActorContext,
-    *,
-    placement: str,
-    permit_type_key: str = "",
-    application_id: str = "",
-    conversation_id: str = "",
-    reference: str = "",
-) -> dict[str, Any]:
-    """Return the context of the help panel of a portal page."""
-    service = _help_service(request, session)
-    return help_views.panel_context(
-        session,
-        actor,
-        service=service,
-        placement=placement,
-        permit_type_key=permit_type_key,
-        application_id=application_id,
-        conversation_id=conversation_id,
-        reference=reference,
-    )
-
-
 @router.get("/apply", operation_id="ui_portal_chooser")
 def ui_portal_chooser(
     request: Request,
@@ -317,8 +285,6 @@ def ui_portal_track(
     resubmitted: str = "",
     saved: str = "",
     tab: str = "",
-    help_conversation: str = Query("", alias="help"),
-    help_question: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -329,7 +295,6 @@ def ui_portal_track(
     service = _service(request, session)
     tracked = service.track(ref, resolved) if ref.strip() else None
     pm = None if tracked else permits_view.my_permits(session, resolved, tab=tab)
-    share = portal_content.content().get("share", {})
     context = page_context(
         request,
         session,
@@ -344,23 +309,11 @@ def ui_portal_track(
             if tracked
             else (pm or {}).get("next_step", "")
         ),
-        contact_href=share.get("contact_href", "/city/contact"),
-        contact_label=share.get("contact_label", "Planning and Permits"),
         not_found=bool(ref.strip()) and tracked is None,
         revised=revised,
         resubmitted=resubmitted,
         saved=saved,
         portal_notice=forms.PORTAL_NOTICE,
-        help_question=help_question,
-        **_help_panel(
-            request,
-            session,
-            resolved,
-            placement="track",
-            application_id=(tracked or {}).get("application_id", ""),
-            conversation_id=help_conversation,
-            reference=ref,
-        ),
     )
     if tracked is None and pm is None:  # pragma: no cover - pm is built whenever tracked is not
         raise AssertionError

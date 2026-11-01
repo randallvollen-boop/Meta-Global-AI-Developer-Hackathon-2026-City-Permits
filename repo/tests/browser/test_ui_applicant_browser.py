@@ -75,6 +75,23 @@ def test_a_toast_is_top_right_under_the_header(browser, server: BrowserServer) -
             context.close()
 
 
+def test_the_tracker_is_one_column_at_390_pixels(browser, server: BrowserServer) -> None:
+    """The case fills the width: the tracker has no column beside it."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    try:
+        page = context.new_page()
+        _sign_in(page, server)
+        page.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="networkidle")
+        assert page.locator(".tracker-aside").count() == 0
+        card = page.locator('[data-testid="permit-card"]').first
+        assert card.count() == 1
+        box = card.bounding_box()
+        assert box["width"] > 300, box
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    finally:
+        context.close()
+
+
 def test_the_deck_or_fence_choice_swaps_the_question_groups_and_submits(page, server: BrowserServer, login) -> None:
     login("persona_applicant")
     page.goto(f"{server.base_url}/apply/deck_fence", wait_until="networkidle")

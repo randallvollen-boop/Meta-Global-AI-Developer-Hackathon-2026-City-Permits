@@ -15,7 +15,6 @@ from conftest import BrowserServer
 #: The three places the panel is offered.
 PLACEMENTS = (
     ("/apply/help/panel", "form"),
-    ("/apply/track?ref=SYN-APP-005", "track"),
 )
 
 FENCE_QUESTION = "Do I need a permit for a 6 ft fence?"
@@ -35,7 +34,7 @@ def sign_in(context, server: BrowserServer, actor_id: str):
     return page
 
 
-def test_the_panel_is_offered_on_the_three_portal_pages(
+def test_the_panel_is_offered_on_its_own_page(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_applicant")

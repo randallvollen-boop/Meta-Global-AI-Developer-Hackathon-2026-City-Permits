@@ -19,7 +19,6 @@ from p3c_support import seed_help_request  # noqa: E402
 
 PLACEMENTS = (
     ("/apply/help/panel", "form"),
-    ("/apply/track?ref=SYN-APP-005", "track"),
 )
 NONSENSE = ("purple monkey dishwasher", "quantum banana trombone", "velvet lighthouse spaghetti")
 REPLY = "A person at the City read your question and will call you."
@@ -148,10 +147,18 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
     try:
         applicant = sign_in(applicant_context, server, "persona_applicant")
         applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
-        applicant.locator('[data-testid="help-escalate-question"]').fill("Who is reviewing my fence application?")
-        applicant.locator('[data-testid="help-ask-the-city"]').click()
-        applicant.wait_for_selector('[data-testid="help-request"]')
-        tracker_url = applicant.url
+        # Changed deliberately (the applicant restyle, A3): the tracker has no
+        # panel of its own; the launcher opens the assistant on its own page.
+        with applicant_context.expect_page() as opened:
+            applicant.locator('[data-testid="help-launcher"]').click()
+        assistant = opened.value
+        assistant.wait_for_load_state("domcontentloaded")
+        assistant.locator('[data-testid="help-escalate-question"]').fill("Who is reviewing my fence application?")
+        with applicant_context.expect_page() as asked:
+            assistant.locator('[data-testid="help-ask-the-city"]').click()
+        request = asked.value
+        request.wait_for_load_state("domcontentloaded")
+        request.wait_for_selector('[data-testid="help-request"]')
 
         admin = sign_in(admin_context, server, "persona_city_administrator")
         admin.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
@@ -162,11 +169,13 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
         card.locator('[data-testid="help-answer"]').click()
         admin.wait_for_selector('[data-testid="feedback-message"]')
 
-        applicant.goto(tracker_url, wait_until="domcontentloaded")
+        # the reply reaches the applicant as a message of the City on the case
+        applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
         body = applicant.inner_text("body")
-        assert REPLY in body  # as the comment on the case and as the answer in the panel
-        assert applicant.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "answered"
-        assert "Answer from the City" in body
+        assert REPLY in body
+        # and the assistant's own page shows the answer of the City
+        request.reload(wait_until="domcontentloaded")
+        assert "Answer from the City" in request.inner_text("body")
     finally:
         applicant_context.close()
         admin_context.close()

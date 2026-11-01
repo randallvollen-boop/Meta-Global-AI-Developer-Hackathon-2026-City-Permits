@@ -131,6 +131,7 @@ def ui_portal_help_panel(
     conversation: str = "",
     type_key: str = "",
     application_id: str = "",
+    reference: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -170,6 +171,7 @@ def ui_portal_help_panel(
             permit_type_key=type_key,
             application_id=application_id,
             conversation_id=conversation,
+            reference=reference,
         ),
     )
     return render(request, "portal_help.html", context)

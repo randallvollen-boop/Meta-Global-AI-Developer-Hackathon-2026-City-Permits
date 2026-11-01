@@ -534,10 +534,11 @@ def test_empty_state_is_one_start_card_with_no_metrics_or_empty_panels(client, e
         assert absent not in page
     assert page.count('href="/apply"') >= 2 and 'data-testid="start-application"' in page
     assert content.content()["next_step_empty"] in page
-    # the sidebar keeps Need help? and the help panel
-    side = page.split('class="tracker-aside"')[1]
-    assert "Need help?" in side and 'data-testid="help-panel"' in side and 'data-placement="track"' in side
-    assert 'data-testid="help-ask-the-city"' in side and 'data-testid="contact-link"' in side
+    # Changed deliberately (the applicant restyle, A3): the side column is
+    # gone; the tracker offers a launcher for the assistant instead.
+    assert 'class="tracker-aside"' not in page
+    assert 'data-testid="help-panel"' not in page
+    assert 'data-testid="help-launcher"' in page
 
 
 def test_tabs_counts_come_from_the_server_and_cards_show_the_mockup_parts(client, environment) -> None:
@@ -559,10 +560,11 @@ def test_tabs_counts_come_from_the_server_and_cards_show_the_mockup_parts(client
     assert 'data-testid="tracked-status">Awaiting intake agent<' in card
     assert f'href="/apply/track?ref={reference}"' in card and "View application" in card
     assert f'href="/apply/submitted/{reference}/copy"' in card and "Download submission" in card
-    # the right-hand sidebar names what happens next, from the stored state
-    side = page.split('data-testid="what-next"')[1]
-    assert content.content()["next_step"]["submitted"][:40] in html.unescape(side)
-    assert "service target for this permit type is 5 days" in side
+    # the selected case names what happens next, from the stored state
+    detail = client.get(f"/apply/track?ref={reference}").text
+    card = detail.split('data-testid="permit-card"')[1].split("</article>")[0]
+    assert content.content()["next_step"]["submitted"][:40] in html.unescape(card)
+    assert "service target for this permit type is 5 days" in card
     drafts = client.get("/apply/track?tab=drafts").text
     assert 'data-tab="drafts"' in drafts and "Draft DRAFT-" in drafts and 'data-testid="status-badge">Draft<' in drafts
     closed = client.get("/apply/track?tab=closed").text
@@ -628,9 +630,9 @@ def test_the_request_box_shows_the_applicant_visible_ask_and_the_primary_action(
     assert 'data-testid="primary-action">Respond to request<' in card
     assert f'href="/apply/track?ref={reference}#request"' in card and "View request" in card
     assert 'data-testid="status-badge">Action needed<' in card and "badge-warn" in card
-    assert "Respond to the City" in page.split('data-testid="what-next"')[1]
     # the detail view carries the same box, the response forms and the messages
     detail = client.get(f"/apply/track?ref={reference}").text
+    assert "Respond to the City" in detail.split('data-testid="what-next"')[1]
     assert 'id="request"' in detail and 'id="respond"' in detail
     assert 'data-testid="revise-form"' in detail and 'data-testid="resubmit-form"' in detail
     assert VISIBLE_NOTE in detail.split('data-testid="city-messages"')[1].split("</ul>")[0]
@@ -721,26 +723,19 @@ def test_lookup_by_reference_still_works_and_misses_say_so(client) -> None:
     assert 'data-testid="track-form"' in missing and 'id="track-ref"' in missing
 
 
-def test_the_help_panel_is_on_the_tracker_and_the_chooser_links_to_it(
+def test_the_help_panel_has_a_page_of_its_own_and_the_screens_link_to_it(
     client,
 ) -> None:
     """The applicant screens lost their column; the assistant keeps a page."""
     choose(client)
-    reference = submit_fence(client)
-    for path, placement in (
-        (f"/apply/track?ref={reference}", "track"),
-        ("/apply/help/panel", "form"),
-    ):
-        page = client.get(path).text
-        assert f'data-placement="{placement}"' in page, path
-        for testid in ("help-panel", "help-form", "help-question", "help-submit", "help-ask-the-city"):
-            assert f'data-testid="{testid}"' in page, (path, testid)
-    chooser = client.get("/apply").text
-    assert 'data-testid="help-panel"' not in chooser
-    assert (
-        'href="/apply/help/panel" target="_blank" rel="noopener" data-testid="help-launcher"'
-        in chooser
-    )
+    page = client.get("/apply/help/panel").text
+    assert 'data-placement="form"' in page
+    for testid in ("help-panel", "help-form", "help-question", "help-submit", "help-ask-the-city"):
+        assert f'data-testid="{testid}"' in page, testid
+    for path in ("/apply", "/apply/deck_fence", "/apply/track"):
+        screen = client.get(path).text
+        assert 'data-testid="help-panel"' not in screen, path
+        assert 'data-testid="help-launcher"' in screen, path
 
 
 def test_new_screens_have_help_entries(client) -> None:

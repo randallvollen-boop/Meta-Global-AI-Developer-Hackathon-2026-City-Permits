@@ -33,6 +33,10 @@ HELP_SCREENS = (
     ("persona_applicant", "/city/community/permit/SYN-APP-012"),
     ("persona_applicant", "/lifecycle"),
     ("persona_applicant", "/walkthrough"),
+    # The applicant screens of the permit portal carry the button too.
+    ("persona_applicant", "/apply"),
+    ("persona_applicant", "/apply/deck_fence"),
+    ("persona_applicant", "/apply/track"),
 )
 
 

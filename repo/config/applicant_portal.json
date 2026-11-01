@@ -64,7 +64,7 @@
   },
   "discretionary_note": "Only a person or the board decides this kind of application.",
   "next_step_empty": "Start an application to begin. Your applications will be listed here.",
-  "target_sentence": "The City's service target for this permit type is {days} days. The City works to that target and does not promise it for any one application.",
+  "target_sentence": "The City's service target for this permit type is {days} days.",
   "request_titles": {
     "missing_field": "An item is missing",
     "missing_document": "A document is missing",

@@ -182,9 +182,12 @@ def test_single_admin_approval_http_authorization_and_redirect(seeded: Settings)
 
     app = create_app(seeded)
     app.include_router(ui_router)
-    homes = {
+    # The page each persona's action token is read from.  Changed deliberately
+    # (the applicant restyle, A1): the chooser of the applicant carries no
+    # form of its own, so the token of the applicant comes from the form.
+    token_pages = {
         "persona_city_administrator": "/rules?tab=rules&view=drafts",
-        "persona_applicant": "/apply",
+        "persona_applicant": "/apply/deck_fence",
         "persona_data_steward": "/steward",
         "persona_permit_reviewer": "/permits/app_synth_001",
         "persona_agent_operator": "/agent/intake",
@@ -192,10 +195,10 @@ def test_single_admin_approval_http_authorization_and_redirect(seeded: Settings)
     with TestClient(app) as client:
         def post_as(actor_id: str, version: int):
             assert client.post("/api/session/select", json={"actor_id": actor_id}).status_code == 200
-            home = client.get(homes[actor_id])
+            page = client.get(token_pages[actor_id])
             marker = 'name="csrf_token" value="'
-            assert marker in home.text
-            token = home.text.split(marker, 1)[1].split('"', 1)[0]
+            assert marker in page.text
+            token = page.text.split(marker, 1)[1].split('"', 1)[0]
             return client.post(
                 "/ui/actions/rule.approve",
                 data={

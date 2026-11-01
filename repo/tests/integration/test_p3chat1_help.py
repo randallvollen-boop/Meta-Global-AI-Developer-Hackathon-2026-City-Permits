@@ -134,9 +134,11 @@ def test_the_panel_has_a_page_of_its_own_and_the_chooser_links_to_it(
     launcher = re.search(r'href="([^"]+)"[^>]*data-testid="help-launcher"', form)
     assert launcher is not None
     assert launcher.group(1).startswith(PANEL_PATH)
+    # Changed deliberately (the applicant restyle, A3): the tracker lost its
+    # column of help; it links to the panel's own page.
     tracker = client.get("/apply/track", params={"ref": "SYN-APP-005"}).text
-    assert 'data-testid="help-panel"' in tracker
-    assert 'data-placement="track"' in tracker
+    assert 'data-testid="help-panel"' not in tracker
+    assert 'data-testid="help-launcher"' in tracker
 
 
 def test_the_panel_shows_the_fixed_notice(client: TestClient) -> None:

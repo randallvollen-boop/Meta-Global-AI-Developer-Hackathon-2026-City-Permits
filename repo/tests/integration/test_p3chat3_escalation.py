@@ -167,11 +167,11 @@ def test_ask_answer_and_read_survive_restarts(environment) -> None:
             version = version_of(environment, conversation) if conversation else 0
             conversation, _ = ask(
                 client, question, conversation=conversation, version=str(version),
-                placement="track", path="/apply/track?ref=SYN-APP-005", application_id="app_d05", return_ref="SYN-APP-005",
+                placement="track", path="/apply/help/panel", application_id="app_d05", return_ref="SYN-APP-005",
             )
         assert escalate(
             client, conversation, version_of(environment, conversation), NONSENSE[2],
-            path="/apply/track?ref=SYN-APP-005", placement="track", application_id="app_d05", return_ref="SYN-APP-005",
+            path="/apply/help/panel", placement="track", application_id="app_d05", return_ref="SYN-APP-005",
         ).status_code == 303
     with running(environment) as client:  # restart 1: the City answers
         choose(client, ADMIN)
@@ -186,8 +186,11 @@ def test_ask_answer_and_read_survive_restarts(environment) -> None:
     with running(environment) as client:  # restart 2: the applicant reads the reply
         choose(client, APPLICANT)
         tracker = client.get(f"/apply/track?ref=SYN-APP-005&help={conversation}").text
+        # Changed deliberately (the applicant restyle, A3): the tracker has
+        # no panel of its own; the reply reaches the applicant as a message
+        # of the City on the case.
         assert "We will look at it today." in tracker
-        assert 'data-testid="help-request-reply"' in tracker
+        assert 'data-testid="city-messages"' in tracker
         again = panel(client, conversation).text
         assert 'data-status="answered"' in again
         # the conversation, its version and its ownership are intact
@@ -351,7 +354,7 @@ def test_chat_model_runs_stay_out_of_every_staff_view(client, environment) -> No
 def test_a_request_made_on_the_tracker_is_tied_to_the_applicants_case(client, environment) -> None:
     choose(client, APPLICANT)
     response = escalate(
-        client, "", 0, "Who reviews my case?", path="/apply/track?ref=SYN-APP-005",
+        client, "", 0, "Who reviews my case?", path="/apply/help/panel",
         placement="track", application_id="app_d05", return_ref="SYN-APP-005",
     )
     assert response.status_code == 303

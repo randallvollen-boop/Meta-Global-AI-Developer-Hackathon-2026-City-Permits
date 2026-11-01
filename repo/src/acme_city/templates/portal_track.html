@@ -12,7 +12,19 @@
 </ol>
 {% endmacro %}
 
-{% macro app_card(card, detail=false) %}
+{# The next step of the City, and the service target behind "More details". #}
+{% macro next_step_block(text) %}
+{% set marker = portal_content().target_sentence.split('{days}')[0].strip() %}
+{% set parts = (text or '').split(marker) %}
+<p data-testid="next-step">{{ parts[0].strip() }}</p>
+{% if parts | length > 1 %}
+<details class="detail-more"><summary>More details</summary>
+  <p class="muted" data-testid="target-sentence">{{ marker }}{{ parts[1] }}</p>
+</details>
+{% endif %}
+{% endmacro %}
+
+{% macro app_card(card, detail=false, next_text='') %}
 <article class="permit-card" data-testid="permit-card" data-status="{{ card.status }}" data-reference="{{ card.reference }}" data-kind="{{ card.kind }}">
   <header class="permit-card-head">
     <div class="permit-id">
@@ -22,6 +34,13 @@
     </div>
     <p class="permit-badge"><span class="badge badge-{{ card.badge.tone }}" data-testid="status-badge">{{ card.badge.text }}</span>{{ ui.info('application_status') }}</p>
   </header>
+
+  {% if detail %}
+  <div class="card-next" data-testid="what-next">
+    <h3>What happens next</h3>
+    {{ next_step_block(next_text) }}
+  </div>
+  {% endif %}
 
   {% if card.request %}
   <div class="request-box" {% if detail %}id="request" {% endif %}role="group" aria-labelledby="req-{{ card.reference }}" data-testid="request-box">
@@ -61,14 +80,14 @@
 
 {% macro activity_list(events, show_ref) %}
 {% if events %}
-<section class="panel activity" aria-labelledby="activity-h" data-testid="recent-activity">
-  <h2 id="activity-h">Recent activity</h2>
+<details class="panel activity detail-more" data-testid="recent-activity">
+  <summary>Recent activity</summary>
   <ul class="activity-list">
     {% for event in events %}
     <li data-testid="activity-item"><time datetime="{{ event.when.isoformat() }}" title="{{ event.stamp }}">{{ event.date }}</time><span>{{ event.title }}{% if show_ref %} <span class="muted">({{ event.reference }})</span>{% endif %}{% if event.text %}<span class="activity-text">{{ event.text }}</span>{% endif %}</span></li>
     {% endfor %}
   </ul>
-</section>
+</details>
 {% endif %}
 {% endmacro %}
 
@@ -81,15 +100,14 @@
 {% block content %}
 <div class="page-head tracker-head">
   <div><h1>My permits</h1><p class="sub">Track your applications and respond to requests from the City.</p></div>
-  <div class="actions">{{ ui.help_button('apply_track') }}<a class="btn gold" href="/apply" data-testid="start-application">Start an application</a></div>
+  <div class="actions">{{ ui.help_button('apply_track') }}<a class="btn gold" href="/apply" data-testid="start-application">Start an application</a><a class="btn ghost" href="/apply/help/panel{% if tracked %}?application_id={{ tracked.application_id }}&amp;reference={{ tracked.reference }}{% endif %}" target="_blank" rel="noopener" data-testid="help-launcher">Ask about your permit</a></div>
 </div>
 
-<div class="tracker-layout">
 <div class="tracker-main">
   {% if tracked %}
   <p class="back-link"><a href="/apply/track" data-testid="all-permits">&larr; All my permits</a></p>
   <section class="panel tracked" data-testid="tracked-application" aria-label="Application {{ tracked.reference }}">
-    {{ app_card(tracked.card, true) }}
+    {{ app_card(tracked.card, true, next_step) }}
     <p class="detail-more">{{ ui.detail_link('my-permit', tracked.reference, 'Record details') }}</p>
     <h3>Messages from the City</h3>
     <ul data-testid="city-messages">
@@ -138,7 +156,7 @@
       <p><button type="submit" class="btn primary" data-testid="revise-submit">Submit revised documents</button></p>
     </form>
     <h3>Send the answer back to the City</h3>
-    <p class="muted">Sending the answer creates a new revision of your application. The City assesses it again from the start.</p>
+    <p class="muted">Your answer sends the application back to the City to check again.</p>
     <form method="post" action="/apply/track/{{ tracked.application_id }}/resubmit" enctype="multipart/form-data" data-testid="resubmit-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="reference" value="{{ tracked.reference }}">
@@ -159,7 +177,7 @@
   {% if pm.empty %}
   <section class="panel empty-state" data-testid="my-permits-empty">
     <h2>You have no applications yet</h2>
-    <p>Start an application and it will be listed here, with what the City needs from you and where it stands.</p>
+    <p>{{ next_step }}</p>
     <p><a class="btn gold" href="/apply" data-testid="empty-start">Start an application</a></p>
   </section>
   {% else %}
@@ -179,21 +197,11 @@
   {% endif %}
   {% endif %}
 
-  <form method="get" action="/apply/track" role="search" class="track-find" data-testid="track-form">
-    <p class="field"><label for="track-ref">Find an application by reference number</label><span class="track-row"><input id="track-ref" name="ref" value="{{ ref }}" required><button type="submit" class="btn">Track</button></span></p>
-  </form>
-</div>
-
-<aside class="tracker-aside" aria-label="Help and next steps">
-  <section class="panel side-card" data-testid="what-next">
-    <h2>What happens next</h2>
-    <p data-testid="next-step">{{ next_step }}</p>
-  </section>
-  <section class="panel side-card" data-testid="need-help">
-    <h2>Need help?</h2>
-    <p>Ask below, or contact <a href="{{ contact_href }}" data-testid="contact-link">{{ contact_label }}</a>.</p>
-  </section>
-  {% include "components/help_panel.html" %}
-</aside>
+  <details class="detail-more">
+    <summary>Find an application by reference number</summary>
+    <form method="get" action="/apply/track" role="search" class="track-find" data-testid="track-form">
+      <p class="field"><label for="track-ref">Reference number</label><span class="track-row"><input id="track-ref" name="ref" value="{{ ref }}" required><button type="submit" class="btn">Track</button></span></p>
+    </form>
+  </details>
 </div>
 {% endblock %}
