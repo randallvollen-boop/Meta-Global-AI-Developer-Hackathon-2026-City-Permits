@@ -21,6 +21,7 @@ conversation of another applicant is not found.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
 from urllib.parse import urlencode
@@ -30,11 +31,11 @@ from sqlalchemy.orm import Session
 
 from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_help.sources import applicant_next_steps as _applicant_next_steps
-from acme_city.applicant_portal.permits_view import short_date
+from acme_city.applicant_portal.permits_view import long_stamp, short_date
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import help as help_models
-from acme_city.persistence.models import model_run, permit
+from acme_city.persistence.models import permit
 
 #: The statuses a case holds while it is with the reviewer.
 #:
@@ -117,7 +118,7 @@ def timing_figures(
     type_row = _type_row(session, permit_type_key)
     area = review_area or (type_row.review_area if type_row is not None else "")
     figures: dict[str, Any] = {
-        "as_of": moment.isoformat(),
+        "as_of": long_stamp(moment),
         "permit_type_label": type_row.label if type_row is not None else "",
         "service_target": None,
         "review_area": None,
@@ -186,32 +187,42 @@ def applicant_requests(
     ]
 
 
-def run_view(session: Session, turn: Any, label: str) -> dict[str, Any] | None:
-    """Return the source line of the model run behind a turn, if there is one.
+def first_sentence(text: str) -> str:
+    """Return the first sentence of a text.
 
-    The shape is the one ``components/muse_source.html`` renders: the mode, the
-    source label, the usage and the latency.  The run is read only when it
-    belongs to the very turn being shown, so a turn never shows another run.
+    The panel shows the first sentence of an answer and tucks the rest of
+    the passage away: a rule dump that reads like a rule dump is no answer
+    at all.
     """
-    answer = dict(turn.answer or {})
-    run_id = str(answer.get("model_run_id") or "")
-    if not run_id or turn.mode not in ("replay", "live"):
-        # A turn the validation refused shows the deterministic rule text; it
-        # carries no model source line, because no model answer is shown.
-        return None
-    row = session.get(model_run.ModelRun, run_id)
-    if row is None:
-        return None
-    refs = row.input_refs if isinstance(row.input_refs, dict) else {}
-    if str(refs.get("turn_id") or "") != str(turn.id):
-        return None
-    usage = row.usage if isinstance(row.usage, dict) else {}
+    clean = " ".join(str(text or "").split())
+    match = re.search(r"(?<=[.!?])\s", clean)
+    return clean[: match.start() + 1] if match else clean
+
+
+def citation_label(citation: dict[str, Any]) -> str:
+    """Return the readable label of a passage, never its raw identifier."""
+    label = str(citation.get("title") or citation.get("source_id") or "")
+    reference = str(citation.get("citation") or "")
+    if reference and reference not in label:
+        label = f"{label}: {reference}"
+    return label
+
+
+def paragraph_view(paragraph: dict[str, Any]) -> dict[str, Any]:
+    """Return the view of one paragraph of an answer.
+
+    The paragraph shows its first sentence and the label of the passage it
+    quotes.  The whole text of the passage sits behind "Show the rule text".
+    """
+    citations = list(paragraph.get("citations") or []) or [paragraph]
+    first = citations[0] if citations else {}
+    text = str(paragraph.get("text") or "")
     return {
-        "run_id": row.id,
-        "mode": row.mode,
-        "source_label": label,
-        "usage": dict(usage),
-        "latency_ms": row.latency_ms,
+        "text": text,
+        "sentence": first_sentence(text),
+        "label": citation_label(first),
+        "quote": str(first.get("quote") or paragraph.get("quote") or ""),
+        "source_id": str(paragraph.get("source_id") or ""),
     }
 
 
@@ -226,11 +237,12 @@ def turn_view(turn: Any, config: Any = None) -> dict[str, Any]:
     view = {
         "turn_id": turn.id,
         "question": turn.question,
-        "created_at": turn.created_at.isoformat() if turn.created_at else "",
         "mode": turn.mode,
         "outcome": turn.outcome,
         "label": str(answer.get("label", "")),
-        "paragraphs": list(answer.get("paragraphs") or []),
+        "paragraphs": [
+            paragraph_view(paragraph) for paragraph in answer.get("paragraphs") or []
+        ],
         "cannot_answer": bool(answer.get("cannot_answer")),
         "reason": str(answer.get("reason", "")),
         "sources": list(turn.sources or []),
@@ -240,13 +252,6 @@ def turn_view(turn: Any, config: Any = None) -> dict[str, Any]:
         view["declined_text"] = (
             config.refusal_text(view["reason"]) if view["outcome"] == "unanswerable" else ""
         )
-    return view
-
-
-def _turn_with_run(session: Session, turn: Any, config: Any) -> dict[str, Any]:
-    """Return the view of a turn with the source line of its run."""
-    view = turn_view(turn, config)
-    view["run"] = run_view(session, turn, view["label"])
     return view
 
 
@@ -306,13 +311,13 @@ def panel_context(
         "help_placement": placement,
         "help_conversation_id": conversation.id if conversation is not None else "",
         "help_conversation_version": conversation.version if conversation is not None else 0,
-        "help_turns": [_turn_with_run(session, turn, config) for turn in turns],
+        "help_turns": [turn_view(turn, config) for turn in turns],
         "help_earlier_turns": earlier,
         "help_requests": [
             {
                 "request_id": row.id,
                 "status": row.status,
-                "created_at": row.created_at.isoformat() if row.created_at else "",
+                "created_on": short_date(row.created_at),
                 "reply": row.reply or "",
             }
             for row in requests
@@ -348,7 +353,6 @@ __all__ = [
     "applicant_requests",
     "panel_context",
     "review_area_backlog",
-    "run_view",
     "timing_figures",
     "turn_view",
 ]

@@ -65,7 +65,8 @@ My permits, Start an application, Help and Home.
   - Acceptance: the help window opens from **Ask about your permit** in the
     header and answers from the City's published rules and from my own case
     only; the answer quotes the rule it used, shows its citation and labels itself
-    "Matching ACME rule text (not an AI answer)"; a question that matches nothing says so
+    "Matching ACME rule text (not an AI answer)", or "Recorded demo answer" when a
+    recorded answer of the demonstration is shown; a question that matches nothing says so
     instead of guessing; the window shows the configured service target and
     the current review-area backlog as two separate figures and never a
     completion date.

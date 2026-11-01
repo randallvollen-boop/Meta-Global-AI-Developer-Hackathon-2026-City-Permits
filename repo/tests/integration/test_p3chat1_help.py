@@ -147,10 +147,8 @@ def test_the_panel_has_a_page_of_its_own_and_the_chooser_links_to_it(
 def test_the_panel_shows_the_fixed_notice(client: TestClient) -> None:
     choose(client, "persona_applicant")
     page = client.get(PANEL_PATH).text
-    assert (
-        "This assistant explains ACME City rules and your application. "
-        "It does not decide permits or give legal advice." in page
-    )
+    assert "published rules and your own application" in page
+    assert "It never decides a permit." in page
 
 
 def test_only_the_applicant_sees_the_panel(client: TestClient) -> None:
@@ -193,7 +191,7 @@ def test_a_question_is_answered_with_the_published_rule(client: TestClient) -> N
     # label is still the one of every question without a fixture.
     assert (
         "Matching ACME rule text (not an AI answer)" in page
-        or "Recorded replay" in page
+        or "Recorded demo answer" in page
     )
     assert "ACME Code §14-306" in page
     assert 'data-testid="help-quote"' in page
@@ -227,9 +225,9 @@ def test_every_demo_question_is_answered_with_a_citation(client: TestClient) -> 
         assert 'data-testid="help-turn"' in page, question
         assert (
             "Matching ACME rule text (not an AI answer)" in page
-            or "Recorded replay" in page
+            or "Recorded demo answer" in page
         ), question
-        assert page.count('data-testid="help-citation"') >= 1, question
+        assert page.count('data-testid="help-citation-label"') >= 1, question
 
 
 def test_an_unknown_question_gets_the_explicit_no_match(
@@ -273,13 +271,13 @@ def test_a_citation_shows_the_readable_label_of_the_passage(
     choose(client, "persona_applicant")
     location = ask(client, FENCE_QUESTION)
     page = client.get(PANEL_PATH, params={"conversation": conversation_of(location)}).text
-    summaries = re.findall(
-        r'<summary data-testid="help-citation">(.*?)</summary>', page, re.S
+    labels = re.findall(
+        r'<p class="muted" data-testid="help-citation-label">(.*?)</p>', page, re.S
     )
-    assert summaries
-    for summary in summaries:
+    assert labels
+    for label in labels:
         # The raw identifier of the passage is not what the applicant reads.
-        assert not re.search(r"(rule|lifecycle|service_target)\.[A-Za-z0-9]", summary)
+        assert not re.search(r"(rule|lifecycle|service_target)\.[A-Za-z0-9]", label)
     # The readable label of the quoted rule is there.
     assert "ACME Code §14-305: Fence height, front yard" in page
 

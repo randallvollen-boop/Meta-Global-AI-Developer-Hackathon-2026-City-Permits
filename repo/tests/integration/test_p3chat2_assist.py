@@ -107,13 +107,21 @@ def ask(client: TestClient, question: str, path: str = "/apply/help/panel", **ex
 def test_the_fence_answer_quotes_the_rule_and_shows_its_source(client) -> None:
     choose(client, "persona_applicant")
     page = ask(client, FENCE)
-    assert 'data-testid="muse-source"' in page
+    panel = re.search(
+        r'<section class="panel help-panel".*?</section>', page, re.S
+    )
+    assert panel is not None
+    answer = panel.group(0)
     assert 'data-mode="replay"' in page
-    assert "Recorded replay" in page
-    assert " in · " in page and " out" in page  # usage is shown
-    assert "ACME Code §14-305" in page
-    assert page.count('data-testid="help-quote"') >= 2
-    assert "Threshold: 4." in page
+    assert "Recorded demo answer" in answer
+    # Changed deliberately (the clean answers slice): the tokens and the
+    # latency of the run are not shown to the applicant.
+    assert 'data-testid="muse-source"' not in answer
+    assert " in · " not in answer and " out" not in answer
+    assert " ms" not in answer
+    assert "ACME Code §14-305" in answer
+    assert answer.count('data-testid="help-quote"') >= 2
+    assert "Threshold: 4." in answer
     # The next step comes from the server, not from the recorded output.
     assert 'data-testid="help-next-steps"' in page or 'data-testid="help-more"' in page
     assert "will be approved" not in page.lower()
@@ -124,7 +132,7 @@ def test_the_declined_question_shows_the_reason_and_the_way_to_a_person(client) 
     page = ask(client, DECLINE)
     assert 'data-testid="help-declined"' in page
     assert 'data-reason="needs_a_person"' in page
-    assert "The assistant did not answer." in page
+    assert "The assistant did not answer" in page
     # Changed deliberately (the pop-out slice): the way to a person is the
     # one contact page of the City website.
     assert 'data-testid="help-declined-link"' in page

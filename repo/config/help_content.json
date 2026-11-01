@@ -35,7 +35,7 @@
     "title": "Tutorial: the demo story",
     "intro": "The story follows one fence permit through the City. An applicant applies, an agent operator wakes the agents that prepare the case, a data steward settles a question about who the applicant is, a permit reviewer checks the application and records a decision, and a city administrator tests a rule change. Each section is for one person. The numbered steps use the labels you see on the screens.",
     "switch_note": "You act as one person at a time. To change person, pick the next one from the list of personas. The tutorial does not switch for you.",
-    "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a Muse answer, it is a recorded replay: a stored answer shown again, labelled \"Recorded replay\" (a labelled demonstration fixture). No model is called when you follow these steps.",
+    "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a Muse answer, it is a recorded replay: a stored answer shown again, and its label says so. No model is called when you follow these steps.",
     "state_note": "Some screens are empty until the demo data is prepared. The steps say when. If a list is empty, ask whoever runs the demo to prepare the data as the user test guide describes in the technical documentation.",
     "sections": [
       {
@@ -90,7 +90,7 @@
           },
           {
             "do": "Click \"Start an application\", then \"Residential deck or fence\". In \"Ask about your permit\" type \"Do I need a permit for a 6 ft fence?\" and click \"Ask\".",
-            "see": "The answer shows the label \"Recorded replay\" and cites ACME Code §14-305 and §14-306. It is a stored answer that was shown again.",
+            "see": "The answer shows the label \"Recorded demo answer\" and cites ACME Code §14-305 and §14-306. It is a stored answer that was shown again.",
             "href": "/apply/deck_fence"
           }
         ]
@@ -311,8 +311,8 @@
           "Open \"Start an application\", \"My permits\" or an application form, and click \"Ask about your permit\" in the header. The assistant opens in a small window of its own.",
           "Type your question under \"Your question\", for example \"Do I need a permit for a 6 ft fence?\"",
           "Click \"Ask\". You can also click one of the questions the City is often asked.",
-          "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded replay\".",
-          "Open a citation, such as ACME Code §14-306, to read the rule text the answer relies on.",
+          "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded demo answer\".",
+          "Open a citation, such as ACME Code §14-306, and click \"Show the rule text\" to read the rule the answer relies on.",
           "If the assistant did not answer, the window says so and shows the rule text that matches your words.",
           "To reach a person, click \"Contact the City\" in the footer of any page, type under \"Your question\" and click \"Send my question\".",
           "Find your request, and the City's answer to it, on the contact page and under \"More details\" in the window."

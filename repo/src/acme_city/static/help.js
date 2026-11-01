@@ -2,8 +2,8 @@
 
    The script is an enhancement, not a requirement: the panel works without
    it.  The question is an ordinary form post that re-renders the page with
-   the answer, and on the application form the answer opens in a separate
-   browsing context so the typed fields and files stay intact.
+   the answer, and the panel opens in a browsing context of its own, so the
+   fields and the files the applicant typed stay intact.
 
    When the script is present the question is sent in the background and the
    answer is rendered in place, a suggested question fills the box instead of
@@ -64,15 +64,6 @@
     panel.setAttribute("data-help-conversation", conversationId || "");
   }
 
-  function citationLabel(citation) {
-    /* The readable label of the passage, never its raw identifier. */
-    var label = citation.title || citation.source_id || "";
-    if (citation.citation && label.indexOf(citation.citation) === -1) {
-      label = label + ": " + citation.citation;
-    }
-    return label;
-  }
-
   function renderTurns(panel, payload) {
     var region = panel.querySelector("[data-help-conversation]");
     if (!region) return;
@@ -102,18 +93,7 @@
         var declined = document.createElement("p");
         declined.setAttribute("data-testid", "help-declined");
         declined.setAttribute("data-reason", turn.reason || "");
-        var head = document.createElement("strong");
-        head.textContent = "The assistant did not answer.";
-        declined.appendChild(head);
-        declined.appendChild(document.createTextNode(" " + turn.declined_text));
-        if (paragraphs.length) {
-          declined.appendChild(
-            document.createTextNode(
-              " The rule text that matches your words is shown here instead."
-            )
-          );
-        }
-        declined.appendChild(document.createTextNode(" "));
+        declined.appendChild(document.createTextNode(turn.declined_text + " "));
         var ask = document.createElement("a");
         ask.setAttribute("href", contactHref(panel));
         ask.setAttribute("data-testid", "help-declined-link");
@@ -128,29 +108,25 @@
         for (var j = 0; j < paragraphs.length; j++) {
           var paragraph = paragraphs[j];
           var entry = document.createElement("li");
-          if (paragraph.text && paragraph.text !== paragraph.quote) {
-            var said = document.createElement("p");
-            said.setAttribute("data-testid", "help-paragraph-text");
-            said.textContent = paragraph.text;
-            entry.appendChild(said);
-          }
-          var sources =
-            paragraph.citations && paragraph.citations.length
-              ? paragraph.citations
-              : [paragraph];
-          for (var k = 0; k < sources.length; k++) {
-            var citation = sources[k];
-            var details = document.createElement("details");
-            var summary = document.createElement("summary");
-            summary.setAttribute("data-testid", "help-citation");
-            summary.textContent = citationLabel(citation);
-            details.appendChild(summary);
-            var quote = document.createElement("blockquote");
-            quote.setAttribute("data-testid", "help-quote");
-            quote.textContent = citation.quote;
-            details.appendChild(quote);
-            entry.appendChild(details);
-          }
+          var said = document.createElement("p");
+          said.setAttribute("data-testid", "help-paragraph-text");
+          said.textContent = paragraph.sentence;
+          entry.appendChild(said);
+          var name = document.createElement("p");
+          name.className = "muted";
+          name.setAttribute("data-testid", "help-citation-label");
+          name.textContent = paragraph.label;
+          entry.appendChild(name);
+          var details = document.createElement("details");
+          var summary = document.createElement("summary");
+          summary.setAttribute("data-testid", "help-citation");
+          summary.textContent = "Show the rule text";
+          details.appendChild(summary);
+          var quote = document.createElement("blockquote");
+          quote.setAttribute("data-testid", "help-quote");
+          quote.textContent = paragraph.quote;
+          details.appendChild(quote);
+          entry.appendChild(details);
           citations.appendChild(entry);
         }
         item.appendChild(citations);
@@ -159,12 +135,6 @@
         none.setAttribute("data-testid", "help-no-match");
         none.textContent = panel.getAttribute("data-help-no-match") || "";
         item.appendChild(none);
-      }
-      if (turn.created_at) {
-        var stamp = document.createElement("p");
-        stamp.className = "muted";
-        stamp.textContent = turn.created_at;
-        item.appendChild(stamp);
       }
       list.appendChild(item);
     }

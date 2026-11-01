@@ -8,7 +8,6 @@
    The panel shows what a worker needs to decide.  The rest sits behind
    "More details", and the rule text of a citation sits behind "Show the rule
    text". #}
-{% from "components/muse_source.html" import muse_source %}
 {% set contact_href = "/city/contact" ~ ("?conversation=" ~ help_conversation_id if help_conversation_id else "") ~ "#ask" %}
 <section class="panel help-panel" id="help-panel" data-testid="help-panel" data-placement="{{ help_placement }}" data-help-no-match="{{ help_no_match_text }}" data-help-conversation="{{ help_conversation_id }}">
   <h2>Ask about your permit</h2>
@@ -59,41 +58,28 @@
       {% for turn in help_turns %}
       <li data-testid="help-turn" data-outcome="{{ turn.outcome }}" data-mode="{{ turn.mode }}">
         <p class="help-question-text">{{ turn.question }}</p>
-        {% if turn.run or turn.paragraphs %}
-        <p class="muted" data-testid="help-answer-label">{% if turn.run %}{{ muse_source(turn.run) }}{% else %}{{ turn.label }}{% endif %}</p>
+        {% if turn.paragraphs %}
+        <p class="muted" data-testid="help-answer-label">{{ turn.label }}</p>
         {% endif %}
         {% if turn.declined_text %}
-        <p data-testid="help-declined" data-reason="{{ turn.reason }}"><strong>The assistant did not answer.</strong> {{ turn.declined_text }}{% if turn.paragraphs %} The rule text that matches your words is shown here instead.{% endif %} <a href="{{ contact_href }}" data-testid="help-declined-link">Ask a person at the City</a></p>
+        <p data-testid="help-declined" data-reason="{{ turn.reason }}">{{ turn.declined_text }} <a href="{{ contact_href }}" data-testid="help-declined-link">Ask a person at the City</a></p>
         {% endif %}
         {% if turn.paragraphs %}
         <ul class="help-citations" data-testid="help-citations">
           {% for paragraph in turn.paragraphs %}
           <li>
-            {% if paragraph.text != paragraph.quote %}
-            <p data-testid="help-paragraph-text">{{ paragraph.text }}</p>
-            {% endif %}
-            {% if paragraph.citations %}
-              {% for citation in paragraph.citations %}
+            <p data-testid="help-paragraph-text">{{ paragraph.sentence }}</p>
+            <p class="muted" data-testid="help-citation-label">{{ paragraph.label }}</p>
             <details>
-              {% set label = citation.title or citation.source_id %}
-              <summary data-testid="help-citation">{{ label }}{% if citation.citation and citation.citation not in label %}: {{ citation.citation }}{% endif %}</summary>
-              <blockquote data-testid="help-quote">{{ citation.quote }}</blockquote>
-            </details>
-              {% endfor %}
-            {% else %}
-            <details>
-              {% set label = paragraph.title or paragraph.source_id %}
-              <summary data-testid="help-citation">{{ label }}{% if paragraph.citation and paragraph.citation not in label %}: {{ paragraph.citation }}{% endif %}</summary>
+              <summary data-testid="help-citation">Show the rule text</summary>
               <blockquote data-testid="help-quote">{{ paragraph.quote }}</blockquote>
             </details>
-            {% endif %}
           </li>
           {% endfor %}
         </ul>
         {% else %}
         <p data-testid="help-no-match">{{ help_no_match_text }}</p>
         {% endif %}
-        <p class="muted">{{ turn.created_at }}</p>
       </li>
       {% endfor %}
     </ol>
@@ -113,7 +99,7 @@
     <h3>Your requests to the City</h3>
     <ul data-testid="help-requests">
       {% for item in help_requests %}
-      <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} ({{ item.status }}){% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
+      <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_on }} ({{ item.status }}){% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
       {% endfor %}
     </ul>
     {% endif %}

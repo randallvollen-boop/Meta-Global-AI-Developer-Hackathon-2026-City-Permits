@@ -38,7 +38,7 @@ CREDENTIAL = "test-provider-key-not-a-real-credential"
 FENCE = "Do I need a permit for a 6 ft fence?"
 DECLINE = "Will my fence permit be approved?"
 FALLBACK_DEMO = "Show me the ACME rule text for a fence"
-REPLAY_LABEL_START = "Recorded replay"
+REPLAY_LABEL_START = "Recorded demo answer"
 FALLBACK_LABEL = "Matching ACME rule text (not an AI answer)"
 
 
@@ -130,7 +130,6 @@ def test_the_fence_question_replays_a_labelled_fixture_with_citations(seeded) ->
     assert result.turn.outcome == "answered"
     assert result.turn.mode == "replay"
     assert result.answer.label.startswith(REPLAY_LABEL_START)
-    assert "not a live Muse answer" in result.answer.label
     text = " ".join(p["text"] for p in result.answer.paragraphs)
     assert "4 ft" in text
     assert any(c["citation"] == "ACME Code §14-305"

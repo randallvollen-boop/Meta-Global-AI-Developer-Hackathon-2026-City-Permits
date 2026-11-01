@@ -26,15 +26,6 @@
           }
         ],
         "text": "For the side and the rear yard of the same residential lot the published limit is 6 ft."
-      },
-      {
-        "citations": [
-          {
-            "quote": "Residential deck or fence (deck_fence)",
-            "source_id": "permit_type.deck_fence"
-          }
-        ],
-        "text": "This permit type is the one for a residential deck, fence or other yard structure, and it is reviewed at the counter."
       }
     ],
     "cannot_answer": false,

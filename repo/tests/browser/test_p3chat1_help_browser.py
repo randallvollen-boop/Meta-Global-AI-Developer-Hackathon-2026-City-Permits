@@ -67,7 +67,7 @@ def test_a_question_is_answered_in_place_with_javascript(
     body = page.locator('[data-testid="help-panel"]').inner_text()
     assert "ACME Code §14-306" in body
     assert (
-        "Matching ACME rule text (not an AI answer)" in body or "Recorded replay" in body
+        "Matching ACME rule text (not an AI answer)" in body or "Recorded demo answer" in body
     )  # chat 2: the fence question has a labelled replay fixture
     assert page.recorded_errors == []
 
@@ -92,7 +92,7 @@ def test_a_question_is_answered_without_javascript(
         body = answer.locator('[data-testid="help-panel"]').inner_text()
         assert "ACME Code §14-306" in body
         assert (
-            "Matching ACME rule text (not an AI answer)" in body or "Recorded replay" in body
+            "Matching ACME rule text (not an AI answer)" in body or "Recorded demo answer" in body
         )  # chat 2: the fence question has a labelled replay fixture
     finally:
         context.close()
@@ -165,8 +165,8 @@ def test_a_declined_question_shows_the_refusal_with_javascript(
     page.locator('[data-testid="help-submit"]').click()
     page.wait_for_selector('[data-testid="help-declined"]', state="visible")
     declined = page.locator('[data-testid="help-declined"]').first
-    assert "The assistant did not answer." in declined.inner_text()
-    assert "This needs a person at the City" in declined.inner_text()
+    assert "The assistant did not answer" in declined.inner_text()
+    assert "this needs a person" in declined.inner_text()
     assert declined.get_attribute("data-reason") == "needs_a_person"
     # The rule text that matches the question is shown as well.
     assert page.locator('[data-testid="help-citation"]').count() >= 1
