@@ -587,7 +587,7 @@ def town_map(
         _street_rows(catalog),
         points,
         caption=(
-            "Map of the fictional town of ACME City: parcels, streets, address points "
+            "Map of the fictional town of the City of Acme: parcels, streets, address points "
             "and permit markers (simulated data)"
         ),
         focus=subject,

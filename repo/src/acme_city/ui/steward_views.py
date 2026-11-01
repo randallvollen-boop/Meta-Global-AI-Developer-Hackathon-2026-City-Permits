@@ -132,7 +132,7 @@ CLOSED_NEXT_STEPS: dict[str, str] = {
 
 #: The four collections of Master records, in tab order.
 MASTER_TABS: tuple[tuple[str, str], ...] = (
-    ("people", "People & organizations"),
+    ("people", "People and organizations"),
     ("properties", "Properties"),
     ("licenses", "Business licenses"),
     ("registrations", "Contractor registrations"),
@@ -361,7 +361,7 @@ def people_collection(
     page: int = 1,
     base_path: str = "/masters",
 ) -> dict[str, Any]:
-    """Return the People & organizations collection."""
+    """Return the People and organizations collection."""
     parties = view_models.visible_parties(session, actor)
     ids = {party.id for party in parties}
     aliases: dict[str, list[str]] = defaultdict(list)

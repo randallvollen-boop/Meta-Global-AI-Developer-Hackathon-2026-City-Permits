@@ -234,7 +234,7 @@ def community_summary(session: Session, *, type: str = "") -> dict[str, Any]:
         {code: shown[code]["display"] for code in districts},
         [],
         caption=(
-            "Map of ACME City shaded by zoning district: the darker the district, the more "
+            "Map of the City of Acme shaded by zoning district: the darker the district, the more "
             "public permits. A hatched district has fewer than 3."
         ),
     )

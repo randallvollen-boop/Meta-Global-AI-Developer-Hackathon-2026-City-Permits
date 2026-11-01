@@ -27,7 +27,7 @@ from support.nav_expectations import EXPECTED_NAVIGATION  # noqa: E402
 SCREENS = (
     ("/queue", "Work queue"),
     # Changed deliberately (steward restyle): the screens carry their new names.
-    ("/applicants", "People & organizations"),
+    ("/applicants", "People and organizations"),
     ("/masters", "Master records"),
     ("/permits/app_synth_001", "Permit workspace"),
     ("/steward", "Data issues"),
@@ -303,7 +303,7 @@ def test_the_footer_states_that_the_data_is_fictional(
     page.goto(f"{server.base_url}/queue", wait_until="domcontentloaded")
     assert page.locator('[data-testid="demo-banner"]').count() == 0
     footer = page.locator('[data-testid="app-footer"]').inner_text()
-    assert "Fictional ACME City demonstration" in footer
+    assert "Fictional City of Acme demonstration" in footer
     assert "Westerville" not in footer
 
 

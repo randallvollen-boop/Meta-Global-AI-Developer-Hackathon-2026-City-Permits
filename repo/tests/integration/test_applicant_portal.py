@@ -117,7 +117,7 @@ def test_chooser_groups_seventeen_types_without_process_badges(client) -> None:
     for group in ("Home and property", "Business and construction", "Planning and land use"):
         assert group in page
     assert 'data-testid="track-link"' in page
-    assert "ACME City never asks for permit fees by gift card or wire transfer." in page
+    assert "The City of Acme never asks for permit fees by gift card or wire transfer." in page
 
 
 def test_every_type_has_a_form_with_its_documents(client) -> None:

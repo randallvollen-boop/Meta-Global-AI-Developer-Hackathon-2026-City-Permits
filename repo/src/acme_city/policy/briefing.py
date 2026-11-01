@@ -27,7 +27,7 @@ from acme_city.policy import views
 
 DETERMINISTIC_SOURCE = "Deterministic briefing built from the typed facts of this run. No model was used."
 FOOTER = (
-    "Fictional ACME City data. Impact estimates come from the ACME permit engine. "
+    "Fictional City of Acme data. Impact estimates come from the ACME permit engine. "
     "They forecast no staff time and give no legal opinion."
 )
 SYNTHETIC_LABEL = "Synthetic data"

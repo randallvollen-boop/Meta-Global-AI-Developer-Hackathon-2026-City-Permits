@@ -83,7 +83,7 @@ FAQ: tuple[tuple[str, str], ...] = (
 
 #: The fictional contact and emergency notice.
 CONTACT_NOTICE: dict[str, str] = {
-    "desk": "ACME City Permit Support Desk, 100 Example Plaza, ACME City (fictional).",
+    "desk": "City of Acme Permit Support Desk, 100 Example Plaza, City of Acme (fictional).",
     "phone": "555-0100 (fictional), weekdays 8:00 to 16:30.",
     "emergency": (
         "Emergency notice (fictional): for a danger to life or property call 555-0911. "

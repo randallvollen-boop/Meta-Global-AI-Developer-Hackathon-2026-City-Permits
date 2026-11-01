@@ -107,10 +107,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 worker.stop()
 
     app = FastAPI(
-        title="ACME City permit demonstration",
+        title="City of Acme permit demonstration",
         version="0.1.0",
         description=(
-            "Fictional ACME City registry-MDM permit demonstration. "
+            "Fictional City of Acme registry-MDM permit demonstration. "
             "All data, rules, fees and permits in this service are synthetic."
         ),
         # The generated API documentation is a demonstration convenience.

@@ -39,7 +39,7 @@ STAFF_ROUTES: tuple[tuple[str, str], ...] = (
 )
 
 #: The one line the footer carries.
-FOOTER_LINE = "Fictional ACME City demonstration. Synthetic records only."
+FOOTER_LINE = "Fictional City of Acme demonstration. Synthetic records only."
 
 
 def _client(settings) -> TestClient:

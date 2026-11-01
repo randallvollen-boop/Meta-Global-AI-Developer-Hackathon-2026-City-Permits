@@ -217,7 +217,7 @@ def test_the_staff_layout_says_the_switcher_is_for_demonstration_only(client: Te
     assert 'data-testid="demo-switch"' in city
     assert "Demo controls" in city
     assert "data-demo-persona" in city
-    assert "Fictional ACME City demonstration." in staff
+    assert "Fictional City of Acme demonstration." in staff
     assert "Fictional City of Acme website" in city
 
 

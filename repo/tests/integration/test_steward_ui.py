@@ -145,7 +145,7 @@ def test_master_records_has_four_tabs_and_one_collection_at_a_time(client: TestC
         for item in re.findall(r'<a [^>]*data-testid="master-tab"[^>]*>(.*?)</a>', page.text, re.S)
     ]
     assert [label.rsplit(" ", 1)[0] for label in labels] == [
-        "People &amp; organizations",
+        "People and organizations",
         "Properties",
         "Business licenses",
         "Contractor registrations",

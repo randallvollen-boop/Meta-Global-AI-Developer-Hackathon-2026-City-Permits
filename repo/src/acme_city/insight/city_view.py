@@ -204,7 +204,7 @@ def city_view(
         {code: f"{district_counts[code]} permits" for code in districts},
         dots,
         caption=(
-            "Map of ACME City shaded by zoning district: the darker the district, the more "
+            "Map of the City of Acme shaded by zoning district: the darker the district, the more "
             "permits match the filters. Orange dots mark parcels with exceptions; a larger "
             "dot is more exceptions."
         ),

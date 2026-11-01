@@ -96,7 +96,7 @@ def test_the_demo_notice_is_visible_on_every_persona_home(
         assert footer.count() == 1
         assert footer.is_visible()
         text = " ".join(footer.inner_text().split())
-        assert text == "Fictional ACME City demonstration. Synthetic records only.", text
+        assert text == "Fictional City of Acme demonstration. Synthetic records only.", text
     assert_no_horizontal_overflow(page)
     assert page.recorded_errors == []
 

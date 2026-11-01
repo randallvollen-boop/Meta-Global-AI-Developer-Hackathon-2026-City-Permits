@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 #: The notice the portal shows.  It is ACME's own and fictional.
-PORTAL_NOTICE = "ACME City never asks for permit fees by gift card or wire transfer."
+PORTAL_NOTICE = "The City of Acme never asks for permit fees by gift card or wire transfer."
 
 CERTIFICATION_TEXT = (
     "I certify that the information in this application is accurate and complete to "

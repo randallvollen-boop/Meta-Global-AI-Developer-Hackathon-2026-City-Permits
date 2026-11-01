@@ -504,7 +504,7 @@ def test_the_briefing_is_deterministic_typed_and_labelled(client) -> None:
     assert _strip_tokens(first) == _strip_tokens(second), "the same run gives the same briefing"
     assert "Deterministic briefing built from the typed facts of this run. No model was used." in first
     assert 'data-testid="policy-briefing-synthetic"' in first and "Synthetic data" in first
-    assert "Fictional ACME City data. Impact estimates come from the ACME permit engine. They forecast no staff time and give no legal opinion." in first
+    assert "Fictional City of Acme data. Impact estimates come from the ACME permit engine. They forecast no staff time and give no legal opinion." in first
     assert 'data-testid="policy-download-html"' in first and "Download HTML" in first
     assert "ACME Code §14-306" in first
     lowered = first.lower()
@@ -566,7 +566,7 @@ def test_downloads_are_attachments_and_every_text_is_escaped(client) -> None:
     assert "<script>" not in html.text and "&lt;script&gt;" in html.text
     assert "<script" not in html.text.lower().replace("&lt;script", "")
     assert "src=" not in html.text and "href=" not in html.text, "self-contained: no outside asset or link"
-    assert "Synthetic data" in html.text and "Fictional ACME City data." in html.text
+    assert "Synthetic data" in html.text and "Fictional City of Acme data." in html.text
     md = client.get(f"{run}/briefing/download?format=md")
     assert md.status_code == 200 and md.headers["content-type"].startswith("text/markdown")
     assert "<script>" not in md.text and "\\<script\\>" in md.text and "\\[link\\]" in md.text

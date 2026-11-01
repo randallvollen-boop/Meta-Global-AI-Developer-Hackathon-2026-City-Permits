@@ -204,7 +204,7 @@
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
     },
     "applicants": {
-      "title": "People & organizations",
+      "title": "People and organizations",
       "purpose": "One record per person or organization, with where each value comes from.",
       "can_do": [
         "Search by name or alias, and filter people or organizations.",
@@ -225,7 +225,7 @@
     },
     "permit": {
       "title": "Permit workspace",
-      "purpose": "One application in one place. Review is the working tab; Documents, People & property, and Activity hold the supporting record.",
+      "purpose": "One application in one place. Review is the working tab; Documents, People and organizations, and Activity hold the supporting record.",
       "can_do": [
         "Read the application checks, the suggested fields and the next action on the Review tab.",
         "Take the actions your persona is granted; a button that is unavailable says what is missing."

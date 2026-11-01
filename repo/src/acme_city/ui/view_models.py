@@ -56,7 +56,7 @@ SCREENS: list[dict[str, str]] = [
     # other persona is unchanged.
     {"key": "overview", "label": "Planning overview", "href": "/overview"},
     {"key": "queue", "label": "Work queue", "href": "/queue"},
-    {"key": "applicants", "label": "People & organizations", "href": "/applicants"},
+    {"key": "applicants", "label": "People and organizations", "href": "/applicants"},
     {
         "key": "masters",
         "label": "Master records",
@@ -135,8 +135,8 @@ PERSONA_ORDER: tuple[str, ...] = (
 #: shows only when the file exists.
 PERSONA_PROFILES: dict[str, dict[str, str]] = {
     "Applicant": {
-        "who": "A resident or contractor who needs a permit from ACME City.",
-        "does": "Starts an application, answers the questions, uploads plans, pays the fee and tracks the permit until it is issued.",
+        "who": "A resident or contractor who needs a permit from the City of Acme.",
+        "does": "Starts an application, answers the questions, uploads plans and tracks the permit until it is issued.",
         "start": "Apply for a permit, then follow it on the tracking page.",
         "next": "/city/",
         "icon": "applicant",
@@ -658,7 +658,7 @@ def navigation(session: Session, actor: ActorContext) -> list[dict[str, Any]]:
     if applications:
         permit_href = f"/permits/{applications[0].id}"
     items: list[dict[str, Any]] = []
-    # People & organizations is a tab of Master records for a persona that may
+    # People and organizations is a tab of Master records for a persona that may
     # open Master records, so it is not listed twice.
     masters_open = may_open_screen(session, actor, "masters")
     for screen in SCREENS:

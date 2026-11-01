@@ -6,14 +6,14 @@ Routes:
 * ``GET /steward/issues/{kind}/{id}``         one focused case
 * ``GET /masters``                            Master records, four tabs
 * ``GET /masters/{party_id}``                 one record profile
-* ``GET /applicants``                         the People & organizations tab
+* ``GET /applicants``                         the People and organizations tab
 * ``GET /applicants/{party_id}``              one record profile
 * ``GET /source-records``                     the source-record catalogue
 * ``GET /activity``                           recorded steward decisions
 * ``GET /queue/intake``                       the intake queue
 * ``GET /queue/early-resolution``             the early-resolution board
 
-``/applicants`` is rendered as the People & organizations tab, so its address,
+``/applicants`` is rendered as the People and organizations tab, so its address,
 its test ids and ``/applicants/{id}`` keep working.  Every screen is guarded by
 the grants in ``view_models.SCREEN_PERMISSIONS``, the same predicate the
 navigation uses.  ``HANDLERS`` holds the lane's interface actions, which
@@ -161,7 +161,7 @@ def _collections_page(
     system_id, dataset = COLLECTION_SOURCES[tab]
     summary = steward_views.source_summary(session, system_id, dataset)
     summary["may_open"] = _may_read_source(session, resolved)
-    title = "People & organizations" if base_path == "/applicants" else "Master records"
+    title = "People and organizations" if base_path == "/applicants" else "Master records"
     context = page_context(
         request,
         session,
@@ -208,7 +208,7 @@ def ui_applicants(
     q: str = "",
     page: int = 1,
 ) -> Any:
-    """Show the People & organizations tab (the shared applicant view)."""
+    """Show the People and organizations tab (the shared applicant view)."""
     resolved, refused = _guard(request, session, actor, "applicants")
     if refused is not None:
         return refused
