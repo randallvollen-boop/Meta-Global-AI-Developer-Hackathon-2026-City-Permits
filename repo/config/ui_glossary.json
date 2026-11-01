@@ -234,7 +234,7 @@
     },
     "steward": {
       "title": "Data issues",
-      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. The matcher and Muse propose; the steward decides.",
+      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. Muse proposes. People decide.",
       "can_do": [
         "Filter by Needs review, Assigned to me, Awaiting source or Resolved.",
         "Open an issue to read the evidence, preview what an action will do, and record a decision."

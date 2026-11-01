@@ -15,7 +15,7 @@
         <dl class="prop-facts">
           <dt>Standardized address</dt><dd>{{ proposal.matched_address or 'none chosen' }}</dd>
           <dt>Parcel number</dt><dd class="mono">{{ proposal.parcel_number or 'none' }}</dd>
-          <dt>Locator score and status</dt><dd>{% if proposal.score is not none %}{{ '%g' % proposal.score }}{% else %}no score{% endif %}, {{ proposal.status_word }}</dd>
+          <dt>How closely the address matched</dt><dd>{% if proposal.score is not none %}{{ '%g' % proposal.score }} out of 1{% else %}no score{% endif %}, {{ proposal.status_word }}</dd>
           {% if proposal.parcel %}<dt>Parcel</dt><dd>zoning {{ proposal.parcel.zoning }}, flood zone {{ proposal.parcel.flood_zone }}, owner {{ proposal.parcel.owner }} (synthetic)</dd>{% endif %}
         </dl>
         <div class="prop-map">{{ proposal.inset|safe }}</div>
@@ -23,7 +23,7 @@
       {% if proposal.note %}<p class="muted">{{ proposal.note }}</p>{% endif %}
       <table class="data-table">
         <caption class="visually-hidden">Locator candidates</caption>
-        <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
+        <thead><tr><th scope="col">Candidate</th><th scope="col">How closely it matched</th><th scope="col">Parcel</th></tr></thead>
         <tbody>
           {% for candidate in proposal.candidates %}
           <tr><th scope="row">{{ candidate.address }}</th><td>{{ '%g' % candidate.score }}</td><td class="mono">{{ candidate.parcel_number or 'none' }}</td></tr>

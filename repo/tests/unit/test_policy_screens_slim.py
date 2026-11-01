@@ -187,7 +187,7 @@ def test_every_what_if_button_and_the_result_sentence(client: TestClient) -> Non
         question=QUESTION,
     )
     assert 'data-testid="policy-proposal-changes"' in asked
-    assert "Muse proposes; you decide. Nothing is saved until you save it." in asked
+    assert "Muse proposes. People decide. Nothing is saved until you save it." in asked
     assert 'data-testid="evidence-panel"' not in asked
     save = form_of(asked, "policy-proposal-save-form")
     _path, stored = submit(

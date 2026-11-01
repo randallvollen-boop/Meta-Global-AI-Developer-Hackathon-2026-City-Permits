@@ -33,6 +33,7 @@ from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import agent_ops, audit, model_run as model_run_models, permit
+from acme_city.ui import ops_views
 
 # The administration view model moved to ``admin_config_views``; it is
 # re-exported so ``from acme_city.ui.agent_views import administration`` works.
@@ -68,6 +69,20 @@ RUN_STATE_LABELS: dict[str, str] = {
 
 #: The engines a recorded run may name.
 ENGINE_LABELS: dict[str, str] = {BUILTIN_ENGINE: BUILTIN_ENGINE_LABEL}
+
+#: The words the operator reads for the state of one step of a run.
+NODE_STATE_LABELS: dict[str, str] = {
+    "ok": "Completed",
+    "warn": "Needs attention",
+    "block": "Blocked",
+}
+
+#: The words the operator reads for the outcome an agent proposes.
+OUTCOME_LABELS: dict[str, str] = {
+    "approve": "Approve",
+    "deny": "Deny",
+    "hold": "Hold",
+}
 
 
 def _iso(value) -> str:
@@ -115,6 +130,7 @@ def _run_nodes(session: Session, run_id: str) -> list[dict[str, Any]]:
             "label": row.label,
             "level": row.dependency_level,
             "status": row.status,
+            "status_label": NODE_STATE_LABELS.get(row.status, row.status),
             "note": row.note or "",
         }
         for row in rows
@@ -276,7 +292,9 @@ def agent_screen(
             "application_id": row.id,
             "source_application_number": row.source_application_number,
             "status": row.status,
+            "status_label": _status_label(row.status),
             "permit_type_key": _type_key(session, row.permit_type_id),
+            "permit_type_label": _type_label(session, row.permit_type_id),
             "review_area": row.review_area or "",
             "version": row.version,
         }
@@ -291,6 +309,7 @@ def agent_screen(
             "application_id": row.application_id,
             "source_application_number": _number_of(session, row.application_id),
             "proposed_outcome": row.proposed_outcome,
+            "outcome_label": OUTCOME_LABELS.get(row.proposed_outcome, row.proposed_outcome),
             "rationale": row.rationale or "",
             "conditions": list(row.conditions or []),
             "recommendation_id": row.id,
@@ -305,6 +324,7 @@ def agent_screen(
             "finished_at": _iso(run.finished_at),
             "reference": _number_of(session, run.application_id) if run.application_id else "",
             "result": run.outcome,
+            "result_label": RUN_STATE_LABELS.get(run.outcome, run.outcome),
             "detail": run.outcome_detail or "",
             "target": run.application_id or "",
             "triggered_by": run.triggered_by or "",
@@ -347,7 +367,7 @@ def agent_screen(
         "history_total": len(runs),
         "evidence": [
             {
-                "label": f"{run['reference'] or 'run'} · {run['result']}",
+                "label": f"{run['reference'] or 'run'} · {run['result_label']}",
                 "kind": "agent run",
                 "detail": run["run_id"],
                 "received_at": run["started_at"],
@@ -783,6 +803,7 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
             "status": "",
             "review_area": "",
             "permit_type_key": "",
+            "permit_type_label": "",
             "state": "",
             "state_label": "",
             "attempts": 0,
@@ -825,8 +846,10 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
         "reference": application.source_application_number,
         "revision": application.revision,
         "status": application.status,
+        "status_label": _status_label(application.status),
         "review_area": application.review_area or "",
         "permit_type_key": _type_key(session, application.permit_type_id),
+        "permit_type_label": _type_label(session, application.permit_type_id),
         "state": work.status if work is not None else "",
         "state_label": _queue_state_label(work.status if work is not None else ""),
         "attempts": work.attempts if work is not None else 0,
@@ -841,6 +864,7 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
                 "message": row.message,
                 "rule": row.rule or "",
                 "severity": row.severity,
+                "severity_label": _severity_label(row.severity),
                 "applicant_must": row.applicant_must or "",
                 "recorded_at": _iso(row.created_at),
             }
@@ -928,6 +952,31 @@ def _type_key(session: Session, permit_type_id: str | None) -> str:
     return "" if row is None else row.key
 
 
+def _type_label(session: Session, permit_type_id: str | None) -> str:
+    """Return the catalogue label of one permit type.
+
+    The operator reads the name of the permit type, not the key the
+    catalogue stores it under.
+    """
+    if not permit_type_id:
+        return ""
+    row = session.get(permit.PermitType, permit_type_id)
+    return "" if row is None else row.label
+
+
+def _status_label(status: str | None) -> str:
+    """Return the readable word of the state of a case."""
+    return ops_views.display_word("values", status or "", "Not recorded")
+
+
+def _severity_label(severity: str | None) -> str:
+    """Return the readable word of how serious a finding is."""
+    return {
+        "block": "Blocking",
+        "review": "Needs review",
+    }.get(str(severity or ""), str(severity or "").replace("_", " ").capitalize())
+
+
 def _holds(session: Session, actor: ActorContext, permission: str) -> bool:
     """Return whether the actor holds one grant."""
     from acme_city.auth.permissions import PermissionResolver
@@ -947,12 +996,24 @@ def _graph_view(agent_key: str) -> list[list[dict[str, Any]]]:
                 {
                     "node_id": node.node_id,
                     "label": node.label,
-                    "description": node.description,
+                    "description": _graph_description(node.description),
                 }
                 for node in level
             ]
         )
     return levels
+
+
+def _graph_description(description: str) -> str:
+    """Return the description of one step as the operator reads it.
+
+    A fictional city names no model family and no vendor, so the two names the
+    stored description carries are dropped here and nowhere else.
+    """
+    text = str(description or "")
+    text = text.replace("Muse Spark", "Muse")
+    text = text.replace("ArcGIS locator", "locator")
+    return text
 
 
 def sidebar_status(session: Session, actor: ActorContext) -> dict[str, Any] | None:

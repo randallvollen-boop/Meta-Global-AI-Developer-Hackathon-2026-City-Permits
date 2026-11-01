@@ -75,6 +75,7 @@
     "passed": "Passed",
     "fail": "Failed",
     "failed": "Failed",
+    "succeeded": "Succeeded",
     "condition": "Condition",
     "review": "Needs review",
     "block": "Blocking",

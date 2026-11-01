@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>{{ 'Master records' if tabs|length > 1 else 'People & organizations' }}</h1>
+    <h1>{{ 'Master records' if tabs|length > 1 else 'People and organizations' }}</h1>
     <p class="sub">Find an identity or property first. Licenses and registrations remain credentials held by that identity.</p>
   </div>
   <div class="actions">{{ ui.help_button(help_screen) }}</div>
@@ -48,7 +48,7 @@
         <th scope="col">Type</th>
         <th scope="col">Primary contact</th>
         <th scope="col">Applications</th>
-        <th scope="col">Attention {{ ui.info('data_issue') }}</th>
+        <th scope="col">Data issues {{ ui.info('data_issue') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -124,7 +124,7 @@
       <tr data-testid="credential-row" data-credential-status="{{ row.status_key }}">
         <th scope="row">{{ ui.detail_link('record', row.party_id, row.name) }}
           <br><span class="muted record-line" data-testid="record-status-line">Record status: {{ row.record_status }} {{ ui.info('party_record_status') }}</span>
-          {% if row.issue_count %}<br>{{ ui.detail_link('record', row.party_id, 'Data issue: ' ~ row.issue_count ~ (' open' ), 'pill warn') }}{% endif %}
+          {% if row.issue_count %}<br>{{ ui.detail_link('record', row.party_id, 'Data issues: ' ~ row.issue_count ~ (' open' ), 'pill warn') }}{% endif %}
           {% if row.synthetic %} <span class="badge-synthetic">Synthetic</span>{% endif %}</th>
         <td class="nowrap">{{ ui.detail_link('credential', row.credential_id, row.number, 'mono') }}</td>
         <td class="nowrap"><span class="pill {{ 'ok' if row.status_key == 'active' else 'bad' }}" data-testid="credential-status">{{ row.status }}</span></td>

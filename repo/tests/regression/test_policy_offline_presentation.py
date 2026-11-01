@@ -131,7 +131,7 @@ def _propose(client: TestClient, question: str) -> str:
 
 def test_a_checked_proposal_says_that_nothing_is_saved_yet(client: TestClient) -> None:
     body = _propose(client, RECORDED_QUESTIONS[0])
-    assert "Muse proposes; you decide. Nothing is saved until you save it." in body
+    assert "Muse proposes. People decide. Nothing is saved until you save it." in body
     assert "This saves a what-if. It does not run it, and it changes no published rule." in body
     assert 'data-testid="policy-proposal-save"' in body
 

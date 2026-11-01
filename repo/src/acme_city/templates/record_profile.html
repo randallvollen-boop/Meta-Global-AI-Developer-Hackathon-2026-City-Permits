@@ -8,14 +8,14 @@
 {% set p = profile %}
 {% set summary = p.source_summary %}
 {% set _ = summary.update({'may_open': may_read_source}) %}
-<p class="crumb"><a href="{{ back_href }}">&larr; {{ 'Master records' if back_href == '/masters' else 'People &amp; organizations'|safe }}</a></p>
+<p class="crumb"><a href="{{ back_href }}">&larr; {{ 'Master records' if back_href == '/masters' else 'People and organizations' }}</a></p>
 <div class="page-head">
   <div>
     <h1 data-testid="record-name">{{ p.name }}</h1>
     <p class="sub">
       {{ p.type }}
       · <span data-testid="record-status-label">Record status: <b>{{ p.record_status }}</b></span> {{ ui.info('party_record_status') }}
-      {% if p.issues %}· <span class="pill warn nowrap" data-testid="record-data-issue">Data issue: {{ p.issues|length }} open</span> {{ ui.info('data_issue') }}{% endif %}
+      {% if p.issues %}· <span class="pill warn nowrap" data-testid="record-data-issue">Data issues: {{ p.issues|length }} open</span> {{ ui.info('data_issue') }}{% endif %}
     </p>
   </div>
   <div class="actions">{{ ui.detail_link('record', p.party.id, 'Open as side panel', 'button button-quiet btn sm') }}{{ ui.help_button(help_screen) }}</div>

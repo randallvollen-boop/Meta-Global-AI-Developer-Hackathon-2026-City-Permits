@@ -48,7 +48,7 @@
     </span>
   </div>
   <div class="card-b">
-    <p class="muted">The assistant gathers the evidence and proposes; you decide.</p>
+    <p class="muted">Muse proposes. People decide.</p>
     {% if not case.assistant.awake %}
     <p class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
       <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ case.assistant.sleep_note }}
@@ -147,14 +147,14 @@
 
 <li>
 <section class="panel" aria-labelledby="q1" data-question="1" data-testid="case-q1">
-  <h2 id="q1">1. What is the problem?</h2>
+  <h2 id="q1">1. The problem</h2>
   <p>{{ c.problem }}</p>
 </section>
 </li>
 
 <li>
 <section class="panel" aria-labelledby="q2" data-question="2" data-testid="case-q2">
-  <h2 id="q2">2. Why does it matter?</h2>
+  <h2 id="q2">2. Why it matters</h2>
   <p>{{ c.why }}</p>
   {% if c.applications %}
   <table class="data-table" id="case-applications" data-testid="case-applications">
@@ -174,9 +174,10 @@
 
 <li>
 <section class="panel" aria-labelledby="q3" data-question="3" data-testid="case-q3">
-  <h2 id="q3">3. What are we comparing?</h2>
+  <h2 id="q3">3. The comparison</h2>
   {% if c.kind == 'link' %}
-  <p class="muted">Source record <b class="mono">{{ c.source_record.id }}</b> ({{ c.source_record.source }}) against each master record it may belong to.</p>
+  <p class="muted">Source record <b>{{ c.source_record.name or 'not named' }}</b> ({{ c.source_record.source }}) against each master record it may belong to.</p>
+  <details class="stw-disclosure"><summary>More details</summary><span class="mono">Source record {{ c.source_record.id }}</span></details>
   {% if c.candidates|length > 1 %}
   <form class="stw-chooser stw-filter-form" method="get" action="{{ request.url.path }}" data-testid="candidate-chooser">
     {% if back_href %}<input type="hidden" name="back" value="{{ back_href }}">{% endif %}
@@ -212,7 +213,8 @@
   {% elif c.comparison %}
   {{ comparisons.comparison(c.comparison) }}
   {% elif c.kind == 'automatic_link' %}
-  <p class="muted">Source record <b class="mono">{{ c.automatic.record }}</b> ({{ c.automatic.source_system }}) was connected to <b>{{ c.automatic.entity_label }}</b> by the automatic linking. A link names the master record of a source record; it decides no permit.</p>
+  <p class="muted">A source record ({{ c.automatic.source_system }}) was connected to <b>{{ c.automatic.entity_label }}</b> by the automatic linking. A link names the master record of a source record; it decides no permit.</p>
+  <details class="stw-disclosure"><summary>More details</summary><span class="mono">Source record {{ c.automatic.record }}</span></details>
   <dl class="stwa-facts">
     <div>
       <dt>Source dataset</dt>
@@ -239,7 +241,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q4" data-question="4" data-testid="case-q4">
-  <h2 id="q4">4. What supports the decision?</h2>
+  <h2 id="q4">4. The evidence</h2>
   <details class="stw-disclosure" data-testid="case-q4-details">
     <summary>More details</summary>
     {% if c.kind == 'link' %}
@@ -257,7 +259,7 @@
         </div>
       </div>
       {% if cand.no_comparison %}<p class="muted" data-testid="no-comparison">No comparison for: {{ cand.no_comparison|join(', ') }}.</p>{% endif %}
-      <p class="score-line" data-testid="score-line">Matcher score <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
+      <p class="score-line" data-testid="score-line">How closely the names match <b class="num">{{ '%.2f'|format(cand.score) }}</b> out of 1. {{ ui.info('match_evidence') }}
         It is an ordering aid built from the evidence above. It does not state the probability of a match.
       </p>
       {% if cand.score_parts %}
@@ -281,14 +283,14 @@
       <dl class="prop-facts">
         <dt>Standardized address</dt><dd>{{ c.parcel.matched_address or 'none chosen' }}</dd>
         <dt>Parcel number</dt><dd class="mono">{{ c.parcel.parcel_number or 'none' }}</dd>
-        <dt>Locator score and status</dt><dd>{% if c.parcel.score is not none %}{{ '%g' % c.parcel.score }}{% else %}no score{% endif %}, {{ c.parcel.status_word }}</dd>
+        <dt>How closely the address matched</dt><dd>{% if c.parcel.score is not none %}{{ '%g' % c.parcel.score }} out of 1{% else %}no score{% endif %}, {{ c.parcel.status_word }}</dd>
         {% if c.parcel.parcel %}<dt>Parcel</dt><dd>zoning {{ c.parcel.parcel.zoning }}, flood zone {{ c.parcel.parcel.flood_zone }}, owner {{ c.parcel.parcel.owner }}</dd>{% endif %}
       </dl>
       <div class="prop-map">{{ c.parcel.inset|safe }}</div>
     </div>
     {% if c.parcel.note %}<p class="muted">{{ c.parcel.note }}</p>{% endif %}
     <table class="data-table"><caption class="visually-hidden">Locator candidates</caption>
-      <thead><tr><th scope="col">Candidate</th><th scope="col">Score</th><th scope="col">Parcel</th></tr></thead>
+      <thead><tr><th scope="col">Candidate</th><th scope="col">How closely it matched</th><th scope="col">Parcel</th></tr></thead>
       <tbody>{% for cand in c.parcel.candidates %}<tr><th scope="row">{{ cand.address }}</th><td>{{ '%g' % cand.score }}</td><td class="mono">{{ cand.parcel_number or '-' }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No candidate.</td></tr>{% endfor %}</tbody>
     </table>
     {% elif c.kind == 'case' %}
@@ -323,7 +325,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q5" data-question="5" data-testid="case-q5">
-  <h2 id="q5">5. What will this action do? {{ ui.info('action_preview') }}</h2>
+  <h2 id="q5">5. The effect of the action {{ ui.info('action_preview') }}</h2>
   {% if c.actions %}
   <p class="muted req-legend">* Required</p>
   {% for item in c.actions %}
@@ -349,7 +351,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q6" data-question="6" data-testid="case-q6">
-  <h2 id="q6">6. What happened?</h2>
+  <h2 id="q6">6. What happened</h2>
   {% if c.result %}
   <dl class="pair-list" data-testid="case-result">
     <dt>Result</dt><dd>{{ c.result.text }}</dd>

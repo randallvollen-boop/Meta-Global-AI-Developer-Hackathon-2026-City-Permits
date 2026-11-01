@@ -31,7 +31,7 @@
       </dl>
       <div data-testid="agent-run-detail-provenance">
         {% for model in view.model_runs %}
-        <p><strong>{{ model.source_label }}</strong>. {{ model.status }}{% if model.response_id %}. Response {{ model.response_id }}{% endif %}{% if model.error %}. {{ model.error }}{% endif %}</p>
+        <p><strong>{{ model.source_label|pretty }}</strong>. {{ model.status|pretty }}{% if model.response_id %}. Response {{ model.response_id }}{% endif %}{% if model.error %}. {{ model.error }}{% endif %}</p>
         {% else %}<p>{{ view.engine_label }}. No provider call or replay is recorded for this attempt.</p>{% endfor %}
       </div>
     </details>
@@ -49,7 +49,7 @@
   <div class="card-h"><h2 id="run-changes-heading">Recorded business changes</h2></div>
   <div class="card-b">
     <ul class="issue-list" data-testid="agent-run-detail-changes">
-      {% for finding in view.findings %}<li>{{ finding.type }}: {{ finding.message }}</li>
+      {% for finding in view.findings %}<li>{{ finding.type|pretty }}: {{ finding.message }}</li>
       {% else %}<li>No business changes were recorded by this attempt.</li>{% endfor %}
     </ul>
   </div>

@@ -21,7 +21,7 @@
         {% for row in inbox.waiting[:10] %}
         <tr data-testid="agent-inbox-row" data-application-id="{{ row.application_id }}">
           <th scope="row" data-label="Reference"><a href="/agents/cases/{{ row.application_id }}" data-testid="agent-inbox-case-link">{{ row.source_application_number }}</a></th>
-          <td data-label="Type">{{ row.permit_type_key }}</td>
+          <td data-label="Type">{{ row.permit_type_label }}</td>
           <td data-label="Process">
             {% if inbox.can_run %}
             <form method="post" action="/ui/actions/agent.run.intake" class="action-form" data-testid="agent-inbox-process-form">

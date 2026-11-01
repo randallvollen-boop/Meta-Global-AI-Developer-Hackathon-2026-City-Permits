@@ -28,9 +28,9 @@
       <dt>Reference</dt>
       <dd data-testid="agent-case-reference">{{ view.reference }}</dd>
       <dt>Status</dt>
-      <dd data-testid="agent-case-status">{{ view.status }}</dd>
+      <dd data-testid="agent-case-status">{{ view.status_label }}</dd>
       <dt>Type</dt>
-      <dd>{{ view.permit_type_key or '-' }}</dd>
+      <dd>{{ view.permit_type_label or '-' }}</dd>
       <dt>Review area</dt>
       <dd>{{ view.review_area or '-' }}</dd>
       <dt>Processing state</dt>
@@ -63,18 +63,20 @@
     <table class="data-table opr-table" data-testid="agent-case-findings">
       <caption class="visually-hidden">The findings of the current revision</caption>
       <thead>
-        <tr><th scope="col">Finding</th><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">When</th></tr>
+        <tr><th scope="col">Finding</th><th scope="col">Severity</th><th scope="col">When</th></tr>
       </thead>
       <tbody>
         {% for finding in view.findings %}
         <tr data-testid="agent-case-finding">
-          <td data-label="Finding">{{ finding.message }}</td>
-          <td data-label="Rule">{{ finding.rule or '-' }}</td>
-          <td data-label="Severity">{{ finding.severity }}</td>
+          <td data-label="Finding">
+            {{ finding.message }}
+            {% if finding.rule %}<details class="opr-details"><summary>More details</summary><span class="mono">Rule {{ finding.rule }}</span></details>{% endif %}
+          </td>
+          <td data-label="Severity">{{ finding.severity_label }}</td>
           <td data-label="When">{{ finding.recorded_at }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="muted" data-testid="agent-case-findings-empty">No finding is open on this case.</td></tr>
+        <tr><td colspan="3" class="muted" data-testid="agent-case-findings-empty">No finding is open on this case.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -102,7 +104,7 @@
           <td data-label="Steps">
             <ul class="issue-list" data-testid="agent-case-run-nodes">
               {% for node in run.nodes %}
-              <li data-node-id="{{ node.node_id }}" data-status="{{ node.status }}">{{ node.label }}: {{ node.status }}</li>
+              <li data-node-id="{{ node.node_id }}" data-status="{{ node.status }}">{{ node.label }}: {{ node.status_label }}</li>
               {% endfor %}
             </ul>
           </td>

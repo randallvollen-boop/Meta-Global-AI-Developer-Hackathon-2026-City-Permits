@@ -29,7 +29,7 @@
   <tbody>
     {% for row in comparison.rows %}
     <tr data-field="{{ row.field }}">
-      <th scope="row" class="stw-cell-field">{{ row.field }}</th>
+      <th scope="row" class="stw-cell-field">{{ row.field|pretty }}</th>
       <td class="stw-cell-source" data-label="{{ comparison.headers.source }}"><span class="stw-value">{{ row.source }}</span>{% if row.source_normalized %}<span class="stw-normalized">Compared as: {{ row.source_normalized }}</span>{% endif %}</td>
       <td class="stw-cell-master" data-label="{{ comparison.headers.master }}"><span class="stw-value">{{ row.master }}</span>{% if row.master_normalized %}<span class="stw-normalized">Compared as: {{ row.master_normalized }}</span>{% endif %}</td>
       <td class="nowrap stw-cell-result">{{ result_cell(row.result) }}{% if row.note %} <span class="muted">{{ row.note }}</span>{% endif %}</td>
