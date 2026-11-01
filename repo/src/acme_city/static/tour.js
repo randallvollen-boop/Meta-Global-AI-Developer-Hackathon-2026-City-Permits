@@ -129,7 +129,7 @@
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',
       '    <span class="tour-auto" data-testid="tour-auto" hidden>',
       '      <span class="tour-countdown" data-testid="tour-countdown" aria-live="off"></span>',
-      '      <span class="tour-progress" aria-hidden="true">',
+      '      <span class="tour-progress" data-testid="tour-progress" aria-hidden="true">',
       '        <span class="tour-progress-fill" data-testid="tour-progress-fill"></span>',
       '      </span>',
       '    </span>',
