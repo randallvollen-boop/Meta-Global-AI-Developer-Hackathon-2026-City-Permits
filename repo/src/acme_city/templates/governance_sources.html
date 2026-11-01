@@ -196,10 +196,10 @@
       <tr data-testid="synchronization-row" data-status="{{ command.status }}">
         <th scope="row">{{ command.source_command_id }}</th>
         <td>{{ command.change_case_id or '-' }}</td>
-        <td>{{ command.source_system_id }}</td>
-        <td>{{ command.operation }}</td>
+        <td>{{ command.source_label }}</td>
+        <td>{{ command.operation_label }}</td>
         <td>{{ command.accepted_source_version or '-' }}</td>
-        <td><span class="badge badge-{{ command.status }}">{{ command.status }}</span></td>
+        <td><span class="badge badge-{{ command.status }}">{{ command.status_label }}</span></td>
       </tr>
       {% else %}
       <tr><td colspan="6" class="muted">No command has been sent to a source.</td></tr>
@@ -219,11 +219,11 @@
     <tbody>
       {% for domain in governance.domains %}
       <tr data-testid="domain-row">
-        <th scope="row">{{ domain.domain_id }}</th>
+        <th scope="row">{{ domain.domain_label }}</th>
         <td>{{ domain.accountable_owner }}</td>
-        <td>{{ domain.steward_queue_id or 'not assigned' }}</td>
+        <td>{{ domain.queue_label }}</td>
         <td>{{ domain.system_custodian }}</td>
-        <td>{{ domain.default_source_system_id or 'not declared' }}</td>
+        <td>{{ domain.source_label }}</td>
         <td>{{ domain.version }}</td>
       </tr>
       {% endfor %}
@@ -238,7 +238,7 @@
     <tbody>
       {% for queue in governance.queues %}
       <tr data-testid="queue-configuration-row">
-        <th scope="row">{{ queue.queue_id }}</th>
+        <th scope="row">{{ queue.label }}</th>
         <td>{{ queue.domain_id }}</td>
         <td>{{ queue.primary }}</td>
         <td>{{ queue.delegate }}</td>
@@ -261,10 +261,10 @@
     <tbody>
       {% for assignment in governance.assignments %}
       <tr data-testid="assignment-row">
-        <th scope="row">{{ assignment.subject_type }} {{ assignment.subject_id }}</th>
-        <td>{{ assignment.responsibility }}</td>
-        <td>{{ assignment.actor_id or '-' }}</td>
-        <td>{{ assignment.queue_id or '-' }}</td>
+        <th scope="row">{{ assignment.subject_label }}</th>
+        <td>{{ assignment.responsibility_label }}</td>
+        <td>{{ assignment.actor_label }}</td>
+        <td>{{ assignment.queue_label }}</td>
         <td>{{ assignment.effective_from }}</td>
         <td>{{ assignment.effective_to or 'open' }}</td>
         <td>{{ assignment.version }}</td>
@@ -289,14 +289,14 @@
     <tbody>
       {% for policy in governance.policies %}
       <tr data-testid="policy-row" data-policy-id="{{ policy.policy_id }}">
-        <th scope="row">{{ policy.policy_id }}</th>
+        <th scope="row">{{ policy.policy_label }}</th>
         <td>{{ policy.field_group }}</td>
-        <td>{{ policy.domain_id or 'all' }}</td>
-        <td>{{ policy.authoritative_source_system_id or 'not declared' }}{% if policy.authoritative_dataset_key %} / {{ policy.authoritative_dataset_key }}{% endif %}</td>
+        <td>{{ policy.domain_label }}</td>
+        <td>{{ policy.source_label }}{% if policy.authoritative_dataset_key %} / {{ policy.authoritative_dataset_key }}{% endif %}</td>
         <td>{{ policy.change_destination }}</td>
         <td>{{ policy.user_action }}</td>
         <td>{{ 'required' if policy.requires_source_ack else 'not required' }}</td>
-        <td><span class="badge badge-{{ policy.status }}">{{ policy.status }}</span></td>
+        <td><span class="badge badge-{{ policy.status }}">{{ policy.status_label }}</span></td>
       </tr>
       {% else %}
       <tr><td colspan="8" class="muted">No authority policy is stored.</td></tr>
@@ -348,7 +348,7 @@
       {% for event in governance.history %}
       <tr data-testid="governance-history-row" data-action="{{ event.action }}">
         <td>{{ event.occurred_date }}</td>
-        <th scope="row">{{ event.action }}</th>
+        <th scope="row">{{ event.action_label }}</th>
         <td>{{ event.actor }}</td>
         <td class="mono">{{ event.target_type }}{% if event.target_id %} {{ event.target_id }}{% endif %}</td>
         <td>{{ event.reason or 'no reason recorded' }}</td>

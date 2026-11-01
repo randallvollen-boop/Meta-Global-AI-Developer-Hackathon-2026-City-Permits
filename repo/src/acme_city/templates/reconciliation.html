@@ -75,8 +75,8 @@
         <td>{{ row.payment_applied }}</td>
         <td>{{ row.balance }}</td>
         <td>
-          <span class="badge badge-{{ row.finance_status }}">{{ row.finance_status }}</span>
-          <span class="t2">: {{ row.status_detail }}</span>
+          <span class="badge badge-{{ row.finance_status }}">{{ row.finance_status_label }}</span>
+          {% if row.exception %}<span class="t2">{{ row.exception }}</span>{% endif %}
         </td>
         <td><a class="btn sm" href="{{ row.href }}" data-testid="assessment-view-details">View details</a></td>
       </tr>
@@ -97,7 +97,7 @@
 <section class="panel card" aria-labelledby="selected-assessment-heading" data-testid="selected-assessment" data-assessment-id="{{ selected.assessment_id }}">
   <div class="card-h">
     <h2 id="selected-assessment-heading">Selected assessment: {{ selected.reference }}</h2>
-    <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status }}</span></span>
+    <span class="right"><span class="badge badge-{{ selected.status }}">{{ selected.status_label }}</span></span>
   </div>
   <div class="card-b" style="display:grid;gap:14px">
     <div class="tbl-wrap">
@@ -109,7 +109,7 @@
         <tr><th scope="row">Fee assessed</th><td>{{ selected.assessed_total }} {{ selected.currency }}</td></tr>
         <tr><th scope="row">Payment applied</th><td>{{ selected.settled_allocated }} {{ selected.currency }}</td></tr>
         <tr><th scope="row">Outstanding balance</th><td>{{ selected.balance }} {{ selected.currency }}</td></tr>
-        <tr><th scope="row">Finance status</th><td>{{ selected.status }}: {{ selected.status_detail }}</td></tr>
+        <tr><th scope="row">Finance status</th><td>{{ selected.status_label }}: {{ selected.status_detail }}</td></tr>
         {% if selected.exception %}<tr><th scope="row">Recorded exception</th><td>{{ selected.exception }}</td></tr>{% endif %}
       </tbody>
     </table>
@@ -152,8 +152,8 @@
           <th scope="row" class="mono">{{ receipt.transaction }}</th>
           <td>{{ receipt.amount }}</td>
           <td>{{ receipt.currency }}{% if receipt.distinct_currency %} <span class="pill warn">not the assessment currency</span>{% endif %}</td>
-          <td><span class="badge badge-{{ receipt.settlement_status }}">{{ receipt.settlement_status }}</span></td>
-          <td><span class="badge badge-{{ receipt.status }}">{{ receipt.status }}</span></td>
+          <td><span class="badge badge-{{ receipt.settlement_status }}">{{ receipt.settlement_status_label }}</span></td>
+          <td><span class="badge badge-{{ receipt.status }}">{{ receipt.status_label }}</span></td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="muted">No receipt is allocated to this assessment.</td></tr>
@@ -174,7 +174,7 @@
           <td class="mono">{{ allocation.payment_id }}</td>
           <td>{{ allocation.amount }}</td>
           <td>{{ allocation.currency }}</td>
-          <td><span class="badge badge-{{ allocation.status }}">{{ allocation.status }}</span></td>
+          <td><span class="badge badge-{{ allocation.status }}">{{ allocation.status_label }}</span></td>
           <td>{{ allocation.actor }}</td>
         </tr>
         {% else %}
@@ -188,7 +188,7 @@
     <ul class="alias-list" data-testid="selected-assessment-permit-status">
       {% for item in position.permit_status %}
       {% if item.application_id == selected.application_id %}
-      <li>{{ item.reference }}: application {{ item.application_status }}, permit {{ item.permit }}</li>
+      <li>{{ item.reference }}: application {{ item.application_status_label }}, permit {{ item.permit_label }}</li>
       {% endif %}
       {% endfor %}
     </ul>
@@ -202,7 +202,7 @@
         {% for event in selected.history %}
         <tr data-testid="assessment-history-row" data-action="{{ event.action }}">
           <td>{{ event.occurred_date }}</td>
-          <th scope="row">{{ event.action }}</th>
+          <th scope="row">{{ event.action_label }}</th>
           <td>{{ event.actor }}</td>
           <td>{{ event.reason or 'no reason recorded' }}</td>
         </tr>
@@ -273,9 +273,9 @@
         <td class="mono">{{ receipt.payment_id }}</td>
         <td>{{ receipt.amount }}</td>
         <td>{{ receipt.currency }}{% if receipt.distinct_currency %} <span class="pill warn">different currency</span>{% endif %}</td>
-        <td><span class="badge badge-{{ receipt.settlement_status }}">{{ receipt.settlement_status }}</span></td>
+        <td><span class="badge badge-{{ receipt.settlement_status }}">{{ receipt.settlement_status_label }}</span></td>
         <td>{{ receipt.allocation_status }}</td>
-        <td>{{ receipt.account_link_status }}</td>
+        <td>{{ receipt.account_link_status_label }}</td>
         <td>{{ receipt.linked_assessment }}</td>
       </tr>
       {% else %}
@@ -334,7 +334,7 @@
         <th scope="row" class="mono">{{ account.account_id }}</th>
         <td class="mono">{{ account.source_account_id }}</td>
         <td>{{ account.account_role }}</td>
-        <td><span class="badge badge-{{ account.link_status }}">{{ account.link_status }}</span></td>
+        <td><span class="badge badge-{{ account.link_status }}">{{ account.link_status_label }}</span></td>
         <td>{{ account.party if account.party_id else 'not linked' }}</td>
         <td>{{ account.version }}</td>
       </tr>

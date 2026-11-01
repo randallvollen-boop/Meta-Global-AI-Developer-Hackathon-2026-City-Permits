@@ -46,7 +46,7 @@ SCREENS = (
     # own grant, so it is swept with the Administrator.
     ("/overview", "Planning overview"),
     # P3c: the four operations screens of the City Administrator.
-    ("/ops/dashboard", "Operations dashboard"),
+    ("/ops/dashboard", "Operations"),
     ("/ops/audit", "Audit log"),
     ("/ops/support", "Support"),
     ("/ops/checks", "Checks"),

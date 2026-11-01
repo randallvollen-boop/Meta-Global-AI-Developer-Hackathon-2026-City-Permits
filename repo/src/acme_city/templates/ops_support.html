@@ -72,7 +72,7 @@
   {% if lookup %}
   <div data-testid="support-lookup-result">
     <h3><span class="mono">{{ lookup.reference }}</span></h3>
-    <p>Status: <strong data-testid="support-status">{{ lookup.status }}</strong>. Permit type: {{ lookup.permit_type or 'not recorded' }}. First submitted: <span class="mono">{{ lookup.submitted_at or 'not submitted' }}</span>.</p>
+    <p>Status: <strong data-testid="support-status">{{ lookup.status|pretty }}</strong>. Permit type: {{ lookup.permit_type or 'not recorded' }}. First submitted: <span class="mono">{{ lookup.submitted_at or 'not submitted' }}</span>.</p>
     <h4>Timeline</h4>
     <ul data-testid="support-timeline">
       {% for t in lookup.timeline %}<li><span class="mono">{{ t.when }}</span> {{ t.what }}</li>{% else %}<li class="muted">Nothing has happened on this case yet.</li>{% endfor %}
@@ -113,7 +113,7 @@
     <caption class="visually-hidden">Recent support cases</caption>
     <thead><tr><th scope="col">Recorded</th><th scope="col">Reference</th><th scope="col">Channel</th><th scope="col">Summary</th></tr></thead>
     <tbody>
-      {% for c in support_cases %}<tr data-testid="support-case-row"><td class="mono">{{ c.created_at }}</td><td class="mono">{{ c.reference or 'none' }}</td><td>{{ c.channel }}</td><td>{{ c.summary }}</td></tr>
+      {% for c in support_cases %}<tr data-testid="support-case-row"><td class="mono">{{ c.created_at }}</td><td class="mono">{{ c.reference or 'none' }}</td><td>{{ c.channel|pretty }}</td><td>{{ c.summary }}</td></tr>
       {% else %}<tr><td colspan="4" class="muted" data-testid="support-cases-empty">No support case is recorded yet.</td></tr>{% endfor %}
     </tbody>
   </table></div>

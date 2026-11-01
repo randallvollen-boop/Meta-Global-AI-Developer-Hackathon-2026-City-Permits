@@ -66,7 +66,7 @@
       <select id="filter-state" name="state">
         <option value="">Every state</option>
         {% for state in queue.states %}
-        <option value="{{ state }}" {% if queue.filters.state == state %}selected{% endif %}>{{ state }}</option>
+        <option value="{{ state }}" {% if queue.filters.state == state %}selected{% endif %}>{{ state|pretty }}</option>
         {% endfor %}
       </select>
     </p>
@@ -117,7 +117,15 @@
         </td>
         <td data-testid="queue-issue">
           <div>{{ item.issue_label }}</div>
-          {% if item.issue_code %}<div class="t2">{{ ui.detail_link('case-tech', item.id, 'Exact code') if item.kind == 'application' else item.issue_code }}</div>{% endif %}
+          {% if item.issue_code %}
+          <div class="t2">
+            {% if item.kind == 'application' %}
+            {{ ui.detail_link('case-tech', item.id, 'Exact code') }}
+            {% else %}
+            <details class="opr-details"><summary>Exact code</summary><span class="mono">{{ item.issue_code }}</span></details>
+            {% endif %}
+          </div>
+          {% endif %}
         </td>
         <td data-testid="queue-next-party">{{ item.next_party }}</td>
         <td class="dates" data-testid="queue-dates">

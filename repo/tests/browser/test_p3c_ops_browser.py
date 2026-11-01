@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
 from p3c_support import seed_help_request  # noqa: E402
 
 SCREENS = (
-    ("/ops/dashboard", "Operations dashboard"),
+    ("/ops/dashboard", "Operations"),
     ("/ops/audit", "Audit log"),
     ("/ops/support", "Support"),
     ("/ops/checks", "Checks"),

@@ -32,7 +32,7 @@
       <select id="intake-channel" name="channel" data-testid="intake-channel">
         <option value="">Every channel</option>
         {% for channel in queue.channels %}
-        <option value="{{ channel }}" {% if queue.filters.channel == channel %}selected{% endif %}>{{ channel }}</option>
+        <option value="{{ channel }}" {% if queue.filters.channel == channel %}selected{% endif %}>{{ channel|pretty }}</option>
         {% endfor %}
       </select>
     </p>
@@ -50,7 +50,7 @@
       <select id="intake-priority" name="priority" data-testid="intake-priority-filter">
         <option value="">Every priority</option>
         {% for value in queue.priorities %}
-        <option value="{{ value }}" {% if queue.filters.priority == value %}selected{% endif %}>{{ value }}</option>
+        <option value="{{ value }}" {% if queue.filters.priority == value %}selected{% endif %}>{{ value|pretty }}</option>
         {% endfor %}
       </select>
     </p>
@@ -117,22 +117,22 @@
           </td>
           <th scope="row" class="stw-cell stw-cell-record" data-label="Case">
             <span class="ref">{{ row.reference }}</span>
-            <span class="stw-reference">{{ row.channel }}</span>
+            <span class="stw-reference">{{ row.channel|pretty }}</span>
           </th>
           <td class="stw-cell" data-label="Type">
             <a href="{{ row.href }}">{{ row.permit_type_label }}</a>
             <span class="stw-reference">{{ row.review_area }}</span>
           </td>
-          <td class="stw-cell" data-label="State"><span class="pill {{ 'warn' if row.status == 'needs_information' else 'info' }}">{{ row.status_label }}</span></td>
-          <td class="stw-cell" data-label="Priority">{% if row.priority == 'high' %}<span class="pill warn" data-testid="intake-priority">high</span>{% else %}<span class="pill plain" data-testid="intake-priority">normal</span>{% endif %}</td>
+          <td class="stw-cell" data-label="State"><span class="pill {{ 'warn' if row.status == 'needs_information' else 'info' }}">{{ row.status|pretty }}</span></td>
+          <td class="stw-cell" data-label="Priority">{% if row.priority == 'high' %}<span class="pill warn" data-testid="intake-priority">{{ row.priority|pretty }}</span>{% else %}<span class="pill plain" data-testid="intake-priority">{{ row.priority|pretty }}</span>{% endif %}</td>
           <td class="stw-cell" data-label="Owner">{{ row.owner_label or 'Unassigned' }}</td>
           <td class="stw-cell stw-cell-next" data-label="Next step" data-testid="intake-next-step">{{ row.next_step }}</td>
           <td class="stw-cell stw-cell-signals" data-label="Signals">
             <details class="opr-details" data-testid="intake-signals"><summary>Signals</summary>
             {% if row.signals.duplicate.state != 'none' %}<div data-testid="signal-duplicate"><span class="badge badge-blocking">duplicate</span> {{ row.signals.duplicate.detail }}</div>{% endif %}
-            {% if row.signals.document_quality.flags %}<div data-testid="signal-document-quality"><span class="badge badge-conflicting">document</span> {{ row.signals.document_quality.state }}</div>{% endif %}
-            <div data-testid="signal-parcel"><span class="badge badge-submitted">parcel</span> {{ row.signals.parcel.status }}{% if row.signals.parcel.parcel_number %} ({{ row.signals.parcel.parcel_number }}){% endif %}</div>
-            <div data-testid="signal-agent"><span class="badge badge-submitted">agent</span> {{ row.signals.agent.state }}</div>
+            {% if row.signals.document_quality.flags %}<div data-testid="signal-document-quality"><span class="badge badge-conflicting">document</span> {{ row.signals.document_quality.state|pretty }}</div>{% endif %}
+            <div data-testid="signal-parcel"><span class="badge badge-submitted">parcel</span> {{ row.signals.parcel.status|pretty }}{% if row.signals.parcel.parcel_number %} ({{ row.signals.parcel.parcel_number }}){% endif %}</div>
+            <div data-testid="signal-agent"><span class="badge badge-submitted">agent</span> {{ row.signals.agent.state|pretty }}</div>
             </details>
             {% if can_process and row.signals.agent.state != 'not run' %}<a href="/agents/cases/{{ row.application_id }}" data-testid="intake-run-link">View run</a>{% endif %}
           </td>

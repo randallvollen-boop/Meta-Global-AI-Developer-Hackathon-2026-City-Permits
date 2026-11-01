@@ -36,7 +36,7 @@ from acme_city.persistence.models import (
     source,
 )
 from acme_city.rules import approval_policy, catalog
-from acme_city.ui import property_views, view_models
+from acme_city.ui import ops_views, property_views, view_models
 from acme_city.ui.view_models import action as build_action
 from acme_city.ui.view_models import _field
 
@@ -917,6 +917,7 @@ def _lifecycle_history(
                 "occurred_date": _readable_date(row.occurred_at),
                 "occurred_at": view_models._iso(row.occurred_at),
                 "action": row.action,
+                "action_label": ops_views.action_label(row.action),
                 "version_id": row.target_id or "",
                 "version_label": label or (row.target_id or ""),
                 "actor": _actor_label(session, row.actor_id),
@@ -1726,6 +1727,19 @@ def _draft_action(
 # -------------------------------------------------------- governance screen
 
 
+def _policy_status_label(status: str | None) -> str:
+    """Return the readable state of one authority policy.
+
+    The stored state carries a note after a semicolon, so the note is kept
+    and the state itself is read as a word.
+    """
+    head, _, note = str(status or "").partition(";")
+    label = ops_views.display_word("values", head.strip(), "Proposed")
+    if note.strip():
+        return f"{label}. {note.strip()[:1].upper()}{note.strip()[1:]}."
+    return label
+
+
 def governance_screen(
     session: Session, actor: ActorContext, *, tab: str = "sources"
 ) -> dict[str, Any]:
@@ -1794,21 +1808,56 @@ def governance_screen(
             select(governance.StewardQueue).order_by(governance.StewardQueue.queue_id)
         ).scalars().all()
     ]
+    queue_labels = {row["queue_id"]: row["label"] for row in queues}
+    for domain in domains:
+        domain["domain_label"] = domain["label"] or admin_b_labels.identifier_label(
+            domain["domain_id"]
+        )
+        domain["queue_label"] = queue_labels.get(
+            domain["steward_queue_id"] or "", "Not assigned"
+        )
+        domain["source_label"] = source_labels.get(
+            domain["default_source_system_id"] or "", "Not declared"
+        )
+    domain_labels = {row["domain_id"]: row["domain_label"] for row in domains}
     assignments = [
         view.model_dump(mode="json") for view in service.current_assignments()
     ]
+    for assignment in assignments:
+        assignment["actor_label"] = (
+            _actor_label(session, assignment.get("actor_id"))
+            if assignment.get("actor_id") else "Not assigned"
+        )
+        assignment["queue_label"] = (
+            queue_labels.get(str(assignment.get("queue_id") or ""), "Not assigned")
+        )
+        assignment["subject_label"] = domain_labels.get(
+            str(assignment.get("subject_id") or ""),
+            admin_b_labels.identifier_label(str(assignment.get("subject_id") or "")),
+        )
+        assignment["responsibility_label"] = ops_views.display_word(
+            "values", assignment.get("responsibility")
+        )
     policies = [
         {
             "policy_id": row.policy_id,
+            "policy_label": admin_b_labels.identifier_label(row.policy_id),
             "field_group": row.field_group,
             "domain_id": row.domain_id,
+            "domain_label": admin_b_labels.identifier_label(
+                row.domain_id, missing="All domains"
+            ),
             "authoritative_source_system_id": row.authoritative_source_system_id,
+            "source_label": source_labels.get(
+                row.authoritative_source_system_id or "", "Not declared"
+            ),
             "authoritative_dataset_key": row.authoritative_dataset_key,
             "change_destination": row.change_destination,
             "user_action": row.user_action,
             "requires_source_ack": row.requires_source_ack,
             "decision_relevant": row.decision_relevant,
             "status": row.status,
+            "status_label": _policy_status_label(row.status),
             "approver_actor_id": row.approver_actor_id,
             "version": row.version,
         }
@@ -1852,8 +1901,13 @@ def governance_screen(
             "source_command_id": row.id,
             "change_case_id": row.change_case_id,
             "source_system_id": row.source_system_id,
+            "source_label": source_labels.get(row.source_system_id, "Not declared"),
             "operation": row.operation,
+            "operation_label": ops_views.display_word(
+                "values", row.operation, "Sent to the source"
+            ),
             "status": row.status,
+            "status_label": ops_views.display_word("values", row.status),
             "accepted_source_version": row.accepted_source_version,
         }
         for row in session.execute(
@@ -1998,6 +2052,7 @@ def _governance_history(session: Session) -> list[dict[str, Any]]:
     return [
         {
             "action": row.action,
+            "action_label": ops_views.action_label(row.action),
             "occurred_at": view_models._iso(row.occurred_at),
             "occurred_date": _readable_date(row.occurred_at),
             "actor": _actor_label(session, row.actor_id),
@@ -2109,6 +2164,7 @@ def reconciliation_screen(
             "source_account_id": row.source_account_id,
             "account_role": row.account_role,
             "link_status": row.link_status,
+            "link_status_label": ops_views.link_status_label(row.link_status),
             "party_id": row.party_id,
             "party": _actor_label(session, row.party_id),
             "version": row.version,
@@ -2117,6 +2173,10 @@ def reconciliation_screen(
             select(registry.FinanceAccount).order_by(registry.FinanceAccount.account_id)
         ).scalars().all()
     ]
+    for allocation in allocations:
+        allocation["status_label"] = ops_views.display_word(
+            "values", allocation.get("status")
+        )
 
     assessment_by_id = {row["assessment_id"]: row for row in assessments}
     allocation_by_payment: dict[str, list[str]] = {}
@@ -2140,6 +2200,9 @@ def reconciliation_screen(
                 ),
                 "balance": f"{row['position']['balance']} {row['currency']}",
                 "finance_status": row["position"]["status"],
+                "finance_status_label": ops_views.display_word(
+                    "values", row["position"]["status"]
+                ),
                 "exception": row["position"]["exception"] or "",
                 "status_detail": _finance_status_detail(row),
                 "href": f"/reconciliation?tab=assessments&assessment={row['assessment_id']}",
@@ -2164,6 +2227,9 @@ def reconciliation_screen(
                 "amount": payment["amount"],
                 "currency": payment["currency"],
                 "settlement_status": payment["settlement_status"],
+                "settlement_status_label": ops_views.display_word(
+                    "values", payment["settlement_status"]
+                ),
                 "allocation_status": (
                     ", ".join(
                         sorted(
@@ -2194,6 +2260,9 @@ def reconciliation_screen(
                 "payer_account_id": payment["payer_account_id"] or "",
                 "account_link_status": _account_link_status(
                     session, payment["payer_account_id"]
+                ),
+                "account_link_status_label": ops_views.link_status_label(
+                    _account_link_status(session, payment["payer_account_id"])
                 ),
                 "distinct_currency": payment["currency"] != "USD",
             }
@@ -2322,7 +2391,11 @@ def _permit_status_for(
             {
                 "reference": application.source_application_number,
                 "application_status": application.status,
+                "application_status_label": ops_views.display_word(
+                    "values", application.status
+                ),
                 "permit": "issued" if issued is not None else "not issued",
+                "permit_label": "Issued" if issued is not None else "Not issued",
             }
         )
     return statuses
@@ -2359,7 +2432,12 @@ def _selected_assessment(
             "settlement_status": payment_by_id.get(item["payment_id"], {}).get(
                 "settlement_status", ""
             ),
+            "settlement_status_label": ops_views.display_word(
+                "values",
+                payment_by_id.get(item["payment_id"], {}).get("settlement_status", ""),
+            ),
             "status": item["status"],
+            "status_label": ops_views.display_word("values", item["status"]),
             "distinct_currency": item["currency"] != row["currency"],
         }
         for item in own_allocations
@@ -2378,6 +2456,7 @@ def _selected_assessment(
     history = [
         {
             "action": row.action,
+            "action_label": ops_views.action_label(row.action),
             "occurred_at": view_models._iso(row.occurred_at),
             "occurred_date": _readable_date(row.occurred_at),
             "actor": _actor_label(session, row.actor_id),
@@ -2404,6 +2483,7 @@ def _selected_assessment(
         ),
         "balance": row["position"]["balance"],
         "status": row["position"]["status"],
+        "status_label": ops_views.display_word("values", row["position"]["status"]),
         "status_detail": _finance_status_detail(row),
         "exception": row["position"]["exception"] or "",
         "lines": [

@@ -51,11 +51,11 @@
           </div>
           <div class="fieldset">
             <label for="pt-fields">Required fields</label>
-            <input id="pt-fields" name="required_fields" placeholder="parcel_number project_description">
+            <input id="pt-fields" name="required_fields" placeholder="Parcel number, project description">
           </div>
           <div class="fieldset">
             <label for="pt-documents">Required documents</label>
-            <input id="pt-documents" name="required_documents" placeholder="site_plan material_spec">
+            <input id="pt-documents" name="required_documents" placeholder="Site plan, material specification">
           </div>
           <div class="fieldset">
             <label for="pt-fee">Fee schedule</label>
@@ -92,7 +92,6 @@
             <span class="item" style="gap:8px;align-items:center">
               <span>
                 {{ type.label }}
-                <span class="ref">{{ type.permit_type_key }}</span>
                 {% if type.description %}<span class="t2">{{ type.description }}</span>{% endif %}
               </span>
             </span>
