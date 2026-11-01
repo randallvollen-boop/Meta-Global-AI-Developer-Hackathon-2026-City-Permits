@@ -116,7 +116,7 @@
         </div>
       </details>
       {% else %}
-      <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change a permit type icon. Your persona does not hold the 'permit.icon.generate' grant.</p>
+      <p class="lock"><svg aria-hidden="true"><use href="#i-lock"/></svg>Only the City Administrator can change a permit type icon. Your persona does not hold the grant to {{ 'permit.icon.generate'|pretty|lower }}.</p>
       {% endif %}
     </article>
     {% endfor %}
