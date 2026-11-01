@@ -16,8 +16,8 @@ Cedarline Coffee cannot open until its permit is issued, and its owner is record
 
 As **Data Steward**, open `/steward`.
 
-- Do: Press Start fresh, then open Data issues, press Prepare recommendations, press Accept recommendation on each task that carries a High pill and approve the link of the property.
-- Look for: The task carries a High pill and a reason in one line, and the decision is recorded in your name.
+- Do: Press Start fresh, then open Data issues, press Prepare recommendations, press Accept all high-confidence (N) to see the list and confirm it, and approve the link of the property.
+- Look for: Every task of the café carries a High pill and a reason in one line, and the decision is recorded in your name.
 
 ### 2. Let the agent route the case
 
@@ -37,7 +37,7 @@ As **Permit Reviewer**, open `/queue/review`.
 
 As **City Administrator**, open `/reconciliation`.
 
-- Do: Open Reconciliation, press Start under Assess application and assess the case of the café, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
+- Do: Open Reconciliation, press Start under Assess application, type the reference of the café's case and press Assess application, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
 - Look for: The receipt from the old account is matched and the balance shows 0.00.
 
 ### 5. Issue the permit

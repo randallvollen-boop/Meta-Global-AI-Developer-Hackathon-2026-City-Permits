@@ -80,10 +80,10 @@ PATHS: tuple[Path, ...] = (
                 "Data Steward",
                 "/steward",
                 "Press Start fresh, then open Data issues, press Prepare "
-                "recommendations, press Accept recommendation on each task that "
-                "carries a High pill and approve the link of the property.",
-                "The task carries a High pill and a reason in one line, and the "
-                "decision is recorded in your name.",
+                "recommendations, press Accept all high-confidence (N) to see "
+                "the list and confirm it, and approve the link of the property.",
+                "Every task of the café carries a High pill and a reason in one "
+                "line, and the decision is recorded in your name.",
             ),
             Step(
                 "Let the agent route the case",
@@ -110,9 +110,10 @@ PATHS: tuple[Path, ...] = (
                 "Pay the fee",
                 "City Administrator",
                 "/reconciliation",
-                "Open Reconciliation, press Start under Assess application and "
-                "assess the case of the café, then allocate the 150.00 receipt "
-                "from the old finance account and reconcile the assessment.",
+                "Open Reconciliation, press Start under Assess application, type "
+                "the reference of the café's case and press Assess application, "
+                "then allocate the 150.00 receipt from the old finance account "
+                "and reconcile the assessment.",
                 "The receipt from the old account is matched and the balance "
                 "shows 0.00.",
             ),

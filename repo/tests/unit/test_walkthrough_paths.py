@@ -41,6 +41,10 @@ EXCLUDED = (
 #: The labels of the pre-submit check are named by the resident path and they
 #: are built by the lane of the pre-submit check.  This lane does not assert
 #: them: the other lane proves that they are on the screen.
+#:
+#: The button that accepts every recommendation the assistant is sure of
+#: carries the count of them, so the steps name it with the same (N) the
+#: guides of the City use.
 LABELS = (
     "Data issues",
     "Prepare recommendations",
