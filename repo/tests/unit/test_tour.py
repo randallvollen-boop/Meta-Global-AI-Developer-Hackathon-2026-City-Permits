@@ -88,6 +88,7 @@ def test_the_tour_follows_the_written_walkthrough(steps: list[dict[str, str]]) -
         written = WALKTHROUGH[number - 1]
         assert step["title"] == written.title, step["id"]
         assert step["persona"] == written.persona, step["id"]
+        assert step["path"] == written.path, step["id"]
         seen.append(number)
     assert seen == sorted(seen), "the tour does not follow the order of the story"
     assert seen[0] == 3, "the tour starts at the application"

@@ -82,7 +82,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Decide a case",
         "Permit Reviewer",
         "/queue/review",
-        "Open the case from step 3. On the People & property tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write a rationale and submit it. Then try Issue permit.",
+        "Open your case from step 3 in the Review queue. On the People & property tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write a rationale and submit it. Then try Issue permit.",
         "Deciding and issuing are separate. After the approval, Issue permit is refused (the permit may not be issued yet) until the fee is assessed, paid and reconciled on the Reconciliation screen, so a refusal is expected.",
     ),
     Step(

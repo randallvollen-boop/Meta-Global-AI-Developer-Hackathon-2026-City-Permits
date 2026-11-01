@@ -42,10 +42,10 @@
       "title": "Decide a case",
       "persona": "Permit Reviewer",
       "actor_id": "persona_permit_reviewer",
-      "path": "/queue",
-      "target": "[data-testid=\"queue-item\"]",
+      "path": "/queue/review",
+      "target": "[data-testid=\"review-table\"]",
       "permission": "permit.decide",
-      "caption": "The reviewer's queue holds the cases with the City. Open one, run the application checks, record the decision with its reason, then issue the permit."
+      "caption": "The Review queue holds the cases with the reviewer and the recommendation of each one. Open a case, run the application checks, record the decision with its reason, then issue the permit."
     },
     {
       "id": "audit",
