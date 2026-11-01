@@ -12,6 +12,9 @@
    - tabs on the permit workspace (all panels stacked without JS);
    - Replay run animates the recorded 5-node strip client-side only and
      never sends a request;
+   - the step graph of an agent run is replayed after the run; the script of
+     the page (static/agent-progress.js) moves the cards of the graph and
+     never sends a request;
    - work-queue rows navigate to their case;
    - toast mirrors the feedback outcome. */
 
@@ -123,6 +126,13 @@
     message.textContent = outcome.message || "";
     region.appendChild(message);
 
+    var details = document.createElement("details");
+    details.className = "feedback-more";
+    details.setAttribute("data-testid", "feedback-more");
+    var summary = document.createElement("summary");
+    summary.textContent = "More details";
+    details.appendChild(summary);
+
     var list = document.createElement("dl");
     list.className = "feedback-detail";
     var rows = [
@@ -155,7 +165,8 @@
       wrapper.appendChild(definition);
       list.appendChild(wrapper);
     });
-    region.appendChild(list);
+    details.appendChild(list);
+    region.appendChild(details);
     if (outcome.message) toast(outcome.message);
   }
 
@@ -277,6 +288,18 @@
       );
       if (button && button.getAttribute("aria-selected") !== "true") button.click();
     }
+    announceRun(sent);
+  }
+
+  function announceRun(sent) {
+    /* The step graph of an agent run is replayed after the run, so the
+       operator sees the order the agent worked in.  The replay shows the
+       states the run recorded and never claims to be a live run. */
+    if (typeof sent !== "string") return;
+    if (sent.indexOf("agent.run.") !== 0 && sent !== "agent.retry") return;
+    document.dispatchEvent(
+      new CustomEvent("acme:agent-run", { detail: { action: sent } })
+    );
   }
 
   function rereadThePage(sent) {

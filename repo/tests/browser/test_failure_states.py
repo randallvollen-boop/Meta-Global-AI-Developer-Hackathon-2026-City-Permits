@@ -28,6 +28,9 @@ def test_a_source_that_does_not_answer_leaves_the_accepted_value(
         {"payload": '{"_demo_control": {"mode": "timeout"}}'},
     )
     assert "did not answer in time" in message
+    # The detail list of the last action sits behind the disclosure of the
+    # frame (demo polish, P3), so it is opened before it is read.
+    page.locator('[data-testid="feedback-more"] > summary').click()
     assert page.locator('[data-testid="feedback-pending"]').inner_text().startswith("yes")
     after = page.request.get(
         f"{server.base_url}/api/sources/permitting/applicant_profiles/snapshots",
