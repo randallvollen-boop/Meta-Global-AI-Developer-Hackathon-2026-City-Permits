@@ -28,9 +28,9 @@
   <table class="data-table" data-testid="parcel-attributes">
     <caption class="visually-hidden">Attributes of parcel {{ record.parcel_number }}</caption>
     <tbody>
-      <tr><th scope="row">Parcel number (PARCELID)</th><td class="mono">{{ parcel.parcel_number }}</td></tr>
+      <tr><th scope="row">Parcel number</th><td class="mono">{{ parcel.parcel_number }}</td></tr>
       <tr><th scope="row">Owner (synthetic)</th><td data-testid="record-owner">{{ parcel.owner }}</td></tr>
-      <tr><th scope="row">Land use</th><td>{{ parcel.use }}{% if parcel.use_code %} ({{ parcel.use_code }}){% endif %}</td></tr>
+      <tr><th scope="row">Land use</th><td>{{ parcel.use }}</td></tr>
       <tr><th scope="row">Zoning</th><td data-testid="record-zoning">{{ parcel.zoning }}{% if record.zoning_district.name %}: {{ record.zoning_district.name }}{% endif %}</td></tr>
       <tr><th scope="row">Subdivision</th><td>{{ parcel.subdivision or '-' }}</td></tr>
       <tr><th scope="row">Area</th><td>{{ parcel.acres }} acres</td></tr>
@@ -45,11 +45,11 @@
   <h2 id="record-addresses-heading">Addresses and units on this parcel</h2>
   <table class="data-table" data-testid="record-addresses">
     <caption class="visually-hidden">Official addresses on this parcel</caption>
-    <thead><tr><th scope="col">Official address</th><th scope="col">Kind</th><th scope="col">Address id</th></tr></thead>
+    <thead><tr><th scope="col">Official address</th><th scope="col">Kind</th></tr></thead>
     <tbody>
       {% for address in record.addresses %}
-      <tr><th scope="row">{{ address.label }}</th><td>{{ address.kind }}{% if address.unit %} {{ address.unit }}{% endif %}</td><td class="mono">{{ address.address_id }}</td></tr>
-      {% else %}<tr><td colspan="3" class="muted">No official address is recorded.</td></tr>{% endfor %}
+      <tr><th scope="row">{{ address.label }}</th><td>{{ address.kind }}{% if address.unit %} {{ address.unit }}{% endif %}</td></tr>
+      {% else %}<tr><td colspan="2" class="muted">No official address is recorded.</td></tr>{% endfor %}
     </tbody>
   </table>
 </section>
@@ -78,7 +78,7 @@
 
 <section class="panel" id="record-source" aria-labelledby="record-source-heading">
   <h2 id="record-source-heading">Source and stewardship</h2>
-  <p data-testid="record-source">{{ record.source.system }}, version {{ record.source.version }}, status {{ record.source.status }}{% if record.source.valid_from %}, valid from {{ record.source.valid_from }}{% endif %}.</p>
+  <p data-testid="record-source">{{ record.source.system }}, version {{ record.source.version }}, status {{ record.source.status|pretty }}{% if record.source.valid_from %}, valid from {{ ui_time(record.source.valid_from) }}{% endif %}.</p>
   <p class="muted">{{ record.source.label }}</p>
 </section>
 {% set history = record.history %}

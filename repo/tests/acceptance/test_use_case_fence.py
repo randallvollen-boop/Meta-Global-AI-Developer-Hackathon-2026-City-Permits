@@ -322,9 +322,9 @@ def test_use_case_fence(client: TestClient, environment) -> None:
     choose(client, "persona_permit_reviewer")
     front_body = client.get(f"/permits/{front_id}").text
     rear_body = client.get(f"/permits/{rear_id}").text
-    assert 'data-testid="recommendation-outcome">deny<' in front_body
+    assert 'data-testid="recommendation-outcome">Deny<' in front_body
     assert "DF-1" in front_body and "ACME Code §14-305" in front_body
-    assert 'data-testid="recommendation-outcome">approve<' in rear_body
+    assert 'data-testid="recommendation-outcome">Approve<' in rear_body
     assert "DF-2" in rear_body and "ACME Code §14-306" in rear_body
 
     # 8. The reviewer confirms the denial; the decision of record is theirs.

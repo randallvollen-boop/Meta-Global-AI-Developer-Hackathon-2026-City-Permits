@@ -426,10 +426,10 @@ def test_the_briefing_keeps_its_full_source_for_exports(client: TestClient) -> N
 
 def test_the_results_and_briefing_use_clear_scenario_and_export_labels(client: TestClient) -> None:
     results = _results(client)
-    assert "Open scenario" in results
-    assert "All scenarios" in results
-    assert "Open the what-if" not in results
-    assert "All what-ifs" not in results
+    assert "Open the what-if" in results
+    assert "All what-ifs" in results
+    assert "Open scenario" not in results
+    assert "All scenarios" not in results
     assert "before you see it" not in results
     run_id = re.search(r'href="/policy/runs/([^/\"]+)/briefing"', results).group(1)
     briefing = client.get(f"/policy/runs/{run_id}/briefing").text

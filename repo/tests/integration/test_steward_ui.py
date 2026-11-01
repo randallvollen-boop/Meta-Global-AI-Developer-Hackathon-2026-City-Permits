@@ -528,8 +528,8 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert order == [1, 2, 3, 4, 5, 6]
     headings = re.findall(r"<h2 id=\"q\d\">(.*?)</h2>", html, re.S)
     assert [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", h)).strip().split(" i ")[0].strip() for h in headings][:6] == [
-        "1. The problem", "2. Why it matters", "3. The comparison",
-        "4. The evidence", "5. The effect of the action", "6. What happened",
+        "1. What is the problem?", "2. Why does it matter?", "3. What are we comparing?",
+        "4. What supports the decision?", "5. What will this action do?", "6. What happened?",
     ]
     q3 = html.split('data-question="3"')[1].split('data-question="4"')[0]
     q4 = html.split('data-question="4"')[1].split('data-question="5"')[0]

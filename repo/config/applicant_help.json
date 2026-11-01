@@ -65,7 +65,7 @@
     ],
     "refusal_texts": {
       "no_published_text": "The assistant did not answer: no published City text answers that question.",
-      "outside_acme_rules": "The assistant did not answer: that question is outside the ACME City rules it can quote.",
+      "outside_acme_rules": "The assistant did not answer: that question is outside the published ACME Code rules it can quote.",
       "not_about_a_permit": "The assistant did not answer: that question is not about a permit.",
       "needs_a_person": "The assistant did not answer: this needs a person."
     }
@@ -168,7 +168,7 @@
         "decision",
         "codes"
       ],
-      "text": "Your application is under review. A reviewer is assessing it against the published ACME City rules. The City does not need anything from you at this step."
+      "text": "Your application is under review. A reviewer is assessing it against the published ACME Code rules. The City does not need anything from you at this step."
     },
     {
       "id": "lifecycle.approved",

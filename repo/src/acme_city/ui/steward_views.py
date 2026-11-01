@@ -2532,7 +2532,7 @@ def link_case(
         run = session.get(model_run.ModelRun, proposal.model_run_id)
         mode = run.mode if run is not None else "unknown"
         provenance = {
-            "label": {"replay": "Recorded replay", "live": "Muse Spark (live)"}.get(mode, f"Muse ({mode})"),
+            "label": {"replay": "Recorded replay", "live": "Muse (live)"}.get(mode, f"Muse ({mode})"),
             "detail": "A model proposed this link; a steward decides.",
             "run_id": proposal.model_run_id,
         }

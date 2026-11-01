@@ -92,7 +92,7 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
     assert "Validation finished" in message
     page.reload(wait_until="domcontentloaded")
     assert page.locator('[data-testid="rule-results"]').count() == 1
-    assert "pass" in page.locator('[data-testid="rule-results"]').inner_text()
+    assert "Passed" in page.locator('[data-testid="rule-results"]').inner_text()
 
     message = submit_action(
         "permit.decide",

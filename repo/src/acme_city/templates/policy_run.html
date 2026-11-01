@@ -9,7 +9,7 @@
 <div class="page-head">
   <div>
     <h1>What-if results</h1>
-    <p class="sub">{{ r.scenario.name }} · Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open scenario</a>{% endif %} · <a href="/policy/scenarios">All scenarios</a></p>
+    <p class="sub">{{ r.scenario.name }} · Revision {{ r.scenario.revision }}{% if r.scenario.deleted %} · this what-if was deleted; the run is kept{% else %} · <a href="/policy/scenarios/{{ r.scenario.id }}">Open the what-if</a>{% endif %} · <a href="/policy/scenarios">All what-ifs</a></p>
   </div>
   <div class="actions">
     {{ ui.help_button('policy_run') }}
@@ -115,7 +115,7 @@
   <h2 id="outcomes-heading">Recommended outcomes {{ ui.info('policy_outcome_counts') }}</h2>
   <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Cases by recommended outcome</caption>
-    <thead><tr><th scope="col">Outcome</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Difference</th></tr></thead>
+    <thead><tr><th scope="col">Outcome</th><th scope="col">Baseline</th><th scope="col">What-if</th><th scope="col">Difference</th></tr></thead>
     <tbody>{% for row in r.outcomes %}<tr data-outcome="{{ row.key }}"><th scope="row">{{ row.label }}</th><td>{{ row.baseline }}</td><td>{{ row.scenario }}</td><td>{{ row.delta }}</td></tr>{% endfor %}</tbody>
   </table></div>
   <p class="muted">A person decides every case; these are what the agent would recommend. The baseline is the one this run captured.</p>
@@ -145,7 +145,7 @@
   <h3>Recommendation holds</h3>
   <div class="tbl-wrap"><table class="data-table">
     <caption class="visually-hidden">Recommendation holds</caption>
-    <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
+    <thead><tr><th scope="col">Baseline</th><th scope="col">What-if</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
     <tbody><tr><td>{{ r.holds.baseline }}</td><td>{{ r.holds.scenario }}</td><td>{{ r.holds.cleared }}</td><td>{{ r.holds.added }}</td></tr></tbody>
   </table></div>
   {% if r.holds.cleared_but_still_blocked_by_safeguards %}<p class="muted">{{ r.holds.cleared_but_still_blocked_by_safeguards }} cleared holds still carry a safeguard or a missing input, so a person still has to act.</p>{% endif %}
@@ -158,7 +158,7 @@
   <div data-testid="policy-needs">
     <div class="tbl-wrap"><table class="data-table">
       <caption class="visually-hidden">Needs information at intake</caption>
-      <thead><tr><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
+      <thead><tr><th scope="col">Baseline</th><th scope="col">What-if</th><th scope="col">Cleared</th><th scope="col">Added</th></tr></thead>
       <tbody><tr><td>{{ r.needs.baseline }}</td><td>{{ r.needs.scenario }}</td><td>{{ r.needs.cleared }}</td><td>{{ r.needs.added }}</td></tr></tbody>
     </table></div>
   </div>

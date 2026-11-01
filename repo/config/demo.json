@@ -51,7 +51,7 @@
     {
       "code": "DOES_NOT_MEET_CODE",
       "label": "Does not meet code",
-      "description": "The proposed work does not meet the published ACME City rules.",
+      "description": "The proposed work does not meet the published ACME Code rules.",
       "code_type": "denial"
     },
     {
@@ -69,7 +69,7 @@
     {
       "code": "DENIAL_RULE_FAILURE",
       "label": "A published rule is not met",
-      "description": "The proposed work does not meet a published ACME City rule.",
+      "description": "The proposed work does not meet a published ACME Code rule.",
       "code_type": "denial"
     },
     {

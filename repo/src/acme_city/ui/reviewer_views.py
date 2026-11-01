@@ -422,7 +422,7 @@ def _ai_summary(detail: dict[str, Any]) -> dict[str, Any]:
         "source_label": (
             "Recorded replay"
             if run and run.get("mode") == "replay"
-            else (run["source_label"] if run else "")
+            else (ops_views.display_word("values", run["source_label"]) if run else "")
         ),
         "fields": fields,
         "total": len(fields),

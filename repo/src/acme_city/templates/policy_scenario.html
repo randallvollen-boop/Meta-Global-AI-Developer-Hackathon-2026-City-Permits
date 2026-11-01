@@ -116,7 +116,7 @@
       <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="rule_threshold">
       <p class="field"><label for="t-rule">Rule <span aria-hidden="true">*</span></label>
         <select id="t-rule" name="rule_id" required aria-required="true">
-          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.label }} — {{ r.type }}, {{ r.current }}</option>{% endfor %}
+          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.label }}, {{ r.type }}, {{ r.current }}</option>{% endfor %}
         </select></p>
       <p class="field"><label for="t-limit">New limit (optional)</label><input id="t-limit" name="limit_value" inputmode="decimal"></p>
       <p class="field"><label for="t-op">New operator (optional)</label>
@@ -133,7 +133,7 @@
       <input type="hidden" name="operation" value="add_change"><input type="hidden" name="kind" value="rule_retirement">
       <p class="field"><label for="r-rule">Rule <span aria-hidden="true">*</span></label>
         <select id="r-rule" name="rule_id" required aria-required="true">
-          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.label }} — {{ r.type }}</option>{% endfor %}
+          {% for r in options.rules %}<option value="{{ r.rule_id }}">{{ r.label }}, {{ r.type }}</option>{% endfor %}
         </select></p>
       <p class="muted">{{ retire_note }}</p>
       <p><button type="submit" class="button btn" data-testid="policy-add-retirement-submit">Add this change</button></p>

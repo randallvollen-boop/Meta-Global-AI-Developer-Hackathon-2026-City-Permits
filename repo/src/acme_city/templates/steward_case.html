@@ -147,14 +147,14 @@
 
 <li>
 <section class="panel" aria-labelledby="q1" data-question="1" data-testid="case-q1">
-  <h2 id="q1">1. The problem</h2>
+  <h2 id="q1">1. What is the problem?</h2>
   <p>{{ c.problem }}</p>
 </section>
 </li>
 
 <li>
 <section class="panel" aria-labelledby="q2" data-question="2" data-testid="case-q2">
-  <h2 id="q2">2. Why it matters</h2>
+  <h2 id="q2">2. Why does it matter?</h2>
   <p>{{ c.why }}</p>
   {% if c.applications %}
   <table class="data-table" id="case-applications" data-testid="case-applications">
@@ -174,7 +174,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q3" data-question="3" data-testid="case-q3">
-  <h2 id="q3">3. The comparison</h2>
+  <h2 id="q3">3. What are we comparing?</h2>
   {% if c.kind == 'link' %}
   <p class="muted">Source record <b>{{ c.source_record.name or 'not named' }}</b> ({{ c.source_record.source }}) against each master record it may belong to.</p>
   <details class="stw-disclosure"><summary>More details</summary><span class="mono">Source record {{ c.source_record.id }}</span></details>
@@ -241,7 +241,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q4" data-question="4" data-testid="case-q4">
-  <h2 id="q4">4. The evidence</h2>
+  <h2 id="q4">4. What supports the decision?</h2>
   <details class="stw-disclosure" data-testid="case-q4-details">
     <summary>More details</summary>
     {% if c.kind == 'link' %}
@@ -325,7 +325,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q5" data-question="5" data-testid="case-q5">
-  <h2 id="q5">5. The effect of the action {{ ui.info('action_preview') }}</h2>
+  <h2 id="q5">5. What will this action do? {{ ui.info('action_preview') }}</h2>
   {% if c.actions %}
   <p class="muted req-legend">* Required</p>
   {% for item in c.actions %}
@@ -351,7 +351,7 @@
 
 <li>
 <section class="panel" aria-labelledby="q6" data-question="6" data-testid="case-q6">
-  <h2 id="q6">6. What happened</h2>
+  <h2 id="q6">6. What happened?</h2>
   {% if c.result %}
   <dl class="pair-list" data-testid="case-result">
     <dt>Result</dt><dd>{{ c.result.text }}</dd>

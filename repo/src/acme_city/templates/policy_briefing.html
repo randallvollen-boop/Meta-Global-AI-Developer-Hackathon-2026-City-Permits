@@ -25,7 +25,7 @@
   <header class="briefing-head">
     <h2>{{ briefing.scenario_name }}</h2>
     <p data-testid="policy-briefing-population">{{ briefing.population_label }} · Revision {{ run.scenario_revision_number }}</p>
-    <p class="muted" data-testid="policy-briefing-source">{{ muse.display_source_label }}</p>
+    <p class="muted" data-testid="policy-briefing-source">{{ muse.display_source_label|pretty }}</p>
     {% if briefing.synthetic %}<p data-testid="policy-briefing-synthetic"><span class="badge-synthetic" data-testid="synthetic-badge">Synthetic data</span> Generated samples.</p>{% endif %}
   </header>
   {% for section in briefing.sections %}
@@ -64,7 +64,7 @@
   {% else %}
   <p data-testid="policy-writer-deterministic">Built from saved results. No model was used.</p>
   {% endif %}
-  <p class="muted" data-testid="policy-writer-source">{{ briefing.source_label }}</p>
+  <p class="muted" data-testid="policy-writer-source">{{ briefing.source_label|pretty }}</p>
   {% if muse.rejected %}
   <div class="callout" data-testid="policy-writer-fallback">
     <p><strong>The Muse briefing was not used.</strong> It was a {% if muse.live %}Muse{% else %}recorded Muse{% endif %} briefing. {{ muse.fallback }}</p>

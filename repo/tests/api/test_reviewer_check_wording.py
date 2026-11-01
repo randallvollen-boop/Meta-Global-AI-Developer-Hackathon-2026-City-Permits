@@ -78,16 +78,18 @@ def test_a_passing_rule_shows_its_failure_text_only_as_a_labelled_condition(
     client: TestClient,
 ) -> None:
     html = _run_checks(client, "app_synth_001")
-    rows = re.findall(r'<tr>\s*<th scope="row">([A-Z]+-\d+)</th>(.*?)</tr>', html, re.S)
+    table = re.search(r'data-testid="rule-results".*?</table>', html, re.S)
+    assert table is not None, "the case under test must show rule results"
+    rows = re.findall(r'<tr>\s*<th scope="row">(.*?)</th>(.*?)</tr>', table.group(0), re.S)
     assert rows, "the case under test must show rule results"
     saw_pass = False
-    for rule_id, row in rows:
+    for rule_name, row in rows:
         cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
         status = re.sub(r"<[^>]+>", "", cells[2]).strip()
         message_cell = re.sub(r"<[^>]+>", "", cells[4]).strip()
-        if status == "pass" and message_cell:
+        if status == "Passed" and message_cell:
             saw_pass = True
-            assert message_cell.startswith("Fails when: "), (rule_id, message_cell)
+            assert message_cell.startswith("Fails when: "), (rule_name, message_cell)
     assert saw_pass
 
 
