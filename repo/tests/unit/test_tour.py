@@ -140,6 +140,17 @@ def test_the_tour_of_every_path_acts_as_the_personas_of_that_path(
             assert persona in STORY_ORDER, (key, persona)
 
 
+def test_the_paths_together_walk_with_every_persona(paths: dict[str, dict]) -> None:
+    """The paths of the tour name every persona of the City between them."""
+    personas = {
+        step["persona"]
+        for path in paths.values()
+        for step in path["steps"]
+        if step["persona"]
+    }
+    assert personas == set(STORY_ORDER)
+
+
 def test_every_step_holds_the_grant_its_persona_needs(
     paths: dict[str, dict], session: Session
 ) -> None:
