@@ -79,8 +79,9 @@ PATHS: tuple[Path, ...] = (
                 "Match the café to its owner",
                 "Data Steward",
                 "/steward",
-                "Open Data issues, press Prepare recommendations, then open each "
-                "task of the café and press Accept recommendation.",
+                "Press Start fresh, then open Data issues, press Prepare "
+                "recommendations, press Accept recommendation on each task that "
+                "carries a High pill and approve the link of the property.",
                 "The task carries a High pill and a reason in one line, and the "
                 "decision is recorded in your name.",
             ),
@@ -88,7 +89,8 @@ PATHS: tuple[Path, ...] = (
                 "Let the agent route the case",
                 "Agent Operator",
                 "/agent/intake",
-                "Press Wake agent, then press Process the next 20 cases.",
+                "Press Wake agent, then press Process one beside the case of "
+                "the café.",
                 "The run shows Completed and the Router line says Ready for "
                 "review in the Building area.",
             ),
@@ -97,8 +99,10 @@ PATHS: tuple[Path, ...] = (
                 "Permit Reviewer",
                 "/queue/review",
                 "Open the case of the café from the Review queue, press Start "
-                "under Run application checks, then press Start under Record "
-                "review decision, choose Approve and write your reason.",
+                "under Confirm parcel on the People and organizations tab and "
+                "submit it, press Start under Run application checks and submit "
+                "it, then press Start under Record review decision, choose "
+                "Approve and write your reason.",
                 "The rule results show Passed and the decision is recorded in "
                 "the case history with your reason.",
             ),
@@ -146,18 +150,18 @@ PATHS: tuple[Path, ...] = (
                 "/apply",
                 "Choose Residential deck or fence, type 400 Lantern Row, answer "
                 "the questions for a 6 ft fence in the front yard, attach a file "
-                "for each of the two required documents, tick the certification "
-                "and press Submit application.",
-                "A reference number appears and the tracker lists both documents "
-                "as received.",
+                "for each of the two required documents and tick the "
+                "certification.",
+                "The form asks only the questions that project needs, and the "
+                "assistant names the published rule behind each answer.",
             ),
             Step(
                 "Check the application before it is sent",
                 "Applicant",
                 "/apply",
                 "Press Check my application, then change the 6 ft front yard "
-                "fence to 4 ft and press Check my application again, or press "
-                "Submit anyway and write Why submit now.",
+                "fence to 4 ft and press Submit application, or press Submit "
+                "anyway and write why you send it now.",
                 "The findings are grouped under Must fix, Should check and "
                 "Looks good, and each one names the published rule behind it.",
             ),

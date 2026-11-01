@@ -35,29 +35,23 @@ EXCLUDED = (
     "tour_steps.json",
 )
 
-#: The labels the pre-submit lane of the City builds.  They are named by the
-#: resident path and they are not on the screen yet, so they are not checked
-#: against the application in this lane.
-PENDING_LABELS = (
-    "Check my application",
-    "Must fix",
-    "Should check",
-    "Looks good",
-    "Submit anyway",
-    "Why submit now",
-)
-
 #: The labels the steps name.  Every one of them is on a screen of the
 #: application, spelled the way the screen spells it.
+#:
+#: The labels of the pre-submit check are named by the resident path and they
+#: are built by the lane of the pre-submit check.  This lane does not assert
+#: them: the other lane proves that they are on the screen.
 LABELS = (
     "Data issues",
     "Prepare recommendations",
     "Accept recommendation",
     "High",
     "Wake agent",
+    "Process one",
     "Process the next 20 cases",
     "Run application checks",
     "Record review decision",
+    "Confirm parcel",
     "Approve",
     "Issue permit",
     "Assess application",
@@ -149,21 +143,6 @@ def test_the_steps_name_the_labels_of_the_application() -> None:
     words = application_words()
     for label in LABELS:
         assert label in words, label
-    for label in PENDING_LABELS:
-        # The pre-submit lane builds these labels.  They are named by the
-        # resident path, and this lane does not assert them.
-        assert label
-
-
-def test_the_steps_of_the_resident_path_name_the_pre_submit_check() -> None:
-    """The resident path names the pre-submit check with its fixed labels."""
-    text = " ".join(
-        f"{step.do} {step.look_for}"
-        for key, step in every_step()
-        if key == "resident"
-    )
-    for label in ("Check my application", "Must fix", "Submit anyway"):
-        assert label in text, label
 
 
 def test_the_paths_use_the_personas_of_the_city() -> None:

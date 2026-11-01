@@ -27,7 +27,7 @@
       <button type="button" class="button btn" data-tour-start="{{ path.key }}" data-testid="path-start">Start</button>
       <a class="button btn ghost" href="#path-steps-{{ path.key }}" data-testid="path-steps-link">Steps</a>
       {% if path.key == 'cafe' %}
-      <form method="post" action="{{ walkthrough.fresh.url }}" class="path-fresh-form" data-testid="path-fresh-form">
+      <form method="post" action="{{ walkthrough.fresh.url }}" class="guide-path-fresh-form" data-testid="path-fresh-form">
         <input type="hidden" name="csrf_token" value="{{ judge.csrf_token }}">
         {% if walkthrough.fresh.permitted %}
         <button type="submit" class="button btn" data-testid="path-fresh">{{ walkthrough.fresh.label }}</button>

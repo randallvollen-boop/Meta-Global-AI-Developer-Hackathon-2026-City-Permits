@@ -69,6 +69,20 @@ def wake_the_assistant(page, server: BrowserServer, login) -> None:
     )
 
 
+def wake_the_intake_agent(page, server: BrowserServer, login) -> None:
+    """Wake the intake agent, the way the Agent Operator does."""
+    login("persona_agent_operator")
+    page.goto(f"{server.base_url}/agent/intake", wait_until="load")
+    page.wait_for_selector('[data-testid="agent-toggle"]')
+    if page.locator('[data-testid="agent-mode"]').inner_text().strip() == "asleep":
+        page.locator('[data-testid="agent-toggle"]').click()
+        page.wait_for_function(
+            "() => document.querySelector('[data-testid=agent-mode]')"
+            "?.textContent.trim() === 'awake'"
+        )
+    assert page.locator('[data-testid="agent-mode"]').inner_text().strip() == "awake"
+
+
 def accept_the_recommendation(page, server: BrowserServer, record: str) -> None:
     """Let the Data Steward accept the recommendation of the assistant."""
     page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
@@ -80,6 +94,179 @@ def accept_the_recommendation(page, server: BrowserServer, record: str) -> None:
     reason.fill("the source names this master record and no other fits as well")
     message = click_action(page, "assistant-accept", "steward.assist.accept")
     assert "accepted" in message.lower()
+
+
+def start_the_copy(page, server: BrowserServer) -> str:
+    """Press Start fresh and return the reference of the copy."""
+    page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
+    with page.expect_response(
+        lambda response: "/walkthrough/start-fresh" in response.url
+    ) as posted:
+        page.locator(
+            '[data-testid="walkthrough-path"][data-path="cafe"] [data-testid="path-fresh"]'
+        ).click()
+    assert posted.value.status == 303
+    page.wait_for_url(re.compile(r"/walkthrough\?case=app_judge_"))
+    notice = page.locator('[data-testid="judge-copy-notice"]')
+    notice.wait_for()
+    match = re.search(r"CAFE-2026-[A-Z0-9]+", notice.inner_text())
+    assert match is not None, notice.inner_text()
+    return match.group(0)
+
+
+def test_the_café_path_runs_on_the_copy_of_the_judge(
+    page, server: BrowserServer, login, submit_action
+) -> None:
+    """The whole path on the copy the judge made: the agent routes it too."""
+    reference = start_the_copy(page, server)
+
+    # 1. The Agent Operator wakes the agents and lets the agent route the case.
+    wake_the_assistant(page, server, login)
+    wake_the_intake_agent(page, server, login)
+    page.goto(f"{server.base_url}/agent/intake", wait_until="load")
+    row = page.locator(f'[data-testid="agent-waiting-row"]:has-text("{reference}")')
+    assert row.count() == 1, "the agent waits for the copy of the café"
+    with page.expect_response(
+        lambda response: "/ui/actions/agent.run.intake" in response.url
+    ) as posted:
+        row.locator('[data-testid="agent-run-one"]').click()
+    assert posted.value.status == 200, posted.value.text()
+    assert posted.value.json()["status"] == "accepted"
+
+    # The case of the copy waits for the reviewer now.
+    login("persona_permit_reviewer")
+    page.goto(f"{server.base_url}/queue/review", wait_until="domcontentloaded")
+    assert page.locator(f'[data-testid="review-row"]:has-text("{reference}")').count() == 1
+
+    # 2. The Data Steward accepts the links the assistant recommends.
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
+    message = click_action(page, "assistant-prepare", "steward.assist.prepare")
+    assert "recommendation" in message
+    page.wait_for_selector('[data-testid="recommendation-pill"]')
+    rows = page.locator('[data-issue-row][data-recommendation="high"]')
+    assert rows.count() == 3, "the copy of the café holds three owner records"
+    for _ in range(3):
+        row = rows.first
+        row.locator('[data-testid="issue-link"]').click()
+        page.wait_for_selector('[data-testid="assistant-accept"]')
+        reason = page.locator('[data-testid="assistant-reason-field"]')
+        reason.fill("the source names this master record and no other fits as well")
+        message = click_action(page, "assistant-accept", "steward.assist.accept")
+        assert "accepted" in message.lower()
+        page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
+        page.wait_for_selector('[data-testid="recommendation-pill"]')
+
+    # The property of the café waits for the steward as well.
+    property_row = page.locator('[data-issue-row][data-kind="parcel"]').first
+    assert property_row.count() == 1, "the property of the café waits for the steward"
+    property_row.locator('[data-testid="issue-link"]').click()
+    page.wait_for_selector('[data-action-id="parcel.link.decide"]')
+    message = submit_action(
+        "parcel.link.decide",
+        {"reason": "the locator names this parcel for the address of the café"},
+    )
+    assert "parcel" in message.lower()
+
+    # 3. The Permit Reviewer runs the checks and approves the copy.
+    copy_id = (
+        page.request.get(f"{server.base_url}/tour/steps?path=cafe")
+        .json()["steps"][2]["path"]
+        .rsplit("/", 1)[-1]
+    )
+    login("persona_permit_reviewer")
+    page.goto(f"{server.base_url}/permits/{copy_id}", wait_until="domcontentloaded")
+    page.locator('[data-testid="workspace-tab"][data-tab="people"]').click()
+    message = submit_action(
+        "parcel.confirm",
+        {"application_id": copy_id, "reason": "the parcel is the one of the address"},
+    )
+    assert "parcel" in message.lower()
+    page.reload(wait_until="domcontentloaded")
+    message = submit_action("permit.evaluate", {"application_id": copy_id})
+    assert "Validation finished" in message
+    page.reload(wait_until="domcontentloaded")
+    assert "Passed" in page.locator('[data-testid="rule-results"]').inner_text()
+
+    message = submit_action(
+        "permit.decide",
+        {
+            "application_id": copy_id,
+            "outcome": "approved",
+            "reason": "the validated inputs and the approved links support the application",
+        },
+    )
+    assert "Recorded the reviewer decision" in message
+
+    # 4. The City Administrator assesses the fee and matches the receipt.
+    login("persona_city_administrator")
+    page.goto(f"{server.base_url}/reconciliation", wait_until="domcontentloaded")
+    message = submit_action(
+        "finance.assess",
+        {
+            "application_id": reference,
+            "valuation": "50000.00",
+            "reason": "the declared valuation of the application",
+        },
+    )
+    assert "Assessed" in message
+    page.reload(wait_until="domcontentloaded")
+    row = page.locator(f'[data-testid="assessment-row"][data-application-id="{copy_id}"]').first
+    assessment_id = row.get_attribute("data-assessment-id")
+    assert assessment_id
+    assert "150.00" in row.inner_text()
+
+    page.goto(f"{server.base_url}/reconciliation?tab=receipts", wait_until="domcontentloaded")
+    receipt = page.locator('[data-testid="payment-row"]:has-text("ERP-TXN-J")').first
+    assert receipt.count() == 1, "the receipt of the copy is on the register"
+    receipt_id = receipt.locator("td").first.inner_text().strip()
+    page.goto(f"{server.base_url}/reconciliation", wait_until="domcontentloaded")
+
+    message = submit_action(
+        "finance.allocate",
+        {
+            "payment_id": receipt_id,
+            "assessment_id": assessment_id,
+            "amount": "150.00",
+            "currency": "USD",
+            "idempotency_key": "cafe-copy-allocation-1",
+            "reason": "the settled receipt from the old finance account covers the fee",
+        },
+    )
+    assert "Confirmed an allocation" in message
+    message = submit_action(
+        "finance.reconcile",
+        {
+            "assessment_id": assessment_id,
+            "payment_ids": receipt_id,
+        },
+    )
+    assert "Reconciled position" in message
+
+    # 5. The Permit Reviewer issues the permit of the copy.
+    login("persona_permit_reviewer")
+    page.goto(f"{server.base_url}/permits/{copy_id}", wait_until="domcontentloaded")
+    message = submit_action(
+        "permit.issue",
+        {
+            "application_id": copy_id,
+            "command_key": "cafe-copy-issue-1",
+            "reason": "the finance position is exact",
+        },
+    )
+    assert "Issued the simulated permit" in message
+    permit_number = re.search(r"ACME-2026-\d+", message)
+    assert permit_number is not None
+
+    # 6. The resident finds the permit on the public record.
+    page.goto(f"{server.base_url}/city/community", wait_until="domcontentloaded")
+    page.locator('[data-testid="community-q"]').fill(permit_number.group(0))
+    page.locator('[data-testid="community-search"]').click()
+    page.wait_for_selector('[data-testid="community-results"]')
+    assert permit_number.group(0) in page.locator(
+        '[data-testid="community-results"]'
+    ).inner_text()
+    assert page.recorded_errors == []
 
 
 def test_the_café_path_runs_from_the_link_to_the_public_record(
@@ -120,16 +307,7 @@ def test_the_café_path_runs_from_the_link_to_the_public_record(
     assert "Recorded the approve decision" in message
 
     # 2. The Agent Operator lets the agent route the case.
-    login("persona_agent_operator")
-    page.goto(f"{server.base_url}/agent/intake", wait_until="load")
-    page.wait_for_selector('[data-testid="agent-toggle"]')
-    if page.locator('[data-testid="agent-mode"]').inner_text().strip() == "asleep":
-        page.locator('[data-testid="agent-toggle"]').click()
-        page.wait_for_function(
-            "() => document.querySelector('[data-testid=agent-mode]')"
-            "?.textContent.trim() === 'awake'"
-        )
-    assert page.locator('[data-testid="agent-mode"]').inner_text().strip() == "awake"
+    wake_the_intake_agent(page, server, login)
 
     # 3. The Permit Reviewer runs the checks and approves the case.
     login("persona_permit_reviewer")

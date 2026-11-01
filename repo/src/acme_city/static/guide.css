@@ -25,8 +25,18 @@
 .guide-persona { margin: 0 0 0.4rem; font-weight: 600; }
 .guide-k { display: block; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
 .guide-path-card { margin-bottom: 1rem; }
-.guide-path-line { margin: 0 0 0.6rem; }
+.guide-path-cards { margin-top: 1rem; }
+.guide-path-list { list-style: none; padding-left: 0; margin: 0; display: grid; gap: 0.75rem; }
+@media (min-width: 900px) { .guide-path-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .guide-path-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.guide-path {
+  display: grid; gap: 0.4rem; align-content: start; min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); padding: 0.75rem;
+}
+.guide-path-title { font-size: 1.05rem; margin: 0; }
+.guide-path-line { margin: 0 0 0.6rem; color: var(--fg-2); font-size: 0.92rem; }
 .guide-path-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 0.75rem; }
 .guide-path-actions form { margin: 0; }
-.guide-path-fresh { display: inline; }
-.path-fresh-form { display: inline-flex; margin: 0; }
+.guide-path-fresh-form { display: inline-flex; margin: 0; }
+.guide-path-minutes { font-size: 0.85rem; }

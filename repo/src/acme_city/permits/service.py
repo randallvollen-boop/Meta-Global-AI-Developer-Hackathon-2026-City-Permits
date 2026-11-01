@@ -74,10 +74,20 @@ class PermitService:
     # ----------------------------------------------------------------- loading
 
     def load_application(self, application_id: str) -> permit.Application:
-        """Return the stored application or refuse."""
+        """Return the stored application or refuse.
+
+        The readable reference of the City names the same case, so a person
+        may use either name.
+        """
         application = self._session.execute(
             select(permit.Application).where(permit.Application.id == application_id)
         ).scalar_one_or_none()
+        if application is None:
+            application = self._session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == application_id
+                )
+            ).scalar_one_or_none()
         if application is None:
             raise NotFoundError("that application does not exist")
         return application

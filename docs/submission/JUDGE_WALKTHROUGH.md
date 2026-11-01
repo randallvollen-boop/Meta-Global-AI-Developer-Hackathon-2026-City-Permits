@@ -16,21 +16,21 @@ Cedarline Coffee cannot open until its permit is issued, and its owner is record
 
 As **Data Steward**, open `/steward`.
 
-- Do: Open Data issues, press Prepare recommendations, then open each task of the café and press Accept recommendation.
+- Do: Press Start fresh, then open Data issues, press Prepare recommendations, press Accept recommendation on each task that carries a High pill and approve the link of the property.
 - Look for: The task carries a High pill and a reason in one line, and the decision is recorded in your name.
 
 ### 2. Let the agent route the case
 
 As **Agent Operator**, open `/agent/intake`.
 
-- Do: Press Wake agent, then press Process the next 20 cases.
+- Do: Press Wake agent, then press Process one beside the case of the café.
 - Look for: The run shows Completed and the Router line says Ready for review in the Building area.
 
 ### 3. Run the checks and approve the case
 
 As **Permit Reviewer**, open `/queue/review`.
 
-- Do: Open the case of the café from the Review queue, press Start under Run application checks, then press Start under Record review decision, choose Approve and write your reason.
+- Do: Open the case of the café from the Review queue, press Start under Confirm parcel on the People and organizations tab and submit it, press Start under Run application checks and submit it, then press Start under Record review decision, choose Approve and write your reason.
 - Look for: The rule results show Passed and the decision is recorded in the case history with your reason.
 
 ### 4. Pay the fee
@@ -64,14 +64,14 @@ A resident applies for a fence, checks the application before it is sent and fol
 
 As **Applicant**, open `/apply`.
 
-- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents, tick the certification and press Submit application.
-- Look for: A reference number appears and the tracker lists both documents as received.
+- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents and tick the certification.
+- Look for: The form asks only the questions that project needs, and the assistant names the published rule behind each answer.
 
 ### 2. Check the application before it is sent
 
 As **Applicant**, open `/apply`.
 
-- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Check my application again, or press Submit anyway and write Why submit now.
+- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Submit application, or press Submit anyway and write why you send it now.
 - Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
 
 ### 3. Let the agent route the application

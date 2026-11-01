@@ -180,21 +180,21 @@
     </div>
   </section>
 
-  <section class="panel card landing-paths" aria-labelledby="landing-paths-heading">
+  <section class="panel card guide-path-cards" aria-labelledby="landing-paths-heading">
     <div class="card-b">
     <h2 id="landing-paths-heading">Pick a path</h2>
     <p class="landing-line" data-testid="landing-paths-line">Each path is one journey with its own steps and its own guided tour. Every record in the app is fictional.</p>
-    <ul class="landing-path-list" data-testid="landing-paths">
+    <ul class="guide-path-list" data-testid="landing-paths">
       {% for path in paths %}
-      <li class="landing-path" data-testid="landing-path" data-path="{{ path.key }}">
-        <h3 class="landing-path-title">{{ path.title }}</h3>
-        <p class="landing-path-line">{{ path.one_line }}</p>
-        <p class="landing-path-actions">
-          <span class="muted landing-path-minutes">{{ path.minutes }} minutes</span>
+      <li class="guide-path" data-testid="landing-path" data-path="{{ path.key }}">
+        <h3 class="guide-path-title">{{ path.title }}</h3>
+        <p class="guide-path-line">{{ path.one_line }}</p>
+        <p class="guide-path-actions">
+          <span class="muted guide-path-minutes">{{ path.minutes }} minutes</span>
           <button type="button" class="button btn sm" data-tour-start="{{ path.key }}" data-testid="landing-path-start">Start</button>
           <a class="button btn sm ghost" href="/walkthrough#path-{{ path.key }}" data-testid="landing-path-steps">Steps</a>
           {% if path.key == 'cafe' %}
-          <form method="post" action="{{ fresh.url }}" class="path-fresh-form" data-testid="landing-path-fresh-form">
+          <form method="post" action="{{ fresh.url }}" class="guide-path-fresh-form" data-testid="landing-path-fresh-form">
             <input type="hidden" name="csrf_token" value="{{ judge.csrf_token }}">
             {% if fresh.permitted %}
             <button type="submit" class="button btn sm" data-testid="landing-path-fresh">{{ fresh.label }}</button>

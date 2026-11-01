@@ -258,6 +258,8 @@
 
   /* The token of the page.  The server decides whether the write may. */
   function formToken() {
+    var engine = document.querySelector("script[data-tour-csrf]");
+    if (engine) return String(engine.getAttribute("data-tour-csrf") || "");
     var field = document.querySelector('[data-testid="tour-csrf"]');
     return field ? String(field.value || "") : "";
   }
