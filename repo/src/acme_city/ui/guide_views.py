@@ -424,8 +424,10 @@ DOC_TITLE = "City of Acme permits: judge walkthrough"
 
 #: The introduction of the submission copy of the walkthrough.
 DOC_INTRO = (
-    "Four paths, each one independent. Every record in the app is fictional, and "
-    "the app issues no real permit."
+    "Four paths, each one independent, and each with its own guided tour. The "
+    "café path offers a fresh copy of the café case, so every judge walks a "
+    "case of their own. Every record in the app is fictional, and the app "
+    "issues no real permit."
 )
 
 #: The instruction of the submission copy of the walkthrough.

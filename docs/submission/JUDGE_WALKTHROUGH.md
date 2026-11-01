@@ -1,6 +1,6 @@
 # City of Acme permits: judge walkthrough
 
-Four paths, each one independent. Every record in the app is fictional, and the app issues no real permit.
+Four paths, each one independent, and each with its own guided tour. The café path offers a fresh copy of the café case, so every judge walks a case of their own. Every record in the app is fictional, and the app issues no real permit.
 
 Start at https://acme-city-permits.onrender.com/walkthrough. The same steps are on that page, and the button on each step switches to the right persona and opens the screen. To run the app on a local computer instead, follow `repo/USER_TEST_GUIDE.md`. From `repo/`, run `uv run python scripts/prepare_user_test.py --mode demo-synthetic` and then `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`, and open http://127.0.0.1:8266/walkthrough. The demo-synthetic mode loads the synthetic year of permits that the City view needs.
 
