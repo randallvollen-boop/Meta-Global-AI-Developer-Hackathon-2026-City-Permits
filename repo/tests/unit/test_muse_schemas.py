@@ -23,6 +23,7 @@ from acme_city.muse.schemas import (
     POLICY_BRIEF_SCHEMA_VERSION,
     POLICY_PROPOSE_SCHEMA_VERSION,
     MATCH_SCHEMA_VERSION,
+    PRESUBMIT_FEEDBACK_SCHEMA_VERSION,
     STEWARD_EXPLANATION_SCHEMA_VERSION,
     TASK_CONFIG,
     TASK_OUTPUT_MODELS,
@@ -86,6 +87,7 @@ def test_the_schema_names_its_version(task: str) -> None:
         POLICY_BRIEF_SCHEMA_VERSION,  # policy 3 added the fourth and fifth tasks
         POLICY_PROPOSE_SCHEMA_VERSION,
         STEWARD_EXPLANATION_SCHEMA_VERSION,  # the steward assistant added the sixth
+        PRESUBMIT_FEEDBACK_SCHEMA_VERSION,  # the pre-submit check added the seventh
     }
     assert config["prompt_version"]
     assert config["schema_name"]

@@ -45,6 +45,7 @@ from acme_city.persistence.models import finance, permit, registry
 from acme_city.kernel.inputs import build_inputs, missing_required_fields
 from acme_city.rules.evaluator import evaluate as evaluate_inputs
 from acme_city.rules.evaluator import overall_status, worst_status
+from acme_city.rules.schemas import RuleResult, RuleSetVersion
 from acme_city.rules.service import RuleCatalogService
 
 #: The domain every permit action is authorized in.
@@ -321,6 +322,28 @@ class PermitService:
         self._session.flush()
         return self.application_view(application)
 
+    def rule_results(
+        self,
+        permit_type_key: str,
+        facts: dict[str, Any],
+        *,
+        basis_at: datetime,
+        extra_inputs: dict[str, Any] | None = None,
+    ) -> tuple[list[RuleResult], RuleSetVersion, dict[str, Any]]:
+        """Evaluate facts with the same rule set ``evaluate`` uses.
+
+        No case row is required.  ``extra_inputs`` is how a saved evaluation
+        adds the confirmed parcel.  A pre-submit check omits them, because a
+        draft has no confirmed parcel yet.
+        """
+        rule_set = self._catalog.resolve(
+            "executable", permit_type_key, basis_at, basis_label=DEFAULT_DATE_BASIS
+        )
+        inputs = build_inputs(dict(facts))
+        if extra_inputs:
+            inputs.update(dict(extra_inputs))
+        return evaluate_inputs(inputs, rule_set), rule_set, inputs
+
     def evaluate(self, application_id: str, actor: ActorContext) -> EvaluationView:
         """Evaluate the current revision against the selected rule versions."""
         application = self.load_application(application_id)
@@ -343,13 +366,14 @@ class PermitService:
         # A returned case is terminal: it is not evaluated again.
         require_not_returned(application, action="evaluating the application")
         basis_at = application.initial_submitted_at or revision.submitted_at
-        rule_set = self._catalog.resolve(
-            "executable", permit_type.key, basis_at, basis_label=DEFAULT_DATE_BASIS
+        # The same helper runs on an unsaved draft.  The confirmed parcel is
+        # the only extra a saved evaluation adds.
+        results, rule_set, inputs = self.rule_results(
+            permit_type.key,
+            revision.snapshot or {},
+            basis_at=basis_at,
+            extra_inputs=self.parcel_inputs(application),
         )
-        inputs = build_inputs(revision.snapshot or {})
-        # Inputs that come from the parcel are read from the confirmed parcel only.
-        inputs.update(self.parcel_inputs(application))
-        results = evaluate_inputs(inputs, rule_set)
         blockers = self.evaluation_blockers(application, inputs, permit_type)
         dependencies, dependency_versions = self.dependency_state(
             application, revision, rule_set

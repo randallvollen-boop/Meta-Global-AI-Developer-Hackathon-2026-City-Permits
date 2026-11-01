@@ -47,6 +47,9 @@ ENV_GIS_BASE_URL: Final = "ACME_GIS_BASE_URL"
 ENV_GIS_AUTO_PROPOSE_SCORE: Final = "ACME_GIS_AUTO_PROPOSE_SCORE"
 ENV_APPLICANT_ASSIST_LIVE: Final = "ACME_APPLICANT_ASSIST_LIVE_ENABLED"
 ENV_POLICY_ASSIST_LIVE: Final = "ACME_POLICY_ASSIST_LIVE_ENABLED"
+#: Pre-submit feedback on Check my application.  Off by default.  A credential
+#: alone never turns it on.
+ENV_PRESUBMIT_REVIEW_LIVE: Final = "ACME_PRESUBMIT_REVIEW_LIVE_ENABLED"
 #: ``demo`` (the default; the fictional demonstration, unchanged) or ``production``.
 ENV_DEPLOYMENT_MODE: Final = "ACME_DEPLOYMENT_MODE"
 #: Whether the session cookie carries the ``Secure`` attribute.  Unset means on
@@ -176,6 +179,11 @@ class Settings(OperatorSettings, AutolinkSettings, BaseModel):
     #: may call the provider.  Off by default; a credential alone never turns it
     #: on.  The live path shares the call cap and the error-stop of every run.
     policy_assist_live_enabled: bool = False
+    #: Whether Check my application may ask the provider for feedback.
+    #:
+    #: Off by default.  A credential alone never turns it on.  Submit does not
+    #: read this flag: it runs the rules layer only.
+    presubmit_review_live_enabled: bool = False
     meta_api_key: SecretStr | None = None
     key_file: Path | None = None
     secret_is_ephemeral: bool = False
@@ -323,6 +331,7 @@ class Settings(OperatorSettings, AutolinkSettings, BaseModel):
             "meta_api_key_present": self.meta_api_key is not None,
             "applicant_assist_live_enabled": self.applicant_assist_live_enabled,
             "policy_assist_live_enabled": self.policy_assist_live_enabled,
+            "presubmit_review_live_enabled": self.presubmit_review_live_enabled,
             "deployment_mode": self.deployment_mode,
             "cookie_secure": self.effective_cookie_secure,
             "trust_proxy_headers": self.trust_proxy_headers,
@@ -405,6 +414,14 @@ class Settings(OperatorSettings, AutolinkSettings, BaseModel):
             "on",
         }
 
+        presubmit_live_raw = pick(ENV_PRESUBMIT_REVIEW_LIVE)
+        presubmit_review_live_enabled = str(presubmit_live_raw or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+
         scenario_clock = (pick(ENV_SCENARIO_CLOCK, "") or "").strip()
 
         mode = (pick(ENV_DEPLOYMENT_MODE, "demo") or "demo").strip().lower()
@@ -446,6 +463,7 @@ class Settings(OperatorSettings, AutolinkSettings, BaseModel):
             gis_auto_propose_score=gis_auto_propose_score,
             applicant_assist_live_enabled=applicant_assist_live_enabled,
             policy_assist_live_enabled=policy_assist_live_enabled,
+            presubmit_review_live_enabled=presubmit_review_live_enabled,
             meta_api_key=meta_api_key,
             key_file=resolved_key_file,
             secret_is_ephemeral=ephemeral,
@@ -480,6 +498,7 @@ __all__ = [
     "ENV_MUSE_PROVIDER_ENABLED",
     "ENV_TRUST_PROXY_HEADERS",
     "ENV_POLICY_ASSIST_LIVE",
+    "ENV_PRESUBMIT_REVIEW_LIVE",
     "KEY_FILE_ALLOWED_NAMES",
     "Settings",
     "parse_key_file",

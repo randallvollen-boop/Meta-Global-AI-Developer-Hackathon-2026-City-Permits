@@ -1067,6 +1067,30 @@ class MuseService:
             }
         ]
 
+    def presubmit_feedback(
+        self,
+        *,
+        actor: ActorContext,
+        items: Sequence[Mapping[str, Any]],
+        documents: Sequence[Mapping[str, str]] | None = None,
+    ) -> dict[str, Any]:
+        """Ask for feedback on a pre-submit review.
+
+        This is not a proposing run.  ``run`` refuses the task.  The portal
+        calls this only when the applicant presses Check my application.
+        """
+        from acme_city.muse.presubmit import feedback
+
+        return feedback(
+            self._session,
+            self._settings,
+            actor_id=actor.actor_id,
+            items=items,
+            documents=documents or (),
+            client=self._client,
+            now=self._now,
+        )
+
     # ------------------------------------------------------------------- view
 
     def _view(

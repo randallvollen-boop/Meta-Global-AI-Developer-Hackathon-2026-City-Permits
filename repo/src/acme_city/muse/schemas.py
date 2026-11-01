@@ -56,6 +56,12 @@ STEWARD_EXPLANATION_SCHEMA_VERSION: Final = "acme-steward-explanation-schema-v1"
 #: The version of the steward-explanation prompt.
 STEWARD_EXPLANATION_PROMPT_VERSION: Final = "acme-steward-explanation-prompt-v1"
 
+#: The version of the pre-submit feedback schema.
+PRESUBMIT_FEEDBACK_SCHEMA_VERSION: Final = "acme-presubmit-feedback-schema-v1"
+
+#: The version of the pre-submit feedback prompt.
+PRESUBMIT_FEEDBACK_PROMPT_VERSION: Final = "acme-presubmit-feedback-prompt-v1"
+
 #: The provider that serves the Standard Muse models.
 MUSE_PROVIDER: Final = "meta"
 
@@ -77,6 +83,9 @@ POLICY_PROPOSE_SCHEMA_NAME: Final = "acme_city_policy_propose"
 
 #: The schema name the provider is asked to enforce for the steward explanation.
 STEWARD_EXPLANATION_SCHEMA_NAME: Final = "acme_city_steward_explanation"
+
+#: The schema name the provider is asked to enforce for pre-submit feedback.
+PRESUBMIT_FEEDBACK_SCHEMA_NAME: Final = "acme_city_presubmit_feedback"
 
 #: The JSON Schema keywords that are removed from the generated schema.
 #:
@@ -205,11 +214,24 @@ POLICY_PROPOSE_TASK: Final = "policy_propose"
 #: assistant rather than by :class:`~acme_city.muse.service.MuseService`.
 STEWARD_EXPLANATION_TASK: Final = "steward_explanation"
 
+#: The task name of the pre-submit feedback.
+#:
+#: It is a separate, non-proposing path.  It writes no observation, no match
+#: proposal and no business row.  The applicant portal asks for it only when
+#: the applicant presses Check my application, and ``MuseService.run`` refuses
+#: it.
+PRESUBMIT_FEEDBACK_TASK: Final = "presubmit_feedback"
+
 #: The tasks whose runs belong to the what-if screens, never to a general run list.
 POLICY_TASKS: Final = (POLICY_BRIEF_TASK, POLICY_PROPOSE_TASK)
 
 #: The tasks whose runs no general run list may show.
-PRIVATE_TASKS: Final = (APPLICANT_ASSIST_TASK, STEWARD_EXPLANATION_TASK, *POLICY_TASKS)
+PRIVATE_TASKS: Final = (
+    APPLICANT_ASSIST_TASK,
+    STEWARD_EXPLANATION_TASK,
+    PRESUBMIT_FEEDBACK_TASK,
+    *POLICY_TASKS,
+)
 
 #: The tasks whose output is a proposal the City may act on.
 PROPOSING_TASKS: Final = (EXTRACTION_TASK, MATCH_TASK)
@@ -356,6 +378,26 @@ class StewardExplanationOutput(MuseOutputModel):
     explanation: str = Field(min_length=1, max_length=2000)
 
 
+class PresubmitFeedbackItem(MuseOutputModel):
+    """One short note, bound to one rule the rules layer already returned."""
+
+    rule_id: str = Field(min_length=1, max_length=64)
+    text: str = Field(min_length=1, max_length=500)
+
+
+class PresubmitFeedbackOutput(MuseOutputModel):
+    """Plain feedback for Check my application.
+
+    Every item cites a rule id the server already ran.  The model does not
+    decide the application: it cannot return an outcome, and ``cannot_review``
+    means the reply is not shown.
+    """
+
+    items: list[PresubmitFeedbackItem]
+    cannot_review: bool
+    reason: str = Field(max_length=200)
+
+
 #: The output model, prompt version and schema version of every task.
 TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
     EXTRACTION_TASK: {
@@ -394,6 +436,12 @@ TASK_CONFIG: Final[dict[str, dict[str, str]]] = {
         "schema_version": STEWARD_EXPLANATION_SCHEMA_VERSION,
         "schema_name": STEWARD_EXPLANATION_SCHEMA_NAME,
     },
+    PRESUBMIT_FEEDBACK_TASK: {
+        "output_model": "PresubmitFeedbackOutput",
+        "prompt_version": PRESUBMIT_FEEDBACK_PROMPT_VERSION,
+        "schema_version": PRESUBMIT_FEEDBACK_SCHEMA_VERSION,
+        "schema_name": PRESUBMIT_FEEDBACK_SCHEMA_NAME,
+    },
 }
 
 #: The strict output model of every task.
@@ -404,6 +452,7 @@ TASK_OUTPUT_MODELS: Final[dict[str, type[MuseOutputModel]]] = {
     POLICY_BRIEF_TASK: PolicyBriefOutput,
     POLICY_PROPOSE_TASK: PolicyProposeOutput,
     STEWARD_EXPLANATION_TASK: StewardExplanationOutput,
+    PRESUBMIT_FEEDBACK_TASK: PresubmitFeedbackOutput,
 }
 
 
@@ -480,8 +529,14 @@ __all__ = [
     "POLICY_PROPOSE_SCHEMA_VERSION",
     "POLICY_PROPOSE_TASK",
     "POLICY_TASKS",
+    "PRESUBMIT_FEEDBACK_PROMPT_VERSION",
+    "PRESUBMIT_FEEDBACK_SCHEMA_NAME",
+    "PRESUBMIT_FEEDBACK_SCHEMA_VERSION",
+    "PRESUBMIT_FEEDBACK_TASK",
     "PRIVATE_TASKS",
     "PROPOSING_TASKS",
+    "PresubmitFeedbackItem",
+    "PresubmitFeedbackOutput",
     "PolicyBriefOutput",
     "PolicyClaim",
     "PolicyProposeOutput",
