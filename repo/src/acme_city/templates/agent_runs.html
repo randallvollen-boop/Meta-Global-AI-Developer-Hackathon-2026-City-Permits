@@ -49,7 +49,7 @@
 </form>
 
 <p class="opr-count" data-testid="run-count">
-  <strong>{{ view.total }}</strong> recorded run(s) match. Page {{ view.page }} of {{ view.pages }}.
+  <strong>{{ view.total }}</strong> recorded run{{ '' if view.total == 1 else 's' }} match. Page {{ view.page }} of {{ view.pages }}.
 </p>
 
 <section class="panel card" aria-labelledby="run-history-heading">

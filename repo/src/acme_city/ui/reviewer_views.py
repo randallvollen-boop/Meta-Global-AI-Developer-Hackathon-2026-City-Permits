@@ -17,7 +17,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.core.clock import utc_now
-from acme_city.persistence.models import audit, change, permit, registry
+from acme_city.persistence.models import audit, change, finance, permit, registry
+from acme_city.ui import display, ops_views
 
 #: The queue views, in display order: key, label, what the view holds.
 QUEUE_VIEWS: tuple[tuple[str, str, str], ...] = (
@@ -455,6 +456,157 @@ def _issuance_words(detail: dict[str, Any], blockers: list[dict[str, str]]) -> t
     return "Ready", "The issuing officer issues the permit."
 
 
+def _actor_label(session: Session, actor_id: str | None) -> str:
+    """Return the name of the person or service that acted."""
+    if not actor_id:
+        return "Not recorded"
+    from acme_city.ui import view_models
+
+    return view_models.actor_label(session, actor_id)
+
+
+def _party_name(session: Session, party_id: str | None) -> str:
+    """Return the name of a person or organization."""
+    if not party_id:
+        return ""
+    row = session.get(registry.Party, party_id)
+    return "" if row is None else row.display_name
+
+
+def _parcel_number(session: Session, parcel_id: str | None) -> str:
+    """Return the parcel number of one parcel."""
+    if not parcel_id:
+        return ""
+    row = session.execute(
+        select(registry.Parcel).where(registry.Parcel.parcel_id == parcel_id)
+    ).scalars().first()
+    return "" if row is None else row.source_parcel_number
+
+
+def _address_text(session: Session, address_id: str | None) -> str:
+    """Return the address as the record holds it."""
+    if not address_id:
+        return ""
+    row = session.execute(
+        select(registry.Address).where(registry.Address.address_id == address_id)
+    ).scalars().first()
+    if row is None:
+        return ""
+    return row.source_string or " ".join(
+        part
+        for part in (
+            row.street_number,
+            row.street_name,
+            row.street_type,
+            row.unit_type,
+            row.unit_number,
+        )
+        if part
+    )
+
+
+def _rule_titles(session: Session, rule_ids: set[str]) -> dict[str, str]:
+    """Return the title of each rule, by its rule id."""
+    if not rule_ids:
+        return {}
+    rows = session.execute(
+        select(finance.RuleVersion)
+        .where(finance.RuleVersion.rule_id.in_(sorted(rule_ids)))
+        .order_by(finance.RuleVersion.effective_from)
+    ).scalars().all()
+    titles: dict[str, str] = {}
+    for row in rows:
+        titles[row.rule_id] = row.title
+    return titles
+
+
+def label_workspace(session: Session, detail: dict[str, Any]) -> None:
+    """Add the readable words to everything the workspace shows.
+
+    The stored keys stay where they are.  Every value a reviewer reads gets
+    the word a person says beside it: a name instead of an actor id, the
+    title of a rule instead of its key, and the plain state of a thing
+    instead of the state the database stores.
+    """
+    decision = detail.get("current_decision")
+    if isinstance(decision, dict):
+        decision["decided_by_label"] = _actor_label(
+            session, decision.get("decided_by_actor_id")
+        )
+    for row in detail.get("decisions") or []:
+        row["decided_by_label"] = _actor_label(session, row.get("decided_by_actor_id"))
+
+    for row in detail.get("findings") or []:
+        row["type_label"] = ops_views.display_word("values", row.get("finding_type"))
+        row["severity_label"] = ops_views.display_word("values", row.get("severity"))
+        row["state_label"] = ops_views.display_word("values", row.get("state"))
+        row["waived_by_label"] = _actor_label(session, row.get("waived_by_actor_id"))
+
+    evaluation = detail.get("evaluation")
+    rule_ids: set[str] = set()
+    if isinstance(evaluation, dict):
+        evaluation["outcome_label"] = ops_views.display_word("values", evaluation.get("outcome"))
+        evaluation["status_label"] = ops_views.display_word("values", evaluation.get("status"))
+        evaluation["performed_by_label"] = _actor_label(
+            session, evaluation.get("performed_by_actor_id")
+        )
+        for result in evaluation.get("results") or []:
+            result["status_label"] = ops_views.display_word("values", result.get("status"))
+            rule_ids.add(str(result.get("rule_id") or ""))
+    for row in detail.get("evaluations") or []:
+        row["outcome_label"] = ops_views.display_word("values", row.get("outcome"))
+        row["status_label"] = ops_views.display_word("values", row.get("status"))
+        rule_ids.update(str(item) for item in (row.get("rule_versions") or {}))
+
+    for row in detail.get("recommendations") or []:
+        row["proposed_outcome_label"] = ops_views.display_word(
+            "values", row.get("proposed_outcome")
+        )
+        row["status_label"] = ops_views.display_word("values", row.get("status"))
+
+    titles = _rule_titles(session, {item for item in rule_ids if item})
+    for result in (evaluation or {}).get("results") or []:
+        result["rule_title"] = titles.get(str(result.get("rule_id") or ""), "")
+
+    current = detail.get("current") or {}
+    for party in current.get("parties") or []:
+        party["name"] = _party_name(session, party.get("party_id"))
+        party["role_label"] = ops_views.display_word("values", party.get("party_role"))
+    site = current.get("site") or {}
+    site["parcel_label"] = _parcel_number(session, site.get("parcel_id"))
+    site["address_label"] = _address_text(session, site.get("address_id"))
+    site["resolution_label"] = ops_views.display_word(
+        "values", site.get("resolution_status"), "Not resolved"
+    )
+
+    for link in detail.get("crosswalks") or []:
+        link["entity_label"] = _party_name(session, link.get("entity_id")) or str(
+            link.get("entity_id") or ""
+        )
+        link["source_label"] = display.source_name(
+            session, link.get("source_system_id"), link.get("source_dataset_key")
+        )
+        link["link_status_label"] = ops_views.link_status_label(link.get("link_status"))
+
+    for document in detail.get("documents") or []:
+        document["document_type_label"] = ops_views.display_word(
+            "values", document.get("document_type")
+        )
+
+    finance_view = detail.get("finance") or {}
+    assessment = finance_view.get("assessment")
+    if isinstance(assessment, dict):
+        assessment["status_label"] = ops_views.display_word("values", assessment.get("status"))
+    reconciliation = finance_view.get("reconciliation")
+    if isinstance(reconciliation, dict):
+        reconciliation["status_label"] = ops_views.display_word(
+            "values", reconciliation.get("status")
+        )
+    for allocation in finance_view.get("allocations") or []:
+        allocation["status_label"] = ops_views.display_word("values", allocation.get("status"))
+        allocation["actor_label"] = _actor_label(session, allocation.get("actor_id"))
+
+
 def workspace_extras(
     session: Session,
     actor: Any,
@@ -464,6 +616,7 @@ def workspace_extras(
     """Return the reviewer-facing facts the workspace tabs show."""
     from acme_city.ui import view_models
 
+    label_workspace(session, detail)
     type_label = detail["permit_type"]["label"]
     revision_number = detail["submitted"]["revision_number"]
     blockers = list(detail.get("blockers") or [])

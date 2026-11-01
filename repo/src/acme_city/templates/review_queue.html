@@ -41,9 +41,9 @@
         <td>
           {% if row.recommendation %}
           <span class="pill {{ 'ok' if row.recommendation.proposed_outcome == 'approve' else 'bad' if row.recommendation.proposed_outcome == 'deny' else 'warn' }}"
-                data-testid="review-recommendation">{{ row.recommendation.proposed_outcome }}</span>
-          <span class="pill plain" data-testid="review-recommendation-status">{{ row.recommendation.status }}</span>
-          {% if row.recommendation.stale %}<span class="pill warn" data-testid="review-recommendation-stale">stale</span>{% endif %}
+                data-testid="review-recommendation">{{ row.recommendation.proposed_outcome|pretty }}</span>
+          <span class="pill plain" data-testid="review-recommendation-status">{{ row.recommendation.status|pretty }}</span>
+          {% if row.recommendation.stale %}<span class="pill warn" data-testid="review-recommendation-stale">Stale</span>{% endif %}
           {% else %}
           <span class="muted" data-testid="review-recommendation-none">The adjudication agent has not run on this case.</span>
           {% endif %}
@@ -58,7 +58,7 @@
             {% endif %}
           </details>
         </td>
-        <td>{% if row.age_days is not none %}<span class="age">{{ row.age_days }}d</span>{% else %}-{% endif %}</td>
+        <td>{% if row.age_days is not none %}<span class="age">{{ row.age_days }} days</span>{% else %}-{% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="4" class="muted" data-testid="review-empty">No case is in review in this area.</td></tr>

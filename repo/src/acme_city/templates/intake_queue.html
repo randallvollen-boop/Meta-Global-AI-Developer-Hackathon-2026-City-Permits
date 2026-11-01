@@ -88,7 +88,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="action_id" value="permit.intake.process_selected">
     <input type="hidden" name="next" value="/queue/intake?tab={{ queue.filters.tab }}">
-    <p class="muted stw-summary" data-testid="intake-count">{{ queue.total_after_filters }} of {{ queue.total_in_tab }} case(s) in this view.</p>
+    <p class="muted stw-summary" data-testid="intake-count">{{ queue.total_after_filters }} of {{ queue.total_in_tab }} case{{ '' if queue.total_in_tab == 1 else 's' }} in this view.</p>
     <div class="tbl-wrap">
     <table class="data-table stw-queue-table" data-testid="intake-table">
       <caption class="visually-hidden">The cases of the selected intake view</caption>
@@ -140,7 +140,7 @@
             {% if row.age_days is not none %}
             <span class="age {{ 'over' if row.age_tone == 'over' else 'at' if row.age_tone == 'at' else '' }}"
                   data-testid="intake-age" data-age-days="{{ row.age_days }}" data-target-days="{{ row.service_target_days }}"
-                  title="The service target of this permit type is {{ row.service_target_days }} day(s).">{{ row.age_days }}d</span>
+                  title="The service target of this permit type is {{ row.service_target_days }} day{{ '' if row.service_target_days == 1 else 's' }}.">{{ row.age_days }} days</span>
             {% else %}-{% endif %}
           </td>
         </tr>

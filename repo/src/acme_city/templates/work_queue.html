@@ -73,7 +73,7 @@
     <p><button type="submit" class="button btn">Apply filters</button></p>
   </form>
 
-  <p class="muted" data-testid="queue-count" style="padding:0 16px">{{ queue.entries|length }} item(s) in view.</p>
+  <p class="muted" data-testid="queue-count" style="padding:0 16px">{{ queue.entries|length }} item{{ '' if queue.entries|length == 1 else 's' }} in view.</p>
 
   <div class="tbl-wrap">
   <table class="data-table queue-table" data-testid="queue-table">

@@ -220,7 +220,7 @@ def test_the_workspace_has_four_tabs_and_opens_on_review(client: TestClient) -> 
         for m in re.findall(r'<button type="button" role="tab".*?>(.*?)</button>', page, re.S)
     ]
     assert [re.sub(r"\s*\d+$", "", label) for label in labels] == [
-        "Review", "Documents", "People & property", "Activity",
+        "Review", "Documents", "People and organizations", "Activity",
     ]
     assert re.search(r'id="tab-review"[^>]*aria-selected="true"', page)
     assert re.search(r'id="tab-documents"[^>]*aria-selected="false"', page)

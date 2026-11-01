@@ -57,7 +57,7 @@
     {% if help_turns %}
     <h3>Your questions</h3>
     {% if help_earlier_turns %}
-    <p class="muted" data-testid="help-earlier-turns">{{ help_earlier_turns }} earlier question(s) of yours are in your history.</p>
+    <p class="muted" data-testid="help-earlier-turns">{{ help_earlier_turns }} earlier question{{ '' if help_earlier_turns == 1 else 's' }} of yours are in your history.</p>
     {% endif %}
     <ol class="help-turns" data-testid="help-turns">
       {% for turn in help_turns %}
