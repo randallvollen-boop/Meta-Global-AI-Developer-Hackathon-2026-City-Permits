@@ -277,15 +277,8 @@ def test_every_quoted_label_in_the_steps_exists_in_the_application() -> None:
     missing = []
     for text in texts:
         for quoted in re.findall(r'"([^"]{3,})"', text):
-            # A link label is built from the name of the candidate record, and
-            # the batch button of the assistant carries the count of the
-            # recommendations it would accept.
-            if quoted.startswith("Confirm link to "):
-                probe = "Confirm link to "
-            elif quoted == "Accept all high-confidence (N)":
-                probe = "Accept all high-confidence ("
-            else:
-                probe = quoted
+            # A link label is built from the name of the candidate record.
+            probe = "Confirm link to " if quoted.startswith("Confirm link to ") else quoted
             if probe not in corpus:
                 missing.append(quoted)
     assert not missing, missing
