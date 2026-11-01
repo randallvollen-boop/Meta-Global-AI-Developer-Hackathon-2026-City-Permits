@@ -730,8 +730,11 @@ def test_the_help_panel_has_a_page_of_its_own_and_the_screens_link_to_it(
     choose(client)
     page = client.get("/apply/help/panel").text
     assert 'data-placement="form"' in page
-    for testid in ("help-panel", "help-form", "help-question", "help-submit", "help-ask-the-city"):
+    for testid in ("help-panel", "help-form", "help-question", "help-submit"):
         assert f'data-testid="{testid}"' in page, testid
+    # Changed deliberately (the pop-out slice): the form that asks a person
+    # at the City moved to the contact page of the City website.
+    assert 'data-testid="help-escalate-form"' not in page
     for path in ("/apply", "/apply/deck_fence", "/apply/track"):
         screen = client.get(path).text
         assert 'data-testid="help-panel"' not in screen, path

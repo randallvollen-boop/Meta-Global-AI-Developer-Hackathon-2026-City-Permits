@@ -13,7 +13,7 @@
   "max_message_length": 1000,
   "history_turns": 6,
   "escalation": {
-    "note": "When the assistant has not been able to help, the panel prompts the applicant to ask a person at the City. The button is always available; this only decides when the panel offers it.",
+    "note": "When the assistant has not been able to help, the panel prompts the applicant to ask a person at the City on the contact page of the City website.",
     "threshold": 3,
     "person_phrases": [
       "talk to a person",
@@ -39,8 +39,8 @@
       "need a person",
       "need a human"
     ],
-    "prompt_unsuccessful": "The assistant could not answer your last {count} questions. A person at the City can. Press \"Ask the City\" below to send your question to the support desk.",
-    "prompt_person": "You asked for a person. Press \"Ask the City\" below to send your question to the support desk; a person answers it."
+    "prompt_unsuccessful": "The assistant could not answer your last {count} questions.",
+    "prompt_person": "You asked for a person."
   },
   "max_matches": 3,
   "assist": {

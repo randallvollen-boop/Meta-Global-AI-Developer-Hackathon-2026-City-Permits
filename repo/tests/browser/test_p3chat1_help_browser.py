@@ -46,7 +46,9 @@ def test_the_panel_is_offered_on_its_own_page(
         assert panel.count() == 1, path
         assert panel.get_attribute("data-placement") == placement, path
         assert page.locator('[data-testid="help-form"]').count() == 1, path
-        assert page.locator('[data-testid="help-ask-the-city"]').count() == 1, path
+        # Changed deliberately (the pop-out slice): the form that asks a
+        # person at the City moved to the contact page of the City website.
+        assert page.locator('[data-testid="help-escalate-form"]').count() == 0, path
     assert page.recorded_errors == []
 
 
@@ -126,18 +128,16 @@ def test_the_launcher_opens_the_assistant_away_from_the_form(
 def test_the_ask_the_city_button_works_without_javascript(
     browser, server: BrowserServer
 ) -> None:
+    """The form that asks a person at the City is on the contact page."""
     context = browser.new_context(java_script_enabled=False)
     try:
         page = sign_in(context, server, "persona_applicant")
-        page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
-        page.locator('[data-testid="help-escalate-question"]').fill(FENCE_QUESTION)
-        # The request opens in its own browsing context, as on the form.
-        with context.expect_page() as opened:
-            page.locator('[data-testid="help-ask-the-city"]').click()
-        answer = opened.value
-        answer.wait_for_load_state("domcontentloaded")
-        assert answer.locator('[data-testid="help-request"]').count() == 1
-        status = answer.locator('[data-testid="help-request"]').first.get_attribute(
+        page.goto(f"{server.base_url}/city/contact", wait_until="domcontentloaded")
+        page.locator('[data-testid="contact-question"]').fill(FENCE_QUESTION)
+        page.locator('[data-testid="contact-submit"]').click()
+        page.wait_for_selector('[data-testid="contact-request"]')
+        assert page.locator('[data-testid="contact-request"]').count() == 1
+        status = page.locator('[data-testid="contact-request"]').first.get_attribute(
             "data-status"
         )
         assert status == "open"

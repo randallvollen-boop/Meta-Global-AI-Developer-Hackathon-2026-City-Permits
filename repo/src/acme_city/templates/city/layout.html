@@ -44,7 +44,11 @@
       <span class="city-wordmark"><b>City of Acme</b>{% if portal_page %}<small data-testid="city-service-name">Permit Services</small>{% endif %}</span>
     </a>
     <div class="city-header-tools">
+    {% if portal_page and is_applicant and path != '/apply/help/panel' %}
+    <a class="city-help-link" href="/apply/help/panel?placement=popout" target="_blank" rel="noopener" data-help-popout data-testid="help-popout">Ask<span class="city-help-more"> about your permit</span></a>
+    {% else %}
     <a class="city-help-link" href="/help" data-testid="help-link"{% if active == 'help' %} aria-current="page"{% endif %}>Help<span class="city-help-more"> and guides</span></a>
+    {% endif %}
     {% if is_applicant %}
     {{ persona_menu(actor, personas, name=shown_name, name_testid='applicant-name', wrapper_testid='applicant-account') }}
     {% else %}
@@ -58,7 +62,7 @@
       <ul data-testid="applicant-nav">
         <li><a href="/apply/track" data-testid="nav-my-permits"{% if portal_active == 'track' %} aria-current="page"{% endif %}>My permits</a></li>
         <li><a href="/apply" data-testid="nav-start"{% if portal_active == 'start' %} aria-current="page"{% endif %}>Start an application</a></li>
-        <li><a href="/apply/help/panel" data-testid="nav-help"{% if portal_active == 'help' %} aria-current="page"{% endif %}>Help</a></li>
+        <li><a href="/apply/help/panel?placement=popout" target="_blank" rel="noopener" data-help-popout data-testid="nav-help"{% if portal_active == 'help' %} aria-current="page"{% endif %}>Help</a></li>
       </ul>
       {% else %}
       <ul>

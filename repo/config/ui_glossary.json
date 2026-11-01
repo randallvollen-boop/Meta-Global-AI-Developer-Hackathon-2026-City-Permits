@@ -289,7 +289,7 @@
     },
     "admin": {
       "title": "Administration",
-      "purpose": "Configuration and persona administration for the demonstration, on six tabs: Permit types, Appearance, Users and roles, Agent processing, Reason codes and Configuration log. Every change is a governed, audited action. Changes apply to new intake and never rewrite a submitted case. Configuration never implies a business approval.",
+      "purpose": "Configuration and persona administration for the demonstration, on seven tabs: Permit types, Appearance, Users and roles, Agent processing, Reason codes, Configuration log and Sample data. Every change is a governed, audited action. Changes apply to new intake and never rewrite a submitted case. Configuration never implies a business approval.",
       "can_do": [
         "Add or change a permit type and what it requires.",
         "Review the users and roles, the agent processing settings, the reason codes and the configuration log."

@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from acme_city.applicant_help.config import load_config
+from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_help.views import applicant_requests
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
@@ -239,6 +240,7 @@ def city_home(
 def city_contact(
     request: Request,
     error: str = "",
+    conversation: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ):
@@ -247,8 +249,22 @@ def city_contact(
     A visitor reads the phone numbers and the office hours.  An applicant who
     is signed in may also send a question to the City's support desk; the
     question becomes a help request and a person answers it.
+
+    A request made from a conversation continues that conversation, so the
+    question reaches the case the applicant was asking about and the answer
+    of the City reaches the applicant in the same place.
     """
     is_applicant = actor is not None and actor_label(session, actor.actor_id) == "Applicant"
+    owned = None
+    carried = ""
+    if is_applicant and actor is not None and conversation:
+        service = ApplicantHelpService(session, settings=request.app.state.settings)
+        owned = service.conversation_for(actor, conversation)
+        if owned is not None:
+            # The last question of the conversation is the one the applicant
+            # wants to send to a person, so the box starts with it.
+            turns = service.turns(owned)
+            carried = turns[-1].question if turns else ""
     context = city_context(
         request,
         session,
@@ -264,6 +280,9 @@ def city_contact(
         contact_requests=(
             applicant_requests(session, actor) if is_applicant and actor is not None else []
         ),
+        contact_conversation_id=owned.id if owned is not None else "",
+        contact_conversation_version=owned.version if owned is not None else 0,
+        contact_question=carried,
         csrf_token=(
             csrf_token(request.app.state.settings, actor.session_id)
             if is_applicant and actor is not None

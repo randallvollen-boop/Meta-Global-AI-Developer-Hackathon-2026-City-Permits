@@ -122,7 +122,7 @@ def test_guide_is_saved_and_repeatable_without_muse(
     first_answer = first.text.split(marker, 1)[1].split("</p>", 1)[0]
     second_answer = second.text.split(marker, 1)[1].split("</p>", 1)[0]
     assert first_answer == second_answer
-    assert "Saved guidance. Live Muse is off." in first.text
+    assert "Saved guidance." in first.text
     # No call to the model was made on the way to the saved answer.
     assert tripwire.calls == []
 
@@ -142,7 +142,7 @@ def test_the_focused_case_renders_the_same_saved_guide_twice(
     first_answer = first.text.split(marker, 1)[1].split("</p>", 1)[0]
     second_answer = second.text.split(marker, 1)[1].split("</p>", 1)[0]
     assert first_answer == second_answer
-    assert "Saved guidance. Live Muse is off." in first.text
+    assert "Saved guidance." in first.text
     assert tripwire.calls == []
 
 

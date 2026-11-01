@@ -45,8 +45,15 @@ REVIEW_BACKLOG_STATUSES: tuple[str, ...] = ("ready_for_review", "under_review")
 #: The panels the help assistant is offered on.
 #:
 #: ``contact`` is the contact page of the City website, where the applicant
-#: asks a person at the City instead of the assistant.
-PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track", "contact")
+#: asks a person at the City instead of the assistant.  ``popout`` is the
+#: small window the assistant opens in.
+PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track", "contact", "popout")
+
+#: The placements the panel page itself is opened with.
+#:
+#: The page is the body of the pop-out window; ``form`` is the plain page the
+#: application form opens when there is no script.
+PANEL_PLACEMENTS: tuple[str, ...] = ("form", "popout")
 
 #: The plain words of the backlog statuses.
 STATUS_WORDS: dict[str, str] = {
@@ -333,6 +340,7 @@ def panel_context(
 
 
 __all__ = [
+    "PANEL_PLACEMENTS",
     "PLACEMENTS",
     "REVIEW_BACKLOG_STATUSES",
     "STATUS_WORDS",

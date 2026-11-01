@@ -1,12 +1,16 @@
 {# The applicant help panel.
 
-   The panel is offered on the chooser, on the application form and on the
-   tracker.  Its question form is a form of its own: it is never part of the
-   application form, so the applicant's typed fields and files stay intact.
-   On the application form the answer opens in a separate browsing context,
-   which is what keeps that form untouched without JavaScript. #}
+   The panel is the body of the help window, which the header of the City
+   website opens in a small window of its own.  Its question form is a form
+   of its own: it is never part of the application form, so the applicant's
+   typed fields and files stay intact.
+
+   The panel shows what a worker needs to decide.  The rest sits behind
+   "More details", and the rule text of a citation sits behind "Show the rule
+   text". #}
 {% from "components/muse_source.html" import muse_source %}
-<section class="panel help-panel" id="help-panel" data-testid="help-panel" data-placement="{{ help_placement }}" data-help-no-match="{{ help_no_match_text }}">
+{% set contact_href = "/city/contact" ~ ("?conversation=" ~ help_conversation_id if help_conversation_id else "") ~ "#ask" %}
+<section class="panel help-panel" id="help-panel" data-testid="help-panel" data-placement="{{ help_placement }}" data-help-no-match="{{ help_no_match_text }}" data-help-conversation="{{ help_conversation_id }}">
   <h2>Ask about your permit</h2>
   <p class="muted" data-testid="help-notice">{{ help_notice }}</p>
 
@@ -27,11 +31,22 @@
 
   {% if help_suggestions %}
   <p class="muted" id="help-suggestions-label">Questions the City is often asked:</p>
+  {% set shown_suggestions = help_suggestions[:3] %}
   <ul class="help-suggestions" aria-labelledby="help-suggestions-label" data-testid="help-suggestions">
-    {% for item in help_suggestions %}
+    {% for item in shown_suggestions %}
     <li><a class="btn ghost" href="?{% if help_query %}{{ help_query }}&amp;{% endif %}help_question={{ item.text | urlencode }}" data-help-suggestion="{{ item.text }}" data-testid="help-suggestion">{{ item.text }}</a></li>
     {% endfor %}
   </ul>
+  {% if help_suggestions|length > 3 %}
+  <details class="detail-more" data-testid="help-more-questions">
+    <summary>More questions</summary>
+    <ul class="help-suggestions" aria-labelledby="help-suggestions-label">
+      {% for item in help_suggestions[3:] %}
+      <li><a class="btn ghost" href="?{% if help_query %}{{ help_query }}&amp;{% endif %}help_question={{ item.text | urlencode }}" data-help-suggestion="{{ item.text }}" data-testid="help-suggestion">{{ item.text }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
   {% endif %}
 
   <div data-help-conversation>
@@ -48,7 +63,7 @@
         <p class="muted" data-testid="help-answer-label">{% if turn.run %}{{ muse_source(turn.run) }}{% else %}{{ turn.label }}{% endif %}</p>
         {% endif %}
         {% if turn.declined_text %}
-        <p data-testid="help-declined" data-reason="{{ turn.reason }}"><strong>The assistant did not answer.</strong> {{ turn.declined_text }} You can ask the City below{% if turn.paragraphs %}; the rule text that matches your words is shown here instead{% endif %}.</p>
+        <p data-testid="help-declined" data-reason="{{ turn.reason }}"><strong>The assistant did not answer.</strong> {{ turn.declined_text }}{% if turn.paragraphs %} The rule text that matches your words is shown here instead.{% endif %} <a href="{{ contact_href }}" data-testid="help-declined-link">Ask a person at the City</a></p>
         {% endif %}
         {% if turn.paragraphs %}
         <ul class="help-citations" data-testid="help-citations">
@@ -87,65 +102,48 @@
 
   <div data-help-escalation-slot>
   {% if help_escalation and help_escalation.offered %}
-  <p class="callout" role="status" data-testid="help-escalation-prompt" data-reason="{{ help_escalation.reason }}">{{ help_escalation.text }} <a href="#help-ask-city">Go to Ask the City</a></p>
+  <p class="callout" role="status" data-testid="help-escalation-prompt" data-reason="{{ help_escalation.reason }}">{{ help_escalation.text }} <a href="{{ contact_href }}" data-testid="help-escalation-link">Ask a person at the City</a></p>
   {% endif %}
   </div>
-  <h3 id="help-ask-city">Ask a person at the City</h3>
-  <p class="muted">Your question goes to the City's support desk. A person answers it.</p>
-  <form method="post" action="/apply/help/escalate" class="help-form" data-help-form{% if help_placement == 'form' %} target="_blank"{% endif %} data-testid="help-escalate-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="placement" value="{{ help_placement }}">
-    <input type="hidden" name="type_key" value="{{ help_type_key }}">
-    <input type="hidden" name="application_id" value="{{ help_application_id }}">
-    <input type="hidden" name="conversation_id" value="{{ help_conversation_id }}">
-    <input type="hidden" name="conversation_version" value="{{ help_conversation_version }}">
-    <input type="hidden" name="return_ref" value="{{ help_reference }}">
-    {% if help_last_question %}
-    <input type="hidden" name="question" value="{{ help_last_question }}">
-    <p class="muted" data-testid="help-escalate-question">Your question: {{ help_last_question }}</p>
+
+  <details class="detail-more" data-testid="help-more">
+    <summary>More details</summary>
+
+    {% if help_requests %}
+    <h3>Your requests to the City</h3>
+    <ul data-testid="help-requests">
+      {% for item in help_requests %}
+      <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} ({{ item.status }}){% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if help_timing.service_target or help_timing.review_area %}
+    <h3>How long review takes</h3>
+    <ul class="help-timing" data-testid="help-timing">
+      {% if help_timing.service_target %}
+      <li data-testid="help-service-target">
+        Service target for {{ help_timing.permit_type_label }}: {{ help_timing.service_target.days }} days.
+        <span class="muted">{{ help_timing.service_target.definition }}</span>
+      </li>
+      {% endif %}
+      {% if help_timing.review_area %}
+      <li data-testid="help-review-backlog">
+        Cases in the {{ help_timing.review_area.name }} review area right now: {{ help_timing.review_area.count }} ({{ help_timing.review_area.statuses | join(', ') }}).
+        <span class="muted">{{ help_timing.review_area.definition }} Read at {{ help_timing.as_of }}.</span>
+      </li>
+      {% endif %}
+    </ul>
+    <p class="muted" data-testid="help-timing-note">{{ help_timing.note }}</p>
     {% else %}
-    <p class="field">
-      <label for="help-escalate-question">Your question</label>
-      <textarea id="help-escalate-question" name="question" rows="2" maxlength="{{ help_max_length }}" required data-testid="help-escalate-question"></textarea>
-    </p>
+    <p class="muted" data-testid="help-timing-none">Choose a permit type to see its service target and the backlog of its review area.</p>
     {% endif %}
-    <p><button type="submit" class="btn" data-testid="help-ask-the-city">Ask the City</button></p>
-  </form>
 
-  {% if help_requests %}
-  <h3>Your requests to the City</h3>
-  <ul data-testid="help-requests">
-    {% for item in help_requests %}
-    <li data-testid="help-request" data-status="{{ item.status }}">{{ item.created_at }} ({{ item.status }}){% if item.reply %}: <span data-testid="help-request-reply"><strong>Answer from the City:</strong> {{ item.reply }}</span>{% endif %}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-
-  {% if help_timing.service_target or help_timing.review_area %}
-  <h3>How long review takes</h3>
-  <ul class="help-timing" data-testid="help-timing">
-    {% if help_timing.service_target %}
-    <li data-testid="help-service-target">
-      Service target for {{ help_timing.permit_type_label }}: {{ help_timing.service_target.days }} days.
-      <span class="muted">{{ help_timing.service_target.definition }}</span>
-    </li>
+    {% if help_next_steps %}
+    <h3>What you can do now</h3>
+    <ul data-testid="help-next-steps">
+      {% for step in help_next_steps %}<li>{{ step }}</li>{% endfor %}
+    </ul>
     {% endif %}
-    {% if help_timing.review_area %}
-    <li data-testid="help-review-backlog">
-      Cases in the {{ help_timing.review_area.name }} review area right now: {{ help_timing.review_area.count }} ({{ help_timing.review_area.statuses | join(', ') }}).
-      <span class="muted">{{ help_timing.review_area.definition }} Read at {{ help_timing.as_of }}.</span>
-    </li>
-    {% endif %}
-  </ul>
-  <p class="muted" data-testid="help-timing-note">{{ help_timing.note }}</p>
-  {% else %}
-  <p class="muted" data-testid="help-timing-none">Choose a permit type to see its service target and the backlog of its review area.</p>
-  {% endif %}
-
-  {% if help_next_steps %}
-  <h3>What you can do now</h3>
-  <ul data-testid="help-next-steps">
-    {% for step in help_next_steps %}<li>{{ step }}</li>{% endfor %}
-  </ul>
-  {% endif %}
+  </details>
 </section>

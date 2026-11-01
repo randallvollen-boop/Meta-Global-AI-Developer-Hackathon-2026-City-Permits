@@ -116,8 +116,11 @@ def test_the_panel_has_a_page_of_its_own_and_the_chooser_links_to_it(
     panel = client.get(PANEL_PATH).text
     assert 'data-testid="help-panel"' in panel
     assert 'data-testid="help-form"' in panel
-    assert 'data-testid="help-ask-the-city"' in panel
     assert 'data-testid="help-suggestion"' in panel
+    # Changed deliberately (the pop-out slice): the form that asks a person
+    # at the City moved to the one contact page of the City website.
+    assert 'data-testid="help-escalate-form"' not in panel
+    assert 'data-testid="help-ask-the-city"' not in panel
     # The chooser no longer carries the panel; it offers a launcher that
     # opens the panel on its own page.
     chooser = client.get("/apply").text

@@ -7,7 +7,7 @@ the persona.  The guide reads nothing else and decides nothing.
 
 The guide never reaches a model.  It has no write tool, it names no action
 that the context does not hold, and it does not import the Muse package.  The
-label it returns is exact: "Saved guidance. Live Muse is off."
+label it returns is exact: "Saved guidance."
 """
 # REQUIRES: UX-01, UX-02
 # The guide answers from saved words and recorded state.  It cannot call a
@@ -29,7 +29,7 @@ GUIDE_PATH = REPO_DIR / "config" / "steward_guide.json"
 GUIDE_MODE = "saved_guidance"
 
 #: The exact label the guide shows while no model is called.
-OFFLINE_LABEL = "Saved guidance. Live Muse is off."
+OFFLINE_LABEL = "Saved guidance."
 
 #: The order in which the guide offers its next actions: address invalid or
 #: stale evidence, resolve blocking identity questions, review eligible

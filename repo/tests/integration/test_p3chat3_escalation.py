@@ -93,9 +93,11 @@ def test_the_third_unsuccessful_turn_prompts_ask_the_city(client, environment) -
         version = version_of(environment, conversation) if conversation else 0
         conversation, _ = ask(client, question, conversation=conversation, version=str(version))
         body = panel(client, conversation).text
-        assert 'data-testid="help-ask-the-city"' in body  # the button never depends on the prompt
         assert ('data-testid="help-escalation-prompt"' in body) is (number >= 3), number
     assert "could not answer your last 3 questions" in body
+    # The prompt points at the one contact page of the City website, and it
+    # carries the conversation, so the request reaches the case.
+    assert re.search(r'href="/city/contact(\?conversation=[^"]*)?#ask"', body), body
 
 
 def test_a_matched_turn_is_not_counted(client, environment) -> None:

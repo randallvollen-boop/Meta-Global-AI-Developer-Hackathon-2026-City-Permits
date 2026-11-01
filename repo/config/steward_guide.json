@@ -2,7 +2,7 @@
   "version": "1",
   "mode": {
     "key": "saved_guidance",
-    "label": "Saved guidance. Live Muse is off."
+    "label": "Saved guidance."
   },
   "no_evidence": "No evidence recorded.",
   "no_guidance": "This screen has no saved guidance yet.",

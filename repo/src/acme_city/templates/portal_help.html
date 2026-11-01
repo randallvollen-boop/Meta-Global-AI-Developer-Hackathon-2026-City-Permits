@@ -1,7 +1,10 @@
+{# The body of the help window.
+
+   The window is opened from the header of the City website and from the
+   applicant screens.  It carries the panel and nothing else: the title of
+   the window says what it is. #}
 {% extends "city/layout.html" %}
 
 {% block content %}
-<div class="page-head"><div><h1>Help with your permit</h1><p class="sub">The assistant explains the City's published rules and your own application. It does not decide permits or give legal advice.</p></div></div>
 {% include "components/help_panel.html" %}
-<p><a class="btn" href="/apply">Back to the permit list</a>{% if help_type_key %} <a class="btn" href="/apply/{{ help_type_key }}">Back to your application form</a>{% endif %}</p>
 {% endblock %}

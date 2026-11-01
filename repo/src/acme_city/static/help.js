@@ -6,16 +6,47 @@
    browsing context so the typed fields and files stay intact.
 
    When the script is present the question is sent in the background and the
-   answer is rendered in place, and a suggested question fills the box
-   instead of navigating.  Nothing here decides anything: the server answers
-   from its own source bundle and the script only shows what it sent back. */
+   answer is rendered in place, a suggested question fills the box instead of
+   navigating, and the launcher opens the assistant in a small window of its
+   own.  Nothing here decides anything: the server answers from its own
+   source bundle and the script only shows what it sent back. */
 
 (function () {
   "use strict";
 
+  /* The window the assistant opens in.  It keeps the name, so a second
+     launcher reuses the same window. */
+  var POPOUT_NAME = "acme-permit-help";
+  var POPOUT_FEATURES = "width=420,height=680,noopener";
+  var POPOUT_PATH = "/apply/help/panel";
+
   function panelOf(node) {
     if (!node || !node.closest) return null;
     return node.closest("[data-testid=help-panel]");
+  }
+
+  function contactHref(panel) {
+    /* The contact page continues the conversation of the panel, so the
+       question reaches the case the applicant was asking about. */
+    var conversation = panel ? panel.getAttribute("data-help-conversation") : "";
+    return "/city/contact" + (conversation ? "?conversation=" + conversation : "") + "#ask";
+  }
+
+  function popoutUrl(link) {
+    /* The window opens the panel in the pop-out placement, and it keeps the
+       context of the page it was opened from: the application the applicant
+       was looking at. */
+    var href = (link && link.getAttribute("href")) || POPOUT_PATH;
+    var url = href.split("#")[0];
+    if (url.indexOf("placement=") === -1) {
+      url += (url.indexOf("?") === -1 ? "?" : "&") + "placement=popout";
+    }
+    return url;
+  }
+
+  function openPopout(event) {
+    event.preventDefault();
+    window.open(popoutUrl(event.currentTarget), POPOUT_NAME, POPOUT_FEATURES);
   }
 
   function syncConversation(panel, conversationId, version) {
@@ -28,6 +59,9 @@
     for (var i = 0; i < versions.length; i++) {
       versions[i].value = String(version);
     }
+    /* The link to the contact page carries the conversation, so the request
+       reaches the case the applicant was asking about. */
+    panel.setAttribute("data-help-conversation", conversationId || "");
   }
 
   function citationLabel(citation) {
@@ -71,17 +105,20 @@
         var head = document.createElement("strong");
         head.textContent = "The assistant did not answer.";
         declined.appendChild(head);
-        declined.appendChild(
-          document.createTextNode(
-            " " +
-              turn.declined_text +
-              " You can ask the City below" +
-              (paragraphs.length
-                ? "; the rule text that matches your words is shown here instead"
-                : "") +
-              "."
-          )
-        );
+        declined.appendChild(document.createTextNode(" " + turn.declined_text));
+        if (paragraphs.length) {
+          declined.appendChild(
+            document.createTextNode(
+              " The rule text that matches your words is shown here instead."
+            )
+          );
+        }
+        declined.appendChild(document.createTextNode(" "));
+        var ask = document.createElement("a");
+        ask.setAttribute("href", contactHref(panel));
+        ask.setAttribute("data-testid", "help-declined-link");
+        ask.textContent = "Ask a person at the City";
+        declined.appendChild(ask);
         item.appendChild(declined);
       }
       if (paragraphs.length) {
@@ -147,29 +184,11 @@
     prompt.setAttribute("data-reason", escalation.reason || "");
     prompt.appendChild(document.createTextNode((escalation.text || "") + " "));
     var link = document.createElement("a");
-    link.setAttribute("href", "#help-ask-city");
-    link.textContent = "Go to Ask the City";
+    link.setAttribute("href", contactHref(panel));
+    link.setAttribute("data-testid", "help-escalation-link");
+    link.textContent = "Ask a person at the City";
     prompt.appendChild(link);
     slot.appendChild(prompt);
-  }
-
-  function carryLastQuestion(panel, payload) {
-    var turns = payload.turns || [];
-    if (!turns.length) return;
-    var last = turns[turns.length - 1].question || "";
-    var form = panel.querySelector("[data-testid=help-escalate-form]");
-    if (!form) return;
-    var hidden = form.querySelector('input[type=hidden][name="question"]');
-    var area = form.querySelector('textarea[name="question"]');
-    var shown = form.querySelector("[data-testid=help-escalate-question]");
-    if (hidden) {
-      hidden.value = last;
-      if (shown && shown.tagName !== "TEXTAREA") shown.textContent = "Your question: " + last;
-    } else if (area && (!area.value || area.value === area.getAttribute("data-carried"))) {
-      /* Carry the last question over, but never overwrite what the applicant typed. */
-      area.value = last;
-      area.setAttribute("data-carried", last);
-    }
   }
 
   function showRefusal(form, message) {
@@ -210,7 +229,6 @@
         );
         renderTurns(panel, result.payload);
         renderEscalation(panel, result.payload.escalation);
-        carryLastQuestion(panel, result.payload);
       })
       .catch(function () {
         /* The ordinary post is the fallback: it works without this script. */
@@ -238,6 +256,13 @@
         field.value = this.getAttribute("data-help-suggestion") || "";
         field.focus();
       });
+    }
+    /* Every launcher opens the assistant in the small window of its own. */
+    var launchers = document.querySelectorAll(
+      "[data-help-popout], [data-testid=help-launcher]"
+    );
+    for (var i = 0; i < launchers.length; i++) {
+      launchers[i].addEventListener("click", openPopout);
     }
   }
 

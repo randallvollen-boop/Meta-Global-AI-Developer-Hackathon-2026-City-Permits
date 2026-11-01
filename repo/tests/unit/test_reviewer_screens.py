@@ -230,7 +230,7 @@ def test_the_early_resolution_board_keeps_the_case_and_collapses_the_rest(
     assert 'data-testid="group-findings"' not in page
     assert "Cases to resolve" not in page
     assert 'data-testid="steward-guide-answer"' in page
-    assert "Saved guidance. Live Muse is off." in page
+    assert "Saved guidance." in page
     assert 'data-testid="resolve-case"' in page
     assert "The site plan is missing." in page
     assert "Missing document · Blocking" in page

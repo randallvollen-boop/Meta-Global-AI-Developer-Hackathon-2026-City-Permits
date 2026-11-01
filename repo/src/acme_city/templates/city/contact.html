@@ -19,11 +19,11 @@
     <form method="post" action="/apply/help/escalate" data-testid="contact-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="placement" value="contact">
-      <input type="hidden" name="conversation_id" value="">
-      <input type="hidden" name="conversation_version" value="0">
+      <input type="hidden" name="conversation_id" value="{{ contact_conversation_id }}">
+      <input type="hidden" name="conversation_version" value="{{ contact_conversation_version }}">
       <p class="field">
         <label for="contact-question">Your question</label>
-        <textarea id="contact-question" name="question" rows="3" maxlength="{{ question_max_length }}" required data-testid="contact-question"></textarea>
+        <textarea id="contact-question" name="question" rows="3" maxlength="{{ question_max_length }}" required data-testid="contact-question">{{ contact_question }}</textarea>
       </p>
       <p><button type="submit" class="btn primary" data-testid="contact-submit">Send my question</button></p>
     </form>

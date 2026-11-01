@@ -90,6 +90,11 @@ def _help_return_path(
         return f"/apply/track?{urlencode(query)}"
     if placement == "contact":
         return "/city/contact#ask"
+    if placement == "popout":
+        query = {"placement": "popout"}
+        if conversation_id:
+            query["conversation"] = conversation_id
+        return f"/apply/help/panel?{urlencode(query)}"
     return f"/apply?{urlencode({'help': conversation_id})}"
 
 
@@ -136,13 +141,17 @@ def ui_portal_help_panel(
     type_key: str = "",
     application_id: str = "",
     reference: str = "",
+    placement: str = "",
+    help_question: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
     """Show the help panel on its own page.
 
-    The application form opens its answer here, in a separate browsing
-    context, so the fields and the files the applicant typed stay untouched.
+    The page is the body of the pop-out window: the header of the City
+    website opens it in a small window of its own.  The application form
+    opens its answer here too, in a separate browsing context, so the fields
+    and the files the applicant typed stay untouched.
     """
     resolved, refused = _portal_guard(request, session, actor)
     if refused is not None:
@@ -160,18 +169,21 @@ def ui_portal_help_panel(
             code="not_found",
             back="/apply",
         )
+    panel_placement = (
+        placement if placement in help_views.PANEL_PLACEMENTS else "form"
+    )
     context = page_context(
         request,
         session,
         resolved,
         screen="portal",
         title="Help with your permit",
-        help_question="",
+        help_question=str(help_question or "")[:1000],
         **help_views.panel_context(
             session,
             resolved,
             service=service,
-            placement="form",
+            placement=panel_placement,
             permit_type_key=type_key,
             application_id=application_id,
             conversation_id=conversation,

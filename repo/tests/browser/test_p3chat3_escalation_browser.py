@@ -45,7 +45,6 @@ def test_the_prompt_appears_after_the_third_unsuccessful_question_with_javascrip
             page = sign_in(context, server, "persona_applicant")
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
-            assert page.locator('[data-testid="help-ask-the-city"]').is_visible(), placement
             for number, question in enumerate(NONSENSE, start=1):
                 page.locator('[data-testid="help-question"]').fill(question)
                 page.locator('[data-testid="help-submit"]').click()
@@ -54,9 +53,11 @@ def test_the_prompt_appears_after_the_third_unsuccessful_question_with_javascrip
                 )
                 prompts = page.locator('[data-testid="help-escalation-prompt"]').count()
                 assert prompts == (1 if number == 3 else 0), (placement, number)
-            assert page.locator('[data-testid="help-ask-the-city"]').is_visible()
-            # The textarea of Ask the City is carried over from the last question.
-            assert page.locator('[data-testid="help-escalate-question"]').first is not None
+            # Changed deliberately (the pop-out slice): the prompt points at
+            # the one contact page of the City website.
+            link = page.locator('[data-testid="help-escalation-link"]')
+            assert link.count() == 1, placement
+            assert "/city/contact" in link.get_attribute("href")
             assert errors == [], placement
         finally:
             context.close()
@@ -74,14 +75,16 @@ def test_ask_the_city_after_the_prompt_with_javascript(browser, server: BrowserS
                 "(q) => document.body.innerText.includes(q)", arg=question
             )
         assert page.locator('[data-testid="help-escalation-prompt"]').count() == 1
-        assert page.locator('[data-testid="help-escalate-question"]').input_value() == NONSENSE[-1]
-        # The request opens in its own browsing context, as on the form.
-        with context.expect_page() as opened:
-            page.locator('[data-testid="help-ask-the-city"]').click()
-        answer = opened.value
-        answer.wait_for_load_state("domcontentloaded")
-        assert answer.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
-        assert answer.locator('[data-testid="help-escalation-prompt"]').count() == 0  # a request is open
+        # The prompt leads to the contact page, and the last question of the
+        # conversation is the one the box starts with.
+        page.locator('[data-testid="help-escalation-link"]').click()
+        page.wait_for_url(f"{server.base_url}/city/contact*")
+        assert page.locator('[data-testid="contact-question"]').input_value() == NONSENSE[-1]
+        page.locator('[data-testid="contact-submit"]').click()
+        page.wait_for_selector('[data-testid="contact-request"]')
+        request = page.locator('[data-testid="contact-request"]').first
+        assert request.get_attribute("data-status") == "open"
+        assert NONSENSE[-1] in request.inner_text()
     finally:
         context.close()
 
@@ -102,12 +105,14 @@ def test_the_prompt_and_ask_the_city_work_without_javascript(browser, server: Br
             assert "/apply/help/panel" in current.url
             assert current.locator('[data-testid="help-turn"]').count() == number
             assert current.locator('[data-testid="help-escalation-prompt"]').count() == (1 if number == 3 else 0)
-        with context.expect_page() as asked:
-            current.locator('[data-testid="help-ask-the-city"]').click()
-        result = asked.value
-        result.wait_for_load_state("domcontentloaded")
-        result.wait_for_selector('[data-testid="help-request"]')
-        assert result.locator('[data-testid="help-escalation-prompt"]').count() == 0
+        current.locator('[data-testid="help-escalation-link"]').click()
+        current.wait_for_load_state("domcontentloaded")
+        assert "/city/contact" in current.url
+        current.locator('[data-testid="contact-submit"]').click()
+        current.wait_for_selector('[data-testid="contact-request"]')
+        assert current.locator('[data-testid="contact-request"]').first.get_attribute(
+            "data-status"
+        ) == "open"
     finally:
         context.close()
 
@@ -131,11 +136,14 @@ def test_the_panel_prompts_in_its_own_context_and_keeps_the_form(browser, server
             assert "/apply/help/panel" in current.url
             assert current.locator('[data-testid="help-turn"]').count() == number
         assert current.locator('[data-testid="help-escalation-prompt"]').count() == 1
-        with context.expect_page() as asked:
-            current.locator('[data-testid="help-ask-the-city"]').click()
-        result = asked.value
-        result.wait_for_load_state("domcontentloaded")
-        assert result.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
+        current.locator('[data-testid="help-escalation-link"]').click()
+        current.wait_for_load_state("domcontentloaded")
+        assert "/city/contact" in current.url
+        current.locator('[data-testid="contact-submit"]').click()
+        current.wait_for_selector('[data-testid="contact-request"]')
+        assert current.locator('[data-testid="contact-request"]').first.get_attribute(
+            "data-status"
+        ) == "open"
         assert page.locator("#f-applicant_name").input_value() == "Demo Applicant"  # the form is untouched
     finally:
         context.close()
@@ -153,17 +161,24 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
             applicant.locator('[data-testid="help-launcher"]').click()
         assistant = opened.value
         assistant.wait_for_load_state("domcontentloaded")
-        assistant.locator('[data-testid="help-escalate-question"]').fill("Who is reviewing my fence application?")
-        with applicant_context.expect_page() as asked:
-            assistant.locator('[data-testid="help-ask-the-city"]').click()
-        request = asked.value
-        request.wait_for_load_state("domcontentloaded")
-        request.wait_for_selector('[data-testid="help-request"]')
+        for question in NONSENSE:
+            assistant.locator('[data-testid="help-question"]').fill(question)
+            assistant.locator('[data-testid="help-submit"]').click()
+            assistant.wait_for_function(
+                "(q) => document.body.innerText.includes(q)", arg=question
+            )
+        # The assistant could not answer, so the window points at the contact
+        # page, which continues the conversation of the case.
+        assistant.locator('[data-testid="help-escalation-link"]').click()
+        assistant.wait_for_url(f"{server.base_url}/city/contact*")
+        assert assistant.locator('[data-testid="contact-question"]').input_value() == NONSENSE[-1]
+        assistant.locator('[data-testid="contact-submit"]').click()
+        assistant.wait_for_selector('[data-testid="contact-request"]')
 
         admin = sign_in(admin_context, server, "persona_city_administrator")
         admin.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
         card = admin.locator('[data-testid="help-request-card"]').first
-        assert "Who is reviewing my fence application?" in card.inner_text()
+        assert NONSENSE[-1] in card.inner_text()
         assert "SYN-APP-005" in card.inner_text()
         card.locator('[data-testid="help-reply"]').fill(REPLY)
         card.locator('[data-testid="help-answer"]').click()
@@ -173,9 +188,9 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
         applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
         body = applicant.inner_text("body")
         assert REPLY in body
-        # and the assistant's own page shows the answer of the City
-        request.reload(wait_until="domcontentloaded")
-        assert "Answer from the City" in request.inner_text("body")
+        # and the contact page shows the answer of the City
+        assistant.reload(wait_until="domcontentloaded")
+        assert REPLY in assistant.inner_text("body")
     finally:
         applicant_context.close()
         admin_context.close()

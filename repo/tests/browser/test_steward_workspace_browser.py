@@ -415,7 +415,7 @@ def test_the_saved_guide_opens_without_overflow_on_a_phone(
     page.goto(f"{server.base_url}/steward", wait_until="load")
     guide = page.locator('[data-testid="steward-guide"]')
     guide.locator("summary").click()
-    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert "Saved guidance." in guide.inner_text()
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, guide)
     assert_not_covered(page, page.locator("main h1").first)
@@ -498,7 +498,7 @@ def test_the_guide_of_the_incoming_work_fits_a_phone(
     guide = page.locator('[data-testid="steward-guide"]')
     assert guide.count() == 1
     guide.locator("summary").click()
-    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert "Saved guidance." in guide.inner_text()
     assert guide.locator('[data-testid="steward-guide-answer"]').inner_text().strip()
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, guide)
@@ -516,7 +516,7 @@ def test_the_guide_of_the_early_resolution_board_fits_a_phone(
     guide = page.locator('[data-testid="steward-guide"]')
     assert guide.count() == 1
     guide.locator("summary").click()
-    assert "Saved guidance. Live Muse is off." in guide.inner_text()
+    assert "Saved guidance." in guide.inner_text()
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, guide)
     assert page.recorded_errors == []

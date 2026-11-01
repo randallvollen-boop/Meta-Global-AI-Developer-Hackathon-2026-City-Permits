@@ -308,14 +308,14 @@
         "screen_label": "Start an application",
         "screen_href": "/apply",
         "steps": [
-          "Open \"Start an application\", \"My permits\" or an application form. The panel \"Ask about your permit\" is on each.",
+          "Open \"Start an application\", \"My permits\" or an application form, and click \"Ask about your permit\" in the header. The assistant opens in a small window of its own.",
           "Type your question under \"Your question\", for example \"Do I need a permit for a 6 ft fence?\"",
           "Click \"Ask\". You can also click one of the questions the City is often asked.",
           "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded replay\".",
           "Open a citation, such as ACME Code §14-306, to read the rule text the answer relies on.",
-          "If the assistant did not answer, the page says so and shows the rule text that matches your words.",
-          "To reach a person, find \"Ask a person at the City\", type under \"Your question\" and click \"Ask the City\".",
-          "Find your request under \"Your requests to the City\"."
+          "If the assistant did not answer, the window says so and shows the rule text that matches your words.",
+          "To reach a person, click \"Contact the City\" in the footer of any page, type under \"Your question\" and click \"Send my question\".",
+          "Find your request, and the City's answer to it, on the contact page and under \"More details\" in the window."
         ],
         "result": "The assistant explains the published rules and never decides a permit. A person at the City answers the request you send."
       },
@@ -491,7 +491,7 @@
       {
         "slug": "readme",
         "title": "Project overview",
-        "summary": "What the project is and how the folders are laid out.",
+        "summary": "What the project is, where it stands, and how the folders are laid out.",
         "format": "markdown",
         "root": "project",
         "path": "README.md"

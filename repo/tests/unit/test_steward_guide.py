@@ -142,7 +142,7 @@ def test_the_answer_is_the_saved_guidance_and_never_a_model_answer(
     """The label says plainly that the answer is saved and that Muse is off."""
     response = steward_guide.build(context)
     assert response.mode == "saved_guidance"
-    assert response.mode_label == "Saved guidance. Live Muse is off."
+    assert response.mode_label == "Saved guidance."
     assert response.prompt_label == "Explain this screen"
 
 
@@ -251,7 +251,7 @@ def test_the_guide_never_calls_a_model(
         monkeypatch.setitem(sys.modules, name, RaisingMuse(name))
     response = steward_guide.build(context, "what_changes")
     assert response.explanation
-    assert response.mode_label == "Saved guidance. Live Muse is off."
+    assert response.mode_label == "Saved guidance."
 
 
 def test_the_module_never_imports_the_model_package() -> None:
