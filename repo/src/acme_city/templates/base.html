@@ -97,6 +97,7 @@
         {% else %}
         <p class="persona-current"><a class="button btn" href="/select">Choose a persona</a></p>
         {% endif %}
+        <button type="button" class="top-help-link" data-tour-start data-testid="tour-start-header">Take the tour</button>
         <button type="button" class="icon-btn" id="theme-toggle" data-testid="theme-toggle" aria-label="Switch theme" title="Switch theme"><svg aria-hidden="true"><use href="#i-moon"/></svg></button>
       </div>
     </header>
@@ -169,7 +170,7 @@
       {% endfor %}
     </ul>
     {% include "components/demo_video.html" %}
-    <p class="landing-links" data-testid="guide-links">First visit? <a href="/walkthrough">Follow the walkthrough</a> or <a href="/lifecycle">see the permit life cycle</a>.</p>
+    <p class="landing-links" data-testid="guide-links">First visit? <button type="button" class="button btn sm" data-tour-start data-testid="tour-start-landing">Take the tour</button>, <a href="/walkthrough">follow the walkthrough</a> or <a href="/lifecycle">see the permit life cycle</a>.</p>
     </div>
   </section>
   {% endif %}
@@ -207,6 +208,7 @@
 <script src="/ui/static/app.js" defer></script>
 <script src="/ui/static/property.js" defer></script>
 <script src="/ui/static/ui-patterns.js" defer></script>
+{% include "components/tour_overlay.html" %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

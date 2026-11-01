@@ -102,7 +102,7 @@
 
 <footer class="city-footer">
   <div class="city-wrap">
-    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
+    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a> <span aria-hidden="true">&middot;</span> <button type="button" data-tour-start data-testid="tour-start-footer" style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;">Take the tour</button></p>
     <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
   </div>
 </footer>
@@ -132,5 +132,6 @@
 <script src="/ui/static/help.js" defer></script>
 <script src="/ui/static/applicant.js" defer></script>
 <script src="/ui/static/ui-patterns.js" defer></script>
+{% include "components/tour_overlay.html" %}
 </body>
 </html>

@@ -11,7 +11,7 @@ from conftest import BrowserServer
 
 #: The five personas and the screen each one lands on.
 PERSONAS = (
-    ("persona_applicant", "Applicant", "/apply"),
+    ("persona_applicant", "Applicant", "/city/"),
     ("persona_agent_operator", "Agent Operator", "/agents"),
     ("persona_data_steward", "Data Steward", "/steward"),
     ("persona_permit_reviewer", "Permit Reviewer", "/queue"),

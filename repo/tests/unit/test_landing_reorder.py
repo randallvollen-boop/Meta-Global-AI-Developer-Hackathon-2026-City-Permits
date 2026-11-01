@@ -25,7 +25,7 @@ from acme_city.ui.view_models import PERSONA_ORDER, PERSONA_PROFILES  # noqa: E4
 
 #: The five selectable personas and the screen each one lands on.
 PERSONAS: tuple[tuple[str, str, str], ...] = (
-    ("persona_applicant", "Applicant", "/apply"),
+    ("persona_applicant", "Applicant", "/city/"),
     ("persona_agent_operator", "Agent Operator", "/agents"),
     ("persona_data_steward", "Data Steward", "/steward"),
     ("persona_permit_reviewer", "Permit Reviewer", "/queue"),

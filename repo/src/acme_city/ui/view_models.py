@@ -139,7 +139,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "who": "A resident or contractor who needs a permit from ACME City.",
         "does": "Starts an application, answers the questions, uploads plans, pays the fee and tracks the permit until it is issued.",
         "start": "Apply for a permit, then follow it on the tracking page.",
-        "next": "/apply",
+        "next": "/city/",
         "icon": "applicant",
     },
     "Data Steward": {
