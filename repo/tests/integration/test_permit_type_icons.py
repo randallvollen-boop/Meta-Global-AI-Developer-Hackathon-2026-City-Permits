@@ -17,6 +17,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -801,10 +802,14 @@ def test_portal_chooser_and_form_show_the_icon_of_every_type(
     # stock line symbols of the City sprite, never the generated pictures.
     assert "<img" not in chooser.text
     assert "permit-type-icons" not in chooser.text
-    for key, url in urls.items():
+    for key in urls:
         form = client.get(f"/apply/{key}")
         assert form.status_code == 200, key
-        assert f'<img class="type-ic" src="{url}" alt="" data-testid="form-icon">' in form.text, key
+        # Changed deliberately (the applicant restyle, A2): the form names
+        # the type with a stock line symbol too, never a picture.
+        assert "<img" not in form.text, key
+        assert 'data-testid="form-icon"' not in form.text, key
+        assert re.search(r'<use href="#c-[a-z]+"/>', form.text), key
 
 
 def test_city_home_and_rules_fees_show_no_per_type_icon_by_design(

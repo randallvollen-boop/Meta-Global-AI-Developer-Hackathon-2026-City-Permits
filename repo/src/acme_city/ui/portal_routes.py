@@ -46,7 +46,6 @@ from acme_city.ui.router import (
     ui_actor,
     verify_csrf,
 )
-from acme_city.ui import view_models
 
 router = APIRouter(tags=["portal"])
 
@@ -158,8 +157,6 @@ def _form_context(
     attempted: bool = False,
     error: str = "",
     notice: str = "",
-    help_conversation_id: str = "",
-    help_question: str = "",
     upload_problems: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     values = spec.with_defaults(values)
@@ -168,9 +165,7 @@ def _form_context(
     state = service.completeness(
         spec, values, set(documents), certification_accepted=certification_accepted, sent_separately=declared
     )
-    icon = None
-    row = service._type_row(spec.type_key)  # noqa: SLF001 - same package
-    icon = view_models.icon_for_permit_type(session, row)
+    symbols = portal_content.content().get("type_icons", {})
     return page_context(
         request,
         session,
@@ -184,9 +179,8 @@ def _form_context(
         state=state,
         sent_separately=declared,
         attempted=attempted and not state["can_submit"],
-        icon_url=icon["url"] if icon else "",
+        icon_symbol=str(symbols.get(spec.type_key, "c-permit")),
         certification=forms.CERTIFICATION_TEXT,
-        portal_notice=forms.PORTAL_NOTICE,
         form_error=error,
         form_notice=notice,
         located=service.locate(values.get("address_text", "")),
@@ -197,15 +191,6 @@ def _form_context(
         document_purposes={
             doc_type: portal_content.document_purpose(doc_type) for doc_type, _label in spec.documents
         },
-        help_question=help_question,
-        **_help_panel(
-            request,
-            session,
-            actor,
-            placement="form",
-            permit_type_key=spec.type_key,
-            conversation_id=help_conversation_id,
-        ),
     )
 
 
@@ -524,7 +509,6 @@ def ui_portal_submitted(
         title="Application received",
         tracked=tracked,
         receipt=portal_content.content()["receipt"],
-        portal_notice=forms.PORTAL_NOTICE,
     )
     return render(request, "portal_submitted.html", context)
 
@@ -611,8 +595,6 @@ def ui_portal_form(
     type_key: str,
     request: Request,
     draft: str = "",
-    help_conversation: str = Query("", alias="help"),
-    help_question: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
@@ -645,7 +627,6 @@ def ui_portal_form(
     context = _form_context(
         request, session, resolved, service, spec, values=values,
         certification_accepted=certification_accepted, draft=row, sent_separately=declared,
-        help_conversation_id=help_conversation, help_question=help_question,
     )
     return render(request, "portal_form.html", context)
 

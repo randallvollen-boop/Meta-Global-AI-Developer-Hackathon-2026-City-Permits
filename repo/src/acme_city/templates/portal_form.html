@@ -49,8 +49,8 @@
 
 <div class="page-head">
   <div>
-    <div class="form-kicker">
-      {% if icon_url %}<span class="type-ic-wrap"><img class="type-ic" src="{{ icon_url }}" alt="" data-testid="form-icon"></span>{% endif %}
+    <div class="form-kicker" data-testid="form-kicker">
+      <span class="type-ic-wrap"><svg class="type-ic-fallback" aria-hidden="true"><use href="#{{ icon_symbol }}"/></svg></span>
       <span class="muted" data-testid="form-pill">{{ spec.pill_text }}</span>
     </div>
     <h1 data-testid="form-title">{{ spec.label }}</h1>
@@ -58,13 +58,11 @@
     {% if spec.note %}<p class="muted" data-testid="form-note">{{ spec.note }}</p>{% endif %}
     {% if spec.discretionary %}<p class="muted" data-testid="form-discretionary">{{ portal_content().discretionary_note }}</p>{% endif %}
   </div>
-  <div class="actions">{{ ui.help_button('apply_form') }}</div>
+  <div class="actions">{{ ui.help_button('apply_form') }}<a class="btn ghost" href="/apply/help/panel?type_key={{ spec.type_key }}" target="_blank" rel="noopener" data-testid="help-launcher">Ask about your permit</a></div>
 </div>
-<p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
 {% if form_error %}<p class="action-denied" role="alert" data-testid="form-error">{{ form_error }}</p>{% endif %}
 {% if form_notice %}<p class="muted" role="status" data-testid="form-notice">{{ form_notice }}</p>{% endif %}
 
-<div class="form-layout">
 <form method="post" action="/apply/{{ spec.type_key }}" enctype="multipart/form-data" class="portal-form" novalidate data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-locate-url="/apply/locate" data-testid="application-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="draft" value="{{ draft.reference if draft else '' }}">
@@ -94,8 +92,13 @@
     </p>
     <div class="did-you-mean" role="status" aria-live="polite" data-testid="did-you-mean" data-did-you-mean>
       {% if located.message %}
-        <p>{{ located.message }}{% if located.found %} <span class="muted">Score {{ '%g' % located.score }}. Simulated city locator.</span>{% endif %}</p>
-        {% if located.found and located.alternatives %}<p class="muted">Other possibilities: {% for alt in located.alternatives %}{{ alt.address }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+        <p>{{ located.message }}</p>
+        {% if located.found %}
+        <details class="detail-more"><summary>More details</summary>
+          <p class="muted">Match score {{ '%g' % located.score }}.</p>
+          {% if located.alternatives %}<p class="muted">Other possibilities: {% for alt in located.alternatives %}{{ alt.address }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+        </details>
+        {% endif %}
         {% if located.found and located.ambiguous %}<p class="muted">More than one address fits; a person at the City will confirm the property.</p>{% endif %}
       {% endif %}
     </div>
@@ -106,7 +109,6 @@
     {% set active = spec.applies(run.fields[0], values) %}
     <div class="when-group{% if not active %} is-inactive{% endif %}" data-when-key="{{ run.when[0] }}" data-when-value="{{ run.when[1] }}" data-testid="when-group" data-when-group="{{ run.when[1] }}">
       <h3 class="when-title">{{ run.title }} questions</h3>
-      {% if not active %}<p class="muted when-note">These apply only if you choose {{ run.title }}. They are ignored otherwise.</p>{% endif %}
       {% for field in shown %}{{ field_row(field) }}{% endfor %}
     </div>
     {% else %}
@@ -126,7 +128,10 @@
 
   <fieldset class="panel form-section" data-testid="document-checklist">
     <legend><span class="section-no" aria-hidden="true">3</span> Documents</legend>
-    <p class="muted" data-testid="upload-rules">{{ upload_rules }} If you already sent a document to the City another way, tick &ldquo;Sent to the City separately&rdquo;; the City will still need to receive it.</p>
+    <p class="muted" data-testid="upload-rules">{{ upload_rules }}</p>
+    <details class="detail-more"><summary>More details</summary>
+      <p class="muted">If you already sent a document to the City another way, tick &ldquo;Sent to the City separately&rdquo;; the City will still need to receive it.</p>
+    </details>
     <ul class="doc-list">
       {% for doc_type, label in spec.documents %}
       {% set a = 'file-' ~ doc_type %}
@@ -135,8 +140,12 @@
       <li class="doc-row{% if a in need %} needed{% endif %}" data-doc-type="{{ doc_type }}" data-added="{{ 'true' if added else 'false' }}">
         <div class="doc-main">
           <span class="doc-label">{{ label }} {{ req() }}</span>
-          {% if document_purposes.get(doc_type) %}<span class="doc-purpose muted" data-testid="doc-purpose">{{ document_purposes[doc_type] }}</span>{% endif %}
         </div>
+        {% if document_purposes.get(doc_type) %}
+        <details class="doc-more"><summary>What this document shows</summary>
+          <span class="doc-purpose muted" data-testid="doc-purpose">{{ document_purposes[doc_type] }}</span>
+        </details>
+        {% endif %}
         {{ err(a) }}
         {% if upload_problems.get(doc_type) %}<p class="field-error" role="alert" data-testid="doc-problem"><span class="visually-hidden">Problem with the file: </span>{{ upload_problems[doc_type] }}</p>{% endif %}
         <div class="doc-status-line">
@@ -168,9 +177,4 @@
     </p>
   </fieldset>
 </form>
-
-<aside class="form-aside" aria-label="Help with this application" data-testid="form-help-column">
-{% include "components/help_panel.html" %}
-</aside>
-</div>
 {% endblock %}

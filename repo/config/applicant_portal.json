@@ -15,7 +15,7 @@
     "business_construction": "Business and construction permits",
     "planning_land_use": "Planning and land use permits"
   },
-  "chooser_icons": {
+  "type_icons": {
     "deck_fence": "c-tree",
     "patio": "c-tree",
     "sign": "c-card",
@@ -80,7 +80,7 @@
   "receipt": {
     "title": "Application received",
     "next_step": "The City's intake agent checks it next, then a person at the City decides. Nothing is approved automatically.",
-    "copy_note": "The copy is a printable web page of what you submitted. It is not a permit."
+    "copy_note": "Copy of your submission. It is not a permit."
   },
   "share": {
     "contact_label": "Planning and Permits",

@@ -192,7 +192,7 @@ def test_no_card_shows_a_generated_picture(client: TestClient) -> None:
 
 def test_the_symbol_of_a_card_follows_the_configured_map(client: TestClient) -> None:
     """A deck or a patio is a tree, a sign or an electric job is a card."""
-    icons = content.content()["chooser_icons"]
+    icons = content.content()["type_icons"]
     assert icons, "the configuration names no symbol"
     for key, symbol in icons.items():
         assert symbol in CITY_SYMBOLS, (key, symbol)

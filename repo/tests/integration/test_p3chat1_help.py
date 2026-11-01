@@ -127,9 +127,13 @@ def test_the_panel_has_a_page_of_its_own_and_the_chooser_links_to_it(
     )
     assert launcher is not None, chooser[:400]
     assert launcher.group(1) == PANEL_PATH
+    # Changed deliberately (the applicant restyle, A2): the application form
+    # carries no panel of its own any more; it links to the panel's page.
     form = client.get("/apply/deck_fence").text
-    assert 'data-testid="help-panel"' in form
-    assert 'data-placement="form"' in form
+    assert 'data-testid="help-panel"' not in form
+    launcher = re.search(r'href="([^"]+)"[^>]*data-testid="help-launcher"', form)
+    assert launcher is not None
+    assert launcher.group(1).startswith(PANEL_PATH)
     tracker = client.get("/apply/track", params={"ref": "SYN-APP-005"}).text
     assert 'data-testid="help-panel"' in tracker
     assert 'data-placement="track"' in tracker
@@ -152,8 +156,8 @@ def test_only_the_applicant_sees_the_panel(client: TestClient) -> None:
     assert client.get("/apply").status_code == 403
 
 
-def test_the_help_form_is_separate_from_the_application_form(client: TestClient) -> None:
-    """The help form never nests inside the application form."""
+def test_the_help_form_is_never_part_of_the_application_form(client: TestClient) -> None:
+    """The application form carries no help form of its own."""
     choose(client, "persona_applicant")
     page = client.get("/apply/deck_fence").text
     application_form = re.search(
@@ -161,12 +165,17 @@ def test_the_help_form_is_separate_from_the_application_form(client: TestClient)
     )
     assert application_form is not None
     assert 'data-testid="help-form"' not in application_form.group(0)
-    # Without JavaScript the answer opens in a separate browsing context, so
-    # the fields and the files the applicant typed stay intact.
-    help_form = re.search(r'<form[^>]*data-testid="help-form".*?>', page, re.S)
+    assert 'data-testid="help-panel"' not in page
+    # The assistant has a page of its own, and it opens in a separate
+    # browsing context, so the fields and the files the applicant typed
+    # stay intact.
+    launcher = re.search(r'<a class="btn ghost" href="([^"]+)"[^>]*data-testid="help-launcher">', page)
+    assert launcher is not None
+    assert 'target="_blank"' in launcher.group(0)
+    panel = client.get(launcher.group(1)).text
+    help_form = re.search(r'<form[^>]*data-testid="help-form".*?>', panel, re.S)
     assert help_form is not None
     assert 'target="_blank"' in help_form.group(0)
-    assert 'data-testid="application-form"' not in help_form.group(0)
 
 
 def test_a_question_is_answered_with_the_published_rule(client: TestClient) -> None:
@@ -390,7 +399,7 @@ def test_the_conversation_of_another_applicant_is_not_found(
 
 def test_the_panel_shows_the_two_timing_figures_separately(client: TestClient) -> None:
     choose(client, "persona_applicant")
-    page = client.get("/apply/deck_fence").text
+    page = client.get(PANEL_PATH, params={"type_key": "deck_fence"}).text
     assert 'data-testid="help-service-target"' in page
     assert 'data-testid="help-review-backlog"' in page
     assert "Service target for Residential deck or fence: 5 days." in page

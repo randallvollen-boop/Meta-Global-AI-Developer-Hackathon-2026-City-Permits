@@ -15,7 +15,6 @@ from conftest import BrowserServer
 #: The three places the panel is offered.
 PLACEMENTS = (
     ("/apply/help/panel", "form"),
-    ("/apply/deck_fence", "form"),
     ("/apply/track?ref=SYN-APP-005", "track"),
 )
 
@@ -98,14 +97,13 @@ def test_a_question_is_answered_without_javascript(
         context.close()
 
 
-def test_the_application_form_keeps_its_fields_when_the_help_form_is_used(
+def test_the_launcher_opens_the_assistant_away_from_the_form(
     browser, server: BrowserServer
 ) -> None:
-    """Without JavaScript the answer opens in its own browsing context.
+    """The assistant opens in its own browsing context.
 
     The fields and the files the applicant typed stay in the form they were
-    typed in, because the help form is a form of its own and its answer opens
-    elsewhere.
+    typed in, because the assistant has a page of its own.
     """
     context = browser.new_context(java_script_enabled=False)
     try:
@@ -113,13 +111,12 @@ def test_the_application_form_keeps_its_fields_when_the_help_form_is_used(
         page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
         page.locator("#f-applicant_name").fill("Demo Applicant")
         page.locator("#f-height_ft").fill("4")
-        page.locator('[data-testid="help-question"]').fill(FENCE_QUESTION)
         with context.expect_page() as opened:
-            page.locator('[data-testid="help-submit"]').click()
+            page.locator('[data-testid="help-launcher"]').click()
         answer = opened.value
         answer.wait_for_load_state("domcontentloaded")
         assert "/apply/help/panel" in answer.url
-        assert answer.locator('[data-testid="help-quote"]').count() >= 1
+        assert answer.locator('[data-testid="help-form"]').count() == 1
         # The form the applicant typed in still holds what was typed.
         assert page.locator("#f-applicant_name").input_value() == "Demo Applicant"
         assert page.locator("#f-height_ft").input_value() == "4"

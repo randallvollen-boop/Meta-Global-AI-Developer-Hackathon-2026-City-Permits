@@ -185,7 +185,7 @@ class PortalService:
         do not belong to the City palette.
         """
         titles = content.content().get("chooser_groups", {})
-        symbols = content.content().get("chooser_icons", {})
+        symbols = content.content().get("type_icons", {})
         rows = {
             row.key: row
             for row in self._session.execute(

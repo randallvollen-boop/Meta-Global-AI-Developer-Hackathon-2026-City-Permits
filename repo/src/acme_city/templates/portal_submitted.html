@@ -2,7 +2,7 @@
 {% import "_ui.html" as ui with context %}
 
 {% block content %}
-<div class="page-head"><div><h1 data-testid="submitted-title">{{ receipt.title }}</h1><p class="sub">Your {{ tracked.type_label }} application was received.</p></div><div class="actions">{{ ui.help_button('apply_receipt') }}</div></div>
+<div class="page-head"><div><h1 data-testid="submitted-title">{{ receipt.title }}</h1><p class="sub">Your {{ tracked.type_label }} application was received.</p></div></div>
 <section class="panel card receipt" data-testid="receipt" aria-labelledby="receipt-ref-label">
   <div class="card-b">
     <p class="receipt-ref-label" id="receipt-ref-label">Reference number</p>
@@ -11,7 +11,7 @@
       <div><dt>Project type</dt><dd data-testid="receipt-type">{{ tracked.type_label }}</dd></div>
       <div><dt>Address</dt><dd data-testid="receipt-address">{{ tracked.card.address or 'Not recorded' }}</dd></div>
       <div><dt>Submitted</dt><dd data-testid="receipt-submitted">{{ tracked.card.submitted_stamp }}</dd></div>
-      <div><dt>Status {{ ui.info('record_status') }}</dt><dd data-testid="submitted-status">Status: {{ tracked.status_word }}</dd></div>
+      <div><dt>Status {{ ui.info('record_status') }}</dt><dd data-testid="submitted-status">{{ tracked.status_word }}</dd></div>
     </dl>
     <div class="receipt-next" data-testid="receipt-next">
       <h2>What happens next</h2>
@@ -19,11 +19,12 @@
     </div>
     <p class="receipt-actions">
       <a class="btn primary" href="/apply/track?ref={{ tracked.reference }}" data-testid="track-this">Track application</a>
-      <a class="btn" href="/apply/submitted/{{ tracked.reference }}/copy" download data-testid="download-copy">Download a copy</a>
       <a class="btn ghost" href="/apply" data-testid="start-another">Start another</a>
     </p>
-    <p class="muted">{{ receipt.copy_note }}</p>
-    <p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
+    <p class="muted receipt-copy">
+      <a href="/apply/submitted/{{ tracked.reference }}/copy" download data-testid="download-copy">Download a copy</a>
+      <span data-testid="copy-note">{{ receipt.copy_note }}</span>
+    </p>
   </div>
 </section>
 {% endblock %}

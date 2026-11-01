@@ -19,7 +19,6 @@ from p3c_support import seed_help_request  # noqa: E402
 
 PLACEMENTS = (
     ("/apply/help/panel", "form"),
-    ("/apply/deck_fence", "form"),
     ("/apply/track?ref=SYN-APP-005", "track"),
 )
 NONSENSE = ("purple monkey dishwasher", "quantum banana trombone", "velvet lighthouse spaghetti")
@@ -114,18 +113,21 @@ def test_the_prompt_and_ask_the_city_work_without_javascript(browser, server: Br
         context.close()
 
 
-def test_the_form_placement_prompts_in_its_own_context_and_keeps_the_form(browser, server: BrowserServer) -> None:
+def test_the_panel_prompts_in_its_own_context_and_keeps_the_form(browser, server: BrowserServer) -> None:
     context = browser.new_context(java_script_enabled=False)
     try:
         page = sign_in(context, server, "persona_applicant")
         page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
         page.locator("#f-applicant_name").fill("Demo Applicant")
-        current = page
+        with context.expect_page() as opened:
+            page.locator('[data-testid="help-launcher"]').click()
+        current = opened.value
+        current.wait_for_load_state("domcontentloaded")
         for number, question in enumerate(NONSENSE, start=1):
             current.locator('[data-testid="help-question"]').fill(question)
-            with context.expect_page() as opened:
+            with context.expect_page() as answered:
                 current.locator('[data-testid="help-submit"]').click()
-            current = opened.value
+            current = answered.value
             current.wait_for_load_state("domcontentloaded")
             assert "/apply/help/panel" in current.url
             assert current.locator('[data-testid="help-turn"]').count() == number

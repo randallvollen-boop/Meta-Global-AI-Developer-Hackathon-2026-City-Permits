@@ -458,10 +458,11 @@ def test_the_enter_key_default_button_is_harmless_and_help_is_outside_the_form(c
     first_submit = re.search(r'<button type="submit"[^>]*>', form).group(0)
     assert 'value="update"' in first_submit
     assert "<form" not in form  # no nested forms
-    assert 'data-testid="help-panel"' not in form
-    column = page.split('data-testid="form-help-column"')[1]
-    assert 'data-testid="help-panel"' in column and 'data-placement="form"' in column
-    assert 'data-testid="help-ask-the-city"' in column
+    # Changed deliberately (the applicant restyle, A2): the form has no
+    # column of its own for the assistant; it offers a launcher instead.
+    assert 'data-testid="form-help-column"' not in page
+    assert 'data-testid="help-panel"' not in page
+    assert 'data-testid="help-launcher"' in page
 
 
 def test_save_draft_lands_on_the_drafts_tab_with_a_toast_and_a_continue_card(client) -> None:
@@ -720,14 +721,13 @@ def test_lookup_by_reference_still_works_and_misses_say_so(client) -> None:
     assert 'data-testid="track-form"' in missing and 'id="track-ref"' in missing
 
 
-def test_the_help_panel_is_on_the_form_and_the_tracker_and_the_chooser_links_to_it(
+def test_the_help_panel_is_on_the_tracker_and_the_chooser_links_to_it(
     client,
 ) -> None:
-    """The chooser lost its column; the assistant keeps a page of its own."""
+    """The applicant screens lost their column; the assistant keeps a page."""
     choose(client)
     reference = submit_fence(client)
     for path, placement in (
-        ("/apply/deck_fence", "form"),
         (f"/apply/track?ref={reference}", "track"),
         ("/apply/help/panel", "form"),
     ):
@@ -752,5 +752,9 @@ def test_new_screens_have_help_entries(client) -> None:
     choose(client)
     assert "?detail=help:apply_form" in client.get("/apply/deck_fence").text
     reference = submit_fence(client)
-    assert "?detail=help:apply_receipt" in client.get(f"/apply/submitted/{reference}").text
+    # Changed deliberately (the applicant restyle, A2): the receipt carries no
+    # help button; its topic is still written and still reachable from /help.
+    receipt = client.get(f"/apply/submitted/{reference}").text
+    assert "?detail=help:apply_receipt" not in receipt
+    assert patterns.screen_help("apply_receipt")["purpose"]
     assert "?detail=help:city_permits" in client.get("/city/permits").text
