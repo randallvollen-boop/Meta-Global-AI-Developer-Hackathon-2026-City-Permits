@@ -30,8 +30,10 @@ from sqlalchemy.orm import Session
 
 from acme_city.applicant_help.service import ApplicantHelpService
 from acme_city.applicant_help.sources import applicant_next_steps as _applicant_next_steps
+from acme_city.applicant_portal.permits_view import short_date
 from acme_city.auth.context import ActorContext
 from acme_city.core.clock import utc_now
+from acme_city.persistence.models import help as help_models
 from acme_city.persistence.models import model_run, permit
 
 #: The statuses a case holds while it is with the reviewer.
@@ -41,7 +43,10 @@ from acme_city.persistence.models import model_run, permit
 REVIEW_BACKLOG_STATUSES: tuple[str, ...] = ("ready_for_review", "under_review")
 
 #: The panels the help assistant is offered on.
-PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track")
+#:
+#: ``contact`` is the contact page of the City website, where the applicant
+#: asks a person at the City instead of the assistant.
+PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track", "contact")
 
 #: The plain words of the backlog statuses.
 STATUS_WORDS: dict[str, str] = {
@@ -145,6 +150,33 @@ def applicant_next_steps(
     the text of an answer.
     """
     return _applicant_next_steps(session, actor, application)
+
+
+def applicant_requests(
+    session: Session, actor: ActorContext, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Return the requests this applicant sent to the City, newest first.
+
+    A request is the applicant's own: the list never shows the request of
+    another applicant, and it never shows the text of a conversation the
+    applicant did not escalate.
+    """
+    rows = session.execute(
+        select(help_models.HelpRequest)
+        .where(help_models.HelpRequest.applicant_actor_id == actor.actor_id)
+        .order_by(help_models.HelpRequest.created_at.desc(), help_models.HelpRequest.id)
+        .limit(limit)
+    ).scalars().all()
+    return [
+        {
+            "request_id": row.id,
+            "status": row.status,
+            "created_on": short_date(row.created_at),
+            "question": row.question,
+            "reply": row.reply or "",
+        }
+        for row in rows
+    ]
 
 
 def run_view(session: Session, turn: Any, label: str) -> dict[str, Any] | None:
@@ -305,6 +337,7 @@ __all__ = [
     "REVIEW_BACKLOG_STATUSES",
     "STATUS_WORDS",
     "applicant_next_steps",
+    "applicant_requests",
     "panel_context",
     "review_area_backlog",
     "run_view",

@@ -1,0 +1,68 @@
+{% extends "city/layout.html" %}
+{% block content %}
+<div class="city-wrap city-page">
+  <div class="page-head">
+    <div>
+      <h1>Contact the City</h1>
+      <p class="city-lede">Call the department that answers your question, or ask a person at the City.</p>
+    </div>
+  </div>
+
+  {% if contact_error %}
+  <p class="action-denied" role="alert" data-testid="contact-error">{{ contact_error }}</p>
+  {% endif %}
+
+  {% if is_applicant %}
+  <section class="city-entry city-entry-main" aria-labelledby="ask-h" id="ask" data-testid="contact-ask">
+    <h2 id="ask-h">Ask a person at the City</h2>
+    <p>Your question goes to the City's support desk. A person answers it, and you see the answer here.</p>
+    <form method="post" action="/apply/help/escalate" data-testid="contact-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="placement" value="contact">
+      <input type="hidden" name="conversation_id" value="">
+      <input type="hidden" name="conversation_version" value="0">
+      <p class="field">
+        <label for="contact-question">Your question</label>
+        <textarea id="contact-question" name="question" rows="3" maxlength="{{ question_max_length }}" required data-testid="contact-question"></textarea>
+      </p>
+      <p><button type="submit" class="btn primary" data-testid="contact-submit">Send my question</button></p>
+    </form>
+
+    {% if contact_requests %}
+    <h3>Your requests to the City</h3>
+    <ul data-testid="contact-requests">
+      {% for item in contact_requests %}
+      <li data-testid="contact-request" data-status="{{ item.status }}">{{ item.created_on }}: {{ item.question }}{% if item.reply %}<br><strong>The City answered:</strong> {{ item.reply }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section class="city-entry" aria-labelledby="departments-h" data-testid="contact-departments">
+    <h2 id="departments-h">Departments</h2>
+    <ul class="city-need">
+      {% for item in departments %}
+      <li data-testid="contact-department"><strong>{{ item.name }}</strong><span>{{ item.phone }} &middot; {{ item.hours }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="city-entry" aria-labelledby="visit-h" data-testid="contact-visit">
+    <h2 id="visit-h">Visit</h2>
+    <p>{{ visit.address }}</p>
+    <p>{{ visit.hours }}</p>
+  </section>
+
+  <section class="city-entry" aria-labelledby="after-h" data-testid="contact-after-hours">
+    <h2 id="after-h">After hours</h2>
+    <p>Non-emergency line: {{ after_hours.phone }}</p>
+    <p>{{ after_hours.note }}</p>
+  </section>
+
+  <section class="city-entry" aria-labelledby="write-h" data-testid="contact-write">
+    <h2 id="write-h">Write to us</h2>
+    <p>{{ email }}</p>
+  </section>
+</div>
+{% endblock %}

@@ -14,10 +14,12 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from acme_city.applicant_help.config import load_config
+from acme_city.applicant_help.views import applicant_requests
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
-from acme_city.ui.router import _applicant_name, render, templates, ui_actor
+from acme_city.ui.router import _applicant_name, csrf_token, render, templates, ui_actor
 from acme_city.ui.view_models import SCREENS, actor_label, persona_options
 
 router = APIRouter(prefix="/city", tags=["city-website"])
@@ -27,6 +29,50 @@ PERMITS_HOME = "/apply"
 
 #: Where "Track or resume an application" lands: My permits.
 TRACK_HOME = "/apply/track"
+
+#: The departments of the City website, with the number a resident calls.
+DEPARTMENTS: tuple[dict[str, str], ...] = (
+    {
+        "name": "City Hall",
+        "phone": "(555) 010-0100",
+        "hours": "Weekdays, 8:30 a.m. to 4:30 p.m.",
+    },
+    {
+        "name": "Planning and Permits",
+        "phone": "(555) 010-0120",
+        "hours": "Weekdays, 8:30 a.m. to 4:30 p.m.",
+    },
+    {
+        "name": "Finance Office",
+        "phone": "(555) 010-0110",
+        "hours": "Weekdays, 8:30 a.m. to 4:30 p.m.",
+    },
+    {
+        "name": "Public Works",
+        "phone": "(555) 010-0140",
+        "hours": "Weekdays, 7:30 a.m. to 4:00 p.m.",
+    },
+    {
+        "name": "Recreation Office",
+        "phone": "(555) 010-0170",
+        "hours": "Weekdays, 8:30 a.m. to 4:30 p.m.",
+    },
+)
+
+#: Where a resident goes to see a person, and when the door is open.
+CITY_HALL: dict[str, str] = {
+    "address": "1 Example Plaza, Acme (fictional address)",
+    "hours": "Open weekdays, 8:30 a.m. to 4:30 p.m.; closed on public holidays.",
+}
+
+#: The line a resident calls outside the office hours.
+AFTER_HOURS: dict[str, str] = {
+    "phone": "(555) 010-0199",
+    "note": "In an emergency, use your local emergency number.",
+}
+
+#: The address a written question goes to.  Nothing is monitored.
+CONTACT_EMAIL = "contact@city.example.invalid (a placeholder address; nothing is monitored)."
 
 #: Simple informational pages.  All content is fictional.
 SERVICE_PAGES: dict[str, dict[str, Any]] = {
@@ -100,21 +146,18 @@ SERVICE_PAGES: dict[str, dict[str, Any]] = {
         "intro": "Reach the right department directly, or visit City Hall during office hours.",
         "sections": [
             {"heading": "Departments", "items": [
-                "City Clerk: (555) 010-0100",
-                "Planning and Permits: (555) 010-0120",
-                "Finance Office: (555) 010-0110",
-                "Public Works: (555) 010-0140",
-                "Recreation Office: (555) 010-0170",
+                f"{item['name']}: {item['phone']}" for item in DEPARTMENTS
             ]},
             {"heading": "Visit City Hall", "items": [
-                "1 Example Plaza, Acme (fictional address).",
-                "Open weekdays, 8:30 a.m. to 4:30 p.m.; closed on public holidays.",
+                CITY_HALL["address"],
+                CITY_HALL["hours"],
             ]},
-            {"heading": "Write to us", "items": [
-                "contact@city.example.invalid (a placeholder address; nothing is monitored).",
-            ]},
+            {"heading": "Write to us", "items": [CONTACT_EMAIL]},
         ],
-        "aside": {"heading": "After hours", "lines": ["Non-emergency line: (555) 010-0199", "In an emergency, use your local emergency number."]},
+        "aside": {"heading": "After hours", "lines": [
+            f"Non-emergency line: {AFTER_HOURS['phone']}",
+            AFTER_HOURS["note"],
+        ]},
     },
 }
 
@@ -143,12 +186,6 @@ INFO_PAGES: dict[str, dict[str, Any]] = {
         "aside": {"heading": "Questions", "lines": ["Planning and Permits", "(555) 010-0120"]},
     },
 }
-
-NEWS: tuple[dict[str, str], ...] = (
-    {"date": "Oct 24", "title": "Fall leaf collection begins next week", "body": "Bag leaves in paper yard-waste bags and leave them at the curb on your regular trash day."},
-    {"date": "Oct 20", "title": "Online permit applications now open", "body": "Homeowners and contractors can start, save, and track permit applications from the Permits page."},
-    {"date": "Oct 15", "title": "Mill Pond Park shelter closed for repairs", "body": "The picnic shelter reopens in early November. Other park areas remain open."},
-)
 
 
 # The layout also frames the applicant portal, whose context has no website data.
@@ -193,9 +230,48 @@ def city_home(
 ):
     """The home page of the City website."""
     context = city_context(
-        request, session, actor, title="Home", active_nav="home", news=NEWS
+        request, session, actor, title="Home", active_nav="home"
     )
     return render(request, "city/home.html", context)
+
+
+@router.get("/contact", operation_id="city_contact", include_in_schema=False)
+def city_contact(
+    request: Request,
+    error: str = "",
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+):
+    """The contact page: the departments, the visit and a way to ask a person.
+
+    A visitor reads the phone numbers and the office hours.  An applicant who
+    is signed in may also send a question to the City's support desk; the
+    question becomes a help request and a person answers it.
+    """
+    is_applicant = actor is not None and actor_label(session, actor.actor_id) == "Applicant"
+    context = city_context(
+        request,
+        session,
+        actor,
+        title="Contact the City",
+        active_nav="contact",
+        departments=DEPARTMENTS,
+        visit=CITY_HALL,
+        after_hours=AFTER_HOURS,
+        email=CONTACT_EMAIL,
+        is_applicant=is_applicant,
+        contact_error=str(error or "").strip(),
+        contact_requests=(
+            applicant_requests(session, actor) if is_applicant and actor is not None else []
+        ),
+        csrf_token=(
+            csrf_token(request.app.state.settings, actor.session_id)
+            if is_applicant and actor is not None
+            else ""
+        ),
+        question_max_length=load_config().max_message_length,
+    )
+    return render(request, "city/contact.html", context)
 
 
 @router.get("/permits", operation_id="city_permits", include_in_schema=False)

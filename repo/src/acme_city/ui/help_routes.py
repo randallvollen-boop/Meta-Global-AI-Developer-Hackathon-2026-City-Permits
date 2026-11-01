@@ -4,7 +4,8 @@ Three endpoints, all of them inside the applicant portal:
 
 * ``POST /apply/help`` asks a question and records the turn;
 * ``POST /apply/help/escalate`` asks a person at the City and creates the
-  help request;
+  help request; the contact page of the City website posts here, and the
+  request returns to that page;
 * ``GET /apply/help/panel`` shows the panel on its own page, which is where
   the application form opens its answer so the applicant's typed fields and
   files stay intact.
@@ -74,7 +75,8 @@ def _help_return_path(
     The application form opens the answer in a separate browsing context, so
     the return path of that placement is the standalone panel.  The chooser and
     the tracker return to their own page with the conversation in the query
-    string.
+    string.  A request made on the contact page of the City website returns to
+    that page, at the form the applicant filled in.
     """
     if placement == "form":
         query: dict[str, str] = {"conversation": conversation_id}
@@ -86,6 +88,8 @@ def _help_return_path(
         if reference:
             query["ref"] = reference
         return f"/apply/track?{urlencode(query)}"
+    if placement == "contact":
+        return "/city/contact#ask"
     return f"/apply?{urlencode({'help': conversation_id})}"
 
 
@@ -287,6 +291,14 @@ async def ui_portal_help_escalate(
             return JSONResponse(
                 status_code=error.status_code,
                 content={"status": "denied", "code": error.code, "message": error.message},
+            )
+        if placement == "contact" and isinstance(error, ValidationError):
+            # The request was made on the contact page of the City website,
+            # so the reason is shown there, beside the form it was made in.
+            # A refused grant and a missing record keep their own answers.
+            return RedirectResponse(
+                f"/city/contact?{urlencode({'error': error.message})}#ask",
+                status_code=303,
             )
         return error_response(
             request,
