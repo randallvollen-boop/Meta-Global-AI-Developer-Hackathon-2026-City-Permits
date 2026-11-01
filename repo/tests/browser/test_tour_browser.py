@@ -384,18 +384,18 @@ def test_the_first_step_of_the_café_path_offers_a_fresh_copy(
 
 
 def test_the_fresh_copy_button_makes_a_copy(page, server: BrowserServer) -> None:
-    """The button asks the server for a copy and the server answers."""
+    """The button asks the server for a copy and the server makes one."""
     steps = steps_of(page, server, "cafe")
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(key) => window.acmeTour.start(key)", "cafe")
     wait_for_step(page, server, steps[0])
-    with page.expect_response(
-        lambda response: "/walkthrough/start-fresh" in response.url
-    ) as answered:
-        page.locator('[data-testid="tour-fresh-button"]').click()
-    payload = answered.value.json()
-    assert payload["status"] == "ok"
-    assert payload["reference"].startswith("CAFE-2026-")
+    # The Data Steward opens the screen of the tour, and the queue is empty.
+    assert page.locator('[data-issue-row]').count() == 0
+    page.locator('[data-testid="tour-fresh-button"]').click()
+    # The page is read again, so the three owner records of the copy wait for
+    # the Data Steward.
+    page.wait_for_selector('[data-issue-row]')
+    assert page.locator('[data-issue-row]').count() == 3
     assert page.recorded_errors == []
 
 
