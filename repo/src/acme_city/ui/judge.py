@@ -69,15 +69,6 @@ def set_cookie(response: Response, request: Request, name: str, value: str) -> N
     )
 
 
-def ensure_judge(request: Request, response: Response) -> str:
-    """Return the identifier of the visitor and write the cookie when it is new."""
-    judge = judge_id(request)
-    if not judge:
-        judge = new_judge_id()
-        set_cookie(response, request, JUDGE_COOKIE, judge)
-    return judge
-
-
 def page_context(request: Request) -> dict[str, Any]:
     """Return the context of the visitor: the token and the copy it walks.
 
@@ -162,7 +153,6 @@ __all__ = [
     "JUDGE_SCOPE",
     "attach",
     "copy_case_id",
-    "ensure_judge",
     "expected_tokens",
     "judge_id",
     "judge_token",
