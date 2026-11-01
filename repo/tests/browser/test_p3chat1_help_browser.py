@@ -1,10 +1,10 @@
 """The applicant help panel in the browser.
 
-The panel is offered on the chooser, on the application form and on the
-tracker.  It works without JavaScript: the question is a form of its own and
-the answer re-renders the page.  On the application form the answer opens in
-a separate browsing context, so the fields and the files the applicant typed
-stay exactly as they were.
+The panel has a page of its own, and it is offered on the application form
+and on the tracker.  It works without JavaScript: the question is a form of
+its own and the answer re-renders the page.  On the application form and on
+the panel's own page the answer opens in a separate browsing context, so the
+fields and the files the applicant typed stay exactly as they were.
 """
 # REQUIRES: PORTAL-02, UX-02, UX-03, PER-04, SEC-03
 
@@ -14,7 +14,7 @@ from conftest import BrowserServer
 
 #: The three places the panel is offered.
 PLACEMENTS = (
-    ("/apply", "chooser"),
+    ("/apply/help/panel", "form"),
     ("/apply/deck_fence", "form"),
     ("/apply/track?ref=SYN-APP-005", "track"),
 )
@@ -57,7 +57,7 @@ def test_a_question_is_answered_in_place_with_javascript(
 ) -> None:
     """With JavaScript the answer is rendered in place, without a reload."""
     login("persona_applicant")
-    page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+    page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
     page.locator('[data-testid="help-question"]').fill(FENCE_QUESTION)
     page.locator('[data-testid="help-submit"]').click()
     # The quote sits inside a collapsed citation, so it is attached rather
@@ -79,13 +79,17 @@ def test_a_question_is_answered_without_javascript(
     context = browser.new_context(java_script_enabled=False)
     try:
         page = sign_in(context, server, "persona_applicant")
-        page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+        page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
         page.locator('[data-testid="help-question"]').fill(FENCE_QUESTION)
-        page.locator('[data-testid="help-submit"]').click()
-        page.wait_for_url(lambda url: "/apply?help=" in url)
-        assert page.locator('[data-testid="help-turn"]').count() == 1
-        assert page.locator('[data-testid="help-quote"]').count() >= 1
-        body = page.locator('[data-testid="help-panel"]').inner_text()
+        # Without JavaScript the answer opens in its own browsing context.
+        with context.expect_page() as opened:
+            page.locator('[data-testid="help-submit"]').click()
+        answer = opened.value
+        answer.wait_for_load_state("domcontentloaded")
+        assert "/apply/help/panel" in answer.url
+        assert answer.locator('[data-testid="help-turn"]').count() == 1
+        assert answer.locator('[data-testid="help-quote"]').count() >= 1
+        body = answer.locator('[data-testid="help-panel"]').inner_text()
         assert "ACME Code §14-306" in body
         assert (
             "Matching ACME rule text (not an AI answer)" in body or "Recorded replay" in body
@@ -129,12 +133,15 @@ def test_the_ask_the_city_button_works_without_javascript(
     context = browser.new_context(java_script_enabled=False)
     try:
         page = sign_in(context, server, "persona_applicant")
-        page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+        page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
         page.locator('[data-testid="help-escalate-question"]').fill(FENCE_QUESTION)
-        page.locator('[data-testid="help-ask-the-city"]').click()
-        page.wait_for_url(lambda url: "/apply?help=" in url)
-        assert page.locator('[data-testid="help-request"]').count() == 1
-        status = page.locator('[data-testid="help-request"]').first.get_attribute(
+        # The request opens in its own browsing context, as on the form.
+        with context.expect_page() as opened:
+            page.locator('[data-testid="help-ask-the-city"]').click()
+        answer = opened.value
+        answer.wait_for_load_state("domcontentloaded")
+        assert answer.locator('[data-testid="help-request"]').count() == 1
+        status = answer.locator('[data-testid="help-request"]').first.get_attribute(
             "data-status"
         )
         assert status == "open"
@@ -146,7 +153,7 @@ def test_a_suggested_question_fills_the_box_with_javascript(
     page, server: BrowserServer, login
 ) -> None:
     login("persona_applicant")
-    page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+    page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
     page.locator('[data-testid="help-suggestion"]').first.click()
     assert page.locator('[data-testid="help-question"]').input_value() == FENCE_QUESTION
     assert page.recorded_errors == []
@@ -157,7 +164,7 @@ def test_a_declined_question_shows_the_refusal_with_javascript(
 ) -> None:
     """The refusal of the assistant is shown in place, as it is without it."""
     login("persona_applicant")
-    page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+    page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
     page.locator('[data-testid="help-question"]').fill(DECLINE_QUESTION)
     page.locator('[data-testid="help-submit"]').click()
     page.wait_for_selector('[data-testid="help-declined"]', state="visible")

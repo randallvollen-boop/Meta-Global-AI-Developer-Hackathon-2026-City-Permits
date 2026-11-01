@@ -85,9 +85,15 @@ def describe_image(data: bytes) -> tuple[str, int, int] | None:
 
 
 def wrap_icon_prompt(sentence: str) -> str:
-    """Wrap an administrator's sentence in the fixed civic icon style."""
+    """Wrap an administrator's sentence in the fixed civic icon style.
+
+    The palette is the palette of the City of Acme website: civic blue,
+    deep navy and gold on a white tile.  A picture in any other colour does
+    not belong to the site it stands on.
+    """
     return (
-        "Flat vector icon on a rounded-square soft tile, civic blue and lavender palette, "
+        "Flat vector icon on a rounded-square soft tile, City of Acme palette: "
+        "civic blue #1a5fa0, deep navy #12304f and gold #f0b323 on a white tile, "
         "simple bold shapes, generous padding, flat even lighting, no text, no letters, "
         f"no numbers, no logos, no watermarks. Subject: {sentence}"
     )

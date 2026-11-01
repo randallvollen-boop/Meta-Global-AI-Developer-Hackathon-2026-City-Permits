@@ -1,7 +1,7 @@
 """Chat 3 in the browser, as the Applicant: the prompt, Ask the City, the reply.
 
-The help panel is offered on the chooser, on the application form and on the
-tracker.  After three questions the assistant could not answer it prompts the
+The help panel has a page of its own, and it is offered on the application form
+and on the tracker.  After three questions the assistant could not answer it prompts the
 applicant to ask a person at the City; the button itself is always there.  The
 Administrator's reply reaches the applicant, with and without JavaScript.
 """
@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
 from p3c_support import seed_help_request  # noqa: E402
 
 PLACEMENTS = (
-    ("/apply", "chooser"),
+    ("/apply/help/panel", "form"),
     ("/apply/deck_fence", "form"),
     ("/apply/track?ref=SYN-APP-005", "track"),
 )
@@ -68,7 +68,7 @@ def test_ask_the_city_after_the_prompt_with_javascript(browser, server: BrowserS
     context = browser.new_context(viewport={"width": 1280, "height": 900})
     try:
         page = sign_in(context, server, "persona_applicant")
-        page.goto(f"{server.base_url}/apply", wait_until="domcontentloaded")
+        page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
         for question in NONSENSE:
             page.locator('[data-testid="help-question"]').fill(question)
             page.locator('[data-testid="help-submit"]').click()
@@ -77,10 +77,13 @@ def test_ask_the_city_after_the_prompt_with_javascript(browser, server: BrowserS
             )
         assert page.locator('[data-testid="help-escalation-prompt"]').count() == 1
         assert page.locator('[data-testid="help-escalate-question"]').input_value() == NONSENSE[-1]
-        page.locator('[data-testid="help-ask-the-city"]').click()
-        page.wait_for_url(lambda url: "/apply?help=" in url)
-        assert page.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
-        assert page.locator('[data-testid="help-escalation-prompt"]').count() == 0  # a request is open
+        # The request opens in its own browsing context, as on the form.
+        with context.expect_page() as opened:
+            page.locator('[data-testid="help-ask-the-city"]').click()
+        answer = opened.value
+        answer.wait_for_load_state("domcontentloaded")
+        assert answer.locator('[data-testid="help-request"]').first.get_attribute("data-status") == "open"
+        assert answer.locator('[data-testid="help-escalation-prompt"]').count() == 0  # a request is open
     finally:
         context.close()
 
@@ -89,18 +92,24 @@ def test_the_prompt_and_ask_the_city_work_without_javascript(browser, server: Br
     context = browser.new_context(java_script_enabled=False)
     try:
         page = sign_in(context, server, "persona_applicant")
-        for path, pattern in (("/apply", "/apply?help="), ("/apply/track?ref=SYN-APP-005", "/apply/track?")):
-            page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
-            for number, question in enumerate(NONSENSE, start=1):
-                page.locator('[data-testid="help-question"]').fill(question)
-                page.locator('[data-testid="help-submit"]').click()
-                page.wait_for_url(lambda url, p=pattern: p in url)
-                assert page.locator('[data-testid="help-turn"]').count() == number
-                assert page.locator('[data-testid="help-escalation-prompt"]').count() == (1 if number == 3 else 0)
-            page.locator('[data-testid="help-ask-the-city"]').click()
-            page.wait_for_selector('[data-testid="help-request"]')
-            assert page.locator('[data-testid="help-escalation-prompt"]').count() == 0
-            # a fresh visit starts a fresh conversation for the next placement
+        page.goto(f"{server.base_url}/apply/help/panel", wait_until="domcontentloaded")
+        current = page
+        for number, question in enumerate(NONSENSE, start=1):
+            current.locator('[data-testid="help-question"]').fill(question)
+            # Without JavaScript the answer opens in its own browsing context.
+            with context.expect_page() as opened:
+                current.locator('[data-testid="help-submit"]').click()
+            current = opened.value
+            current.wait_for_load_state("domcontentloaded")
+            assert "/apply/help/panel" in current.url
+            assert current.locator('[data-testid="help-turn"]').count() == number
+            assert current.locator('[data-testid="help-escalation-prompt"]').count() == (1 if number == 3 else 0)
+        with context.expect_page() as asked:
+            current.locator('[data-testid="help-ask-the-city"]').click()
+        result = asked.value
+        result.wait_for_load_state("domcontentloaded")
+        result.wait_for_selector('[data-testid="help-request"]')
+        assert result.locator('[data-testid="help-escalation-prompt"]').count() == 0
     finally:
         context.close()
 

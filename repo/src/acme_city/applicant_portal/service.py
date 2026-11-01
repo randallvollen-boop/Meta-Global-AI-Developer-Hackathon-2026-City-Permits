@@ -179,10 +179,13 @@ class PortalService:
         Each group carries its common projects (``cards``) and the rest of its
         types (``more``), which the page puts in an expandable part.  A card
         names the project and says what it is; process wording lives on the form.
-        """
-        from acme_city.ui.view_models import icon_for_permit_type
 
+        A card names a stock line symbol of the City sprite, never a generated
+        picture: the pictures are made for the staff screens and their colours
+        do not belong to the City palette.
+        """
         titles = content.content().get("chooser_groups", {})
+        symbols = content.content().get("chooser_icons", {})
         rows = {
             row.key: row
             for row in self._session.execute(
@@ -194,13 +197,12 @@ class PortalService:
 
         def card(row: permit.PermitType) -> dict[str, Any]:
             category = row.process_category or "simple"
-            icon = icon_for_permit_type(self._session, row)
             return {
                 "type_key": row.key,
                 "label": row.label,
                 "description": row.description or "",
                 "category": category,
-                "icon_url": icon["url"] if icon else "",
+                "icon_symbol": str(symbols.get(row.key, "c-permit")),
                 "href": f"/apply/{row.key}",
             }
 

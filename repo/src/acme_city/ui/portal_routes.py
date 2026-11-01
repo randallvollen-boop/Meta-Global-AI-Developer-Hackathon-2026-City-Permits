@@ -257,12 +257,10 @@ def _help_panel(
 def ui_portal_chooser(
     request: Request,
     saved: str = "",
-    help_conversation: str = Query("", alias="help"),
-    help_question: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
-    """Show "What are you trying to do?"."""
+    """Show "Start an application": the groups of permit types."""
     resolved, refused = _portal_guard(request, session, actor)
     if refused is not None:
         return refused
@@ -274,7 +272,7 @@ def ui_portal_chooser(
         session,
         resolved,
         screen="portal",
-        title="What are you trying to do?",
+        title="Start an application",
         groups=groups,
         drafts=[
             {
@@ -286,14 +284,6 @@ def ui_portal_chooser(
         ],
         saved=saved,
         portal_notice=forms.PORTAL_NOTICE,
-        help_question=help_question,
-        **_help_panel(
-            request,
-            session,
-            resolved,
-            placement="chooser",
-            conversation_id=help_conversation,
-        ),
     )
     return render(request, "portal_chooser.html", context)
 

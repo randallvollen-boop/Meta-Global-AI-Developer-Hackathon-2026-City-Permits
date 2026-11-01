@@ -11,9 +11,15 @@
     {"key": "documents", "title": "The documents asked for", "text": "Each project type lists its own documents. You can add a file now or say you sent it to the City separately."}
   ],
   "chooser_groups": {
-    "home_property": "Home and property",
-    "business_construction": "Business and construction",
-    "planning_land_use": "Planning and land use"
+    "home_property": "Home and property permits",
+    "business_construction": "Business and construction permits",
+    "planning_land_use": "Planning and land use permits"
+  },
+  "chooser_icons": {
+    "deck_fence": "c-tree",
+    "patio": "c-tree",
+    "sign": "c-card",
+    "residential_electric": "c-card"
   },
   "document_purposes": {
     "site_plan": "Shows where the work sits on the property and its distance from the property lines.",

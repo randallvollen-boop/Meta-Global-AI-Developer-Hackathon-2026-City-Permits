@@ -287,8 +287,10 @@ def test_the_switch_behind_the_buttons_lands_on_my_permits(client) -> None:
 def test_chooser_groups_compact_cards_and_expandable_rest(client) -> None:
     choose(client)
     page = client.get("/apply").text
-    assert "<h1>What are you trying to do?</h1>" in page
-    assert page.index("What are you trying to do?") < page.index('data-testid="track-link"') < page.index("Home and property")
+    # Changed deliberately (the applicant restyle, A1): the heading is a
+    # statement and the groups are named after the permits they hold.
+    assert '<h1 data-testid="chooser-title">Start an application</h1>' in page
+    assert page.index("Start an application") < page.index('data-testid="track-link"') < page.index("Home and property permits")
     groups = re.findall(r'data-group="([^"]+)"', page)
     assert groups == ["home_property", "business_construction", "planning_land_use"]
     first = page.split('data-testid="type-card"')[1]
@@ -300,10 +302,10 @@ def test_chooser_groups_compact_cards_and_expandable_rest(client) -> None:
     # process wording is off the cards
     for text in ("Discretionary", "Permit portal", "Portal + plans", "Plan review process"):
         assert text not in page
-    # the help panel sits beside/below the catalogue and the track link is kept
-    assert page.index("chooser-main") < page.index('data-testid="chooser-help-column"')
-    assert 'data-testid="help-panel"' in page and 'data-placement="chooser"' in page
-    assert 'data-testid="help-form"' in page and 'data-testid="help-ask-the-city"' in page
+    # the gift-card notice is one line at the bottom of the page, not a banner
+    notice = page.split('data-testid="portal-notice"')[0].rsplit("<p", 1)[1]
+    assert 'class="notice"' not in notice
+    assert page.index('data-testid="portal-notice"') > page.index('data-testid="portal-group"')
 
 
 def test_group_titles_and_cards_come_from_config_and_the_database(client) -> None:
@@ -718,14 +720,27 @@ def test_lookup_by_reference_still_works_and_misses_say_so(client) -> None:
     assert 'data-testid="track-form"' in missing and 'id="track-ref"' in missing
 
 
-def test_the_help_panel_is_on_the_chooser_form_and_tracker_with_their_test_ids(client) -> None:
+def test_the_help_panel_is_on_the_form_and_the_tracker_and_the_chooser_links_to_it(
+    client,
+) -> None:
+    """The chooser lost its column; the assistant keeps a page of its own."""
     choose(client)
     reference = submit_fence(client)
-    for path, placement in (("/apply", "chooser"), ("/apply/deck_fence", "form"), (f"/apply/track?ref={reference}", "track")):
+    for path, placement in (
+        ("/apply/deck_fence", "form"),
+        (f"/apply/track?ref={reference}", "track"),
+        ("/apply/help/panel", "form"),
+    ):
         page = client.get(path).text
         assert f'data-placement="{placement}"' in page, path
         for testid in ("help-panel", "help-form", "help-question", "help-submit", "help-ask-the-city"):
             assert f'data-testid="{testid}"' in page, (path, testid)
+    chooser = client.get("/apply").text
+    assert 'data-testid="help-panel"' not in chooser
+    assert (
+        'href="/apply/help/panel" target="_blank" rel="noopener" data-testid="help-launcher"'
+        in chooser
+    )
 
 
 def test_new_screens_have_help_entries(client) -> None:

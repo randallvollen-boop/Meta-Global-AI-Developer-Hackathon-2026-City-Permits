@@ -795,9 +795,12 @@ def test_portal_chooser_and_form_show_the_icon_of_every_type(
     chooser = client.get("/apply")
     assert chooser.status_code == 200
     assert chooser.text.count('data-testid="type-card"') == 17
-    for key, url in urls.items():
+    for key in urls:
         assert f'data-type-key="{key}"' in chooser.text, key
-        assert f'<img class="type-ic" src="{url}"' in chooser.text, key
+    # Changed deliberately (the applicant restyle, A1): the applicant sees the
+    # stock line symbols of the City sprite, never the generated pictures.
+    assert "<img" not in chooser.text
+    assert "permit-type-icons" not in chooser.text
     for key, url in urls.items():
         form = client.get(f"/apply/{key}")
         assert form.status_code == 200, key

@@ -39,7 +39,7 @@ def _csrf(client, path: str) -> str:
 
 def test_the_dispatch_ui_action_needs_the_transition_grant(audit_client, pick) -> None:
     pick(audit_client, "persona_applicant")
-    token = _csrf(audit_client, "/apply")
+    token = _csrf(audit_client, "/apply/help/panel")
     refused = audit_client.post(
         "/ui/actions/change.dispatch",
         data={"csrf_token": token, "action_id": "change.dispatch", "next": "/apply"},

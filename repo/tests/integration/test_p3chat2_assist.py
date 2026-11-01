@@ -85,7 +85,7 @@ def token(client: TestClient, path: str) -> str:
     return match.group(1)
 
 
-def ask(client: TestClient, question: str, path: str = "/apply", **extra) -> str:
+def ask(client: TestClient, question: str, path: str = "/apply/help/panel", **extra) -> str:
     response = client.post(
         "/apply/help",
         data={
@@ -93,7 +93,7 @@ def ask(client: TestClient, question: str, path: str = "/apply", **extra) -> str
             "question": question,
             "conversation_version": "0",
             "conversation_id": "",
-            "placement": extra.pop("placement", "chooser"),
+            "placement": extra.pop("placement", "form"),
             **extra,
         },
         follow_redirects=False,
@@ -101,7 +101,7 @@ def ask(client: TestClient, question: str, path: str = "/apply", **extra) -> str
     assert response.status_code == 303, response.text
     match = re.search(r"(?:help|conversation)=([^&]+)", response.headers["location"])
     assert match
-    return client.get("/apply", params={"help": match.group(1)}).text
+    return client.get("/apply/help/panel", params={"conversation": match.group(1)}).text
 
 
 def test_the_fence_answer_quotes_the_rule_and_shows_its_source(client) -> None:
@@ -140,7 +140,7 @@ def test_the_failing_fixture_shows_the_deterministic_rule_text(client) -> None:
 
 def test_the_demo_questions_are_offered_as_chips_in_demo_mode(client) -> None:
     choose(client, "persona_applicant")
-    page = client.get("/apply").text
+    page = client.get("/apply/help/panel").text
     assert DECLINE in page
     assert "Show me the ACME rule text for a fence" in page
 

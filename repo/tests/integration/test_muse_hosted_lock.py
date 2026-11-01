@@ -247,18 +247,18 @@ def ask_help(client: TestClient) -> str:
     response = client.post(
         "/apply/help",
         data={
-            "csrf_token": csrf_from(client, "/apply"),
+            "csrf_token": csrf_from(client, "/apply/help/panel"),
             "question": "How tall may my rear yard fence be?",
             "conversation_version": "0",
             "conversation_id": "",
-            "placement": "chooser",
+            "placement": "form",
         },
         follow_redirects=False,
     )
     assert response.status_code == 303, response.text
     match = re.search(r"(?:help|conversation)=([^&]+)", response.headers["location"])
     assert match
-    return client.get("/apply", params={"help": match.group(1)}).text
+    return client.get("/apply/help/panel", params={"conversation": match.group(1)}).text
 
 
 def propose_policy(client: TestClient):

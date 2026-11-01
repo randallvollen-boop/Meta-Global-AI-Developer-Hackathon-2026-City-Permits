@@ -3,7 +3,7 @@
 
 {% macro type_card(card) %}
 <a class="card type-card" href="{{ card.href }}" data-testid="type-card" data-type-key="{{ card.type_key }}">
-  <span class="type-ic-wrap">{% if card.icon_url %}<img class="type-ic" src="{{ card.icon_url }}" alt="">{% else %}<svg class="type-ic-fallback" aria-hidden="true"><use href="#c-permit"/></svg>{% endif %}</span>
+  <span class="type-ic-wrap"><svg class="type-ic-fallback" aria-hidden="true"><use href="#{{ card.icon_symbol }}"/></svg></span>
   <span class="type-text"><strong>{{ card.label }}</strong><span class="muted">{{ card.description }}</span></span>
 </a>
 {% endmacro %}
@@ -14,13 +14,17 @@
 
 {% block content %}
 <div class="page-head chooser-head">
-  <div><h1>What are you trying to do?</h1><p class="sub">Choose your project. The portal asks only for what that kind of project needs.</p></div>
-  <div class="actions"><a class="btn" href="/apply/track" data-testid="track-link">Track an existing application</a> {{ ui.help_button('apply') }}</div>
+  <div>
+    <h1 data-testid="chooser-title">Start an application</h1>
+    <p class="sub" data-testid="chooser-sub">Choose the project you need a permit for. The form asks only for what that project needs.</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/apply/track" data-testid="track-link">Track an existing application</a>
+    {{ ui.help_button('apply') }}
+    <a class="btn ghost" href="/apply/help/panel" target="_blank" rel="noopener" data-testid="help-launcher">Ask about your permit</a>
+  </div>
 </div>
 
-<p class="notice" data-testid="portal-notice"><svg aria-hidden="true"><use href="#i-alert"/></svg>{{ portal_notice }}</p>
-
-<div class="chooser-layout">
 <div class="chooser-main">
 {% for group in groups %}
 <section class="panel chooser-group" aria-labelledby="group-{{ group.key }}" data-testid="portal-group" data-group="{{ group.key }}">
@@ -32,7 +36,7 @@
   {% endif %}
   {% if group.more %}
   <details class="more-types" data-testid="more-types"{% if not group.cards %} open{% endif %}>
-    <summary>{% if group.cards %}More {{ group.label | lower }} permits{% else %}All {{ group.label | lower }} permits{% endif %} ({{ group.more | length }})</summary>
+    <summary>{% if group.cards %}More {{ group.label | lower }}{% else %}All {{ group.label | lower }}{% endif %} ({{ group.more | length }})</summary>
     <div class="type-cards compact">
       {% for card in group.more %}{{ type_card(card) }}{% endfor %}
     </div>
@@ -52,8 +56,5 @@
 {% endif %}
 </div>
 
-<aside class="chooser-aside" aria-label="Questions about permits" data-testid="chooser-help-column">
-{% include "components/help_panel.html" %}
-</aside>
-</div>
+<p class="muted chooser-note" data-testid="portal-notice">{{ portal_notice }}</p>
 {% endblock %}

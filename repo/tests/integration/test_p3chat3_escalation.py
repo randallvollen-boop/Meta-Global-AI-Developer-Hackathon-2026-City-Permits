@@ -45,7 +45,7 @@ def client(environment):
         yield test_client
 
 
-def ask(client, question, *, conversation="", version="0", placement="chooser", path="/apply", **extra):
+def ask(client, question, *, conversation="", version="0", placement="form", path="/apply/help/panel", **extra):
     response = client.post(
         "/apply/help",
         data={
@@ -72,7 +72,7 @@ def panel(client, conversation):
     return client.get("/apply/help/panel", params={"conversation": conversation})
 
 
-def escalate(client, conversation, version, question, *, path="/apply", placement="chooser", **extra):
+def escalate(client, conversation, version, question, *, path="/apply/help/panel", placement="form", **extra):
     return client.post(
         "/apply/help/escalate",
         data={
@@ -146,8 +146,8 @@ def test_the_prompt_is_in_the_json_answer_and_goes_once_a_request_exists(client,
         version = version_of(environment, conversation) if conversation else 0
         response = client.post(
             "/apply/help",
-            data={"csrf_token": token(client, "/apply"), "question": question, "conversation_id": conversation,
-                  "conversation_version": str(version), "placement": "chooser"},
+            data={"csrf_token": token(client, "/apply/help/panel"), "question": question, "conversation_id": conversation,
+                  "conversation_version": str(version), "placement": "form"},
             headers={"Accept": "application/json"},
         )
         conversation = response.json()["conversation_id"]
@@ -231,8 +231,8 @@ def test_another_applicant_cannot_read_ask_on_or_escalate_a_conversation(client,
     assert panel(client, conversation).status_code == 404
     refused = client.post(
         "/apply/help",
-        data={"csrf_token": token(client, "/apply"), "question": "my question", "conversation_id": conversation,
-              "conversation_version": str(before[0]), "placement": "chooser"},
+        data={"csrf_token": token(client, "/apply/help/panel"), "question": "my question", "conversation_id": conversation,
+              "conversation_version": str(before[0]), "placement": "form"},
         follow_redirects=False,
     )
     assert refused.status_code == 404
