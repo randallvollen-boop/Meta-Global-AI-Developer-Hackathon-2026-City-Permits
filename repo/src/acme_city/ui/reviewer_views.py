@@ -489,7 +489,7 @@ def workspace_extras(
     issuance_status, issuance_next = _issuance_words(detail, blockers)
     review_target = view_models.holds_grant(session, actor, "permit.decide", "permits")
     back_href, back_label = (
-        ("/queue/review", "Back to permit review") if review_target else ("/queue", "Back to the work queue")
+        ("/queue/review", "Back to the review queue") if review_target else ("/queue", "Back to the work queue")
     )
     return {
         "header": {

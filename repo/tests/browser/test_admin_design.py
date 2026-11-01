@@ -368,7 +368,7 @@ def test_governance_source_overview_fits_a_phone(
     """Source attention and cards fit 390px and remain reachable."""
     login("persona_city_administrator")
     open_screen(page, server, "/governance?tab=sources")
-    assert page.locator("h1").inner_text() == "Data sources and ownership"
+    assert page.locator("h1").inner_text() == "Governance and sources"
     assert page.locator('[data-testid="governance-attention"]').count() == 1
     assert page.locator('[data-testid="source-card"]').count() == 3
     source_grid = page.locator('[data-testid="source-overview"]')
@@ -450,7 +450,7 @@ def test_city_permit_activity_hierarchy_fits_a_phone(
         server,
         "/insight/city?type=shed&outcome=approved&period=30d&exceptions=1",
     )
-    assert page.locator("h1").inner_text() == "City permit activity"
+    assert page.locator("h1").inner_text() == "City view"
     assert page.locator('[data-testid="insight-filter-summary"]').count() == 1
     filters = page.locator('[data-testid="insight-filters"]')
     assert filters.evaluate("element => getComputedStyle(element).display") == "grid"

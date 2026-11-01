@@ -93,7 +93,7 @@ def ui_steward_automation(
         session,
         resolved,
         screen="steward_automation",
-        title="Automatic linking",
+        title="Steward automation",
         automation=state,
         preview=preview_view,
         guide=_guide(state),

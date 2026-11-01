@@ -333,7 +333,7 @@ def _token(body: str, name: str = "csrf_token") -> str:
 def test_the_results_lead_with_the_count_and_the_explanation(client: TestClient) -> None:
     """The screen answers the question first: how many cases change, and why."""
     body = _results(client)
-    assert "<h1>Scenario results</h1>" in body
+    assert "<h1>What-if results</h1>" in body
     summary = body.split('data-testid="policy-summary"')[1].split("</p>")[0]
     assert re.search(r"\d+ of \d+ cases have a different result\.", summary)
     assert body.index('data-testid="policy-summary"') < body.index(

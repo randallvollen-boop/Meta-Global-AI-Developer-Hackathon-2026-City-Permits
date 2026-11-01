@@ -103,17 +103,16 @@ SCREENS: list[dict[str, str]] = [
         "label": "What-if",
         "href": "/policy/scenarios",
     },
-    {"key": "ops_dashboard", "label": "Operations", "href": "/ops/dashboard"},
+    {"key": "ops_dashboard", "label": "Operations dashboard", "href": "/ops/dashboard"},
     {"key": "ops_audit", "label": "Audit log", "href": "/ops/audit"},
     {"key": "ops_support", "label": "Support", "href": "/ops/support"},
     {"key": "ops_checks", "label": "Checks", "href": "/ops/checks"},
     # Reserved screens.  Each is gated on a permission no persona holds until
-    # the slice that builds its route grants it.
+    # the slice that builds its route grants it.  A screen with no route is
+    # not listed here: the table holds no entry that points nowhere.
     {"key": "agents_home", "label": "Agents", "href": "/agents"},
     {"key": "agent_runs", "label": "Agent runs", "href": "/agents/runs"},
-    {"key": "agent_case", "label": "Agent cases", "href": "/agents/cases"},
     {"key": "steward_automation", "label": "Steward automation", "href": "/steward/automation"},
-    {"key": "steward_new_master", "label": "New master record", "href": "/steward/new-master"},
 ]
 
 #: The labels of the five selectable personas, in selector order.  The order
@@ -327,6 +326,9 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "policy_run": (("policy.run.view", None),),
     "policy_briefing": (("policy.brief.view", None),),
     # The reserved screens.  No persona holds these grants yet.
+    # The case summary and the new master record have a route but no entry
+    # in the navigation table, so their grants stay here for the guard of
+    # their own screen.
     "agents_home": (("agent.ops.read", None),),
     "agent_runs": (("agent.ops.read", None),),
     "agent_case": (("agent.ops.read", None),),

@@ -225,7 +225,7 @@
     },
     "permit": {
       "title": "Permit workspace",
-      "purpose": "One application in one place. Review is the working tab; Documents, People and property, and Activity hold the supporting record.",
+      "purpose": "One application in one place. Review is the working tab; Documents, People & property, and Activity hold the supporting record.",
       "can_do": [
         "Read the application checks, the suggested fields and the next action on the Review tab.",
         "Take the actions your persona is granted; a button that is unavailable says what is missing."

@@ -236,7 +236,7 @@ def test_the_case_header_reads_for_a_person(client: TestClient) -> None:
     assert "Commercial tenant improvement" in head
     assert "400 Lantern Row, Unit 2" in head
     assert "SYN-APP-001 · Cedarline Coffee Roasters LLC · Revision" in head
-    assert "Back to permit review" in head
+    assert "Back to the review queue" in head
     assert 'href="/queue/review"' in page
     visible = text_of(re.search(r'data-testid="case-header".*?</div>\s*</div>', page, re.S).group(0))
     assert "app_synth_001" not in visible and "com_ti" not in visible

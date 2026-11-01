@@ -203,7 +203,7 @@ def agent_runs(
         page=page,
     )
     context = page_context(
-        request, session, resolved, screen="agent_runs", title="Run history",
+        request, session, resolved, screen="agent_runs", title="Agent runs",
         view=view, summary=operator_summary(session),
     )
     return render(request, "agent_runs.html", context)

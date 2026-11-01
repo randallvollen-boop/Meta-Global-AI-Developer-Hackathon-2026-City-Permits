@@ -63,9 +63,7 @@ RESERVED_PERMISSIONS = (
 RESERVED_SCREENS = {
     "agents_home": "/agents",
     "agent_runs": "/agents/runs",
-    "agent_case": "/agents/cases",
     "steward_automation": "/steward/automation",
-    "steward_new_master": "/steward/new-master",
 }
 
 PERSONAS = (
@@ -193,6 +191,37 @@ def test_a_reserved_screen_is_reachable_only_once_its_route_exists(
         for key, href in RESERVED_SCREENS.items():
             if key in keys or view_models.may_open_screen(session, actor, key):
                 assert _has_route(client, href), (actor_id, key)
+
+
+def _serves_exactly(client: TestClient, href: str) -> bool:
+    """Whether the application serves ``href`` itself.
+
+    A route that takes an identifier does not serve the path without one, so
+    ``/agents/cases/{application_id}`` does not serve ``/agents/cases``.
+    """
+    def includes(routes) -> bool:
+        for route in routes:
+            if getattr(route, "path", "") == href:
+                return True
+            nested = getattr(route, "original_router", None)
+            if nested is not None and includes(nested.routes):
+                return True
+        return False
+
+    return includes(client.app.routes)
+
+
+def test_the_navigation_table_holds_no_entry_that_points_nowhere(
+    client: TestClient,
+) -> None:
+    """Every screen of the table is served at its own address."""
+    for screen in view_models.SCREENS:
+        href = screen["href"]
+        if not href:
+            # The permit workspace has no address of its own: the navigation
+            # points at the case the persona may open.
+            continue
+        assert _serves_exactly(client, href), (screen["key"], href)
 
 
 # ----------------------------------------------------------------- screens

@@ -153,7 +153,7 @@ def test_governance_rules_and_city_copy_is_plain_and_fictional(client: TestClien
     ).status_code == 200
 
     governance = client.get("/governance?tab=sources").text
-    assert "Data sources and ownership" in governance
+    assert "Governance and sources" in governance
     assert "See each dataset owner, source, correction route and unowned record." in governance
     assert "Records needing attention" in governance
 
