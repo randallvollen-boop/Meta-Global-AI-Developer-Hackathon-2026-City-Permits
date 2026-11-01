@@ -10,7 +10,7 @@ The permit life cycle behind these steps is at `/lifecycle`: every status, every
 
 Open `/select`.
 
-- Do: Open the video below the persona cards and play it. It runs under three minutes.
+- Do: Open the video below the persona cards and play it. It runs under three minutes. The guided tour opens from Take the tour: in the line of guides on the landing, and in the Demo controls menu in the top right once a persona is signed in.
 - Look for: Five personas, each a fictional person with one job. Every record in the app is fictional.
 
 ## 2. Read the permit life cycle

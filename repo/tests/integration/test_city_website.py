@@ -207,13 +207,16 @@ def test_the_staff_layout_says_the_switcher_is_for_demonstration_only(client: Te
     # carries a banner any more, so the sentence that explains the switcher
     # lives in the switcher itself.  The long note is cut (demo controls, S3):
     # the control announces itself as a demonstration control and nothing else.
-    # A staff persona is not the signed-in applicant, so the City website
-    # header shows it no menu.
+    # Changed deliberately (persona chip, T3): the City website carries the
+    # same chip for every signed-in persona, so a staff persona finds the
+    # menu there too.
     assert 'data-testid="demo-switch"' in staff
     assert "Demo controls" in staff
     assert "Demonstration control for switching users" not in staff
     assert "role would come from that sign-in" not in staff
-    assert "data-demo-persona" not in city
+    assert 'data-testid="demo-switch"' in city
+    assert "Demo controls" in city
+    assert "data-demo-persona" in city
     assert "Fictional ACME City demonstration." in staff
     assert "Fictional City of Acme website" in city
 

@@ -11,10 +11,14 @@ h2{font-family:Georgia,"Times New Roman",serif;color:#12304f;font-size:1.15rem;m
 dl{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem}
 dt{font-weight:700}dd{margin:0}
 .note{background:#fff6d6;border:1px solid #e8d48a;padding:.5rem .75rem;border-radius:6px;font-size:.9rem}
-@media print{body{margin:0}}
+.back-to-app{margin:1rem 0 0;font-size:.9rem}
+@media print{body{margin:0}.back-to-app{display:none}}
 </style>
 </head>
 <body>
+{# The way back to the application, for a reader who opened the copy of
+   their own application in the browser. #}
+<p class="back-to-app"><a href="{{ back_href }}" data-testid="back-to-app">Back to the app</a></p>
 <p class="note">{{ copy_note }} Fictional demonstration.</p>
 <h1>Application {{ record.reference }}</h1>
 <p>{{ record.type_label }}</p>

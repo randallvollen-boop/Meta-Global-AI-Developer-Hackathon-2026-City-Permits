@@ -5,11 +5,19 @@
    outcome of the last action of the acting persona. #}
 {% from "_persona_menu.html" import persona_menu with context %}
 <!DOCTYPE html>
-<html lang="en">
+{# Light is the default everywhere.  The dark mode is a choice of the reader
+   on the application screens of the staff frame, so a page that offers it
+   says so on the root element; the head script then applies the choice
+   before the page is painted and the page never flashes.  The landing is
+   the public front door of the demonstration and stays light, like the City
+   website. #}
+{% set theme_control = actor and screen != 'select' %}
+<html lang="en" data-theme="light"{% if theme_control %} data-theme-control="on"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} | ACME City permit demonstration</title>
+  <script src="/ui/static/theme.js"></script>
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
   <link rel="stylesheet" href="/ui/static/reviewer.css">
@@ -34,8 +42,6 @@
 <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M3 13l2-6 2 6a2.5 2.5 0 0 1-4 0zM17 13l2-6 2 6a2.5 2.5 0 0 1-4 0zM8 21h8"/></symbol>
 <symbol id="i-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82"/></symbol>
 <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
-<symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
-<symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m10.29 3.86-8.47 14.14A2 2 0 0 0 3.53 21h16.94a2 2 0 0 0 1.71-3l-8.47-14.14a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
@@ -93,12 +99,11 @@
         <a class="top-help-link" href="/help" data-testid="help-link"{% if screen == 'help' %} aria-current="page"{% endif %}>Help</a>
         {% set demo_clock = scenario_clock() %}{% if demo_clock %}<span class="demo-date" data-testid="demo-date">{{ demo_clock.label }} <span class="info-tip" tabindex="0" role="note" aria-label="{{ demo_clock.help }}" title="{{ demo_clock.help }}">&#9432;</span></span>{% endif %}
         {% if actor %}
-        {{ persona_menu(actor, personas) }}
+        {% set chip_sub = (applicant_name | default('', true)) or (actor.department | default('', true)) %}
+        {{ persona_menu(actor, personas, sub=chip_sub, theme=theme_control) }}
         {% else %}
         <p class="persona-current"><a class="button btn" href="/select">Choose a persona</a></p>
         {% endif %}
-        <button type="button" class="top-help-link" data-tour-start data-testid="tour-start-header">Take the tour</button>
-        <button type="button" class="icon-btn" id="theme-toggle" data-testid="theme-toggle" aria-label="Switch theme" title="Switch theme"><svg aria-hidden="true"><use href="#i-moon"/></svg></button>
       </div>
     </header>
 

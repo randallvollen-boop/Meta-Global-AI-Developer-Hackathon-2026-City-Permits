@@ -6,10 +6,13 @@
    legacy names (--ink, --paper, --panel, --line, --current, --submitted,
    --proposed, --issued, --denied, --accepted, --radius) so every existing
    class keeps working. Colour is never the only signal: every pill and
-   badge carries text. Dark theme applies under prefers-color-scheme
-   and under [data-theme="dark"]; [data-theme="light"] forces light. */
+   badge carries text. Light is the default on every page: the setting of
+   the device is never followed. The dark theme applies only under
+   [data-theme="dark"], which the staff frame sets when the reader asks for
+   it. */
 
 :root {
+  color-scheme: light;
   --bg: #f4f6f8;
   --surface: #ffffff;
   --surface-2: #eef2f5;
@@ -44,18 +47,8 @@
   --accepted: var(--ok);
   --radius: var(--r-md);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d141b; --surface: #141d26; --surface-2: #1a2531; --line: #263342; --line-soft: #1f2b37;
-    --fg: #e6edf3; --fg-2: #a7b4c1; --fg-3: #74828f;
-    --accent: #5aa7dc; --accent-fg: #0b1620; --accent-soft: #16304a;
-    --ok: #4cc488; --ok-soft: #10301f; --warn: #e3a44a; --warn-soft: #33250f;
-    --bad: #f0786d; --bad-soft: #3a1714; --info: #a59cf5; --info-soft: #221f45;
-    --muse: #c79af5; --muse-soft: #2c1a40;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
-    color-scheme: dark;
-  }
-}
+/* The setting of the device is never followed: the interface is light
+   everywhere unless the reader asks for the dark mode of the staff frame. */
 :root[data-theme="dark"] {
   --bg: #0d141b; --surface: #141d26; --surface-2: #1a2531; --line: #263342; --line-soft: #1f2b37;
   --fg: #e6edf3; --fg-2: #a7b4c1; --fg-3: #74828f;
@@ -841,7 +834,9 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .needs-status { margin: 0.4rem 0; }
 
 /* The account chip in the top bar is the demo persona switcher: it names the
-   persona that acts and its menu offers the five personas. */
+   persona that acts and its menu offers the five personas.  The first line of
+   the chip is always the role; the small second line names the person (the
+   applicant) or the department of the persona. */
 .account-menu { position: relative; }
 .account-trigger {
   list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
@@ -854,7 +849,8 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
   border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor;
 }
 .account-trigger .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.account-dept { font-weight: 400; color: var(--fg-2); }
+.account-text { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2; text-align: left; }
+.account-sub { font-weight: 400; font-size: .74rem; color: var(--fg-2); max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-panel {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 14rem;
   max-height: calc(100vh - 96px); overflow-y: auto;
@@ -873,7 +869,17 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .account-persona:hover { background: var(--accent-soft); }
 .account-persona[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .account-persona:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
-@media (max-width: 760px) { .account-dept { display: none; } .toast { top: 56px; } }
+/* The tour and the dark mode: the other entries of the menu of the chip. */
+.account-extras { display: grid; gap: 4px; margin: 0 0 10px; }
+.account-action {
+  width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  cursor: pointer; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface-2); color: var(--fg); font: inherit; font-size: .85rem; font-weight: 600;
+}
+.account-action:hover { background: var(--accent-soft); }
+.account-action:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.account-action-state { font-weight: 400; font-size: .74rem; color: var(--fg-2); }
+@media (max-width: 760px) { .toast { top: 56px; } }
 
 /* ---- What-if (policy 2): padding, callouts and narrow-screen fit ---- */
 .policy-screen section.card, .policy-screen article.card { padding: 14px 16px; margin: 14px 0; }

@@ -120,7 +120,14 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .city-header-tools .account-trigger { padding: 6px 12px; font-size: .92rem; border-color: rgba(255,255,255,.35); }
 .city-header-tools .account-trigger:focus-visible { outline: 3px solid var(--city-gold); outline-offset: 2px; }
 .city-header-tools .account-name { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.city-header-tools .account-sub { color: rgba(255,255,255,.78); max-width: 14ch; }
 .city-header-tools .account-panel { color: var(--fg); max-width: calc(100vw - 32px); }
+.city-header-tools .account-panel .account-sub { color: var(--fg-2); }
+
+/* The way back from a page that stands alone (the rate-limited page).  It is
+   not part of the printed page. */
+.back-to-app { margin-top: 1.2rem; font-size: .9rem; }
+@media print { .back-to-app { display: none; } }
 
 /* Gold primary button used on the applicant screens. */
 .city .btn.gold, .city a.btn.gold { background: var(--city-gold); border-color: var(--city-gold); color: #1a1200; font-weight: 700; text-decoration: none; }
@@ -135,6 +142,11 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .city .toast.city-toast { top: 148px; right: 16px; left: auto; max-width: min(420px, calc(100vw - 32px)); z-index: 45; animation: city-toast-out .3s ease 9s forwards; }
 @keyframes city-toast-out { to { opacity: 0; visibility: hidden; transform: translateY(-12px); } }
 @media (max-width: 760px) { .city .toast.city-toast { top: 164px; right: 16px; } }
+@media (max-width: 640px) {
+  /* On a phone the tools of the City header move to a row of their own, so
+     the header is taller and the toast sits below it. */
+  .city .toast.city-toast { top: 176px; }
+}
 
 /* U2 Permits entry */
 .city-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
@@ -286,8 +298,14 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
   .receipt-facts dd { margin-bottom: 8px; }
   .receipt .ref.big { font-size: 1.5rem; }
   .step-label { font-size: .8rem; }
-  .city-header-tools .account-name { max-width: 6ch; }
+  .city-header-tools .account-name { max-width: 12ch; }
+  .city-header-tools .account-sub { max-width: 12ch; }
   .city-header-tools .account-trigger { padding: 6px 9px; gap: 6px; }
+  /* On a phone the tools of the City header move to a row of their own: the
+     chip of the persona then stays in the top right without pushing the page
+     sideways, whatever the length of the role. */
+  .city-header-row { flex-wrap: wrap; }
+  .city-header-tools { margin-left: auto; }
   .type-cards.compact { grid-template-columns: minmax(0, 1fr); }
   .portal-form input.num { width: 8ch; }
 }

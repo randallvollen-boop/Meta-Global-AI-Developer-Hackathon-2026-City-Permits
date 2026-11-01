@@ -193,6 +193,11 @@ def test_all_requests_limit_answers_429_with_the_application_page(make_client) -
     assert "/ui/static/app.css" in blocked.text
     assert blocked.headers["content-security-policy"]  # the security headers still apply
     assert re.search(r"Wait \d+ seconds?", blocked.text)
+    # The page stands alone, without a session, so the way back is the
+    # persona chooser.
+    assert 'data-testid="back-to-app"' in blocked.text
+    assert ">Back to the app</a>" in blocked.text
+    assert '<a href="/select" data-testid="back-to-app">' in blocked.text
 
 
 def test_api_callers_get_a_json_429(make_client) -> None:

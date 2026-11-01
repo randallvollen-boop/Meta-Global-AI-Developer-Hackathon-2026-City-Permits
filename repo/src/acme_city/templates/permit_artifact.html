@@ -14,9 +14,15 @@
     <title>{{ permit_number }}: simulated ACME City permit</title>
     <style>
 {{ styles }}
+.back-to-app { margin: 1rem 0 0; font-size: .85rem; }
+@media print { .back-to-app { display: none; } }
     </style>
   </head>
   <body>
+    {# The way back to the application.  The document renders from the
+       immutable snapshot of the permit, so the link is the same for every
+       reader and the bytes of the document never change. #}
+    <p class="back-to-app"><a href="{{ back_href }}" data-testid="back-to-app">Back to the app</a></p>
     <header class="banner">
       <p class="simulated">Simulated demonstration document: not an official city record</p>
       <h1>ACME City simulated building permit</h1>

@@ -4,8 +4,8 @@
    dark.  Layout contract:
      - the drawer sits at the right edge;
      - it keeps --ui-clear-top free at the top (toasts live top-right) and
-       --ui-clear-bottom free at the bottom (the Demo controls button lives
-       bottom-left), so it never covers either. */
+       --ui-clear-bottom free at the bottom (the mobile navigation lives
+       there), so it never covers either. */
 
 :root {
   --ui-clear-top: 112px; /* clears a shown toast: top 64px + its height */
@@ -91,12 +91,12 @@ html.ui-js .ui-info-fallback { display: none; }
 .ui-drawer-refused { margin: 0; padding: 12px; border-radius: 8px; background: var(--bad-soft, #fbe6e3); color: var(--fg, #142230); }
 
 @media (max-width: 760px) {
-  /* The staff app's bottom bar and the Demo controls button sit lower here. */
+  /* The staff app's bottom bar sits lower here. */
   :root { --ui-clear-bottom: 120px; }
 }
 
 /* Narrow screens: a full-width sheet.  The top and bottom bands stay free for
-   toasts and for the Demo controls button. */
+   the toasts and for the mobile navigation. */
 @media (max-width: 640px) {
   .ui-drawer { width: 100vw; border-radius: 12px 12px 0 0; border: 1px solid var(--line, #dde3e9); border-left: 0; }
   .ui-drawer-section dl > div { grid-template-columns: 1fr; gap: 2px; }

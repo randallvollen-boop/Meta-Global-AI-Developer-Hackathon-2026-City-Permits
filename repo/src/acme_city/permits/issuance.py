@@ -54,6 +54,13 @@ ARTIFACT_STYLESHEET = "permit-print.css"
 #: The first number of the fictional permit sequence.
 PERMIT_SEQUENCE_START = 1000
 
+#: The way back from the printable artifact of a permit.  The document renders
+#: from the immutable snapshot of the permit, so the link is the same for every
+#: reader: the bytes of the document, and with them its artifact hash, never
+#: depend on who opened it.  The permit belongs to the applicant, whose home
+#: is the City website.
+ARTIFACT_BACK_HREF = "/city/"
+
 
 class IssuePermitCommand(PermitModel):
     """Issue a simulated permit from a current approved decision.
@@ -644,6 +651,7 @@ def render_snapshot(snapshot: dict[str, Any]) -> bytes:
         "allocated_total": format_cents(int(snapshot.get("allocated_total_cents") or 0)),
         "artifact_hash": snapshot.get("artifact_hash", ""),
         "styles": artifact_styles(),
+        "back_href": ARTIFACT_BACK_HREF,
     }
     template = _environment().get_template("permit_artifact.html")
     return template.render(**context).encode("utf-8")
@@ -655,6 +663,7 @@ def render_permit_artifact(session: Session, permit_id: str) -> bytes:
 
 
 __all__ = [
+    "ARTIFACT_BACK_HREF",
     "ARTIFACT_STYLESHEET",
     "PERMIT_SEQUENCE_START",
     "IssuePermitCommand",

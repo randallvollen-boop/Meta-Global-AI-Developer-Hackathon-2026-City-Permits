@@ -1,4 +1,4 @@
-"""The staff chrome: the theme toggle, the account bar and the demo control corner.
+"""The staff chrome: the dark mode in the persona menu, the account bar and the demo control corner.
 
 Root cause of the theme bug these tests guard: the deferred ``app.js`` ran
 ``initTheme`` at load and again on DOMContentLoaded, bound two click listeners,
@@ -17,6 +17,8 @@ def test_the_theme_toggle_switches_both_ways_and_persists(page, server: BrowserS
     login("persona_data_steward")
     page.goto(f"{server.base_url}/queue", wait_until="networkidle")
     start = page.evaluate(BG)
+    # The dark mode sits in the menu of the chip in the top right.
+    page.locator('[data-testid="persona-trigger"]').click()
     page.locator("#theme-toggle").click()
     dark = page.evaluate(BG)
     assert dark != start
@@ -24,6 +26,7 @@ def test_the_theme_toggle_switches_both_ways_and_persists(page, server: BrowserS
     assert page.evaluate("localStorage.getItem('acme-theme')") == "dark"
     page.reload(wait_until="networkidle")
     assert page.evaluate(BG) == dark  # persisted
+    page.locator('[data-testid="persona-trigger"]').click()
     page.locator("#theme-toggle").click()
     assert page.evaluate(BG) == start
     assert page.evaluate("localStorage.getItem('acme-theme')") == "light"

@@ -6,7 +6,9 @@
 {% set path = request.url.path.rstrip('/') %}
 {% set portal_page = path == '/apply' or path.startswith('/apply/') %}
 {% set is_applicant = actor is defined and actor and actor.label == 'Applicant' %}
-{% set shown_name = (applicant_name if applicant_name is defined and applicant_name else (actor.label if actor else '')) %}
+{# The second line of the chip: the name of the person, or the department of
+   the persona.  The role itself is always the first line. #}
+{% set shown_name = (applicant_name | default('', true)) or (actor.department | default('', true)) %}
 {% set portal_active = 'track' if path == '/apply/track' else ('help' if path == '/apply/help/panel' else 'start') %}
 {# The placement the assistant is opened from.  It is named apart from the
    placement of the panel itself, which the panel page carries. #}
@@ -53,8 +55,10 @@
     {% else %}
     <a class="city-help-link" href="/help" data-testid="help-link"{% if active == 'help' %} aria-current="page"{% endif %}>Help<span class="city-help-more"> and guides</span></a>
     {% endif %}
-    {% if is_applicant %}
-    {{ persona_menu(actor, personas, name=shown_name, name_testid='applicant-name', wrapper_testid='applicant-account') }}
+    {# Every signed-in persona gets the same chip in the same corner, on the
+       City website as well as in the staff application. #}
+    {% if actor %}
+    {{ persona_menu(actor, personas, sub=shown_name, sub_testid='applicant-name', wrapper_testid='applicant-account') }}
     {% else %}
     <p class="city-hours">City Hall (555) 010-0100</p>
     {% endif %}
@@ -102,7 +106,7 @@
 
 <footer class="city-footer">
   <div class="city-wrap">
-    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a> <span aria-hidden="true">&middot;</span> <button type="button" data-tour-start data-testid="tour-start-footer" style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;">Take the tour</button></p>
+    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
     <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
   </div>
 </footer>

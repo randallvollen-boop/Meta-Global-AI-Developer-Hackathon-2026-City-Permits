@@ -47,7 +47,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Watch the tour (optional)",
         "",
         "/select",
-        "Open the video below the persona cards and play it. It runs under three minutes.",
+        "Open the video below the persona cards and play it. It runs under three minutes. The guided tour opens from Take the tour: in the line of guides on the landing, and in the Demo controls menu in the top right once a persona is signed in.",
         "Five personas, each a fictional person with one job. Every record in the app is fictional.",
     ),
     Step(

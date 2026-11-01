@@ -7,8 +7,7 @@
    and whether a source or a consumer still has to acknowledge it.
 
    Progressive enhancements (no server round-trip for chrome):
-   - theme toggle persisted in localStorage (system setting otherwise);
-   - persona segmented control submits its server form on click;
+   - dark mode of the staff frame, persisted in localStorage;
    - tabs on the permit workspace (all panels stacked without JS);
    - Replay run animates the recorded 5-node strip client-side only and
      never sends a request;
@@ -32,15 +31,19 @@
   }
 
   /* -------------------------------------------------------------- theme */
-  function syncThemeIcon() {
+  /* The dark mode is a choice of the reader, kept in localStorage.  The
+     choice is applied before the page is painted by static/theme.js, so this
+     script only reads it and reports it on the control in the persona menu. */
+  function themeIsDark() {
+    return document.documentElement.getAttribute("data-theme") === "dark";
+  }
+  function syncThemeControl() {
     var button = document.getElementById("theme-toggle");
     if (!button) return;
-    var root = document.documentElement;
-    var dark = root.getAttribute("data-theme")
-      ? root.getAttribute("data-theme") === "dark"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    button.innerHTML =
-      '<svg aria-hidden="true"><use href="#i-' + (dark ? "sun" : "moon") + '"/></svg>';
+    var dark = themeIsDark();
+    button.setAttribute("aria-pressed", dark ? "true" : "false");
+    var state = button.querySelector('[data-testid="theme-state"]');
+    if (state) state.textContent = dark ? "On" : "Off";
   }
   var themeBound = false;
   function initTheme() {
@@ -48,32 +51,20 @@
     // DOMContentLoaded). A second click listener would undo every toggle.
     if (themeBound) return;
     themeBound = true;
-    try {
-      var stored = window.localStorage.getItem("acme-theme");
-      if (stored === "dark" || stored === "light") {
-        document.documentElement.setAttribute("data-theme", stored);
-      }
-    } catch (error) {
-      /* Storage may be unavailable; the system setting then applies. */
-    }
-    syncThemeIcon();
     var button = document.getElementById("theme-toggle");
-    if (button) {
-      button.addEventListener("click", function () {
-        var root = document.documentElement;
-        var dark = root.getAttribute("data-theme")
-          ? root.getAttribute("data-theme") === "dark"
-          : window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var next = dark ? "light" : "dark";
-        root.setAttribute("data-theme", next);
-        try {
-          window.localStorage.setItem("acme-theme", next);
-        } catch (error) {
-          /* The choice then lasts for this page only. */
-        }
-        syncThemeIcon();
-      });
-    }
+    // Only a page that offers the control reads the stored choice.
+    if (!button) return;
+    button.addEventListener("click", function () {
+      var next = themeIsDark() ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try {
+        window.localStorage.setItem("acme-theme", next);
+      } catch (error) {
+        /* The choice then lasts for this page only. */
+      }
+      syncThemeControl();
+    });
+    syncThemeControl();
   }
 
   /* -------------------------------------------------------------- toast */

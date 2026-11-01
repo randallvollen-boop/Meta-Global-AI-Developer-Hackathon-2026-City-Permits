@@ -27,7 +27,11 @@ from acme_city.persistence.models import finance, permit, registry
 from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.permits.decisions import PermitDecisionCommand
-from acme_city.permits.issuance import IssuePermitCommand, PermitIssuanceService
+from acme_city.permits.issuance import (
+    ARTIFACT_BACK_HREF,
+    IssuePermitCommand,
+    PermitIssuanceService,
+)
 from acme_city.permits.service import PermitService
 
 DECIDED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
@@ -208,6 +212,12 @@ def test_the_artifact_is_stable_and_fictional(seeded: Settings) -> None:
             assert b"not an official city record" in artifact
             assert b"Westerville" not in artifact
             assert result.value.permit_number.encode("utf-8") in artifact
+            # The document stands alone, so it carries a way back to the app.
+            assert b'data-testid="back-to-app"' in artifact
+            assert b">Back to the app</a>" in artifact
+            assert ARTIFACT_BACK_HREF.encode("utf-8") in artifact
+            # The way back is not part of the printed document.
+            assert b"@media print" in artifact
             # The same snapshot always renders the same bytes.
             assert service.render_artifact(result.value.permit_id) == artifact
     finally:

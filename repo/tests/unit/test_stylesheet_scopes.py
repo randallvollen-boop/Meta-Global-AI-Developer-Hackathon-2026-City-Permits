@@ -118,6 +118,24 @@ LANDING_ADDED = (
     ".video-title-note",
 )
 
+#: The theme of the frames (slice T3) changed on purpose: the setting of the
+#: device is never followed, so the dark tokens apply only under
+#: [data-theme="dark"], and the chip of the persona carries the role, the
+#: small second line and the other entries of its menu.
+THEME_REMOVED = (
+    ':root:not([data-theme="light"])',
+    ".account-dept",
+)
+THEME_ADDED = (
+    ".account-text",
+    ".account-sub",
+    ".account-extras",
+    ".account-action",
+    ".account-action:hover",
+    ".account-action:focus-visible",
+    ".account-action-state",
+)
+
 
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -203,25 +221,23 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
     # the rule for the "More details" disclosure.  Those selectors changed on
     # purpose and are compared apart; every other selector must still be
     # exactly what it was before the insight move.
-    old = [
-        selector
-        for selector in old
-        if selector not in STAFF_FRAME_REMOVED
-        and selector not in REVIEWER_SLIM_REMOVED
-        and selector not in LANDING_REMOVED
-    ]
-    new = [
-        selector
-        for selector in new
-        if selector not in STAFF_FRAME_REMOVED
-        and selector not in REVIEWER_SLIM_REMOVED
-        and selector not in STAFF_FRAME_ADDED
-        and selector not in PERSONA_MENU_ADDED
-        and selector not in AGENT_INBOX_ADDED
-        and selector not in AGENT_DAG_ADDED
-        and selector not in REVIEWER_SLIM_ADDED
-        and selector not in LANDING_ADDED
-    ]
+    removed = (
+        STAFF_FRAME_REMOVED
+        + REVIEWER_SLIM_REMOVED
+        + LANDING_REMOVED
+        + THEME_REMOVED
+    )
+    added = (
+        STAFF_FRAME_ADDED
+        + PERSONA_MENU_ADDED
+        + AGENT_INBOX_ADDED
+        + AGENT_DAG_ADDED
+        + REVIEWER_SLIM_ADDED
+        + LANDING_ADDED
+        + THEME_ADDED
+    )
+    old = [selector for selector in old if selector not in removed]
+    new = [selector for selector in new if selector not in removed and selector not in added]
     # The block sat in one contiguous run: app.css before it, insight.css, then app.css after.
     first = old.index(insight[0])
     assert old == new[:first] + insight + new[first:]

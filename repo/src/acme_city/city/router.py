@@ -21,7 +21,7 @@ from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.insight import public as community
 from acme_city.ui.router import _applicant_name, csrf_token, render, templates, ui_actor
-from acme_city.ui.view_models import SCREENS, actor_label, persona_options
+from acme_city.ui.view_models import SCREENS, actor_department, actor_label, persona_options
 
 router = APIRouter(prefix="/city", tags=["city-website"])
 
@@ -212,7 +212,11 @@ def city_context(
     return {
         "moved_notice": notice,
         "actor": (
-            {"actor_id": actor.actor_id, "label": actor_label(session, actor.actor_id)}
+            {
+                "actor_id": actor.actor_id,
+                "label": actor_label(session, actor.actor_id),
+                "department": actor_department(session, actor.actor_id),
+            }
             if actor is not None
             else None
         ),

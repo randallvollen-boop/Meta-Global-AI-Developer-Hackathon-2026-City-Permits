@@ -15,6 +15,9 @@
   <h1>Too many requests</h1>
   <p class="city-lede">This address has sent more {{ what }} than the demonstration allows in one minute. Wait {{ retry_after }} second{{ '' if retry_after == 1 else 's' }}, then try again. Nothing you entered was saved by this request.</p>
   <p><a href="/city/">Return to the City home page</a></p>
+  {# The page stands alone, without a session, so the way back is the
+     persona chooser. #}
+  <p class="back-to-app"><a href="/select" data-testid="back-to-app">Back to the app</a></p>
 </main>
 </body>
 </html>

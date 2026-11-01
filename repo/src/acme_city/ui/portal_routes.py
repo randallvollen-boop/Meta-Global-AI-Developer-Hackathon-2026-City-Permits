@@ -35,6 +35,7 @@ from acme_city.audit.service import AuditService
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.core.errors import AcmeError, NotFoundError, ValidationError
+from acme_city.ui import view_models
 from acme_city.ui.router import (
     CSRF_FIELD,
     error_response,
@@ -204,6 +205,17 @@ def _default_values(session: Session, actor: ActorContext) -> dict[str, str]:
 
 def _service(request: Request, session: Session) -> PortalService:
     return PortalService(session, settings=request.app.state.settings)
+
+
+def _persona_home(session: Session, actor: ActorContext) -> str:
+    """Return the screen the persona lands on, the way back into the application.
+
+    It is the screen of the persona card of the landing: the City website for
+    the Applicant, the own home of a staff persona.
+    """
+    label = view_models.actor_label(session, actor.actor_id)
+    options = {option["label"]: option for option in view_models.persona_options(session)}
+    return options.get(label, {}).get("next") or "/city/"
 
 
 @router.get("/apply", operation_id="ui_portal_chooser")
@@ -496,7 +508,9 @@ def ui_portal_copy(
     from acme_city.ui.router import templates
 
     body = templates.get_template("portal_copy.html").render(
-        record=record, copy_note=portal_content.content()["receipt"]["copy_note"]
+        record=record,
+        copy_note=portal_content.content()["receipt"]["copy_note"],
+        back_href=_persona_home(session, resolved),
     )
     return Response(
         body,

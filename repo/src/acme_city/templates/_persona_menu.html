@@ -1,15 +1,26 @@
-{# The demo persona menu: the chip that names the persona that acts, and the
-   menu that switches persona or signs out.  One markup for the staff header
-   (base.html) and the City header (city/layout.html).  `name` is the text on
-   the chip when it differs from the persona label (the applicant's own name). #}
-{% macro persona_menu(actor, personas, name='', name_testid='acting-persona', wrapper_testid='persona-select') %}
+{# The demo persona chip: one markup for the staff header (base.html) and the
+   City header (city/layout.html).
+
+   The chip names the persona that acts.  The first line is always the role
+   ("Applicant", "Permit Reviewer", ...); the small second line names the
+   person (the applicant) or the department of the persona.  The menu offers
+   the five personas under "Demo controls", the guided tour and, in the staff
+   frame, the dark mode.
+
+   The test ids are the ones the walkthroughs use: persona-trigger, demo-switch,
+   sign-out and acting-persona in both frames, plus applicant-name and
+   applicant-account on the City chip. #}
+{% macro persona_menu(actor, personas, sub='', sub_testid='account-sub', wrapper_testid='persona-select', theme=False) %}
 <details class="account-menu" data-testid="{{ wrapper_testid }}">
   <summary class="account-trigger" data-testid="persona-trigger" aria-label="Demo controls: switch user, now {{ actor.label }}">
     <span class="dot" style="background:{{ persona_dots.get(actor.label, 'var(--accent)') }}"></span>
-    <span class="account-name" data-testid="{{ name_testid }}">{{ name or actor.label }}{% if actor.department %} <span class="account-dept">&middot; {{ actor.department }}</span>{% endif %}</span>
+    <span class="account-text">
+      <span class="account-name" data-testid="acting-persona">{{ actor.label }}</span>
+      {% if sub %}<span class="account-sub" data-testid="{{ sub_testid }}">{{ sub }}</span>{% endif %}
+    </span>
   </summary>
   <div class="account-panel">
-    <p class="account-line">Signed in as <strong>{{ name or actor.label }}</strong>{% if actor.department %}<br><span class="muted">{{ actor.department }}</span>{% endif %}</p>
+    <p class="account-line">Signed in as <strong>{{ actor.label }}</strong>{% if sub %}<br><span class="muted">{{ sub }}</span>{% endif %}</p>
     {% if personas %}
     <p class="account-switch-label">Demo controls</p>
     <ul class="account-personas" data-testid="demo-switch">
@@ -24,6 +35,17 @@
       {% endfor %}
     </ul>
     {% endif %}
+    {# The tour and the theme live in the menu of the chip, under the demo
+       controls, so that every frame opens them from the same place. #}
+    <div class="account-extras">
+      <button type="button" class="account-action" data-tour-start data-testid="tour-start-menu">Take the tour</button>
+      {% if theme %}
+      <button type="button" class="account-action" id="theme-toggle" data-testid="theme-toggle" aria-pressed="false">
+        <span class="account-action-name">Dark mode</span>
+        <span class="account-action-state" data-testid="theme-state" aria-hidden="true">Off</span>
+      </button>
+      {% endif %}
+    </div>
     <form method="post" action="/ui/end" class="persona-end">
       <button type="submit" class="button button-quiet btn sm" data-testid="sign-out">Sign out</button>
     </form>

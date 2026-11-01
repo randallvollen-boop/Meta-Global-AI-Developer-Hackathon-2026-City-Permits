@@ -506,6 +506,10 @@ def test_download_a_copy_is_an_attachment_of_the_applicants_own_record(client, e
     assert reference in text and "Residential deck or fence" in text and "Lantren" in text
     assert "cedar" in text and "Fence height (ft)" in text and "Fence" in text
     assert "Received: " in text and "It is not a permit" in text
+    # The copy stands alone, so it carries a way back to the application.
+    assert 'data-testid="back-to-app"' in text
+    assert ">Back to the app</a>" in text
+    assert '<a href="/city/" data-testid="back-to-app">' in text
     for secret in (INTERNAL_NOTE, INTERNAL_FINDING, VISIBLE_NOTE, MUST_LINE, "persona_permit_reviewer"):
         assert secret not in text
     assert client.get("/apply/submitted/ACME-NOPE/copy").status_code == 404

@@ -1,4 +1,4 @@
-"""The tour opens from the landing and from the header of every frame.
+"""The tour opens from the landing and from the menu of the persona chip.
 
 The button starts the first step of the tour, and the tour walks every step
 on a desktop and on a phone without any help from the test.
@@ -40,20 +40,26 @@ def test_the_button_of_the_landing_starts_the_first_step(page, server: BrowserSe
     assert page.recorded_errors == []
 
 
-def test_the_button_of_the_staff_header_starts_the_first_step(page, server: BrowserServer) -> None:
+def test_the_button_of_the_staff_menu_starts_the_first_step(page, server: BrowserServer) -> None:
+    """The tour opens from the menu of the chip in the staff frame."""
     steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.locator('button[data-persona="persona_data_steward"]').click()
     page.wait_for_url(f"{server.base_url}/steward")
-    page.locator('[data-testid="tour-start-header"]').click()
+    page.locator('[data-testid="persona-trigger"]').click()
+    page.locator('[data-testid="tour-start-menu"]').click()
     wait_for_step(page, server, steps[0])
     assert page.recorded_errors == []
 
 
-def test_the_button_of_the_city_footer_starts_the_first_step(page, server: BrowserServer) -> None:
+def test_the_button_of_the_city_menu_starts_the_first_step(page, server: BrowserServer) -> None:
+    """The tour opens from the menu of the same chip in the City frame."""
     steps = steps_of(page, server)
-    page.goto(f"{server.base_url}/city/", wait_until="networkidle")
-    page.locator('[data-testid="tour-start-footer"]').click()
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    page.locator('button[data-persona="persona_applicant"]').click()
+    page.wait_for_url(f"{server.base_url}/city/")
+    page.locator('.city-header [data-testid="persona-trigger"]').click()
+    page.locator('.city-header [data-testid="tour-start-menu"]').click()
     wait_for_step(page, server, steps[0])
     assert page.recorded_errors == []
 
