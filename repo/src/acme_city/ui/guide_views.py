@@ -4,6 +4,11 @@ Both pages read; neither changes a record.  The life cycle comes from
 :mod:`acme_city.permits.lifecycle_map`; who makes each move comes from the
 grants the personas are seeded with, the same list the architecture page uses.  Every "Open as" button posts to the ordinary persona
 switch, so a step runs the real screen with the real checks.
+
+The walkthrough is a set of paths.  Each path is one journey with its own
+steps, its own guided tour and its own card on the landing.  The paths are
+the only source of the written steps: the submission copy of the walkthrough
+is generated from them and a test fails when the two drift apart.
 """
 # REQUIRES: UX-04, PER-03
 # The life cycle and the walkthrough are read-only views over the enforced
@@ -30,10 +35,16 @@ AGENT_NAMES: dict[str, str] = {"agent:intake": "Intake agent (automatic)"}
 #: The statuses on the main path, in order; the page draws them as one row.
 MAIN_PATH: tuple[str, ...] = ("draft", "submitted", "ready_for_review", "approved", "issued")
 
+#: The case of the café path when no judge has made a copy of it.
+DEFAULT_CASE_ID = "app_synth_001"
+
+#: The placeholder in a step path that stands for the case of the café path.
+CASE_PLACEHOLDER = "{case}"
+
 
 @dataclass(frozen=True)
 class Step:
-    """One step of the judge walkthrough."""
+    """One step of one path of the judge walkthrough."""
 
     title: str
     persona: str
@@ -42,71 +53,223 @@ class Step:
     look_for: str
 
 
-WALKTHROUGH: tuple[Step, ...] = (
-    Step(
-        "Watch the tour (optional)",
-        "",
-        "/select",
-        "Open the video below the persona cards and play it. It runs under three minutes. The guided tour opens from Take the tour: in the line of guides on the landing, and in the Demo controls menu in the top right once a persona is signed in.",
-        "Five personas, each a fictional person with one job. Every record in the app is fictional.",
+@dataclass(frozen=True)
+class Path:
+    """One path through the application, with its own steps and its own tour."""
+
+    key: str
+    title: str
+    one_line: str
+    minutes: int
+    steps: tuple[Step, ...]
+
+
+#: The paths of the walkthrough, in the order the landing lists them.
+PATHS: tuple[Path, ...] = (
+    Path(
+        key="cafe",
+        title="Get the café open",
+        one_line=(
+            "Cedarline Coffee cannot open until its permit is issued, and its "
+            "owner is recorded three ways in three city systems."
+        ),
+        minutes=6,
+        steps=(
+            Step(
+                "Match the café to its owner",
+                "Data Steward",
+                "/steward",
+                "Open Data issues, press Prepare recommendations, then open each "
+                "task of the café and press Accept recommendation.",
+                "The task carries a High pill and a reason in one line, and the "
+                "decision is recorded in your name.",
+            ),
+            Step(
+                "Let the agent route the case",
+                "Agent Operator",
+                "/agent/intake",
+                "Press Wake agent, then press Process the next 20 cases.",
+                "The run shows Completed and the Router line says Ready for "
+                "review in the Building area.",
+            ),
+            Step(
+                "Run the checks and approve the case",
+                "Permit Reviewer",
+                "/queue/review",
+                "Open the case of the café from the Review queue, press Start "
+                "under Run application checks, then press Start under Record "
+                "review decision, choose Approve and write your reason.",
+                "The rule results show Passed and the decision is recorded in "
+                "the case history with your reason.",
+            ),
+            Step(
+                "Pay the fee",
+                "City Administrator",
+                "/reconciliation",
+                "Open Reconciliation, press Start under Assess application and "
+                "assess the case of the café, then allocate the 150.00 receipt "
+                "from the old finance account and reconcile the assessment.",
+                "The receipt from the old account is matched and the balance "
+                "shows 0.00.",
+            ),
+            Step(
+                "Issue the permit",
+                "Permit Reviewer",
+                "/queue/review",
+                "Open the case of the café again and press Start under Issue "
+                "permit.",
+                "The permit number appears on the case and the issued artifact "
+                "opens.",
+            ),
+            Step(
+                "Find it as a resident",
+                "",
+                "/city/community",
+                "Search for the permit number on the City of Acme website.",
+                "The public record shows the permit, the parcel and the outcome, "
+                "and never a homeowner's name, documents or fees.",
+            ),
+        ),
     ),
-    Step(
-        "Read the permit life cycle",
-        "",
-        "/lifecycle",
-        "Read the main path across the top, then the statuses a case can move to instead.",
-        "Each move names who makes it. An agent only routes cases. A person decides and issues.",
+    Path(
+        key="resident",
+        title="Apply as a resident",
+        one_line=(
+            "A resident applies for a fence, checks the application before it "
+            "is sent and follows it through the City."
+        ),
+        minutes=3,
+        steps=(
+            Step(
+                "Apply for a permit",
+                "Applicant",
+                "/apply",
+                "Choose Residential deck or fence, type 400 Lantern Row, answer "
+                "the questions for a 6 ft fence in the front yard, attach a file "
+                "for each of the two required documents, tick the certification "
+                "and press Submit application.",
+                "A reference number appears and the tracker lists both documents "
+                "as received.",
+            ),
+            Step(
+                "Check the application before it is sent",
+                "Applicant",
+                "/apply",
+                "Press Check my application, then change the 6 ft front yard "
+                "fence to 4 ft and press Check my application again, or press "
+                "Submit anyway and write Why submit now.",
+                "The findings are grouped under Must fix, Should check and "
+                "Looks good, and each one names the published rule behind it.",
+            ),
+            Step(
+                "Let the agent route the application",
+                "Agent Operator",
+                "/agent/intake",
+                "Press Wake agent, then press Process the next 20 cases.",
+                "The Router line sends an application that breaks a rule to Early "
+                "resolution and says which rule.",
+            ),
+            Step(
+                "Track the application",
+                "Applicant",
+                "/apply/track",
+                "Press Track application on the City of Acme website and open "
+                "the application.",
+                "The tracker lists both documents as received and the status of "
+                "the application.",
+            ),
+        ),
     ),
-    Step(
-        "Apply for a permit",
-        "Applicant",
-        "/apply",
-        "Choose Residential deck or fence. Keep the applicant name already filled in. Type 400 Lantern Row and pick the suggested address. Answer the questions, for example a 6 ft fence in the side or rear yard, 2 ft from the property line. Attach a small .txt file for each of the two required documents, tick the certification, press Submit application, then press Track application. Submit once: a second application for the same project at the same address is flagged as a duplicate. To see early resolution later, submit a second application at another address, such as 100 Kestrel Way, and tick Sent to the City separately for one document instead of attaching it.",
-        "A reference number such as SYN-APP-614, and a tracker that lists both documents as received. The assistant opens over the page and cites the published ACME rule behind each answer.",
+    Path(
+        key="city",
+        title="Run the city",
+        one_line=(
+            "The record of the café decision, the City at a glance and a what "
+            "if on a fee change."
+        ),
+        minutes=3,
+        steps=(
+            Step(
+                "Check the record of the decision",
+                "City Administrator",
+                "/ops/audit",
+                "Choose Recorded permit decision in the Action filter, press "
+                "Apply filters, then press View details on the top row.",
+                "The actor, the time, the decision and the case it belongs to "
+                "are recorded together.",
+            ),
+            Step(
+                "See the city at a glance",
+                "City Administrator",
+                "/insight/city",
+                "Filter the City view by permit type and outcome.",
+                "The map, the counts and the definition printed beside each "
+                "figure.",
+            ),
+            Step(
+                "Try a what if on a fee change",
+                "City Administrator",
+                "/policy/scenarios",
+                "Open What-if, save a new what-if, change a fee and run it over "
+                "the cases.",
+                "The run writes down what the change would do and it decides "
+                "nothing.",
+            ),
+        ),
     ),
-    Step(
-        "Let the agent route the work",
-        "Agent Operator",
-        "/agent/intake",
-        "Press Wake agent. The page shows it awake straight away. Then press Process the next 20 cases, or Process one beside your case. Open Agent runs in the left menu and press View run on the row for your case. Under More details on the agent screen, All runs opens the same list, and Processing and Engine are listed there. Then go back to Agents, click Steward assistant under Agent status, and press Wake agent there too, so the Data Steward can ask it for recommendations.",
-        "The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.",
-    ),
-    Step(
-        "Clear a case for review",
-        "Data Steward",
-        "/steward",
-        "In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a Decision note and submit it. Then open the Check the person identity issue from ACME ePermit Portal (simulated), press Start under Confirm link to Demo Applicant, write a Decision note and submit it.",
-        "The assistant only proposes: Accept recommendation and Accept all high-confidence (N), which shows the exact list first, record the decision in your name. Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.",
-    ),
-    Step(
-        "Decide a case",
-        "Permit Reviewer",
-        "/queue/review",
-        "Open your case from step 3 in the Review queue. On the People and organizations tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write the Rationale (internal record) and press Record the decision. Then try Issue permit.",
-        "Deciding and issuing are separate. After the approval, Issue permit is refused (the permit may not be issued yet) until the fee is assessed, paid and reconciled on the Reconciliation screen, so a refusal is expected.",
-    ),
-    Step(
-        "Check the record of the decision",
-        "City Administrator",
-        "/ops/audit",
-        "Choose Recorded permit decision in the Action filter and press Apply filters, then press View details on the top row.",
-        "The actor, the time, the decision record and, under References, the case the decision belongs to, named by its reference (SYN-APP-nnn, the number from step 3). A denial also shows its reason code under Recorded detail. The written rationale is on the case page, not in the audit log.",
-    ),
-    Step(
-        "See the city at a glance",
-        "City Administrator",
-        "/insight/city",
-        "Filter the City view by permit type or outcome. Then open the planning overview and try a what if policy scenario.",
-        "The map, the counts and the definition printed beside each figure.",
-    ),
-    Step(
-        "Look up permits as a resident",
-        "",
-        "/city/community",
-        "Search by a street name on the City of Acme website.",
-        "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees.",
+    Path(
+        key="before",
+        title="Before you start",
+        one_line=(
+            "The video, the permit life cycle and the plans for assistants "
+            "through MCP and for staff screens on a phone."
+        ),
+        minutes=2,
+        steps=(
+            Step(
+                "Watch the video",
+                "",
+                "/select",
+                "Open the video below the persona cards and play it.",
+                "It runs under three minutes and every record it shows is "
+                "fictional.",
+            ),
+            Step(
+                "Read the permit life cycle",
+                "",
+                "/lifecycle",
+                "Read the main path across the top, then the statuses a case "
+                "can move to instead.",
+                "Each move names who makes it, an agent only routes cases and a "
+                "person decides and issues.",
+            ),
+            Step(
+                "See what the City plans next",
+                "",
+                "/help",
+                "Open Help and documentation and read the plan for assistants "
+                "through MCP.",
+                "The plan says plainly that none of it is built yet.",
+            ),
+        ),
     ),
 )
+
+#: The path the guided tour opens when no other path is named.
+DEFAULT_PATH = PATHS[0].key
+
+
+def resolve_path(path: str, case_id: str = DEFAULT_CASE_ID) -> str:
+    """Return the screen a step opens, with the case of the café path in it."""
+    return path.replace(CASE_PLACEHOLDER, case_id)
+
+
+def path_by_key(key: str) -> Path | None:
+    """Return the path with that key, or nothing when there is no such path."""
+    for path in PATHS:
+        if path.key == key:
+            return path
+    return None
 
 
 def _persona_ids(session: Session) -> dict[str, str]:
@@ -170,23 +333,168 @@ def lifecycle_view(session: Session) -> dict[str, Any]:
     }
 
 
-def walkthrough_view(session: Session) -> dict[str, Any]:
-    """Return the judge walkthrough with the actor id each step switches to."""
-    ids = _persona_ids(session)
+def path_cards(session: Session) -> list[dict[str, Any]]:
+    """Return the card of every path: its title, its one line and its minutes."""
+    return [
+        {
+            "key": path.key,
+            "title": path.title,
+            "one_line": path.one_line,
+            "minutes": path.minutes,
+        }
+        for path in PATHS
+    ]
+
+
+def fresh_copy_context(session: Session) -> dict[str, Any]:
+    """Return the state of the Start fresh button of the café path.
+
+    The button is offered while the demonstration has room under the
+    allowance of copies.  When it is not offered, the reason says why, and
+    the reason is shown beside the disabled button.
+    """
+    from acme_city.walkthrough import judge_copy
+
+    room = judge_copy.room_for_copies(session)
     return {
-        "steps": [
-            {
-                "number": number,
-                "title": step.title,
-                "persona": step.persona,
-                "actor_id": ids.get(step.persona, "") if step.persona else "",
-                "path": step.path,
-                "do": step.do,
-                "look_for": step.look_for,
-            }
-            for number, step in enumerate(WALKTHROUGH, start=1)
-        ]
+        "label": "Start fresh",
+        "url": "/walkthrough/start-fresh",
+        "permitted": room > 0,
+        "room": room,
+        "max": judge_copy.MAX_JUDGE_COPIES,
+        "reason": (
+            ""
+            if room > 0
+            else (
+                f"the demonstration already holds {judge_copy.MAX_JUDGE_COPIES} copies of "
+                "the café case, the whole allowance"
+            )
+        ),
     }
 
 
-__all__ = ["MAIN_PATH", "WALKTHROUGH", "Step", "lifecycle_view", "walkthrough_view"]
+def walkthrough_view(session: Session, *, case_id: str = DEFAULT_CASE_ID) -> dict[str, Any]:
+    """Return the judge walkthrough: the paths, their steps and the actor each step switches to."""
+    ids = _persona_ids(session)
+    reference = ""
+    if case_id != DEFAULT_CASE_ID:
+        row = session.execute(
+            select(permit.Application.source_application_number).where(
+                permit.Application.id == case_id
+            )
+        ).scalar_one_or_none()
+        reference = str(row or "")
+    return {
+        "case_id": case_id,
+        "default_case_id": DEFAULT_CASE_ID,
+        "has_copy": case_id != DEFAULT_CASE_ID,
+        "copy_reference": reference,
+        "fresh": fresh_copy_context(session),
+        "paths": [
+            {
+                "key": path.key,
+                "title": path.title,
+                "one_line": path.one_line,
+                "minutes": path.minutes,
+                "steps": [
+                    {
+                        "number": number,
+                        "title": step.title,
+                        "persona": step.persona,
+                        "actor_id": ids.get(step.persona, "") if step.persona else "",
+                        "path": resolve_path(step.path, case_id),
+                        "do": step.do,
+                        "look_for": step.look_for,
+                    }
+                    for number, step in enumerate(path.steps, start=1)
+                ],
+            }
+            for path in PATHS
+        ],
+    }
+
+
+#: The heading of the submission copy of the walkthrough.
+DOC_TITLE = "City of Acme permits: judge walkthrough"
+
+#: The introduction of the submission copy of the walkthrough.
+DOC_INTRO = (
+    "Four paths, each one independent. Every record in the app is fictional, and "
+    "the app issues no real permit."
+)
+
+#: The instruction of the submission copy of the walkthrough.
+DOC_HOWTO = (
+    "Start at https://acme-city-permits.onrender.com/walkthrough. The same "
+    "steps are on that page, and the button on each step switches to the right "
+    "persona and opens the screen. To run the app on a local computer instead, "
+    "follow `repo/USER_TEST_GUIDE.md`. From `repo/`, run `uv run python "
+    "scripts/prepare_user_test.py --mode demo-synthetic` and then `uv run python "
+    "scripts/start_demo.py --host 127.0.0.1 --port 8266`, and open "
+    "http://127.0.0.1:8266/walkthrough. The demo-synthetic mode loads the "
+    "synthetic year of permits that the City view needs."
+)
+
+#: The note of the submission copy of the walkthrough.
+DOC_LIFECYCLE = (
+    "The permit life cycle behind these steps is at `/lifecycle`: every status, "
+    "every move, and who makes each move."
+)
+
+
+def walkthrough_markdown() -> str:
+    """Return the submission copy of the walkthrough.
+
+    The document is generated from the paths, so the words of the page and the
+    words of the document cannot drift apart.
+    """
+    lines: list[str] = [
+        f"# {DOC_TITLE}",
+        "",
+        DOC_INTRO,
+        "",
+        DOC_HOWTO,
+        "",
+        DOC_LIFECYCLE,
+        "",
+    ]
+    for path in PATHS:
+        lines.append(f"## {path.title}")
+        lines.append("")
+        lines.append(path.one_line)
+        lines.append("")
+        lines.append(f"{len(path.steps)} steps, about {path.minutes} minutes.")
+        lines.append("")
+        for number, step in enumerate(path.steps, start=1):
+            lines.append(f"### {number}. {step.title}")
+            lines.append("")
+            if step.persona:
+                lines.append(f"As **{step.persona}**, open `{step.path}`.")
+            else:
+                lines.append(f"Open `{step.path}`.")
+            lines.append("")
+            lines.append(f"- Do: {step.do}")
+            lines.append(f"- Look for: {step.look_for}")
+            lines.append("")
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
+__all__ = [
+    "CASE_PERSONA",
+    "CASE_PLACEHOLDER",
+    "DEFAULT_CASE_ID",
+    "DEFAULT_PATH",
+    "DOC_HOWTO",
+    "DOC_INTRO",
+    "DOC_LIFECYCLE",
+    "DOC_TITLE",
+    "MAIN_PATH",
+    "PATHS",
+    "Path",
+    "Step",
+    "lifecycle_view",
+    "path_by_key",
+    "resolve_path",
+    "walkthrough_markdown",
+    "walkthrough_view",
+]

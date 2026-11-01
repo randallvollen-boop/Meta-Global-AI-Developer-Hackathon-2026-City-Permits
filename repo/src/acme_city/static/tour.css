@@ -18,10 +18,16 @@
 }
 
 .tour-count { margin: 0; font-size: .78rem; letter-spacing: .04em; color: var(--fg-2, #4a5b6b); }
+.tour-path { margin: 0 0 .1rem; font-size: .78rem; letter-spacing: .04em; color: var(--fg-2, #4a5b6b); font-weight: 600; }
 .tour-title { margin: .15rem 0 .35rem; font-size: 1.1rem; }
 .tour-caption { margin: 0 0 .5rem; font-size: .95rem; }
 .tour-warning { margin: 0 0 .5rem; font-size: .88rem; color: var(--warn, #a5650b); }
 .tour-note { margin: 0 0 .5rem; font-size: .85rem; color: var(--fg-2, #4a5b6b); }
+
+/* Start fresh: the one write the tour may offer, on the first step of the
+   café path.  The note beside the button says what the server answered. */
+.tour-fresh { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 0 0 .5rem; }
+.tour-fresh-note { font-size: .82rem; color: var(--fg-2, #4a5b6b); }
 
 .tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .tour-controls .btn { font-size: .88rem; }

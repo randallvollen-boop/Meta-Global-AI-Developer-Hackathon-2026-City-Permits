@@ -108,6 +108,8 @@ def test_production_starts_against_an_unmarked_database(tmp_path: Path) -> None:
         ("GET", "/openapi.json", {}),
         ("GET", "/lifecycle", {}),
         ("GET", "/walkthrough", {}),
+        ("GET", "/tour/steps", {}),
+        ("POST", "/walkthrough/start-fresh", {}),
     ],
 )
 def test_demo_only_endpoints_do_not_exist_in_production(prod, method, path, kwargs) -> None:

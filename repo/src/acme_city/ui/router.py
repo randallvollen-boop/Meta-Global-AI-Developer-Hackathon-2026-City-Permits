@@ -399,8 +399,12 @@ def select_persona(
     """Show the persona selector.
 
     The selector offers exactly the four selectable personas.  A service
-    identity is never offered and never holds a session.
+    identity is never offered and never holds a session.  Under the personas
+    the paths of the walkthrough are offered, one card for each path.
     """
+    from acme_city.ui import guide_views, judge
+
+    visitor = judge.page_context(request)
     context = {
         "screen": "select",
         "title": "Choose a persona",
@@ -409,6 +413,9 @@ def select_persona(
         "feedback": None,
         "csrf_token": "",
         "fictional_demo": True,
+        "paths": guide_views.path_cards(session),
+        "fresh": guide_views.fresh_copy_context(session),
+        "judge": visitor,
         "actor": (
             {
                 "actor_id": actor.actor_id,
@@ -418,7 +425,9 @@ def select_persona(
             else None
         ),
     }
-    return render(request, "base.html", context)
+    response = render(request, "base.html", context)
+    judge.attach(response, request, visitor)
+    return response
 
 
 @signin_router.get("/select", operation_id="sign_in_not_configured")

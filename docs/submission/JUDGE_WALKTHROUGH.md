@@ -1,79 +1,143 @@
 # City of Acme permits: judge walkthrough
 
-Nine steps, about ten minutes. Every record in the app is fictional, and the app issues no real permit.
+Four paths, each one independent. Every record in the app is fictional, and the app issues no real permit.
 
-Start at https://acme-city-permits.onrender.com/walkthrough. The same steps are on that page, and the button on each step switches to the right persona and opens the screen. To run the app on a local computer instead, follow `repo/USER_TEST_GUIDE.md`. From `repo/`, run `uv run python scripts/prepare_user_test.py --mode demo-synthetic` and then `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`, and open http://127.0.0.1:8266/walkthrough. The demo-synthetic mode loads the synthetic year of permits that steps 8 and 9 need.
+Start at https://acme-city-permits.onrender.com/walkthrough. The same steps are on that page, and the button on each step switches to the right persona and opens the screen. To run the app on a local computer instead, follow `repo/USER_TEST_GUIDE.md`. From `repo/`, run `uv run python scripts/prepare_user_test.py --mode demo-synthetic` and then `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`, and open http://127.0.0.1:8266/walkthrough. The demo-synthetic mode loads the synthetic year of permits that the City view needs.
 
 The permit life cycle behind these steps is at `/lifecycle`: every status, every move, and who makes each move.
 
-## 1. Watch the tour (optional)
+## Get the café open
+
+Cedarline Coffee cannot open until its permit is issued, and its owner is recorded three ways in three city systems.
+
+6 steps, about 6 minutes.
+
+### 1. Match the café to its owner
+
+As **Data Steward**, open `/steward`.
+
+- Do: Open Data issues, press Prepare recommendations, then open each task of the café and press Accept recommendation.
+- Look for: The task carries a High pill and a reason in one line, and the decision is recorded in your name.
+
+### 2. Let the agent route the case
+
+As **Agent Operator**, open `/agent/intake`.
+
+- Do: Press Wake agent, then press Process the next 20 cases.
+- Look for: The run shows Completed and the Router line says Ready for review in the Building area.
+
+### 3. Run the checks and approve the case
+
+As **Permit Reviewer**, open `/queue/review`.
+
+- Do: Open the case of the café from the Review queue, press Start under Run application checks, then press Start under Record review decision, choose Approve and write your reason.
+- Look for: The rule results show Passed and the decision is recorded in the case history with your reason.
+
+### 4. Pay the fee
+
+As **City Administrator**, open `/reconciliation`.
+
+- Do: Open Reconciliation, press Start under Assess application and assess the case of the café, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
+- Look for: The receipt from the old account is matched and the balance shows 0.00.
+
+### 5. Issue the permit
+
+As **Permit Reviewer**, open `/queue/review`.
+
+- Do: Open the case of the café again and press Start under Issue permit.
+- Look for: The permit number appears on the case and the issued artifact opens.
+
+### 6. Find it as a resident
+
+Open `/city/community`.
+
+- Do: Search for the permit number on the City of Acme website.
+- Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner's name, documents or fees.
+
+## Apply as a resident
+
+A resident applies for a fence, checks the application before it is sent and follows it through the City.
+
+4 steps, about 3 minutes.
+
+### 1. Apply for a permit
+
+As **Applicant**, open `/apply`.
+
+- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents, tick the certification and press Submit application.
+- Look for: A reference number appears and the tracker lists both documents as received.
+
+### 2. Check the application before it is sent
+
+As **Applicant**, open `/apply`.
+
+- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Check my application again, or press Submit anyway and write Why submit now.
+- Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
+
+### 3. Let the agent route the application
+
+As **Agent Operator**, open `/agent/intake`.
+
+- Do: Press Wake agent, then press Process the next 20 cases.
+- Look for: The Router line sends an application that breaks a rule to Early resolution and says which rule.
+
+### 4. Track the application
+
+As **Applicant**, open `/apply/track`.
+
+- Do: Press Track application on the City of Acme website and open the application.
+- Look for: The tracker lists both documents as received and the status of the application.
+
+## Run the city
+
+The record of the café decision, the City at a glance and a what if on a fee change.
+
+3 steps, about 3 minutes.
+
+### 1. Check the record of the decision
+
+As **City Administrator**, open `/ops/audit`.
+
+- Do: Choose Recorded permit decision in the Action filter, press Apply filters, then press View details on the top row.
+- Look for: The actor, the time, the decision and the case it belongs to are recorded together.
+
+### 2. See the city at a glance
+
+As **City Administrator**, open `/insight/city`.
+
+- Do: Filter the City view by permit type and outcome.
+- Look for: The map, the counts and the definition printed beside each figure.
+
+### 3. Try a what if on a fee change
+
+As **City Administrator**, open `/policy/scenarios`.
+
+- Do: Open What-if, save a new what-if, change a fee and run it over the cases.
+- Look for: The run writes down what the change would do and it decides nothing.
+
+## Before you start
+
+The video, the permit life cycle and the plans for assistants through MCP and for staff screens on a phone.
+
+3 steps, about 2 minutes.
+
+### 1. Watch the video
 
 Open `/select`.
 
-- Do: Open the video below the persona cards and play it. It runs under three minutes. The guided tour opens from Take the tour: in the line of guides on the landing, and in the Demo controls menu in the top right once a persona is signed in.
-- Look for: Five personas, each a fictional person with one job. Every record in the app is fictional.
+- Do: Open the video below the persona cards and play it.
+- Look for: It runs under three minutes and every record it shows is fictional.
 
-## 2. Read the permit life cycle
+### 2. Read the permit life cycle
 
 Open `/lifecycle`.
 
 - Do: Read the main path across the top, then the statuses a case can move to instead.
-- Look for: Each move names who makes it. An agent only routes cases. A person decides and issues.
+- Look for: Each move names who makes it, an agent only routes cases and a person decides and issues.
 
-## 3. Apply for a permit
+### 3. See what the City plans next
 
-As **Applicant**, open `/apply`.
+Open `/help`.
 
-- Do: Choose Residential deck or fence. Keep the applicant name already filled in. Type 400 Lantern Row and pick the suggested address. Answer the questions, for example a 6 ft fence in the side or rear yard, 2 ft from the property line. Attach a small .txt file for each of the two required documents, tick the certification, press Submit application, then press Track application. Submit once: a second application for the same project at the same address is flagged as a duplicate. To see early resolution later, submit a second application at another address, such as 100 Kestrel Way, and tick Sent to the City separately for one document instead of attaching it.
-- Look for: A reference number such as SYN-APP-614, and a tracker that lists both documents as received. The assistant opens over the page and cites the published ACME rule behind each answer.
-
-## 4. Let the agent route the work
-
-As **Agent Operator**, open `/agent/intake`.
-
-- Do: Press Wake agent. The page shows it awake straight away. Then press Process the next 20 cases, or Process one beside your case. Open Agent runs in the left menu and press View run on the row for your case. Under More details on the agent screen, All runs opens the same list, and Processing and Engine are listed there. Then go back to Agents, click Steward assistant under Agent status, and press Wake agent there too, so the Data Steward can ask it for recommendations.
-- Look for: The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.
-
-## 5. Clear a case for review
-
-As **Data Steward**, open `/steward`.
-
-- Do: In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a Decision note and submit it. Then open the Check the person identity issue from ACME ePermit Portal (simulated), press Start under Confirm link to Demo Applicant, write a Decision note and submit it.
-- Look for: The assistant only proposes: Accept recommendation and Accept all high-confidence (N), which shows the exact list first, record the decision in your name. Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.
-
-## 6. Decide a case
-
-As **Permit Reviewer**, open `/queue/review`.
-
-- Do: Open your case from step 3 in the Review queue. On the People and organizations tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write the Rationale (internal record) and press Record the decision. Then try Issue permit.
-- Look for: Deciding and issuing are separate. After the approval, Issue permit is refused (the permit may not be issued yet) until the fee is assessed, paid and reconciled on the Reconciliation screen, so a refusal is expected.
-
-## 7. Check the record of the decision
-
-As **City Administrator**, open `/ops/audit`.
-
-- Do: Choose Recorded permit decision in the Action filter and press Apply filters, then press View details on the top row.
-- Look for: The actor, the time, the decision record and, under References, the case the decision belongs to, named by its reference (SYN-APP-nnn, the number from step 3). A denial also shows its reason code under Recorded detail. The written rationale is on the case page, not in the audit log.
-
-## 8. See the city at a glance
-
-As **City Administrator**, open `/insight/city`.
-
-- Do: Filter the City view by permit type or outcome. Then open the planning overview and try a what if policy scenario.
-- Look for: The map, the counts and the definition printed beside each figure.
-
-## 9. Look up permits as a resident
-
-Open `/city/community`.
-
-- Do: Search by a street name on the City of Acme website.
-- Look for: The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees.
-
-## Future features
-
-- A withdraw action for applicants. The Withdrawn status exists, but no action in the app sets it yet.
-- Application checks that leave a decided case decided. Today, running them on an approved or denied case moves it back to Ready for review.
-- Issued permits that stay closed. Today a record correction can reopen one.
-- Automatic linking on the hosted demo. It is built (Steward automation at `/steward/automation`, and the prepare mode `steward-automation`), but the hosted demo runs it paused.
-
-This file mirrors `repo/src/acme_city/ui/guide_views.py` (`WALKTHROUGH`); `repo/tests/unit/test_judge_walkthrough_doc.py` fails if they differ.
+- Do: Open Help and documentation and read the plan for assistants through MCP.
+- Look for: The plan says plainly that none of it is built yet.

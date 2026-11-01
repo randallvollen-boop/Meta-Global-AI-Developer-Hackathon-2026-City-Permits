@@ -1042,6 +1042,23 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .persona-text p { margin: 0; }
 .persona-text form { margin-top: 0.25rem; }
 
+/* The paths of the walkthrough under the personas: one card per path, with
+   the title, the one line, the minutes, the tour and the written steps. */
+.landing-paths { margin-top: 1rem; }
+.landing-path-list { list-style: none; padding-left: 0; margin: 0; display: grid; gap: 0.75rem; }
+@media (min-width: 900px) { .landing-path-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .landing-path-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.landing-path {
+  display: grid; gap: 0.4rem; align-content: start; min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); padding: 0.75rem;
+}
+.landing-path-title { font-size: 1.05rem; margin: 0; }
+.landing-path-line { margin: 0; color: var(--fg-2); font-size: 0.92rem; }
+.landing-path-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0; }
+.landing-path-actions form { margin: 0; }
+.landing-path-minutes { font-size: 0.85rem; }
+
 /* The video title card on the landing.  The player sits inside a disclosure,
    so nothing of the video loads until the card is opened. */
 .video-title-summary {

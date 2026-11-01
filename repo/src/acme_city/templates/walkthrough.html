@@ -6,27 +6,60 @@
 <div class="page-head">
   <div>
     <h1>Walkthrough</h1>
-    <p class="sub">{{ walkthrough.steps|length }} steps, about ten minutes. Steps 6 and 7 go together.</p>
+    <p class="sub">{{ walkthrough.paths|length }} paths, each one independent. Start a path and the guided tour walks it with you.</p>
   </div>
   <div class="actions">{{ ui.general_help_button() }}</div>
 </div>
 
-<ol class="guide-steps" data-testid="walkthrough-steps">
-  {% for step in walkthrough.steps %}
-  <li class="panel guide-step" data-testid="walkthrough-step">
-    <h2><span class="guide-step-n">{{ step.number }}</span> {{ step.title }}</h2>
-    {% if step.persona %}<p class="guide-persona">As {{ step.persona }}</p>{% endif %}
-    <p><span class="guide-k">Do</span> {{ step.do }}</p>
-    <details class="guide-more">
-      <summary>More details</summary>
-      <p><span class="guide-k">Look for</span> {{ step.look_for }}</p>
-    </details>
-    {% if step.actor_id %}
-    {{ open_as(step.actor_id, step.persona, step.path, 'walkthrough-open') }}
-    {% else %}
-    <a class="button btn" href="{{ step.path }}" data-testid="walkthrough-link">Open</a>
+{% if walkthrough.has_copy %}
+<p class="notice" role="status" data-testid="judge-copy-notice">Your copy of the café case is {{ walkthrough.copy_reference }}. The café path walks your copy.</p>
+{% endif %}
+
+{% for path in walkthrough.paths %}
+<section class="panel card guide-path-card" aria-labelledby="path-heading-{{ path.key }}" data-testid="walkthrough-path" data-path="{{ path.key }}" id="path-{{ path.key }}">
+  <div class="card-h">
+    <h2 id="path-heading-{{ path.key }}">{{ path.title }}</h2>
+    <p class="muted" data-testid="path-minutes">{{ path.minutes }} minutes</p>
+  </div>
+  <div class="card-b">
+    <p class="guide-path-line" data-testid="path-line">{{ path.one_line }}</p>
+    <p class="guide-path-actions">
+      <button type="button" class="button btn" data-tour-start="{{ path.key }}" data-testid="path-start">Start</button>
+      <a class="button btn ghost" href="#path-steps-{{ path.key }}" data-testid="path-steps-link">Steps</a>
+      {% if path.key == 'cafe' %}
+      <form method="post" action="{{ walkthrough.fresh.url }}" class="path-fresh-form" data-testid="path-fresh-form">
+        <input type="hidden" name="csrf_token" value="{{ judge.csrf_token }}">
+        {% if walkthrough.fresh.permitted %}
+        <button type="submit" class="button btn" data-testid="path-fresh">{{ walkthrough.fresh.label }}</button>
+        {% else %}
+        <button type="button" class="button btn" data-testid="path-fresh" disabled aria-describedby="path-fresh-note">{{ walkthrough.fresh.label }}</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </p>
+    {% if path.key == 'cafe' and not walkthrough.fresh.permitted %}
+    <p class="muted" id="path-fresh-note" data-testid="path-fresh-note">{{ walkthrough.fresh.reason }}</p>
     {% endif %}
-  </li>
-  {% endfor %}
-</ol>
+    <h3 class="visually-hidden" id="path-steps-{{ path.key }}">The steps of {{ path.title }}</h3>
+    <ol class="guide-steps" data-testid="path-steps">
+      {% for step in path.steps %}
+      <li class="panel guide-step" data-testid="walkthrough-step">
+        <h3><span class="guide-step-n">{{ step.number }}</span> {{ step.title }}</h3>
+        {% if step.persona %}<p class="guide-persona">As {{ step.persona }}</p>{% endif %}
+        <p><span class="guide-k">Do</span> {{ step.do }}</p>
+        <details class="guide-more">
+          <summary>More details</summary>
+          <p><span class="guide-k">Look for</span> {{ step.look_for }}</p>
+        </details>
+        {% if step.actor_id %}
+        {{ open_as(step.actor_id, step.persona, step.path, 'walkthrough-open') }}
+        {% else %}
+        <a class="button btn" href="{{ step.path }}" data-testid="walkthrough-link">Open</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+{% endfor %}
 {% endblock %}

@@ -13,9 +13,9 @@ from conftest import BrowserServer
 VIEWPORTS = ({"width": 1280, "height": 900}, {"width": 390, "height": 844})
 
 
-def steps_of(page, server: BrowserServer) -> list[dict[str, str]]:
-    """Return the steps the server serves to the browser."""
-    return page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+def steps_of(page, server: BrowserServer, path: str = "cafe") -> list[dict[str, str]]:
+    """Return the steps of one path the server serves to the browser."""
+    return page.request.get(f"{server.base_url}/tour/steps?path={path}").json()["steps"]
 
 
 def wait_for_step(page, server: BrowserServer, step: dict[str, str]) -> None:
@@ -33,6 +33,20 @@ def test_the_button_of_the_landing_starts_the_first_step(page, server: BrowserSe
     steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.locator('[data-testid="tour-start-landing"]').click()
+    wait_for_step(page, server, steps[0])
+    assert page.locator('[data-testid="tour-count"]').inner_text().strip() == (
+        f"Step 1 of {len(steps)}"
+    )
+    assert page.recorded_errors == []
+
+
+def test_the_button_of_a_path_card_on_the_landing_starts_that_path(
+    page, server: BrowserServer
+) -> None:
+    """Every path on the landing opens its own tour."""
+    steps = steps_of(page, server, "city")
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    page.locator('[data-testid="landing-path"][data-path="city"] [data-testid="landing-path-start"]').click()
     wait_for_step(page, server, steps[0])
     assert page.locator('[data-testid="tour-count"]').inner_text().strip() == (
         f"Step 1 of {len(steps)}"

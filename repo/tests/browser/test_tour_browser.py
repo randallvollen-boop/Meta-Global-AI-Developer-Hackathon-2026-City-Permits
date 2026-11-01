@@ -1,8 +1,9 @@
-"""The guided tour walks every step and every control of it works.
+"""The guided tour walks every step of a path and every control of it works.
 
 The tour switches persona, opens the real screen, rings the control and
 explains it.  The browser reads the steps from the server, so the test walks
-the same list the tour walks.
+the same list the tour walks.  Every path has its own tour and its own
+Auto-play.
 
 The engine is loaded here by hand: the frames of the application carry the
 script from the entry-point slice, and this test drives the engine itself.
@@ -23,10 +24,18 @@ VIEWPORTS = ({"width": 1280, "height": 900}, {"width": 390, "height": 844})
 #: the state of the tour, so it holds across the change of the screen.
 AUTO_PLAY_MS = 2000
 
+#: The paths of the tour, as the configuration names them.
+PATHS = ("cafe", "resident", "city", "before")
+
 
 def load_engine(page, server: BrowserServer) -> None:
     """Load the tour engine on the page that is open."""
     page.add_script_tag(url=f"{server.base_url}/ui/static/tour.js")
+
+
+def steps_of(page, server: BrowserServer, path: str = "cafe") -> list[dict[str, str]]:
+    """Return the steps of one path the server serves to the browser."""
+    return page.request.get(f"{server.base_url}/tour/steps?path={path}").json()["steps"]
 
 
 def wait_for_step(page, server: BrowserServer, step: dict[str, str]) -> None:
@@ -44,7 +53,7 @@ def wait_for_step(page, server: BrowserServer, step: dict[str, str]) -> None:
 @pytest.mark.parametrize("viewport", VIEWPORTS, ids=["1280", "390"])
 def test_the_tour_walks_every_step(page, server: BrowserServer, viewport) -> None:
     page.set_viewport_size(viewport)
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     assert steps
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     load_engine(page, server)
@@ -75,8 +84,38 @@ def test_the_tour_walks_every_step(page, server: BrowserServer, viewport) -> Non
     assert page.recorded_errors == []
 
 
+@pytest.mark.parametrize("path", PATHS)
+def test_every_path_has_a_tour_that_walks_its_own_steps(
+    page, server: BrowserServer, path: str
+) -> None:
+    """Each path opens its own tour, with its own steps and its own count."""
+    steps = steps_of(page, server, path)
+    assert steps
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    load_engine(page, server)
+    page.evaluate("(key) => window.acmeTour.start(key)", path)
+    wait_for_step(page, server, steps[0])
+    assert page.locator('[data-testid="tour-count"]').inner_text().strip() == (
+        f"Step 1 of {len(steps)}"
+    )
+    assert page.locator('[data-testid="tour-path"]').inner_text().strip()
+    assert page.recorded_errors == []
+
+
+def test_the_button_of_a_path_card_starts_that_path(page, server: BrowserServer) -> None:
+    """The Start button of a card opens the tour of that path."""
+    steps = steps_of(page, server, "city")
+    page.goto(f"{server.base_url}/walkthrough", wait_until="networkidle")
+    page.locator('[data-testid="walkthrough-path"][data-path="city"] [data-testid="path-start"]').click()
+    wait_for_step(page, server, steps[0])
+    assert page.locator('[data-testid="tour-count"]').inner_text().strip() == (
+        f"Step 1 of {len(steps)}"
+    )
+    assert page.recorded_errors == []
+
+
 def test_the_back_button_returns_to_the_previous_step(page, server: BrowserServer) -> None:
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     load_engine(page, server)
     page.evaluate("() => window.acmeTour.start()")
@@ -90,7 +129,7 @@ def test_the_back_button_returns_to_the_previous_step(page, server: BrowserServe
 
 
 def test_the_auto_play_button_pauses_and_resumes(page, server: BrowserServer) -> None:
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     load_engine(page, server)
     page.evaluate("() => window.acmeTour.start()")
@@ -108,7 +147,7 @@ def test_the_auto_play_keeps_playing_across_the_screen_changes(
     page, server: BrowserServer
 ) -> None:
     """Auto-play walks on by itself: no second click is needed."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
     # The tour opens from the landing, the way a reader opens it.
@@ -148,11 +187,28 @@ def test_the_auto_play_keeps_playing_across_the_screen_changes(
     assert page.recorded_errors == []
 
 
+def test_the_auto_play_keeps_playing_on_the_path_it_walks(
+    page, server: BrowserServer
+) -> None:
+    """The auto-play of one path walks on across the screens of that path."""
+    steps = steps_of(page, server, "city")
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
+    page.evaluate("(key) => window.acmeTour.start(key)", "city")
+    wait_for_step(page, server, steps[0])
+    page.locator('[data-testid="tour-play"]').click()
+    assert page.locator('[data-testid="tour-play"]').inner_text().strip() == "Pause"
+    wait_for_step(page, server, steps[1])
+    assert page.locator('[data-testid="tour-play"]').inner_text().strip() == "Pause"
+    assert page.locator('[data-testid="tour-countdown"]').is_visible()
+    assert page.recorded_errors == []
+
+
 def test_pause_stops_the_tour_and_the_pause_survives_a_reload(
     page, server: BrowserServer
 ) -> None:
     """Pause stops the tour, and the tour stays paused after a reload."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
     page.evaluate("() => window.acmeTour.start()")
@@ -178,7 +234,7 @@ def test_pause_stops_the_tour_and_the_pause_survives_a_reload(
 
 def test_next_and_back_keep_the_tour_playing(page, server: BrowserServer) -> None:
     """Next and Back move the tour on; they do not stop the auto-play."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     # A long step gives the test room to read the panel before the tour moves.
     page.evaluate("(ms) => window.acmeTour.setInterval(ms)", 5000)
@@ -203,7 +259,7 @@ def test_the_length_of_the_step_may_change_while_the_tour_plays(
     page, server: BrowserServer
 ) -> None:
     """The step of the auto-play follows the hook, whenever the hook is set."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("() => window.acmeTour.start()")
     wait_for_step(page, server, steps[0])
@@ -220,7 +276,7 @@ def test_the_length_of_the_step_may_come_from_the_tour_root(
     page, server: BrowserServer
 ) -> None:
     """The attribute on the root of the tour shortens the step."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("() => window.acmeTour.start()")
     wait_for_step(page, server, steps[0])
@@ -239,7 +295,7 @@ def test_the_length_of_the_step_may_come_from_the_tour_root(
 
 def test_the_countdown_fits_on_a_phone(page, server: BrowserServer) -> None:
     """The countdown stands beside the button on a small screen too."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
@@ -259,7 +315,7 @@ def test_the_countdown_fits_on_a_phone(page, server: BrowserServer) -> None:
 
 def test_the_auto_play_stops_at_the_last_step(page, server: BrowserServer) -> None:
     """The tour plays on to its last step, and there it stops."""
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
     page.evaluate("() => window.acmeTour.start()")
@@ -281,7 +337,7 @@ def test_the_auto_play_stops_at_the_last_step(page, server: BrowserServer) -> No
 
 
 def test_the_exit_button_closes_the_tour(page, server: BrowserServer) -> None:
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     load_engine(page, server)
     page.evaluate("() => window.acmeTour.start()")
@@ -296,7 +352,7 @@ def test_the_exit_button_closes_the_tour(page, server: BrowserServer) -> None:
 
 
 def test_the_start_button_opens_the_first_step(page, server: BrowserServer) -> None:
-    steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+    steps = steps_of(page, server)
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     load_engine(page, server)
     page.evaluate(
@@ -312,6 +368,37 @@ def test_the_start_button_opens_the_first_step(page, server: BrowserServer) -> N
     assert page.recorded_errors == []
 
 
+def test_the_first_step_of_the_café_path_offers_a_fresh_copy(
+    page, server: BrowserServer
+) -> None:
+    """The one write of the tour is offered on the first step of the café path."""
+    steps = steps_of(page, server, "cafe")
+    assert steps[0].get("fresh")
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    page.evaluate("(key) => window.acmeTour.start(key)", "cafe")
+    wait_for_step(page, server, steps[0])
+    fresh = page.locator('[data-testid="tour-fresh"]')
+    assert fresh.is_visible()
+    assert page.locator('[data-testid="tour-fresh-button"]').is_visible()
+    assert page.recorded_errors == []
+
+
+def test_the_fresh_copy_button_makes_a_copy(page, server: BrowserServer) -> None:
+    """The button asks the server for a copy and the server answers."""
+    steps = steps_of(page, server, "cafe")
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    page.evaluate("(key) => window.acmeTour.start(key)", "cafe")
+    wait_for_step(page, server, steps[0])
+    with page.expect_response(
+        lambda response: "/walkthrough/start-fresh" in response.url
+    ) as answered:
+        page.locator('[data-testid="tour-fresh-button"]').click()
+    payload = answered.value.json()
+    assert payload["status"] == "ok"
+    assert payload["reference"].startswith("CAFE-2026-")
+    assert page.recorded_errors == []
+
+
 def test_auto_play_is_off_when_the_system_asks_for_reduced_motion(
     browser, server: BrowserServer
 ) -> None:
@@ -320,7 +407,7 @@ def test_auto_play_is_off_when_the_system_asks_for_reduced_motion(
     )
     page = context.new_page()
     try:
-        steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+        steps = steps_of(page, server)
         page.goto(f"{server.base_url}/select", wait_until="networkidle")
         load_engine(page, server)
         page.evaluate("() => window.acmeTour.start()")
@@ -344,7 +431,7 @@ def test_the_auto_play_stays_off_with_reduced_motion(
     )
     page = context.new_page()
     try:
-        steps = page.request.get(f"{server.base_url}/tour/steps").json()["steps"]
+        steps = steps_of(page, server)
         page.goto(f"{server.base_url}/select", wait_until="networkidle")
         page.evaluate("(ms) => window.acmeTour.setInterval(ms)", AUTO_PLAY_MS)
         page.evaluate("() => window.acmeTour.start()")

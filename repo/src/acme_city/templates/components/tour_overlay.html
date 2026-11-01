@@ -2,7 +2,9 @@
 
    The overlay itself is built by static/tour.js, so the tour works on every
    page that carries this file.  A button that starts the tour is marked with
-   data-tour-start; the steps live in config/tour_steps.json and are served
-   by /tour/steps. #}
+   data-tour-start, and the name of the attribute is the path the tour walks;
+   the steps live in config/tour_steps.json and are served by /tour/steps, one
+   path at a time. #}
 <link rel="stylesheet" href="/ui/static/tour.css" data-tour-styles>
+<input type="hidden" data-testid="tour-csrf" value="{{ csrf_token }}">
 <script src="/ui/static/tour.js" defer></script>

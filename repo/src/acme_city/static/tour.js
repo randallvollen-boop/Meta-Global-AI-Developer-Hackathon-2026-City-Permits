@@ -1,17 +1,24 @@
 /* The guided tour of the ACME City demonstration.
 
-   The tour walks one permit from the application to the public record, in the
-   order of the written walkthrough.  It switches persona through the ordinary
+   The tour walks one path through the City, in the order of the written
+   walkthrough of that path.  It switches persona through the ordinary
    persona switch, opens the real screen, rings the control the person would
    press and explains in one or two lines what happens there and why it
    matters.  It never changes a record: it opens screens and points.
 
-   The steps live in config/tour_steps.json and are served by /tour/steps.
-   The overlay is built here, so the tour works on every page that loads
-   this script.  The state of the tour lives in the session storage, so the
-   tour survives the page change between two steps.  The auto-play lives in
-   the same place, so the tour keeps playing across the page change as well:
-   the viewer presses Auto-play once and the tour walks on by itself. */
+   The steps live in config/tour_steps.json and are served by /tour/steps,
+   one path at a time.  The browser asks for the path it walks, so every path
+   has its own tour and its own Auto-play.  The overlay is built here, so the
+   tour works on every page that loads this script.  The state of the tour
+   lives in the session storage, so the tour survives the page change between
+   two steps and keeps the path it walks.  The auto-play lives in the same
+   place, so the tour keeps playing across the page change as well: the
+   viewer presses Auto-play once and the tour walks on by itself.
+
+   One step may offer Start fresh: it creates a copy of the café case for
+   the visitor, so the path works for every judge of the shared
+   demonstration.  That is the only write the tour ever makes, and the server
+   decides whether it may. */
 
 (function () {
   "use strict";
@@ -22,6 +29,7 @@
 
   var STEPS_URL = "/tour/steps";
   var ACTOR_URL = "/ui/actor";
+  var FRESH_URL = "/walkthrough/start-fresh?format=json";
   var STATE_KEY = "acme-tour";
   var AUTO_PLAY_MS = 9000;
   var COUNTDOWN_MS = 1000;
@@ -38,7 +46,7 @@
   /* Where the tour is, and whether it plays on its own.  The state travels
      in the session storage: a step that opens another screen comes back to
      the same place, and the auto-play comes back with it. */
-  var state = { active: false, index: 0, playing: false, intervalMs: 0 };
+  var state = { active: false, index: 0, playing: false, intervalMs: 0, path: "" };
 
   /* ------------------------------------------------------------- storage */
 
@@ -106,17 +114,22 @@
     root.innerHTML = [
       '<div class="tour-ring" data-testid="tour-ring" hidden></div>',
       '<div class="tour-panel" data-testid="tour-panel">',
+      '  <p class="tour-path" data-testid="tour-path"></p>',
       '  <p class="tour-count" data-testid="tour-count"></p>',
       '  <h2 class="tour-title" data-testid="tour-title"></h2>',
       '  <p class="tour-caption" data-testid="tour-caption" aria-live="polite"></p>',
       '  <p class="tour-warning" data-testid="tour-warning" hidden></p>',
       '  <p class="tour-note" id="tour-note" data-testid="tour-note" hidden></p>',
+      '  <p class="tour-fresh" data-testid="tour-fresh" hidden>',
+      '    <button type="button" class="btn sm" data-tour-fresh data-testid="tour-fresh-button">Start fresh</button>',
+      '    <span class="tour-fresh-note" data-testid="tour-fresh-note"></span>',
+      '  </p>',
       '  <div class="tour-controls">',
       '    <button type="button" class="btn sm" data-tour-back data-testid="tour-back">Back</button>',
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',
       '    <span class="tour-auto" data-testid="tour-auto" hidden>',
       '      <span class="tour-countdown" data-testid="tour-countdown" aria-live="off"></span>',
-      '      <span class="tour-progress" data-testid="tour-progress" aria-hidden="true">',
+      '      <span class="tour-progress" aria-hidden="true">',
       '        <span class="tour-progress-fill" data-testid="tour-progress-fill"></span>',
       '      </span>',
       '    </span>',
@@ -131,6 +144,7 @@
     overlay.querySelector("[data-tour-next]").addEventListener("click", goNext);
     overlay.querySelector("[data-tour-play]").addEventListener("click", toggleAuto);
     overlay.querySelector("[data-tour-exit]").addEventListener("click", exit);
+    overlay.querySelector("[data-tour-fresh]").addEventListener("click", startFresh);
     return overlay;
   }
 
@@ -171,14 +185,19 @@
 
   /* --------------------------------------------------------------- steps */
 
-  function loadSteps() {
-    if (steps) return Promise.resolve(steps);
-    return fetch(STEPS_URL, { credentials: "same-origin" })
+  /* The steps of one path.  The path is asked for by name, so every path
+     has its own list and its own count. */
+  function loadSteps(pathKey) {
+    var key = pathKey || state.path || "";
+    if (steps && key === state.path) return Promise.resolve(steps);
+    var url = STEPS_URL + (key ? "?path=" + encodeURIComponent(key) : "");
+    return fetch(url, { credentials: "same-origin" })
       .then(function (answer) {
         return answer.json();
       })
       .then(function (payload) {
         steps = (payload && payload.steps) || [];
+        state.path = (payload && payload.path) || key;
         return steps;
       });
   }
@@ -235,6 +254,50 @@
     if (target) place(target);
   }
 
+  /* --------------------------------------------------------------- fresh */
+
+  /* The token of the page.  The server decides whether the write may. */
+  function formToken() {
+    var field = document.querySelector('[data-testid="tour-csrf"]');
+    return field ? String(field.value || "") : "";
+  }
+
+  /* Start fresh asks the server for a copy of the café case for this
+     visitor.  The server may refuse, and then the panel says why. */
+  function startFresh() {
+    var button = part("tour-fresh-button");
+    var freshNote = part("tour-fresh-note");
+    if (button) button.disabled = true;
+    if (freshNote) freshNote.textContent = "Making your copy of the café case.";
+    fetch(FRESH_URL, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: "csrf_token=" + encodeURIComponent(formToken())
+    })
+      .then(function (answer) {
+        return answer.json().then(function (payload) {
+          return { ok: answer.ok, payload: payload || {} };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          if (button) button.disabled = false;
+          if (freshNote) {
+            freshNote.textContent = result.payload.message || "The copy could not be made.";
+          }
+          return;
+        }
+        /* The copy is made.  The page is read again, so the new tasks of
+           the Data Steward are on the screen and the tour goes on. */
+        window.location.reload();
+      })
+      .catch(function () {
+        if (button) button.disabled = false;
+        if (freshNote) freshNote.textContent = "The copy could not be made.";
+      });
+  }
+
   /* --------------------------------------------------------------- show */
 
   function show() {
@@ -245,6 +308,7 @@
     }
     build();
     overlay.hidden = false;
+    part("tour-path").textContent = current.path_title || "";
     part("tour-count").textContent = "Step " + (index + 1) + " of " + steps.length;
     part("tour-title").textContent = current.title || "";
     part("tour-caption").textContent = current.caption || "";
@@ -258,6 +322,14 @@
     } else {
       play.disabled = false;
       play.removeAttribute("aria-describedby");
+    }
+    var fresh = part("tour-fresh");
+    if (fresh) {
+      fresh.hidden = !current.fresh;
+      var freshNote = part("tour-fresh-note");
+      if (freshNote) freshNote.textContent = "";
+      var freshButton = part("tour-fresh-button");
+      if (freshButton) freshButton.disabled = false;
     }
     paintNote();
     if (!ring(current)) {
@@ -311,8 +383,13 @@
       });
   }
 
-  function start() {
-    loadSteps().then(function () {
+  /* Start the tour of one path.  A path with no name opens the path the
+     server offers by default. */
+  function start(pathKey) {
+    var key = pathKey || "";
+    state.path = key;
+    steps = null;
+    loadSteps(key).then(function () {
       index = 0;
       state.index = 0;
       goTo(0);
@@ -487,13 +564,15 @@
     document.head.appendChild(link);
   }
 
-  /* Any button marked data-tour-start opens the tour, whenever it appears. */
+  /* Any button marked data-tour-start opens the tour, whenever it appears.
+     The name of the attribute is the path the tour walks; an empty name
+     opens the path the server offers by default. */
   function bindStarters() {
     document.addEventListener("click", function (event) {
       var button = event.target && event.target.closest
         ? event.target.closest("[data-tour-start]")
         : null;
-      if (button) start();
+      if (button) start(button.getAttribute("data-tour-start") || "");
     });
   }
 
@@ -501,12 +580,13 @@
     var saved = readState();
     if (!saved) return;
     if (saved.intervalMs > 0) state.intervalMs = saved.intervalMs;
+    if (saved.path) state.path = saved.path;
     if (!saved.active) return;
     state.active = true;
     state.index = saved.index || 0;
     state.playing = !!saved.playing;
     index = state.index;
-    loadSteps().then(show);
+    loadSteps(state.path).then(show);
   }
 
   function init() {

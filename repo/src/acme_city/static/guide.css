@@ -20,6 +20,13 @@
 .guide-open-as { margin: 0.25rem 0 0; }
 .guide-steps { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
 .guide-step h2 { display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0; }
+.guide-step h3 { display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0; font-size: 1.05rem; }
 .guide-step-n { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.95rem; }
 .guide-persona { margin: 0 0 0.4rem; font-weight: 600; }
 .guide-k { display: block; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+.guide-path-card { margin-bottom: 1rem; }
+.guide-path-line { margin: 0 0 0.6rem; }
+.guide-path-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 0.75rem; }
+.guide-path-actions form { margin: 0; }
+.guide-path-fresh { display: inline; }
+.path-fresh-form { display: inline-flex; margin: 0; }

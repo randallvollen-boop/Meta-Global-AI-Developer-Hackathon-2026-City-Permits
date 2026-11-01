@@ -100,7 +100,7 @@ Choose Applicant and try to open another applicant's case. The page `/permits/ap
 uv run python scripts/prepare_user_test.py --mode demo-synthetic
 ```
 
-This resets the fictional fixtures and loads the synthetic year of permits (the same loader the hosted demo uses, with its default seed and count unless you pass `--synthetic-seed` and `--synthetic-count`). Steps 8 and 9 of the judge walkthrough (`docs/submission/JUDGE_WALKTHROUGH.md`), the City view at `/insight/city` and the resident search at `/city/community`, need it. The mode is a prepare mode; it does not start the server. Start the app afterwards with `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`.
+This resets the fictional fixtures and loads the synthetic year of permits (the same loader the hosted demo uses, with its default seed and count unless you pass `--synthetic-seed` and `--synthetic-count`). The Run the city path of the judge walkthrough (`docs/submission/JUDGE_WALKTHROUGH.md`), the City view at `/insight/city` and the resident search at `/city/community`, need it. The mode is a prepare mode; it does not start the server. Start the app afterwards with `uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266`.
 
 ## Steward assistant demonstration
 
@@ -137,7 +137,7 @@ The settings screen says that this deployment runs the automation paused, becaus
 # Reset only; all D01 work remains open and the steward demonstration tasks wait in Data issues
 uv run python scripts/prepare_user_test.py --mode fresh
 
-# Reset plus the synthetic year of permits (judge walkthrough steps 8 and 9)
+# Reset plus the synthetic year of permits (the Run the city path)
 uv run python scripts/prepare_user_test.py --mode demo-synthetic
 
 # Replay-labelled Muse evidence and approved identity links

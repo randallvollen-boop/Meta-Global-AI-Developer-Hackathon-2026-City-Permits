@@ -179,6 +179,39 @@
     <p class="landing-links" data-testid="guide-links">First visit? <button type="button" class="button btn sm" data-tour-start data-testid="tour-start-landing">Take the tour</button>, <a href="/walkthrough">follow the walkthrough</a> or <a href="/lifecycle">see the permit life cycle</a>.</p>
     </div>
   </section>
+
+  <section class="panel card landing-paths" aria-labelledby="landing-paths-heading">
+    <div class="card-b">
+    <h2 id="landing-paths-heading">Pick a path</h2>
+    <p class="landing-line" data-testid="landing-paths-line">Each path is one journey with its own steps and its own guided tour. Every record in the app is fictional.</p>
+    <ul class="landing-path-list" data-testid="landing-paths">
+      {% for path in paths %}
+      <li class="landing-path" data-testid="landing-path" data-path="{{ path.key }}">
+        <h3 class="landing-path-title">{{ path.title }}</h3>
+        <p class="landing-path-line">{{ path.one_line }}</p>
+        <p class="landing-path-actions">
+          <span class="muted landing-path-minutes">{{ path.minutes }} minutes</span>
+          <button type="button" class="button btn sm" data-tour-start="{{ path.key }}" data-testid="landing-path-start">Start</button>
+          <a class="button btn sm ghost" href="/walkthrough#path-{{ path.key }}" data-testid="landing-path-steps">Steps</a>
+          {% if path.key == 'cafe' %}
+          <form method="post" action="{{ fresh.url }}" class="path-fresh-form" data-testid="landing-path-fresh-form">
+            <input type="hidden" name="csrf_token" value="{{ judge.csrf_token }}">
+            {% if fresh.permitted %}
+            <button type="submit" class="button btn sm" data-testid="landing-path-fresh">{{ fresh.label }}</button>
+            {% else %}
+            <button type="button" class="button btn sm" data-testid="landing-path-fresh" disabled aria-describedby="landing-fresh-note">{{ fresh.label }}</button>
+            {% endif %}
+          </form>
+          {% endif %}
+        </p>
+        {% if path.key == 'cafe' and not fresh.permitted %}
+        <p class="muted" id="landing-fresh-note" data-testid="landing-path-fresh-note">{{ fresh.reason }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    </div>
+  </section>
   {% endif %}
 
   {% block content %}{% endblock %}

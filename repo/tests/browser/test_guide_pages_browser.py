@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import pytest
 
 from acme_city.permits import lifecycle_map
-from acme_city.ui.guide_views import WALKTHROUGH
+from acme_city.ui.guide_views import PATHS
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 PERSONAS = (
@@ -76,27 +76,74 @@ def test_lifecycle_examples_open_the_permit_workspace(page, server: BrowserServe
         assert page.locator('[data-testid="error-panel"]').count() == 0
 
 
-def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer) -> None:
+def test_the_walkthrough_shows_one_card_for_every_path(page, server: BrowserServer) -> None:
+    """The page offers the paths, each with its title, its line and its minutes."""
     page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
-    assert page.locator('[data-testid="walkthrough-step"]').count() == len(WALKTHROUGH)
-    for step in WALKTHROUGH:
-        page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
-        if step.persona:
-            page.locator(f'[data-testid="walkthrough-open"][data-next="{step.path}"]').first.click()
-            page.wait_for_load_state("domcontentloaded")
-            assert urlparse(page.url).path == step.path, step.title
-            assert "moved_from" not in page.url, step.title
-            if step.persona == "Applicant":
-                assert page.locator('[data-testid="applicant-account"]').count() == 1, step.title
+    cards = page.locator('[data-testid="walkthrough-path"]')
+    assert cards.count() == len(PATHS)
+    for index, path in enumerate(PATHS):
+        card = cards.nth(index)
+        assert card.get_attribute("data-path") == path.key
+        assert path.title in card.inner_text()
+        assert path.one_line in card.inner_text()
+        assert f"{path.minutes} minutes" in card.inner_text()
+        assert card.locator('[data-testid="path-start"]').count() == 1
+        assert card.locator('[data-testid="path-steps-link"]').count() == 1
+    # Every step of every path is on the page, with its words.
+    steps = page.locator('[data-testid="walkthrough-step"]')
+    assert steps.count() == sum(len(path.steps) for path in PATHS)
+    assert page.recorded_errors == []
+
+
+def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer) -> None:
+    """Every step of every path opens the screen it names."""
+    page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
+    for path in PATHS:
+        for step in path.steps:
+            page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
+            if step.persona:
+                page.locator(
+                    f'[data-testid="walkthrough-open"][data-next="{step.path}"]'
+                ).first.click()
+                page.wait_for_load_state("domcontentloaded")
+                assert urlparse(page.url).path == step.path, step.title
+                assert "moved_from" not in page.url, step.title
+                if step.persona == "Applicant":
+                    assert page.locator('[data-testid="applicant-account"]').count() == 1, step.title
+                else:
+                    assert page.locator('[data-testid="acting-persona"]').first.inner_text().startswith(
+                        step.persona
+                    ), step.title
             else:
-                assert page.locator('[data-testid="acting-persona"]').first.inner_text().startswith(step.persona), step.title
-        else:
-            response = page.request.get(f"{server.base_url}{step.path}")
-            assert response.ok, step.title
+                response = page.request.get(f"{server.base_url}{step.path}")
+                assert response.ok, step.title
     assert page.recorded_errors == []
 
 
 def test_the_persona_selector_points_to_both_guides(page, server: BrowserServer) -> None:
     page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
     links = page.locator('[data-testid="guide-links"] a')
-    assert sorted(links.nth(i).get_attribute("href") for i in range(links.count())) == ["/lifecycle", "/walkthrough"]
+    assert sorted(links.nth(i).get_attribute("href") for i in range(links.count())) == [
+        "/lifecycle",
+        "/walkthrough",
+    ]
+
+
+def test_the_landing_offers_the_paths_under_the_personas(page, server: BrowserServer) -> None:
+    """The landing offers one card for every path, under the personas."""
+    page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
+    cards = page.locator('[data-testid="landing-path"]')
+    assert cards.count() == len(PATHS)
+    personas = page.locator('[data-testid="persona-card"]')
+    assert personas.count() >= 1
+    for index, path in enumerate(PATHS):
+        card = cards.nth(index)
+        assert card.get_attribute("data-path") == path.key
+        assert path.title in card.inner_text()
+        assert path.one_line in card.inner_text()
+        assert card.locator('[data-testid="landing-path-start"]').count() == 1
+        assert card.locator('[data-testid="landing-path-steps"]').count() == 1
+    # The café card carries the one button that writes.
+    fresh = page.locator('[data-testid="landing-path-fresh"]')
+    assert fresh.count() == 1
+    assert page.recorded_errors == []

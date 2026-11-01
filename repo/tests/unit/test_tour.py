@@ -1,9 +1,9 @@
-"""The guided tour: the steps, the screens and the grants.
+"""The guided tour: the paths, the screens and the grants.
 
-The tour walks one permit from the application to the public record.  It
-follows the written walkthrough step by step, switches persona through the
-ordinary persona switch, opens the real screen and points at the real
-control.  It changes no record.
+The tour walks one path of the walkthrough.  It follows the written steps of
+that path, switches persona through the ordinary persona switch, opens the
+real screen and points at the real control.  It changes no record, apart from
+the one step that offers a fresh copy of the café case.
 
 Every step names the persona that acts, the grant that persona needs, the
 screen and the control the tour points at.  A step whose persona does not
@@ -28,7 +28,7 @@ from support.client import choose, client, settings  # noqa: E402,F401
 from acme_city.auth.permissions import PermissionResolver  # noqa: E402
 from acme_city.persistence.session import SessionFactory  # noqa: E402
 from acme_city.ui.guide_routes import tour_steps  # noqa: E402
-from acme_city.ui.guide_views import WALKTHROUGH  # noqa: E402
+from acme_city.ui.guide_views import DEFAULT_CASE_ID, PATHS, resolve_path  # noqa: E402
 
 CONFIG = Path(__file__).resolve().parents[2] / "config" / "tour_steps.json"
 
@@ -51,9 +51,9 @@ STORY_ORDER = (
 
 
 @pytest.fixture()
-def steps() -> list[dict[str, str]]:
-    """The steps of the tour, read from the configuration."""
-    return list(json.loads(CONFIG.read_text(encoding="utf-8"))["steps"])
+def paths() -> dict[str, dict]:
+    """The paths of the tour, read from the configuration."""
+    return dict(json.loads(CONFIG.read_text(encoding="utf-8"))["paths"])
 
 
 @pytest.fixture()
@@ -73,90 +73,156 @@ def needle(selector: str) -> str:
     return f'{match.group("attribute")}="{match.group("value")}"'
 
 
+def test_the_configuration_holds_one_path_for_every_path_of_the_walkthrough(
+    paths: dict[str, dict],
+) -> None:
+    """The tour and the written walkthrough offer the same paths."""
+    assert set(paths) == {path.key for path in PATHS}
+
+
+def test_every_path_names_a_title_and_a_length(paths: dict[str, dict]) -> None:
+    for key, path in paths.items():
+        assert str(path.get("title", "")).strip(), key
+        assert int(path.get("minutes", 0)) > 0, key
+        assert path.get("steps"), key
+
+
 def test_every_step_names_a_persona_a_screen_a_control_and_a_caption(
-    steps: list[dict[str, str]],
+    paths: dict[str, dict],
 ) -> None:
-    assert steps, "the tour has no steps"
-    for step in steps:
-        for field in ("id", "title", "path", "target", "caption"):
-            assert str(step.get(field, "")).strip(), (step.get("id"), field)
-        assert str(step.get("path", "")).startswith("/"), step.get("id")
-        assert len(str(step.get("caption", ""))) < 240, step.get("id")
+    for key, path in paths.items():
+        for step in path["steps"]:
+            for field in ("id", "title", "path", "target", "caption"):
+                assert str(step.get(field, "")).strip(), (key, step.get("id"), field)
+            assert str(step.get("path", "")).startswith("/"), step.get("id")
+            assert len(str(step.get("caption", ""))) < 240, step.get("id")
 
 
-def test_the_tour_follows_the_written_walkthrough(steps: list[dict[str, str]]) -> None:
-    """Each step of the tour is the step of the walkthrough it names."""
-    seen = []
-    for step in steps:
-        number = int(step["walkthrough_step"])
-        assert 1 <= number <= len(WALKTHROUGH), step["id"]
-        written = WALKTHROUGH[number - 1]
-        assert step["title"] == written.title, step["id"]
-        assert step["persona"] == written.persona, step["id"]
-        assert step["path"] == written.path, step["id"]
-        seen.append(number)
-    assert seen == sorted(seen), "the tour does not follow the order of the story"
-    assert seen[0] == 3, "the tour starts at the application"
-
-
-def test_the_tour_acts_as_the_personas_of_the_story_in_order(
-    steps: list[dict[str, str]],
+def test_the_tour_of_every_path_follows_the_written_steps_of_that_path(
+    paths: dict[str, dict],
 ) -> None:
-    personas = [step["persona"] for step in steps if step["persona"]]
-    assert personas, "the tour acts as nobody"
-    ranks = [STORY_ORDER.index(persona) for persona in personas]
-    assert ranks == sorted(ranks), personas
-    assert set(personas) == set(STORY_ORDER), personas
+    """Each step of the tour is a step of the walkthrough of the same path."""
+    for path in PATHS:
+        tour = paths[path.key]
+        seen = []
+        for step in tour["steps"]:
+            number = int(step["walkthrough_step"])
+            assert 1 <= number <= len(path.steps), (path.key, step["id"])
+            written = path.steps[number - 1]
+            assert step["title"] == written.title, (path.key, step["id"])
+            assert step["persona"] == written.persona, (path.key, step["id"])
+            seen.append(number)
+        assert seen == sorted(seen), f"the tour of {path.key} does not follow the order of the story"
+
+
+def test_the_tour_of_the_café_path_starts_at_the_first_step(paths: dict[str, dict]) -> None:
+    """The café path opens with the task of the Data Steward."""
+    steps = paths["cafe"]["steps"]
+    assert int(steps[0]["walkthrough_step"]) == 1
+    assert steps[0]["persona"] == "Data Steward"
+
+
+def test_the_tour_of_every_path_acts_as_the_personas_of_that_path(
+    paths: dict[str, dict],
+) -> None:
+    """Every path is walked by the personas of the City and by nobody else.
+
+    The path that prepares a visitor names no persona: the video, the life
+    cycle and the help hub are open to anyone.
+    """
+    for key, path in paths.items():
+        personas = [step["persona"] for step in path["steps"] if step["persona"]]
+        if key == "before":
+            assert not personas, key
+            continue
+        assert personas, key
+        for persona in personas:
+            assert persona in STORY_ORDER, (key, persona)
 
 
 def test_every_step_holds_the_grant_its_persona_needs(
-    steps: list[dict[str, str]], session: Session
+    paths: dict[str, dict], session: Session
 ) -> None:
     """A step whose persona lacks the grant fails the test."""
-    for step in steps:
-        if not step["persona"]:
-            assert not step["permission"], step["id"]
-            continue
-        assert step["permission"], step["id"]
-        grants = PermissionResolver(session).grants_for(step["actor_id"])
-        held = {grant.action for grant in grants}
-        assert step["permission"] in held, (
-            f"{step['id']}: {step['persona']} does not hold {step['permission']}"
-        )
+    for key, path in paths.items():
+        for step in path["steps"]:
+            if not step["persona"]:
+                assert not step["permission"], (key, step["id"])
+                continue
+            assert step["permission"], (key, step["id"])
+            grants = PermissionResolver(session).grants_for(step["actor_id"])
+            held = {grant.action for grant in grants}
+            assert step["permission"] in held, (
+                f"{key}: {step['id']}: {step['persona']} does not hold {step['permission']}"
+            )
 
 
 def test_every_step_points_at_a_control_of_its_screen(
-    steps: list[dict[str, str]], client: TestClient
+    paths: dict[str, dict], client: TestClient
 ) -> None:
     """The control of every step is really on the screen the step opens."""
-    for step in steps:
-        if step["actor_id"]:
-            choose(client, step["actor_id"])
-        response = client.get(step["path"])
-        assert response.status_code == 200, (step["id"], response.status_code)
-        assert needle(step["target"]) in response.text, (
-            step["id"],
-            step["target"],
-            step["path"],
-        )
+    for key, path in paths.items():
+        for step in path["steps"]:
+            if step["actor_id"]:
+                choose(client, step["actor_id"])
+            screen = resolve_path(str(step["path"]), DEFAULT_CASE_ID)
+            response = client.get(screen)
+            assert response.status_code == 200, (key, step["id"], response.status_code)
+            assert needle(step["target"]) in response.text, (
+                key,
+                step["id"],
+                step["target"],
+                screen,
+            )
 
 
-def test_the_tour_changes_no_record(steps: list[dict[str, str]]) -> None:
+def test_the_tour_changes_no_record(paths: dict[str, dict]) -> None:
     """No step names an action: the tour only opens screens and points."""
-    for step in steps:
-        assert "/ui/actions/" not in step["path"], step["id"]
-        assert "command_key" not in step.get("caption", ""), step["id"]
+    for key, path in paths.items():
+        for step in path["steps"]:
+            assert "/ui/actions/" not in step["path"], (key, step["id"])
+            assert "command_key" not in step.get("caption", ""), (key, step["id"])
 
 
-def test_the_route_serves_the_steps_to_the_browser(client: TestClient) -> None:
+def test_only_the_first_step_of_the_café_path_offers_a_fresh_copy(
+    paths: dict[str, dict],
+) -> None:
+    """The one write of the tour is offered on the first step of the café path."""
+    fresh = [
+        (key, step["id"])
+        for key, path in paths.items()
+        for step in path["steps"]
+        if step.get("fresh")
+    ]
+    assert fresh == [("cafe", "steward")]
+
+
+def test_the_route_serves_the_steps_of_the_chosen_path(client: TestClient) -> None:
     response = client.get("/tour/steps")
     assert response.status_code == 200, response.text[:200]
     payload = response.json()
     assert payload["title"] == "Take the tour"
-    assert len(payload["steps"]) == len(tour_steps()["steps"])
+    assert payload["path"] == "cafe"
+    assert len(payload["steps"]) == len(tour_steps()["paths"]["cafe"]["steps"])
     for step in payload["steps"]:
         assert step["path"].startswith("/")
         assert step["target"]
+
+
+def test_the_route_serves_the_steps_of_every_path(client: TestClient) -> None:
+    for key, path in tour_steps()["paths"].items():
+        response = client.get(f"/tour/steps?path={key}")
+        assert response.status_code == 200, key
+        payload = response.json()
+        assert payload["path"] == key
+        assert len(payload["steps"]) == len(path["steps"])
+        assert {item["key"] for item in payload["paths"]} == set(tour_steps()["paths"])
+
+
+def test_the_route_refuses_a_path_that_does_not_exist(client: TestClient) -> None:
+    response = client.get("/tour/steps?path=nonsense")
+    assert response.status_code == 200
+    assert response.json()["path"] == "cafe"
 
 
 def test_the_overlay_loads_the_script_and_the_stylesheet() -> None:
@@ -172,14 +238,22 @@ def test_the_overlay_loads_the_script_and_the_stylesheet() -> None:
 
 def test_the_script_never_writes_a_record() -> None:
     """The engine only reads the steps and switches persona."""
-    root = Path(__file__).resolve().parents[2] / "src" / "acme_city"
-    script = (root / "static" / "tour.js").read_text(encoding="utf-8")
+    script = SCRIPT.read_text(encoding="utf-8")
     assert 'method: "POST"' in script
     assert "/ui/actor" in script
     assert "/ui/actions/" not in script
-    # The only request the engine makes besides the persona switch reads the
-    # steps of the tour.
-    assert script.count("fetch(") == 2
+    # The only requests the engine makes are the persona switch, the steps of
+    # the path and the one copy the café path may offer.
+    assert script.count("fetch(") == 3
+    assert "/walkthrough/start-fresh" in script
+
+
+def test_the_engine_starts_the_path_it_is_given() -> None:
+    """A button that names a path starts that path."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    assert "data-tour-start" in script
+    assert "start(button.getAttribute(\"data-tour-start\") || \"\")" in script
+    assert "?path=" in script
 
 
 def test_the_engine_carries_the_auto_play_across_the_page_change() -> None:
@@ -190,11 +264,13 @@ def test_the_engine_carries_the_auto_play_across_the_page_change() -> None:
     the viewer does not have to press the button a second time.
     """
     script = SCRIPT.read_text(encoding="utf-8")
-    # The state of the tour names the wish to play on.
+    # The state of the tour names the wish to play on and the path it walks.
     assert re.search(r"var state = \{[^}]*playing:\s*false", script)
     assert "state.playing = true" in script
-    # The resume reads the wish back from the storage.
+    assert re.search(r"var state = \{[^}]*path:\s*\"\"", script)
+    # The resume reads the wish and the path back from the storage.
     assert "state.playing = !!saved.playing" in script
+    assert "if (saved.path) state.path = saved.path;" in script
     # The change of the screen writes the state first and stops the timers of
     # the page afterwards: the wish crosses the change, the timers do not.
     body = re.search(r"function goTo\(number\) \{(.*?)\n  \}", script, re.S)

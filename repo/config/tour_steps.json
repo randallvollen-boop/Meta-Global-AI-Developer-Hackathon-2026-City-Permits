@@ -1,84 +1,209 @@
 {
-  "version": "1",
+  "version": "2",
   "title": "Take the tour",
-  "note": "The guided tour of one permit, from the application to the public record. The tour only opens screens and points at controls; it never changes a record. Each step names the walkthrough step of the same story.",
-  "steps": [
-    {
-      "id": "apply",
-      "walkthrough_step": 3,
-      "title": "Apply for a permit",
-      "persona": "Applicant",
-      "actor_id": "persona_applicant",
-      "path": "/apply",
-      "target": "[data-testid=\"type-card\"]",
-      "permission": "application.submit",
-      "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
+  "note": "The guided tour of one path through the City. The tour only opens screens and points at controls; it never changes a record. Each step names the walkthrough step of the same path.",
+  "default_path": "cafe",
+  "paths": {
+    "cafe": {
+      "title": "Get the café open",
+      "minutes": 6,
+      "steps": [
+        {
+          "id": "steward",
+          "walkthrough_step": 1,
+          "title": "Match the café to its owner",
+          "persona": "Data Steward",
+          "actor_id": "persona_data_steward",
+          "path": "/steward",
+          "target": "[data-testid=\"assistant-prepare\"]",
+          "permission": "registry.crosswalk.propose",
+          "fresh": true,
+          "caption": "The steward assistant prepares a recommendation and the Data Steward records the decision. The identity and the payer account must both be cleared before a reviewer may approve the case."
+        },
+        {
+          "id": "agent",
+          "walkthrough_step": 2,
+          "title": "Let the agent route the case",
+          "persona": "Agent Operator",
+          "actor_id": "persona_agent_operator",
+          "path": "/agent/intake",
+          "target": "[data-testid=\"agent-toggle\"]",
+          "permission": "agent.run.intake",
+          "caption": "The intake agent reads each new case and routes it to the right queue. It never decides: a person does that."
+        },
+        {
+          "id": "reviewer",
+          "walkthrough_step": 3,
+          "title": "Run the checks and approve the case",
+          "persona": "Permit Reviewer",
+          "actor_id": "persona_permit_reviewer",
+          "path": "/permits/{case}",
+          "target": "[data-action-id=\"permit.evaluate\"]",
+          "permission": "permit.decide",
+          "caption": "Open the case of the café, run the application checks and record the decision with its reason. The identity and the payer account must be cleared first."
+        },
+        {
+          "id": "finance",
+          "walkthrough_step": 4,
+          "title": "Pay the fee",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/reconciliation",
+          "target": "[data-action-id=\"finance.assess\"]",
+          "permission": "finance.assessment.create",
+          "caption": "The fee is assessed on the case, the receipt from the old finance account is allocated to it and the assessment is reconciled. A permit is issued only at a 0.00 balance."
+        },
+        {
+          "id": "issue",
+          "walkthrough_step": 5,
+          "title": "Issue the permit",
+          "persona": "Permit Reviewer",
+          "actor_id": "persona_permit_reviewer",
+          "path": "/permits/{case}",
+          "target": "[data-action-id=\"permit.issue\"]",
+          "permission": "permit.issue",
+          "caption": "Deciding and issuing are separate. The permit is issued from the case once the finance position is exact, and the issued artifact never changes afterwards."
+        },
+        {
+          "id": "public",
+          "walkthrough_step": 6,
+          "title": "Find it as a resident",
+          "persona": "",
+          "actor_id": "",
+          "path": "/city/community",
+          "target": "[data-testid=\"community-q\"]",
+          "permission": "",
+          "caption": "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees."
+        }
+      ]
     },
-    {
-      "id": "agent",
-      "walkthrough_step": 4,
-      "title": "Let the agent route the work",
-      "persona": "Agent Operator",
-      "actor_id": "persona_agent_operator",
-      "path": "/agent/intake",
-      "target": "[data-testid=\"agent-toggle\"]",
-      "permission": "agent.run.intake",
-      "caption": "The intake agent reads each new application and routes it to the right queue. It never decides: a person does that."
+    "resident": {
+      "title": "Apply as a resident",
+      "minutes": 3,
+      "steps": [
+        {
+          "id": "apply",
+          "walkthrough_step": 1,
+          "title": "Apply for a permit",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply",
+          "target": "[data-testid=\"type-card\"]",
+          "permission": "application.submit",
+          "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
+        },
+        {
+          "id": "check",
+          "walkthrough_step": 2,
+          "title": "Check the application before it is sent",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply/deck_fence",
+          "target": "[data-testid=\"submit-application\"]",
+          "permission": "application.submit",
+          "caption": "Press Check my application to see what the published rules say about the answers, and fix what the panel lists under Must fix before the application is sent."
+        },
+        {
+          "id": "agent",
+          "walkthrough_step": 3,
+          "title": "Let the agent route the application",
+          "persona": "Agent Operator",
+          "actor_id": "persona_agent_operator",
+          "path": "/agent/intake",
+          "target": "[data-testid=\"agent-toggle\"]",
+          "permission": "agent.run.intake",
+          "caption": "The intake agent reads each new application and routes it to the right queue. An application that breaks a rule waits in Early resolution, and the Router line gives the reason."
+        },
+        {
+          "id": "track",
+          "walkthrough_step": 4,
+          "title": "Track the application",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply/track",
+          "target": "[data-testid=\"permit-list\"]",
+          "permission": "application.submit",
+          "caption": "The resident follows the application on the City of Acme website and reads what the City has recorded so far."
+        }
+      ]
     },
-    {
-      "id": "steward",
-      "walkthrough_step": 5,
-      "title": "Clear a case for review",
-      "persona": "Data Steward",
-      "actor_id": "persona_data_steward",
-      "path": "/steward",
-      "target": "[data-testid=\"assistant-prepare\"]",
-      "permission": "registry.crosswalk.propose",
-      "caption": "The steward assistant prepares a recommendation; the Data Steward records the decision. The parcel link and the identity link must both be cleared before a reviewer may approve."
+    "city": {
+      "title": "Run the city",
+      "minutes": 3,
+      "steps": [
+        {
+          "id": "audit",
+          "walkthrough_step": 1,
+          "title": "Check the record of the decision",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/ops/audit",
+          "target": "[data-testid=\"audit-filter-apply\"]",
+          "permission": "ops.audit_log.view",
+          "caption": "Every action is recorded. Filter the log for the recorded permit decision and open its details."
+        },
+        {
+          "id": "insight",
+          "walkthrough_step": 2,
+          "title": "See the city at a glance",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/insight/city",
+          "target": "[data-testid=\"filter-apply\"]",
+          "permission": "insight.city.view",
+          "caption": "The City view: the counts, the map, and the definition printed beside each figure."
+        },
+        {
+          "id": "whatif",
+          "walkthrough_step": 3,
+          "title": "Try a what if on a fee change",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/policy/scenarios",
+          "target": "[data-testid=\"policy-create-anchor\"]",
+          "permission": "policy.scenario.manage",
+          "caption": "A what-if runs a change over the cases and writes down what it would do. It decides nothing and changes nothing."
+        }
+      ]
     },
-    {
-      "id": "reviewer",
-      "walkthrough_step": 6,
-      "title": "Decide a case",
-      "persona": "Permit Reviewer",
-      "actor_id": "persona_permit_reviewer",
-      "path": "/queue/review",
-      "target": "[data-testid=\"review-table\"]",
-      "permission": "permit.decide",
-      "caption": "The Review queue lists each case with its reviewer and recommendation. Open a case, run the application checks, and record the decision with its reason. Issue permit waits until the fee is assessed, paid and reconciled."
-    },
-    {
-      "id": "audit",
-      "walkthrough_step": 7,
-      "title": "Check the record of the decision",
-      "persona": "City Administrator",
-      "actor_id": "persona_city_administrator",
-      "path": "/ops/audit",
-      "target": "[data-testid=\"audit-filter-apply\"]",
-      "permission": "ops.audit_log.view",
-      "caption": "Every action is recorded. Filter the log for the recorded permit decision and open its details."
-    },
-    {
-      "id": "insight",
-      "walkthrough_step": 8,
-      "title": "See the city at a glance",
-      "persona": "City Administrator",
-      "actor_id": "persona_city_administrator",
-      "path": "/insight/city",
-      "target": "[data-testid=\"filter-apply\"]",
-      "permission": "insight.city.view",
-      "caption": "The City view: the counts, the map, and the definition printed beside each figure."
-    },
-    {
-      "id": "public",
-      "walkthrough_step": 9,
-      "title": "Look up permits as a resident",
-      "persona": "",
-      "actor_id": "",
-      "path": "/city/community",
-      "target": "[data-testid=\"community-q\"]",
-      "permission": "",
-      "caption": "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees."
+    "before": {
+      "title": "Before you start",
+      "minutes": 2,
+      "steps": [
+        {
+          "id": "video",
+          "walkthrough_step": 1,
+          "title": "Watch the video",
+          "persona": "",
+          "actor_id": "",
+          "path": "/select",
+          "target": "[data-testid=\"demo-video\"]",
+          "permission": "",
+          "caption": "The video shows the same journey in under three minutes. Every record in the app is fictional."
+        },
+        {
+          "id": "lifecycle",
+          "walkthrough_step": 2,
+          "title": "Read the permit life cycle",
+          "persona": "",
+          "actor_id": "",
+          "path": "/lifecycle",
+          "target": "[data-testid=\"lifecycle-main-path\"]",
+          "permission": "",
+          "caption": "The life cycle lists every status and every move, and it names who makes each move. An agent only routes cases, a person decides and issues."
+        },
+        {
+          "id": "help",
+          "walkthrough_step": 3,
+          "title": "See what the City plans next",
+          "persona": "",
+          "actor_id": "",
+          "path": "/help",
+          "target": "[data-testid=\"help-cards\"]",
+          "permission": "",
+          "caption": "The help hub lists the guides, the glossary and the technical documents, including the plan for assistants through MCP."
+        }
+      ]
     }
-  ]
+  }
 }
