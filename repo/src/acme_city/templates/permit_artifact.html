@@ -3,15 +3,19 @@
 
   The template renders only from the immutable snapshot of the permit, so the
   same permit always produces the same bytes and the same artifact hash.
-  ACME City is fictional: the document never claims to be an official record
-  of a real municipality and it carries no other city's branding.
+  The City of Acme is fictional: the document never claims to be an official
+  record of a real municipality and it carries no other city's branding.
+
+  The document is rendered without the application filters, so the readable
+  words of the stored values come from _display_words.html.
 -#}
+{% import "_display_words.html" as words %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ permit_number }}: simulated ACME City permit</title>
+    <title>{{ permit_number }}: simulated City of Acme permit</title>
     <style>
 {{ styles }}
 .back-to-app { margin: 1rem 0 0; font-size: .85rem; }
@@ -25,9 +29,9 @@
     <p class="back-to-app"><a href="{{ back_href }}" data-testid="back-to-app">Back to the app</a></p>
     <header class="banner">
       <p class="simulated">Simulated demonstration document: not an official city record</p>
-      <h1>ACME City simulated building permit</h1>
+      <h1>Simulated {{ words.permit_type_label(permit_type) }} permit</h1>
       <p class="fictional">
-        ACME City is a fictional municipality. Every record, fee, rule and permit in
+        The City of Acme is a fictional municipality. Every record, fee, rule and permit in
         this document is synthetic and exists only for this demonstration.
       </p>
     </header>
@@ -40,11 +44,11 @@
         <dt>Issued</dt>
         <dd>{{ issued_at }}</dd>
         <dt>Permit type</dt>
-        <dd>{{ permit_type }}</dd>
+        <dd>{{ words.permit_type_label(permit_type) }}</dd>
         <dt>Application</dt>
         <dd>{{ application_number }}</dd>
         <dt>Status</dt>
-        <dd>{{ status }}</dd>
+        <dd>{{ words.status_label(status) }}</dd>
       </dl>
     </section>
 
@@ -66,9 +70,9 @@
       <h2>Reviewer decision</h2>
       <dl>
         <dt>Outcome</dt>
-        <dd>{{ decision_outcome }}</dd>
+        <dd>{{ words.status_label(decision_outcome) }}</dd>
         <dt>Decided by</dt>
-        <dd>{{ decided_by }}</dd>
+        <dd>{{ words.actor_label(decided_by) }}</dd>
         <dt>Decided at</dt>
         <dd>{{ decided_at }}</dd>
         <dt>Reason</dt>
@@ -110,7 +114,7 @@
     <section class="block">
       <h2>Fee assessment</h2>
       <p class="basis">
-        Fee schedule {{ fee_schedule_version }}: {{ fee_schedule_id }}
+        Fee schedule {{ fee_schedule_version }}: {{ words.fee_schedule_label(fee_schedule_id) }}
       </p>
       <table>
         <thead>

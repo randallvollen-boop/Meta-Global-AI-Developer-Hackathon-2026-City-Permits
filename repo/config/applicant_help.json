@@ -168,7 +168,7 @@
         "decision",
         "codes"
       ],
-      "text": "Your application is under review. A reviewer is assessing it against the published ACME Code rules. The City does not need anything from you at this step."
+      "text": "Your application is under review. A reviewer is assessing it against the published ACME City rules. The City does not need anything from you at this step."
     },
     {
       "id": "lifecycle.approved",

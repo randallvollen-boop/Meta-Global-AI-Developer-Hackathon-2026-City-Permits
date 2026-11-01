@@ -1,0 +1,65 @@
+{# The readable names of the stored values that the printable permit shows.
+
+   The printable permit renders from its own snapshot, without a database
+   connection, so it cannot read config/ui_display.json the way the rest of
+   the application does.  The words below are the same words that file holds,
+   so the permit and the screens around it name a thing the same way.
+
+   Every macro takes the stored value and returns the words a reader sees. #}
+
+{#- The name of one permit type, as the catalogue names it. -#}
+{% macro permit_type_label(key) -%}
+  {{- {
+    "res_building": "Residential building",
+    "deck_fence": "Residential deck or fence",
+    "com_ti": "Commercial tenant improvement",
+    "sign": "Sign",
+    "row_encroachment": "Right-of-way or encroachment",
+    "patio": "Patio",
+    "shed": "Shed or accessory building",
+    "pod": "Temporary container (POD or dumpster)",
+    "hvac": "HVAC replacement",
+    "water_heater": "Water-heater replacement",
+    "residential_electric": "Residential electric service",
+    "fire_alarm": "Commercial fire alarm",
+    "change_occupancy": "Change of occupancy",
+    "site_plan_review": "Site plan review",
+    "rezoning": "Rezoning",
+    "zoning_variance": "Zoning variance",
+    "certificate_appropriateness": "Certificate of appropriateness",
+  }.get(key, (key or "")|replace("_", " ")|capitalize) -}}
+{%- endmacro %}
+
+{#- The name of the person or service that acted, as the screens name it. -#}
+{% macro actor_label(actor_id) -%}
+  {{- {
+    "persona_applicant": "Applicant",
+    "persona_data_steward": "Data Steward",
+    "persona_permit_reviewer": "Permit Reviewer",
+    "persona_city_administrator": "City Administrator",
+    "persona_agent_operator": "Agent Operator",
+    "synthetic_history": "Synthetic history",
+  }.get(actor_id, (actor_id or "")|replace("_", " ")|capitalize) -}}
+{%- endmacro %}
+
+{#- The name of the fee schedule, as the register names it. -#}
+{% macro fee_schedule_label(schedule_id) -%}
+  {{- {
+    "fee_commercial_demo": "Standard review fees",
+  }.get(schedule_id, (schedule_id or "")|replace("_", " ")|capitalize) -}}
+{%- endmacro %}
+
+{#- The state of the permit or of the decision, in plain words. -#}
+{% macro status_label(value) -%}
+  {{- {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "approved": "Approved",
+    "approved_with_conditions": "Approved with conditions",
+    "denied": "Denied",
+    "issued": "Issued",
+    "withdrawn": "Withdrawn",
+    "returned": "Returned to the applicant",
+    "archived": "Archived",
+  }.get(value, (value or "")|replace("_", " ")|capitalize) -}}
+{%- endmacro %}

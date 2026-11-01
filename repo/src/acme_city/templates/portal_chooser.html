@@ -36,7 +36,7 @@
   {% endif %}
   {% if group.more %}
   <details class="more-types" data-testid="more-types"{% if not group.cards %} open{% endif %}>
-    <summary>{% if group.cards %}More {{ group.label | lower }}{% else %}All {{ group.label | lower }}{% endif %} ({{ group.more | length }})</summary>
+    <summary>{% if group.cards %}Show the other {{ group.label | lower }}{% else %}Show all {{ group.label | lower }}{% endif %} ({{ group.more | length }})</summary>
     <div class="type-cards compact">
       {% for card in group.more %}{{ type_card(card) }}{% endfor %}
     </div>

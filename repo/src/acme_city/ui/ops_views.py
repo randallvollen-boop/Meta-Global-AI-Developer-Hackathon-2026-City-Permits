@@ -12,9 +12,16 @@ a label says what a number means, it never changes it.
 
 from __future__ import annotations
 
+import json
+from functools import lru_cache
 from typing import Any
 
+from acme_city.fixtures.loader import REPO_ROOT
 from acme_city.ops.dashboard import PROCESSING_GROUP, WORKLOAD_GROUP
+
+#: The committed display configuration.  It holds the plain words of every
+#: stored value the screens show, so no screen has to invent a name.
+DISPLAY_PATH = REPO_ROOT / "config" / "ui_display.json"
 
 #: The two groups of the operations dashboard, in the order they are shown.
 FIGURE_GROUPS: tuple[tuple[str, str], ...] = (
@@ -81,6 +88,47 @@ AUDIT_OUTCOME_LABELS: dict[str, str] = {
 def readable_words(value: str) -> str:
     """Return a stored identifier as reader-facing sentence-case words."""
     return " ".join(str(value or "").replace("_", " ").replace(".", " ").split()).capitalize()
+
+
+@lru_cache(maxsize=1)
+def _display_config() -> dict[str, Any]:
+    """Return the committed display configuration."""
+    return json.loads(DISPLAY_PATH.read_text(encoding="utf-8"))
+
+
+def display_words(section: str) -> dict[str, str]:
+    """Return one section of the readable display words.
+
+    The sections keep the words of one kind of stored value apart, so a
+    status that reads one way on one screen and another way on another
+    screen cannot happen.
+    """
+    return dict(_display_config().get(section) or {})
+
+
+def display_word(section: str, value: Any, default: str = "") -> str:
+    """Return the readable word of one stored value in one section.
+
+    A value with no word of its own falls back to the stored key in plain
+    words, so a screen never shows a raw key it has no name for.
+    """
+    text = str(value or "")
+    words = display_words(section)
+    if text in words:
+        return words[text]
+    if not text:
+        return default
+    return default or readable_words(text)
+
+
+def link_status_label(value: Any) -> str:
+    """Return the readable word of the state of an identity link."""
+    return display_word("link_statuses", value, "Not linked")
+
+
+def action_label(value: Any) -> str:
+    """Return the readable word of one recorded action."""
+    return display_word("actions", value, "Recorded event")
 
 
 def audit_action_label(action: str) -> str:
@@ -248,15 +296,20 @@ __all__ = [
     "audit_presentation",
     "CHECK_STATUS_LABELS",
     "CHECK_STATUS_ORDER",
+    "DISPLAY_PATH",
     "FIGURE_GROUPS",
     "FIGURE_GROUP_OF",
     "FIGURE_LABELS",
+    "action_label",
     "check_status_label",
     "checks_presentation",
     "dashboard_presentation",
+    "display_word",
+    "display_words",
     "figure_groups",
     "group_of",
     "label_for",
+    "link_status_label",
     "readable_words",
     "scope_statement",
 ]

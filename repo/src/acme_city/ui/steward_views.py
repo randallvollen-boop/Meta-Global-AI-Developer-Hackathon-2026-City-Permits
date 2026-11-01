@@ -62,6 +62,7 @@ from acme_city.registry.provenance import affected_dependents, current_accepted_
 from acme_city.registry import automation as registry_automation
 from acme_city.ui import (
     display,
+    ops_views,
     patterns,
     property_views,
     steward_automation_views,
@@ -634,7 +635,7 @@ def record_profile(session: Session, actor: ActorContext, party_id: str) -> dict
                 ),
                 "record_id": link["source_record_id"],
                 "status_key": link["link_status"],
-                "status": display.pretty(link["link_status"]),
+                "status": ops_views.link_status_label(link["link_status"]),
                 "decided_by": view_models.actor_label(session, link.get("decision_actor_id")),
                 "decided_at": link.get("decided_at"),
                 "decision": link.get("decision") or "",
@@ -996,7 +997,7 @@ def _resolve_source(ctx: DetailContext, item_id: str) -> DetailView | None:
                 Section(
                     "Current link",
                     (
-                        Row("State", display.pretty(latest.link_status)),
+                        Row("State", ops_views.link_status_label(latest.link_status)),
                         Row("Master record", _party_label(ctx.session, latest.entity_id)),
                         Row("Decided by", view_models.actor_label(ctx.session, latest.decision_actor_id)),
                         Row("Decided at", display.readable_date(latest.decided_at) or "not decided"),
@@ -1157,7 +1158,7 @@ def parcel_profile(session: Session, actor: ActorContext, parcel_key: str) -> di
             {
                 "source": display.source_name(session, link.source_system_id, link.source_dataset_key),
                 "record_id": link.source_record_id,
-                "status": display.pretty(link.link_status),
+                "status": ops_views.link_status_label(link.link_status),
             }
         )
     history = view_models.history(session, actor, parcel.parcel_id)

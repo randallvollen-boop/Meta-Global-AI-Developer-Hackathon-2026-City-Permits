@@ -95,7 +95,7 @@
         <p>{{ located.message }}</p>
         {% if located.found %}
         <details class="detail-more"><summary>More details</summary>
-          <p class="muted">Match score {{ '%g' % located.score }}.</p>
+          <p class="muted">How closely the address matched: {{ '%g' % located.score }} out of 1.</p>
           {% if located.alternatives %}<p class="muted">Other possibilities: {% for alt in located.alternatives %}{{ alt.address }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
         </details>
         {% endif %}
