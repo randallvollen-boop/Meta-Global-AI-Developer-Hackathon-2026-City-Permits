@@ -62,12 +62,13 @@ My permits, Start an application, Help and Home.
     and, when the City asked, **Submit revised documents**.
 - As an Applicant, I want to ask what the rules say and what the process is,
   so that I understand the permit before I file it.
-  - Acceptance: the help window opens from **Ask about your permit** in the
-    header and answers from the City's published rules and from my own case
+  - Acceptance: the assistant opens over the page from **Ask** at the corner
+    of the page, or from **Ask about your permit** in the header, and answers
+    from the City's published rules and from my own case
     only; the answer quotes the rule it used, shows its citation and labels itself
     "Matching ACME rule text (not an AI answer)", or "Recorded demo answer" when a
     recorded answer of the demonstration is shown; a question that matches nothing says so
-    instead of guessing; the window shows the configured service target and
+    instead of guessing; the panel shows the configured service target and
     the current review-area backlog as two separate figures and never a
     completion date.
 - As an Applicant, I want to ask a person at the City when the assistant
@@ -76,13 +77,14 @@ My permits, Start an application, Help and Home.
     carries the form **Send my question**, which creates a help request that
     the City's support desk answers; my conversation stays private to me
     until then. After three questions the assistant could not answer, or when
-    I ask for a person, the window points me to that page; the City's answer
-    appears on my case and in the window.
-- As an Applicant, I want the help window never to lose what I have typed,
+    I ask for a person, the panel points me to that page; the City's answer
+    appears on my case and in the panel.
+- As an Applicant, I want the assistant never to lose what I have typed,
   so that asking a question does not cost me my application.
-  - Acceptance: the help question is a form of its own, in a window of its
-    own; on the application form the fields and files I typed stay exactly as
-    they were, with JavaScript switched off as well.
+  - Acceptance: the assistant opens over the page, so the page stays where it
+    is and nothing navigates; the help question is a form of its own, so on
+    the application form the fields and files I typed stay exactly as they
+    were, with JavaScript switched off as well.
 
 ## Agent Operator
 

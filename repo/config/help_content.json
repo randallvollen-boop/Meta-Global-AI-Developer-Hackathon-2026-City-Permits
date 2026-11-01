@@ -89,7 +89,7 @@
             "href": "/apply/track"
           },
           {
-            "do": "Click \"Start an application\", then \"Residential deck or fence\". In \"Ask about your permit\" type \"Do I need a permit for a 6 ft fence?\" and click \"Ask\".",
+            "do": "Click \"Start an application\", then \"Residential deck or fence\". Click \"Ask\" at the corner of the page, type \"Do I need a permit for a 6 ft fence?\" under \"Your question\" and click \"Ask\".",
             "see": "The answer shows the label \"Recorded demo answer\" and cites ACME Code §14-305 and §14-306. It is a stored answer that was shown again.",
             "href": "/apply/deck_fence"
           }
@@ -308,14 +308,14 @@
         "screen_label": "Start an application",
         "screen_href": "/apply",
         "steps": [
-          "Open \"Start an application\", \"My permits\" or an application form, and click \"Ask about your permit\" in the header. The assistant opens in a small window of its own.",
+          "Open \"Start an application\", \"My permits\" or an application form, and click \"Ask\" at the corner of the page, or \"Ask about your permit\" in the header. The assistant opens over the page.",
           "Type your question under \"Your question\", for example \"Do I need a permit for a 6 ft fence?\"",
           "Click \"Ask\". You can also click one of the questions the City is often asked.",
           "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded demo answer\".",
           "Open a citation, such as ACME Code §14-306, and click \"Show the rule text\" to read the rule the answer relies on.",
-          "If the assistant did not answer, the window says so and shows the rule text that matches your words.",
+          "If the assistant did not answer, the panel says so and shows the rule text that matches your words.",
           "To reach a person, click \"Contact the City\" in the footer of any page, type under \"Your question\" and click \"Send my question\".",
-          "Find your request, and the City's answer to it, on the contact page and under \"More details\" in the window."
+          "Find your request, and the City's answer to it, on the contact page and under \"More details\" in the panel."
         ],
         "result": "The assistant explains the published rules and never decides a permit. A person at the City answers the request you send."
       },

@@ -46,15 +46,17 @@ REVIEW_BACKLOG_STATUSES: tuple[str, ...] = ("ready_for_review", "under_review")
 #: The panels the help assistant is offered on.
 #:
 #: ``contact`` is the contact page of the City website, where the applicant
-#: asks a person at the City instead of the assistant.  ``popout`` is the
-#: small window the assistant opens in.
-PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track", "contact", "popout")
+#: asks a person at the City instead of the assistant.  The other three are
+#: the applicant screens the assistant is opened from.
+PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track", "contact")
 
 #: The placements the panel page itself is opened with.
 #:
-#: The page is the body of the pop-out window; ``form`` is the plain page the
-#: application form opens when there is no script.
-PANEL_PLACEMENTS: tuple[str, ...] = ("form", "popout")
+#: The page is the panel on its own: the launcher of the applicant pages
+#: sends the applicant there when there is no script, and the panel that
+#: slides up over the page carries the placement of the page it was opened
+#: from.
+PANEL_PLACEMENTS: tuple[str, ...] = ("chooser", "form", "track")
 
 #: The plain words of the backlog statuses.
 STATUS_WORDS: dict[str, str] = {

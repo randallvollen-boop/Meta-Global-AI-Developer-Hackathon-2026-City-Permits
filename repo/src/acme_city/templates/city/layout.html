@@ -8,6 +8,10 @@
 {% set is_applicant = actor is defined and actor and actor.label == 'Applicant' %}
 {% set shown_name = (applicant_name if applicant_name is defined and applicant_name else (actor.label if actor else '')) %}
 {% set portal_active = 'track' if path == '/apply/track' else ('help' if path == '/apply/help/panel' else 'start') %}
+{# The placement the assistant is opened from.  It is named apart from the
+   placement of the panel itself, which the panel page carries. #}
+{% set launcher_placement = 'track' if path == '/apply/track' else ('form' if portal_page and path not in ('/apply', '/apply/help/panel') else 'chooser') %}
+{% set on_help_page = path == '/apply/help/panel' %}
 {% set portal_text = portal_content() %}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -44,8 +48,8 @@
       <span class="city-wordmark"><b>City of Acme</b>{% if portal_page %}<small data-testid="city-service-name">Permit Services</small>{% endif %}</span>
     </a>
     <div class="city-header-tools">
-    {% if portal_page and is_applicant and path != '/apply/help/panel' %}
-    <a class="city-help-link" href="/apply/help/panel?placement=popout" target="_blank" rel="noopener" data-help-popout data-testid="help-popout">Ask<span class="city-help-more"> about your permit</span></a>
+    {% if portal_page and is_applicant and not on_help_page %}
+    <a class="city-help-link" href="/apply/help/panel?placement={{ launcher_placement }}" data-help-panel-open data-testid="help-ask" aria-haspopup="dialog">Ask<span class="city-help-more"> about your permit</span></a>
     {% else %}
     <a class="city-help-link" href="/help" data-testid="help-link"{% if active == 'help' %} aria-current="page"{% endif %}>Help<span class="city-help-more"> and guides</span></a>
     {% endif %}
@@ -62,7 +66,7 @@
       <ul data-testid="applicant-nav">
         <li><a href="/apply/track" data-testid="nav-my-permits"{% if portal_active == 'track' %} aria-current="page"{% endif %}>My permits</a></li>
         <li><a href="/apply" data-testid="nav-start"{% if portal_active == 'start' %} aria-current="page"{% endif %}>Start an application</a></li>
-        <li><a href="/apply/help/panel?placement=popout" target="_blank" rel="noopener" data-help-popout data-testid="nav-help"{% if portal_active == 'help' %} aria-current="page"{% endif %}>Help</a></li>
+        <li><a href="/apply/help/panel?placement={{ launcher_placement }}" data-help-panel-open data-testid="nav-help"{% if portal_active == 'help' %} aria-current="page"{% endif %}>Help</a></li>
       </ul>
       {% else %}
       <ul>
@@ -104,6 +108,25 @@
 </footer>
 
 {% block toasts %}{% endblock %}
+
+{# The assistant of the applicant.  The launcher sits at the corner of the
+   page and opens the panel over the page: the page stays where it is, and
+   the fields the applicant typed stay as they were. #}
+{% if is_applicant and not on_help_page %}
+<div class="help-panel-host" id="help-panel-host" data-help-placement="{{ launcher_placement }}" hidden>
+  <div class="help-panel-sheet" role="dialog" aria-modal="true" aria-label="Ask about your permit" data-testid="help-panel-sheet">
+    <button type="button" class="help-panel-close" data-help-panel-close data-testid="help-panel-close" aria-label="Close the assistant">&times;</button>
+    <div class="help-panel-body" data-help-panel-body>
+      <p class="muted" data-testid="help-panel-loading">The assistant is opening.</p>
+    </div>
+  </div>
+</div>
+<a class="help-chat-launcher" href="/apply/help/panel?placement={{ launcher_placement }}" data-help-panel-open data-help-panel-launcher data-testid="help-chat-launcher" aria-haspopup="dialog" aria-expanded="false" aria-label="Ask about your permit">
+  <svg class="help-chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.7L3 21l1.9-5a8.4 8.4 0 0 1-.9-3.8A8.4 8.4 0 0 1 12 3.6a8.4 8.4 0 0 1 9 7.9z"/></svg>
+  <span>Ask</span>
+</a>
+{% endif %}
+
 {% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 <script src="/ui/static/property.js" defer></script>
 <script src="/ui/static/help.js" defer></script>

@@ -1,9 +1,10 @@
 """Chat 3 in the browser, as the Applicant: the prompt, Ask the City, the reply.
 
-The help panel has a page of its own, and it is offered on the application form
-and on the tracker.  After three questions the assistant could not answer it prompts the
-applicant to ask a person at the City; the button itself is always there.  The
-Administrator's reply reaches the applicant, with and without JavaScript.
+The help panel opens over the page of the applicant, and it has a page of its
+own for the applicant who has no script.  After three questions the assistant
+could not answer it prompts the applicant to ask a person at the City; the
+button itself is always there.  The Administrator's reply reaches the
+applicant, with and without JavaScript.
 """
 # REQUIRES: PORTAL-02, UX-02, UX-03, PER-04, SEC-03
 
@@ -155,25 +156,26 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
     try:
         applicant = sign_in(applicant_context, server, "persona_applicant")
         applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
-        # Changed deliberately (the applicant restyle, A3): the tracker has no
-        # panel of its own; the launcher opens the assistant on its own page.
-        with applicant_context.expect_page() as opened:
-            applicant.locator('[data-testid="help-launcher"]').click()
-        assistant = opened.value
-        assistant.wait_for_load_state("domcontentloaded")
+        # Changed deliberately (the panel slice): the tracker has no panel of
+        # its own; the launcher opens the assistant over the page.
+        applicant.locator('[data-testid="help-launcher"]').click()
+        applicant.wait_for_selector('[data-testid="help-panel"]')
         for question in NONSENSE:
-            assistant.locator('[data-testid="help-question"]').fill(question)
-            assistant.locator('[data-testid="help-submit"]').click()
-            assistant.wait_for_function(
+            applicant.locator('[data-testid="help-question"]').fill(question)
+            applicant.locator('[data-testid="help-submit"]').click()
+            applicant.wait_for_function(
                 "(q) => document.body.innerText.includes(q)", arg=question
             )
-        # The assistant could not answer, so the window points at the contact
+        # The assistant could not answer, so the panel points at the contact
         # page, which continues the conversation of the case.
-        assistant.locator('[data-testid="help-escalation-link"]').click()
-        assistant.wait_for_url(f"{server.base_url}/city/contact*")
-        assert assistant.locator('[data-testid="contact-question"]').input_value() == NONSENSE[-1]
-        assistant.locator('[data-testid="contact-submit"]').click()
-        assistant.wait_for_selector('[data-testid="contact-request"]')
+        assert applicant.locator('[data-testid="help-escalation-prompt"]').count() == 1
+        # The address carries the conversation of the applicant.
+        tracker_url = applicant.url
+        applicant.locator('[data-testid="help-escalation-link"]').click()
+        applicant.wait_for_url(f"{server.base_url}/city/contact*")
+        assert applicant.locator('[data-testid="contact-question"]').input_value() == NONSENSE[-1]
+        applicant.locator('[data-testid="contact-submit"]').click()
+        applicant.wait_for_selector('[data-testid="contact-request"]')
 
         admin = sign_in(admin_context, server, "persona_city_administrator")
         admin.goto(f"{server.base_url}/ops/support", wait_until="domcontentloaded")
@@ -185,12 +187,14 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
         admin.wait_for_selector('[data-testid="feedback-message"]')
 
         # the reply reaches the applicant as a message of the City on the case
-        applicant.goto(f"{server.base_url}/apply/track?ref=SYN-APP-005", wait_until="domcontentloaded")
+        applicant.goto(tracker_url, wait_until="domcontentloaded")
         body = applicant.inner_text("body")
         assert REPLY in body
-        # and the contact page shows the answer of the City
-        assistant.reload(wait_until="domcontentloaded")
-        assert REPLY in assistant.inner_text("body")
+        # and the panel of the applicant shows the answer of the City
+        applicant.locator('[data-testid="help-launcher"]').click()
+        applicant.wait_for_selector('[data-testid="help-panel"]')
+        applicant.locator('[data-testid="help-more"] > summary').click()
+        assert REPLY in applicant.locator('[data-testid="help-panel"]').inner_text()
     finally:
         applicant_context.close()
         admin_context.close()

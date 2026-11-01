@@ -1,9 +1,10 @@
 {# The applicant help panel.
 
-   The panel is the body of the help window, which the header of the City
-   website opens in a small window of its own.  Its question form is a form
-   of its own: it is never part of the application form, so the applicant's
-   typed fields and files stay intact.
+   The panel is the assistant.  It has a page of its own, and it slides up
+   over the page of the applicant; both carry the same panel, the same
+   conversation and the same answers.  Its question form is a form of its
+   own: it is never part of the application form, so the applicant's typed
+   fields and files stay intact.
 
    The panel shows what a worker needs to decide.  The rest sits behind
    "More details", and the rule text of a citation sits behind "Show the rule
@@ -13,7 +14,11 @@
   <h2>Ask about your permit</h2>
   <p class="muted" data-testid="help-notice">{{ help_notice }}</p>
 
-  <form method="post" action="/apply/help" class="help-form" data-help-form{% if help_placement == 'form' %} target="_blank"{% endif %} data-testid="help-form">
+  {# The answer of the panel opens in a browsing context of its own, so the
+     page the applicant came from keeps what it held - the fields and the
+     files of the application form.  With the script the answer is rendered
+     in place and the target is never used. #}
+  <form method="post" action="/apply/help" class="help-form" data-help-form{% if help_placement == 'form' or help_in_page %} target="_blank"{% endif %} data-testid="help-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="placement" value="{{ help_placement }}">
     <input type="hidden" name="type_key" value="{{ help_type_key }}">

@@ -8,7 +8,9 @@ Three endpoints, all of them inside the applicant portal:
   request returns to that page;
 * ``GET /apply/help/panel`` shows the panel on its own page, which is where
   the application form opens its answer so the applicant's typed fields and
-  files stay intact.
+  files stay intact.  The same route answers with the bare panel when the
+  page asks for the fragment: that is the panel that slides up over the
+  page of the applicant.
 
 Each write checks the CSRF token, the grant of the acting persona and a
 mandatory expected version, and each one is audited without the text of the
@@ -72,30 +74,20 @@ def _help_return_path(
 ) -> str:
     """Return the local path a help action returns to.
 
-    The application form opens the answer in a separate browsing context, so
-    the return path of that placement is the standalone panel.  The chooser and
-    the tracker return to their own page with the conversation in the query
-    string.  A request made on the contact page of the City website returns to
-    that page, at the form the applicant filled in.
+    A question asked in the panel comes back to the panel: the panel has a
+    page of its own, and the answer is read there.  The placement says which
+    screen of the applicant the panel was opened from, so the answer knows
+    the case it is about.  A request made on the contact page of the City
+    website returns to that page, at the form the applicant filled in.
     """
-    if placement == "form":
-        query: dict[str, str] = {"conversation": conversation_id}
-        if type_key:
-            query["type_key"] = type_key
-        return f"/apply/help/panel?{urlencode(query)}"
-    if placement == "track":
-        query = {"help": conversation_id}
-        if reference:
-            query["ref"] = reference
-        return f"/apply/track?{urlencode(query)}"
     if placement == "contact":
         return "/city/contact#ask"
-    if placement == "popout":
-        query = {"placement": "popout"}
-        if conversation_id:
-            query["conversation"] = conversation_id
-        return f"/apply/help/panel?{urlencode(query)}"
-    return f"/apply?{urlencode({'help': conversation_id})}"
+    query: dict[str, str] = {"conversation": conversation_id, "placement": placement}
+    if type_key:
+        query["type_key"] = type_key
+    if reference:
+        query["ref"] = reference
+    return f"/apply/help/panel?{urlencode(query)}"
 
 
 def _placement(form: Any) -> str:
@@ -143,15 +135,17 @@ def ui_portal_help_panel(
     reference: str = "",
     placement: str = "",
     help_question: str = "",
+    fragment: str = "",
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
 ) -> Any:
-    """Show the help panel on its own page.
+    """Show the help panel on its own page, or as a fragment of a page.
 
-    The page is the body of the pop-out window: the header of the City
-    website opens it in a small window of its own.  The application form
-    opens its answer here too, in a separate browsing context, so the fields
-    and the files the applicant typed stay untouched.
+    The page is the panel on its own: the launcher of the applicant pages
+    sends the applicant there when there is no script.  The fragment is the
+    same panel without the frame around it: the panel that slides up over the
+    page of the applicant is fetched from here, and it carries the same
+    conversation, the same citations and the same answers.
     """
     resolved, refused = _portal_guard(request, session, actor)
     if refused is not None:
@@ -190,6 +184,14 @@ def ui_portal_help_panel(
             reference=reference,
         ),
     )
+    if fragment:
+        # The panel of the page: the same panel, without the frame of the
+        # page around it.  Its question form opens the answer in a browsing
+        # context of its own, so the page of the applicant keeps what it
+        # held if the script is not there.
+        return render(
+            request, "components/help_panel.html", {**context, "help_in_page": True}
+        )
     return render(request, "portal_help.html", context)
 
 

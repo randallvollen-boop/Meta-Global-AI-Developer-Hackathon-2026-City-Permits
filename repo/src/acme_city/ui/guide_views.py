@@ -62,7 +62,7 @@ WALKTHROUGH: tuple[Step, ...] = (
         "Applicant",
         "/apply",
         "Choose Residential deck or fence. Keep the applicant name already filled in. Type 400 Lantern Row and pick the suggested address. Answer the questions, for example a 6 ft fence in the side or rear yard, 2 ft from the property line. Attach a small .txt file for each of the two required documents, tick the certification, press Submit application, then press Track application. Submit once: a second application for the same project at the same address is flagged as a duplicate. To see early resolution later, submit a second application at another address, such as 100 Kestrel Way, and tick Sent to the City separately for one document instead of attaching it.",
-        "A reference number such as SYN-APP-614, and a tracker that lists both documents as received. The help window opens from the header and cites the published ACME rule behind each answer.",
+        "A reference number such as SYN-APP-614, and a tracker that lists both documents as received. The assistant opens over the page and cites the published ACME rule behind each answer.",
     ),
     Step(
         "Let the agent route the work",

@@ -83,7 +83,7 @@ def ask(client: TestClient, question: str) -> str:
             "question": question,
             "conversation_version": "0",
             "conversation_id": "",
-            "placement": "popout",
+            "placement": "form",
         },
         follow_redirects=False,
     )

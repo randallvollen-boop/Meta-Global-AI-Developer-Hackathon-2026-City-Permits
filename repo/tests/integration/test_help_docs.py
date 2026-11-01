@@ -154,13 +154,14 @@ def test_the_help_link_is_on_the_staff_and_city_layouts(client: TestClient) -> N
     assert re.search(r'<a class="city-help-link" href="/help" data-testid="help-link"', city)
     assert 'href="/help" data-testid="help-link-footer"' in city
     sign_in(client, "persona_applicant")
-    # Changed deliberately (the pop-out slice): the header of the applicant
-    # pages opens the help window instead of the hub; the hub stays in the
-    # footer of every page.
+    # Changed deliberately (the panel slice): the header of the applicant
+    # pages opens the assistant panel instead of the hub; the hub stays in
+    # the footer of every page.
     for path in ("/apply", "/apply/track"):
         page = client.get(path).text
         assert 'href="/help" data-testid="help-link-footer"' in page, path
-        assert 'data-testid="help-popout"' in page, path
+        assert 'data-testid="help-ask"' in page, path
+        assert 'data-testid="help-chat-launcher"' in page, path
     assert re.search(
         r'<a class="city-help-link" href="/help" data-testid="help-link"',
         client.get("/city/permits").text,

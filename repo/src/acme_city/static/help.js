@@ -1,52 +1,137 @@
 /* The local script of the applicant help panel.
 
-   The script is an enhancement, not a requirement: the panel works without
-   it.  The question is an ordinary form post that re-renders the page with
-   the answer, and the panel opens in a browsing context of its own, so the
-   fields and the files the applicant typed stay intact.
+   The script is an enhancement, not a requirement: without it the launcher
+   is an ordinary link to the panel page, and the question is an ordinary
+   form post that re-renders that page.
 
-   When the script is present the question is sent in the background and the
-   answer is rendered in place, a suggested question fills the box instead of
-   navigating, and the launcher opens the assistant in a small window of its
-   own.  Nothing here decides anything: the server answers from its own
-   source bundle and the script only shows what it sent back. */
+   With the script the assistant opens in a panel over the page.  The page
+   stays where it is: nothing navigates, the fields and the files the
+   applicant typed stay exactly as they were, and the panel holds the same
+   assistant as the page of its own - the same endpoints, the same
+   conversation, the same citations.
+
+   Nothing here decides anything: the server answers from its own source
+   bundle and the script only shows what it sent back. */
 
 (function () {
   "use strict";
 
-  /* The window the assistant opens in.  It keeps the name, so a second
-     launcher reuses the same window. */
-  var POPOUT_NAME = "acme-permit-help";
-  var POPOUT_FEATURES = "width=420,height=680,noopener";
-  var POPOUT_PATH = "/apply/help/panel";
+  /* The panel of the assistant.  The page of its own and the panel that
+     slides up over the page are the same panel, fetched from one place. */
+  var PANEL_PATH = "/apply/help/panel";
+
+  /* The controls the keyboard may reach inside the open panel.  The summary
+     of a disclosure is one of them: it is in the tab order of the browser. */
+  var FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+  /* The open panel, the control that opened it, and the conversation it
+     holds. */
+  var host = null;
+  var sheet = null;
+  var opener = null;
+  var loaded = false;
+  var conversation = "";
+
+  function hostElement() {
+    if (!host) host = document.getElementById("help-panel-host");
+    return host;
+  }
+
+  function sheetElement() {
+    if (!sheet) sheet = document.querySelector("[data-testid=help-panel-sheet]");
+    return sheet;
+  }
 
   function panelOf(node) {
     if (!node || !node.closest) return null;
     return node.closest("[data-testid=help-panel]");
   }
 
-  function contactHref(panel) {
-    /* The contact page continues the conversation of the panel, so the
-       question reaches the case the applicant was asking about. */
-    var conversation = panel ? panel.getAttribute("data-help-conversation") : "";
-    return "/city/contact" + (conversation ? "?conversation=" + conversation : "") + "#ask";
-  }
-
-  function popoutUrl(link) {
-    /* The window opens the panel in the pop-out placement, and it keeps the
-       context of the page it was opened from: the application the applicant
-       was looking at. */
-    var href = (link && link.getAttribute("href")) || POPOUT_PATH;
+  function panelUrl(link) {
+    /* The panel is fetched from the place the launcher points at, so the
+       panel knows the case and the permit type of the page it was opened
+       from.  The conversation of the applicant travels with it. */
+    var href = (link && link.getAttribute("href")) || PANEL_PATH;
     var url = href.split("#")[0];
+    var separator = url.indexOf("?") === -1 ? "?" : "&";
     if (url.indexOf("placement=") === -1) {
-      url += (url.indexOf("?") === -1 ? "?" : "&") + "placement=popout";
+      var box = hostElement();
+      var placement = box ? box.getAttribute("data-help-placement") : "";
+      if (placement) url += separator + "placement=" + encodeURIComponent(placement);
+    }
+    if (conversation && url.indexOf("conversation=") === -1) {
+      url += (url.indexOf("?") === -1 ? "?" : "&") +
+        "conversation=" + encodeURIComponent(conversation);
     }
     return url;
   }
 
-  function openPopout(event) {
-    event.preventDefault();
-    window.open(popoutUrl(event.currentTarget), POPOUT_NAME, POPOUT_FEATURES);
+  function contactHref(panel) {
+    /* The contact page continues the conversation of the panel, so the
+       question reaches the case the applicant was asking about. */
+    var talk = panel ? panel.getAttribute("data-help-conversation") : "";
+    return "/city/contact" + (talk ? "?conversation=" + talk : "") + "#ask";
+  }
+
+  function focusableItems() {
+    var box = sheetElement();
+    if (!box) return [];
+    return Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), function (el) {
+      return el.getClientRects().length > 0;
+    });
+  }
+
+  function focusPanel() {
+    var items = focusableItems();
+    if (items.length) items[0].focus();
+  }
+
+  function showLauncher(visible) {
+    var launchers = document.querySelectorAll("[data-help-panel-launcher]");
+    for (var i = 0; i < launchers.length; i++) {
+      launchers[i].hidden = !visible;
+      launchers[i].setAttribute("aria-expanded", visible ? "false" : "true");
+    }
+  }
+
+  function openPanel(trigger) {
+    var box = hostElement();
+    if (!box) return false;
+    opener = trigger;
+    box.hidden = false;
+    showLauncher(false);
+    focusPanel();
+    return true;
+  }
+
+  function closePanel() {
+    var box = hostElement();
+    if (!box || box.hidden) return;
+    box.hidden = true;
+    showLauncher(true);
+    if (opener && document.contains(opener)) opener.focus();
+    opener = null;
+  }
+
+  function panelIsOpen() {
+    var box = hostElement();
+    return !!box && !box.hidden;
+  }
+
+  function rememberConversation(conversationId) {
+    /* The conversation belongs to the applicant and it stays with the page:
+       the address carries it, so a reload opens the panel on the same
+       conversation. */
+    conversation = conversationId || "";
+    try {
+      var url = new URL(window.location.href);
+      if (conversation) url.searchParams.set("help", conversation);
+      else url.searchParams.delete("help");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch (error) {
+      /* The address is a convenience; the panel still holds the talk. */
+    }
   }
 
   function syncConversation(panel, conversationId, version) {
@@ -62,6 +147,7 @@
     /* The link to the contact page carries the conversation, so the request
        reaches the case the applicant was asking about. */
     panel.setAttribute("data-help-conversation", conversationId || "");
+    rememberConversation(conversationId);
   }
 
   function renderTurns(panel, payload) {
@@ -206,17 +292,23 @@
       });
   }
 
-  function init() {
-    var forms = document.querySelectorAll("form[data-help-form]");
-    for (var i = 0; i < forms.length; i++) {
-      var form = forms[i];
-      if (form.getAttribute("action") !== "/apply/help") continue;
-      form.addEventListener("submit", function (event) {
-        askInPlace(event, this);
-      });
+  function preparePanel(panel) {
+    /* The panel of the page is fetched after the page is read, so its form
+       and its questions are wired here, not when the page was read. */
+    if (!panel) return;
+    var form = panel.querySelector("form[data-help-form]");
+    if (form && !form.getAttribute("data-help-ready")) {
+      form.setAttribute("data-help-ready", "1");
+      if (form.getAttribute("action") === "/apply/help") {
+        form.addEventListener("submit", function (event) {
+          askInPlace(event, this);
+        });
+      }
     }
-    var chips = document.querySelectorAll("a[data-help-suggestion]");
+    var chips = panel.querySelectorAll("a[data-help-suggestion]");
     for (var i = 0; i < chips.length; i++) {
+      if (chips[i].getAttribute("data-help-ready")) continue;
+      chips[i].setAttribute("data-help-ready", "1");
       chips[i].addEventListener("click", function (event) {
         var panel = panelOf(this);
         if (!panel) return;
@@ -227,12 +319,110 @@
         field.focus();
       });
     }
-    /* Every launcher opens the assistant in the small window of its own. */
+  }
+
+  function loadPanel(url) {
+    var box = sheetElement();
+    if (!box) return;
+    var body = box.querySelector("[data-help-panel-body]");
+    if (!body) return;
+    var request = url + (url.indexOf("?") === -1 ? "?" : "&") + "fragment=1";
+    fetch(request, { credentials: "same-origin", headers: { Accept: "text/html" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("the panel could not be read");
+        return response.text();
+      })
+      .then(function (html) {
+        body.innerHTML = html;
+        loaded = true;
+        var panel = body.querySelector("[data-testid=help-panel]");
+        preparePanel(panel);
+        if (panel) {
+          var field = panel.querySelector("[data-testid=help-question]");
+          if (field) field.focus();
+        }
+      })
+      .catch(function () {
+        /* The panel page is one click away: the applicant is never left
+           without the assistant. */
+        body.innerHTML = "";
+        var note = document.createElement("p");
+        note.className = "muted";
+        note.setAttribute("data-testid", "help-panel-error");
+        note.textContent = "The assistant could not be opened here.";
+        body.appendChild(note);
+        var link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("data-testid", "help-panel-link");
+        link.textContent = "Open the assistant on its own page";
+        body.appendChild(link);
+      });
+  }
+
+  function openFromLauncher(event) {
+    var link = event.currentTarget;
+    if (!hostElement()) return;
+    /* A click with a key held means "open this elsewhere": the launcher is
+       an ordinary link, and the panel page is one click away. */
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== 0) return;
+    event.preventDefault();
+    if (!openPanel(link)) return;
+    if (!loaded) loadPanel(panelUrl(link));
+  }
+
+  function trapFocus(event) {
+    var items = focusableItems();
+    if (!items.length) return;
+    var box = sheetElement();
+    var first = items[0];
+    var last = items[items.length - 1];
+    var active = document.activeElement;
+    if (!box.contains(active)) {
+      event.preventDefault();
+      first.focus();
+    } else if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  function init() {
+    var panels = document.querySelectorAll("[data-testid=help-panel]");
+    for (var i = 0; i < panels.length; i++) {
+      preparePanel(panels[i]);
+    }
+    /* Every launcher of the assistant opens the panel over the page. */
     var launchers = document.querySelectorAll(
-      "[data-help-popout], [data-testid=help-launcher]"
+      "[data-help-panel-open], [data-testid=help-launcher]"
     );
     for (var i = 0; i < launchers.length; i++) {
-      launchers[i].addEventListener("click", openPopout);
+      launchers[i].addEventListener("click", openFromLauncher);
+    }
+    var closers = document.querySelectorAll("[data-help-panel-close]");
+    for (var i = 0; i < closers.length; i++) {
+      closers[i].addEventListener("click", function (event) {
+        event.preventDefault();
+        closePanel();
+      });
+    }
+    document.addEventListener("keydown", function (event) {
+      if (!panelIsOpen()) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePanel();
+        return;
+      }
+      if (event.key === "Tab") trapFocus(event);
+    });
+    /* The conversation of the page is the one the address names. */
+    try {
+      conversation = new URL(window.location.href).searchParams.get("help") || "";
+    } catch (error) {
+      conversation = "";
     }
   }
 

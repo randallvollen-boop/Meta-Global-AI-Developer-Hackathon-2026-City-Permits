@@ -291,3 +291,57 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
   .type-cards.compact { grid-template-columns: minmax(0, 1fr); }
   .portal-form input.num { width: 8ch; }
 }
+
+
+/* ================= The assistant panel of the applicant ================= */
+
+/* The launcher sits at the corner of the page and opens the panel over the
+   page.  The page behind it stays where it is: nothing scrolls, nothing
+   navigates, and the fields the applicant typed stay as they were. */
+.help-chat-launcher {
+  position: fixed; right: 16px; bottom: 16px; z-index: 58;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 18px; border: 0; border-radius: 999px;
+  background: var(--accent); color: var(--accent-fg, #fff);
+  font: 600 .95rem var(--f-body); text-decoration: none; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(18,48,79,.28);
+}
+.help-chat-launcher:hover { filter: brightness(1.07); }
+.help-chat-launcher:focus-visible { outline: 3px solid var(--city-gold); outline-offset: 2px; }
+.help-chat-launcher[hidden] { display: none; }
+.help-chat-icon { width: 20px; height: 20px; stroke: currentColor; fill: none; }
+
+/* The panel.  It holds the assistant and nothing else. */
+.help-panel-host { display: none; }
+.help-panel-host:not([hidden]) { display: block; }
+.help-panel-sheet {
+  position: fixed; right: 0; bottom: 0; z-index: 59;
+  width: min(430px, 100vw); height: min(72vh, 660px);
+  display: flex; flex-direction: column;
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--line); border-right: 0; border-radius: 12px 12px 0 0;
+  box-shadow: 0 -10px 30px rgba(18,48,79,.24);
+}
+.help-panel-close {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2, #eef2f5);
+  color: var(--fg); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.help-panel-close:hover { background: var(--accent-soft); }
+.help-panel-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.help-panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px 24px; }
+/* Inside the sheet the panel is a plain block: the sheet is its card. */
+.help-panel-sheet .help-panel { border: 0; background: transparent; box-shadow: none; padding: 0; margin: 0; }
+.help-panel-sheet .help-panel h2 { padding-right: 40px; }
+
+/* A phone: the panel is a sheet of the whole width. */
+@media (max-width: 640px) {
+  .help-panel-sheet { left: 0; right: 0; width: 100vw; height: 84vh; }
+  .help-chat-launcher { right: 12px; bottom: 12px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .help-panel-sheet { animation: help-panel-in .18s ease-out; }
+  @keyframes help-panel-in { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+}
+@media print { .help-chat-launcher, .help-panel-sheet { display: none !important; } }
