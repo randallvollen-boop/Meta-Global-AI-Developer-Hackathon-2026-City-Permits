@@ -2,7 +2,7 @@
 
 This is the single runbook for the hosted demonstration: first setup, every later deploy, the smoke check, live Muse for judging, the nightly reset and rollback. Other documents point here.
 
-This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. The custom domain `permits.vollendata.com` is the intended address; it did not respond when last checked, so do not rely on it. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
+This document sets up the public ACME City permits demonstration on Render. The live address is `https://acme-city-permits.onrender.com`. There is no custom domain. The service runs in `demo` mode with fictional data only. Anyone who opens the site can act as any of the five personas, so the deployment adds rate limits, a request size limit and a visible notice.
 
 The blueprint is `render.yaml` at the repository root. It was written and tested without calling Render, so Render reports any field it does not accept when the Blueprint is created.
 
@@ -31,8 +31,8 @@ All limits count requests per minute for one client address. A setting of `0` sw
 | `ACME_RATE_LIMIT_WRITE_PER_MINUTE` | 60 | Requests that are not GET, HEAD or OPTIONS |
 | `ACME_RATE_LIMIT_SESSION_PER_MINUTE` | 20 | Persona and session switches (`/ui/actor`, `/ui/end`, `/api/session/select`, `DELETE /api/session`) |
 | `ACME_RATE_LIMIT_UPLOAD_PER_MINUTE` | 20 | Multipart (file upload) requests, except the applicant form's background check (`POST /apply/<type_key>/check`), which writes nothing and counts as a read |
-| `ACME_MUSE_LIVE_CALL_CAP` | 2 | Live Muse calls in total since the data was last rebuilt, across every visitor and every Muse button (see Live Muse below) |
-| `ACME_MUSE_DAILY_CALL_CAP` | not set (code default 10) | Provider calls per day, shared by every path that can reach the provider |
+| `ACME_MUSE_LIVE_CALL_CAP` | 100 | Live Muse calls in total since the data was last rebuilt, across every visitor and every Muse button (see Live Muse below) |
+| `ACME_MUSE_DAILY_CALL_CAP` | 100 | Provider calls per day, shared by every path that can reach the provider |
 | `ACME_MUSE_IMAGE_DAILY_CAP` | 10 | Live Muse image calls per day |
 | `ACME_MAX_REQUEST_BYTES` | 26214400 | Largest request body (25 MB). The code default is 32 MB, `0` switches it off |
 
@@ -64,15 +64,12 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 3. **Choose the instance type.** `render.yaml` leaves `plan` unset on both services on purpose. In the Blueprint form (or later under each service's Settings) pick the paid instance type already on the account for the web service. Do not use a free instance: it sleeps when idle, so the first visitor would wait for a cold start and a full data rebuild. The cron job runs for seconds each night and takes the smallest type Render offers. Keep the web service at 1 instance.
 
 4. **Fill the prompted variables.** Render asks for the two values marked `sync: false`:
-   - `META_API_KEY`: leave it empty. Live Muse stays off (see step 7).
+   - `META_API_KEY`: the Meta key, pasted in the dashboard only, never in the repository, chat or tickets. Without it every Muse button falls back to the recorded replay (see step 7).
    - `ACME_DEPLOY_HOOK_URL` (cron job): leave it empty for now. It is filled in step 6, because the hook does not exist until the web service does.
 
    Apply the Blueprint. The first build and start take a few minutes. `ACME_SECRET_KEY` is generated once by Render and stays the same across deploys.
 
-5. **Add the custom domain.**
-   1. In Render, open `acme-city-permits`, then Settings, then Custom Domains, and add `permits.vollendata.com`. Render shows the hostname to point at, in the form `acme-city-permits.onrender.com` (use the exact name Render shows).
-   2. In Netlify, open Domains, then `vollendata.com`, then DNS records, and add a record of type CNAME, name `permits`, value the Render hostname. Leave other records unchanged. The Domain Name System (DNS) records for the domain stay in Netlify.
-   3. Back in Render, press Verify on the custom domain. Render issues and renews the TLS certificate itself once the CNAME resolves. It can take several minutes. The `onrender.com` address keeps working in the meantime.
+5. **Address.** There is no custom domain. The site uses the Render address `https://acme-city-permits.onrender.com` (Randall, 2026-11-01). Nothing to do; go on to step 6.
 
 6. **Set the deploy hook for the nightly reset.**
    1. In Render, open `acme-city-permits`, then Settings, then Deploy Hook, and copy the URL.
@@ -81,7 +78,7 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 
    The URL is a secret: anyone who holds it can start a deploy. Keep it out of the repository, chat and tickets. If it leaks, use the Regenerate button beside the hook in Render and update the cron job variable. If the cron job cannot be used, the manual alternative is to press Manual Deploy, then Deploy latest commit, on the web service each time the data should be reset. The schedule is in UTC (`0 2 * * *`).
 
-7. **Live Muse.** Leave it off. Turning it on for judging is a separate step, below.
+7. **Live Muse.** On for judging, at most 100 live calls a day. See Live Muse for judging below.
 
 8. **Run the smoke check** (below).
 
@@ -120,22 +117,23 @@ Run it after every deploy and every rollback. Use the `onrender.com` address.
 
 ## Live Muse for judging
 
-Live Muse stays off until judging, and Randall turns it on himself. The live service holds:
+Live Muse is on for judging, at Randall's request (2026-10-31), with at most 100 live calls a day. The live service holds:
 
 | Setting | Value now |
 |---|---|
-| `ACME_MUSE_PROVIDER_ENABLED` | 0 |
-| `ACME_APPLICANT_ASSIST_LIVE_ENABLED` | 0 |
-| `ACME_POLICY_ASSIST_LIVE_ENABLED` | 0 |
-| `ACME_MUSE_LIVE_CALL_CAP` | 2 |
+| `ACME_MUSE_PROVIDER_ENABLED` | 1 |
+| `ACME_APPLICANT_ASSIST_LIVE_ENABLED` | 1 |
+| `ACME_POLICY_ASSIST_LIVE_ENABLED` | 1 |
+| `ACME_MUSE_LIVE_CALL_CAP` | 100 |
+| `ACME_MUSE_DAILY_CALL_CAP` | 100 |
 | `ACME_MUSE_IMAGE_DAILY_CAP` | 10 |
-| `META_API_KEY` | not present (Render drops a variable left empty) |
+| `META_API_KEY` | set in the dashboard only (Render drops a variable left empty) |
 
 ### How the limits really work
 
-- `ACME_MUSE_LIVE_CALL_CAP` is not per visitor and not per session. The service counts every completed live model run in the database. At 2, live Muse stops after two live calls in total, from anyone, until the data is rebuilt.
+- `ACME_MUSE_LIVE_CALL_CAP` is not per visitor and not per session. The service counts every completed live model run in the database. At 100, live Muse stops after 100 live calls in total, from anyone, until the data is rebuilt.
 - One recorded provider error stops every further live call until the data is rebuilt, whatever the cap says.
-- `ACME_MUSE_DAILY_CALL_CAP` (code default 10, not set in `render.yaml`) caps provider calls per day. It is reserved inside the Muse client before each call, so it binds as well, and at its default of 10 it would stop judging long before the live cap.
+- `ACME_MUSE_DAILY_CALL_CAP` (100 in `render.yaml`; the code default is 10) caps provider calls per day. It is reserved inside the Muse client before each call, so it binds as well. Two calls at the same moment can take the total one or two past the cap; Randall accepted that on 2026-10-31.
 
 | Path | Live call cap | Daily allowance | Image daily cap |
 |---|---|---|---|
@@ -150,7 +148,10 @@ The intake and adjudication agents use the City's built in logic and never call 
 - Both are Render environment variables. Randall can raise or lower them at any time: Environment, edit the value, Save. Render then redeploys, which also resets the counts.
 - The live call cap counts live runs since the last database reset. It works as a daily limit only once the nightly reset cron has `ACME_DEPLOY_HOOK_URL` set (see Nightly reset). Any deploy also resets it.
 
-### Turn it on
+### Turn it on again
+
+Use these steps after turning it off, or on a new service.
+
 
 1. In Render, open `acme-city-permits`, then Environment, then Add Environment Variable. Add `META_API_KEY` with the key.
 2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1`. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live.
@@ -178,7 +179,7 @@ Set `ACME_MUSE_PROVIDER_ENABLED` back to `0`, and the two assistant flags to `0`
 
 ### Steward assistant
 
-The Steward assistant lane starts after the current fixes merge. Its Muse button uses the same `ACME_MUSE_PROVIDER_ENABLED` switch and the same limits. Add its own switch here if the lane introduces one.
+"Explain with Muse" on a steward recommendation uses the same `ACME_MUSE_PROVIDER_ENABLED` switch and the same limits. Without a key the button is disabled with a short note, and the recommendation keeps its own reason.
 
 ## Nightly reset
 
