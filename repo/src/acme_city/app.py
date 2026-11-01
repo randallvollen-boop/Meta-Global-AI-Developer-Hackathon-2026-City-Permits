@@ -107,7 +107,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 worker.stop()
 
     app = FastAPI(
-        title="ACME City Permit Demonstration",
+        title="ACME City permit demonstration",
         version="0.1.0",
         description=(
             "Fictional ACME City registry-MDM permit demonstration. "

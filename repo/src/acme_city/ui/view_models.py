@@ -326,9 +326,9 @@ SCREEN_PERMISSIONS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "policy_run": (("policy.run.view", None),),
     "policy_briefing": (("policy.brief.view", None),),
     # The reserved screens.  No persona holds these grants yet.
-    # The case summary and the new master record have a route but no entry
-    # in the navigation table, so their grants stay here for the guard of
-    # their own screen.
+    # The case summary has a route of its own and the new master record
+    # waits for its slice, so their grants stay here for the guard of their
+    # own screen.
     "agents_home": (("agent.ops.read", None),),
     "agent_runs": (("agent.ops.read", None),),
     "agent_case": (("agent.ops.read", None),),
