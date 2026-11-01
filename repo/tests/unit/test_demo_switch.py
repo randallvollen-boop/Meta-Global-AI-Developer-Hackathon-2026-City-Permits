@@ -2,7 +2,7 @@
 
 The switcher is a demonstration control, not part of the service.  It names
 the five personas, it says who is acting now, and it sends every choice to the
-persona selector.  The help pages point at the list of personas without naming
+persona selector.  The help pages point at Demo controls without naming
 where the control sits, so the copy stays true wherever the control lives.
 """
 # REQUIRES: UX-01, PER-04
@@ -155,11 +155,12 @@ def test_the_help_pages_point_at_the_list_of_personas(client: TestClient) -> Non
     who = re.search(r'<p class="help-who"[^>]*>(.*?)</p>', how_to, re.S)
     assert who is not None, how_to[:400]
     text = re.sub(r"<[^>]+>", " ", who.group(1))
-    assert "list of personas" in text
-    assert "Demo controls" not in text
+    assert "Demo controls" in text
+    assert "list of personas" not in text
     assert "bottom left" not in text.lower()
     tutorial = client.get("/help/tutorial").text
-    assert "list of personas" in tutorial
+    assert "Demo controls" in tutorial
+    assert "list of personas" not in tutorial
     assert "bottom left" not in tutorial.lower()
 
 

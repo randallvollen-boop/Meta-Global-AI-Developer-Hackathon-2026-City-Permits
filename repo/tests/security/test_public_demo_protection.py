@@ -537,6 +537,7 @@ def test_blueprint_limits_match_the_documented_defaults() -> None:
         ("ACME_RATE_LIMIT_WRITE_PER_MINUTE", "60"),
         ("ACME_RATE_LIMIT_SESSION_PER_MINUTE", "20"),
         ("ACME_RATE_LIMIT_UPLOAD_PER_MINUTE", "20"),
+        ("ACME_MUSE_LIVE_CALLS_ALLOWED", "1"),
         ("ACME_MUSE_LIVE_CALL_CAP", "100"),
         ("ACME_MUSE_DAILY_CALL_CAP", "100"),
         ("ACME_MUSE_IMAGE_DAILY_CAP", "10"),

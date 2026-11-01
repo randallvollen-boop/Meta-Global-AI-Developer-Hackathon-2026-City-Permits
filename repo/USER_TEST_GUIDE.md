@@ -1,6 +1,6 @@
-# ACME City local user test guide
+# City of Acme local user test guide
 
-The application uses fictional ACME City records, rules, fees, payments and permits. It does not connect to a municipality or issue an official permit.
+The application uses fictional City of Acme records, rules, fees, payments and permits. It does not connect to a municipality or issue an official permit.
 
 ## Start the application
 
@@ -18,7 +18,7 @@ The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. The Perm
 The selector offers exactly five personas, in the order a permit moves through them:
 
 1. Applicant: applies for a permit on the City website and tracks it.
-2. Agent Operator: wakes the intake and adjudication agents and asks them to process waiting cases (Wake agent, then Process next 20 or Process one). Under More tools the Intake queue holds the batch action "Process selected with agent". The Agent Operator records no permit decision.
+2. Agent Operator: wakes the intake and adjudication agents and asks them to process waiting cases (Wake agent, then Process the next 20 cases or Process one). Under More tools the Intake queue holds the batch action "Process selected with agent". The Agent Operator records no permit decision.
 3. Data Steward: approves identity and parcel links and works the Data issues queue.
 4. Permit Reviewer: confirms the parcel, runs the application checks, records the review decision and issues the permit.
 5. City Administrator: assesses fees, reconciles payments, configures the app and reads the audit log.
@@ -84,7 +84,7 @@ Open **Data issues** as Data Steward (every reset puts the Cedarline comparisons
 
 ### D06 source correction
 
-Use **Master records** (People & organizations) or a Data issues case to request a correction. Inspect the destination, proposed value, evidence, affected applications and required rechecks before any transition. A correction request does not overwrite the submitted application snapshot.
+Use **Master records** (People and organizations) or a Data issues case to request a correction. Inspect the destination, proposed value, evidence, affected applications and required rechecks before any transition. A correction request does not overwrite the submitted application snapshot.
 
 ### D11 financial exceptions
 
@@ -115,7 +115,7 @@ Every reset now builds the steward demonstration, so `--mode fresh` holds the sa
 
 Choose **Agent Operator**, open **Agents**, click **Steward assistant** under **Agent status** and press **Wake agent**. Then choose **Data Steward**, open **Data issues** and press **Prepare recommendations** (up to 20 tasks per press). The rows show all three levels: **High** on the three links the source ties to one master record, **Review** on `ERP-BL-00413`, which fits two master records almost equally well, and **Held** on the conflicting issue, which only a person may settle. Each row has a one-line reason.
 
-Open the `ERP-BL-00413` task. The assistant panel shows the evidence and **Accept recommendation**, **Clear recommendation** and **Explain with Muse** (off while live Muse is off, with a note). Read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. Back on **Data issues**, **Accept all high-confidence (3)** opens the list of the three High links; **Accept these 3 recommendations** accepts exactly that list, and an item that changed in between is skipped and named. **Agreement with the assistant** then reads "N accepted unchanged of M prepared in the last 7 days".
+Open the `ERP-BL-00413` task. The assistant panel shows the evidence and **Accept recommendation**, **Clear recommendation** and **Explain with Muse** (on for the hosted demonstration, with a daily allowance of 100 calls; off while live Muse is off or that allowance is used up, with a note). Read the six questions in order, preview an action, then press **Reject match** or **Confirm link**. Back on **Data issues**, **Accept all high-confidence (3)** opens the list of the three High links; **Accept these 3 recommendations** accepts exactly that list, and an item that changed in between is skipped and named. **Agreement with the assistant** then reads "N accepted unchanged of M prepared in the last 7 days".
 
 On the hosted demo (the `ready-for-review` seed) the two Cedarline links the walkthrough approves, `PER-AP-0003` and `ERP-BL-00412`, are already decided, so Quarry Lane Imports LLC (`ERP-BL-00710`) is the High task.
 

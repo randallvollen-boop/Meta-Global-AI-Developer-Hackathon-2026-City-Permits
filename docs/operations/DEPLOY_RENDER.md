@@ -31,6 +31,7 @@ All limits count requests per minute for one client address. A setting of `0` sw
 | `ACME_RATE_LIMIT_WRITE_PER_MINUTE` | 60 | Requests that are not GET, HEAD or OPTIONS |
 | `ACME_RATE_LIMIT_SESSION_PER_MINUTE` | 20 | Persona and session switches (`/ui/actor`, `/ui/end`, `/api/session/select`, `DELETE /api/session`) |
 | `ACME_RATE_LIMIT_UPLOAD_PER_MINUTE` | 20 | Multipart (file upload) requests, except the applicant form's background check (`POST /apply/<type_key>/check`), which writes nothing and counts as a read |
+| `ACME_MUSE_LIVE_CALLS_ALLOWED` | 1 | Lets a public demo place live Muse calls. Without it, live calls stay locked |
 | `ACME_MUSE_LIVE_CALL_CAP` | 100 | Live Muse calls in total since the data was last rebuilt, across every visitor and every Muse button (see Live Muse below) |
 | `ACME_MUSE_DAILY_CALL_CAP` | 100 | Provider calls per day, shared by every path that can reach the provider |
 | `ACME_MUSE_IMAGE_DAILY_CAP` | 10 | Live Muse image calls per day |
@@ -122,6 +123,7 @@ Live Muse is on for judging, at Randall's request (2026-10-31), with at most 100
 | Setting | Value now |
 |---|---|
 | `ACME_MUSE_PROVIDER_ENABLED` | 1 |
+| `ACME_MUSE_LIVE_CALLS_ALLOWED` | 1 |
 | `ACME_APPLICANT_ASSIST_LIVE_ENABLED` | 1 |
 | `ACME_POLICY_ASSIST_LIVE_ENABLED` | 1 |
 | `ACME_MUSE_LIVE_CALL_CAP` | 100 |
@@ -154,7 +156,7 @@ Use these steps after turning it off, or on a new service.
 
 
 1. In Render, open `acme-city-permits`, then Environment, then Add Environment Variable. Add `META_API_KEY` with the key.
-2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1`. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live.
+2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1` and `ACME_MUSE_LIVE_CALLS_ALLOWED` to `1`. Without the second flag, a public demo still locks live calls. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live.
 3. Set `ACME_MUSE_LIVE_CALL_CAP` to `100`, and add `ACME_MUSE_DAILY_CALL_CAP` with the value `100`. Without the second, the daily allowance stops live calls at 10.
 4. Save. Render redeploys by itself, which also resets the live call count. Run the smoke check.
 

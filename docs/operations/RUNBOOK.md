@@ -85,8 +85,8 @@ There are two agents that people run. Both are **service identities** and neithe
 **An agent is engaged only when it is awake, and only when a person runs
 it.** After a reset both agents sleep. The Agent Operator wakes one on its
 screen (**Wake agent** / **Put agent to sleep**); until then every run is
-refused. A person then runs it: **Process one** / **Process next 20** on
-the Intake agent screen, **Process one** / **Process next 20** on the Adjudication agent
+refused. A person then runs it: **Process one** / **Process the next 20 cases** on
+the Intake agent screen, **Process one** / **Process the next 20 cases** on the Adjudication agent
 screen, or **Re-run intake agent** / **Re-run adjudication** on the permit
 workspace. The same rules apply to a re-run.
 
@@ -151,11 +151,11 @@ the audit trail.
 |---|---|---|---|
 | City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
 | Agent Operator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
-| Agent Operator | Intake agent | Process one / Process next 20 | The seven-node intake graph runs; the case is routed |
+| Agent Operator | Intake agent | Process one / Process the next 20 cases | The seven-node intake graph runs; the case is routed |
 | Agent Operator | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved or stay unapproved; proposals remain evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
-| Agent Operator | Adjudication agent | Process one / Process next 20 | The five-node adjudication graph runs and leaves a pending recommendation |
+| Agent Operator | Adjudication agent | Process one / Process the next 20 cases | The five-node adjudication graph runs and leaves a pending recommendation |
 | Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
 | Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
 | Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision with a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
@@ -171,7 +171,7 @@ screen is also a 403). Order and labels are canonical for everyone.
 
 | Persona | Screens |
 |---|---|
-| Applicant | Work queue, People & organizations, Permit workspace, and the City of Acme website |
+| Applicant | Work queue, People and organizations, Permit workspace, and the City of Acme website |
 | Agent Operator | Agents (home), Intake agent, Adjudication agent and Agent runs in the bar; the Intake queue under More tools |
 | Data Steward | Data issues (home), Master records, Source records and Activity in the bar; Work queue, Permit workspace, Rules and fees, Intake queue, Early resolution and Steward automation under More tools |
 | Permit Reviewer | Work queue, Permit workspace and Review queue |
@@ -798,12 +798,12 @@ sequenceDiagram
     P->>I: stage raw, create application + revision + documents
     I->>I: wait as "Awaiting intake agent"
     A->>I: wake the intake agent
-    A->>I: Process next 20 (seven-node graph; the locator corrects the address and proposes the parcel)
+    A->>I: Process the next 20 cases (seven-node graph; the locator corrects the address and proposes the parcel)
     I->>I: route to ready_for_review with the review area
     S->>I: approve identity links, the parcel link and extracted values
     A->>J: wake the adjudication agent
     R->>R: confirm the parcel (Is this the right property?)
-    A->>J: Process next 20 (five-node graph)
+    A->>J: Process the next 20 cases (five-node graph)
     J->>J: recommendation pending (for example deny, DF-1), advisory
     R->>J: Confirm (decision of record) or Revert (reason required)
     M->>I: assess fee, import payment, allocate, reconcile (exact)

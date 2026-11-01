@@ -100,16 +100,17 @@ first entry of the City website menu.
 - As an Agent Operator, I want to run the intake agent when it is awake, so
   that incoming cases are processed the way the City decided they should be.
   - Acceptance: **Intake agent** shows whether the agent is awake; **Process
-    next 20** and **Process one** are disabled while it sleeps ("The agent is
+    the next 20 cases** and **Process one** are disabled while it sleeps ("The agent is
     asleep, so the run buttons are off. Use Wake agent above to turn them on.");
-    the seven-step run is recorded and **All runs**, then **View run**, shows
-    each step. The page updates in place after each action.
+    the seven-step run is recorded. Open **Agent runs** and press **View run**.
+    **All runs**, **Processing** and **Engine** are under **More details** on the agent screen.
+    The page updates in place after each action.
 - As an Agent Operator, I want to run the adjudication agent on the cases in
   review, so that each has a deterministic recommendation before a reviewer
   looks at it.
-  - Acceptance: **Adjudication agent** runs **Process next 20** or **Process
-    one** and the five-step run is recorded; the recommendation waits for a
-    person. I record no permit decision.
+  - Acceptance: **Adjudication agent** runs **Process the next 20 cases** or **Process
+    one** and the five-step run is recorded; the recommendation waits under
+    **Waiting for a person**. I record no permit decision.
 - As an Agent Operator, I want to wake and sleep the steward assistant, so
   that the Data Steward can ask it for recommendations only when the City
   allows it.
@@ -170,8 +171,9 @@ first entry of the City website menu.
 - As a Data Steward, I want Muse to explain a recommendation in plain words,
   so that its reason is easy to read.
   - Acceptance: **Explain with Muse** rewrites the reason and never changes
-    the decision or its certainty. While live Muse is off the button is off
-    and the note beside it says so; the assistant's reason stands.
+    the decision or its certainty. On the hosted demonstration live Muse is on,
+    with a daily allowance of 100 calls. While live Muse is off, or that allowance
+    is used up, the button is off and the note beside it says so; the assistant's reason stands.
 - As a Data Steward, I want the navigation to hide screens outside my grants,
   so that the menu lists only screens the server allows.
   - Acceptance: Steward navigation lists Data issues, Master records, Source
@@ -196,10 +198,14 @@ first entry of the City website menu.
     confirms or reverts. Nothing is final until confirmed."
 - As a Permit Reviewer, I want to confirm or revert the recommendation, so
   that my judgment is the decision of record.
-  - Acceptance: **Confirm** records the decision through the normal decision
-    service with me as the decider of record; **Revert** needs a reason and
-    returns the case to manual review. A held recommendation cannot be
-    confirmed.
+  - Acceptance: after the adjudication agent has left a recommendation, the card
+    offers **Confirm the recommendation** (button **Confirm**) and **Revert the
+    recommendation** (button **Revert**). **Confirm** records the decision through
+    the normal decision service with me as the decider of record; **Revert** needs
+    a reason and returns the case to manual review. A held recommendation cannot be
+    confirmed. When no recommendation is waiting, **Record review decision** records
+    the outcome **Approve**, the **Rationale (internal record)** and **Record the
+    decision**. The walkthrough uses that path, and it does not require the recommendation.
 - As a Permit Reviewer, I want issuance to stay a separate action, so that an
   approval never issues by itself.
   - Acceptance: **Issue permit** requires a current approved decision, valid
@@ -233,7 +239,7 @@ first entry of the City website menu.
     and make the permit decisions." **Administration** → **Users and roles**
     shows the table "Role permissions" with the column "Can wake and run
     agents" and **Save role permissions**. The Administrator has no **Wake
-    agent** or **Process next 20** button: the agent screens return 403 for
+    agent** or **Process the next 20 cases** button: the agent screens return 403 for
     this persona.
 - As a City Administrator, I want to simulate incoming permits from the
   outside portal, so that I can watch data arrive and wait for the agent.

@@ -31,8 +31,9 @@ def test_the_tutorial_names_the_labels_the_screens_show() -> None:
     assert "Run what-if" not in steps
     assert "Read briefing" in steps
     assert "Try recorded Muse briefing" in steps
-    assert "Write the briefing with Muse" not in steps
-    assert 'label "Recorded Muse briefing"' in steps
+    assert "Write the briefing with Muse" in steps
+    assert "Recorded Muse briefing" in steps
+    assert "Muse briefing (live)" in steps
     assert "Legislator briefing" not in steps
 
 
@@ -46,7 +47,9 @@ def test_the_what_if_guide_names_the_labels_the_screens_show() -> None:
     assert "Or start empty" not in steps
     assert "Read briefing" in steps
     assert "Try recorded Muse briefing" in steps
-    assert "Write the briefing with Muse" not in steps
+    assert "Write the briefing with Muse" in steps
+    assert "Recorded Muse briefing" in steps
+    assert "Muse briefing (live)" in steps
     assert "Download HTML" in steps
     assert "Download Markdown" in steps
     assert "Download (HTML)" not in steps

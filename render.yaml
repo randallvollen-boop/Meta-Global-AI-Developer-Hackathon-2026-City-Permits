@@ -54,6 +54,8 @@ services:
       # Live Muse is on for judging, capped per day (DEPLOY_RENDER.md).
       - key: ACME_MUSE_PROVIDER_ENABLED
         value: "1"
+      - key: ACME_MUSE_LIVE_CALLS_ALLOWED
+        value: "1"
       - key: META_API_KEY
         sync: false
       - key: ACME_MUSE_LIVE_CALL_CAP

@@ -57,29 +57,28 @@ Both cases now wait. Nothing has been triaged.
    **Adjudication agent** and **Agent runs**, and under More tools the
    **Intake queue**, where a selected batch is processed with the agent. The
    **Agents** page shows both agents as **asleep** and 2 cases waiting.
-2. Click **Intake agent**. The state reads **asleep**, **Process next 20** is
+2. Click **Intake agent**. The state reads **asleep**, **Process the next 20 cases** is
    disabled, and the page says "The agent is asleep, so the run buttons are
    off. Use Wake agent above to turn them on."
 3. Press **Wake agent**. The state reads **awake**, the
-   button becomes **Put agent to sleep**, and "At a glance" shows **Waiting 2**,
-   **Processed 0**, **Needs human 0**, **Errors 0**. Under "Cases waiting for
-   the agent" the table lists `SYN-APP-014` and `SYN-APP-015`, each with a
+   button becomes **Put agent to sleep**, and under **More details** the counts show **Waiting 2**,
+   **Processed 0**, **Needs human 0**, **Errors 0**. Under **Waiting work**
+   the table lists `SYN-APP-014` and `SYN-APP-015`, each with a
    **Process one** button.
-4. Press **Show the processing steps**. The diagram shows the seven steps:
+4. The step diagram on the page shows the seven steps:
    Classifier, Field extractor, Document QC (quality check), Address locator,
-   Completeness, Duplicate finder and Router. The page says "Each group waits
-   for the group before it. The steps of one group run one after the other."
+   Completeness, Duplicate finder and Router. The page says "Steps run left to right; each column waits for the one before it."
 5. The other personas do not see these screens in their navigation. Data
    Steward and City Administrator get a 403 on `/agent/intake`, and so does the
    Permit Reviewer.
 
 ## 4. As Agent Operator, run the intake agent
 
-1. Press **Process next 20** (or **Process one** beside each case).
-   "At a glance" now shows **Waiting 0**, **Processed 2**, **Needs human 0**,
-   **Errors 0**, and "Recent results" lists one run for each case with the
+1. Press **Process the next 20 cases** (or **Process one** beside each case).
+   Under **More details** the counts now show **Waiting 0**, **Processed 2**, **Needs human 0**,
+   **Errors 0**, and **Recent results** lists one run for each case with the
    result **Completed** and "7 step(s)".
-2. Press **All runs**, then **View run** on the row for `SYN-APP-014`. The
+2. Open **Agent runs** and press **View run** on the row for `SYN-APP-014`. **All runs** under **More details** opens the same list. The
    run detail lists the seven steps, each **ok**: Classifier, Field extractor,
    Document QC, Address locator, Completeness, Duplicate finder and Router. The
    Router line reads "Ready for review in the Building area."
@@ -114,15 +113,15 @@ Both cases now wait. Nothing has been triaged.
 ## 6. As Agent Operator, wake the adjudication agent
 
 1. Switch to **Agent Operator** and open **Adjudication agent**.
-2. Press **Wake agent**. The state reads **awake**. "At a glance"
-   shows **In review 2**, **Recommended 0**, **Awaiting confirmation 0**,
+2. Press **Wake agent**. The state reads **awake**. Under **More details** the counts
+   show **In review 2**, **Recommended 0**, **Awaiting confirmation 0**,
    **Held for a person 0**.
-3. Press **Show the processing steps**. The diagram shows the five steps: Rule
+3. The step diagram on the page shows the five steps: Rule
    loader, Rule evaluator, Condition builder, Precedent check and Disposition.
 
 ## 7. As Agent Operator, run the adjudication agent
 
-1. Press **Process next 20**. "At a glance" shows **In review 2**,
+1. Press **Process the next 20 cases**. Under **More details** the counts show **In review 2**,
    **Recommended 2**, **Awaiting confirmation 2**, **Held for a person 0**.
    "Waiting for a person" lists `SYN-APP-015` with **approve** and
    `SYN-APP-014` with **deny**.

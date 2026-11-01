@@ -1,4 +1,4 @@
-# ACME City Permits: judge walkthrough
+# City of Acme permits: judge walkthrough
 
 Nine steps, about ten minutes. Every record in the app is fictional, and the app issues no real permit.
 
@@ -31,21 +31,21 @@ As **Applicant**, open `/apply`.
 
 As **Agent Operator**, open `/agent/intake`.
 
-- Do: Press Wake agent. The page shows it awake straight away. Then press Process next 20, or Process one beside your case. Open All runs, and press View run on the row for your case. Then go back to Agents, click Steward assistant under Agent status, and press Wake agent there too, so the Data Steward can ask it for recommendations.
+- Do: Press Wake agent. The page shows it awake straight away. Then press Process the next 20 cases, or Process one beside your case. Open Agent runs in the left menu and press View run on the row for your case. Under More details on the agent screen, All runs opens the same list, and Processing and Engine are listed there. Then go back to Agents, click Steward assistant under Agent status, and press Wake agent there too, so the Data Steward can ask it for recommendations.
 - Look for: The run shows Completed, and its Router line under Processing steps says Ready for review in the Building area. A case with a blocking finding, such as a missing document, goes to early resolution instead, and the Router line gives that reason.
 
 ## 5. Clear a case for review
 
 As **Data Steward**, open `/steward`.
 
-- Do: In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a decision note and submit it. Then open the Check the person identity issue from the ACME ePermit Portal source, press Start under Confirm link to Demo Applicant, write a decision note and submit it.
+- Do: In Data issues, press Prepare recommendations. The steward assistant gives each task it works on (up to 20 per press) a High, Review or Held pill and a one-line reason. Open the Check the property issue that names your case reference. Press Start under Approve parcel link for that reference, write a Decision note and submit it. Then open the Check the person identity issue from ACME ePermit Portal (simulated), press Start under Confirm link to Demo Applicant, write a Decision note and submit it.
 - Look for: The assistant only proposes: Accept recommendation and Accept all high-confidence (N), which shows the exact list first, record the decision in your name. Without these two approvals the Permit Reviewer cannot approve the case: the decision is refused with the blockers parcel_link_unapproved and identity_link_unapproved. A case that arrives with a blocking finding, such as a second application with a missing document, waits in Early resolution instead (/queue/early-resolution). There Advance to review is off until the finding is cleared, and Return to the applicant is the other way out.
 
 ## 6. Decide a case
 
 As **Permit Reviewer**, open `/queue/review`.
 
-- Do: Open your case from step 3 in the Review queue. On the People & property tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write a rationale and submit it. Then try Issue permit.
+- Do: Open your case from step 3 in the Review queue. On the People and organizations tab, press Start under Confirm parcel and submit it. The page updates in place and keeps your tab. On the Review tab, press Start under Run application checks and submit it: the rule results appear and the decision form is offered. Press Start under Record review decision, choose Approve, write the Rationale (internal record) and press Record the decision. Then try Issue permit.
 - Look for: Deciding and issuing are separate. After the approval, Issue permit is refused (the permit may not be issued yet) until the fee is assessed, paid and reconciled on the Reconciliation screen, so a refusal is expected.
 
 ## 7. Check the record of the decision
