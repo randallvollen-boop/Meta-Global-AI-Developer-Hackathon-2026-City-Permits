@@ -45,7 +45,7 @@
       "path": "/queue/review",
       "target": "[data-testid=\"review-table\"]",
       "permission": "permit.decide",
-      "caption": "The Review queue holds the cases with the reviewer and the recommendation of each one. Open a case, run the application checks, and record the decision with its reason. Issue permit is refused until the fee is assessed, paid and reconciled."
+      "caption": "The Review queue lists each case with its reviewer and recommendation. Open a case, run the application checks, and record the decision with its reason. Issue permit waits until the fee is assessed, paid and reconciled."
     },
     {
       "id": "audit",
