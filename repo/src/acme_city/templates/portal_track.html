@@ -93,7 +93,7 @@
 
 {% block toasts %}
 {% if saved %}<div class="toast on city-toast" role="status" data-testid="draft-saved">Your draft {{ saved }} was saved.</div>
-{% elif revised %}<div class="toast on city-toast" role="status" data-testid="revised-notice">{{ revised }} revised document(s) received. The City will review them.</div>
+{% elif revised %}<div class="toast on city-toast" role="status" data-testid="revised-notice">{{ revised|int }} revised document{{ '' if revised|int == 1 else 's' }} received. The City will review them.</div>
 {% elif resubmitted %}<div class="toast on city-toast" role="status" data-testid="resubmitted-notice">Your response was sent to the City. The application is back with the City to check again.</div>{% endif %}
 {% endblock %}
 

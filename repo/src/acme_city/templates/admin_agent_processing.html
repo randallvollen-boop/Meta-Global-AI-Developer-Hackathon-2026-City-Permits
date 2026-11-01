@@ -46,9 +46,9 @@
       <p class="muted" data-testid="admin-worker-note">{{ agent_processing.worker_note }}</p>
       <p class="muted" data-testid="admin-eligible-count">
         {% if agent_processing.automatic %}
-        {{ agent_processing.eligible_count }} eligible case(s) will be scheduled once the intake agent is awake.
+        {{ agent_processing.eligible_count }} eligible case{{ '' if agent_processing.eligible_count == 1 else 's' }} will be scheduled once the intake agent is awake.
         {% else %}
-        {{ agent_processing.eligible_count }} eligible case(s) are waiting for the intake agent.
+        {{ agent_processing.eligible_count }} eligible case{{ '' if agent_processing.eligible_count == 1 else 's' }} are waiting for the intake agent.
         {% endif %}
       </p>
     </div>

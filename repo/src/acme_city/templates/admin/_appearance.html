@@ -20,7 +20,7 @@
 
     {% for type in admin.permit_type_icons.types %}
     <article class="adm-icon-type" data-testid="permit-type-icon-row" data-permit-type="{{ type.permit_type_key }}" data-icon-panel>
-      <h3 class="adm-icon-title">{{ type.label }} <span class="ref">{{ type.permit_type_key }}</span></h3>
+      <h3 class="adm-icon-title">{{ type.label }}</h3>
 
       {# The icon the City shows today, with the source it was saved from. #}
       <div class="adm-icon-current">
