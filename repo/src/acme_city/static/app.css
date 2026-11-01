@@ -975,7 +975,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
    hover text and the accessible description of the card. */
 .persona-cards { list-style: none; padding-left: 0; display: grid; gap: 0.75rem; font-size: 0.92rem; }
 @media (min-width: 720px) { .persona-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .persona-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .persona-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .persona-card {
   display: grid; gap: 0.4rem; justify-items: start; align-content: start; min-width: 0;
   border: 1px solid var(--line); border-radius: var(--radius);
@@ -983,7 +983,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 }
 .persona-icon { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 .persona-text { display: grid; gap: 0.35rem; min-width: 0; }
-.persona-name { font-size: 1.05rem; margin: 0; }
+.persona-name { font-size: 1.05rem; margin: 0; min-height: 3em; }
 .persona-text p { margin: 0; }
 .persona-text form { margin-top: 0.25rem; }
 

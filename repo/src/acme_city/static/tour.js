@@ -93,7 +93,7 @@
       '  <h2 class="tour-title" data-testid="tour-title"></h2>',
       '  <p class="tour-caption" data-testid="tour-caption"></p>',
       '  <p class="tour-warning" data-testid="tour-warning" hidden></p>',
-      '  <p class="tour-note" data-testid="tour-note" hidden></p>',
+      '  <p class="tour-note" id="tour-note" data-testid="tour-note" hidden></p>',
       '  <div class="tour-controls">',
       '    <button type="button" class="btn sm" data-tour-back data-testid="tour-back">Back</button>',
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',

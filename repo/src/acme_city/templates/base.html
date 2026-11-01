@@ -163,7 +163,8 @@
             <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
             <input type="hidden" name="next" value="{{ persona.next }}">
             <button type="submit" class="button btn" value="{{ persona.actor_id }}" data-persona="{{ persona.actor_id }}"
-                    aria-describedby="persona-who-{{ persona.actor_id }} persona-does-{{ persona.actor_id }} persona-start-{{ persona.actor_id }}">Continue as {{ persona.label }}</button>
+                    aria-label="Continue as {{ persona.label }}"
+                    aria-describedby="persona-who-{{ persona.actor_id }} persona-does-{{ persona.actor_id }} persona-start-{{ persona.actor_id }}">Continue</button>
           </form>
         </div>
       </li>

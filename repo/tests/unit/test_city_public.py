@@ -65,7 +65,8 @@ def test_a_search_by_street_name_returns_cards_that_open_a_record(searched: str)
     assert cards is not None, "the search returned cards"
     hrefs = re.findall(r'href="(/city/community/permit/[^"]+)"', cards.group(1))
     assert hrefs, "a card links to its record"
-    assert 'data-testid="community-card"' in cards.group(1) or "community-card" in cards.group(1)
+    assert 'class="community-card"' in cards.group(1)
+    assert 'class="community-card-link"' in cards.group(1)
 
 
 def test_the_record_of_a_card_shows_the_permit_the_parcel_and_the_outcome(

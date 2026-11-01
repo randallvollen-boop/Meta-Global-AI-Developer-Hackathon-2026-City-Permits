@@ -99,7 +99,8 @@ def test_every_card_carries_its_hover_text_and_its_description(landing: str) -> 
 def test_the_card_names_the_persona_and_the_button_says_it(landing: str) -> None:
     for actor_id, label, _ in PERSONAS:
         assert f'<h2 class="persona-name">{label}</h2>' in landing, label
-        assert f">Continue as {label}</button>" in landing, label
+        assert f'aria-label="Continue as {label}"' in landing, label
+        assert ">Continue</button>" in landing, label
 
 
 def test_every_persona_posts_its_own_start_screen(landing: str) -> None:

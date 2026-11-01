@@ -7,6 +7,7 @@ loaded until the card is opened.
 
 from __future__ import annotations
 
+import pytest
 from conftest import BrowserServer
 
 #: The five personas and the screen each one lands on.
@@ -22,16 +23,33 @@ PERSONAS = (
 def test_the_five_personas_are_in_one_row_inside_the_first_viewport(page, server: BrowserServer) -> None:
     page.set_viewport_size({"width": 1280, "height": 800})
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    cards = page.locator('[data-testid="persona-card"]')
     buttons = page.locator('[data-testid="persona-card"] button[data-persona]')
     assert buttons.count() == 5
     tops = []
     for index in range(buttons.count()):
+        card = cards.nth(index).bounding_box()
         box = buttons.nth(index).bounding_box()
-        assert box is not None
-        tops.append(round(box["y"]))
+        assert card is not None and box is not None
+        tops.append(round(card["y"]))
         assert box["y"] >= 0, "the button is above the fold"
         assert box["y"] + box["height"] <= 800, "the button needs a scroll to be seen"
     assert len(set(tops)) == 1, f"the cards are not in one row: {tops}"
+    assert page.recorded_errors == []
+
+
+@pytest.mark.parametrize("width", (1100, 1280, 1440))
+def test_every_persona_button_fits_inside_its_card(page, server: BrowserServer, width: int) -> None:
+    """The button of a card never reaches into the next card."""
+    page.set_viewport_size({"width": width, "height": 900})
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    cards = page.locator('[data-testid="persona-card"]')
+    for index in range(cards.count()):
+        card = cards.nth(index).bounding_box()
+        button = cards.nth(index).locator("button[data-persona]").bounding_box()
+        assert card is not None and button is not None
+        assert button["x"] >= card["x"] - 1, (width, index)
+        assert button["x"] + button["width"] <= card["x"] + card["width"] + 1, (width, index)
     assert page.recorded_errors == []
 
 
