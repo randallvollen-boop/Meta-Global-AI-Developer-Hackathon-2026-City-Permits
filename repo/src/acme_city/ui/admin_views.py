@@ -1820,6 +1820,10 @@ def governance_screen(
             domain["default_source_system_id"] or "", "Not declared"
         )
     domain_labels = {row["domain_id"]: row["domain_label"] for row in domains}
+    for queue in queues:
+        queue["domain_label"] = domain_labels.get(
+            queue["domain_id"], admin_b_labels.identifier_label(queue["domain_id"])
+        )
     assignments = [
         view.model_dump(mode="json") for view in service.current_assignments()
     ]
