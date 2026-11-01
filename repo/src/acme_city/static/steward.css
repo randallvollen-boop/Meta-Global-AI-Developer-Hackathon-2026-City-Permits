@@ -58,8 +58,8 @@ body[data-screen="early_resolution"] .data-table thead th {
    filter disclosure, the saved views and one row per case.  The next step
    of a case reads before the detailed signals. */
 .stw-panel { margin-bottom: 16px; }
-.stw-cell-next { font-size: .82rem; }
-.stw-cell-signals { font-size: .78rem; }
+.stw-cell-next { font-size: 0.875rem; }
+.stw-cell-signals { font-size: 0.875rem; }
 .stw-cell-signals .badge { margin-right: 2px; }
 .stw-cell-select { width: 1%; }
 
@@ -141,7 +141,7 @@ body[data-screen="early_resolution"] .data-table thead th {
   body[data-screen="steward"] .stw-cell-source::before,
   body[data-screen="steward"] .stw-cell-master::before {
     content: attr(data-label); display: block; color: var(--fg-3);
-    font-size: .72rem;
+    font-size: 0.875rem;
   }
   body[data-screen="steward"] .stw-cell-result { margin-top: 4px; }
   body[data-screen="steward"] .stw-case-facts { grid-template-columns: 1fr; gap: 1px; }
@@ -158,11 +158,11 @@ body[data-screen="early_resolution"] .data-table thead th {
     border-radius: var(--r-md); background: var(--surface);
   }
   body[data-screen="steward"] .stw-cell {
-    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+    padding: 2px 0; border: 0; text-align: left; font-size: 0.875rem;
   }
   body[data-screen="steward"] .stw-cell::before {
     content: attr(data-label); display: inline-block; min-width: 9.5em;
-    color: var(--fg-3); font-size: .72rem;
+    color: var(--fg-3); font-size: 0.875rem;
   }
   body[data-screen="steward"] .stw-cell-task { margin-bottom: 2px; font-size: .92rem; }
   body[data-screen="steward"] .stw-cell-task::before { content: none; }
@@ -184,11 +184,11 @@ body[data-screen="early_resolution"] .data-table thead th {
     border-radius: var(--r-md); background: var(--surface);
   }
   body[data-screen="source_records"] .stw-source-table .stw-cell {
-    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+    padding: 2px 0; border: 0; text-align: left; font-size: 0.875rem;
   }
   body[data-screen="source_records"] .stw-source-table .stw-cell::before {
     content: attr(data-label); display: inline-block; min-width: 9.5em;
-    color: var(--fg-3); font-size: .72rem;
+    color: var(--fg-3); font-size: 0.875rem;
   }
   body[data-screen="source_records"] .stw-source-table .stw-cell-record::before { content: none; }
   body[data-screen="source_records"] .stw-source-table .stw-cell-action { margin-top: 8px; }
@@ -239,12 +239,12 @@ body[data-screen="early_resolution"] .data-table thead th {
   }
   body[data-screen="intake_queue"] .stw-cell,
   body[data-screen="early_resolution"] .stw-cell {
-    padding: 2px 0; border: 0; text-align: left; font-size: .82rem;
+    padding: 2px 0; border: 0; text-align: left; font-size: 0.875rem;
   }
   body[data-screen="intake_queue"] .stw-cell::before,
   body[data-screen="early_resolution"] .stw-cell::before {
     content: attr(data-label); display: inline-block; min-width: 9.5em;
-    color: var(--fg-3); font-size: .72rem;
+    color: var(--fg-3); font-size: 0.875rem;
   }
   body[data-screen="intake_queue"] .stw-cell-record::before,
   body[data-screen="early_resolution"] .stw-cell-record::before { content: none; }
@@ -268,7 +268,7 @@ body[data-screen="early_resolution"] .data-table thead th {
     border-radius: var(--r-md); background: var(--surface);
   }
   body[data-screen="activity"] .stw-cell {
-    padding: 2px 0; border: 0; text-align: left; font-size: .84rem;
+    padding: 2px 0; border: 0; text-align: left; font-size: 0.875rem;
   }
   body[data-screen="activity"] .stw-cell-change { order: 1; }
   body[data-screen="activity"] .stw-cell-result { order: 2; margin: 4px 0; }

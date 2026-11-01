@@ -99,10 +99,10 @@
 /* Tables.  The page never scrolls sideways: a table that is wider than the
    screen scrolls inside its own labelled region. */
 .admin-b .tbl-wrap { max-width: 100%; overflow-x: auto; }
-.admin-b .data-table { font-size: .82rem; }
+.admin-b .data-table { font-size: 0.875rem; }
 .admin-b .data-table th,
 .admin-b .data-table td { overflow-wrap: anywhere; }
-.admin-b .data-table caption { text-align: left; color: var(--fg-2); font-size: .8rem; padding-bottom: .3rem; }
+.admin-b .data-table caption { text-align: left; color: var(--fg-2); font-size: 0.875rem; padding-bottom: .3rem; }
 
 /* Forms.  A control never leaves the width of the screen and a long label
    wraps instead of pushing the page sideways. */
@@ -115,7 +115,7 @@
 .admin-b .button { white-space: normal; text-align: left; max-width: 100%; }
 .admin-b .inline-form { display: inline-block; max-width: 100%; }
 .admin-b fieldset { border: 1px solid var(--line); border-radius: 6px; margin: .5rem 0; min-width: 0; }
-.admin-b .lock { flex-direction: column; align-items: flex-start; font-size: .82rem; color: var(--fg-2); margin-top: .4rem; }
+.admin-b .lock { flex-direction: column; align-items: flex-start; font-size: 0.875rem; color: var(--fg-2); margin-top: .4rem; }
 .admin-b .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: .6rem .8rem; border-radius: 6px; }
 
 /* The run settings.  The population and the number of cases come first, the

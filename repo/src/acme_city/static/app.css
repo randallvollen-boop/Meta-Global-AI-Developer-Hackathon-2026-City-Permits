@@ -46,6 +46,41 @@
   --denied: var(--bad);
   --accepted: var(--ok);
   --radius: var(--r-md);
+  /* Stacking scale, lowest first. One list for the whole interface: a
+     layer paints above every layer listed before it. The open persona
+     menu is last, so on a phone or a tablet it stays above a toast, the
+     help chat sheet, a detail drawer and the guided tour.
+       2  --z-sticky-bar     an in-page sticky bar
+      20  --z-header         the sticky top bar, while the menu is closed
+      25  --z-mobile-nav     the bottom bar
+      26  --z-nav-more       the More tools panel
+      40  --z-toast          a toast
+      45  --z-city-toast     a City toast
+      50  --z-scrim          a modal scrim
+      58  --z-help-launcher  the Ask launcher
+      59  --z-help-sheet     the help chat sheet
+      60  --z-drawer         a detail drawer, and the skip link
+      70  --z-popover        an information popover
+      80  --z-tour           the guided tour
+      90  --z-persona-menu   the open persona menu
+     The top bar is its own stacking context (it is sticky, and the blur
+     holds the menu in). While the menu is open the bar takes
+     --z-persona-menu, which is what lets the menu paint above the layers
+     that live outside the bar. A focused skip link on the City website
+     uses 100 and stays off the screen until it is focused. */
+  --z-sticky-bar: 2;
+  --z-header: 20;
+  --z-mobile-nav: 25;
+  --z-nav-more: 26;
+  --z-toast: 40;
+  --z-city-toast: 45;
+  --z-scrim: 50;
+  --z-help-launcher: 58;
+  --z-help-sheet: 59;
+  --z-drawer: 60;
+  --z-popover: 70;
+  --z-tour: 80;
+  --z-persona-menu: 90;
 }
 /* The setting of the device is never followed: the interface is light
    everywhere unless the reader asks for the dark mode of the staff frame. */
@@ -78,7 +113,7 @@ p { margin: 0.35rem 0; }
 button { font: inherit; color: inherit; }
 .mono { font-family: var(--f-mono); font-size: .86em; }
 .num { font-variant-numeric: tabular-nums; }
-.muted { color: var(--fg-2); font-size: .86rem; }
+.muted { color: var(--fg-2); font-size: 0.875rem; }
 .faint { color: var(--fg-3); }
 
 .visually-hidden {
@@ -87,7 +122,7 @@ button { font: inherit; color: inherit; }
 }
 .skip-link {
   position: absolute; left: -999px; top: 0; background: var(--panel);
-  padding: 0.5rem 0.8rem; border: 2px solid var(--accent); z-index: 60;
+  padding: 0.5rem 0.8rem; border: 2px solid var(--accent); z-index: var(--z-drawer);
 }
 .skip-link:focus { left: 0.5rem; top: 0.5rem; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
@@ -146,14 +181,21 @@ button { font: inherit; color: inherit; }
 
 .main { min-width: 0; display: flex; flex-direction: column; }
 .top {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: var(--z-header);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 22px;
 }
+/* The open menu has to leave the bar's stacking context, or a drawer, the
+   chat sheet or the tour paints over it. The bar takes the menu's layer
+   only while the menu is open. */
+.top:has(.account-menu[open]) {
+  z-index: var(--z-persona-menu);
+  overflow: visible;
+}
 .crumbs { display: flex; gap: 6px; align-items: center; font-size: .82rem; color: var(--fg-3); min-width: 0; }
 .crumbs b { color: var(--fg); font-weight: 600; }
-.top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; }
 .seg {
   display: inline-flex; background: var(--surface-2); border: 1px solid var(--line);
   border-radius: 99px; padding: 3px; gap: 2px; align-items: center;
@@ -276,7 +318,7 @@ main { padding-top: 0.9rem; }
 
 /* Table */
 .tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 th {
   text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .07em;
   color: var(--fg-3); font-weight: 600; padding: 10px 12px;
@@ -313,7 +355,7 @@ tr:last-child td { border-bottom: 0; }
 .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
 /* Legacy data-table keeps its test-targeted class, styled as the mockup table */
-.data-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.6rem; font-size: .84rem; }
+.data-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.6rem; font-size: 0.875rem; }
 .panel { overflow-x: auto; }
 section.panel, .card { min-width: 0; }
 main > *, .ws-main > * { min-width: 0; }
@@ -326,7 +368,7 @@ main > *, .ws-main > * { min-width: 0; }
   color: var(--fg-3); font-weight: 600; border-bottom: 1px solid var(--line);
 }
 .tbl-wrap .data-table thead th { white-space: nowrap; }
-.data-table tbody th { font-size: .84rem; color: var(--fg); font-weight: 600; }
+.data-table tbody th { font-size: 0.875rem; color: var(--fg); font-weight: 600; }
 
 /* Case progress pipeline */
 .pipe { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 0; position: relative; }
@@ -418,7 +460,7 @@ main > *, .ws-main > * { min-width: 0; }
 .agent-dag-note { margin: 0; }
 .agent-dag .rnode::after { display: none; }
 .agent-dag-arrow { flex: 0 0 auto; align-self: center; color: var(--fg-3); font-size: 1.1rem; }
-.agent-dag-legend { margin: 0.5rem 0 0; font-size: .72rem; color: var(--fg-3); }
+.agent-dag-legend { margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--fg-3); }
 .agent-dag-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 /* The clear state is the one the run strip already has; the other states
    are named here, and every state names itself in words as well. */
@@ -494,7 +536,7 @@ main > *, .ws-main > * { min-width: 0; }
 .act-row .go { margin-left: auto; }
 .act-row.denied { background: var(--surface-2); }
 .act-row.denied .t { color: var(--fg-2); }
-.lock { font-size: .7rem; color: var(--fg-3); display: flex; gap: 5px; align-items: center; }
+.lock { font-size: 0.875rem; color: var(--fg-3); display: flex; gap: 5px; align-items: center; }
 .lock svg { width: 12px; height: 12px; }
 .writes { font: 500 .68rem var(--f-mono); color: var(--fg-3); }
 
@@ -597,14 +639,14 @@ details.action:not([open]) > .action-version { }
 .alloc i { background: var(--ok); display: block; height: 100%; }
 
 .notice {
-  display: flex; gap: 10px; align-items: center; font-size: .76rem; color: var(--fg-2);
+  display: flex; gap: 10px; align-items: center; font-size: 0.875rem; color: var(--fg-2);
   padding: 8px 12px; border-radius: 99px; background: var(--surface-2); width: fit-content; max-width: 100%;
 }
 .notice svg { width: 14px; height: 14px; flex: none; }
 .toast {
   position: fixed; right: 18px; top: 64px; max-width: calc(100vw - 36px); background: var(--fg); color: var(--bg);
   padding: 10px 14px; border-radius: 12px; font-size: .82rem; font-weight: 500;
-  box-shadow: var(--shadow); display: flex; gap: 8px; align-items: center; z-index: 40;
+  box-shadow: var(--shadow); display: flex; gap: 8px; align-items: center; z-index: var(--z-toast);
   transform: translateY(-12px); opacity: 0; transition: .2s ease; pointer-events: none;
 }
 .toast.on { transform: none; opacity: 1; }
@@ -616,7 +658,7 @@ details.action:not([open]) > .action-version { }
 .type-ic.line { display: grid; place-items: center; background: var(--surface-2); color: var(--fg-3); }
 .type-ic.line svg { width: 16px; height: 16px; }
 .scrim {
-  position: fixed; inset: 0; z-index: 50;
+  position: fixed; inset: 0; z-index: var(--z-scrim);
   background: color-mix(in srgb, var(--fg) 38%, transparent);
   display: grid; place-items: center; padding: 16px;
 }
@@ -717,7 +759,7 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
   .shell { grid-template-columns: minmax(0,1fr); }
   .side { display: none; }
   .mobile-nav {
-    display: flex; position: fixed; inset: auto 0 0; z-index: 25; background: var(--surface);
+    display: flex; position: fixed; inset: auto 0 0; z-index: var(--z-mobile-nav); background: var(--surface);
     border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
     overflow-x: auto; gap: 2px;
   }
@@ -740,13 +782,13 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
   .run { grid-template-columns: minmax(0,1fr); }
   .facts, .facts-grid { grid-template-columns: minmax(0,1fr); }
   .crumbs { display: none; }
-  .top { flex-wrap: nowrap; overflow-x: auto; }
+  .top { flex-wrap: nowrap; overflow: visible; }
   .seg { flex: none; }
   .seg-btn .lbl-long { display: none; }
   .seg-btn { padding: 4px 7px; }
   body { font-size: 14px; }
   main { padding: 0.6rem; padding-bottom: 96px; }
-  .data-table { font-size: 0.8rem; }
+  .data-table { font-size: 0.875rem; }
   .data-table th, .data-table td { padding: 0.25rem 0.3rem; }
   .field { flex-basis: 100%; }
 }
@@ -809,7 +851,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .type-card .type-ic { width: 40px; height: 40px; }
 .portal-form fieldset.panel { border: 1px solid var(--line); border-radius: 10px; margin: 12px 0; }
 .portal-form .field { display: grid; gap: 4px; max-width: 520px; }
-.completeness { padding: 12px 16px; margin: 12px 0; border-left: 5px solid var(--warn); position: sticky; top: 0; z-index: 2; background: var(--surface); }
+.completeness { padding: 12px 16px; margin: 12px 0; border-left: 5px solid var(--warn); position: sticky; top: 0; z-index: var(--z-sticky-bar); background: var(--surface); }
 .completeness.ok { border-left-color: var(--ok); }
 .doc-list { list-style: none; padding: 0; display: grid; gap: 10px; }
 .doc-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; }
@@ -837,10 +879,11 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
    persona that acts and its menu offers the five personas.  The first line of
    the chip is always the role; the small second line names the person (the
    applicant) or the department of the persona. */
-.account-menu { position: relative; }
+.account-menu { position: relative; flex: none; }
 .account-trigger {
   list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-  padding: 4px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-2);
+  min-width: 40px; min-height: 40px; box-sizing: border-box;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-2);
   font-size: .82rem; font-weight: 600; color: var(--fg);
 }
 .account-trigger::-webkit-details-marker { display: none; }
@@ -852,8 +895,13 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .account-text { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2; text-align: left; }
 .account-sub { font-weight: 400; font-size: .74rem; color: var(--fg-2); max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-panel {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 14rem;
-  max-height: calc(100vh - 96px); overflow-y: auto;
+  /* Fixed, and right-aligned to the screen, so the bar cannot clip it and a
+     long menu cannot hang off the left edge. Top stays automatic: that is
+     the static position under the chip, whether the bar (it blurs, so it
+     holds fixed descendants) or the viewport is the containing block. */
+  position: fixed; right: 8px; left: auto; z-index: var(--z-persona-menu);
+  min-width: min(14rem, calc(100vw - 16px)); max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 96px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: var(--shadow);
 }
 .account-line { margin: 0 0 8px; font-size: .82rem; }
@@ -861,8 +909,9 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .account-personas { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }
 .account-personas form { margin: 0; }
 .account-persona {
-  width: 100%; text-align: left; display: flex; flex-direction: column; gap: 1px; cursor: pointer;
-  padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
+  width: 100%; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 1px; cursor: pointer;
+  min-width: 40px; min-height: 40px; box-sizing: border-box;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--surface-2); color: var(--fg); font: inherit; font-size: .85rem; font-weight: 600;
 }
 .account-persona span { font-weight: 400; font-size: .74rem; color: var(--fg-2); }
@@ -888,7 +937,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .policy-screen .inline-form { display: inline; }
 .policy-screen details { margin: 8px 0; }
 .policy-screen fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 8px 0; min-width: 0; }
-.policy-screen .lock { flex-direction: column; align-items: flex-start; font-size: .82rem; color: var(--fg-2); margin-top: 6px; }
+.policy-screen .lock { flex-direction: column; align-items: flex-start; font-size: 0.875rem; color: var(--fg-2); margin-top: 6px; }
 .policy-screen .field { margin: 6px 0; }
 .policy-screen .field label { display: block; font-weight: 600; }
 .policy-screen .page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -968,7 +1017,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 }
 
 /* Demo scenario clock label in the top bar. */
-.demo-date { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-2); white-space: nowrap; }
+.demo-date { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; font-size: 12px; color: var(--fg-2); white-space: nowrap; text-overflow: ellipsis; }
 .demo-date .info-tip { cursor: help; }
 
 /* The landing: one short line, the five personas in one row on a desktop and

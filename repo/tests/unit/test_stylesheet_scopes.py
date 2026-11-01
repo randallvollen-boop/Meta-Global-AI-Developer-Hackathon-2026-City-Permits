@@ -63,6 +63,7 @@ PERSONA_MENU_ADDED = (
     ".account-persona:hover",
     '.account-persona[aria-current="true"]',
     ".account-persona:focus-visible",
+    ".top:has(.account-menu[open])",
 )
 
 #: The selectors the step graph of the agents (slice P1) added on purpose:

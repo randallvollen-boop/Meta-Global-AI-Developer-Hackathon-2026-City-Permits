@@ -1,7 +1,7 @@
 /* The guided tour: a ring around the control of the step and a panel that
    carries the caption and the controls.  The panel never covers the ring. */
 
-.tour-overlay { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+.tour-overlay { position: fixed; inset: 0; z-index: var(--z-tour); pointer-events: none; }
 
 .tour-ring {
   position: fixed; border: 3px solid var(--accent, #1f5f8b); border-radius: 8px;

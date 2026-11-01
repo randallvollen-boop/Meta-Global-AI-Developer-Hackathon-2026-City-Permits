@@ -27,7 +27,7 @@
 .nav-more-mobile[open] > .nav-more-summary { color: var(--accent); background: var(--accent-soft); }
 .nav-more-panel {
   position: fixed; left: 16px; right: 16px; bottom: calc(120px + env(safe-area-inset-bottom, 0px));
-  max-height: 60vh; overflow-y: auto; z-index: 26;
+  max-height: 60vh; overflow-y: auto; z-index: var(--z-nav-more);
   display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px;
   padding: 8px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); box-shadow: var(--shadow);

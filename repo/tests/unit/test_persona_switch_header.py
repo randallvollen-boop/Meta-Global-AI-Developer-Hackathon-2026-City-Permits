@@ -122,14 +122,16 @@ def test_every_persona_item_posts_to_the_persona_selector(
     assert f'name="actor_id" value="{actor_id}"' in markup
     target = re.search(r'name="next" value="([^"]+)"', markup)
     assert target is not None, markup
-    # The choice lands on the home of the persona that was picked.
+    # The menu posts the home of the persona that was picked, the same
+    # target the landing cards use, so the switch is not redirected.
+    assert target.group(1) == home, markup
     response = client.post(
         "/ui/actor",
         data={"actor_id": actor_id, "next": target.group(1)},
         follow_redirects=False,
     )
     assert response.status_code == 303, response.text[:200]
-    assert response.headers["location"].split("?")[0] == home, response.headers["location"]
+    assert response.headers["location"] == home, response.headers["location"]
     assert client.get("/api/session").json()["actor_id"] == actor_id
 
 
@@ -189,13 +191,14 @@ def test_every_city_menu_item_switches_to_that_personas_home(
     assert form is not None, actor_id
     target = re.search(r'name="next" value="([^"]+)"', form.group(0))
     assert target is not None
+    assert target.group(1) == home
     response = client.post(
         "/ui/actor",
         data={"actor_id": actor_id, "next": target.group(1)},
         follow_redirects=False,
     )
     assert response.status_code == 303, response.text[:200]
-    assert response.headers["location"].split("?")[0] == home, response.headers["location"]
+    assert response.headers["location"] == home, response.headers["location"]
     assert client.get("/api/session").json()["actor_id"] == actor_id
 
 

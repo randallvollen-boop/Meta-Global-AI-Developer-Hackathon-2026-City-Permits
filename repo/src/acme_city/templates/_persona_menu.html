@@ -28,7 +28,7 @@
       <li>
         <form method="post" action="/ui/actor">
           <input type="hidden" name="actor_id" value="{{ persona.actor_id }}">
-          <input type="hidden" name="next" value="{{ '/city/' if persona.label == 'Applicant' else '/queue' }}">
+          <input type="hidden" name="next" value="{{ persona.next }}">
           <button type="submit" class="account-persona" data-demo-persona="{{ persona.actor_id }}"{% if actor.actor_id == persona.actor_id %} aria-current="true"{% endif %}>{{ persona.label }}<span>{{ 'City website' if persona.label == 'Applicant' else 'Staff application' }}</span></button>
         </form>
       </li>
