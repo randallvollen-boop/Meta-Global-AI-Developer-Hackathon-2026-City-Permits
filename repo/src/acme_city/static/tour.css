@@ -23,9 +23,20 @@
 .tour-warning { margin: 0 0 .5rem; font-size: .88rem; color: var(--warn, #a5650b); }
 .tour-note { margin: 0 0 .5rem; font-size: .85rem; color: var(--fg-2, #4a5b6b); }
 
-.tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; }
+.tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .tour-controls .btn { font-size: .88rem; }
+
+/* The countdown of the auto-play sits beside the button that starts it.  The
+   text counts the seconds down; the thin bar fills over the step. */
+.tour-auto { display: inline-flex; flex-direction: column; gap: .2rem; min-width: 5.5rem; }
+.tour-countdown { font-size: .78rem; color: var(--fg-2, #4a5b6b); white-space: nowrap; }
+.tour-progress { display: block; height: 3px; border-radius: 2px; background: var(--line, #dde3e9); overflow: hidden; }
+.tour-progress-fill { display: block; height: 100%; width: 0; background: var(--accent, #1f5f8b); transition: width 1s linear; }
 
 @media (max-width: 720px) {
   .tour-panel { bottom: 4.5rem; max-height: 50vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-progress-fill { transition: none; }
 }

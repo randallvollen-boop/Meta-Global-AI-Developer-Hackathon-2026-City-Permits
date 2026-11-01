@@ -32,6 +32,11 @@ from acme_city.ui.guide_views import WALKTHROUGH  # noqa: E402
 
 CONFIG = Path(__file__).resolve().parents[2] / "config" / "tour_steps.json"
 
+#: The engine of the tour and the stylesheet that goes with it.
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "src" / "acme_city" / "static" / "tour.js"
+STYLE = ROOT / "src" / "acme_city" / "static" / "tour.css"
+
 #: The tour points at one control of a screen with an attribute selector.
 TARGET = re.compile(r'^\[data-(?P<attribute>[a-z-]+)="(?P<value>[^"]+)"\]$')
 
@@ -175,3 +180,57 @@ def test_the_script_never_writes_a_record() -> None:
     # The only request the engine makes besides the persona switch reads the
     # steps of the tour.
     assert script.count("fetch(") == 2
+
+
+def test_the_engine_carries_the_auto_play_across_the_page_change() -> None:
+    """The wish to play on travels with the state of the tour.
+
+    The state of the tour lives in the session storage.  The wish to play on
+    is part of it, so the screen the tour comes to starts the timer again and
+    the viewer does not have to press the button a second time.
+    """
+    script = SCRIPT.read_text(encoding="utf-8")
+    # The state of the tour names the wish to play on.
+    assert re.search(r"var state = \{[^}]*playing:\s*false", script)
+    assert "state.playing = true" in script
+    # The resume reads the wish back from the storage.
+    assert "state.playing = !!saved.playing" in script
+    # The change of the screen writes the state first and stops the timers of
+    # the page afterwards: the wish crosses the change, the timers do not.
+    body = re.search(r"function goTo\(number\) \{(.*?)\n  \}", script, re.S)
+    assert body is not None
+    assert body.group(1).index("persist()") < body.group(1).index("clearTimers()")
+
+
+def test_the_engine_shows_what_the_auto_play_does() -> None:
+    """The button says what it does, and the panel counts the step down."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    style = STYLE.read_text(encoding="utf-8")
+    # The button says Auto-play when the tour is still and Pause when it plays.
+    assert 'state.playing ? "Pause" : "Auto-play"' in script
+    # The countdown stands beside the button and counts the seconds down.
+    assert 'data-testid="tour-countdown"' in script
+    assert "Next in " in script
+    assert ".tour-countdown" in style
+    assert ".tour-progress-fill" in style
+    # The seconds are quiet for the screen reader; only the caption is told.
+    assert 'aria-live="off"' in script
+    assert 'aria-live="polite"' in script
+
+
+def test_the_engine_keeps_the_reduced_motion_rule() -> None:
+    """With reduced motion the tour does not play on its own."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    assert "the system asks for reduced motion" in script
+    body = re.search(r"function startAuto\(\) \{(.*?)\n  \}", script, re.S)
+    assert body is not None
+    assert "reducedMotion()" in body.group(1)
+
+
+def test_the_engine_finishes_the_tour_at_the_last_step() -> None:
+    """At the last step the auto-play stops and the panel says so."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    assert "The tour is finished." in script
+    body = re.search(r"function startAuto\(\) \{(.*?)\n  \}", script, re.S)
+    assert body is not None
+    assert "index >= steps.length - 1" in body.group(1)
