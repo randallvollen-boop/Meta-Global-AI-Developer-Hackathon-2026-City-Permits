@@ -51,19 +51,21 @@ services:
         value: "8"
       - key: ACME_PUBLIC_DEMO
         value: "1"
-      # Live Muse is off unless a person turns it on (DEPLOY_RENDER.md).
+      # Live Muse is on for judging, capped per day (DEPLOY_RENDER.md).
       - key: ACME_MUSE_PROVIDER_ENABLED
-        value: "0"
+        value: "1"
       - key: META_API_KEY
         sync: false
       - key: ACME_MUSE_LIVE_CALL_CAP
-        value: "2"
+        value: "100"
+      - key: ACME_MUSE_DAILY_CALL_CAP
+        value: "100"
       - key: ACME_MUSE_IMAGE_DAILY_CAP
         value: "10"
       - key: ACME_APPLICANT_ASSIST_LIVE_ENABLED
-        value: "0"
+        value: "1"
       - key: ACME_POLICY_ASSIST_LIVE_ENABLED
-        value: "0"
+        value: "1"
       # Requests per minute per client address; 0 switches a limit off.
       - key: ACME_RATE_LIMIT_ALL_PER_MINUTE
         value: "300"

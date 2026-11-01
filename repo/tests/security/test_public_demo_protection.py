@@ -517,7 +517,8 @@ def test_blueprint_declares_the_demo_service_without_secret_values() -> None:
     assert re.search(r"key: META_API_KEY\n\s+sync: false", BLUEPRINT)
     assert re.search(r"key: ACME_DEPLOY_HOOK_URL\n\s+sync: false", BLUEPRINT)
     assert re.search(r"key: ACME_DEPLOYMENT_MODE\n\s+value: demo", BLUEPRINT)
-    assert re.search(r"key: ACME_MUSE_PROVIDER_ENABLED\n\s+value: \"?0\"?", BLUEPRINT)
+    # Randall turned live Muse on for judging (2026-10-31), capped per day.
+    assert re.search(r"key: ACME_MUSE_PROVIDER_ENABLED\n\s+value: \"?1\"?", BLUEPRINT)
     assert re.search(r"key: ACME_DEMO_SEED_ON_START\n\s+value: \"?1\"?", BLUEPRINT)
     assert 'schedule: "0 2 * * *"' in BLUEPRINT
     assert not re.search(r"(?m)^\s+plan:", BLUEPRINT)  # Randall sets the instance type
@@ -531,7 +532,8 @@ def test_blueprint_limits_match_the_documented_defaults() -> None:
         ("ACME_RATE_LIMIT_WRITE_PER_MINUTE", "60"),
         ("ACME_RATE_LIMIT_SESSION_PER_MINUTE", "20"),
         ("ACME_RATE_LIMIT_UPLOAD_PER_MINUTE", "20"),
-        ("ACME_MUSE_LIVE_CALL_CAP", "2"),
+        ("ACME_MUSE_LIVE_CALL_CAP", "100"),
+        ("ACME_MUSE_DAILY_CALL_CAP", "100"),
         ("ACME_MUSE_IMAGE_DAILY_CAP", "10"),
         ("ACME_COOKIE_SECURE", "1"),
         ("ACME_TRUST_PROXY_HEADERS", "1"),
