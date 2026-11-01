@@ -308,3 +308,42 @@ first entry of the City website menu.
 - As either agent, I want to state an advisory outcome with a rationale
   citing each rule once, so that the human reviewer decides with the advice in hand and
   keeps the decision.
+
+## Future feature: assistants through MCP
+
+This section is a plan, not a build. The MCP server is not part of the
+demonstration today and no assistant calls the application. The full plan is
+in `docs/operations/MCP_PLAN.md`.
+
+The rules the plan holds to:
+
+- The server resolves the persona. No tool takes a role or a persona as an
+  argument.
+- The server reads by default. A write scope has to be asked for.
+- A write needs the person. The server shows a preview and a one time
+  confirmation, and the person confirms it.
+- Every call is audited as "Assistant via MCP", the calls that are refused
+  too.
+- No tool decides, approves, issues or publishes. People decide.
+
+- As an Applicant, I want my own assistant to look up the rules and check my
+  facts, so that I know what the City asks of me before I apply.
+  - Acceptance: the assistant reads the rules and the fees, checks my own
+    facts, and submits my own application only after I confirm it.
+- As an Agent Operator, I want my assistant to read the state of the agents
+  and their runs, so that I can see what they did.
+  - Acceptance: the assistant reads the agent status and the runs. It asks
+    for a run only after I confirm it.
+- As a Data Steward, I want my assistant to read the source links and the
+  datasets, so that I start from the evidence.
+  - Acceptance: the assistant reads the source links, the trusted view and
+    the datasets, and proposes a source link. It never decides a link.
+- As a Permit Reviewer, I want my assistant to summarize a case, so that I
+  start from the facts and the rule results.
+  - Acceptance: the assistant summarizes the case and prepares a draft
+    recommendation. It never decides and never issues.
+- As a City Administrator, I want my assistant to run a what-if and read the
+  audit trail, so that I can see the effect of a change before anyone makes
+  it.
+  - Acceptance: the assistant runs a what-if, reads the impact preview and
+    searches the audit log. It never publishes a change.
