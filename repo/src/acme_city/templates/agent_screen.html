@@ -190,8 +190,10 @@
         {% for row in agent.awaiting %}
         <tr data-testid="agent-awaiting-row" data-application-id="{{ row.application_id }}">
           <th scope="row" data-label="Reference"><a href="/agents/cases/{{ row.application_id }}">{{ row.source_application_number }}</a></th>
-          <td data-label="Recommendation"><span class="pill {{ 'ok' if row.proposed_outcome == 'approve' else 'bad' if row.proposed_outcome == 'deny' else 'warn' }}">{{ row.outcome_label }}</span></td>
-          <td data-label="Conditions">{{ row.conditions|join('; ') if row.conditions else '-' }}</td>
+          <td data-label="Recommendation"><span class="pill {{ 'ok' if row.proposed_outcome == 'approve' else 'bad' if row.proposed_outcome == 'deny' else 'warn' }}">{{ row.outcome_label }}</span>
+            <span class="t2" data-testid="agent-awaiting-reason">{{ row.plain.short }}</span>
+            {% if row.plain.rest %}<details class="opr-details" data-testid="agent-awaiting-more"><summary>More details</summary><ul class="issue-list">{% for line in row.plain.rest %}<li>{{ line }}</li>{% endfor %}</ul></details>{% endif %}</td>
+          <td data-label="Conditions">{{ row.plain.conditions|join('; ') if row.plain.conditions else '-' }}</td>
           <td data-label="When">{{ row.created_at }}</td>
         </tr>
         {% else %}

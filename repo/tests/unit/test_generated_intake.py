@@ -31,11 +31,12 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import audit as audit_models
-from acme_city.persistence.models import permit, registry
+from acme_city.persistence.models import gis, permit, registry
 from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.models.source import SourceSnapshot
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.portal_intake.generated import (
+    ADDRESSES,
     GENERATED_REFERENCE_PREFIX,
     MAX_GENERATED_PER_CALL,
     MAX_GENERATED_TOTAL,
@@ -256,6 +257,86 @@ def test_the_generated_records_name_none_of_the_d_parties() -> None:
         "Ironvale Construction Group LLC",
     ):
         assert forbidden not in names
+
+
+def test_every_generated_address_matches_the_parcel_it_names() -> None:
+    """The address of a generated case is one the City can match.
+
+    The locator resolves the address to the parcel the record names, so the
+    intake agent has a property to propose and the steward has a parcel link
+    to approve.
+    """
+    assert ADDRESSES
+    for address, parcel in ADDRESSES:
+        assert parcel.startswith("ACME-P-")
+        assert address.endswith(", ACME City")
+
+
+def test_the_locator_resolves_every_generated_address_to_its_parcel(
+    seeded: Settings,
+) -> None:
+    from acme_city.gis.adapter import get_locator
+
+    locator = get_locator(seeded)
+    for address, parcel in ADDRESSES:
+        candidates = locator.find_candidates(address, 5)
+        assert candidates, address
+        top = candidates[0]
+        assert top.score >= 90, (address, top.score)
+        hit = locator.parcel_at(top.x, top.y)
+        assert hit is not None, address
+        assert hit.parcel_number == parcel, (address, hit.parcel_number, parcel)
+
+
+def test_the_intake_agent_proposes_the_parcel_of_a_generated_case(
+    seeded: Settings, document_root: Path
+) -> None:
+    """The property of a generated case reaches the steward as a proposal."""
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with transaction(factory) as session:
+            administrator = context_for(session, "persona_city_administrator")
+            service = IntakeService(session, settings=seeded, document_root=document_root)
+            results = service.generate_cases(
+                seed=7, count=6, nonce="run1", actor=administrator
+            )
+            control = AgentControlService(session)
+            control.ensure_defaults()
+            state = control.state(agent_models.AGENT_INTAKE)
+            assert state is not None
+            state.mode = agent_models.AGENT_AWAKE
+            session.flush()
+            for result in results:
+                application = session.get(permit.Application, result.application_id)
+                assert application is not None
+                run_agent(
+                    session,
+                    application=application,
+                    agent_key=agent_models.AGENT_INTAKE,
+                    triggered_by="persona_agent_operator",
+                    settings=seeded,
+                )
+                session.flush()
+            matches = session.execute(
+                select(gis.ApplicationParcelMatch).where(
+                    gis.ApplicationParcelMatch.application_id.in_(
+                        [result.application_id for result in results]
+                    )
+                )
+            ).scalars().all()
+            proposed = {row.application_id: row for row in matches}
+            assert len(proposed) == len(results)
+            for result in results:
+                match = proposed[result.application_id]
+                application = session.get(permit.Application, result.application_id)
+                assert application is not None
+                facts = dict(application.submitted_facts or {})
+                # The address locator proposed the parcel the case names.
+                assert match.link_state == "proposed", match.link_state
+                assert match.parcel_number == facts["parcel_number"]
+                assert match.matched_address
+    finally:
+        factory.dispose()
 
 
 # -------------------------------------------------------------------- caps

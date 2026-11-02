@@ -89,6 +89,15 @@
       {{ err('f-address_text') }}
       <input id="f-address_text" name="address_text" value="{{ values.address_text }}" autocomplete="off" list="address-suggest" data-suggest-url="/apply/suggest" required aria-required="true"{{ bad('f-address_text') }}>
       <datalist id="address-suggest"></datalist>
+      <span class="sample-address" data-testid="sample-address">
+        <button type="button" class="btn ghost sm" data-testid="sample-address-button" aria-expanded="false" aria-controls="sample-address-list">{{ portal_content().sample_address.button }}</button>
+        <span class="muted" data-testid="sample-address-note">{{ portal_content().sample_address.note }}</span>
+      </span>
+      <span class="sample-address-list" id="sample-address-list" hidden data-testid="sample-address-list">
+        {% for item in sample_addresses %}
+        <button type="button" class="btn ghost sm" data-testid="sample-address-option" data-address="{{ item.address }}" data-parcel="{{ item.parcel_number }}">{{ item.address }}</button>
+        {% endfor %}
+      </span>
     </p>
     <div class="did-you-mean" role="status" aria-live="polite" data-testid="did-you-mean" data-did-you-mean>
       {% if located.message %}

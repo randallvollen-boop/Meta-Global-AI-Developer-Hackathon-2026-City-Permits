@@ -65,6 +65,14 @@ RESPONDABLE_STATUSES: frozenset[str] = frozenset(
     {"needs_information", "revisions_requested"}
 )
 
+#: How many sample addresses the form offers beside the address field.
+SAMPLE_ADDRESS_COUNT = 6
+
+#: The address of the demonstration walkthrough.  It is not offered as a
+#: sample: the walkthrough uses it, and a sample that repeats it would show
+#: the same case twice.
+WALKTHROUGH_ADDRESS = "400 Lantern Row"
+
 _SAFE = re.compile(r"[^A-Za-z0-9]+")
 
 
@@ -392,6 +400,42 @@ class PortalService:
         }
 
     # ----------------------------------------------------------------- locator
+
+    def sample_addresses(self) -> list[dict[str, str]]:
+        """Return official addresses of the City that match a parcel.
+
+        The addresses come from the property master the address locator reads,
+        so every one of them resolves to a parcel of the City and the applicant
+        can go on without finding their own address on the map.  One address
+        of every street is taken, so the list is not one street, and the same
+        addresses are offered on every run.
+        """
+        from acme_city.gis.catalog import PropertyCatalog
+
+        catalog = PropertyCatalog(self._session)
+        chosen: list[dict[str, str]] = []
+        streets: set[str] = set()
+        for record in catalog.addresses():
+            address = record.address
+            source = (address.source_string or "").strip()
+            if not source or source == WALKTHROUGH_ADDRESS:
+                continue
+            if record.parcel_number is None or address.unit_number:
+                # A unit is ambiguous: a person has to choose the property.
+                continue
+            street = address.street_name or ""
+            if street in streets:
+                continue
+            streets.add(street)
+            chosen.append(
+                {
+                    "address": f"{source}, {address.municipality or 'ACME City'}",
+                    "parcel_number": record.parcel_number,
+                }
+            )
+            if len(chosen) >= SAMPLE_ADDRESS_COUNT:
+                break
+        return chosen
 
     def locate(self, text: str) -> dict[str, Any]:
         """Return the "Did you mean" answer of the locator for typed text."""

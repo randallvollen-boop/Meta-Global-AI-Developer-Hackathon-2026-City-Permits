@@ -35,6 +35,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.agents.plain_reason import describe_row
 from acme_city.agents.findings import (
     FINDING_CATEGORY_ORDER,
     category_rank,
@@ -764,6 +765,7 @@ def review_queue(
                 "stale": recommendation.stale,
                 "rationale": recommendation.rationale or "",
                 "conditions": list(recommendation.conditions or []),
+                "plain": describe_row(session, recommendation),
             }
             if recommendation is not None
             else None

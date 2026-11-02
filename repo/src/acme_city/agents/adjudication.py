@@ -22,6 +22,7 @@ record.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -48,7 +49,8 @@ from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
 from acme_city.rules.catalog import select_rule_versions, version_label as rule_version_label
-from acme_city.triage.service import build_rationale, unit_for_field
+from acme_city.agents.plain_reason import plain_reason
+from acme_city.triage.service import unit_for_field
 
 #: The service identity the adjudication agent acts as.
 ADJUDICATION_AGENT_ID = "service_agent_adjudication"
@@ -138,11 +140,13 @@ class AdjudicationAgent:
         # had, and the attempt is recorded as failed, so a person sees what
         # happened and a retry starts from the same revision.
         with self._session.begin_nested():
-            rules = self._node_rule_loader(run, application, findings)
-            results = self._node_rule_evaluator(run, application, actor)
+            loaded = self._node_rule_loader(run, application, findings)
+            results = self._node_rule_evaluator(run, application, actor, loaded.rules)
             conditions = self._node_condition_builder(run, results)
             precedent = self._node_precedent_check(run, application, findings)
-            self._node_disposition(run, application, rules, results, conditions, precedent)
+            self._node_disposition(
+                run, application, loaded, results, conditions, precedent
+            )
 
             run.finished_at = utc_now()
             self._session.flush()
@@ -225,8 +229,14 @@ class AdjudicationAgent:
         run: agent_models.AgentRun,
         application: permit.Application,
         findings: FindingWriter,
-    ) -> list[LoadedRule]:
-        """Find the published rules of the permit type."""
+    ) -> LoadedRules:
+        """Find the published rules of the permit type.
+
+        The loader also reports the state of the property of the case.  The
+        parcel inputs (zoning, flood zone) are read from the parcel the Data
+        Steward confirms, so a case whose property is still waiting for the
+        steward is not a case the agent may recommend on.
+        """
         node = graphs.ADJUDICATION_GRAPH[0]
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
@@ -253,9 +263,20 @@ class AdjudicationAgent:
         from acme_city.gis.matching import ParcelMatchService
 
         parcel_service = ParcelMatchService(self._session, now=self._now)
+        # A case without a locator match keeps the behaviour of the seeded
+        # demonstration cases: there is no parcel to wait for.
+        parcel_confirmed = parcel_service.parcel_confirmed(application.id)
         if parcel_service.for_application(application.id) is not None:
+            approved = parcel_service.approved_parcel(application.id)
             confirmed = parcel_service.confirmed_parcel(application.id)
-            if confirmed is not None:
+            if approved is None:
+                # The Data Steward has not confirmed the property yet.
+                status = "warn"
+                notes.append(
+                    "The parcel link has not been confirmed by the Data Steward yet, "
+                    "so the parcel inputs (zoning, flood zone) were not used."
+                )
+            elif confirmed is not None:
                 notes.append(
                     f"Parcel inputs come from the confirmed parcel {confirmed.source_parcel_number}: "
                     f"zoning {confirmed.zoning_code}, flood zone {confirmed.flood_zone}."
@@ -264,7 +285,9 @@ class AdjudicationAgent:
                 status = "warn"
                 notes.append(
                     "Parcel inputs (zoning, flood zone) are read from the confirmed parcel "
-                    "only. The parcel is not confirmed yet, so none were used."
+                    f"only. The Data Steward confirmed the parcel link "
+                    f"{approved.source_parcel_number}; the Permit Reviewer confirms the "
+                    "parcel before the decision, so none were used."
                 )
         if permit_type.discretionary:
             status = "warn"
@@ -282,13 +305,14 @@ class AdjudicationAgent:
             )
         )
         self._finish(run, row, status=status, note=" ".join(notes))
-        return rules
+        return LoadedRules(rules=rules, parcel_confirmed=parcel_confirmed)
 
     def _node_rule_evaluator(
         self,
         run: agent_models.AgentRun,
         application: permit.Application,
         actor: ActorContext,
+        rules: list[LoadedRule] | None = None,
     ) -> list[dict[str, Any]]:
         """Run the deterministic evaluator against the submitted facts."""
         node = graphs.ADJUDICATION_GRAPH[1]
@@ -311,8 +335,13 @@ class AdjudicationAgent:
         if previous_status == "under_review":
             application.status = "under_review"
             self._session.flush()
+        # The note names each rule by its title, so a person who reads the run
+        # never meets a bare rule id.
+        titles = {rule.rule_id: rule.title for rule in rules or []}
         statuses = ", ".join(
-            f"{item.get('rule_id')} {item.get('status')}" for item in results
+            f"{titles.get(str(item.get('rule_id'))) or item.get('citation') or 'a rule'} "
+            f"{item.get('status')}"
+            for item in results
         )
         self._finish(
             run,
@@ -413,7 +442,7 @@ class AdjudicationAgent:
         self,
         run: agent_models.AgentRun,
         application: permit.Application,
-        rules: list[LoadedRule],
+        loaded: LoadedRules,
         results: list[dict[str, Any]],
         conditions: list[str],
         precedent: dict[str, Any] | None,
@@ -423,6 +452,7 @@ class AdjudicationAgent:
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
         permit_type = permits.permit_type(application)
+        rules = loaded.rules
         explicit_units = {rule.rule_id: rule.unit for rule in rules if rule.unit}
         units: dict[str, str] = {}
         for result in results:
@@ -432,7 +462,6 @@ class AdjudicationAgent:
                 or unit_for_field(result.get("field_path"))
                 or ""
             )
-        rationale = build_rationale(results, "", units=units)
 
         chosen = kernel.disposition(
             type_label=permit_type.label,
@@ -441,20 +470,33 @@ class AdjudicationAgent:
             results=results,
             conditions=conditions,
             precedent_outcome=None if precedent is None else str(precedent["outcome"]),
+            parcel_confirmed=loaded.parcel_confirmed,
         )
         outcome = chosen.outcome
-        reason = chosen.reason
+        titles = {rule.rule_id: rule.title for rule in rules}
+        # The words a person reads: the outcome and the reason, with the title
+        # and the citation of each rule.  The decision itself is the kernel's.
+        plain = plain_reason(
+            outcome=outcome,
+            hold_reason=chosen.hold_reason,
+            results=[{**result, "unit": units.get(str(result.get("rule_id")))} for result in results],
+            titles=titles,
+            kernel_reason=chosen.reason,
+            parcel_confirmed=loaded.parcel_confirmed,
+            precedent_outcome=None if precedent is None else str(precedent["outcome"]),
+        )
+        reason = " ".join(plain.lines)
 
         # A pending recommendation of an earlier run is superseded, so the
         # case never carries two live recommendations.
-        for row in self._session.execute(
+        for previous in self._session.execute(
             select(permit.Recommendation).where(
                 permit.Recommendation.application_id == application.id,
                 permit.Recommendation.status == STATUS_PENDING,
             )
         ).scalars().all():
-            row.status = "superseded"
-            row.version += 1
+            previous.status = "superseded"
+            previous.version += 1
 
         recommendation = permit.Recommendation(
             id=new_id("rec"),
@@ -473,6 +515,9 @@ class AdjudicationAgent:
                     "observed_value": result.get("observed_value"),
                     "limit_value": result.get("limit_value"),
                     "unit": units.get(str(result.get("rule_id"))),
+                    "title": titles.get(str(result.get("rule_id"))) or "",
+                    "operator": result.get("operator") or "",
+                    "field_path": result.get("field_path") or "",
                     "message": result.get("message") or "",
                     "condition_note": result.get("condition_note") or "",
                 }
@@ -480,7 +525,7 @@ class AdjudicationAgent:
             ],
             run_ref=run.id,
             status=STATUS_PENDING,
-            rationale=f"{reason} {rationale}".strip(),
+            rationale=plain.text,
             muse_summary=None,
             muse_run_id=None,
             conditions=list(conditions),
@@ -527,6 +572,21 @@ class LoadedRule:
         self.unit = unit
 
 
+@dataclass(frozen=True)
+class LoadedRules:
+    """What the rule loader found for one case.
+
+    The rules are the published rules of the permit type.  ``parcel_confirmed``
+    says whether the Data Steward confirmed the property of the case: the
+    parcel inputs (zoning, flood zone) are read from that parcel, so a case
+    whose parcel is still waiting for the steward is not evaluated on the
+    whole rule set.
+    """
+
+    rules: list[LoadedRule]
+    parcel_confirmed: bool = True
+
+
 __all__ = [
     "ADJUDICATION_AGENT_ID",
     "OUTCOME_APPROVE",
@@ -539,4 +599,5 @@ __all__ = [
     "STATUS_SUPERSEDED",
     "AdjudicationAgent",
     "LoadedRule",
+    "LoadedRules",
 ]

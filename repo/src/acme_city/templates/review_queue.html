@@ -44,6 +44,7 @@
                 data-testid="review-recommendation">{{ row.recommendation.proposed_outcome|pretty }}</span>
           <span class="pill plain" data-testid="review-recommendation-status">{{ row.recommendation.status|pretty }}</span>
           {% if row.recommendation.stale %}<span class="pill warn" data-testid="review-recommendation-stale">Stale</span>{% endif %}
+          <div class="t2" data-testid="review-recommendation-reason">{{ row.recommendation.plain.short }}</div>
           {% else %}
           <span class="muted" data-testid="review-recommendation-none">The adjudication agent has not run on this case.</span>
           {% endif %}
@@ -51,9 +52,14 @@
             <summary>More details</summary>
             <p data-testid="review-row-area">Area: {{ row.review_area or 'unassigned' }}</p>
             <p data-testid="review-row-owner">Owner: {{ row.owner_label or 'Unassigned' }}</p>
-            {% if row.recommendation and row.recommendation.conditions %}
+            {% if row.recommendation and row.recommendation.plain.rest %}
+            <ul class="issue-list" data-testid="review-recommendation-more-reasons">
+              {% for line in row.recommendation.plain.rest %}<li>{{ line }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+            {% if row.recommendation and row.recommendation.plain.conditions %}
             <ul class="issue-list" data-testid="review-recommendation-conditions">
-              {% for condition in row.recommendation.conditions %}<li>{{ condition }}</li>{% endfor %}
+              {% for condition in row.recommendation.plain.conditions %}<li>{{ condition }}</li>{% endfor %}
             </ul>
             {% endif %}
           </details>

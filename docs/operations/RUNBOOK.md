@@ -120,10 +120,20 @@ severity of `block` or `review`.
 | 2 | Rule evaluator | Runs the existing deterministic evaluator. |
 | 3 | Condition builder | Collects the conditions of approval from the `condition` results. |
 | 3 | Precedent check | Finds an earlier decided case of the same type on the same parcel. |
-| 4 | Disposition | `hold` when the type is discretionary, has no rules, or a rule needs judgment or a missing input; `deny` when a rule fails; `approve_with_conditions` when conditions apply; otherwise `approve`. |
+| 4 | Disposition | `hold` when the type is discretionary, has no rules, or a rule needs judgment or a missing input; `deny` when a rule fails; `hold` when the Data Steward has not confirmed the parcel of the case; `approve_with_conditions` when conditions apply; otherwise `approve`. |
 
 The rationale cites each rule once, with its id, the observed value and unit, the limit
 and the citation.
+
+**A case whose parcel is not confirmed is not recommended on.** The rule inputs
+that come from the parcel (zoning, flood zone) are read from the parcel the
+Data Steward confirms, so while the link the address locator proposed is
+unapproved the agent holds the case: the recommendation reads **"Cannot
+recommend yet: the parcel is not confirmed. Waiting on Data Steward."** and the
+Next action of the case reads **"Waiting on Data Steward"**. A rule that fails
+on its own still recommends denial, because a failure that does not read the
+parcel stands on its own. Once the steward confirms the parcel, a re-run
+evaluates the case again.
 
 ### Confirm and revert
 
@@ -718,6 +728,14 @@ a document checklist with drag and drop, the certification, **Submit
 application** (refused server-side unless complete and certified), **Save and
 exit** (a draft) and **Track an application**. Arrivals land as "Awaiting
 intake agent".
+
+**Use a sample address.** Beside the address field the form offers **Use a
+sample address**: it lists six official addresses of the City, one of every
+street, and the note **"Fictional addresses that match the City's map."**
+They come from the property master the address locator reads, so every one of
+them resolves to a parcel of the City. Picking one fills the field and the
+locator checks it, so the case arrives with a parcel the steward can approve.
+Typing any address still works.
 
 ## Community permit insight (synthetic year, City view, community view)
 

@@ -26,6 +26,7 @@ from acme_city.agents.control import (
     AgentControlService,
 )
 from acme_city.agents.intake import waiting_applications
+from acme_city.agents.plain_reason import describe_row
 from acme_city.agents.runtime import (
     BUILTIN_ENGINE,
     BUILTIN_ENGINE_LABEL,
@@ -316,6 +317,7 @@ def agent_screen(
             "proposed_outcome": row.proposed_outcome,
             "outcome_label": OUTCOME_LABELS.get(row.proposed_outcome, row.proposed_outcome),
             "rationale": row.rationale or "",
+            "plain": describe_row(session, row),
             "conditions": list(row.conditions or []),
             "recommendation_id": row.id,
             "created_at": _iso(row.created_at),
@@ -817,6 +819,7 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
             "engine_label": BUILTIN_ENGINE_LABEL,
             "findings": [],
             "runs": [],
+            "recommendation": None,
         }
     work = session.execute(
         select(agent_ops.AgentWorkQueue)
@@ -840,6 +843,11 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
             .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
         ).scalars().all()
     )
+    recommendation = session.execute(
+        select(permit.Recommendation)
+        .where(permit.Recommendation.application_id == application_id)
+        .order_by(permit.Recommendation.created_at.desc(), permit.Recommendation.id.desc())
+    ).scalars().first()
     latest = runs[0] if runs else None
     progress = (
         _progress_view(latest.agent_key, latest, _run_nodes(session, latest.id))
@@ -861,6 +869,19 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
         "attempts": work.attempts if work is not None else 0,
         "note": work.note or "" if work is not None else "",
         "engine_label": BUILTIN_ENGINE_LABEL,
+        # What the adjudication agent recommends and why, in plain words.
+        "recommendation": (
+            {
+                "proposed_outcome": recommendation.proposed_outcome,
+                "outcome_label": OUTCOME_LABELS.get(
+                    recommendation.proposed_outcome, recommendation.proposed_outcome
+                ),
+                "status": recommendation.status,
+                "plain": describe_row(session, recommendation),
+            }
+            if recommendation is not None
+            else None
+        ),
         # The step graph of the latest run on this case.
         "progress": progress,
         "findings": [

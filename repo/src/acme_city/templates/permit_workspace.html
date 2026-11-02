@@ -393,20 +393,21 @@
           <p class="muted" data-testid="recommendation-notice">
             The agent recommends; a person confirms or reverts. Nothing is final until confirmed.
           </p>
-          <p data-testid="recommendation-rationale">{{ rec.rationale }}</p>
-          {% if rec.conditions %}
+          <div data-testid="recommendation-rationale">
+            <p><strong data-testid="recommendation-reason">{{ rec.plain.short }}</strong></p>
+            {% for line in rec.plain.rest %}<p data-testid="recommendation-reason-line">{{ line }}</p>{% endfor %}
+          </div>
+          {% if rec.plain.conditions %}
           <div data-testid="recommendation-conditions">
             <h4>Conditions of approval</h4>
             <ul class="issue-list">
-              {% for condition in rec.conditions %}<li>{{ condition }}</li>{% endfor %}
+              {% for condition in rec.plain.conditions %}<li>{{ condition }}</li>{% endfor %}
             </ul>
           </div>
           {% endif %}
           <ul class="issue-list" data-testid="recommendation-citations">
             {% for ref in rec.evidence_refs %}
-            <li data-rule-id="{{ ref.rule_id }}" data-status="{{ ref.status }}">
-              {{ ref.rule_id }}: {{ ref.status|pretty }}, observed {{ ref.observed_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, limit {{ ref.limit_value }}{% if ref.unit %} {{ ref.unit }}{% endif %}, {{ ref.citation }}
-            </li>
+            <li data-rule-id="{{ ref.rule_id }}" data-status="{{ ref.status }}">{{ rec.plain.evidence[loop.index0] }}</li>
             {% endfor %}
           </ul>
           {% if rec.proposed_outcome == 'hold' %}

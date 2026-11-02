@@ -90,6 +90,10 @@ class CaseInput:
     requirements_snapshot: tuple[tuple[str, Any], ...] | None = None
     #: Rule inputs read from the confirmed parcel (zoning, flood zone).
     parcel_inputs: tuple[tuple[str, Any], ...] = ()
+    #: Whether the Data Steward confirmed the property of the case.  A case
+    #: whose parcel link is not confirmed yet is not evaluated on the whole
+    #: rule set, so the agent holds it and waits for the steward.
+    parcel_confirmed: bool = True
     #: ``(reference, number)`` of a live duplicate case found by lookup.
     duplicate_of: tuple[str, str] | None = None
     #: Findings of the steps that need the outside world (address locator,
@@ -113,6 +117,7 @@ class CaseInput:
         documents: Iterable[DocumentInput | tuple[str, Sequence[str]] | str] = (),
         requirements_snapshot: Mapping[str, Any] | None = None,
         parcel_inputs: Mapping[str, Any] | None = None,
+        parcel_confirmed: bool = True,
         duplicate_of: tuple[str, str] | None = None,
         carried_findings: Iterable[FindingSpec] = (),
         safeguard_blockers: Iterable[str] = (),
@@ -141,6 +146,7 @@ class CaseInput:
                 )
             ),
             parcel_inputs=_freeze_pairs(parcel_inputs),
+            parcel_confirmed=bool(parcel_confirmed),
             duplicate_of=duplicate_of,
             carried_findings=tuple(carried_findings),
             safeguard_blockers=tuple(sorted(safeguard_blockers)),
@@ -177,6 +183,11 @@ class CaseInput:
                 None if self.requirements_snapshot is None else dict(self.requirements_snapshot)
             ),
             "parcel_inputs": dict(self.parcel_inputs),
+            # The property of a case is confirmed unless the case says
+            # otherwise, so the default is left out.  A case whose parcel the
+            # Data Steward has not confirmed yet carries the fact, and a
+            # population of confirmed cases hashes as it always did.
+            **({} if self.parcel_confirmed else {"parcel_confirmed": False}),
             "duplicate_of": None if self.duplicate_of is None else list(self.duplicate_of),
             "carried_findings": [
                 [f.finding_type, f.message, f.rule, f.severity] for f in self.carried_findings
