@@ -414,7 +414,6 @@ def _accept(ctx: ActionContext) -> Outcome:
     recommendation = assistant.recommendation_by_id(ctx.session, recommendation_id)
     if recommendation.cleared:
         return _refused(
-            ctx,
             recommendation,
             steward_assist_views.CLEARED_ACCEPT_NOTE,
             "cleared",
@@ -425,14 +424,12 @@ def _accept(ctx: ActionContext) -> Outcome:
         refusal = steward_assist_views.accept_refusal(ctx.session, recommendation)
         if not refusal:
             raise
-        return _refused(ctx, recommendation, refusal, "refused")
+        return _refused(recommendation, refusal, "refused")
     reason = ctx.text("reason") or recommendation.reason
     return _accept_one(ctx, recommendation, reason)
 
 
-def _refused(
-    ctx: ActionContext, recommendation: Any, message: str, state: str
-) -> Outcome:
+def _refused(recommendation: Any, message: str, state: str) -> Outcome:
     """Return the refusal of an acceptance, with nothing changed.
 
     The refusal is recorded in the audit trail and reported in the feedback
