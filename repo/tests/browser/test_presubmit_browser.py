@@ -331,6 +331,23 @@ def test_the_override_works_after_a_refused_submit_at_a_real_property(
     assert all("422" in error for error in page.recorded_errors), page.recorded_errors
 
 
+def test_a_held_submit_returns_to_the_presubmit_panel_in_the_viewport(
+    page, server: BrowserServer, login
+) -> None:
+    """A refused submit returns to its review and override controls."""
+    login("persona_applicant")
+    page.goto(f"{server.base_url}/apply/deck_fence", wait_until="networkidle")
+    _fence(page, height="6", location="front", description="6 ft front fence")
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    page.locator('[data-testid="submit-application"]').click()
+    panel = page.locator('[data-testid="presubmit-panel"]')
+    panel.wait_for()
+    box = panel.bounding_box()
+    assert box is not None
+    assert box["bottom"] > 0 and box["top"] < page.viewport_size["height"], box
+    assert page.url.endswith("#presubmit"), page.url
+
+
 def test_the_buttons_of_a_held_form_share_one_row_and_stack_on_a_phone(
     page, server: BrowserServer, login
 ) -> None:

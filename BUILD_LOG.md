@@ -493,3 +493,8 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The screen no longer offers the mode that only records suggestions: a suggestion reaches no steward in this release, so the mode is not offered and the activate action refuses it. The stored value of the mode stays, and a policy that holds it is reported as paused with the reason. The future feature is written down in `docs/submission/JUDGE_WALKTHROUGH.md`.
 - The unused count of the applied links and the second limit of the list are gone. The worker comment no longer says it never applies a link.
 - No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
+## 2026-11-02 — Retest item 1: held application anchor
+
+- Cause confirmed: a rejected application returned the form with `data-server-held`, but the review panel had no id and the form action carried no fragment. A browser therefore restored the document at its top instead of at the Must fix and override controls.
+- The shared applicant-form template now gives the panel the stable `presubmit` id and posts every form to that anchor. The fragment is browser-side only, so the server paths for the live check and implicit `intent=update` remain unchanged.
+- Added server and browser regression coverage. The browser check is written but not run here because this sandbox cannot launch browsers.

@@ -364,3 +364,8 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 
 - Root cause: both `render.yaml` and the entrypoint seed override explicitly set `ACME_SCENARIO_CLOCK` to `auto`, pinning the running demo to scenario data rather than the real date.
 - Static compilation passed for the entrypoint and focused protection test. The changed default checks passed (`2 passed, 46 deselected`), and `tests/unit/test_scenario_clock.py` passed (`10 passed`), preserving explicit controlled dates.
+## 2026-11-02 — Retest item 1 evidence
+
+- Before the template change, `uv run pytest tests/unit/test_portal_form.py::test_a_held_submit_returns_to_the_presubmit_panel -q` failed because the held response rendered a `data-testid="presubmit-panel"` element without an id.
+- After the template change, `uv run pytest tests/unit/test_portal_form.py -q` passed: 20 passed in 8.13s. It covers the held 422 response, the panel id, and the matching action fragment.
+- `tests/browser/test_presubmit_browser.py::test_a_held_submit_returns_to_the_presubmit_panel_in_the_viewport` was added but not run: browser execution is unavailable in this sandbox.

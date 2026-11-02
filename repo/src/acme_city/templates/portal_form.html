@@ -63,7 +63,7 @@
 {% if form_error %}<p class="action-denied" role="alert" data-testid="form-error">{{ form_error }}</p>{% endif %}
 {% if form_notice %}<p class="muted" role="status" data-testid="form-notice">{{ form_notice }}</p>{% endif %}
 
-<form method="post" action="/apply/{{ spec.type_key }}" enctype="multipart/form-data" class="portal-form" novalidate data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-review-url="/apply/{{ spec.type_key }}/review" data-locate-url="/apply/locate" data-testid="application-form"{% if review and review.held %} data-server-held="true"{% endif %}>
+<form method="post" action="/apply/{{ spec.type_key }}#presubmit" enctype="multipart/form-data" class="portal-form" novalidate data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-review-url="/apply/{{ spec.type_key }}/review" data-locate-url="/apply/locate" data-testid="application-form"{% if review and review.held %} data-server-held="true"{% endif %}>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="draft" value="{{ draft.reference if draft else '' }}">
   {# The fallback submitter keeps an Enter key from losing the draft.  The
@@ -182,7 +182,7 @@
     <p><label><input type="checkbox" name="certification_accepted" id="f-certification_accepted" {% if state.certification_accepted %}checked{% endif %} data-testid="certify" aria-required="true"{{ bad('f-certification_accepted') }}> {{ certification }} {{ req() }}</label></p>
     <p class="muted needs-status" role="status" aria-live="polite" data-testid="completeness-banner" data-complete="{{ 'true' if state.can_submit else 'false' }}" data-status>{{ state.status }}</p>
     {% if review %}
-    <div data-testid="presubmit-panel" data-presubmit-root>
+    <div id="presubmit" data-testid="presubmit-panel" data-presubmit-root>
       {% for key in ['must_fix', 'should_check', 'looks_good'] %}
       <section data-testid="{{ key.replace('_', '-') }}">
         <h2>{{ review.labels[key] }}</h2>

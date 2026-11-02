@@ -126,6 +126,22 @@ def test_the_submit_button_is_never_disabled(client: TestClient) -> None:
     assert "disabled" not in button.group(0)
 
 
+def test_a_held_submit_returns_to_the_presubmit_panel(client: TestClient) -> None:
+    """The no-script form target carries the review panel's stable anchor."""
+    response = post_form(
+        client,
+        {**FENCE, "height_ft": "6", "location": "front"},
+        intent="submit",
+        files=FILES,
+    )
+    assert response.status_code == 422, response.text
+    panel = re.search(r'<div id="([^"]+)"[^>]*data-testid="presubmit-panel"', response.text)
+    assert panel is not None, response.text
+    form = re.search(r'<form[^>]*action="([^"]+)"[^>]*data-testid="application-form"', response.text)
+    assert form is not None, response.text
+    assert form.group(1).endswith(f"#{panel.group(1)}")
+
+
 def test_an_incomplete_application_shows_a_linked_error_list(
     client: TestClient,
 ) -> None:
