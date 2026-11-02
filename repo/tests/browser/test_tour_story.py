@@ -1,8 +1,9 @@
-"""The tour can fill the fence form, and it can name the issued permit.
+"""The tour fills the fence form when its check step arrives.
 
-Fill in the story's answers writes the form in the browser. It does not
-submit. Check my application then passes for a 4 ft back yard fence. A 6 ft
-fence in the front yard is a Must fix, because that is the published limit.
+The story answers fill an untouched form without submitting it or pressing
+Check my application. The refill button remains available. A 4 ft back yard
+fence then passes Check my application. A 6 ft fence in the front yard is a
+Must fix, because that is the published limit.
 
 The permit card after Issue permit names the permit of this visit and links
 the public search already filled with that number.
@@ -16,10 +17,10 @@ PERMIT = "ACME-2026-000731"
 ADDRESS = "12 Marrow Creek Road, ACME City"
 
 
-def test_fill_then_check_passes_and_six_feet_in_front_must_be_fixed(
+def test_arriving_at_the_check_step_fills_then_checks_without_auto_submitting(
     page, server: BrowserServer, login
 ) -> None:
-    """A 4 ft back yard fence has no Must fix. 6 ft in the front yard does."""
+    """An untouched form fills on arrival; only the visitor presses Check."""
     login("persona_applicant")
     page.evaluate(
         """() => sessionStorage.setItem("acme-tour", JSON.stringify({
@@ -28,11 +29,11 @@ def test_fill_then_check_passes_and_six_feet_in_front_must_be_fixed(
     )
     page.goto(f"{server.base_url}/apply/deck_fence", wait_until="networkidle")
     page.wait_for_selector('[data-testid="tour-fill"]')
-    page.locator('[data-testid="tour-fill"]').click()
     assert page.locator('[name="height_ft"]').input_value() == "4"
     assert page.locator('[name="location"]').input_value() == "side_rear"
     assert page.locator('[name="address_text"]').input_value() == "400 Lantern Row, ACME City"
     assert page.locator('[data-testid="certify"]').is_checked() is False
+    assert page.locator('[data-testid="presubmit-panel"]').count() == 0
     page.evaluate(
         """() => {
             const panel = document.querySelector('[data-testid="tour-panel"]');
@@ -49,6 +50,31 @@ def test_fill_then_check_passes_and_six_feet_in_front_must_be_fixed(
     page.locator('[data-testid="check-application"]').click()
     page.wait_for_selector('[data-testid="must-fix"] [data-testid="presubmit-item"]')
     assert page.locator('[data-testid="must-fix"] [data-testid="presubmit-item"]').count() >= 1
+
+
+def test_arriving_at_the_check_step_never_overwrites_typed_answers(
+    page, server: BrowserServer, login
+) -> None:
+    """A visitor's pre-existing form entry wins over the story answers."""
+    login("persona_applicant")
+    page.add_init_script(
+        """() => {
+            sessionStorage.setItem("acme-tour", JSON.stringify({
+              active: true, index: 3, playing: false, intervalMs: 0, path: "resident"
+            }));
+            document.addEventListener("DOMContentLoaded", () => {
+              const address = document.querySelector('[name="address_text"]');
+              const height = document.querySelector('[name="height_ft"]');
+              if (address) address.value = "500 Visitor Way, ACME City";
+              if (height) height.value = "5";
+            }, { once: true });
+        }"""
+    )
+    page.goto(f"{server.base_url}/apply/deck_fence", wait_until="networkidle")
+    page.wait_for_selector('[data-testid="tour-fill"]')
+    assert page.locator('[name="address_text"]').input_value() == "500 Visitor Way, ACME City"
+    assert page.locator('[name="height_ft"]').input_value() == "5"
+    assert page.locator('[name="file__site_plan"]').evaluate("input => input.files.length") == 0
 
 
 def test_the_permit_card_links_the_search_for_this_permit(

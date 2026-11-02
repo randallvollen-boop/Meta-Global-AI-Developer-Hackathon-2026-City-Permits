@@ -27,7 +27,7 @@ As **Applicant**, open `/apply`.
 As **Applicant**, open `/apply`.
 
 - Why: We are here because Check my application asks Muse for feedback before the application is sent.
-- Do: Press Fill in the story’s answers, press Check my application, then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application.
+- Do: With the story’s answers already filled in, press Check my application, then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application.
 - Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
 
 ### 3. Let the agent route the application

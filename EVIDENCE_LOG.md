@@ -336,3 +336,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Source inspection: held-form hints were flex children, making their wrappers determine the desktop row height and width. They are below the row now, and both related controls retain their `aria-describedby` links.
 - Source inspection: feedback markup hid every persisted outcome, so non-success feedback depended on script timing. Refused, denied, and error results now render visible; the existing client opens each non-success outcome once per audit event.
 - Local checks: `node --check src/acme_city/static/app.js`; `node --check src/acme_city/static/property.js`; and `python -m compileall -q src tests/unit/test_portal_form.py tests/unit/test_stylesheet_scopes.py tests/integration/test_presubmit.py` exited 0. The focused `pytest --collect-only` command collected 86 tests. Focused test execution and browser tests did not complete in this sandbox, so no test-pass claim is made.
+
+## 2026-11-02 — Retest item 2: resident tour fill evidence
+
+- Root cause: `tour.js` only called `fillStory` from the Fill in the story’s answers button listener, so arrival at the Check step did not populate the form.
+- Static checks passed: `node --check repo/src/acme_city/static/tour.js` and `uv run python -m compileall -q tests/browser/test_tour_story.py src/acme_city/ui/guide_views.py`. Focused non-browser tests passed: `38 passed` across `tests/unit/test_tour.py`, `test_judge_walkthrough_doc.py`, and `test_walkthrough_paths.py`.
+- Browser tests were deliberately not run in this workspace. The changed browser cases are ready for the lead’s browser gate.

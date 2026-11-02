@@ -102,7 +102,7 @@ PATHS: tuple[Path, ...] = (
                 "Check the application before it is sent",
                 "Applicant",
                 "/apply",
-                "Press Fill in the story’s answers, press Check my application, "
+                "With the story’s answers already filled in, press Check my application, "
                 "then set the fence to 6 ft in the front yard and press Check my "
                 "application again to see Must fix, or press Submit application.",
                 "The findings are grouped under Must fix, Should check and "
