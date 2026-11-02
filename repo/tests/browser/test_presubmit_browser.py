@@ -342,8 +342,9 @@ def test_a_held_submit_returns_to_the_presubmit_panel_in_the_viewport(
     page.locator('[data-testid="submit-application"]').click()
     panel = page.locator('[data-testid="presubmit-panel"]')
     panel.wait_for()
-    box = panel.bounding_box()
-    assert box is not None
+    boxes = _boxes(page, '[data-testid="presubmit-panel"]')
+    assert len(boxes) == 1
+    box = boxes[0]
     assert box["bottom"] > 0 and box["top"] < page.viewport_size["height"], box
     assert page.url.endswith("#presubmit"), page.url
 

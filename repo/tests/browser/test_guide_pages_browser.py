@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import pytest
 
 from acme_city.permits import lifecycle_map
-from acme_city.ui.guide_views import PATHS
+from acme_city.ui.guide_views import PATHS, resolve_path
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 
 PERSONAS = (
@@ -208,12 +208,13 @@ def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer)
     for path in PATHS:
         for step in path.steps:
             page.goto(f"{server.base_url}/walkthrough", wait_until="domcontentloaded")
+            expected_path = resolve_path(step.path)
             if step.persona:
                 page.locator(
-                    f'[data-testid="walkthrough-open"][data-next="{step.path}"]'
+                    f'[data-testid="walkthrough-open"][data-next="{expected_path}"]'
                 ).first.click()
                 page.wait_for_load_state("domcontentloaded")
-                assert urlparse(page.url).path == step.path, step.title
+                assert urlparse(page.url).path == expected_path, step.title
                 assert "moved_from" not in page.url, step.title
                 if step.persona == "Applicant":
                     assert page.locator('[data-testid="applicant-account"]').count() == 1, step.title
@@ -222,7 +223,7 @@ def test_every_walkthrough_step_lands_on_its_screen(page, server: BrowserServer)
                         step.persona
                     ), step.title
             else:
-                response = page.request.get(f"{server.base_url}{step.path}")
+                response = page.request.get(f"{server.base_url}{expected_path}")
                 assert response.ok, step.title
     assert page.recorded_errors == []
 

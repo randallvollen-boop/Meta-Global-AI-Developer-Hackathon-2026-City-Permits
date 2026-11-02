@@ -82,7 +82,7 @@ As **Agent Operator**, open `/agent/intake`.
 
 As **Permit Reviewer**, open `/permits/{case}`.
 
-- Why: We are here because a person decides the case, an open parcel or identity link is Data follow-up that does not block the decision, and the applicant is told by email at this point while the demonstration sends no email.
+- Why: We are here because a person decides the case, an open parcel or identity link is Data follow-up that does not block the decision; open parcel and identity work is marked Data follow-up, and the applicant is told by email at this point while the demonstration sends no email.
 - Do: On the café’s case workspace, press Start under Confirm parcel, press Start under Run application checks or Run checks again, and record the decision.
 - Look for: The checks summary reads Checks finished or These checks already ran on this revision, Next: record the decision appears when a decision is open, the Recommendation section reads Recommend deny: with the reason when the rules fail or Passed when they do not, Needs information is prefilled, plain blockers link to the fix, Data follow-up does not block the decision, and an approval against a failed rule reads Approved as an exception to the failed rule once Exception reason is written.
 

@@ -16,11 +16,15 @@ def test_a_missing_tour_case_clears_the_saved_tour_state(page, server: BrowserSe
         }))"""
     )
 
-    response = page.goto(f"{server.base_url}/permits/app_judge_79750d", wait_until="networkidle")
+    missing_url = f"{server.base_url}/permits/app_judge_79750d"
+    response = page.goto(missing_url, wait_until="networkidle")
 
     assert response is not None and response.status == 404
     assert page.locator('body[data-case-missing="true"]').count() == 1
     assert page.locator("h1").inner_text() == "This case is no longer here"
     assert page.locator('[data-testid="missing-case-start-fresh"]').inner_text() == "Start fresh"
     assert page.evaluate("() => sessionStorage.getItem('acme-tour')") is None
-    assert page.recorded_errors == []
+    assert page.url == missing_url
+    assert page.recorded_errors == [
+        "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]

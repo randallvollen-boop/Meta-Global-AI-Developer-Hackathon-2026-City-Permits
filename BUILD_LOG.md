@@ -498,3 +498,10 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Cause confirmed: a rejected application returned the form with `data-server-held`, but the review panel had no id and the form action carried no fragment. A browser therefore restored the document at its top instead of at the Must fix and override controls.
 - The shared applicant-form template now gives the panel the stable `presubmit` id and posts every form to that anchor. The fragment is browser-side only, so the server paths for the live check and implicit `intent=update` remain unchanged.
 - Added server and browser regression coverage. The browser check is written but not run here because this sandbox cannot launch browsers.
+
+## 2026-11-02 — Combined retest gate repairs
+
+- The missing-case browser assertion now permits exactly the single console 404 produced by navigation to the asserted missing-case URL; no other console error is allowed.
+- The generated judge walkthrough is synchronized with `guide_views.PATHS`, including the Data follow-up wording. The route browser check resolves the `{case}` placeholder as the rendered page does, and the held-submit viewport check uses its existing DOM-box helper.
+- The resident tour now treats a browser-selected first select option as untouched, so an otherwise pristine form is filled on arrival while visitor-entered values still prevent filling.
+- Local verification after these edits: `tests/unit/test_judge_walkthrough_doc.py` passed (3), `tests/unit/test_walkthrough_paths.py` passed (9), `node --check repo/src/acme_city/static/tour.js` passed, and a direct comparison confirmed the document exactly equals `walkthrough_markdown()`. Browser execution was not run in this sandbox.

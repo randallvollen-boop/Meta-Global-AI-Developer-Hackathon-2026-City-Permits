@@ -264,7 +264,9 @@
       }
       if (control.tagName === "SELECT") {
         for (var option = 0; option < control.options.length; option++) {
-          if (control.options[option].selected !== control.options[option].defaultSelected) return false;
+          var selectedByBrowser = option === 0 && control.selectedIndex === 0 &&
+            !control.options[option].defaultSelected;
+          if (control.options[option].selected !== control.options[option].defaultSelected && !selectedByBrowser) return false;
         }
         continue;
       }

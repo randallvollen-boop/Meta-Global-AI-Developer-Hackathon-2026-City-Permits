@@ -369,3 +369,8 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Before the template change, `uv run pytest tests/unit/test_portal_form.py::test_a_held_submit_returns_to_the_presubmit_panel -q` failed because the held response rendered a `data-testid="presubmit-panel"` element without an id.
 - After the template change, `uv run pytest tests/unit/test_portal_form.py -q` passed: 20 passed in 8.13s. It covers the held 422 response, the panel id, and the matching action fragment.
 - `tests/browser/test_presubmit_browser.py::test_a_held_submit_returns_to_the_presubmit_panel_in_the_viewport` was added but not run: browser execution is unavailable in this sandbox.
+
+## 2026-11-02 — Combined retest gate repairs
+
+- Verified after the final edits: `tests/unit/test_judge_walkthrough_doc.py` — 3 passed; `tests/unit/test_walkthrough_paths.py` — 9 passed; `node --check repo/src/acme_city/static/tour.js` — passed; and the checked submission document equals `walkthrough_markdown()` byte for byte.
+- The five affected browser tests were not run because browsers are unavailable in this sandbox; they remain for the browser gate.
