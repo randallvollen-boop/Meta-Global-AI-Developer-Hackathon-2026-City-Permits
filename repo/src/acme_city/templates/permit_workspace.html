@@ -19,6 +19,7 @@
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
       {% if detail.permit_type.icon %}<img class="type-ic" src="{{ detail.permit_type.icon.url }}" alt="" data-testid="permit-type-icon">{% endif %}
       <span class="pill {{ state_tones.get(detail.current.status, 'info') }}" data-testid="case-stage">{{ rv.header.stage }}</span>
+      {% if rv.data_follow_up %}<span class="pill warn" data-testid="data-follow-up">Data follow-up</span>{% endif %}
     </div>
     <h1 data-testid="case-title">{{ rv.header.project_type }}</h1>
     <p class="sub" data-testid="case-address">{{ rv.header.address or 'Property address not recorded' }}{% if rv.header.submitted_address and rv.header.submitted_address != rv.header.address %} <span class="muted">(submitted as &ldquo;{{ rv.header.submitted_address }}&rdquo;)</span>{% endif %}</p>
@@ -44,11 +45,11 @@
   <div class="actions"><a class="btn ghost" href="{{ rv.header.back_href }}" data-testid="back-link">{{ rv.header.back_label }}</a> {% if detail.can_open_submission %}<a class="btn" href="/steward/applications/{{ app.application_id }}" target="_blank" rel="noopener" data-testid="open-original-submission">Open the original submission</a> {% endif %}{{ ui.detail_link('case-tech', app.application_id, 'Technical details') }} {{ ui.help_button('permit') }}</div>
 </div>
 
-<details data-testid="case-pipeline">
-  <summary>More details</summary>
+<details class="ws-section" data-testid="case-pipeline">
+  <summary><h2>Where this case is</h2></summary>
+  <div class="ws-section-body">
   <section class="card">
   <div class="card-b">
-    <div class="card-h" style="padding:0 0 14px"><h2>Where this case is</h2></div>
     <div class="pipe">
       {% for step in detail.pipeline %}
       <div class="step {{ step.state }}">
@@ -60,12 +61,14 @@
     </div>
   </div>
   </section>
+  </div>
 </details>
 
 
 <div class="ws">
   <div class="ws-main">
 
+    {% set ws_collapse = true %}
     {% include "components/responsibility_panel.html" %}
 
     <section class="card">
@@ -76,14 +79,50 @@
       </div>
 
       <div class="card-b tab-panel" id="panel-review" role="tabpanel" aria-labelledby="tab-review" data-testid="review-panel">
-        <section class="next-action" data-testid="next-action">
-          <h2>Next action</h2>
+        <details class="ws-section next-action" data-testid="next-action"{% if detail.open_sections.next %} open{% endif %}>
+          <summary><h2>Next action</h2></summary>
+          <div class="ws-section-body">
           <p><strong>{{ detail.next_step_text }}</strong></p>
+          {% if rv.blocker_guides %}
+          {% set decision_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'decision') | list %}
+          {% set follow_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'follow_up') | list %}
+          {% set issuance_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'issuance') | list %}
+          <div data-testid="blocker-summary">
+            {% if decision_guides %}
+            <p>{{ decision_guides|length }} blocker{{ 's' if decision_guides|length != 1 else '' }} still prevent{{ 's' if decision_guides|length == 1 else '' }} a decision.</p>
+            {% endif %}
+            {% if follow_guides %}
+            <p data-testid="data-follow-up-note">Data follow-up is still open. It does not prevent a decision.</p>
+            {% endif %}
+            {% if issuance_guides %}
+            <p>{{ issuance_guides|length }} blocker{{ 's' if issuance_guides|length != 1 else '' }} still prevent{{ 's' if issuance_guides|length == 1 else '' }} issuance.</p>
+            {% endif %}
+          </div>
+          <ul class="issue-plain" data-testid="blocker-guides">
+            {% for item in rv.blocker_guides %}
+            <li data-testid="blocker-guide" data-blocker-code="{{ item.code }}">
+              <span data-testid="blocker-text">{{ item.text }}</span>
+              <span class="muted" data-testid="blocker-owner">{{ item.owner }}</span>
+              <a href="{{ item.href }}" data-testid="blocker-link">Open the fix</a>
+            </li>
+            {% endfor %}
+          </ul>
+          <details data-testid="blocker-codes">
+            <summary>More details</summary>
+            <ul>
+              {% for item in rv.blocker_guides %}
+              <li><span class="mono" data-testid="blocker-code">{{ item.code }}</span> {{ item.detail }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endif %}
           <p class="muted" data-testid="issuance-status">Permit issuance: <b>{{ rv.issuance_status }}</b>{% if rv.issuance_next %}. {{ rv.issuance_next }}{% endif %}</p>
-        </section>
+          </div>
+        </details>
 
-        <section data-testid="issue-list-section">
-          <h2>Outstanding issues</h2>
+        <details class="ws-section" data-testid="issue-list-section"{% if detail.open_sections.issues %} open{% endif %}>
+          <summary><h2>Outstanding issues</h2></summary>
+          <div class="ws-section-body">
           {% if rv.outstanding %}
           <ul class="issue-plain" data-testid="outstanding-issues">
             {% for issue in rv.outstanding %}
@@ -104,10 +143,13 @@
             </ul>
           </div>
           {% endif %}
-        </section>
+          </div>
+        </details>
 
-        <section data-testid="ai-section">
-          <h2>Suggested fields{% if not run or run.mode != 'builtin' %} from Muse{% endif %} {{ ui.info('suggested_fields') }}</h2>
+        <details class="ws-section" data-testid="ai-section">
+          <summary><h2>Suggested fields{% if not run or run.mode != 'builtin' %} from Muse{% endif %}</h2></summary>
+          <div class="ws-section-body">
+          {{ ui.info('suggested_fields') }}
           {% if rv.ai.has_run %}
           <p class="ai-summary" data-testid="ai-summary">
             <b>{{ rv.ai.total }} suggested field{{ '' if rv.ai.total == 1 else 's' }}</b>. {{ rv.ai.review_text }}. <span class="pill {{ run.mode }}">{{ rv.ai.source_label|pretty }}</span>.
@@ -170,11 +212,48 @@
 
           </div>
           </details>
-        </section>
+          </div>
+        </details>
 
-        <section data-testid="application-checks">
-          <h2>Application checks {{ ui.info('application_checks') }}</h2>
+        <details class="ws-section" id="application-checks" data-testid="application-checks"{% if detail.open_sections.checks %} open{% endif %}>
+          <summary><h2>Application checks</h2></summary>
+          <div class="ws-section-body">
+          {{ ui.info('application_checks') }}
           <p class="muted">Rules run against the application itself. These are separate from the extraction checks above.</p>
+          {% if detail.evaluation %}
+          <div class="checks-outcome" data-testid="checks-outcome">
+            <p data-testid="checks-result-summary">{{ detail.check_summary }}</p>
+            <ul class="checks-result-list" data-testid="checks-result-list">
+              {% for result in detail.evaluation.results %}
+              <li data-testid="check-result">
+                <span data-testid="check-plain">{{ result.status_label }}</span>.
+                {{ result.rule_title or result.rule_id }}.
+                Published rule: <span class="mono" data-testid="check-citation">{{ result.citation }}</span>.
+              </li>
+              {% endfor %}
+            </ul>
+            <p class="checks-next" data-testid="checks-next">
+              {% if detail.ready_to_decide %}
+              Ready to decide:
+              <a class="btn sm primary" href="#decision-form" data-testid="checks-next-button">Record review decision</a>
+              {% elif detail.blockers %}
+              {{ detail.blockers|length }} blocker{{ 's' if detail.blockers|length != 1 else '' }} still prevent{{ 's' if detail.blockers|length == 1 else '' }} a decision.
+              <a class="btn sm" href="#application-blockers" data-testid="checks-next-button">Review the blockers</a>
+              {% elif detail.current_decision %}
+              The decision is recorded.
+              <a class="btn sm" href="#decision-summary" data-testid="checks-next-button">Read the decision</a>
+              {% else %}
+              The checks are recorded.
+              {% endif %}
+            </p>
+          </div>
+          {% endif %}
+          {% for item in actions if item.action_id == 'permit.evaluate' %}
+            {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
+          {% endfor %}
+          {% if detail.evaluation %}
+          <p class="muted checks-last-run" data-testid="checks-last-run">Last run {{ ui_time(detail.evaluation.performed_at) }}</p>
+          {% endif %}
           <div data-testid="findings-panel">
         {% if detail.blockers %}
         <p class="notice" role="status" data-testid="checks-summary">
@@ -257,12 +336,13 @@
         {% endif %}
 
           </div>
-        </section>
+          </div>
+        </details>
 
-        <details data-testid="agent-more">
-          <summary>More details</summary>
+        <details class="ws-section" data-testid="agent-more">
+          <summary><h2>Agent findings and runs</h2></summary>
+          <div class="ws-section-body">
         <section data-testid="agent-section">
-          <h2>Agent findings and runs</h2>
       {% if detail.findings %}
       <h3>What the agent found</h3>
       <ul class="issue-list" data-testid="application-findings">
@@ -365,15 +445,22 @@
       {% endif %}
 
         </section>
+          </div>
         </details>
 
-        <section data-testid="stage-decision">
-          <h2>Decision {{ ui.info('review_decision') }}</h2>
+        <details class="ws-section" data-testid="stage-decision"{% if detail.open_sections.decision %} open{% endif %}>
+          <summary><h2>Decision</h2></summary>
+          <div class="ws-section-body">
+          {{ ui.info('review_decision') }}
           {% if detail.current_decision or detail.decisions or detail.current_recommendation or detail.recommendations %}
           {% set d = detail.current_decision %}
           {% if d %}
-          <dl class="pair-list" data-testid="decision-summary">
+          <dl class="pair-list" id="decision-summary" data-testid="decision-summary">
             <dt>Outcome</dt><dd>{{ d.outcome_label }}{% if d.stale %} <span class="pill warn">stale: needs reconfirming</span>{% endif %}</dd>
+            {% if d.exception_statement %}
+            <dt>Exception</dt><dd data-testid="decision-exception">{{ d.exception_statement }}</dd>
+            <dt>Exception reason</dt><dd>{{ d.exception_reason }}</dd>
+            {% endif %}
             <dt>Decided by</dt><dd>{{ d.decided_by_label }}</dd>
             <dt>Date</dt><dd>{{ d.decided_at }}</dd>
             <dt>Revision</dt><dd>Revision {{ rv.header.revision }}{% if detail.evaluation %}, application checks version {{ detail.evaluation.version }}{% endif %}</dd>
@@ -539,19 +626,23 @@
           {% else %}
           <p class="muted" data-testid="decision-empty">No reviewer decision is recorded yet.</p>
           {% endif %}
-        </section>
+          </div>
+        </details>
 
-        <section data-testid="stage-line-section">
-          {% if rv.empty_stages %}
+        {% if rv.empty_stages %}
+        <details class="ws-section" data-testid="empty-stages-section">
+          <summary><h2>Not recorded yet</h2></summary>
+          <div class="ws-section-body">
           <p class="stage-line" data-testid="empty-stages">{{ rv.empty_stages|join(' · ') }}</p>
-          {% endif %}
-        </section>
+          </div>
+        </details>
+        {% endif %}
 
         {% if detail.finance.assessment or detail.finance.allocations %}
-        <details data-testid="fee-more">
-          <summary>More details</summary>
+        <details class="ws-section" data-testid="fee-more"{% if detail.open_sections.fee %} open{% endif %}>
+          <summary><h2>Fee assessment and payment</h2></summary>
+          <div class="ws-section-body">
         <section data-testid="stage-fee">
-          <h2>Fee assessment and payment</h2>
 
       {% if detail.finance.assessment %}
       <p class="value-band value-current" data-testid="value-current">
@@ -610,12 +701,14 @@
 
 
         </section>
+          </div>
         </details>
         {% endif %}
 
         {% if detail.issued %}
-        <section data-testid="stage-permit">
-          <h2>Permit issuance</h2>
+        <details class="ws-section" data-testid="stage-permit"{% if detail.open_sections.permit %} open{% endif %}>
+          <summary><h2>Permit issuance</h2></summary>
+          <div class="ws-section-body">
 
       {% for entry in detail.issued %}
       <div class="value-band value-issued" data-testid="value-issued">
@@ -627,14 +720,15 @@
       <p class="muted" data-testid="issued-empty">Nothing has been issued for this case.</p>
       {% endfor %}
 
-        </section>
+          </div>
+        </details>
         {% endif %}
 
         {% if detail.proposed %}
-        <details data-testid="corrections-more">
-          <summary>More details</summary>
+        <details class="ws-section" data-testid="corrections-more">
+          <summary><h2>Proposed corrections</h2></summary>
+          <div class="ws-section-body">
         <section data-testid="stage-proposed">
-          <h2>Proposed corrections</h2>
 
       {% for proposal in detail.proposed %}
       <div class="value-band value-proposed" data-testid="value-proposed">
@@ -653,23 +747,27 @@
 
 
         </section>
+          </div>
         </details>
         {% else %}
-        <details data-testid="corrections-more">
-          <summary>More details</summary>
+        <details class="ws-section" data-testid="corrections-more">
+          <summary><h2>Proposed corrections</h2></summary>
+          <div class="ws-section-body">
         <p class="muted" data-testid="proposed-empty">No correction is proposed for this case.</p>
+          </div>
         </details>
         {% endif %}
 
-        <section class="review-actions" data-testid="review-actions" aria-labelledby="review-actions-heading">
-          <h2 id="review-actions-heading">Actions</h2>
+        <details class="ws-section review-actions" data-testid="review-actions" aria-labelledby="review-actions-heading"{% if detail.open_sections.actions %} open{% endif %}>
+          <summary><h2 id="review-actions-heading">Actions</h2></summary>
+          <div class="ws-section-body">
           <div class="act">
-            {% for item in actions if item.group == 'review' and not (item.action_id == 'permit.decide' and decision_form_shown) %}
+            {% for item in actions if item.group == 'review' and item.action_id != 'permit.evaluate' and not (item.action_id == 'permit.decide' and decision_form_shown) %}
               {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
             {% endfor %}
 
             {% if detail.can_decide and detail.evaluation and not detail.current_decision %}
-            <details class="action act-card" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
+            <details class="action act-card" id="decision-form" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
               <summary class="act-summary">
                 <span class="act-main">
                   <span class="action-label act-title">Record review decision</span>
@@ -686,19 +784,34 @@
                 <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
                 <div class="fieldset">
                   <label for="decision-outcome">Outcome *</label>
-                  <select id="decision-outcome" name="outcome" required>
-                    <option value="approved">Approve</option>
+                  <select id="decision-outcome" name="outcome" required data-testid="decision-outcome">
+                    <option value="approved"{% if not rv.information_request %} selected{% endif %}>Approve</option>
                     <option value="approved_with_conditions">Approve with conditions</option>
                     <option value="denied">Deny</option>
+                    <option value="information_requested"{% if rv.information_request %} selected{% endif %}>Needs information</option>
                   </select>
                 </div>
+                {% set failing_rules = detail.evaluation.results | selectattr('status', 'in', ['fail', 'review']) | list %}
+                {% if failing_rules %}
+                <div class="fieldset" data-testid="exception-rules">
+                  <p>Approving goes against these checks. A check that says Not checked did not run because the parcel is not confirmed. A denial does not need an exception reason.</p>
+                  <ul>
+                    {% for result in failing_rules %}
+                    <li data-testid="exception-rule">{{ result.rule_title or result.rule_id }}. {{ result.wording }}</li>
+                    {% endfor %}
+                  </ul>
+                  <label for="exception-reason">Exception reason</label>
+                  <textarea id="exception-reason" name="exception_reason" rows="3" data-testid="exception-reason"></textarea>
+                  <p class="muted">Required when you approve against a check that failed or needs a person. For example, a variance that was granted.</p>
+                </div>
+                {% endif %}
                 <div class="fieldset">
                   <label for="decision-conditions">Conditions of approval (one per line)</label>
                   <textarea id="decision-conditions" name="conditions" rows="3" data-testid="decision-conditions"></textarea>
                 </div>
                 <div class="fieldset">
                   <label for="decision-reason">Rationale (internal record) *</label>
-                  <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason"></textarea>
+                  <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason">{% if rv.information_request %}{{ rv.information_request.text }}{% endif %}</textarea>
                 </div>
                 <div class="fieldset">
                   <label for="decision-code">Denial reason code</label>
@@ -745,10 +858,12 @@
             </details>
             {% endif %}
           </div>
-        </section>
+          </div>
+        </details>
 
-        <details data-testid="more-actions">
-          <summary>More actions</summary>
+        <details class="ws-section" data-testid="more-actions">
+          <summary><h2>More actions</h2></summary>
+          <div class="ws-section-body">
           <div class="act">
             {% for item in actions if item.group == 'more' and not (item.action_id == 'permit.reconfirm' and (not detail.current_decision or reconfirm_form_shown)) %}
               {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
@@ -963,10 +1078,12 @@
             </ul>
             {% endif %}
           </div>
+          </div>
         </details>
 
-        <details data-testid="fee-preview">
-          <summary>Fee preview</summary>
+        <details class="ws-section" data-testid="fee-preview">
+          <summary><h2>Fee preview</h2></summary>
+          <div class="ws-section-body">
           <div class="fee">
             {% if detail.fee_lines %}
               {% for line in detail.fee_lines %}
@@ -979,11 +1096,14 @@
               <p class="muted">No fee has been assessed yet. A fee is assessed only after a reviewer decision, from the recorded schedule.</p>
             {% endif %}
           </div>
+          </div>
         </details>
       </div>
 
       <div class="card-b tab-panel" id="panel-documents" role="tabpanel" aria-labelledby="tab-documents" data-testid="documents-panel">
-        <h2>Submission</h2>
+        <details class="ws-section" data-testid="submission-section">
+          <summary><h2>Submission</h2></summary>
+          <div class="ws-section-body">
       <div class="value-band value-submitted" data-testid="value-submitted">
         <span class="badge badge-submitted">submitted value</span>
         Revision {{ detail.submitted.revision_number }} ({{ detail.submitted.revision_id }}),
@@ -991,8 +1111,12 @@
         last revision {{ detail.submitted.revision_submitted_at }},
         date basis {{ detail.submitted.date_basis }}.
       </div>
+          </div>
+        </details>
 
-        <h2>Documents</h2>
+        <details class="ws-section" data-testid="documents-section">
+          <summary><h2>Documents</h2></summary>
+          <div class="ws-section-body">
         <table class="data-table" data-testid="document-table">
           <caption class="visually-hidden">Stored document versions</caption>
           <thead><tr><th scope="col">Name</th><th scope="col">Version</th><th scope="col">Received</th><th scope="col">View</th></tr></thead>
@@ -1015,9 +1139,12 @@
             {% endfor %}
           </tbody>
         </table>
+          </div>
+        </details>
 
-        <details data-testid="documents-more">
-          <summary>More details</summary>
+        <details class="ws-section" data-testid="documents-more">
+          <summary><h2>Revisions and submitted facts</h2></summary>
+          <div class="ws-section-body">
         <h2>Revisions</h2>
         <p class="muted" data-testid="revision-note">Results are shown for the current revision only.</p>
         <ol class="revisions" data-testid="revision-list">
@@ -1050,14 +1177,15 @@
         </table>
 
         {% include "components/evidence_panel.html" %}
+          </div>
         </details>
       </div>
 
       <div class="card-b tab-panel" id="panel-people" role="tabpanel" aria-labelledby="tab-people" data-testid="people-panel">
-    <details data-testid="people-more">
-      <summary>More details</summary>
+    <details class="ws-section" data-testid="people-more">
+      <summary><h2 id="identity-heading">People</h2></summary>
+      <div class="ws-section-body">
     <section aria-labelledby="identity-heading">
-      <h2 id="identity-heading">People</h2>
       <table class="data-table" data-testid="identity-parties">
         <caption class="visually-hidden">Parties on this application</caption>
         <thead><tr><th scope="col">Party</th><th scope="col">Role</th><th scope="col">Primary</th><th scope="col">Authority evidence</th></tr></thead>
@@ -1097,6 +1225,7 @@
         </tbody>
       </table>
     </section>
+      </div>
     </details>
 
 
@@ -1104,9 +1233,9 @@
       </div>
 
       <div class="card-b tab-panel" id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" data-testid="timeline-panel">
-        <details data-testid="activity-more">
-          <summary>More details</summary>
-        <h2>Comments</h2>
+        <details class="ws-section" data-testid="activity-comments">
+          <summary><h2>Comments</h2></summary>
+          <div class="ws-section-body">
         <div data-testid="comments-panel">
         {% if detail.comments %}
         <ul class="issue-list" data-testid="comment-list">
@@ -1122,7 +1251,11 @@
         <p class="muted" data-testid="comments-empty">No comment is recorded on this case.</p>
         {% endif %}
         </div>
-        <h2>History</h2>
+          </div>
+        </details>
+        <details class="ws-section" data-testid="activity-history">
+          <summary><h2>History</h2></summary>
+          <div class="ws-section-body">
         {% if detail.synthetic %}
         <section class="panel" data-testid="synthetic-history-panel">
           <h2>Synthetic history</h2>
@@ -1132,6 +1265,7 @@
         {% else %}
         {% include "components/history_panel.html" %}
         {% endif %}
+          </div>
         </details>
 
       </div>

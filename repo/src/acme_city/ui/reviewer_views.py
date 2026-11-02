@@ -10,8 +10,10 @@ details; nothing here writes a record or decides a permission.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote, unquote, urlencode, urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ from sqlalchemy.orm import Session
 from acme_city.agents.plain_reason import describe_recommendation
 from acme_city.applicant_portal.presubmit import FLAG as SUBMITTED_WITH_KNOWN_ISSUES
 from acme_city.core.clock import utc_now
+from acme_city.permits.schemas import Blocker
 from acme_city.persistence.models import audit, change, finance, permit, registry
 from acme_city.ui import display, ops_views
 
@@ -553,7 +556,10 @@ def label_workspace(session: Session, detail: dict[str, Any]) -> None:
             session, evaluation.get("performed_by_actor_id")
         )
         for result in evaluation.get("results") or []:
-            result["status_label"] = ops_views.display_word("values", result.get("status"))
+            if result.get("reason") == "parcel_not_confirmed":
+                result["status_label"] = "Not checked"
+            else:
+                result["status_label"] = ops_views.display_word("values", result.get("status"))
             rule_ids.add(str(result.get("rule_id") or ""))
     for row in detail.get("evaluations") or []:
         row["outcome_label"] = ops_views.display_word("values", row.get("outcome"))
@@ -622,11 +628,511 @@ def label_workspace(session: Session, detail: dict[str, Any]) -> None:
         allocation["actor_label"] = _actor_label(session, allocation.get("actor_id"))
 
 
+#: Queues a case may send the reviewer back to. Persona homes are added
+#: beside these, because a persona who opened the case from home should
+#: land there again.
+_QUEUE_RETURNS: dict[str, str] = {
+    "/queue": "/queue",
+    "/queue/review": "/queue/review",
+    "/queue/intake": "/queue/intake",
+    "/queue/early-resolution": "/queue/early-resolution",
+    "/steward": "/steward",
+    "/agents": "/agents",
+}
+
+#: A permit workspace address with no query. Only these gain ``?from=``.
+_CASE_HREF = re.compile(r"^/permits/[A-Za-z0-9_-]+$")
+
+
+def _path_key(path: str) -> str:
+    """Return the allowlist key of a local path, or ``""`` when it has none."""
+    if not path.startswith("/") or path.startswith("//"):
+        return ""
+    return path.rstrip("/") or "/"
+
+
+def _return_targets() -> dict[str, str]:
+    """Return the allowlisted path and the address the back link uses."""
+    from acme_city.ui import view_models
+
+    targets = dict(_QUEUE_RETURNS)
+    for profile in view_models.PERSONA_PROFILES.values():
+        href = str(profile.get("next") or "")
+        key = _path_key(href)
+        if key:
+            targets.setdefault(key, href)
+    for href in view_models.HOME_OVERRIDES.values():
+        key = _path_key(str(href))
+        if key:
+            targets.setdefault(key, str(href))
+    return targets
+
+
+def page_origin(path: str, query: str = "") -> str:
+    """Return the local path of the page a case link is leaving."""
+    origin = path or "/"
+    if query:
+        return f"{origin}?{query}"
+    return origin
+
+
+def accepted_return(value: str | None) -> tuple[str, str] | None:
+    """Return ``(href, screen path)`` when ``value`` is an allowlisted local return.
+
+    A query on an allowlisted queue is kept, so a filtered queue is the
+    same queue on the way back. A foreign, absolute or off-list value
+    returns ``None`` and the caller uses the persona's home queue.
+    """
+    if not value or not value.startswith("/") or value.startswith("//"):
+        return None
+    if "\\" in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        return None
+    parts = urlsplit(value)
+    if parts.scheme or parts.netloc:
+        return None
+    decoded_path = unquote(parts.path)
+    decoded_query = unquote(parts.query)
+    if (
+        "\\" in decoded_path
+        or "\\" in decoded_query
+        or any(ord(char) < 0x20 or ord(char) == 0x7F for char in decoded_path + decoded_query)
+        or not decoded_path.startswith("/")
+        or decoded_path.startswith("//")
+        or any(segment in {".", ".."} for segment in decoded_path.split("/"))
+    ):
+        return None
+    canonical = _return_targets().get(_path_key(decoded_path))
+    if canonical is None:
+        return None
+    href = f"{canonical}?{parts.query}" if parts.query else canonical
+    return href, canonical
+
+
+def workspace_return(session: Session, actor: Any, value: str | None) -> tuple[str, str]:
+    """Return the back link of the permit workspace and its label."""
+    from acme_city.ui import view_models
+
+    chosen = accepted_return(value)
+    if chosen is None:
+        home = view_models.home_for(session, actor)
+        return home["href"], f"Back to {home['label']}"
+    href, label_path = chosen
+    screen = view_models.screen_for_path(label_path)
+    if screen:
+        name = view_models.screen_label(screen)
+    elif _path_key(label_path) == "/city":
+        name = "the City website"
+    else:
+        name = label_path
+    return href, f"Back to {name}"
+
+
+def stamp_case_links(value: Any, origin: str) -> None:
+    """Add ``?from=`` to every permit-workspace link under ``value``.
+
+    The origin has to be an allowlisted return. Anything else is left
+    alone, and the workspace then uses the persona's home queue.
+    """
+    if accepted_return(origin) is None:
+        return
+    _stamp(value, origin, set())
+
+
+def _stamp(value: Any, origin: str, seen: set[int]) -> None:
+    if isinstance(value, dict):
+        marker = id(value)
+        if marker in seen:
+            return
+        seen.add(marker)
+        href = value.get("href")
+        if isinstance(href, str) and _CASE_HREF.fullmatch(href):
+            value["href"] = f"{href}?{urlencode({'from': origin})}"
+        for item in list(value.values()):
+            _stamp(item, origin, seen)
+    elif isinstance(value, list):
+        marker = id(value)
+        if marker in seen:
+            return
+        seen.add(marker)
+        for item in value:
+            _stamp(item, origin, seen)
+
+
+def _case_from(application_id: str) -> str:
+    """Return the ``from`` value that brings a person back to this case."""
+    return quote(f"/permits/{application_id}", safe="/")
+
+
+def _off_case(path: str, application_id: str) -> str:
+    """Return a link to another screen, with a return to this case."""
+    return f"{path}?from={_case_from(application_id)}"
+
+
+def _short_place(text: str) -> str:
+    """Return an address without the trailing city name."""
+    cleaned = " ".join(str(text or "").split())
+    suffix = ", ACME City"
+    if cleaned.endswith(suffix):
+        cleaned = cleaned[: -len(suffix)].strip()
+    return cleaned
+
+
+def _property_place(session: Session, application: permit.Application) -> str:
+    """Return the address the blocker sentence names."""
+    from acme_city.persistence.models import gis
+
+    match = session.execute(
+        select(gis.ApplicationParcelMatch).where(
+            gis.ApplicationParcelMatch.application_id == application.id
+        )
+    ).scalars().first()
+    if match is not None and match.submitted_text:
+        place = _short_place(match.submitted_text)
+        if place:
+            return place
+    return _short_place(address_with_unit(session, application)) or "this property"
+
+
+def _party_label(session: Session, party_id: str) -> str:
+    """Return the name a blocker sentence uses for a party."""
+    name = _party_name(session, party_id)
+    return name or "this party"
+
+
+def _credential_row(session: Session, credential_id: str | None) -> registry.Credential | None:
+    """Return the credential a blocker names."""
+    if not credential_id:
+        return None
+    return session.execute(
+        select(registry.Credential).where(registry.Credential.credential_id == credential_id)
+    ).scalars().first()
+
+
+def _credential_words(credential: registry.Credential | None) -> str:
+    """Return the plain name of a license or registration."""
+    if credential is None:
+        return "license"
+    kind = {
+        "contractor_registration": "contractor registration",
+        "business_license": "business licence",
+    }.get(credential.credential_type, credential.credential_type.replace("_", " "))
+    return f"{kind} {credential.number}".strip()
+
+
+def _identity_href(session: Session, party_id: str, application_id: str) -> str:
+    """Return the steward task that confirms one party, or the steward queue."""
+    proposal = None
+    if party_id:
+        proposal = session.execute(
+            select(registry.MatchProposal)
+            .where(registry.MatchProposal.entity_id == party_id)
+            .order_by(registry.MatchProposal.created_at.desc())
+        ).scalars().first()
+        if proposal is None:
+            for row in session.execute(select(registry.MatchProposal)).scalars():
+                candidates = {str(item) for item in (row.candidate_ids or [])}
+                if party_id in candidates:
+                    proposal = row
+                    break
+    if proposal is not None:
+        return _off_case(f"/steward/issues/link/{proposal.id}", application_id)
+    return _off_case("/steward", application_id)
+
+
+def _payer_party_id(session: Session, blocker: Blocker) -> str:
+    """Return the party a finance-link blocker is about."""
+    if blocker.subject_type == "party":
+        return str(blocker.subject_id or "")
+    if blocker.subject_id:
+        account = session.execute(
+            select(registry.FinanceAccount).where(
+                registry.FinanceAccount.account_id == blocker.subject_id
+            )
+        ).scalars().first()
+        if account is not None and account.party_id:
+            return account.party_id
+    return ""
+
+
+def blocker_guide(
+    session: Session,
+    application: permit.Application,
+    blocker: Blocker,
+) -> dict[str, str]:
+    """Return the plain words, the owner and the fix link of one blocker.
+
+    The raw code stays out of the sentence. The link leaves the case only
+    with ``?from=`` set to this case, so the person can come back.
+    """
+    code = blocker.code
+    place = _property_place(session, application)
+    case_id = application.id
+    owner = "Permit Reviewer"
+    href = "#application-checks"
+    scope = "decision"
+    text = issue_label(code) or blocker.detail
+
+    if code == "parcel_link_unapproved":
+        owner = "Data Steward"
+        scope = "follow_up"
+        href = _off_case(f"/steward/issues/parcel/{case_id}", case_id)
+        text = (
+            f"The property match for {place} has not been approved by the Data Steward."
+        )
+    elif code in {"parcel_unmatched", "site_unresolved", "site_missing"}:
+        owner = "Data Steward"
+        href = _off_case(f"/steward/issues/parcel/{case_id}", case_id)
+        text = (
+            f"The property address for {place} has not been resolved by the Data Steward."
+        )
+    elif code == "parcel_unconfirmed":
+        owner = "Permit Reviewer"
+        href = "#property-heading"
+        text = (
+            f"The property match for {place} has not been confirmed by the Permit Reviewer."
+        )
+    elif code == "identity_link_unapproved":
+        scope = "follow_up"
+        party_id = str(blocker.subject_id or "")
+        owner = "Data Steward"
+        href = _identity_href(session, party_id, case_id)
+        text = (
+            f"The identity match for {_party_label(session, party_id)} has not been "
+            "approved by the Data Steward."
+        )
+    elif code in {"finance_account_link_unapproved", "finance_account_unknown"}:
+        party_id = _payer_party_id(session, blocker)
+        owner = "Data Steward"
+        href = _identity_href(session, party_id, case_id)
+        text = (
+            f"The payer account for {_party_label(session, party_id)} has not been "
+            "approved by the Data Steward."
+        )
+    elif code.startswith("credential_"):
+        credential = _credential_row(session, blocker.subject_id)
+        owner = "City Administrator"
+        if credential is not None:
+            href = _off_case(f"/detail/credential/{credential.credential_id}", case_id)
+        elif blocker.subject_id:
+            href = _off_case(f"/detail/credential/{blocker.subject_id}", case_id)
+        words = _credential_words(credential)
+        if code == "credential_expired":
+            text = f"The {words} has expired. The City Administrator updates that record."
+        elif code == "credential_missing":
+            text = f"The {words} is not on record. The City Administrator records it."
+        elif code == "credential_inactive":
+            text = f"The {words} is not active. The City Administrator updates that record."
+        elif code == "credential_not_yet_valid":
+            text = (
+                f"The {words} is not valid yet. The City Administrator updates that record."
+            )
+        else:
+            text = (
+                f"The {words} does not match the application. "
+                "The City Administrator corrects that record."
+            )
+    elif code in {"rule_fail", "rule_review"}:
+        rule_id = str(blocker.subject_id or "")
+        title = _rule_titles(session, {rule_id}).get(rule_id) or rule_id or "A check"
+        owner = "Permit Reviewer"
+        href = "#application-checks"
+        if code == "rule_fail":
+            text = (
+                f"{title} failed. The Permit Reviewer can record an exception "
+                "or run the checks again."
+            )
+        else:
+            text = f"{title} needs a person. The Permit Reviewer runs the checks."
+    elif code in {"evaluation_stale", "no_current_evaluation"}:
+        owner = "Permit Reviewer"
+        href = "#application-checks"
+        text = (
+            "The application checks are out of date. The Permit Reviewer runs them again."
+            if code == "evaluation_stale"
+            else "The application checks have not been run. The Permit Reviewer runs them."
+        )
+    elif code in {"decision_stale", "decision_not_current", "decision_not_approved"}:
+        owner = "Permit Reviewer"
+        href = "#decision-summary"
+        text = "The recorded decision needs the Permit Reviewer to confirm it again."
+    elif code == "no_current_assessment" or code.startswith("reconciliation_"):
+        owner = "City Administrator"
+        href = _off_case("/reconciliation", case_id)
+        scope = "issuance"
+        text = (
+            "No fee has been assessed, so the permit cannot be issued. "
+            "The City Administrator records the fee."
+            if code == "no_current_assessment"
+            else (
+                "The fee is not settled, so the permit cannot be issued. "
+                "The City Administrator reconciles the payment."
+            )
+        )
+    elif code == "open_issue":
+        owner = "City Administrator"
+        href = _off_case("/governance", case_id)
+        text = "An open issue still blocks issuance. The City Administrator closes it."
+        scope = "issuance"
+
+    return {
+        "code": code,
+        "text": text,
+        "owner": owner,
+        "href": href,
+        "detail": blocker.detail,
+        "scope": scope,
+    }
+
+
+def workspace_blocker_guides(
+    session: Session, application: permit.Application
+) -> list[dict[str, str]]:
+    """Return every blocker of the case in the words the next-action panel shows.
+
+    Decision blockers come from the same list an approval checks. A stale
+    evaluation is named even when that list does not carry it. The fee
+    blockers are added only once a decision is approved, because they hold
+    issuance rather than the decision.
+    """
+    from acme_city.core.clock import utc_now
+    from acme_city.permits.decisions import PermitDecisionService
+    from acme_city.permits.issuance import PermitIssuanceService
+    from acme_city.permits.service import PermitService
+
+    service = PermitService(session)
+    evaluation = service.current_evaluation(application.id)
+    found: list[Blocker] = []
+    if evaluation is not None:
+        found.extend(PermitDecisionService(session).blockers(application, evaluation))
+        if evaluation.stale and not any(item.code == "evaluation_stale" for item in found):
+            found.append(
+                Blocker(
+                    code="evaluation_stale",
+                    detail="the current evaluation is stale",
+                    subject_type="evaluation",
+                    subject_id=evaluation.id,
+                )
+            )
+    else:
+        facts = dict(application.submitted_facts or {})
+        found.extend(service.site_blockers(application))
+        found.extend(service.credential_blockers(application, facts, utc_now()))
+        found.extend(service.identity_link_blockers(application))
+        found.extend(service.finance_link_blockers(application))
+    decision = service.current_decision(application.id)
+    if (
+        decision is not None
+        and decision.outcome == "approved"
+        and application.status == "approved"
+    ):
+        for item in PermitIssuanceService(session).blockers(application, decision):
+            if item.code == "no_current_assessment" or item.code.startswith("reconciliation_"):
+                found.append(item)
+    seen: set[tuple[str, str, str]] = set()
+    guides: list[dict[str, str]] = []
+    for item in found:
+        key = (item.code, item.subject_id or "", item.detail)
+        if key in seen:
+            continue
+        seen.add(key)
+        guides.append(blocker_guide(session, application, item))
+    return guides
+
+
+#: Findings the applicant can clear. A city-only judgment is not one of them.
+APPLICANT_FIX_TYPES = frozenset(
+    {"missing_field", "missing_document", "unreadable", "wrong_type", "duplicate"}
+)
+
+
+def information_request_text(findings: list[dict[str, Any]]) -> str:
+    """Return the request a reviewer would send for these open findings."""
+    lines = [
+        sentence
+        for row in findings
+        if (sentence := _request_sentence(row))
+    ]
+    return "\n\n".join(lines)
+
+
+def information_request_preset(
+    status: str, findings: list[dict[str, Any]]
+) -> dict[str, str] | None:
+    """Return the decision-form defaults for a needs-information case.
+
+    A case already in needs information, or one with an open finding the
+    applicant must fix, opens on that outcome.  Anything else keeps Approve.
+    """
+    text = information_request_text(findings)
+    if status != "needs_information" and not text:
+        return None
+    return {"outcome": "information_requested", "text": text}
+
+
+def _request_sentence(row: dict[str, Any]) -> str:
+    """Return one plain sentence for a finding the applicant must fix."""
+    if row.get("state") != "current" or row.get("waived"):
+        return ""
+    kind = str(row.get("finding_type") or "")
+    if kind not in APPLICANT_FIX_TYPES:
+        return ""
+    message = str(row.get("message") or "").strip()
+    citation = _citation(str(row.get("rule") or ""))
+    if kind == "duplicate":
+        number = _case_number(message) or _case_number(str(row.get("applicant_must") or ""))
+        if not number:
+            return ""
+        return (
+            "This looks like a second application for the same project as "
+            f"{number}. Please confirm whether it replaces that one."
+        )
+    if not str(row.get("applicant_must") or "").strip():
+        return ""
+    label = _subject_label(message)
+    if kind == "missing_document" and label and citation:
+        return f"Please upload the {label} ({citation})."
+    if kind == "missing_field" and label and citation:
+        return f"Please state the {label} ({citation})."
+    must = str(row.get("applicant_must") or "").strip().rstrip(".")
+    if must and citation:
+        return f"{must} ({citation})."
+    return must
+
+
+def _citation(rule: str) -> str:
+    """Return the code citation without the permit-type note."""
+    text = rule.strip()
+    if " (" in text:
+        return text.split(" (", 1)[0].strip()
+    return text
+
+
+def _subject_label(message: str) -> str:
+    """Return the thing a completeness finding says is missing."""
+    included = re.search(r"does not include the (.+?)\.", message, re.I)
+    if included:
+        return included.group(1).strip()
+    stated = re.search(r"does not state (.+?)\.", message, re.I)
+    if stated:
+        return stated.group(1).strip()
+    return ""
+
+
+def _case_number(text: str) -> str:
+    """Return the other application's number named in a duplicate finding."""
+    named = re.search(r"\bin ([A-Za-z0-9][A-Za-z0-9_-]*)\b", text)
+    if named:
+        return named.group(1)
+    named = re.search(r"\bof ([A-Za-z0-9][A-Za-z0-9_-]*)\b", text)
+    return named.group(1) if named else ""
+
+
 def workspace_extras(
     session: Session,
     actor: Any,
     application: permit.Application,
     detail: dict[str, Any],
+    return_from: str | None = None,
 ) -> dict[str, Any]:
     """Return the reviewer-facing facts the workspace tabs show."""
     from acme_city.ui import view_models
@@ -656,9 +1162,7 @@ def workspace_extras(
         empty_stages.append("Permit: Not issued")
     issuance_status, issuance_next = _issuance_words(detail, blockers)
     review_target = view_models.holds_grant(session, actor, "permit.decide", "permits")
-    back_href, back_label = (
-        ("/queue/review", "Back to the review queue") if review_target else ("/queue", "Back to the work queue")
-    )
+    back_href, back_label = workspace_return(session, actor, return_from)
     return {
         "header": {
             "reference": application.source_application_number,
@@ -684,6 +1188,11 @@ def workspace_extras(
         "ai": _ai_summary(detail),
         "revisions": _revision_rows(session, application),
         "decision_record": "Recommendation" if not review_target else "Decision",
+        "blocker_guides": workspace_blocker_guides(session, application),
+        "data_follow_up": _data_follow_up_open(session, application),
+        "information_request": information_request_preset(
+            application.status, list(detail.get("findings") or [])
+        ),
     }
 
 
@@ -1077,3 +1586,14 @@ def present_review_queue(
     presented["paging"] = paging
     presented["match_total"] = len(visible)
     return presented
+
+
+def _data_follow_up_open(session: Session, application: permit.Application) -> bool:
+    """Return whether a parcel or identity link is still open on the case."""
+    from acme_city.permits.decisions import DATA_FOLLOW_UP_CODES
+    from acme_city.permits.service import PermitService
+
+    return any(
+        item.code in DATA_FOLLOW_UP_CODES
+        for item in PermitService(session).identity_link_blockers(application)
+    )

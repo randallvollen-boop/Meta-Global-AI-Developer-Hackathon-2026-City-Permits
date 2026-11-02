@@ -375,7 +375,15 @@ class PermitIssuanceService:
         revision = self._permits.current_revision(application.id)
         inputs = build_inputs(dict(revision.snapshot or {}))
         blockers.extend(self._permits.credential_blockers(application, inputs, self._now))
-        blockers.extend(self._permits.identity_link_blockers(application))
+        # An open parcel or identity link is data follow-up. The steward can
+        # close it after issuance. The payer account and the fee stay.
+        from acme_city.permits.decisions import DATA_FOLLOW_UP_CODES
+
+        blockers.extend(
+            item
+            for item in self._permits.identity_link_blockers(application)
+            if item.code not in DATA_FOLLOW_UP_CODES
+        )
         blockers.extend(self._permits.finance_link_blockers(application))
 
         blockers.extend(self._assessment_blockers(application))

@@ -7,8 +7,14 @@
    which version is current, and which issues are open.  Freshness and open
    issues are two different things: an unknown freshness is reported as
    unknown, never as a number of issues. #}
+{% if ws_collapse is defined and ws_collapse %}
+<details class="ws-section panel panel-responsibility" data-testid="responsibility-panel">
+  <summary><h2 id="responsibility-heading">Responsibility</h2></summary>
+  <div class="ws-section-body">
+{% else %}
 <section class="panel panel-responsibility" aria-labelledby="responsibility-heading" data-testid="responsibility-panel">
   <h2 id="responsibility-heading">Responsibility</h2>
+{% endif %}
   <dl class="responsibility-grid">
     <div class="responsibility-item">
       <dt>Owner</dt>
@@ -63,4 +69,9 @@
     <p class="muted" data-testid="responsibility-queue">This is a configured demonstration target and makes no service promise.</p>
     {% endif %}
   </details>
+{% if ws_collapse is defined and ws_collapse %}
+  </div>
+</details>
+{% else %}
 </section>
+{% endif %}

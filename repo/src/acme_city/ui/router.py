@@ -336,6 +336,14 @@ def render(
 ) -> Any:
     """Render one template."""
     context = {"public_demo": request.app.state.settings.public_demo, **context}
+    # A link into a case remembers the queue it left, so the workspace can
+    # send the reviewer back there.
+    from acme_city.ui import reviewer_views
+
+    reviewer_views.stamp_case_links(
+        context,
+        reviewer_views.page_origin(request.url.path, request.url.query),
+    )
     if request.app.state.settings.is_production:
         # No persona switch and no simulator action is shown in production mode.
         context = {**context, "personas": []}
@@ -732,7 +740,12 @@ def ui_permit_workspace(
     resolved, refused = _guard(request, session, actor, "permit")
     if refused is not None:
         return refused
-    detail = view_models.permit_workspace(session, resolved, application_id)
+    detail = view_models.permit_workspace(
+        session,
+        resolved,
+        application_id,
+        return_from=request.query_params.get("from"),
+    )
     if not detail:
         return error_response(
             request,
@@ -1710,26 +1723,25 @@ def _permit_finding_waive(ctx: ActionContext) -> Outcome:
 
 
 def _permit_evaluate(ctx: ActionContext) -> Outcome:
-    """Evaluate the current revision of an application."""
+    """Evaluate the current revision, or show the result already stored.
+
+    A second run on an unchanged revision writes no evaluation and no
+    ``application.evaluate`` audit row. The click itself is still recorded
+    by the action audit, and the sentence says the stored result was shown.
+    """
     application_id = ctx.text("application_id")
-    view = PermitService(ctx.session).evaluate(application_id, ctx.actor)
+    service = PermitService(ctx.session)
+    existing = service.unchanged_evaluation(application_id, ctx.actor)
+    reused = existing is not None
+    view = existing if existing is not None else service.evaluate(application_id, ctx.actor)
     open_blockers = view_models.open_blockers(ctx.session, application_id)
-    message = (
-        f"Validation finished with the outcome '{view.outcome}' on version "
-        f"{view.version}."
+    ready = not open_blockers and service.current_decision(application_id) is None
+    message = view_models.checks_finished_message(
+        view.results,
+        len(open_blockers),
+        reused=reused,
+        ready_to_decide=ready,
     )
-    if open_blockers:
-        count = len(open_blockers)
-        message = (
-            f"Validation finished. The rule checks gave the outcome '{view.outcome}' "
-            f"on version {view.version}, and "
-            + (
-                "1 blocker still prevents a decision."
-                if count == 1
-                else f"{count} blockers still prevent a decision."
-            )
-            + " The blockers are listed under Application checks."
-        )
     return Outcome(
         message=message,
         destination="Permitting validation",
@@ -1762,6 +1774,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         reason=ctx.text("reason"),
         conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
+        exception_reason=ctx.text("exception_reason"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )
@@ -1788,6 +1801,7 @@ def _permit_reconfirm(ctx: ActionContext) -> Outcome:
         reason=ctx.text("reason"),
         conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
+        exception_reason=ctx.text("exception_reason"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )

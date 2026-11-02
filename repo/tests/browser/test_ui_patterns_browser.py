@@ -65,7 +65,8 @@ def test_drawer_opens_traps_focus_and_returns_it(page, server, login, muse_run) 
     page.goto(f"{server.base_url}/permits/{APPLICATION}", wait_until="domcontentloaded")
     drawer = page.locator("#ui-drawer")
     assert drawer.is_hidden()
-    # The Muse run detail sits in a "More details" disclosure; open it first.
+    # Suggested fields start closed. Open that section, then the Muse run inside it.
+    page.locator('[data-testid="ai-section"] > summary').click()
     page.locator('[data-testid="muse-more"] > summary').click()
     # The workspace header now carries a Technical details link first; this test is about the Muse run drawer.
     link = page.locator('[data-detail-kind="muse-run"]').first
@@ -114,7 +115,8 @@ def test_deep_link_opens_the_drawer_and_closes(page, server, login, muse_run) ->
 def test_info_popover_opens_and_esc_returns_focus(page, server, login, muse_run) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/permits/{APPLICATION}", wait_until="domcontentloaded")
-    # The Muse run detail sits in a "More details" disclosure; open it first.
+    # Suggested fields start closed. Open that section, then the Muse run inside it.
+    page.locator('[data-testid="ai-section"] > summary').click()
     page.locator('[data-testid="muse-more"] > summary').click()
     # The Review tab now opens with other definitions first; this test is about the Muse label popover.
     button = page.locator('[data-testid="ui-info-btn"][data-info-key="muse_provenance"]').first

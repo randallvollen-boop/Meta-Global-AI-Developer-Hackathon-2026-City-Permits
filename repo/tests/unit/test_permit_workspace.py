@@ -312,6 +312,24 @@ def test_run_application_checks_shows_the_rule_results(client: TestClient) -> No
     assert 'data-testid="rule-results"' in review
     assert 'data-testid="decision-form"' in review
     assert "Record review decision" in review
+    assert 'data-testid="checks-result-summary"' in review
+    assert 'data-testid="check-citation"' in review
+    assert 'data-testid="checks-last-run"' in review
+    assert "Run checks again" in review
+    shown = review.count('data-testid="check-result"')
+    assert shown >= 1
+    summary = re.search(
+        r'data-testid="checks-result-summary"[^>]*>(.*?)</p>', review, re.S
+    )
+    assert summary is not None
+    summary_text = text_of(summary.group(1))
+    assert summary_text == (
+        "The check passed" if shown == 1 else f"All {shown} checks passed"
+    )
+    next_step = re.search(r'data-testid="checks-next".*?</p>', review, re.S)
+    assert next_step is not None
+    assert "Review the blockers" in next_step.group(0)
+    assert "Ready to decide" not in next_step.group(0)
 
 
 def test_record_review_decision_needs_a_rationale(

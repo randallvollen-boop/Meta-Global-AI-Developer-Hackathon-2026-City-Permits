@@ -191,12 +191,12 @@
           },
           {
             "do": "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit it.",
-            "see": "The rule results appear. A blocker is an open question, such as an identity link, and it is separate from the rule results.",
+            "see": "The rule results appear. An open parcel or identity link is Data follow-up: it is separate from the rule results and does not refuse the decision.",
             "href": "/queue/review"
           },
           {
             "do": "Click \"Start\" under \"Record review decision\". Choose \"Approve\", write the \"Rationale (internal record)\" and click \"Record the decision\".",
-            "see": "If the parcel link or the identity link is still open, the server refuses the approval and names the blocker. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled.",
+            "see": "An open parcel or identity link does not refuse the approval. The case shows Data follow-up, and the Data Steward can confirm it afterwards. A check that was not run because the parcel is not confirmed is listed as Not checked and needs an exception reason to approve. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled. The payer account is still required to apply a payment and to issue.",
             "href": "/queue/review"
           }
         ]
@@ -329,13 +329,13 @@
           "Read the tabs \"Documents\", \"People and organizations\", \"Activity\" and \"Review\".",
           "On the \"People and organizations\" tab, click \"Start\" under \"Confirm parcel\" and submit it.",
           "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit the form.",
-          "Read the rule results and any blockers on the page. A blocker is an open question, such as an identity link, that must be settled first.",
+          "Read the rule results. An open parcel or identity link is Data follow-up and does not have to be settled before the decision. A check listed as Not checked needs an exception reason before you approve. The payer account and the fee still have to be settled before the permit is issued.",
           "Click \"Start\" under \"Record review decision\".",
           "Choose \"Approve\", \"Approve with conditions\" or \"Deny\". For a denial also choose the \"Denial reason code\".",
           "Write the \"Rationale (internal record)\". It is required.",
           "Click \"Record the decision\" and read the message at the top."
         ],
-        "result": "The decision is recorded against the versions you saw. If blockers remain, the server refuses an approval and says why. Issue permit stays refused until the fee is assessed, paid and reconciled."
+        "result": "The decision is recorded against the versions you saw. Data follow-up does not refuse it. Another blocker, such as an expired credential or a stale check, still refuses an approval and says why. Issue permit stays refused until the fee is assessed, paid and reconciled."
       },
       {
         "slug": "resolve-a-data-issue",

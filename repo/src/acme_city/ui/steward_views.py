@@ -2667,7 +2667,11 @@ def parcel_case(session: Session, actor: ActorContext, application_id: str) -> d
             f"The applicant typed “{match.submitted_text}”. The address locator proposed "
             + (f"{match.matched_address} on parcel {match.parcel_number}." if match.parcel_number else "no single parcel; a person must choose.")
         ),
-        "why": f"{application.source_application_number} cannot be decided until its parcel link is approved and the Permit Reviewer confirms the parcel.",
+        "why": (
+            f"{application.source_application_number} can be decided while this parcel link "
+            "is open. After you approve it, the Permit Reviewer still confirms the parcel, "
+            "and that confirmation blocks a decision until it is recorded."
+        ),
         "applications": outstanding,
         "parcel": proposal,
         "comparison": typed_comparison(
