@@ -2,6 +2,46 @@
    Uses the tokens of app.css only, so light and dark both follow. */
 .eyebrow { margin: 0 0 4px; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); }
 .queue-views { margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
+.queue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+.queue-toolbar > .tabs,
+.queue-toolbar > .queue-views { margin: 0; flex: 1 1 auto; min-width: 0; }
+.queue-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 16rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.queue-find label { font-size: .8rem; font-weight: 600; color: var(--fg-2); }
+.queue-find input[type="search"] {
+  flex: 1 1 12rem;
+  width: 14rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.queue-find-summary { padding: 10px 16px 0; margin: 0; }
+.queue-find-hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  min-width: 0;
+}
 .queue-table td { vertical-align: top; }
 .queue-table .dates { white-space: nowrap; font-size: .8rem; }
 .queue-table .t1 { font-weight: 500; overflow-wrap: anywhere; }
@@ -30,6 +70,11 @@
   body[data-screen="review_queue"] .tabs {
     flex-wrap: wrap;
     overflow-x: visible;
+  }
+  body[data-screen="review_queue"] .queue-find,
+  body[data-screen="queue"] .queue-find {
+    width: 100%;
+    flex-basis: 100%;
   }
   body[data-screen="review_queue"] .review-table-wrap {
     overflow-x: visible;

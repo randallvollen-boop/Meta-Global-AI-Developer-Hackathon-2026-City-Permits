@@ -2598,6 +2598,8 @@ def work_queue(
     object_type: str | None = None,
     state: str | None = None,
     focus: str = "all",
+    query: str = "",
+    page: int = 1,
 ) -> dict[str, Any]:
     """Return the work queue of the acting persona.
 
@@ -2833,29 +2835,76 @@ def work_queue(
     if state:
         items = [item for item in items if item["state"] == state]
 
+    from acme_city.ui.queue_find import (
+        matches_query,
+        normalize_query,
+        paginate,
+        paging_links,
+        search_summary,
+        sole_open,
+        work_href,
+    )
+
     focus = focus if focus in reviewer_views.QUEUE_VIEW_KEYS else "all"
     views = reviewer_views.queue_views(items, focus)
     if focus != "all":
         items = [item for item in items if item["bucket"] == focus]
+    filters = {
+        "focus": focus,
+        "view": view,
+        "department": department or "",
+        "object_type": object_type or "",
+        "state": state or "",
+    }
+    text = normalize_query(query)
+    # The chip (the view) is applied first. The search then runs on that
+    # whole list, and only the matching rows are paged.
+    if text:
+        items = [
+            item
+            for item in items
+            if matches_query(
+                str(item.get("title") or ""),
+                str(item.get("applicant_name") or ""),
+                str(item.get("address") or ""),
+                text,
+            )
+        ]
     counts: dict[str, int] = {}
     for item in items:
         counts[item["object_type"]] = counts.get(item["object_type"], 0) + 1
+    back = work_href(
+        focus=focus,
+        view=view,
+        department=department or "",
+        object_type=object_type or "",
+        state=state or "",
+        query=text,
+    )
+    shown, paging = paginate(items, page)
+    paging.update(paging_links(back, paging["page"], paging["pages"]))
     return {
-        "entries": items,
+        "entries": shown,
         "counts": counts,
         "views": views,
         "has_owner": any(item.get("owner_label") for item in items),
         "age_note": reviewer_views.scenario_clock_note(now),
-        "filters": {
-            "focus": focus,
-            "view": view,
-            "department": department or "",
-            "object_type": object_type or "",
-            "state": state or "",
-        },
+        "filters": filters,
         "states": sorted({item["state"] for item in items}),
         "departments": sorted({item["department"] for item in items}),
         "object_types": sorted({item["object_type"] for item in items}),
+        "query": text,
+        "search_summary": search_summary(len(items), text) if text else "",
+        "clear_href": work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+        ),
+        "sole": sole_open(items, text, back),
+        "paging": paging,
+        "match_total": len(items),
     }
 
 

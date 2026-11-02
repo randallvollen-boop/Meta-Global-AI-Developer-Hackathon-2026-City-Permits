@@ -930,33 +930,42 @@ def review_row_sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
     return (rank, -age_value, str(row.get("reference") or ""))
 
 
-def _review_href(area: str, action: str) -> str:
-    """Return a review-queue address that keeps the area and the action."""
-    from urllib.parse import urlencode
+def _review_href(area: str, action: str, query: str = "") -> str:
+    """Return a review-queue address that keeps the area, the action and the search."""
+    from acme_city.ui.queue_find import review_href
 
-    params: list[tuple[str, str]] = []
-    if area:
-        params.append(("area", area))
-    if action:
-        params.append(("next_action", action))
-    if not params:
-        return "/queue/review"
-    return "/queue/review?" + urlencode(params)
+    return review_href(area, action, query)
 
 
 def present_review_queue(
-    session: Session, queue: dict[str, Any], next_action: str = ""
+    session: Session,
+    queue: dict[str, Any],
+    next_action: str = "",
+    query: str = "",
+    page: int = 1,
 ) -> dict[str, Any]:
-    """Copy a review queue, then add stage, next action, chips and sort.
+    """Copy a review queue, then add stage, next action, chips, search and sort.
 
     Membership and area counts stay as the queue service returned them.
     The action filter and the sort happen here. An unknown action shows
     every row. Counts are taken after the area filter and before the
-    action filter, so the selected chip's count is the number of rows.
+    action filter, so the selected chip's count is the number of rows
+    in that action. The search runs after the chip and before the page,
+    so a match is not dropped because it would have been on a later page.
     """
+    from acme_city.ui.queue_find import (
+        matches_query,
+        normalize_query,
+        paginate,
+        paging_links,
+        search_summary,
+        sole_open,
+    )
+
     presented = dict(queue)
     area = str(queue.get("area") or "")
     selected = next_action if next_action in NEXT_ACTION_KEYS else ""
+    text = normalize_query(query)
     annotated: list[dict[str, Any]] = []
     for source in queue.get("rows") or []:
         row = dict(source)
@@ -981,7 +990,7 @@ def present_review_queue(
             "key": key,
             "label": label,
             "count": counts[key],
-            "href": _review_href(area, key),
+            "href": _review_href(area, key, text),
         }
         for key, label in NEXT_ACTIONS
         if counts.get(key, 0) > 0
@@ -989,10 +998,34 @@ def present_review_queue(
     visible = annotated
     if selected:
         visible = [row for row in annotated if row["next_action_key"] == selected]
+    if text:
+        visible = [
+            row
+            for row in visible
+            if matches_query(
+                str(row.get("reference") or ""),
+                str(row.get("applicant_name") or ""),
+                str(row.get("address") or ""),
+                text,
+            )
+        ]
     visible.sort(key=review_row_sort_key)
-    presented["rows"] = visible
+    back = _review_href(area, selected, text)
+    shown, paging = paginate(visible, page)
+    paging.update(paging_links(back, paging["page"], paging["pages"]))
+    names = list(queue.get("areas") or [])
+    presented["area_hrefs"] = {"": _review_href("", selected, text)}
+    for name in names:
+        presented["area_hrefs"][name] = _review_href(str(name), selected, text)
+    presented["rows"] = shown
     presented["next_action"] = selected
-    presented["next_all_href"] = _review_href(area, "")
+    presented["next_all_href"] = _review_href(area, "", text)
     presented["next_all_count"] = len(annotated)
     presented["next_actions"] = chips
+    presented["query"] = text
+    presented["search_summary"] = search_summary(len(visible), text) if text else ""
+    presented["clear_href"] = _review_href(area, selected, "")
+    presented["sole"] = sole_open(visible, text, back)
+    presented["paging"] = paging
+    presented["match_total"] = len(visible)
     return presented

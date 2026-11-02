@@ -200,6 +200,14 @@ first entry of the City website menu.
     issues**. Filter chips above the table count each Next action. **Ready to
     decide** and **Ready to issue** sort first. Area and owner stay under More
     details.
+- As a Permit Reviewer, I want to search the queue for one application, so
+  that I can find a case such as 617 without paging through the list.
+  - Acceptance: a search box on the **Work queue** and the **Review queue**
+    matches the reference (**SYN-APP-617** or **617**), the applicant name and
+    the site address. The search is in the page address (`q`), so it works
+    without JavaScript and finds a match past the first page. The page says
+    how many matches and offers **Clear**. It combines with the filter chips.
+    One match shows an **Open** button.
 - As a Permit Reviewer, I want the recommendation card at the Decision step,
   so that I see the outcome, the rule rows with their citations, the
   conditions of approval and the pipeline trace before I decide.
