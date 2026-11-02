@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from acme_city.agents.plain_reason import describe_recommendation
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import audit, change, finance, permit, registry
 from acme_city.ui import display, ops_views
@@ -563,6 +564,19 @@ def label_workspace(session: Session, detail: dict[str, Any]) -> None:
             "values", row.get("proposed_outcome")
         )
         row["status_label"] = ops_views.display_word("values", row.get("status"))
+        row["plain"] = describe_recommendation(
+            rationale=row.get("rationale") or "",
+            evidence_refs=row.get("evidence_refs") or [],
+            conditions=row.get("conditions") or [],
+            titles=_rule_titles(
+                session,
+                {
+                    str(ref.get("rule_id"))
+                    for ref in row.get("evidence_refs") or []
+                    if ref.get("rule_id") and not ref.get("title")
+                },
+            ),
+        )
 
     titles = _rule_titles(session, {item for item in rule_ids if item})
     for result in (evaluation or {}).get("results") or []:

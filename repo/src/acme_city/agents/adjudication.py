@@ -49,7 +49,8 @@ from acme_city.permits.service import PermitService
 from acme_city.persistence.models import agent as agent_models
 from acme_city.persistence.models import permit
 from acme_city.rules.catalog import select_rule_versions, version_label as rule_version_label
-from acme_city.triage.service import build_rationale, unit_for_field
+from acme_city.agents.plain_reason import plain_reason
+from acme_city.triage.service import unit_for_field
 
 #: The service identity the adjudication agent acts as.
 ADJUDICATION_AGENT_ID = "service_agent_adjudication"
@@ -140,7 +141,7 @@ class AdjudicationAgent:
         # happened and a retry starts from the same revision.
         with self._session.begin_nested():
             loaded = self._node_rule_loader(run, application, findings)
-            results = self._node_rule_evaluator(run, application, actor)
+            results = self._node_rule_evaluator(run, application, actor, loaded.rules)
             conditions = self._node_condition_builder(run, results)
             precedent = self._node_precedent_check(run, application, findings)
             self._node_disposition(
@@ -311,6 +312,7 @@ class AdjudicationAgent:
         run: agent_models.AgentRun,
         application: permit.Application,
         actor: ActorContext,
+        rules: list[LoadedRule] | None = None,
     ) -> list[dict[str, Any]]:
         """Run the deterministic evaluator against the submitted facts."""
         node = graphs.ADJUDICATION_GRAPH[1]
@@ -333,8 +335,13 @@ class AdjudicationAgent:
         if previous_status == "under_review":
             application.status = "under_review"
             self._session.flush()
+        # The note names each rule by its title, so a person who reads the run
+        # never meets a bare rule id.
+        titles = {rule.rule_id: rule.title for rule in rules or []}
         statuses = ", ".join(
-            f"{item.get('rule_id')} {item.get('status')}" for item in results
+            f"{titles.get(str(item.get('rule_id'))) or item.get('citation') or 'a rule'} "
+            f"{item.get('status')}"
+            for item in results
         )
         self._finish(
             run,
@@ -455,7 +462,6 @@ class AdjudicationAgent:
                 or unit_for_field(result.get("field_path"))
                 or ""
             )
-        rationale = build_rationale(results, "", units=units)
 
         chosen = kernel.disposition(
             type_label=permit_type.label,
@@ -467,7 +473,19 @@ class AdjudicationAgent:
             parcel_confirmed=loaded.parcel_confirmed,
         )
         outcome = chosen.outcome
-        reason = chosen.reason
+        titles = {rule.rule_id: rule.title for rule in rules}
+        # The words a person reads: the outcome and the reason, with the title
+        # and the citation of each rule.  The decision itself is the kernel's.
+        plain = plain_reason(
+            outcome=outcome,
+            hold_reason=chosen.hold_reason,
+            results=[{**result, "unit": units.get(str(result.get("rule_id")))} for result in results],
+            titles=titles,
+            kernel_reason=chosen.reason,
+            parcel_confirmed=loaded.parcel_confirmed,
+            precedent_outcome=None if precedent is None else str(precedent["outcome"]),
+        )
+        reason = " ".join(plain.lines)
 
         # A pending recommendation of an earlier run is superseded, so the
         # case never carries two live recommendations.
@@ -497,6 +515,9 @@ class AdjudicationAgent:
                     "observed_value": result.get("observed_value"),
                     "limit_value": result.get("limit_value"),
                     "unit": units.get(str(result.get("rule_id"))),
+                    "title": titles.get(str(result.get("rule_id"))) or "",
+                    "operator": result.get("operator") or "",
+                    "field_path": result.get("field_path") or "",
                     "message": result.get("message") or "",
                     "condition_note": result.get("condition_note") or "",
                 }
@@ -504,7 +525,7 @@ class AdjudicationAgent:
             ],
             run_ref=run.id,
             status=STATUS_PENDING,
-            rationale=f"{reason} {rationale}".strip(),
+            rationale=plain.text,
             muse_summary=None,
             muse_run_id=None,
             conditions=list(conditions),

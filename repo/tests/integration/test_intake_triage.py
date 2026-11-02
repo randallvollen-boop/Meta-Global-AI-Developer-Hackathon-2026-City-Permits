@@ -414,13 +414,17 @@ def test_the_adjudication_agent_recommends_deny_and_approve(
                 )
             ).scalar_one()
             assert front_rec.proposed_outcome == "deny"
-            assert "DF-1" in (front_rec.rationale or "")
+            # The reason names the rule by its title, never by its bare id.
+            assert "Fence height, front yard" in (front_rec.rationale or "")
+            assert "DF-1" not in (front_rec.rationale or "")
             assert "ACME Code §14-305" in (front_rec.rationale or "")
             assert "6 ft" in (front_rec.rationale or "")
+            assert "4 ft" in (front_rec.rationale or "")
+            assert front_rec.rationale.startswith("Recommend deny: ")
             assert rear_rec.proposed_outcome == "approve"
-            assert "DF-2" in (rear_rec.rationale or "")
+            assert "Fence height, side and rear yard" in (rear_rec.rationale or "")
             # The rationale cites each rule once.
-            assert (rear_rec.rationale or "").count("DF-2") == 1
+            assert (rear_rec.rationale or "").count("Fence height, side and rear yard") == 1
     finally:
         factory.dispose()
 
@@ -492,7 +496,7 @@ def test_the_adjudication_agent_waits_for_the_steward_while_the_parcel_is_unconf
                 )
             ).scalar_one()
             assert recommendation.proposed_outcome == "approve"
-            assert "DF-2" in (recommendation.rationale or "")
+            assert "Fence height, side and rear yard" in (recommendation.rationale or "")
             evaluation = session.execute(
                 select(permit.Evaluation).where(
                     permit.Evaluation.application_id == application_id,

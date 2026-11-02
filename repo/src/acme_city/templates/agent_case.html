@@ -57,6 +57,37 @@
 {{ agent_progress(view.progress) }}
 {% endif %}
 
+{% if view.recommendation %}
+{% set rec = view.recommendation %}
+<section class="panel card" aria-labelledby="agent-case-recommendation-heading" data-testid="agent-case-recommendation">
+  <div class="card-h"><h2 id="agent-case-recommendation-heading">Recommendation</h2></div>
+  <div class="card-b">
+    <p>
+      <span class="pill {{ 'ok' if rec.proposed_outcome == 'approve' else 'bad' if rec.proposed_outcome == 'deny' else 'warn' }}" data-testid="agent-case-recommendation-outcome">{{ rec.outcome_label }}</span>
+    </p>
+    <p data-testid="agent-case-recommendation-reason"><strong>{{ rec.plain.short }}</strong></p>
+    {% if rec.plain.rest %}
+    <ul class="issue-list" data-testid="agent-case-recommendation-more-reasons">
+      {% for line in rec.plain.rest %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if rec.plain.conditions %}
+    <p class="muted">Conditions of approval</p>
+    <ul class="issue-list" data-testid="agent-case-recommendation-conditions">
+      {% for line in rec.plain.conditions %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if rec.plain.evidence %}
+    <details class="opr-details" data-testid="agent-case-recommendation-evidence"><summary>More details</summary>
+      <ul class="issue-list">
+        {% for line in rec.plain.evidence %}<li>{{ line }}</li>{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 <section class="panel card" aria-labelledby="agent-case-findings-heading">
   <div class="card-h"><h2 id="agent-case-findings-heading">Findings</h2></div>
   <div class="card-b">
