@@ -157,10 +157,19 @@
     var submit = form.querySelector("[data-testid='submit-application']");
     var dym = form.querySelector("[data-did-you-mean]");
     var address = form.querySelector("[name='address_text']");
+    // A review on the screen means the hold must be asked about again while
+    // the applicant edits.  Without it the browser keeps the hold of a
+    // review the applicant has already answered, and Submit stays off.
+    var reviewShown = false;
+    // The assistant's note and its notes on the rules are kept when the
+    // live check answers again without the assistant.
+    var lastNote = "";
+    var lastFeedback = {};
     function refresh() {
       if (!window.fetch || !window.FormData) { return; }
       var data = new FormData(form);
       data.delete("csrf_token");
+      if (reviewShown) { data.set("review", "1"); }
       form.querySelectorAll("input[type=file]").forEach(function (input) {
         data.delete(input.name);
         if (input.files && input.files.length) { data.append("have__" + input.name.replace("file__", ""), "1"); }
@@ -174,6 +183,7 @@
             statusLine.setAttribute("data-complete", state.can_submit ? "true" : "false");
           }
           renderNeeds(state);
+          if (state.review) { renderReview(state.review); }
         }).catch(function () { /* the server still checks on submit */ });
     }
     // After a refused Submit the errors stay up; each one clears as the person fixes it.
@@ -215,40 +225,12 @@
       }
     }
     function ensureOverride() {
-      var wrap = form.querySelector("[data-override]");
-      if (!wrap) {
-        wrap = document.createElement("div");
-        wrap.setAttribute("data-override", "");
-        var label = document.createElement("label");
-        label.htmlFor = "override-reason";
-        label.textContent = "Why submit now";
-        var box = document.createElement("textarea");
-        box.id = "override-reason";
-        box.name = "override_reason";
-        box.setAttribute("data-testid", "why-submit-now");
-        box.maxLength = 500;
-        var button = document.createElement("button");
-        button.type = "submit";
-        button.name = "intent";
-        button.value = "override";
-        button.className = "btn";
-        button.setAttribute("data-testid", "submit-anyway");
-        button.disabled = true;
-        button.setAttribute("aria-describedby", "submit-anyway-why");
-        button.textContent = "Submit anyway";
-        var why = document.createElement("p");
-        why.id = "submit-anyway-why";
-        why.setAttribute("data-testid", "submit-anyway-why");
-        why.textContent = "Enter why submit now.";
-        wrap.appendChild(label);
-        wrap.appendChild(box);
-        wrap.appendChild(button);
-        wrap.appendChild(why);
-        var save = form.querySelector("[data-testid='save-draft']");
-        if (save && save.parentNode) { save.parentNode.insertBefore(wrap, save); }
-        else { form.appendChild(wrap); }
-      }
-      wrap.hidden = false;
+      // The block is always in the page: the browser only shows it while the
+      // hold is on, so there is one markup and not two.
+      var field = form.querySelector("[data-override-field]");
+      if (field) { field.hidden = false; }
+      var group = form.querySelector("[data-override-action]");
+      if (group) { group.hidden = false; }
       var bound = document.getElementById("override-reason");
       if (bound && !bound.getAttribute("data-bound")) {
         bound.setAttribute("data-bound", "1");
@@ -256,18 +238,29 @@
       }
       syncAnyway();
     }
+    function holdNotice() {
+      // The note that says why Submit application is off.  It sits with the
+      // block, not inside the row of the buttons.
+      var why = document.getElementById("submit-held-why");
+      if (!why) {
+        why = document.createElement("p");
+        why.id = "submit-held-why";
+        why.className = "hold-why";
+        why.setAttribute("data-testid", "submit-held-why");
+        why.textContent = "Fix the items under Must fix, or use Submit anyway.";
+        var field = form.querySelector("[data-override-field]");
+        var buttons = form.querySelector(".form-buttons");
+        var anchor = field || buttons;
+        if (anchor && anchor.parentNode) { anchor.parentNode.insertBefore(why, anchor); }
+        else { form.appendChild(why); }
+      }
+      return why;
+    }
     function applyHold(review) {
       if (!submit) { return; }
       if (review.held) {
         submit.disabled = true;
-        var why = document.getElementById("submit-held-why");
-        if (!why) {
-          why = document.createElement("p");
-          why.id = "submit-held-why";
-          why.setAttribute("data-testid", "submit-held-why");
-          why.textContent = "Fix the items under Must fix, or use Submit anyway.";
-          submit.insertAdjacentElement("afterend", why);
-        }
+        var why = holdNotice();
         why.hidden = false;
         submit.setAttribute("aria-describedby", "submit-held-why");
         ensureOverride();
@@ -276,8 +269,10 @@
         submit.removeAttribute("aria-describedby");
         var heldWhy = document.getElementById("submit-held-why");
         if (heldWhy) { heldWhy.hidden = true; }
-        var wrap = form.querySelector("[data-override]");
-        if (wrap) { wrap.hidden = true; }
+        var field = form.querySelector("[data-override-field]");
+        if (field) { field.hidden = true; }
+        var group = form.querySelector("[data-override-action]");
+        if (group) { group.hidden = true; }
       }
     }
     function groupSection(review, key) {
@@ -296,6 +291,7 @@
       items.forEach(function (item) {
         var row = document.createElement("p");
         row.setAttribute("data-testid", "presubmit-item");
+        row.setAttribute("data-rule-id", item.rule_id || "");
         row.textContent = item.sentence || "";
         if (item.feedback) {
           var note = document.createElement("span");
@@ -310,6 +306,18 @@
     function renderReview(review) {
       var root = form.querySelector("[data-presubmit-root]");
       if (!root) { return; }
+      reviewShown = true;
+      // The live check answers with the rules alone.  What the assistant
+      // said about them is kept, so the note does not blink away.
+      if (review.assistant_note) { lastNote = review.assistant_note; }
+      review.assistant_note = lastNote;
+      ["must_fix", "should_check", "looks_good"].forEach(function (key) {
+        (review[key] || []).forEach(function (item) {
+          var id = item.rule_id || "";
+          if (item.feedback) { lastFeedback[id] = item.feedback; }
+          else if (lastFeedback[id]) { item.feedback = lastFeedback[id]; }
+        });
+      });
       root.hidden = false;
       root.setAttribute("data-testid", "presubmit-panel");
       root.textContent = "";
@@ -323,6 +331,19 @@
         root.appendChild(note);
       }
       applyHold(review);
+    }
+    // Read the review the server rendered, so a page that was answered by
+    // the server (a refused Submit) asks about the hold again as well.
+    function rememberRenderedReview() {
+      var root = form.querySelector("[data-presubmit-root]");
+      if (!root || root.hidden) { return; }
+      reviewShown = true;
+      var note = root.querySelector("[data-testid='assistant-note']");
+      if (note) { lastNote = note.textContent; }
+      root.querySelectorAll("[data-testid='presubmit-item']").forEach(function (row) {
+        var said = row.querySelector("[data-testid='presubmit-feedback']");
+        if (said) { lastFeedback[row.getAttribute("data-rule-id") || ""] = said.textContent; }
+      });
     }
     function reviewData() {
       // The files stay on the request so the assistant can read a text file.
@@ -358,6 +379,7 @@
       }
       syncAnyway();
     }
+    rememberRenderedReview();
     if (summary) { summary.focus(); }
     function setPill(row, input) {
       var pill = row.querySelector("[data-testid='doc-status']");

@@ -683,7 +683,9 @@ class PortalService:
         """Run the rules layer on unsaved facts.  Muse runs only when asked.
 
         No case row is written.  ``held`` is true only when the application is
-        otherwise complete and a rule fails or the address matches no parcel.
+        otherwise complete and a rule fails.  An address that matches no
+        parcel never holds the application: the City matches the property
+        once the case is filed.
         """
         from acme_city.applicant_portal.presubmit import (
             ASSISTANT_OFFLINE,

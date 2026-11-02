@@ -1,8 +1,8 @@
 """The rules layer on unsaved facts, and the three groups the applicant sees.
 
 A draft uses the same evaluation as a saved case.  A broken rule is Must fix.
-An address that matches no parcel is Must fix.  A pass is Looks good.  A
-borderline result is Should check.
+A pass is Looks good.  A borderline result is Should check.  An address that
+matches no parcel is Should check: it never holds the application.
 """
 
 from __future__ import annotations
@@ -89,7 +89,8 @@ def test_the_groups_are_must_fix_should_check_and_looks_good() -> None:
     }
 
 
-def test_an_unmatched_address_is_must_fix_and_a_down_locator_is_not() -> None:
+def test_an_unmatched_address_never_holds_the_application() -> None:
+    """An address the locator cannot place is Should check, never Must fix."""
     unmatched = address_item(
         {
             "parcel_matched": False,
@@ -98,9 +99,12 @@ def test_an_unmatched_address_is_must_fix_and_a_down_locator_is_not() -> None:
         },
         "999 Missing Street",
     )
-    assert unmatched is not None and unmatched["status"] == "fail"
+    assert unmatched is not None and unmatched["status"] == "review"
     assert unmatched["kind"] == "address"
     assert unmatched["rule_id"] == ""
+    assert unmatched["sentence"] == (
+        "We could not match this address to a parcel. The City will match it."
+    )
     down = address_item(
         {
             "parcel_matched": False,
@@ -121,6 +125,26 @@ def test_an_unmatched_address_is_must_fix_and_a_down_locator_is_not() -> None:
         "400 Lantern",
     )
     assert ambiguous is not None and ambiguous["status"] == "review"
+
+
+def test_an_unmatched_address_stays_out_of_must_fix() -> None:
+    """The grouped review holds the application on a rule, not on an address."""
+    rule_set = SimpleNamespace(rules=[SimpleNamespace(rule_id="DF-1", title="Fence height")])
+    grouped = group_review(
+        [_result(status="pass", citation="ACME Code §14-306")],
+        rule_set,
+        {
+            "parcel_matched": False,
+            "locator_available": True,
+            "message": "We could not find that address in the city locator.",
+        },
+        address_text="12 Imaginary Lane",
+    )
+    assert grouped["must_fix"] == []
+    assert [item["kind"] for item in grouped["should_check"]] == ["address"]
+    assert grouped["should_check"][0]["sentence"] == (
+        "We could not match this address to a parcel. The City will match it."
+    )
 
 
 def test_an_override_record_keeps_the_reason_and_the_flag() -> None:
