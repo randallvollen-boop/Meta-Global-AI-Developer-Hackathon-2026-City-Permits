@@ -14,7 +14,7 @@ The Hosting and Production passages now describe the live public demonstration o
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 364254 bytes. SHA-256 `a98428b9e385a5e3624a04711029f132c63c68bc54948105a6f63ae939aed68d` (2026-11-02 final rebuild). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 365166 bytes. SHA-256 `fac1507c76ed95a335f89c0ba7b738f45f2caa696d1328d7d2c8c371ff6aa883` (2026-11-02, brand line and theme toggle). It loads nothing from the network and renders offline in a browser.
 
 The application serves this file at `/help/technical/architecture`. It is the only copy in the repository, and `repo/tests/integration/test_help_docs.py` checks that the served bytes are the committed bytes.
 
@@ -117,3 +117,13 @@ The `roadmap` section (Phase 3: built) and the `video` section (the demo video i
 - The video rows carry no draft number. The page says the demo video is being recorded from the final build.
 - The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` were not touched.
 - Kit builder and the Linux checker ran clean, and `check/verify_page.py` passes. The AVA Library copy was not replaced in this revision.
+
+## Revision 2026-11-02, brand line and theme toggle
+
+- The footer brand line, "VollenData" over "A Brighter Future, Rooted in Data.", is right aligned against the page edge and the two are separated by a visible 6px gap. The markup also carries a space between the two spans, so a text copy no longer runs them together. The rule lives in the page local block of `page/extra.css`, not in the brand layer copy, because the shared brand layer is recopied on every rebuild.
+- The theme toggle flips `data-theme` on the root element and does not depend on `localStorage`. The script now guards `matchMedia` and the storage calls, and keeps the reader's choice in force when the operating system theme moves. In a frame with an opaque origin, `localStorage` raises a `SecurityError`, and the toggle still works.
+- `check/verify_page.py` gained two checks, the theme toggle and the footer brand line, and now runs eight. Both were run against the previous build: check 7 passed there and check 8 failed there with three problems.
+- The shared brand layer in the skill, `assets/vds-brand/extra.css` and `assets/vds-brand/snippets.html`, was not changed. The sandbox refused both files, so the skill still carries the older footer rule and the older theme script. Every other page copies that script into its own `body.src.html`, so the skill template should take the same script in a later pass.
+- The frame that carries the page still blocks scripts on this branch. The toggle was read against a frame that allows scripts and an opaque origin, which is what the branch that allows scripts provides.
+- Kit builder and the Linux checker ran clean, `check/verify_page.py` passes, and `repo/tests/integration/test_help_docs.py -k architecture` passes, so the served bytes are the committed bytes. The AVA Library copy was not replaced in this revision.
+

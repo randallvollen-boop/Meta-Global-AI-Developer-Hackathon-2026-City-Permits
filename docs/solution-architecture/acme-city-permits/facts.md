@@ -290,3 +290,12 @@ Sources: the tree at `3a77390`, read on 2026-11-02: `BUILD_LOG.md`, `EVIDENCE_LO
 - The hosted demonstration enables live Muse in `render.yaml` with a daily allowance of 100 and a live-call cap of 100. The credential is entered in the Render dashboard and never sits in the repository.
 - The demo video is being recorded from the final build of the application.
 - The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` are untouched by this pass.
+
+## Presentation pass, 2026-11-02 (the brand line and the theme toggle)
+
+Sources: the project owner's two corrections of 2026-11-02, read against the built page in a browser.
+
+- The footer brand line, "VollenData" over "A Brighter Future, Rooted in Data.", is right aligned against the page edge. The two are separated by a visible 6px gap, and the markup carries a space between the two spans so a text copy reads "VollenData A Brighter Future, Rooted in Data." The wordmark stays the single word "VollenData". The rule lives in the page local block of `page/extra.css`, not in the brand layer copy, because the shared brand layer is recopied on every rebuild.
+- The theme toggle sets `data-theme` on the root element and does not depend on `localStorage`. A frame that allows scripts without the same origin has an opaque origin, and `localStorage` raises a `SecurityError` there; the toggle still flips the theme. Persistence is best effort and is not needed for the page to work.
+- The shared brand layer in the build skill, `assets/vds-brand/extra.css` and `assets/vds-brand/snippets.html`, was not changed. The sandbox refused both files. The skill still carries the older footer rule and the older theme script, and every other page copies that script into its own `body.src.html`, so the skill template should take the same script in a later pass.
+- No figure, status value or claim changed in this pass.

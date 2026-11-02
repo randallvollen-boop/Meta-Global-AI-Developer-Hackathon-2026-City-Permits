@@ -833,18 +833,33 @@
 <footer>
   <div class="wrap">
     <span>Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme. &copy; 2026 Randy Vollen and VollenData.</span>
-    <span class="foot-vds"><span class="vds">VollenData</span><span class="tag">A Brighter Future, Rooted in Data.</span></span>
+    <span class="foot-vds"><span class="vds">VollenData</span> <span class="tag">A Brighter Future, Rooted in Data.</span></span>
   </div>
 </footer>
 
 <script>
+/* Theme toggle. The flip is the data-theme attribute on the root element.
+   Storage is best effort only: a sandboxed frame has an opaque origin and
+   localStorage throws there, which must never stop the toggle from working. */
 (function(){
-  var root=document.documentElement,btn=document.querySelector('.vtheme-toggle'),mq=matchMedia('(prefers-color-scheme: dark)');
-  try{var s=localStorage.getItem('vollen-theme');if(s==='light'||s==='dark')root.setAttribute('data-theme',s);}catch(e){}
-  function cur(){return root.getAttribute('data-theme')||(mq.matches?'dark':'light');}
+  var root=document.documentElement,btn=document.querySelector('.vtheme-toggle');
+  if(!btn)return;
+  var explicit=null;
+  function system(){try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}catch(e){return 'light';}}
+  function cur(){var a=root.getAttribute('data-theme');return a==='dark'||a==='light'?a:system();}
+  function read(){try{var s=window.localStorage.getItem('vollen-theme');return s==='light'||s==='dark'?s:null;}catch(e){return null;}}
+  function save(v){try{window.localStorage.setItem('vollen-theme',v);}catch(e){}}
   function paint(){var d=cur()==='dark';btn.innerHTML=d?'&#9728;':'&#9790;';btn.setAttribute('aria-pressed',d?'true':'false');btn.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');}
-  btn.addEventListener('click',function(){var n=cur()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('vollen-theme',n);}catch(e){}paint();});
-  try{mq.addEventListener('change',function(){var s=null;try{s=localStorage.getItem('vollen-theme');}catch(e){}if(!s)root.removeAttribute('data-theme');paint();});}catch(e){}
+  var saved=read();
+  if(saved){explicit=saved;root.setAttribute('data-theme',saved);}
+  btn.addEventListener('click',function(){
+    var n=cur()==='dark'?'light':'dark';
+    explicit=n;
+    root.setAttribute('data-theme',n);
+    save(n);
+    paint();
+  });
+  try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(!explicit)root.removeAttribute('data-theme');paint();});}catch(e){}
   paint();
 })();
 </script>
