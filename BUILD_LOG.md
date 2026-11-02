@@ -510,3 +510,32 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 
 - Source tracing found that the resident tour's synthetic fill dispatched the normal form `input` and `change` events. The applicant portal therefore queued its live completeness check and address lookup while the tour immediately switched to the Agent Operator. Those applicant-only endpoints could then see the new staff session and return 403.
 - `tour.js` now marks only the synchronous synthetic fill. `property.js` keeps local form affordances current but does not start live validation or address lookup while that marker is present. Visitor edits retain their existing live requests, and the tour still fills only a pristine form, leaving pre-existing typed values and files unchanged.
+
+## 2026-11-02 — The in-app help follows the build (`docs/final-pass`)
+
+- The steward section of the tutorial and the guide of a data issue now cover
+  the steward assistant end to end: the steward wakes and sleeps its own
+  assistant on "Data issues", prepares the recommendations, reads the
+  confidence and the one-line reason of each, accepts or clears each one,
+  accepts a batch on `/steward/batch` with "Accept all high-confidence" and
+  "Accept these", reads "Explain with Muse", reads the "Submitted vs record"
+  panel and "Open the original submission", and closes a data issue by hand
+  with "Close with a reason".
+- The queue of the reviewer is named as it shows today: the chips of the next
+  action, the search and its clear, the tags of the row, the sections of the
+  permit workspace with the "Decision" section open when the next action is
+  to decide, the recorded exception with its "Exception reason", and the
+  prefilled "Needs information". The tag "Data follow-up: parcel not
+  confirmed" and the rule that the agent recommends on the checked rules are
+  stated, with the payer link and the fee still blocking issuing.
+- The guide of the operator names the agent pages of today: the "Incoming"
+  panel, the "Waiting work" heading with its count, "Process N cases",
+  "Nothing is waiting", "Last run", "Needs attention" with "Try again" and
+  the counts of the steward assistant.
+- A glossary term for the "Steward assistant" is added, and the screen help
+  of "Data issues" and of the review queue are refreshed.
+- The claim that no model is called when the tutorial is followed is replaced
+  by the difference between a recorded replay and a live answer, whose label
+  says which it is.
+- No record, rule, fee, grant, persona, model name, fixture, migration or
+  acceptance expectation changed. Nothing was pushed, deployed or published.

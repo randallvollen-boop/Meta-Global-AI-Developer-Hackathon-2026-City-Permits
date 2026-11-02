@@ -35,7 +35,7 @@
     "title": "Tutorial: the demo story",
     "intro": "The story follows one fence permit through the City. An applicant applies, an agent operator wakes the agents that prepare the case, a data steward settles a question about who the applicant is, a permit reviewer checks the application and records a decision, and a city administrator tests a rule change. Each section is for one person. The numbered steps use the labels you see on the screens.",
     "switch_note": "You act as one person at a time. To change person, open Demo controls and pick the next one. The tutorial does not switch for you.",
-    "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a Muse answer, it is a recorded replay: a stored answer shown again, and its label says so. No model is called when you follow these steps.",
+    "replay_note": "Muse is the AI model that drafts answers in this demonstration. Where a step shows a recorded replay, it is a stored answer shown again, and its label says so. A step that may call Muse for a live answer says so on the screen, and the label of that answer says so too.",
     "state_note": "Some screens are empty until the demo data is prepared. The steps say when. If a list is empty, ask whoever runs the demo to prepare the data as the user test guide describes in the technical documentation.",
     "sections": [
       {
@@ -90,7 +90,7 @@
           },
           {
             "do": "Click \"Start an application\", then \"Residential deck or fence\". Click \"Ask\" at the corner of the page, type \"Do I need a permit for a 6 ft fence?\" under \"Your question\" and click \"Ask\".",
-            "see": "The answer shows the label \"Recorded demo answer\" and cites ACME Code §14-305 and §14-306. It is a stored answer that was shown again.",
+            "see": "The answer shows the label that says where it came from: \"Recorded demo answer\" for a stored answer, which cites ACME Code §14-305 and §14-306, and \"Muse Spark (live)\" for a live answer.",
             "href": "/apply/deck_fence"
           }
         ]
@@ -107,17 +107,17 @@
           },
           {
             "do": "Click \"Intake agent\" in the left menu.",
-            "see": "The page says \"The agent is asleep, so the run buttons are off.\" Open \"More details\" to read \"Processing\" and \"Engine\".",
+            "see": "The heading reads \"Waiting work\" with the number of cases that wait beside it. The page says \"The agent is asleep, so the run buttons are off.\" Open \"More details\" to read \"Processing\" and \"Engine\".",
             "href": "/agent/intake"
           },
           {
             "do": "Click \"Wake agent\".",
-            "see": "The button now reads \"Put agent to sleep\". The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.",
+            "see": "The button now reads \"Put agent to sleep\". The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting. When no case waits, the note beside it reads \"Nothing is waiting\".",
             "href": "/agent/intake"
           },
           {
             "do": "Under \"Waiting work\", click \"Process one\" on the fence case, or press the batch button. It reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.",
-            "see": "The case leaves the table. Open \"More details\" and read \"Recent results\". If the table says \"Nothing is waiting for this agent.\", send an application as the Applicant first.",
+            "see": "The case leaves the table. Read \"Last run\" for what the run did, and open \"More details\" to read \"Recent results\". Read \"Needs attention\" for work that failed, and click \"Try again\" on a row to run it again. If the table says \"Nothing is waiting for this agent.\", send an application as the Applicant first.",
             "href": "/agent/intake"
           },
           {
@@ -127,7 +127,7 @@
           },
           {
             "do": "Open \"Steward assistant\" in the left menu and click \"Wake agent\". Leave it awake.",
-            "see": "The steward assistant reads awake. Click \"Prepare recommendations\" to prepare the work of the queue, or leave it to the Data Steward.",
+            "see": "The steward assistant reads awake and the button reads \"Put agent to sleep\". Under \"More details\" the counts read \"Recommendations\", \"High\", \"Review\" and \"Held\". Click \"Prepare recommendations\" to prepare the work of the queue, or leave it to the Data Steward.",
             "href": "/agent/steward_assist"
           }
         ]
@@ -135,7 +135,7 @@
       {
         "persona": "Data Steward",
         "persona_id": "persona_data_steward",
-        "intro": "The data steward keeps the records of people, organizations and properties right. Here the steward clears the fence case so a reviewer can decide it. The steward assistant only proposes. The steward records the decision.",
+        "intro": "The data steward keeps the records of people, organizations and properties right. Here the steward wakes the steward assistant, reads what it proposes, decides every recommendation and settles the record, so a reviewer can decide the case. The steward assistant only proposes. The steward records the decision.",
         "steps": [
           {
             "do": "Open \"Demo controls\" and choose \"Data Steward\".",
@@ -143,19 +143,44 @@
             "href": "/steward"
           },
           {
+            "do": "Wake the steward assistant at the top of the page: click \"Wake\".",
+            "see": "The panel says the steward assistant is awake and the button reads \"Put to sleep\". The change is recorded with your name. While it sleeps, \"Prepare recommendations\" is off and the note says \"Press Wake to wake it.\" The Agent Operator can wake it too.",
+            "href": "/steward"
+          },
+          {
             "do": "Click \"Prepare recommendations\".",
-            "see": "Each task the assistant works on gets a \"High\", \"Review\" or \"Held\" pill and a one line reason. If the button is off, the Agent Operator has not woken the \"Steward assistant\".",
+            "see": "Each task the assistant works on gets a \"High\", \"Review\" or \"Held\" pill and a one-line reason under the record. A \"High\" pill means the assistant is sure of its proposal, \"Review\" means read the evidence first, and \"Held\" means the facts disagree and only a person may settle it.",
             "href": "/steward"
           },
           {
-            "do": "Open the \"Check the property\" issue that names the fence case. Click \"Start\" under \"Approve parcel link\", write a \"Decision note\" and submit it.",
-            "see": "The page records the decision. The parcel link is approved. The permit is not approved.",
+            "do": "Open a task of the queue and read the panel \"The steward assistant\".",
+            "see": "It shows the pill, the reason and the evidence the assistant rests on. Edit the \"Reason\" if you wish, then click \"Accept recommendation\". The decision is recorded with your name. A \"Held\" recommendation is never accepted: read the conflicting facts and decide it yourself with the actions under \"5. What will this action do?\".",
             "href": "/steward"
           },
           {
-            "do": "Open the \"Check the person identity\" issue from \"ACME ePermit Portal (simulated)\". Click \"Start\" under \"Confirm link to Demo Applicant\", write a \"Decision note\" and submit it.",
-            "see": "The page records the decision. Without this approval and the parcel approval, a later approval is refused.",
+            "do": "To turn a proposal down, click \"Clear recommendation\" and decide the task yourself.",
+            "see": "The recommendation is set aside and the task holds no answer. A recommendation for a record match may propose to reject the proposed link; accepting it records that rejection in your name.",
             "href": "/steward"
+          },
+          {
+            "do": "Back on \"Data issues\", click \"Accept all high-confidence\". The button shows how many.",
+            "see": "A page lists exactly the recommendations the batch would accept. Click \"Accept these\" with the count to confirm the list. An item that changed since the list was made is skipped and named, never accepted silently.",
+            "href": "/steward/batch"
+          },
+          {
+            "do": "Open the task that names the fence case and read the panel \"Submitted vs record\".",
+            "see": "It sets what the applicant submitted beside what the record holds today and writes the difference in words. On the case of the permit, click \"Open the original submission\" to read the application as it arrived; that page is read only.",
+            "href": "/steward"
+          },
+          {
+            "do": "To close a data issue that needs no change, click \"Start\" under \"Close with a reason\".",
+            "see": "Choose \"Close as\" and \"Reason\", write the \"Note\", and submit. The issue closes with your name, the time and the reason. A permit decision is a separate step.",
+            "href": "/steward"
+          },
+          {
+            "do": "Open \"More tools\" in the left menu, then click \"Work queue\".",
+            "see": "A case whose parcel link is not confirmed carries the tag \"Data follow-up: parcel not confirmed\". The agent recommends on the rules it checked and does not wait for the steward; the open parcel link stays a follow-up, and the steward can fix the record at any stage, before or after the review, the decision or the issue. Missing information from the applicant still goes back to the applicant, and the payer link and the fee still block issuing.",
+            "href": "/queue"
           },
           {
             "do": "Click \"Master records\" in the left menu and open the tab \"People and organizations\".",
@@ -171,12 +196,12 @@
         "steps": [
           {
             "do": "Open \"Demo controls\" and choose \"Permit Reviewer\".",
-            "see": "You land on the \"Work queue\".",
+            "see": "You land on the \"Work queue\". A case the City sent back to the applicant reads \"Waiting for the applicant's answer\" in the issue column.",
             "href": "/queue"
           },
           {
             "do": "Open \"Review queue\" and open the fence case.",
-            "see": "The permit workspace opens for that application.",
+            "see": "The permit workspace opens for that application. The page folds its parts into sections, such as \"Where this case is\", \"Next action\", \"Outstanding issues\", \"Application checks\", \"Decision\" and \"Actions\". The \"Decision\" section starts open when the next action is to decide or to read the decision.",
             "href": "/queue/review"
           },
           {
@@ -191,12 +216,17 @@
           },
           {
             "do": "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit it.",
-            "see": "The rule results appear. An open parcel or identity link is Data follow-up: it is separate from the rule results and does not refuse the decision.",
+            "see": "The rule results appear. A check that could not run because the parcel is not confirmed is listed as Not checked. An open parcel or identity link is Data follow-up: it is separate from the rule results and does not refuse the decision.",
             "href": "/queue/review"
           },
           {
             "do": "Click \"Start\" under \"Record review decision\". Choose \"Approve\", write the \"Rationale (internal record)\" and click \"Record the decision\".",
-            "see": "An open parcel or identity link does not refuse the approval. The case shows Data follow-up, and the Data Steward can confirm it afterwards. A check that was not run because the parcel is not confirmed is listed as Not checked; the reviewer decides whether to approve against it and records an exception reason when required. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled. The payer account is still required to apply a payment and to issue.",
+            "see": "An open parcel or identity link does not refuse the approval. The case shows Data follow-up, and the Data Steward can confirm it afterwards. A check that was not run because the parcel is not confirmed is listed as Not checked; the reviewer decides whether to approve against it and records an \"Exception reason\" when required. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled. The payer account is still required to apply a payment and to issue.",
+            "href": "/queue/review"
+          },
+          {
+            "do": "To send the case back to the applicant, open the same form and choose \"Needs information\".",
+            "see": "The \"Rationale (internal record)\" is filled with the request for you. Write the rest, click \"Record the decision\", and the case goes back to the applicant. The City assesses the application again from the start.",
             "href": "/queue/review"
           }
         ]
@@ -306,7 +336,7 @@
           "Open \"Start an application\", \"My permits\" or an application form, and click \"Ask\" at the corner of the page, or \"Ask about your permit\" in the header. The assistant opens over the page.",
           "Type your question under \"Your question\", for example \"Do I need a permit for a 6 ft fence?\"",
           "Click \"Ask\". You can also click one of the questions the City is often asked.",
-          "Read the answer. Its label says where it came from. In this demonstration it reads \"Recorded demo answer\".",
+          "Read the answer. Its label says where it came from: \"Recorded demo answer\" for a stored answer and \"Muse Spark (live)\" for a live one.",
           "Open a citation, such as ACME Code §14-306, and click \"Show the rule text\" to read the rule the answer relies on.",
           "If the assistant did not answer, the panel says so and shows the rule text that matches your words.",
           "To reach a person, open \"Contact the City\" from the menu of the City website, type under \"Your question\" and click \"Send my question\".",
@@ -325,17 +355,18 @@
         "screen_label": "Review queue",
         "screen_href": "/queue/review",
         "steps": [
-          "Open \"Review queue\". Read \"Stage\" and \"Next action\" for each case. Stage shows where the case is, for example \"Checks (3 of 6)\". Next action is what is needed now: \"Ready to decide\", \"Ready to issue\", \"Needs checks\", \"Fee not settled\", \"In early resolution\" or \"Submitted with known issues\". \"Ready to decide\" and \"Ready to issue\" come first. An open parcel or identity link is a \"Data follow-up\" tag, not the next-action blocker. To find one case, type its reference, the applicant name or the site address in Search and press Search. A number such as 617 matches SYN-APP-617. Tags on the row show what the agents recommend, and a chip filters to one tag. Click the reference of a case.",
-          "Read the tabs \"Documents\", \"People and organizations\", \"Activity\" and \"Review\".",
-          "On the \"People and organizations\" tab, click \"Start\" under \"Confirm parcel\" and submit it.",
-          "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit the form.",
-          "Read the rule results. An open parcel or identity link is Data follow-up and does not have to be settled before the decision. A check listed as Not checked needs an exception reason before you approve. The payer account and the fee still have to be settled before the permit is issued.",
-          "Click \"Start\" under \"Record review decision\".",
-          "Choose \"Approve\", \"Approve with conditions\" or \"Deny\". For a denial also choose the \"Denial reason code\".",
-          "Write the \"Rationale (internal record)\". It is required.",
-          "Click \"Record the decision\" and read the message at the top."
+          "Open \"Review queue\". Read \"Stage\" and \"Next action\" for each case. Stage shows where the case is, for example \"Checks (3 of 6)\". Next action is what is needed now: \"Ready to decide\", \"Ready to issue\", \"Needs checks\", \"Fee not settled\", \"In early resolution\", \"Submitted with known issues\" or \"Waiting for the applicant\". \"Ready to decide\" and \"Ready to issue\" come first.",
+          "To find one case, type its reference, the applicant name or the site address in Search and press Search. A number such as 617 matches SYN-APP-617. Clear drops the search and keeps the chip.",
+          "Read the tags on the row. They name what the agents recommend, such as \"Agent: approve\" or \"Data follow-up: parcel not confirmed\", and a chip filters to one tag. An open parcel or identity link is a \"Data follow-up\" tag, not the next-action blocker.",
+          "Open the case. The page folds its parts into sections, such as \"Where this case is\", \"Next action\", \"Outstanding issues\", \"Suggested fields\", \"Application checks\", \"Agent findings and runs\", \"Decision\" and \"Actions\". The \"Decision\" section starts open when the next action is to decide or to read the decision.",
+          "Read the tabs \"Documents\", \"People and organizations\", \"Activity\" and \"Review\". On the \"People and organizations\" tab, click \"Start\" under \"Confirm parcel\" and submit it.",
+          "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit the form. Read the rule results. A check listed as Not checked did not run because the parcel is not confirmed.",
+          "An open parcel or identity link is Data follow-up and does not have to be settled before the decision. The payer account and the fee still have to be settled before the permit is issued.",
+          "Click \"Start\" under \"Record review decision\". Choose \"Approve\", \"Approve with conditions\", \"Deny\" or \"Needs information\". For a denial also choose the \"Denial reason code\". This is the manual decision, the one a person records. When the adjudication agent has left a recommendation, the \"Decision\" section also offers \"Confirm the recommendation\", which records that outcome as your decision, and \"Revert the recommendation\", which sends the case back to a manual review with a reason.",
+          "When a check failed or still needs a person, write the \"Exception reason\". It is required when you approve against such a check, and the decision is recorded as an exception to that rule. A denial needs no exception reason.",
+          "Write the \"Rationale (internal record)\". It is required. Click \"Record the decision\" and read the message at the top. To send the case back to the applicant, choose \"Needs information\": the \"Rationale (internal record)\" is then filled with the request for you."
         ],
-        "result": "The decision is recorded against the versions you saw. Data follow-up does not refuse it. Another blocker, such as an expired credential or a stale check, still refuses an approval and says why. Issue permit stays refused until the fee is assessed, paid and reconciled."
+        "result": "The decision is recorded against the versions you saw. Data follow-up does not refuse it. Another blocker, such as an expired credential or a stale check, still refuses an approval and says why. \"Issue permit\" stays refused until the fee is assessed, paid and reconciled."
       },
       {
         "slug": "resolve-a-data-issue",
@@ -348,16 +379,18 @@
         "screen_label": "Data issues",
         "screen_href": "/steward",
         "steps": [
-          "Click \"Data issues\" in the left menu. With the Cedarline demonstration data loaded, \"Needs review\" lists 3 cases.",
-          "Open the case for ERP-BL-00413 (Cedarline Coffee Works).",
-          "Read the sections 1 to 4 in order. Section 3 compares the source record with each master record it might belong to. Section 4 lists what agrees and what conflicts.",
-          "Look at Cedarline Coffee Roasters LLC, the near-duplicate. Its name, license number and unit all conflict with the source record. A similar name is not the same organization.",
-          "Under \"5. What will this action do?\" read the preview of each action. The guide's answer for the near-duplicate is \"Reject match\": never confirm a link to Cedarline Coffee Roasters LLC.",
-          "Click \"Reject match\", then \"Start\". Write a Decision note that names the conflicts, and submit.",
-          "Read the message and the section \"6. What happened?\".",
-          "If a candidate agrees on every compared field, as Cedarline Coffee Works LLC does for this record, choose it under \"Compare with\" and press \"Show this record\". The case then offers \"Confirm link to Cedarline Coffee Works LLC\". Choose the action that matches the evidence."
+          "Click \"Data issues\" in the left menu. The queue starts on the tasks that need a person, under \"Needs review\".",
+          "Wake the steward assistant at the top of the page: click \"Wake\". The button reads \"Put to sleep\" once the assistant is awake, and the change is recorded with your name. While it sleeps, \"Prepare recommendations\" is off and the note says \"Press Wake to wake it.\" The Agent Operator can wake it too.",
+          "Click \"Prepare recommendations\". Each task the assistant works on gets a pill with its confidence and a one-line reason under the record: \"High\" when the assistant is sure of the proposal, \"Review\" when you should read the evidence first, and \"Held\" when the facts disagree and only a person may settle it.",
+          "Open the task of Cedarline Coffee Works (ERP-BL-00413). The panel \"The steward assistant\" shows the pill, the reason and the evidence it rests on. Edit the \"Reason\" if you wish, then click \"Accept recommendation\". The decision is recorded with your name; you decide every one of them.",
+          "Read the sections 1 to 4 in order. Section 3 compares the source record with each master record it might belong to. Section 4 lists what agrees and what conflicts. Under \"3. What are we comparing?\" choose Cedarline Coffee Works LLC under \"Compare with\" and press \"Show this record\".",
+          "Look at Cedarline Coffee Roasters LLC, the near-duplicate. Its name, licence number and unit all conflict with the source record. A similar name is not the same organization. Under \"5. What will this action do?\" read the preview of each action. The action that turns a proposal down names the record it turns down: \"Reject match proposed for\" Cedarline Coffee Works LLC. Never confirm a link to Cedarline Coffee Roasters LLC.",
+          "Click \"Reject match\", then \"Start\". Write a \"Decision note\" that names the conflicts, and submit. Read the message and the section \"6. What happened?\".",
+          "If a candidate agrees on every compared field, as Cedarline Coffee Works LLC does for this record, the case offers \"Confirm link to Cedarline Coffee Works LLC\". Choose the action that matches the evidence, then click \"Start\".",
+          "To turn a proposal down instead of accepting it, click \"Clear recommendation\" and decide the task yourself. To read a proposal in plain words, click \"Explain with Muse\" on the task: it never changes the decision or its certainty.",
+          "Back on \"Data issues\", click \"Accept all high-confidence\". The button shows how many. The page lists exactly the recommendations the batch would accept; click \"Accept these\" with the count to confirm the list. An item that changed since the list was made is skipped and named, never accepted silently. To close a data issue that needs no change, click \"Start\" under \"Close with a reason\", choose \"Close as\" and \"Reason\", write the \"Note\" and submit."
         ],
-        "result": "A rejected match links nothing, and the source record keeps all its values. Another candidate can be linked by proposing again."
+        "result": "A confirmed link ties the source record to the master record, and neither record’s values are overwritten. A rejected match links nothing, and the source record keeps every value. The assistant prepares; you decide."
       },
       {
         "slug": "run-a-what-if-and-write-the-briefing",

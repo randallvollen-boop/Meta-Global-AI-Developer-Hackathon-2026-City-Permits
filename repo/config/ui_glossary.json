@@ -181,6 +181,10 @@
     "action_preview": {
       "label": "What this action will do",
       "text": "A preview of the records an action would link or leave unlinked, the application relationship that would change, which source values are kept and whether an issue would remain. Nothing is written until you press the action."
+    },
+    "steward_assistant": {
+      "label": "Steward assistant",
+      "text": "The assistant the Data Steward works with on the Data issues queue. It reads the task, gathers the evidence the City already holds and proposes a decision, with a confidence and a one line reason. The steward wakes it, reads every proposal and decides each one: the assistant never decides and never writes a record of its own."
     }
   },
   "screens": {
@@ -236,9 +240,10 @@
     },
     "steward": {
       "title": "Data issues",
-      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. Muse proposes. People decide.",
+      "purpose": "The steward's work queue: record matches and source problems that need a person to decide. The steward assistant proposes, and the steward decides every one of them.",
       "can_do": [
         "Filter by Needs review, Assigned to me, Awaiting source or Resolved.",
+        "Wake the steward assistant, let it prepare the recommendations of the queue, and accept or clear each one.",
         "Open an issue to read the evidence, preview what an action will do, and record a decision."
       ],
       "next": "The decision is recorded with the evidence and the note, and appears in the history of the record. A permit decision is a separate step."
@@ -320,7 +325,7 @@
       "purpose": "The cases with the Permit Reviewer. Stage shows where each case is in the life cycle. Next action shows what is needed now and by whom.",
       "can_do": [
         "Read Stage and Next action on each case. Stage uses the life cycle names, for example Checks (3 of 6).",
-        "Filter by Next action. The chips are Ready to decide, Ready to issue, Needs checks, Fee not settled, In early resolution and Submitted with known issues. An open parcel or identity link appears as a Data follow-up tag instead of a next-action chip.",
+        "Filter by Next action. The chips are Ready to decide, Ready to issue, Needs checks, Fee not settled, In early resolution, Submitted with known issues and Waiting for the applicant. An open parcel or identity link appears as a Data follow-up tag instead of a next-action chip.",
         "Search by reference, applicant name or site address. One match offers Open. Clear drops the search and keeps the chip.",
         "Read the agent tags on a row, and filter to one tag. The tooltip is the reason in one sentence.",
         "Open a case to read the recommendation and record a decision."

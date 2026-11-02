@@ -380,3 +380,34 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Root cause traced from `tour.js` to `property.js`: tour `setControl` and `attachFile` dispatch normal `input`/`change` events; `property.js` reacts with `POST /apply/deck_fence/check` and, for the story address, `GET /apply/locate?text=400%20Lantern...`. Both endpoints use `_portal_guard`, which rejects an Agent Operator session with 403. The full tour advances to that persona before delayed requests necessarily leave the browser.
 - The synthetic-fill marker is present only while those events dispatch. The portal listener checks it before scheduling live `refresh()` or `locate()`, preserving its file-status and conditional-question listeners.
 - Post-change static checks: `node --check src/acme_city/static/tour.js`; `node --check src/acme_city/static/property.js`; `git diff --check`; and `PYTHONPATH=src ... pytest tests/unit/test_tour.py --collect-only -q` (26 tests collected) completed successfully. Browser execution was not run by instruction; the original browser assertions remain unchanged.
+
+## 2026-11-02 — The in-app help follows the build, evidence
+
+- Every label quoted by the help was taken from the running screens. The
+  screens were read through the application itself (a signed-in client for
+  each persona): `/agents`, `/agent/intake`, `/agent/steward_assist`,
+  `/agents/runs`, `/queue/intake`, `/steward`, `/steward/batch`, a steward
+  task, the work queue, the review queue and a permit workspace. The
+  recorded data issue and the prepared recommendations were produced with the
+  real actions (`agent.toggle`, `steward.assist.prepare`).
+- The shared check of the help, `tests/integration/test_help_docs.py`, still
+  verifies that every quoted label exists in the application and that every
+  link of the tutorial opens for the persona it names. It passed with the
+  new words.
+- The steward lane check now reads every label the steward guides quote on
+  the page that shows it, with the assistant awake, a recommendation
+  prepared, a batch to confirm and a recorded issue to close: 46 passed.
+- Focused runs after the final edit: `tests/integration/test_help_docs.py`,
+  `test_help_docs_operator.py`, `test_help_docs_steward.py`,
+  `test_help_docs_admin_a.py`, `test_help_docs_admin_b.py` and
+  `tests/unit/test_help_content_overlay.py` gave 86 passed. The filter
+  `-k "help or glossary or tutorial or guide"` over `tests/unit` and
+  `tests/integration` gave 277 passed, and over `tests/browser` gave 83
+  passed.
+- The command of the brief, `pytest -q -p no:cacheprovider tests -k "help or
+  glossary or tutorial or guide" -m "not browser"`, gave 361 passed and 3425
+  deselected in 10m56s. The whole of `tests/unit` and `tests/integration`
+  gave 2498 passed in 2m58s.
+- The daily allowance of live Muse calls was checked against the deployment
+  configuration before the help kept the number: `render.yaml` sets
+  `ACME_MUSE_LIVE_CALL_CAP` and `ACME_MUSE_DAILY_CALL_CAP` to 100.

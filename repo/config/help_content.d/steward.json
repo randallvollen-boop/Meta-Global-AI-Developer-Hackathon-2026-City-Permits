@@ -2,14 +2,6 @@
   "howto": {
     "guides": [
       {
-        "slug": "resolve-a-data-issue",
-        "steps": {
-          "4": "Under \"5. What will this action do?\" read the preview of each action. The action that turns a proposal down names the record it turns down: \"Reject match proposed for\" Cedarline Coffee Works LLC. Never confirm a link to Cedarline Coffee Roasters LLC: its name, licence number and unit conflict.",
-          "5": "Under \"3. What are we comparing?\" choose Cedarline Coffee Works LLC under \"Compare with\" and press \"Show this record\". The candidate agrees with the source record. Then click \"Confirm link to Cedarline Coffee Works LLC\" and click \"Start\". The confirmation names the record it links, so this is the action that matches the evidence.",
-          "7": "A confirmed link ties the source record to the master record. Neither record's values are overwritten, and the conflicts stay visible in the history. A rejected match links nothing, and the source record keeps every value."
-        }
-      },
-      {
         "slug": "work-the-queue-and-the-incoming-work",
         "title": "Work the queue and the incoming work",
         "summary": "Find the work that waits for a person and follow the cases that need a decision.",
