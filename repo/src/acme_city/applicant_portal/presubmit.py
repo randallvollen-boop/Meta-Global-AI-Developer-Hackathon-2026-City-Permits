@@ -33,7 +33,7 @@ ASSISTANT_OFFLINE = "The assistant is offline."
 SUBMIT_HELD_WHY = "Fix the items under Must fix, or use Submit anyway."
 
 #: Beside Submit anyway until the applicant types a reason.
-ANYWAY_WHY = "Enter why submit now."
+ANYWAY_WHY = "Write why you are submitting now."
 
 #: An address the locator could not match to a parcel.  It never holds the
 #: application: the City matches the property once the case is filed.

@@ -194,7 +194,7 @@ def test_a_six_foot_front_fence_is_held_until_the_applicant_says_why(client, env
 
     blank = post_form(client, FRONT_SIX, files=fence_files(), intent="override", override_reason="   ")
     assert blank.status_code == 422, blank.text
-    assert "Enter why submit now." in blank.text
+    assert "Write why you are submitting now." in blank.text
     # The refused page leaves the button usable.  A script may disable it
     # until a reason is typed; the markup itself must not.
     anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', blank.text)
@@ -531,6 +531,25 @@ def test_submit_anyway_posts_the_draft_without_sending_the_files_again(client) -
     assert "/apply/submitted/" in accepted.headers["location"]
 
 
+def test_an_enter_update_keeps_a_complete_held_draft_held(client) -> None:
+    """The hidden first submitter cannot erase the override panel on Enter."""
+    choose(client, "persona_applicant")
+    held = post_form(client, MADE_UP_FRONT_SIX, files=fence_files(), intent="submit")
+    assert held.status_code == 422, held.text
+    reference = draft_reference(held.text)
+
+    updated = post_form(
+        client,
+        {**MADE_UP_FRONT_SIX, "draft": reference},
+        intent="update",
+    )
+    assert updated.status_code == 422, updated.text
+    assert 'data-server-held="true"' in updated.text
+    assert 'data-override-field hidden' not in updated.text
+    assert 'data-override-action hidden' not in updated.text
+    assert "Write why you are submitting now." in updated.text
+
+
 def test_the_live_check_answers_with_the_rules_while_a_review_is_on_screen(client) -> None:
     """The browser learns the current answer, so a hold it cannot lift is lifted."""
     choose(client, "persona_applicant")
@@ -616,6 +635,12 @@ def test_muse_feedback_is_shown_only_when_it_cites_a_real_rule(environment) -> N
         assert "Cedar panels." in sent
         assert "demo.applicant@example.invalid" not in sent
         assert "555-0100" not in sent
+        rendered = post_form(test_client, FRONT_SIX, files=fence_files(), intent="review")
+        assert rendered.status_code == 200, rendered.text
+        feedback = rendered.text.split('data-testid="presubmit-feedback"')[1].split("</p>")[0]
+        assert 'data-testid="presubmit-muse-badge">Muse<' in feedback
+        assert 'data-testid="presubmit-muse-lead">Muse says:<' in feedback
+        assert "Lower the front fence to 4 ft." in rendered.text
         app.state.presubmit_muse_client = MuseClient(live, transport=invented)
         second = test_client.post("/apply/deck_fence/review", data=payload, files=fence_files())
         assert second.status_code == 200, second.text

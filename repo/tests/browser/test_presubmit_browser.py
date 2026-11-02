@@ -70,7 +70,10 @@ def test_check_submit_and_submit_anyway(page, server: BrowserServer, login) -> N
     page.locator('[data-testid="check-application"]').click()
     page.wait_for_selector('[data-testid="looks-good"]')
     assert "None." in page.locator('[data-testid="must-fix"]').inner_text()
-    assert page.locator('[data-testid="assistant-note"]').inner_text() == "The assistant is offline."
+    note = page.locator('[data-testid="assistant-note"]')
+    assert "The assistant is offline." in note.inner_text()
+    assert note.locator('[data-testid="presubmit-muse-badge"]').inner_text() == "Muse"
+    assert note.locator('[data-testid="presubmit-muse-lead"]').inner_text() == "Muse says:"
     submit = page.locator('[data-testid="submit-application"]')
     assert submit.is_enabled()
     submit.click()
@@ -96,7 +99,7 @@ def test_check_submit_and_submit_anyway(page, server: BrowserServer, login) -> N
     anyway_why = page.locator('[data-testid="submit-anyway-why"]')
     assert anyway.is_disabled()
     assert anyway_why.is_visible()
-    assert anyway_why.inner_text() == "Enter why submit now."
+    assert anyway_why.inner_text() == "Write why you are submitting now."
     assert anyway.get_attribute("aria-describedby") == "submit-anyway-why"
     anyway.click(force=True)
     assert "/apply/submitted/" not in page.url
@@ -632,6 +635,85 @@ def test_submit_anyway_after_a_held_reload(held_browser, server: BrowserServer) 
         assert all("422" in error for error in page.recorded_errors), page.recorded_errors
     finally:
         context.close()
+
+
+def test_the_real_held_submit_path_keeps_the_override_after_tour_typing_and_enter(
+    page, server: BrowserServer, login
+) -> None:
+    """At 1280px, the tour, address picker, stored uploads and Enter keep a hold.
+
+    This is the applicant's reported sequence.  Documents are first stored by
+    the document widgets, so the refused Submit posts no file bytes.  Typing
+    then calls /check, and the first (hidden) submitter is exercised with an
+    Enter key before the person uses Submit anyway.
+    """
+    login("persona_applicant")
+    page.set_viewport_size({"width": 1280, "height": 900})
+
+    # Reach the application form from the resident tour, rather than a direct
+    # address bar navigation.  The overlay itself never fills story answers.
+    page.evaluate("() => window.acmeTour.start('resident')")
+    for title in (
+        "A fence for the back yard",
+        "Ask which permit a fence needs",
+        "Apply for a permit",
+    ):
+        page.wait_for_function(
+            "(title) => document.querySelector('[data-testid=tour-title]')?.textContent.trim() === title",
+            arg=title,
+        )
+        page.locator('[data-testid="tour-next"]').click()
+    page.wait_for_url(f"{server.base_url}/apply/deck_fence")
+    page.locator('[data-testid="tour-exit"]').click()
+
+    # Type into the suggest box and select the offered, known address.
+    address = _pick_suggestion(page, KNOWN)
+    _fence(page, height="6", location="front", description="6 ft front fence", address=address)
+
+    # The upload widgets store both files on the draft before Submit.  Opening
+    # the draft again proves that its input controls are empty while Added is
+    # still visible, which is the real post-reload condition.
+    page.locator('[data-testid="save-draft"]').click()
+    page.wait_for_url(lambda url: "/apply/track?tab=drafts&saved=" in url)
+    draft = page.url.rsplit("saved=", 1)[1]
+    page.goto(f"{server.base_url}/apply/deck_fence?draft={draft}", wait_until="networkidle")
+    _assert_reload_kept_the_documents(page)
+
+    # Submit has no selected files now.  The server holds it, and typing on
+    # that held page causes the live completeness/rules check to finish.
+    page.locator('[data-testid="submit-application"]').click()
+    page.wait_for_selector('[data-testid="must-fix"]')
+    with page.expect_response(
+        lambda response: response.url.endswith("/check") and response.request.method == "POST"
+    ) as checked:
+        page.locator("#f-project_description").fill("6 ft front fence, checked again")
+    body = checked.value.json()
+    assert body["can_submit"] is True, body
+    assert body["review"]["held"] is True, body
+    assert page.locator('[data-testid="why-submit-now"]').is_visible()
+    anyway = page.locator('[data-testid="submit-anyway"]')
+    assert anyway.is_visible() and anyway.is_disabled()
+
+    # Browser implicit submission uses the hidden intent=update button.  It
+    # must re-render the held review, rather than saving a draft without it.
+    with page.expect_response(
+        lambda response: response.url.endswith("/apply/deck_fence")
+        and response.request.method == "POST"
+    ) as updated:
+        page.locator("#f-applicant_email").press("Enter")
+    assert updated.value.status == 422
+    page.wait_for_selector('[data-testid="why-submit-now"]')
+    assert page.locator('[data-testid="why-submit-now"]').is_visible()
+    assert page.locator('[data-testid="submit-anyway"]').is_visible()
+
+    page.fill("#override-reason", "The fence is already built.")
+    page.wait_for_function(
+        "() => !document.querySelector(\"[data-testid='submit-anyway']\").disabled"
+    )
+    anyway.click()
+    page.wait_for_url(lambda url: "/apply/submitted/" in url)
+    assert page.locator('[data-testid="submitted-reference"]').inner_text().strip()
+    assert all("422" in error for error in page.recorded_errors), page.recorded_errors
 
 
 def test_submit_anyway_posts_without_javascript(held_browser, server: BrowserServer) -> None:

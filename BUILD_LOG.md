@@ -433,6 +433,15 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - STW-31B: the demo preparation. A separate prepare mode activates the policy, runs the worker once and leaves one applied link in the queue for a person to keep or undo. The Cedarline demonstration is unchanged: three proposals and nothing decided.
 - No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
 
+## 2026-11-02 — Submit anyway held form, G38 and G39
+
+- Traced the reported loss of the override panel across the server-rendered held form, `property.js`, `/apply/{type}/check`, and the implicit `intent=update` submitter. The prior commit `4b502a1` already preserves stored draft documents on a reload and treats a server-rendered hold as authoritative while a live `/check` reports an incomplete file control.
+- A remaining independent path was confirmed by source tracing: pressing Enter uses the hidden first submitter (`intent=update`). That path saved the draft and re-rendered with no review, which omitted the held panel. It now runs the deterministic review for a complete draft and re-renders the held response when Must fix remains. It does not call Muse.
+- Added the 1280px Chromium browser regression sequence: resident tour to Apply, address suggestion selection, widget-stored documents with empty file controls on Submit, a post-hold live `/check`, Enter, reason and receipt. It also asserts that `/check` remains held and that the override controls remain visible.
+- G38: the reason label has the required marker; its hint says `Required to use Submit anyway.`; the disabled explanation says `Write why you are submitting now.`
+- G39: kept `Check my application` and its `/review` path, marked it with the tour's Muse badge and a no-send hint, and labels live feedback and offline wording as Muse notes. Submit still uses the deterministic rules path with `muse=False`.
+- No fixture, hash, rule, persona, grant, acceptance assertion, or live provider setting changed. No provider call was made.
+
 ## 2026-10-30 — Steward autolink lane, review 4 fixes (`lane/steward-autolink`)
 
 - The worker works every job inside a savepoint, so a job that stops after it wrote a link leaves nothing of its work behind: no link, no event, no review item and no record of the application. The job is left failed, so it is tried again, and the next job of the cycle is worked as if the failure never happened.

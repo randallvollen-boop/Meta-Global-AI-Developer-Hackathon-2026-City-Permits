@@ -888,6 +888,31 @@ async def ui_portal_post(
             return RedirectResponse(
                 f"/apply/submitted/{application.source_application_number}", status_code=303
             )
+        elif intent == "update":
+            # The browser's implicit submitter is this intent.  It must keep
+            # a held page held: after a reload the file inputs are empty but
+            # the draft still owns the documents that make the form complete.
+            complete = service.completeness(
+                spec,
+                values,
+                set(documents),
+                certification_accepted=certification_accepted,
+                sent_separately=declared,
+            )
+            if complete["can_submit"]:
+                review = _run_review(
+                    request, service, spec, values, resolved,
+                    certification_accepted=certification_accepted,
+                    declared=declared,
+                    uploaded_types=set(documents),
+                    documents=documents,
+                    muse=False,
+                )
+                if review["must_fix"]:
+                    session.commit()
+                    raise _Held(review)
+            session.commit()
+            notice = notice or "Your changes are kept in a draft. Nothing has been submitted."
         else:
             session.commit()
             if intent == "save":

@@ -66,7 +66,9 @@
 <form method="post" action="/apply/{{ spec.type_key }}" enctype="multipart/form-data" class="portal-form" novalidate data-portal-form data-check-url="/apply/{{ spec.type_key }}/check" data-review-url="/apply/{{ spec.type_key }}/review" data-locate-url="/apply/locate" data-testid="application-form"{% if review and review.held %} data-server-held="true"{% endif %}>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="draft" value="{{ draft.reference if draft else '' }}">
-  {# Pressing Enter in a field must keep the draft, never remove a file or submit. #}
+  {# The fallback submitter keeps an Enter key from losing the draft.  The
+     server re-runs a held review for this intent, so it also keeps the
+     override panel that a person was already answering. #}
   <button type="submit" name="intent" value="update" class="visually-hidden" tabindex="-1" aria-hidden="true" formnovalidate>Update</button>
 
   <p class="muted required-legend" data-testid="required-legend"><span class="req-star" aria-hidden="true">*</span> Required</p>
@@ -177,14 +179,14 @@
         <h2>{{ review.labels[key] }}</h2>
         {% if review[key] %}
           {% for item in review[key] %}
-          <p data-testid="presubmit-item" data-rule-id="{{ item.rule_id }}">{{ item.sentence }}{% if item.feedback %} <span data-testid="presubmit-feedback">{{ item.feedback }}</span>{% endif %}</p>
+          <p data-testid="presubmit-item" data-rule-id="{{ item.rule_id }}">{{ item.sentence }}{% if item.feedback %} <span class="muse-note" data-testid="presubmit-feedback"><span class="tour-muse-badge" data-testid="presubmit-muse-badge">Muse</span> <span data-testid="presubmit-muse-lead">Muse says:</span> {{ item.feedback }}</span>{% endif %}</p>
           {% endfor %}
         {% else %}
           <p>None.</p>
         {% endif %}
       </section>
       {% endfor %}
-      {% if review.assistant_note %}<p data-testid="assistant-note">{{ review.assistant_note }}</p>{% endif %}
+      {% if review.assistant_note %}<p data-testid="assistant-note"><span class="tour-muse-badge" data-testid="presubmit-muse-badge">Muse</span> <span data-testid="presubmit-muse-lead">Muse says:</span> {{ review.assistant_note }}</p>{% endif %}
     </div>
     {% else %}
     <div data-presubmit-root hidden></div>
@@ -194,16 +196,20 @@
     {% endif %}
     <div class="override-field" data-override-field{% if not (review and review.held) %} hidden{% endif %}>
       <p class="field">
-        <label for="override-reason">Why submit now</label>
+        <label for="override-reason">Why submit now {{ req() }}</label>
         <textarea id="override-reason" name="override_reason" data-testid="why-submit-now" maxlength="500">{{ override_reason }}</textarea>
+        <span class="field-hint" data-testid="submit-anyway-required-hint">Required to use Submit anyway.</span>
       </p>
     </div>
     <div class="form-buttons">
-      <button type="submit" name="intent" value="review" class="btn" data-testid="check-application" formnovalidate>Check my application</button>
+      <span class="check-application-wrap">
+        <button type="submit" name="intent" value="review" class="btn" data-testid="check-application" formnovalidate>Check my application <span class="tour-muse-badge" data-testid="check-application-muse-badge">Muse</span></button>
+        <span class="field-hint check-application-hint" data-testid="check-application-muse-hint">Muse reviews your answers and documents and explains what to change. Nothing is sent to the City.</span>
+      </span>
       <button type="submit" name="intent" value="submit" class="btn primary" data-testid="submit-application"{% if review and review.held %} disabled aria-describedby="submit-held-why"{% endif %}>Submit application</button>
       <span class="submit-anyway" data-override-action{% if not (review and review.held) %} hidden{% endif %}>
         <button type="submit" name="intent" value="override" class="btn ghost" data-testid="submit-anyway"{% if not override_reason %} aria-describedby="submit-anyway-why"{% endif %}>Submit anyway</button>
-        <span id="submit-anyway-why" class="submit-anyway-why" data-testid="submit-anyway-why"{% if override_reason %} hidden{% endif %}>Enter why submit now.</span>
+        <span id="submit-anyway-why" class="submit-anyway-why" data-testid="submit-anyway-why"{% if override_reason %} hidden{% endif %}>Write why you are submitting now.</span>
       </span>
       <button type="submit" name="intent" value="save" class="btn" data-testid="save-draft" formnovalidate>Save draft</button>
       <a class="btn" href="/apply">Choose a different project</a>

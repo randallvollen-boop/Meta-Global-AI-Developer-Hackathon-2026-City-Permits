@@ -337,8 +337,18 @@
         row.textContent = item.sentence || "";
         if (item.feedback) {
           var note = document.createElement("span");
+          note.className = "muse-note";
           note.setAttribute("data-testid", "presubmit-feedback");
-          note.textContent = " " + item.feedback;
+          var badge = document.createElement("span");
+          badge.className = "tour-muse-badge";
+          badge.setAttribute("data-testid", "presubmit-muse-badge");
+          badge.textContent = "Muse";
+          var lead = document.createElement("span");
+          lead.setAttribute("data-testid", "presubmit-muse-lead");
+          lead.textContent = " Muse says:";
+          note.appendChild(badge);
+          note.appendChild(lead);
+          note.appendChild(document.createTextNode(" " + item.feedback));
           row.appendChild(note);
         }
         section.appendChild(row);
@@ -369,7 +379,16 @@
       if (review.assistant_note) {
         var note = document.createElement("p");
         note.setAttribute("data-testid", "assistant-note");
-        note.textContent = review.assistant_note;
+        var badge = document.createElement("span");
+        badge.className = "tour-muse-badge";
+        badge.setAttribute("data-testid", "presubmit-muse-badge");
+        badge.textContent = "Muse";
+        var lead = document.createElement("span");
+        lead.setAttribute("data-testid", "presubmit-muse-lead");
+        lead.textContent = " Muse says:";
+        note.appendChild(badge);
+        note.appendChild(lead);
+        note.appendChild(document.createTextNode(" " + review.assistant_note));
         root.appendChild(note);
       }
       applyHold(review, canSubmit);
