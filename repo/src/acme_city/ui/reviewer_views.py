@@ -958,6 +958,7 @@ def present_review_queue(
     query: str = "",
     page: int = 1,
     tag: str = "",
+    page_size: int | str | None = None,
 ) -> dict[str, Any]:
     """Copy a review queue, then add stage, next action, chips, search and sort.
 
@@ -968,10 +969,13 @@ def present_review_queue(
     in that action. The search runs after the chip and before the page,
     so a match is not dropped because it would have been on a later page.
     A recommendation tag narrows the same list and combines with both.
+    ``page_size`` is how many rows one page shows. It comes from the request
+    as an integer clamped to 1..500, and the page links keep it.
     """
     from acme_city.ui.queue_find import (
         matches_query,
         normalize_query,
+        page_size_of,
         paginate,
         paging_links,
         search_summary,
@@ -1050,8 +1054,9 @@ def present_review_queue(
         ]
     visible.sort(key=review_row_sort_key)
     back = _review_href(area, selected, text, chosen)
-    shown, paging = paginate(visible, page)
-    paging.update(paging_links(back, paging["page"], paging["pages"]))
+    size = page_size_of(page_size)
+    shown, paging = paginate(visible, page, size)
+    paging.update(paging_links(back, paging["page"], paging["pages"], size))
     names = list(queue.get("areas") or [])
     presented["area_hrefs"] = {"": _review_href("", selected, text, chosen)}
     for name in names:

@@ -14,6 +14,29 @@ from urllib.parse import quote, urlencode
 #: the first page. A longer list continues on the next page.
 PAGE_SIZE = 25
 
+#: The most rows a request may ask one page to show.
+PAGE_SIZE_MAX = 500
+
+
+def page_size_of(value: Any) -> int:
+    """Return how many rows one page shows.
+
+    ``value`` is the ``page_size`` query parameter. It is read as an integer
+    and clamped to 1..500. A missing value, or a value that is not an
+    integer, uses PAGE_SIZE.
+    """
+    if value is None or value == "":
+        return PAGE_SIZE
+    try:
+        size = int(value)
+    except (TypeError, ValueError):
+        return PAGE_SIZE
+    if size < 1:
+        return 1
+    if size > PAGE_SIZE_MAX:
+        return PAGE_SIZE_MAX
+    return size
+
 
 def normalize_query(value: str | None) -> str:
     """Return the search text with the extra space removed.
@@ -134,11 +157,22 @@ def paginate(
     }
 
 
-def paging_links(url: str, page: int, pages: int) -> dict[str, str]:
-    """Return the previous and next addresses for one page of ``url``."""
+def paging_links(
+    url: str,
+    page: int,
+    pages: int,
+    page_size: int = PAGE_SIZE,
+) -> dict[str, str]:
+    """Return the previous and next addresses for one page of ``url``.
+
+    The page size stays on those addresses, so the next page shows the
+    same number of rows.
+    """
+    separator = "&" if "?" in url else "?"
+    sized = f"{url}{separator}page_size={page_size}"
     return {
-        "prev_href": with_page(url, page - 1) if page > 1 else "",
-        "next_href": with_page(url, page + 1) if page < pages else "",
+        "prev_href": with_page(sized, page - 1) if page > 1 else "",
+        "next_href": with_page(sized, page + 1) if page < pages else "",
     }
 
 
@@ -166,8 +200,10 @@ def sole_open(rows: list[dict[str, Any]], query: str, back: str) -> dict[str, st
 
 __all__ = [
     "PAGE_SIZE",
+    "PAGE_SIZE_MAX",
     "matches_query",
     "normalize_query",
+    "page_size_of",
     "paginate",
     "paging_links",
     "review_href",

@@ -2617,12 +2617,15 @@ def work_queue(
     query: str = "",
     page: int = 1,
     tag: str = "",
+    page_size: int | str | None = None,
 ) -> dict[str, Any]:
     """Return the work queue of the acting persona.
 
     The queue shows the applications, the change cases, the review tasks and
     the open issues the persona may act on, with the blocker, the age, the
     configured response target and the plain next action of each item.
+    ``page_size`` is how many rows one page shows. It comes from the request
+    as an integer clamped to 1..500, and the page links keep it.
     """
     service = PermitService(session)
     now = utc_now()
@@ -2855,6 +2858,7 @@ def work_queue(
     from acme_city.ui.queue_find import (
         matches_query,
         normalize_query,
+        page_size_of,
         paginate,
         paging_links,
         search_summary,
@@ -2935,8 +2939,9 @@ def work_queue(
         query=text,
         tag=chosen,
     )
-    shown, paging = paginate(items, page)
-    paging.update(paging_links(back, paging["page"], paging["pages"]))
+    size = page_size_of(page_size)
+    shown, paging = paginate(items, page, size)
+    paging.update(paging_links(back, paging["page"], paging["pages"], size))
     return {
         "entries": shown,
         "counts": counts,
