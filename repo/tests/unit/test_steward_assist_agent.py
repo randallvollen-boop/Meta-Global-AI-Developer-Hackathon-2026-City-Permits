@@ -316,16 +316,20 @@ def test_the_agent_operator_may_ask_the_assistant(seeded: Settings) -> None:
         factory.dispose()
 
 
-def test_only_the_operator_may_wake_the_assistant(seeded: Settings) -> None:
-    """The wake and sleep switch belongs to the Agent Operator."""
+def test_the_steward_and_the_operator_may_wake_the_assistant_and_only_it(
+    seeded: Settings,
+) -> None:
+    """The steward holds the switch of this one assistant; the other agents stay with the operator."""
     factory = SessionFactory(seeded.database_url)
     try:
         with transaction(factory) as session:
-            with pytest.raises(PermissionDeniedError):
-                AgentControlService(session).set_mode(
-                    assistant.AGENT_KEY, "awake", STEWARD
-                )
             control = AgentControlService(session)
+            for other in ("intake", "adjudication"):
+                with pytest.raises(PermissionDeniedError):
+                    control.set_mode(other, "awake", STEWARD)
+            control.set_mode(assistant.AGENT_KEY, "awake", STEWARD)
+            assert control.state(assistant.AGENT_KEY).mode == "awake"
+            control.set_mode(assistant.AGENT_KEY, "asleep", OPERATOR)
             control.set_mode(assistant.AGENT_KEY, "awake", OPERATOR)
             assert control.state(assistant.AGENT_KEY).mode == "awake"
     finally:
