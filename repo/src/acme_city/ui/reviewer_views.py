@@ -13,12 +13,13 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from typing import Any
-from urllib.parse import unquote, urlencode, urlsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.core.clock import utc_now
+from acme_city.permits.schemas import Blocker
 from acme_city.persistence.models import audit, change, finance, permit, registry
 from acme_city.ui import display, ops_views
 
@@ -739,6 +740,285 @@ def _stamp(value: Any, origin: str, seen: set[int]) -> None:
             _stamp(item, origin, seen)
 
 
+def _case_from(application_id: str) -> str:
+    """Return the ``from`` value that brings a person back to this case."""
+    return quote(f"/permits/{application_id}", safe="/")
+
+
+def _off_case(path: str, application_id: str) -> str:
+    """Return a link to another screen, with a return to this case."""
+    return f"{path}?from={_case_from(application_id)}"
+
+
+def _short_place(text: str) -> str:
+    """Return an address without the trailing city name."""
+    cleaned = " ".join(str(text or "").split())
+    suffix = ", ACME City"
+    if cleaned.endswith(suffix):
+        cleaned = cleaned[: -len(suffix)].strip()
+    return cleaned
+
+
+def _property_place(session: Session, application: permit.Application) -> str:
+    """Return the address the blocker sentence names."""
+    from acme_city.persistence.models import gis
+
+    match = session.execute(
+        select(gis.ApplicationParcelMatch).where(
+            gis.ApplicationParcelMatch.application_id == application.id
+        )
+    ).scalars().first()
+    if match is not None and match.submitted_text:
+        place = _short_place(match.submitted_text)
+        if place:
+            return place
+    return _short_place(address_with_unit(session, application)) or "this property"
+
+
+def _party_label(session: Session, party_id: str) -> str:
+    """Return the name a blocker sentence uses for a party."""
+    name = _party_name(session, party_id)
+    return name or "this party"
+
+
+def _credential_row(session: Session, credential_id: str | None) -> registry.Credential | None:
+    """Return the credential a blocker names."""
+    if not credential_id:
+        return None
+    return session.execute(
+        select(registry.Credential).where(registry.Credential.credential_id == credential_id)
+    ).scalars().first()
+
+
+def _credential_words(credential: registry.Credential | None) -> str:
+    """Return the plain name of a license or registration."""
+    if credential is None:
+        return "license"
+    kind = {
+        "contractor_registration": "contractor registration",
+        "business_license": "business licence",
+    }.get(credential.credential_type, credential.credential_type.replace("_", " "))
+    return f"{kind} {credential.number}".strip()
+
+
+def _identity_href(session: Session, party_id: str, application_id: str) -> str:
+    """Return the steward task that confirms one party, or the steward queue."""
+    proposal = None
+    if party_id:
+        proposal = session.execute(
+            select(registry.MatchProposal)
+            .where(registry.MatchProposal.entity_id == party_id)
+            .order_by(registry.MatchProposal.created_at.desc())
+        ).scalars().first()
+        if proposal is None:
+            for row in session.execute(select(registry.MatchProposal)).scalars():
+                candidates = {str(item) for item in (row.candidate_ids or [])}
+                if party_id in candidates:
+                    proposal = row
+                    break
+    if proposal is not None:
+        return _off_case(f"/steward/issues/link/{proposal.id}", application_id)
+    return _off_case("/steward", application_id)
+
+
+def _payer_party_id(session: Session, blocker: Blocker) -> str:
+    """Return the party a finance-link blocker is about."""
+    if blocker.subject_type == "party":
+        return str(blocker.subject_id or "")
+    if blocker.subject_id:
+        account = session.execute(
+            select(registry.FinanceAccount).where(
+                registry.FinanceAccount.account_id == blocker.subject_id
+            )
+        ).scalars().first()
+        if account is not None and account.party_id:
+            return account.party_id
+    return ""
+
+
+def blocker_guide(
+    session: Session,
+    application: permit.Application,
+    blocker: Blocker,
+) -> dict[str, str]:
+    """Return the plain words, the owner and the fix link of one blocker.
+
+    The raw code stays out of the sentence. The link leaves the case only
+    with ``?from=`` set to this case, so the person can come back.
+    """
+    code = blocker.code
+    place = _property_place(session, application)
+    case_id = application.id
+    owner = "Permit Reviewer"
+    href = "#application-checks"
+    scope = "decision"
+    text = issue_label(code) or blocker.detail
+
+    if code == "parcel_link_unapproved":
+        owner = "Data Steward"
+        href = _off_case(f"/steward/issues/parcel/{case_id}", case_id)
+        text = (
+            f"The property match for {place} has not been approved by the Data Steward."
+        )
+    elif code in {"parcel_unmatched", "site_unresolved", "site_missing"}:
+        owner = "Data Steward"
+        href = _off_case(f"/steward/issues/parcel/{case_id}", case_id)
+        text = (
+            f"The property address for {place} has not been resolved by the Data Steward."
+        )
+    elif code == "parcel_unconfirmed":
+        owner = "Permit Reviewer"
+        href = "#property-heading"
+        text = (
+            f"The property match for {place} has not been confirmed by the Permit Reviewer."
+        )
+    elif code == "identity_link_unapproved":
+        party_id = str(blocker.subject_id or "")
+        owner = "Data Steward"
+        href = _identity_href(session, party_id, case_id)
+        text = (
+            f"The identity match for {_party_label(session, party_id)} has not been "
+            "approved by the Data Steward."
+        )
+    elif code in {"finance_account_link_unapproved", "finance_account_unknown"}:
+        party_id = _payer_party_id(session, blocker)
+        owner = "Data Steward"
+        href = _identity_href(session, party_id, case_id)
+        text = (
+            f"The payer account for {_party_label(session, party_id)} has not been "
+            "approved by the Data Steward."
+        )
+    elif code.startswith("credential_"):
+        credential = _credential_row(session, blocker.subject_id)
+        owner = "City Administrator"
+        if credential is not None:
+            href = _off_case(f"/detail/credential/{credential.credential_id}", case_id)
+        elif blocker.subject_id:
+            href = _off_case(f"/detail/credential/{blocker.subject_id}", case_id)
+        words = _credential_words(credential)
+        if code == "credential_expired":
+            text = f"The {words} has expired. The City Administrator updates that record."
+        elif code == "credential_missing":
+            text = f"The {words} is not on record. The City Administrator records it."
+        elif code == "credential_inactive":
+            text = f"The {words} is not active. The City Administrator updates that record."
+        elif code == "credential_not_yet_valid":
+            text = (
+                f"The {words} is not valid yet. The City Administrator updates that record."
+            )
+        else:
+            text = (
+                f"The {words} does not match the application. "
+                "The City Administrator corrects that record."
+            )
+    elif code in {"rule_fail", "rule_review"}:
+        rule_id = str(blocker.subject_id or "")
+        title = _rule_titles(session, {rule_id}).get(rule_id) or rule_id or "A check"
+        owner = "Permit Reviewer"
+        href = "#application-checks"
+        if code == "rule_fail":
+            text = (
+                f"{title} failed. The Permit Reviewer can record an exception "
+                "or run the checks again."
+            )
+        else:
+            text = f"{title} needs a person. The Permit Reviewer runs the checks."
+    elif code in {"evaluation_stale", "no_current_evaluation"}:
+        owner = "Permit Reviewer"
+        href = "#application-checks"
+        text = (
+            "The application checks are out of date. The Permit Reviewer runs them again."
+            if code == "evaluation_stale"
+            else "The application checks have not been run. The Permit Reviewer runs them."
+        )
+    elif code in {"decision_stale", "decision_not_current", "decision_not_approved"}:
+        owner = "Permit Reviewer"
+        href = "#decision-summary"
+        text = "The recorded decision needs the Permit Reviewer to confirm it again."
+    elif code == "no_current_assessment" or code.startswith("reconciliation_"):
+        owner = "City Administrator"
+        href = _off_case("/reconciliation", case_id)
+        scope = "issuance"
+        text = (
+            "No fee has been assessed, so the permit cannot be issued. "
+            "The City Administrator records the fee."
+            if code == "no_current_assessment"
+            else (
+                "The fee is not settled, so the permit cannot be issued. "
+                "The City Administrator reconciles the payment."
+            )
+        )
+    elif code == "open_issue":
+        owner = "City Administrator"
+        href = _off_case("/governance", case_id)
+        text = "An open issue still blocks issuance. The City Administrator closes it."
+        scope = "issuance"
+
+    return {
+        "code": code,
+        "text": text,
+        "owner": owner,
+        "href": href,
+        "detail": blocker.detail,
+        "scope": scope,
+    }
+
+
+def workspace_blocker_guides(
+    session: Session, application: permit.Application
+) -> list[dict[str, str]]:
+    """Return every blocker of the case in the words the next-action panel shows.
+
+    Decision blockers come from the same list an approval checks. A stale
+    evaluation is named even when that list does not carry it. The fee
+    blockers are added only once a decision is approved, because they hold
+    issuance rather than the decision.
+    """
+    from acme_city.core.clock import utc_now
+    from acme_city.permits.decisions import PermitDecisionService
+    from acme_city.permits.issuance import PermitIssuanceService
+    from acme_city.permits.service import PermitService
+
+    service = PermitService(session)
+    evaluation = service.current_evaluation(application.id)
+    found: list[Blocker] = []
+    if evaluation is not None:
+        found.extend(PermitDecisionService(session).blockers(application, evaluation))
+        if evaluation.stale and not any(item.code == "evaluation_stale" for item in found):
+            found.append(
+                Blocker(
+                    code="evaluation_stale",
+                    detail="the current evaluation is stale",
+                    subject_type="evaluation",
+                    subject_id=evaluation.id,
+                )
+            )
+    else:
+        facts = dict(application.submitted_facts or {})
+        found.extend(service.site_blockers(application))
+        found.extend(service.credential_blockers(application, facts, utc_now()))
+        found.extend(service.identity_link_blockers(application))
+        found.extend(service.finance_link_blockers(application))
+    decision = service.current_decision(application.id)
+    if (
+        decision is not None
+        and decision.outcome == "approved"
+        and application.status == "approved"
+    ):
+        for item in PermitIssuanceService(session).blockers(application, decision):
+            if item.code == "no_current_assessment" or item.code.startswith("reconciliation_"):
+                found.append(item)
+    seen: set[tuple[str, str, str]] = set()
+    guides: list[dict[str, str]] = []
+    for item in found:
+        key = (item.code, item.subject_id or "", item.detail)
+        if key in seen:
+            continue
+        seen.add(key)
+        guides.append(blocker_guide(session, application, item))
+    return guides
+
+
 def workspace_extras(
     session: Session,
     actor: Any,
@@ -800,4 +1080,5 @@ def workspace_extras(
         "ai": _ai_summary(detail),
         "revisions": _revision_rows(session, application),
         "decision_record": "Recommendation" if not review_target else "Decision",
+        "blocker_guides": workspace_blocker_guides(session, application),
     }

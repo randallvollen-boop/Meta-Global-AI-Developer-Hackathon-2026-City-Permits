@@ -82,6 +82,35 @@
           <summary><h2>Next action</h2></summary>
           <div class="ws-section-body">
           <p><strong>{{ detail.next_step_text }}</strong></p>
+          {% if rv.blocker_guides %}
+          {% set decision_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'decision') | list %}
+          {% set issuance_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'issuance') | list %}
+          <div data-testid="blocker-summary">
+            {% if decision_guides %}
+            <p>{{ decision_guides|length }} blocker{{ 's' if decision_guides|length != 1 else '' }} still prevent{{ 's' if decision_guides|length == 1 else '' }} a decision.</p>
+            {% endif %}
+            {% if issuance_guides %}
+            <p>{{ issuance_guides|length }} blocker{{ 's' if issuance_guides|length != 1 else '' }} still prevent{{ 's' if issuance_guides|length == 1 else '' }} issuance.</p>
+            {% endif %}
+          </div>
+          <ul class="issue-plain" data-testid="blocker-guides">
+            {% for item in rv.blocker_guides %}
+            <li data-testid="blocker-guide" data-blocker-code="{{ item.code }}">
+              <span data-testid="blocker-text">{{ item.text }}</span>
+              <span class="muted" data-testid="blocker-owner">{{ item.owner }}</span>
+              <a href="{{ item.href }}" data-testid="blocker-link">Open the fix</a>
+            </li>
+            {% endfor %}
+          </ul>
+          <details data-testid="blocker-codes">
+            <summary>More details</summary>
+            <ul>
+              {% for item in rv.blocker_guides %}
+              <li><span class="mono" data-testid="blocker-code">{{ item.code }}</span> {{ item.detail }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endif %}
           <p class="muted" data-testid="issuance-status">Permit issuance: <b>{{ rv.issuance_status }}</b>{% if rv.issuance_next %}. {{ rv.issuance_next }}{% endif %}</p>
           </div>
         </details>
@@ -181,7 +210,7 @@
           </div>
         </details>
 
-        <details class="ws-section" data-testid="application-checks"{% if detail.open_sections.checks %} open{% endif %}>
+        <details class="ws-section" id="application-checks" data-testid="application-checks"{% if detail.open_sections.checks %} open{% endif %}>
           <summary><h2>Application checks</h2></summary>
           <div class="ws-section-body">
           {{ ui.info('application_checks') }}
