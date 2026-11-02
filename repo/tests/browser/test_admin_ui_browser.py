@@ -90,7 +90,7 @@ def test_the_rules_register_opens_the_selected_version_with_its_diff(
 
 
 def test_the_demo_moment_opens_the_draft_and_takes_the_next_step(
-    page, server: BrowserServer, login, submit_action
+    page, server: BrowserServer, login, submit_action, open_last_action
 ) -> None:
     """The Administrator opens the draft from the overview and acts on it."""
     login(ADMINISTRATOR)
@@ -116,7 +116,8 @@ def test_the_demo_moment_opens_the_draft_and_takes_the_next_step(
     assert "awaiting approval" in page.locator(
         '[data-testid="selected-version"]'
     ).inner_text()
-    # The recorded result is reported in the feedback region.
+    # The recorded result is reported in the panel of the last action.
+    open_last_action()
     assert "in_review" in page.locator('[data-testid="feedback-message"]').inner_text()
     assert page.recorded_errors == []
 

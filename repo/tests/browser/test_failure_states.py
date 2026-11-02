@@ -15,7 +15,7 @@ from conftest import BrowserServer
 
 
 def test_a_source_that_does_not_answer_leaves_the_accepted_value(
-    page, server: BrowserServer, login, submit_action
+    page, server: BrowserServer, login, submit_action, open_last_action
 ) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/applicants/party_applicant_1", wait_until="domcontentloaded")
@@ -29,7 +29,9 @@ def test_a_source_that_does_not_answer_leaves_the_accepted_value(
     )
     assert "did not answer in time" in message
     # The detail list of the last action sits behind the disclosure of the
-    # frame (demo polish, P3), so it is opened before it is read.
+    # frame (demo polish, P3), in the panel that opens from the bell, so the
+    # panel is opened before the list is read.
+    open_last_action()
     page.locator('[data-testid="feedback-more"] > summary').click()
     assert page.locator('[data-testid="feedback-pending"]').inner_text().startswith("yes")
     after = page.request.get(
@@ -75,6 +77,9 @@ def test_a_stale_expected_version_is_refused(
         },
     )
     assert "changed since it was read" in message
+    # A refusal opens the panel of the last action on the spot, so the
+    # person sees it without a click.
+    assert page.locator('[data-testid="feedback"]').is_visible()
     assert page.locator('[data-testid="feedback"]').get_attribute("data-outcome") == "denied"
     evaluations = page.request.get(
         f"{server.base_url}/api/permits/applications/app_synth_001/evaluations"

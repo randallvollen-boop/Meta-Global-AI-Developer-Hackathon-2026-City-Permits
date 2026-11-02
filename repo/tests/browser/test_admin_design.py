@@ -24,7 +24,7 @@ OTHER_SCREENS = (
     ("persona_city_administrator", "/queue"),
 )
 
-#: The staff screens, which carry the shared "Last action" region.
+#: The staff screens, which carry the shared panel of the last action.
 STAFF_SCREENS = (
     ("persona_data_steward", "/queue"),
     ("persona_permit_reviewer", "/queue"),
@@ -107,7 +107,7 @@ def test_the_admin_b_stylesheet_does_not_reach_the_other_screens(
 def test_the_other_screens_keep_their_feedback_region(
     page, server: BrowserServer, login, viewport_390
 ) -> None:
-    """The shared "Last action" region survives the new stylesheet."""
+    """The shared panel of the last action survives the new stylesheet."""
     for actor_id, path in STAFF_SCREENS:
         login(actor_id)
         open_screen(page, server, path)

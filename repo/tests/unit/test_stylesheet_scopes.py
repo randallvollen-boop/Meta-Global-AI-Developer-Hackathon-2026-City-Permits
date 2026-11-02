@@ -37,6 +37,10 @@ PREFIXES = {
 #: banner, the side foot and the build label that stood in it.
 STAFF_FRAME_REMOVED = (".demo-banner", ".side-foot", ".mock-tag")
 
+#: The selectors the panel of the last action (slice G15) removed on purpose:
+#: the rule for the empty box of the frame, which the panel replaced.
+LAST_ACTION_PANEL_REMOVED = (".feedback-empty",)
+
 #: The selectors the staff frame (slice S1) added on purpose: the disclosure
 #: that holds the detail list of the last action.
 STAFF_FRAME_ADDED = (
@@ -227,6 +231,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         + REVIEWER_SLIM_REMOVED
         + LANDING_REMOVED
         + THEME_REMOVED
+        + LAST_ACTION_PANEL_REMOVED
     )
     added = (
         STAFF_FRAME_ADDED

@@ -1,8 +1,8 @@
 {# The shared frame of the ACME City demonstration interface.
 
    The navigation holds the eight required screens.  The footer states that
-   every record on the screen is fictional.  The feedback region reports the
-   outcome of the last action of the acting persona. #}
+   every record on the screen is fictional.  The bell in the header opens the
+   panel that reports the outcome of the last action of the acting persona. #}
 {% from "_persona_menu.html" import persona_menu with context %}
 <!DOCTYPE html>
 {# Light is the default everywhere.  The dark mode is a choice of the reader
@@ -54,6 +54,7 @@
 <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
 </defs></svg>
 <a class="skip-link" href="#main">Skip to the main content</a>
 
@@ -98,6 +99,18 @@
       <div class="top-right persona">
         <a class="top-help-link" href="/help" data-testid="help-link"{% if screen == 'help' %} aria-current="page"{% endif %}>Help</a>
         {% set demo_clock = scenario_clock() %}{% if demo_clock %}<span class="demo-date" data-testid="demo-date">{{ demo_clock.label }} <span class="info-tip" tabindex="0" role="note" aria-label="{{ demo_clock.help }}" title="{{ demo_clock.help }}">&#9432;</span></span>{% endif %}
+        {# The bell of the last action.  It opens the panel that holds the
+           result of the last action of the acting persona; the dot marks a
+           result the person has not opened yet.  A screen without an acting
+           persona has no action to report, so it carries no bell at all. #}
+        {% if screen != 'select' and actor %}
+        <button type="button" class="last-action-toggle" id="last-action-toggle" data-testid="last-action-toggle"
+                aria-expanded="false" aria-controls="ui-feedback-panel" data-outcome="{{ feedback.outcome if feedback else 'none' }}">
+          <svg aria-hidden="true" class="last-action-icon"><use href="#i-bell"/></svg>
+          <span class="last-action-dot" data-testid="last-action-dot"{% if not feedback %} hidden{% endif %}></span>
+          <span class="visually-hidden">Last action</span>
+        </button>
+        {% endif %}
         {% if actor %}
         {% set chip_sub = (applicant_name | default('', true)) or (actor.department | default('', true)) %}
         {{ persona_menu(actor, personas, sub=chip_sub, theme=theme_control) }}
@@ -106,36 +119,6 @@
         {% endif %}
       </div>
     </header>
-
-{# The feedback region reports the last action of the acting persona: one
-   sentence for the person, the details behind a disclosure.  Until an action
-   has been performed the region stays for announcements and shows nothing.
-   The landing has no action to report, so it carries no region at all. #}
-{% if screen != 'select' %}
-{% if feedback %}
-<section id="ui-feedback-region" class="feedback {% if feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
-         role="status" aria-live="polite" data-testid="feedback" data-outcome="{{ feedback.outcome }}">
-  <h2 class="feedback-title">Last action</h2>
-  <p class="feedback-message" data-testid="feedback-message">{{ feedback.reason }}</p>
-  <details class="feedback-more" data-testid="feedback-more">
-    <summary>More details</summary>
-    <dl class="feedback-detail">
-      <div><dt>Destination</dt><dd data-testid="feedback-destination">{{ feedback.destination or 'not applicable' }}</dd></div>
-      <div><dt>State</dt><dd data-testid="feedback-state">{{ feedback.state or 'not applicable' }}</dd></div>
-      <div><dt>Pending</dt><dd data-testid="feedback-pending">{% if feedback.pending %}yes, the source or the consumer has not acknowledged yet{% else %}no{% endif %}</dd></div>
-      <div><dt>Version</dt><dd data-testid="feedback-version">{{ feedback.after_version if feedback.after_version is not none else 'not applicable' }}</dd></div>
-      <div><dt>Affected</dt><dd data-testid="feedback-affected">{{ feedback.affected|join(', ') if feedback.affected else 'none' }}</dd></div>
-      <div><dt>Recorded</dt><dd>{{ feedback.occurred_at }}</dd></div>
-    </dl>
-  </details>
-</section>
-{% else %}
-<section id="ui-feedback-region" class="feedback feedback-empty visually-hidden" role="status" aria-live="polite"
-         data-testid="feedback" data-outcome="none">
-  <p class="feedback-message" data-testid="feedback-message"></p>
-</section>
-{% endif %}
-{% endif %}
 
 <main id="main">
   {% if moved_notice %}<p class="notice" role="status" data-testid="moved-notice">{{ moved_notice }}</p>{% endif %}
@@ -242,6 +225,40 @@
 </nav>
 {% endif %}
 <div class="toast toast-top-right" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+{# The last action of the acting persona: one sentence for the person, the
+   details behind a disclosure.  The panel opens from the bell in the header
+   and stays out of the way until it is asked for.  The hidden region beside
+   it announces every result to a screen reader, so a result is heard even
+   when the panel is shut.  A screen without an acting persona has no action
+   to report, so it carries neither. #}
+{% if screen != 'select' and actor %}
+<aside id="ui-feedback-panel" class="feedback-panel {% if not feedback %}{% elif feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
+       role="dialog" aria-labelledby="ui-feedback-panel-title" data-testid="feedback" data-outcome="{{ feedback.outcome if feedback else 'none' }}" hidden>
+  <div class="feedback-panel-head">
+    <h2 class="feedback-title feedback-panel-title" id="ui-feedback-panel-title" tabindex="-1" data-testid="feedback-panel-title">{{ 'The action was refused' if feedback and feedback.outcome == 'denied' else 'Last action' }}</h2>
+    <button type="button" class="feedback-panel-close" data-testid="feedback-panel-close" aria-label="Close the last action">&times;</button>
+  </div>
+  <div class="feedback-panel-body">
+    <p class="feedback-message" data-testid="feedback-message">{{ feedback.reason if feedback else '' }}</p>
+    {% if feedback %}
+    <details class="feedback-more" data-testid="feedback-more">
+      <summary>More details</summary>
+      <dl class="feedback-detail">
+        <div><dt>Destination</dt><dd data-testid="feedback-destination">{{ feedback.destination or 'not applicable' }}</dd></div>
+        <div><dt>State</dt><dd data-testid="feedback-state">{{ feedback.state or 'not applicable' }}</dd></div>
+        <div><dt>Pending</dt><dd data-testid="feedback-pending">{% if feedback.pending %}yes, the source or the consumer has not acknowledged yet{% else %}no{% endif %}</dd></div>
+        <div><dt>Version</dt><dd data-testid="feedback-version">{{ feedback.after_version if feedback.after_version is not none else 'not applicable' }}</dd></div>
+        <div><dt>Affected</dt><dd data-testid="feedback-affected">{{ feedback.affected|join(', ') if feedback.affected else 'none' }}</dd></div>
+        <div><dt>Recorded</dt><dd>{{ feedback.occurred_at }}</dd></div>
+      </dl>
+    </details>
+    {% else %}
+    <p class="feedback-panel-empty" data-testid="feedback-empty">Nothing to report yet. The result of the next action of this persona appears here.</p>
+    {% endif %}
+  </div>
+</aside>
+<div id="ui-feedback-region" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-testid="feedback-live">{{ feedback.reason if feedback else '' }}</div>
+{% endif %}
 {% import "_ui.html" as ui with context %}{{ ui.drawer() }}
 
 <script src="/ui/static/app.js" defer></script>

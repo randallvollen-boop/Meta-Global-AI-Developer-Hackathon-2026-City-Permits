@@ -1,10 +1,12 @@
-"""The staff frame: the footer line, the banner and the feedback region.
+"""The staff frame: the footer line, the banner and the panel of the last action.
 
 Every staff screen shares one frame.  It shows what a person needs to decide
 and nothing else: the navigation, the acting persona and, after an action,
 one sentence about what changed.  The internal build label is gone, the
-demonstration disclosure is one line in the footer, and the detail list of
-the last action sits behind a disclosure.
+demonstration disclosure is one line in the footer, and the result of the last
+action sits in a panel that opens from the bell in the header.  The detail
+list of that result sits behind a disclosure, and a hidden region announces
+every result to a screen reader.
 """
 # REQUIRES: UX-01, UX-02
 
@@ -73,9 +75,16 @@ def choose(client: TestClient, actor_id: str) -> None:
 
 
 def region_of(body: str) -> str:
-    """Return the feedback region of a rendered page."""
-    match = re.search(r'<section id="ui-feedback-region".*?</section>', body, re.S)
-    assert match is not None, "no feedback region"
+    """Return the panel of the last action of a rendered page."""
+    match = re.search(r'<aside id="ui-feedback-panel".*?</aside>', body, re.S)
+    assert match is not None, "no panel of the last action"
+    return match.group(0)
+
+
+def live_region_of(body: str) -> str:
+    """Return the hidden region that announces the result to a screen reader."""
+    match = re.search(r'<div id="ui-feedback-region".*?</div>', body, re.S)
+    assert match is not None, "no live region"
     return match.group(0)
 
 
@@ -90,18 +99,36 @@ def csrf_of(body: str) -> str:
 def test_no_staff_screen_shows_the_empty_last_action(
     client: TestClient, actor_id: str, path: str
 ) -> None:
-    """The frame holds no empty "Last action" box before an action."""
+    """Before an action the frame shows no result and the panel stays shut."""
     choose(client, actor_id)
     response = client.get(path)
     assert response.status_code == 200, (path, response.text[:200])
     body = response.text
     assert "No action has been performed" not in body, path
-    assert "Last action" not in body, path
     region = region_of(body)
     assert 'data-outcome="none"' in region, path
+    # The panel is shut until the person asks for it, so nothing stands at
+    # the top of the screen.
+    assert "hidden" in region.split(">")[0], path
+    # The panel holds no message before an action.
+    assert re.search(r'data-testid="feedback-message"[^>]*></p>', region), region
     # The live region stays for announcements, but it shows nothing.
-    assert 'aria-live="polite"' in region, path
-    assert "visually-hidden" in region, path
+    live = live_region_of(body)
+    assert 'aria-live="polite"' in live, path
+    assert "visually-hidden" in live, path
+
+
+def test_the_frame_opens_the_last_action_from_the_header(
+    client: TestClient,
+) -> None:
+    """The bell in the header opens the panel; no result stands at the top."""
+    choose(client, REVIEWER)
+    body = client.get("/queue").text
+    assert 'data-testid="last-action-toggle"' in body
+    assert 'aria-controls="ui-feedback-panel"' in body
+    assert 'data-testid="feedback-panel-title"' in body
+    # The panel stands at the end of the frame, not at the top of the screen.
+    assert body.index('id="ui-feedback-panel"') > body.index("<main")
 
 
 @pytest.mark.parametrize("actor_id,path", STAFF_ROUTES)

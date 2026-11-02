@@ -81,7 +81,7 @@ def approve_the_contractor_link(page, server: BrowserServer, submit_action, logi
 
 
 def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
-    page, server: BrowserServer, login, submit_action
+    page, server: BrowserServer, login, submit_action, open_last_action
 ) -> None:
     approve_the_applicant_link(page, server, submit_action, login)
     approve_the_contractor_link(page, server, submit_action, login)
@@ -181,6 +181,9 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
     page.reload(wait_until="domcontentloaded")
     issued = page.locator('[data-testid="value-issued"]').first.inner_text()
     assert permit_number.group(0) in issued
+    # The result of the last action sits in the panel that opens from the
+    # bell, so the panel is opened before the message is read.
+    open_last_action()
     assert page.locator('[data-testid="feedback-message"]').inner_text().strip() != ""
 
 

@@ -184,7 +184,10 @@ def test_the_administrators_reply_reaches_the_applicant(browser, server: Browser
         assert "SYN-APP-005" in card.inner_text()
         card.locator('[data-testid="help-reply"]').fill(REPLY)
         card.locator('[data-testid="help-answer"]').click()
-        admin.wait_for_selector('[data-testid="feedback-message"]')
+        admin.wait_for_function(
+            "() => { const region = document.querySelector('[data-testid=feedback-message]');"
+            " return region !== null && region.textContent.trim() !== ''; }"
+        )
 
         # the reply reaches the applicant as a message of the City on the case
         applicant.goto(tracker_url, wait_until="domcontentloaded")
