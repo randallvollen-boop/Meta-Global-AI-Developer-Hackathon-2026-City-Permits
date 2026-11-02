@@ -166,12 +166,23 @@ def test_the_operator_may_wake_an_agent(client: TestClient) -> None:  # noqa: F8
 
 
 def test_the_operator_may_run_an_agent(client: TestClient, awake: None) -> None:  # noqa: F811
-    """The Agent Operator holds the run grant of both agents."""
+    """The Agent Operator holds the run grant of both agents.
+
+    The queue is empty, so the run is refused for that reason.  A missing
+    grant would be a 403, not this validation refusal.
+    """
     choose(client, "persona_agent_operator")
     token = csrf_of(client.get(HOME_OF["persona_agent_operator"]).text)
-    outcome = post_action(client, "agent.run.intake", token)
-    assert outcome is not None
-    assert outcome["status"] == "accepted"
+    response = client.post(
+        "/ui/actions/agent.run.intake",
+        data={"csrf_token": token, "action_id": "agent.run.intake"},
+        headers={"Accept": "application/json"},
+    )
+    assert response.status_code == 422, response.text
+    outcome = response.json()
+    assert outcome["status"] == "denied"
+    assert outcome["code"] == "validation_failed"
+    assert outcome["message"] == "Nothing is waiting"
 
 
 @pytest.mark.parametrize("actor_id", OUTSIDE)

@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
+from uuid import uuid4
 
 from acme_city.agents import steward_assist as assistant
 from acme_city.agents.control import AgentControlService
@@ -116,6 +117,44 @@ def _prepare(ctx: ActionContext) -> Outcome:
             "prepared": len(result.recommendations),
             "refused": [f"{kind}:{item}" for kind, item in result.refused],
         },
+    )
+
+
+def _run_from_the_screen(ctx: ActionContext) -> Outcome:
+    """Run the assistant on the tasks that are still waiting.
+
+    The awake check comes first.  An empty queue is refused before the
+    assistant is asked to prepare anything, so a second press does not
+    record a skipped run.
+    """
+    from acme_city.ui.agent_views import steward_batch_limit, steward_waiting_tasks
+
+    AgentControlService(ctx.session).authorize_manual_run(ctx.actor, assistant.AGENT_KEY)
+    waiting = steward_waiting_tasks(ctx.session, ctx.actor)
+    if not waiting:
+        raise ValidationError("Nothing is waiting")
+    chosen = [
+        recommenders.Task(issue.kind, issue.item_id)
+        for issue in waiting[: steward_batch_limit(ctx.session)]
+    ]
+    if not chosen:
+        raise ValidationError("Nothing is waiting")
+    result = assistant.prepare(
+        ctx.session, tasks=chosen, actor=ctx.actor, settings=ctx.settings
+    )
+    inputs = dict(result.run.inputs or {})
+    inputs["batch_id"] = uuid4().hex
+    result.run.inputs = inputs
+    ctx.session.flush()
+    count = len(result.recommendations)
+    return Outcome(
+        message=f"The steward assistant ran on {count} waiting task(s).",
+        destination="Steward assistant",
+        state=result.run.outcome,
+        target_type="agent_run",
+        target_id=result.run.id,
+        after_version=count,
+        affected=tuple(row.id for row in result.recommendations),
     )
 
 
@@ -607,6 +646,7 @@ def _explain(ctx: ActionContext) -> Outcome:
 
 #: The interface actions of the lane, keyed by their stable identifier.
 HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
+    "agent.run.steward_assist": _run_from_the_screen,
     "steward.assist.prepare": _prepare,
     "steward.assist.recommend": _recommend,
     "steward.assist.clear": _clear,

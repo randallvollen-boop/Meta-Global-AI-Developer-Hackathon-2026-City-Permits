@@ -2530,6 +2530,9 @@ def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
     control = AgentControlService(ctx.session)
     control.authorize_manual_run(ctx.actor, agent_key)
     label = AGENT_LABELS.get(agent_key, agent_key)
+    # One press is one batch, including a press that works a single case, so
+    # the screen can list the cases that press handled.
+    batch_id = uuid4().hex
     if application_id:
         application = PermitService(ctx.session).load_application(application_id)
         try:
@@ -2539,6 +2542,7 @@ def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
                 agent_key=agent_key,
                 triggered_by=ctx.actor.actor_id,
                 settings=ctx.settings,
+                batch_id=batch_id,
             )
         except AgentRunFailed:
             return Outcome(
@@ -2562,12 +2566,16 @@ def _agent_run(ctx: ActionContext, agent_key: str) -> Outcome:
         cases = waiting_applications(ctx.session)
     else:
         cases = AdjudicationAgent(ctx.session, settings=ctx.settings).candidates()
+    # An empty queue is a refusal.  It must not record a skipped run.
+    if not cases:
+        raise ValidationError("Nothing is waiting")
     results = run_batch(
         ctx.session,
         cases=cases,
         agent_key=agent_key,
         triggered_by=ctx.actor.actor_id,
         settings=ctx.settings,
+        batch_id=batch_id,
     )
     waiting = "waiting " if agent_key == "intake" else ""
     return Outcome(

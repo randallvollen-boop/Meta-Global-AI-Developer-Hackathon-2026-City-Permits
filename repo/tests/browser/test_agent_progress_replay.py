@@ -102,8 +102,13 @@ def test_the_run_replays_its_steps_and_settles_on_the_recorded_result(
     line = page.locator("[data-testid='agent-progress-status']").inner_text().strip()
     assert line.startswith("Latest run: ")
     assert "7 of 7 steps" in line
-    # The run buttons work again.
-    assert page.locator("[data-testid='agent-run-all']").is_enabled()
+    # The case was the only one waiting, so the batch button stays off and says why.
+    batch = page.locator("[data-testid='agent-run-all']")
+    assert batch.is_disabled()
+    assert batch.get_attribute("aria-describedby") == "agent-nothing-waiting"
+    assert page.locator("[data-testid='agent-nothing-waiting']").inner_text().strip() == (
+        "Nothing is waiting"
+    )
 
 
 def test_the_reduced_motion_path_shows_the_recorded_states_and_no_spinner(

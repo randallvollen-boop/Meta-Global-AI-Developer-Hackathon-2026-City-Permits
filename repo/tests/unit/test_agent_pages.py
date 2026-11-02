@@ -132,8 +132,8 @@ def client(tmp_path: Path):
         yield test_client
 
 
-def _simulate(client: TestClient) -> None:
-    assert client.post("/api/intake/simulate", json={"scenario": "deck-high"}).status_code == 200
+def _simulate(client: TestClient, scenario: str = "deck-high") -> None:
+    assert client.post("/api/intake/simulate", json={"scenario": scenario}).status_code == 200
 
 
 def test_wake_and_sleep_buttons_work_and_the_notice_follows(client: TestClient) -> None:
@@ -163,7 +163,9 @@ def test_process_next_and_process_one_run_the_agent(client: TestClient) -> None:
     one = _click(client, "/agent/intake", "agent-run-one")
     assert one["status"] == "accepted"
     assert 'data-testid="agent-history-row"' in client.get("/agent/intake").text
-    _simulate(client)
+    # A repeated deck-high reference is the case that was just processed.
+    # A different arrival is what the batch button then runs.
+    _simulate(client, "address-unknown")
     assert _click(client, "/agent/intake", "agent-run-all")["status"] == "accepted"
 
 

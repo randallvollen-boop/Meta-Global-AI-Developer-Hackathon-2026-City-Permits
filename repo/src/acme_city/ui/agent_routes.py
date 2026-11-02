@@ -11,16 +11,25 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.core.errors import ValidationError
-from acme_city.ui.router import ActionContext, Outcome, _guard, page_context, render, ui_actor
+from acme_city.ui.router import (
+    ActionContext,
+    Outcome,
+    _guard,
+    page_context,
+    render,
+    safe_next,
+    ui_actor,
+)
 from acme_city.agents.summary import operator_summary
 from acme_city.ui.agent_views import (
+    AGENT_RETURN_PATHS,
     agent_case,
     agent_screen,
     run_detail,
@@ -267,12 +276,17 @@ def agent_case_screen(
     application_id: str,
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
+    origin: str | None = Query(default=None, alias="from"),
 ):
     """Show the operational summary of one case."""
     resolved, refused = _guard(request, session, actor, "agent_case")
     if refused is not None:
         return refused
     view = agent_case(session, resolved, application_id)
+    back = safe_next(origin, "")
+    if back in AGENT_RETURN_PATHS:
+        view["back_href"] = back
+        view["back_label"] = "Back to the agent"
     context = page_context(
         request, session, resolved, screen="agent_case", title="Case summary",
         view=view, summary=operator_summary(session),

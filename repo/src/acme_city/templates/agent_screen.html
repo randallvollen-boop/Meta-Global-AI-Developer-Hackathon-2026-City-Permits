@@ -48,17 +48,23 @@
 
 <section class="panel card" aria-labelledby="agent-waiting-heading" data-testid="agent-waiting">
   <div class="card-h">
-    <h2 id="agent-waiting-heading">Waiting work</h2>
+    <h2 id="agent-waiting-heading">Waiting work ({{ agent.waiting_count }})</h2>
     <span class="right">
       {% if agent.can_run %}
       <form method="post" action="/ui/actions/agent.run.{{ agent.agent_key }}" class="action-form" data-testid="agent-run-all-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="action_id" value="agent.run.{{ agent.agent_key }}">
         <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
+        {# A sleeping agent names the sleep notice alone, even when the queue is empty. #}
         <button type="submit" class="btn sm primary" data-testid="agent-run-all"
-                {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
-          Process the next {{ agent.batch_limit }} cases
+                {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"
+                {% elif agent.waiting_count == 0 %}disabled aria-describedby="agent-nothing-waiting"
+                {% endif %}>
+          {{ agent.batch_label }}
         </button>
+        {% if agent.waiting_count == 0 %}
+        <span id="agent-nothing-waiting" class="muted" data-testid="agent-nothing-waiting">Nothing is waiting</span>
+        {% endif %}
       </form>
       {% endif %}
     </span>
@@ -116,6 +122,29 @@
         {% endfor %}
       </tbody>
     </table>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel card" aria-labelledby="agent-last-run-heading" data-testid="agent-last-run">
+  <div class="card-h"><h2 id="agent-last-run-heading">Last run</h2></div>
+  <div class="card-b">
+    {% if agent.last_run %}
+    <p data-testid="agent-last-run-summary">{{ agent.last_run.summary }}</p>
+    {% if agent.last_run.rows %}
+    <ul class="issue-list" data-testid="agent-last-run-list">
+      {% for item in agent.last_run.rows %}
+      <li data-testid="agent-last-run-item">
+        <a href="{{ item.href }}" data-testid="agent-last-run-link">{{ item.reference }}</a>
+        <span data-testid="agent-last-run-outcome">{{ item.outcome }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nothing was recorded for this run.</p>
+    {% endif %}
+    {% else %}
+    <p class="muted" data-testid="agent-last-run-empty">This agent has not run yet.</p>
     {% endif %}
   </div>
 </section>
