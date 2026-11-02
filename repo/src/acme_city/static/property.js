@@ -32,7 +32,11 @@
             });
           }).catch(function () { /* the plain form still works */ });
       }, 200);
-      input.addEventListener("input", ask);
+      input.addEventListener("input", function () {
+        // The tour's own fill is not typing: no suggestions for it.
+        if (input.form && input.form.getAttribute("data-tour-filling") === "true") { return; }
+        ask();
+      });
     });
   }
 
