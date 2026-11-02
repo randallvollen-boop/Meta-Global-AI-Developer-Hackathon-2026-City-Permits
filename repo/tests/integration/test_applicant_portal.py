@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from pathlib import Path
 
@@ -690,3 +691,59 @@ def test_a_real_file_wins_over_a_declaration(client) -> None:
     tracked = client.get(done.headers["location"].replace("/apply/submitted/", "/apply/track?ref=")).text
     assert 'data-testid="declared-separately"' not in tracked
     assert len(re.findall(r":\s*received", tracked)) == 2
+
+
+def test_the_form_offers_sample_addresses_that_match_a_parcel(client) -> None:
+    """The applicant can pick an address instead of finding their own.
+
+    The button stands beside the address field, the note says what the
+    addresses are, and every address on offer resolves to a parcel of the
+    City, so the case that arrives carries a parcel the steward can work on.
+    """
+    choose(client, "persona_applicant")
+    page = client.get("/apply/deck_fence").text
+    assert 'data-testid="sample-address-button"' in page
+    assert "Use a sample address" in page
+    assert "Fictional addresses that match the City's map." in html.unescape(page)
+    options = re.findall(
+        r'data-testid="sample-address-option" data-address="([^"]+)" data-parcel="([^"]+)"',
+        page,
+    )
+    assert 5 <= len(options) <= 8, options
+    assert len({address for address, _parcel in options}) == len(options)
+    for address, parcel in options:
+        assert parcel.startswith("ACME-P-")
+        # The address is one the locator resolves to that parcel.
+        located = client.get("/apply/locate", params={"text": address}).json()
+        assert located["parcel_matched"] is True, address
+        assert located["parcel_number"] == parcel, address
+
+
+def test_a_picked_sample_address_files_a_case_with_its_parcel(client, environment) -> None:
+    """A case filed with a sample address carries the parcel of that address."""
+    choose(client, "persona_applicant")
+    page = client.get("/apply/deck_fence").text
+    match = re.search(
+        r'data-testid="sample-address-option" data-address="([^"]+)" data-parcel="([^"]+)"',
+        page,
+    )
+    assert match, "the form offers a sample address"
+    address, parcel = match.group(1), match.group(2)
+    done = post_form(
+        client,
+        "deck_fence",
+        {**FENCE_FIELDS, "address_text": address},
+        files=fence_files(),
+        intent="submit",
+    )
+    assert done.status_code == 303, done.text
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = session.execute(select(permit.Application)).scalars().all()[-1]
+            facts = dict(application.submitted_facts or {})
+            assert facts["submitted_site_text"] == address
+            assert facts["parcel_number"] == parcel
+            assert facts["submitted_parcel"] == parcel
+    finally:
+        factory.dispose()

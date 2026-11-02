@@ -194,6 +194,9 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .portal-form input.num { width: 9ch; min-width: 7ch; text-align: right; }
 .unit { color: var(--fg-2); font-weight: 600; }
 .field-hint { color: var(--fg-2); font-size: .86rem; display: block; }
+.sample-address { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.sample-address-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.sample-address-list[hidden] { display: none; }
 .choice-options { display: flex; gap: 10px 12px; flex-wrap: wrap; margin-top: 4px; }
 .choice-opt { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; font-weight: 600; background: var(--surface); }
 .choice-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }

@@ -193,6 +193,7 @@ def _form_context(
         form_error=error,
         form_notice=notice,
         located=service.locate(values.get("address_text", "")),
+        sample_addresses=service.sample_addresses(),
         rule_hints=service.rule_hints(spec),
         upload_rules=_upload_rules(),
         upload_accept=",".join(sorted(UPLOAD_EXTENSIONS)),

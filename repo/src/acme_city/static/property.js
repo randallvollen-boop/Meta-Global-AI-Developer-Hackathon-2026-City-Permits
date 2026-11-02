@@ -151,6 +151,34 @@
     var timer = null;
     return function () { var a = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(null, a); }, ms); };
   }
+  // The sample addresses beside the address field.  Picking one fills the
+  // field and sends the same events a typed address sends, so the locator
+  // checks the address and the completeness of the form is read again.
+  function initSampleAddresses(form, address) {
+    var button = form.querySelector("[data-testid='sample-address-button']");
+    var list = form.querySelector("[data-testid='sample-address-list']");
+    if (!button || !list || !address) { return; }
+    function open() {
+      list.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+    }
+    function close() {
+      list.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+    }
+    button.addEventListener("click", function () {
+      if (list.hidden) { open(); } else { close(); }
+    });
+    list.querySelectorAll("[data-address]").forEach(function (option) {
+      option.addEventListener("click", function () {
+        address.value = option.getAttribute("data-address") || "";
+        address.dispatchEvent(new Event("input", { bubbles: true }));
+        address.dispatchEvent(new Event("change", { bubbles: true }));
+        close();
+      });
+    });
+  }
+
   function init(form) {
     var statusLine = form.querySelector("[data-status]");
     var summary = form.querySelector("[data-error-summary]");
@@ -395,6 +423,7 @@
         }).catch(function () {});
     }
     if (address) { address.addEventListener("input", debounce(locate, 300)); }
+    initSampleAddresses(form, address);
     form.querySelectorAll("[data-drop-zone]").forEach(function (zone) {
       var row = zone.closest(".doc-row");
       var input = zone.querySelector("input[type=file]");

@@ -63,6 +63,10 @@
     "archived": "The City archived this application. Ask permit services if you have a question about it."
   },
   "discretionary_note": "Only a person or the board decides this kind of application.",
+  "sample_address": {
+    "button": "Use a sample address",
+    "note": "Fictional addresses that match the City's map."
+  },
   "next_step_empty": "Start an application to begin. Your applications will be listed here.",
   "target_sentence": "The City's service target for this permit type is {days} days.",
   "request_titles": {
