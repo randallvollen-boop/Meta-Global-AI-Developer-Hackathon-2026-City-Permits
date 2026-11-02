@@ -49,8 +49,17 @@
 
 /* Start fresh: the one write the tour may offer, on the first step of the
    café path.  The note beside the button says what the server answered. */
-.tour-fresh { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 0 0 .5rem; }
+.tour-fresh { flex-wrap: wrap; gap: .4rem; align-items: center; margin: 0 0 .5rem; }
+.tour-fresh:not([hidden]) { display: flex; }
+.tour-fresh [hidden] { display: none; }
 .tour-fresh-note { font-size: .82rem; color: var(--fg-2, #4a5b6b); }
+.tour-fill { margin: 0 0 .5rem; }
+.tour-permit:not([hidden]) {
+  display: block; margin: 0 0 .5rem; padding: .5rem .65rem;
+  border: 1px solid var(--line, #dde3e9); border-radius: 8px; font-size: .88rem;
+}
+.tour-permit h3 { margin: 0 0 .3rem; font-size: .95rem; }
+.tour-permit p { margin: 0 0 .15rem; }
 
 .tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .tour-controls .btn { font-size: .88rem; }

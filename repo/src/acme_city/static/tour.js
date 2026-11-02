@@ -131,6 +131,10 @@
       '    <button type="button" class="btn sm" data-tour-fresh data-testid="tour-fresh-button">Start fresh</button>',
       '    <span class="tour-fresh-note" data-testid="tour-fresh-note"></span>',
       '  </p>',
+      '  <p class="tour-fill" data-testid="tour-fill-row" hidden>',
+      '    <button type="button" class="btn sm" data-tour-fill data-testid="tour-fill">Fill in the story\'s answers</button>',
+      '  </p>',
+      '  <div class="tour-permit" data-testid="tour-permit-card" hidden></div>',
       '  <div class="tour-controls">',
       '    <button type="button" class="btn sm" data-tour-back data-testid="tour-back">Back</button>',
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',
@@ -152,6 +156,7 @@
     overlay.querySelector("[data-tour-play]").addEventListener("click", toggleAuto);
     overlay.querySelector("[data-tour-exit]").addEventListener("click", exit);
     overlay.querySelector("[data-tour-fresh]").addEventListener("click", startFresh);
+    overlay.querySelector("[data-tour-fill]").addEventListener("click", fillStory);
     return overlay;
   }
 
@@ -187,6 +192,140 @@
       block.hidden = true;
       if (line) line.textContent = "";
     }
+  }
+
+  /* Fill the form that is already on the screen.  The values come from the
+     step.  The button never submits the form and never presses Check. */
+  function formOnScreen() {
+    return document.querySelector("[data-portal-form]") || document.querySelector("form");
+  }
+
+  function setControl(form, name, value) {
+    var nodes = form.querySelectorAll('[name="' + name + '"]');
+    if (!nodes.length) return;
+    var first = nodes[0];
+    if (first.type === "radio") {
+      for (var i = 0; i < nodes.length; i++) {
+        var radio = nodes[i];
+        radio.checked = radio.value === String(value);
+        if (radio.checked) radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      return;
+    }
+    if (first.type === "checkbox") {
+      var on = value === "on" || value === true || value === "true" || value === "1";
+      for (var j = 0; j < nodes.length; j++) {
+        nodes[j].checked = on;
+        nodes[j].dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      return;
+    }
+    if (first.type === "file") return;
+    first.value = value == null ? "" : String(value);
+    first.dispatchEvent(new Event("input", { bubbles: true }));
+    first.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function attachFile(form, name, file) {
+    var input = form.querySelector('input[type="file"][name="' + name + '"]');
+    if (!input || typeof DataTransfer === "undefined" || typeof File === "undefined") return;
+    var made = new File([file.text || ""], file.name || "note.txt", { type: "text/plain" });
+    var transfer = new DataTransfer();
+    transfer.items.add(made);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function fillStory() {
+    var current = step();
+    var spec = current && current.fill;
+    var form = formOnScreen();
+    if (!spec || !form) return;
+    var fields = spec.fields || {};
+    var names = Object.keys(fields);
+    names.sort(function (left, right) {
+      var leftNode = form.querySelector('[name="' + left + '"]');
+      var rightNode = form.querySelector('[name="' + right + '"]');
+      var leftRadio = leftNode && leftNode.type === "radio" ? 0 : 1;
+      var rightRadio = rightNode && rightNode.type === "radio" ? 0 : 1;
+      return leftRadio - rightRadio;
+    });
+    for (var i = 0; i < names.length; i++) setControl(form, names[i], fields[names[i]]);
+    var files = spec.files || {};
+    Object.keys(files).forEach(function (name) { attachFile(form, name, files[name]); });
+  }
+
+  function paintFill(current) {
+    var row = part("tour-fill-row");
+    if (!row) return;
+    row.hidden = !(current && current.fill);
+  }
+
+  /* The issued permit of this judge's café copy.  Names, documents and fees
+     stay off the card.  The link opens the public search already filled in. */
+  function paintPermit(current) {
+    var card = part("tour-permit-card");
+    if (!card) return;
+    var permit = current && current.permit;
+    card.textContent = "";
+    if (!permit || !permit.number) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+    var heading = document.createElement("h3");
+    heading.textContent = permit.title || "Permit issued";
+    card.appendChild(heading);
+    function line(label, value) {
+      var row = document.createElement("p");
+      row.textContent = label + ": " + (value || "");
+      card.appendChild(row);
+    }
+    line("Permit", permit.number);
+    line("Address", permit.address);
+    line("Parcel", permit.parcel);
+    line("Outcome", permit.outcome);
+    line("Conditions", permit.conditions);
+    line("Date", permit.date);
+    if (permit.search_line) {
+      var search = document.createElement("p");
+      search.setAttribute("data-testid", "tour-permit-search-line");
+      search.textContent = permit.search_line;
+      card.appendChild(search);
+    }
+    if (permit.search_href) {
+      var link = document.createElement("a");
+      link.href = permit.search_href;
+      link.setAttribute("data-testid", "tour-permit-search");
+      link.textContent = permit.search_label || "Search for my permit";
+      card.appendChild(link);
+    }
+  }
+
+  /* The note beside Start fresh, and the note that says a track needs no copy. */
+  function paintCopy(current) {
+    var fresh = part("tour-fresh");
+    if (!fresh) return;
+    var freshNote = part("tour-fresh-note");
+    var freshButton = part("tour-fresh-button");
+    var text = (current && current.copy_note) || "";
+    if (current && current.fresh) {
+      fresh.hidden = false;
+      if (freshButton) {
+        freshButton.hidden = false;
+        freshButton.disabled = false;
+      }
+      if (freshNote) freshNote.textContent = text;
+      return;
+    }
+    if (text) {
+      fresh.hidden = false;
+      if (freshButton) freshButton.hidden = true;
+      if (freshNote) freshNote.textContent = text;
+      return;
+    }
+    fresh.hidden = true;
+    if (freshNote) freshNote.textContent = "";
   }
 
   /* The replay line is separate from the caption.  It is empty when live
@@ -357,14 +496,9 @@
       play.disabled = false;
       play.removeAttribute("aria-describedby");
     }
-    var fresh = part("tour-fresh");
-    if (fresh) {
-      fresh.hidden = !current.fresh;
-      var freshNote = part("tour-fresh-note");
-      if (freshNote) freshNote.textContent = "";
-      var freshButton = part("tour-fresh-button");
-      if (freshButton) freshButton.disabled = false;
-    }
+    paintCopy(current);
+    paintFill(current);
+    paintPermit(current);
     paintNote();
     paintMuse(current);
     paintReplay(current);
