@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import sqlite3
 
+import pytest
+
 from conftest import BrowserServer, assert_no_horizontal_overflow
 
 #: An address the city locator cannot place.  The applicant may type one.
@@ -511,3 +513,145 @@ def test_the_resident_path_of_the_walkthrough_runs_with_a_made_up_address(
     page.goto(f"{server.base_url}/apply/track?ref={reference}", wait_until="networkidle")
     assert reference in page.content()
     assert page.recorded_errors == []
+
+
+#: The address Randall typed.  The city locator does not place it.
+UNMATCHED_STREET = "123 main street"
+
+
+@pytest.fixture(params=["chromium", "webkit"])
+def held_browser(request):
+    """A Chromium or WebKit browser for the held-submit walk."""
+    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import sync_playwright
+
+    engine = request.param
+    with sync_playwright() as playwright:
+        launcher = getattr(playwright, engine)
+        try:
+            if engine == "chromium":
+                browser = launcher.launch(args=["--no-sandbox"])
+            else:
+                browser = launcher.launch()
+        except PlaywrightError as exc:
+            if engine == "webkit":
+                pytest.skip(f"WebKit is not available: {exc}")
+            raise
+        try:
+            yield browser
+        finally:
+            browser.close()
+
+
+def _person(browser, server: BrowserServer, *, java_script: bool):
+    """Return a signed-in applicant page, with or without JavaScript."""
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 900},
+        java_script_enabled=java_script,
+    )
+    page = context.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
+    page.on(
+        "console",
+        lambda message: errors.append(f"console: {message.text}")
+        if message.type == "error"
+        else None,
+    )
+    page.recorded_errors = errors  # type: ignore[attr-defined]
+    page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
+    page.locator('button[data-persona="persona_applicant"]').click()
+    page.wait_for_url(f"{server.base_url}/city/")
+    return context, page
+
+
+def _held_unmatched(page, server: BrowserServer) -> None:
+    """Fill the unmatched 6 ft front fence, submit, and land on the held page."""
+    page.goto(f"{server.base_url}/apply/deck_fence", wait_until="domcontentloaded")
+    _fence(
+        page,
+        height="6",
+        location="front",
+        description="6 ft front fence",
+        address=UNMATCHED_STREET,
+    )
+    page.locator('[data-testid="submit-application"]').click()
+    page.wait_for_selector('[data-testid="must-fix"]')
+    page.wait_for_selector('[data-testid="why-submit-now"]')
+
+
+def _assert_reload_kept_the_documents(page) -> None:
+    """The reload's file inputs are empty; the draft still has the documents."""
+    assert page.locator("#file-site_plan").evaluate("el => el.files.length") == 0
+    assert page.locator("#file-material_spec").evaluate("el => el.files.length") == 0
+    assert page.locator('[data-doc-type="site_plan"]').get_attribute("data-added") == "true"
+    assert page.locator('[data-doc-type="material_spec"]').get_attribute("data-added") == "true"
+
+
+def test_submit_anyway_after_a_held_reload(held_browser, server: BrowserServer) -> None:
+    """Submit, then on the held page type a reason only, and receive a reference.
+
+    Nothing else is edited.  The documents are only on the draft, and a live
+    check must still call the application complete and held.
+    """
+    context, page = _person(held_browser, server, java_script=True)
+    try:
+        _held_unmatched(page, server)
+        assert "ACME Code §14-305" in page.locator('[data-testid="must-fix"]').inner_text()
+        assert "We could not match this address to a parcel." in (
+            page.locator('[data-testid="should-check"]').inner_text()
+        )
+        assert page.locator('[data-testid="why-submit-now"]').is_visible()
+        assert page.locator('[data-testid="submit-anyway"]').is_visible()
+        assert page.locator('[data-testid="submit-application"]').is_disabled()
+        _assert_reload_kept_the_documents(page)
+        page.wait_for_function(
+            "() => document.querySelector(\"[data-testid='submit-anyway']\").disabled"
+        )
+        with page.expect_response(
+            lambda response: response.url.endswith("/check") and response.request.method == "POST"
+        ) as checked:
+            page.locator("#f-project_description").evaluate(
+                "el => el.dispatchEvent(new Event('input', {bubbles: true}))"
+            )
+        body = checked.value.json()
+        assert body["can_submit"] is True, body
+        assert body["missing"] == [] and body["blocking"] == []
+        assert body["review"]["held"] is True, body
+        assert page.locator('[data-testid="why-submit-now"]').is_visible()
+        assert page.locator('[data-testid="submit-anyway"]').is_visible()
+        assert page.locator('[data-testid="submit-application"]').is_disabled()
+        page.fill("#override-reason", "The fence is already built.")
+        page.wait_for_function(
+            "() => !document.querySelector(\"[data-testid='submit-anyway']\").disabled"
+        )
+        page.locator('[data-testid="submit-anyway"]').click()
+        page.wait_for_url(lambda url: "/apply/submitted/" in url)
+        reference = page.locator('[data-testid="submitted-reference"]').inner_text().strip()
+        assert reference
+        assert all("422" in error for error in page.recorded_errors), page.recorded_errors
+    finally:
+        context.close()
+
+
+def test_submit_anyway_posts_without_javascript(held_browser, server: BrowserServer) -> None:
+    """The same walk with no script: the reason is a plain form post."""
+    context, page = _person(held_browser, server, java_script=False)
+    try:
+        _held_unmatched(page, server)
+        assert "ACME Code §14-305" in page.locator('[data-testid="must-fix"]').inner_text()
+        assert page.locator('[data-testid="why-submit-now"]').is_visible()
+        anyway = page.locator('[data-testid="submit-anyway"]')
+        assert anyway.is_visible()
+        assert anyway.is_enabled()
+        assert page.locator('[data-testid="submit-application"]').is_disabled()
+        _assert_reload_kept_the_documents(page)
+        page.fill("#override-reason", "The fence is already built.")
+        assert anyway.is_enabled()
+        anyway.click()
+        page.wait_for_url(lambda url: "/apply/submitted/" in url)
+        reference = page.locator('[data-testid="submitted-reference"]').inner_text().strip()
+        assert reference
+        assert all("422" in error for error in page.recorded_errors), page.recorded_errors
+    finally:
+        context.close()

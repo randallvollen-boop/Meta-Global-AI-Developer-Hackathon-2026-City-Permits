@@ -195,9 +195,12 @@ def test_a_six_foot_front_fence_is_held_until_the_applicant_says_why(client, env
     blank = post_form(client, FRONT_SIX, files=fence_files(), intent="override", override_reason="   ")
     assert blank.status_code == 422, blank.text
     assert "Enter why submit now." in blank.text
+    # The refused page leaves the button usable.  A script may disable it
+    # until a reason is typed; the markup itself must not.
     anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', blank.text)
-    assert anyway is not None and "disabled" in anyway.group(0)
+    assert anyway is not None and "disabled" not in anyway.group(0)
     assert 'aria-describedby="submit-anyway-why"' in anyway.group(0)
+    assert 'data-server-held="true"' in blank.text
     assert application_count(environment) == before
 
     reason = "The fence is already built."
@@ -426,6 +429,106 @@ def test_the_live_check_does_not_call_an_unmatched_address_missing(client) -> No
     assert body["can_submit"] is True
     assert body["missing"] == [] and body["items"] == [] and body["blocking"] == []
     assert body["banner"] == "Ready to submit. All required fields and documents are provided."
+
+
+def draft_reference(page: str) -> str:
+    """Return the draft reference the form is holding."""
+    match = re.search(r'name="draft" value="([^"]+)"', page)
+    assert match and match.group(1), page
+    return match.group(1)
+
+
+def test_a_reload_check_counts_documents_kept_on_the_draft(client) -> None:
+    """A check after a refused submit posts no files; the draft's copies count."""
+    choose(client, "persona_applicant")
+    held = post_form(client, MADE_UP_FRONT_SIX, files=fence_files(), intent="submit")
+    assert held.status_code == 422, held.text
+    reference = draft_reference(held.text)
+    body = client.post(
+        "/apply/deck_fence/check",
+        data={
+            **MADE_UP_FRONT_SIX,
+            "draft": reference,
+            "certification_accepted": "on",
+            "review": "1",
+        },
+    ).json()
+    assert body["can_submit"] is True, body
+    assert body["missing"] == [] and body["blocking"] == []
+    assert body["review"]["held"] is True
+    assert body["review"]["must_fix"]
+
+
+def test_a_reload_check_counts_ticks_kept_on_the_draft(client) -> None:
+    """Ticks stored on the draft count when the check does not post them again."""
+    choose(client, "persona_applicant")
+    saved = post_form(
+        client,
+        {
+            **MADE_UP,
+            "sent_separately__site_plan": "on",
+            "sent_separately__material_spec": "on",
+        },
+        intent="update",
+    )
+    assert saved.status_code == 200, saved.text
+    reference = draft_reference(saved.text)
+    body = client.post(
+        "/apply/deck_fence/check",
+        data={**MADE_UP, "draft": reference, "certification_accepted": "on", "review": "1"},
+    ).json()
+    assert body["can_submit"] is True, body
+    assert body["missing"] == []
+    assert body["sent_separately"] == ["material_spec", "site_plan"]
+    assert body["review"]["held"] is False
+    assert body["review"]["must_fix"] == []
+
+
+def test_an_untick_posted_with_the_check_is_not_restored_from_the_draft(client) -> None:
+    """A check that posts its ticks is believed, so unticking one is missing."""
+    choose(client, "persona_applicant")
+    saved = post_form(
+        client,
+        {
+            **MADE_UP,
+            "sent_separately__site_plan": "on",
+            "sent_separately__material_spec": "on",
+        },
+        intent="update",
+    )
+    reference = draft_reference(saved.text)
+    body = client.post(
+        "/apply/deck_fence/check",
+        data={
+            **MADE_UP,
+            "draft": reference,
+            "certification_accepted": "on",
+            "sent_separately_posted": "1",
+            "sent_separately__site_plan": "on",
+        },
+    ).json()
+    assert body["can_submit"] is False, body
+    missing = [item.lower() for item in body["missing"]]
+    assert any("material" in item for item in missing), missing
+    assert all("site" not in item for item in missing), missing
+
+
+def test_submit_anyway_posts_the_draft_without_sending_the_files_again(client) -> None:
+    """The reload drops the files.  Submit anyway is a plain post of the draft."""
+    choose(client, "persona_applicant")
+    held = post_form(client, MADE_UP_FRONT_SIX, files=fence_files(), intent="submit")
+    assert held.status_code == 422, held.text
+    anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', held.text)
+    assert anyway is not None and "disabled" not in anyway.group(0)
+    assert 'data-override-field hidden' not in held.text
+    accepted = post_form(
+        client,
+        {**MADE_UP_FRONT_SIX, "draft": draft_reference(held.text)},
+        intent="override",
+        override_reason="The fence is already built.",
+    )
+    assert accepted.status_code == 303, accepted.text
+    assert "/apply/submitted/" in accepted.headers["location"]
 
 
 def test_the_live_check_answers_with_the_rules_while_a_review_is_on_screen(client) -> None:

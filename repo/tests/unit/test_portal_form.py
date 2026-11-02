@@ -224,11 +224,19 @@ def test_check_my_application_shows_the_three_groups(client: TestClient) -> None
     assert submit is not None and "disabled" in submit.group(0)
     assert 'aria-describedby="submit-held-why"' in submit.group(0)
     assert "Fix the items under Must fix, or use Submit anyway." in page
+    # Submit anyway is a plain post.  The page must not disable it: a browser
+    # with no script can type the reason and send it.  The script disables it
+    # until a reason is typed, and the browser tests hold it to that.
     anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', page)
-    assert anyway is not None and "disabled" in anyway.group(0)
+    assert anyway is not None and "disabled" not in anyway.group(0)
     assert 'aria-describedby="submit-anyway-why"' in anyway.group(0)
     assert "Enter why submit now." in page
     assert "Why submit now" in page
+    assert 'data-server-held="true"' in page
+    field = re.search(r'<div class="override-field"[^>]*>', page)
+    assert field is not None and "hidden" not in field.group(0), field
+    action = re.search(r'<span class="submit-anyway"[^>]*>', page)
+    assert action is not None and "hidden" not in action.group(0), action
 
 
 def test_the_first_page_has_no_presubmit_panel(client: TestClient) -> None:
