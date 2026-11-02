@@ -68,6 +68,8 @@ services:
         value: "1"
       - key: ACME_POLICY_ASSIST_LIVE_ENABLED
         value: "1"
+      - key: ACME_PRESUBMIT_REVIEW_LIVE_ENABLED
+        value: "1"
       # Requests per minute per client address; 0 switches a limit off.
       - key: ACME_RATE_LIMIT_ALL_PER_MINUTE
         value: "300"

@@ -147,7 +147,7 @@ def _payload(settings: Settings, prompt: str) -> dict[str, Any]:
             }
         },
         "reasoning": {"effort": "low"},
-        "max_output_tokens": min(800, MAX_OUTPUT_TOKENS),
+        "max_output_tokens": MAX_OUTPUT_TOKENS,  # reasoning shares this budget; 800 left no room for the answer
     }
     assert_no_truth_in_payload(payload)
     return payload
