@@ -188,15 +188,10 @@ PATHS: tuple[Path, ...] = (
             Step(
                 "Run the checks and approve the case",
                 "Permit Reviewer",
-                "/queue/review",
-                "Open Review queue, read Stage and Next action, where Stage for a "
-                "case in checks reads Checks (3 of 6) and Next action is Ready "
-                "to decide, Ready to issue, Waiting on Data Steward, Needs "
-                "checks, Fee not settled, In early resolution, or Submitted with "
-                "known issues, with Ready to decide and Ready to issue first, "
-                "then open the case of the café, press Start under Confirm "
-                "parcel, press Start under Run application checks or Run checks "
-                "again, and record the decision.",
+                "/permits/{case}",
+                "On the café’s case workspace, press Start under Confirm parcel, "
+                "press Start under Run application checks or Run checks again, and "
+                "record the decision.",
                 "The checks summary reads Checks finished or These checks already "
                 "ran on this revision, Next: record the decision appears when a "
                 "decision is open, the Recommendation section reads Recommend "
@@ -229,10 +224,9 @@ PATHS: tuple[Path, ...] = (
             Step(
                 "Issue the permit",
                 "Permit Reviewer",
-                "/queue/review",
-                "When the fee is settled, Stage reads Fee (5 of 6) and Next action "
-                "reads Ready to issue, so open the case of the café and press "
-                "Start under Issue permit.",
+                "/permits/{case}",
+                "On the café’s case workspace, when the fee is settled, press Start "
+                "under Issue permit.",
                 "After issuance, Stage reads Issued (6 of 6) and Next action "
                 "reads Issued, and the applicant is told by email at this point "
                 "while the demonstration sends no email.",

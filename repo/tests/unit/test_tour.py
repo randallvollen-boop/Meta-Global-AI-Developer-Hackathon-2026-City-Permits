@@ -349,6 +349,8 @@ def test_the_permit_card_names_the_issued_permit_of_this_visit(client: TestClien
     assert "Search for permit ACME-2026-000731 or 12 Marrow Creek Road, ACME City." in (
         by_id["public"]["caption"]
     )
+    assert by_id["reviewer"]["actor_id"] == "persona_permit_reviewer"
+    assert by_id["reviewer"]["path"] == "/permits/app_d07"
     assert by_id["issue"]["path"] == "/permits/app_d07"
     for step in payload["steps"]:
         if step.get("muse_surface") == "intake":

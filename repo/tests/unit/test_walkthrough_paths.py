@@ -201,6 +201,14 @@ def test_the_café_path_walks_the_whole_journey() -> None:
         "Permit Reviewer",
         "",
     ]
+    assert [step.path for step in path.steps] == [
+        "/steward",
+        "/agent/intake",
+        "/permits/{case}",
+        "/reconciliation",
+        "/permits/{case}",
+        "/city/community",
+    ]
 
 
 def test_each_track_names_where_its_story_starts() -> None:

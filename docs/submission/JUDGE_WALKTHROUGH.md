@@ -80,10 +80,10 @@ As **Agent Operator**, open `/agent/intake`.
 
 ### 3. Run the checks and approve the case
 
-As **Permit Reviewer**, open `/queue/review`.
+As **Permit Reviewer**, open `/permits/{case}`.
 
 - Why: We are here because a person decides the case, an open parcel or identity link is Data follow-up that does not block the decision, and the applicant is told by email at this point while the demonstration sends no email.
-- Do: Open Review queue, read Stage and Next action, where Stage for a case in checks reads Checks (3 of 6) and Next action is Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution, or Submitted with known issues, with Ready to decide and Ready to issue first, then open the case of the café, press Start under Confirm parcel, press Start under Run application checks or Run checks again, and record the decision.
+- Do: On the café’s case workspace, press Start under Confirm parcel, press Start under Run application checks or Run checks again, and record the decision.
 - Look for: The checks summary reads Checks finished or These checks already ran on this revision, Next: record the decision appears when a decision is open, the Recommendation section reads Recommend deny: with the reason when the rules fail or Passed when they do not, Needs information is prefilled, plain blockers link to the fix, Data follow-up does not block the decision, and an approval against a failed rule reads Approved as an exception to the failed rule once Exception reason is written.
 
 ### 4. Apply the café’s payment
@@ -96,10 +96,10 @@ As **City Administrator**, open `/reconciliation`.
 
 ### 5. Issue the permit
 
-As **Permit Reviewer**, open `/queue/review`.
+As **Permit Reviewer**, open `/permits/{case}`.
 
 - Why: We are here because deciding and issuing are separate, and the payer link and the fee still block issuing.
-- Do: When the fee is settled, Stage reads Fee (5 of 6) and Next action reads Ready to issue, so open the case of the café and press Start under Issue permit.
+- Do: On the café’s case workspace, when the fee is settled, press Start under Issue permit.
 - Look for: After issuance, Stage reads Issued (6 of 6) and Next action reads Issued, and the applicant is told by email at this point while the demonstration sends no email.
 
 ### 6. Find it as a resident
