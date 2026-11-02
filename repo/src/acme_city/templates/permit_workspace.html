@@ -527,6 +527,14 @@
         </tbody>
       </table>
       </details>
+      <div data-testid="applicant-notices">
+        <h4>Applicant notices</h4>
+        <ul>
+          {% for n in detail.applicant_notices %}<li>{{ n.subject }} <span class="muted">{{ n.when }}</span></li>
+          {% else %}<li class="muted">No notice yet.</li>{% endfor %}
+        </ul>
+        <p class="muted">The applicant is told of each decision. The demonstration sends no email.</p>
+      </div>
 
           {% else %}
           <p class="muted" data-testid="decision-empty">No reviewer decision is recorded yet.</p>

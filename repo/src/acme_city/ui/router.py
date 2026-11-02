@@ -1751,6 +1751,9 @@ def _decision_conditions(ctx: ActionContext) -> list[str]:
     return [line.strip() for line in ctx.text("conditions").splitlines() if line.strip()]
 
 
+from acme_city.permits.notices import ACTION_NOTE  # noqa: E402
+
+
 def _permit_decide(ctx: ActionContext) -> Outcome:
     """Record an actual reviewer decision."""
     command = PermitDecisionCommand(
@@ -1767,7 +1770,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         raise _conflict(result)
     view = result.value
     return Outcome(
-        message=f"Recorded the reviewer decision '{view.outcome}'.",
+        message=f"Recorded the reviewer decision '{view.outcome}'. {ACTION_NOTE}",
         destination="Permitting decision record",
         state=view.outcome,
         target_type="decision",
@@ -1818,7 +1821,7 @@ def _permit_issue(ctx: ActionContext) -> Outcome:
         raise _conflict(result)
     view = result.value
     return Outcome(
-        message=f"Issued the simulated permit {view.permit_number}.",
+        message=f"Issued the simulated permit {view.permit_number}. {ACTION_NOTE}",
         destination="Permitting issued permit",
         state=view.status,
         target_type="permit",

@@ -3847,6 +3847,7 @@ def permit_workspace(
         "evaluations": evaluations,
         "evaluation": evaluation_view,
         "decisions": decisions,
+        "applicant_notices": applicant_notices(session, application),
         "current_decision": (
             {
                 "decision_id": current_decision.id,
@@ -4509,6 +4510,9 @@ def stewardship_history(session: Session, limit: int = 25) -> list[dict[str, Any
         .limit(limit)
     ).scalars().all()
     return [_history_entry(session, row) for row in rows]
+
+
+from acme_city.permits.notices import applicant_notices  # noqa: E402
 
 
 def decision_outcome_label(row: permit.Decision) -> str:
