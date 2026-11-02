@@ -57,8 +57,9 @@ def test_arriving_at_the_check_step_never_overwrites_typed_answers(
 ) -> None:
     """A visitor's pre-existing form entry wins over the story answers."""
     login("persona_applicant")
+    # add_init_script runs source text, so the function is called in place.
     page.add_init_script(
-        """() => {
+        """(() => {
             sessionStorage.setItem("acme-tour", JSON.stringify({
               active: true, index: 3, playing: false, intervalMs: 0, path: "resident"
             }));
@@ -68,7 +69,7 @@ def test_arriving_at_the_check_step_never_overwrites_typed_answers(
               if (address) address.value = "500 Visitor Way, ACME City";
               if (height) height.value = "5";
             }, { once: true });
-        }"""
+        })();"""
     )
     page.goto(f"{server.base_url}/apply/deck_fence", wait_until="networkidle")
     page.wait_for_selector('[data-testid="tour-fill"]')
