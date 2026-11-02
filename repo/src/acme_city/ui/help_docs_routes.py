@@ -39,13 +39,21 @@ from acme_city.ui.view_models import actor_label
 
 router = APIRouter(tags=["help"])
 
-#: The security headers of an HTML document.  ``sandbox`` without any allow
-#: token gives the document an opaque origin and turns scripts, forms, popups
-#: and top navigation off, whether the file is framed or opened on its own.
+#: The security headers for an ordinary HTML document. ``sandbox`` without any
+#: allow token gives it an opaque origin and turns scripts, forms, popups and
+#: top navigation off, whether the file is framed or opened on its own.
 #: The remaining directives close every other way to load or send anything.
 SANDBOX_CSP = (
     "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; "
     "font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+)
+
+#: The only relaxation for an explicitly flagged document. It remains opaque,
+#: cannot navigate, submit forms, open popups, or connect to the network.
+SCRIPTS_ALLOWED_CSP = (
+    "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; img-src data:; "
+    "style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'; "
+    "frame-ancestors 'self'"
 )
 
 
@@ -257,7 +265,9 @@ def ui_help_document_file(
     if loaded.text is None:
         return Response(loaded.message, status_code=404, media_type="text/plain; charset=utf-8")
     headers = {
-        "Content-Security-Policy": SANDBOX_CSP,
+        "Content-Security-Policy": (
+            SCRIPTS_ALLOWED_CSP if entry.get("scripts_allowed", False) else SANDBOX_CSP
+        ),
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
         "Cache-Control": "private, no-store",

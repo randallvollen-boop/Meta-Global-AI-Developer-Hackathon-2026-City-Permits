@@ -348,28 +348,56 @@ def test_a_path_outside_the_root_is_refused() -> None:
     assert loaded.text is None and "outside" in loaded.message
 
 
-# -------------------------------------- the architecture page is sandboxed
+# -------------------------------------- HTML documents are sandboxed
 
 
-def test_the_architecture_page_is_served_as_committed_inside_a_script_free_sandbox(
+def test_the_architecture_page_is_served_as_committed_inside_an_opaque_script_sandbox(
     client: TestClient,
 ) -> None:
     sign_in(client, "persona_permit_reviewer")
     entry = content.document("architecture")
+    assert entry["scripts_allowed"] is True
     committed = (content.PROJECT_ROOT / entry["path"]).read_bytes()
     wrapper = client.get("/help/technical/architecture").text
     frame = re.search(r"<iframe[^>]*>", wrapper).group(0)
-    assert 'sandbox=""' in frame and 'src="/help/technical/architecture/file"' in frame
-    assert "allow-scripts" not in wrapper and "allow-same-origin" not in wrapper
+    assert 'sandbox="allow-scripts"' in frame and 'src="/help/technical/architecture/file"' in frame
+    assert "allow-same-origin" not in frame
     raw = client.get("/help/technical/architecture/file")
     assert raw.status_code == 200 and raw.content == committed
     assert raw.headers["content-type"].startswith("text/html")
     policy = raw.headers["content-security-policy"]
-    directives = {part.strip().split(" ")[0]: part.strip() for part in policy.split(";")}
-    assert directives["sandbox"] == "sandbox"  # no allow-scripts, no allow-same-origin
-    assert directives["default-src"] == "default-src 'none'"
-    assert "script-src" not in policy and "'unsafe-eval'" not in policy
+    assert policy == (
+        "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; img-src data:; "
+        "style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'; "
+        "frame-ancestors 'self'"
+    )
+    assert "'unsafe-eval'" not in policy
     assert raw.headers["x-content-type-options"] == "nosniff"
     download = client.get("/help/technical/architecture/file?download=true")
     assert download.headers["content-disposition"].startswith("attachment")
     assert download.headers["content-security-policy"] == policy
+
+
+def test_html_documents_without_the_explicit_script_flag_keep_the_strict_sandbox(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sign_in(client, "persona_permit_reviewer")
+    original_document = content.document
+
+    def unflagged_document(slug: str) -> dict[str, object] | None:
+        entry = original_document(slug)
+        if entry is not None and slug == "architecture":
+            return {key: value for key, value in entry.items() if key != "scripts_allowed"}
+        return entry
+
+    monkeypatch.setattr(content, "document", unflagged_document)
+    strict_policy = (
+        "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; "
+        "font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+    )
+    wrapper = client.get("/help/technical/architecture").text
+    frame = re.search(r"<iframe[^>]*>", wrapper).group(0)
+    assert 'sandbox=""' in frame
+    assert "allow-scripts" not in frame and "allow-same-origin" not in frame
+    raw = client.get("/help/technical/architecture/file")
+    assert raw.headers["content-security-policy"] == strict_policy
