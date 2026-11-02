@@ -20,7 +20,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from acme_city.muse.client import MuseClient, MuseRequestError, summarize_request
+from acme_city.muse.client import MAX_OUTPUT_TOKENS, MuseClient, MuseRequestError, summarize_request
 
 #: The strict schema name of the summary task.
 SUMMARY_SCHEMA_NAME = "acme_case_summary"
@@ -89,7 +89,7 @@ def build_summary_payload(
             }
         },
         "reasoning": {"effort": "low"},
-        "max_output_tokens": 800,
+        "max_output_tokens": MAX_OUTPUT_TOKENS,  # reasoning shares this budget
     }
 
 
