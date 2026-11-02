@@ -164,6 +164,7 @@
         {% if persona.icon %}<img class="persona-icon" src="{{ persona.icon }}" alt="" width="64" height="64" loading="lazy">{% endif %}
         <div class="persona-text">
           <h2 class="persona-name">{{ persona.label }}</h2>
+          <p class="persona-line" data-testid="persona-line">{{ persona.line }}</p>
           <p class="persona-who visually-hidden" id="persona-who-{{ persona.actor_id }}">{{ persona.who }}</p>
           <p class="persona-does visually-hidden" id="persona-does-{{ persona.actor_id }}">{{ persona.does }}</p>
           <p class="persona-start visually-hidden" id="persona-start-{{ persona.actor_id }}">{{ persona.start }}</p>

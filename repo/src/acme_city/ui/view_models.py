@@ -129,12 +129,14 @@ PERSONA_ORDER: tuple[str, ...] = (
 
 #: What the persona selector says about each persona, keyed by label.
 #:
-#: ``who`` names the person the demo plays, ``does`` is their job in plain
-#: words, ``start`` is what to try first, ``next`` is the screen the persona
-#: lands on and ``icon`` is the file under ``static/persona-icons``.  The icon
-#: shows only when the file exists.
+#: ``line`` is the one short sentence the card shows: who the person is and
+#: what they do here.  ``who`` names the person the demo plays, ``does`` is
+#: their job in plain words, ``start`` is what to try first, ``next`` is the
+#: screen the persona lands on and ``icon`` is the file under
+#: ``static/persona-icons``.  The icon shows only when the file exists.
 PERSONA_PROFILES: dict[str, dict[str, str]] = {
     "Applicant": {
+        "line": "A resident who applies for a permit and tracks it.",
         "who": "A resident or contractor who needs a permit from the City of Acme.",
         "does": "Starts an application, answers the questions, uploads plans and tracks the permit until it is issued.",
         "start": "Apply for a permit, then follow it on the tracking page.",
@@ -142,6 +144,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "icon": "applicant",
     },
     "Data Steward": {
+        "line": "Links people and properties so every record matches.",
         "who": "The city records specialist who keeps parcel, address, owner and contractor data trustworthy.",
         "does": "Links new source records to the right master record, resolves duplicates and fixes conflicts so every permit points at the right property and people.",
         "start": "Open the steward queue and work the first case.",
@@ -149,6 +152,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "icon": "steward",
     },
     "Permit Reviewer": {
+        "line": "Checks each case and records the decision.",
         "who": "A city plan reviewer in the permit office.",
         "does": "Checks each application against the city rules, asks the applicant for missing information, and approves, denies or issues the permit with a recorded reason.",
         "start": "Open the work queue and review the top application.",
@@ -156,6 +160,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "icon": "reviewer",
     },
     "City Administrator": {
+        "line": "Sets the rules and fees and watches the whole system.",
         "who": "The manager who runs the permit program for the city.",
         "does": "Sets the rules, fees and policies, manages users and roles, and watches operations, audit and community insight.",
         "start": "Open the overview, then try a what if policy scenario.",
@@ -163,6 +168,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "icon": "admin",
     },
     "Agent Operator": {
+        "line": "Runs the agents that read and route new applications.",
         "who": "The operations specialist who runs the city’s automated helper agents.",
         "does": "Wakes the agents, runs processing batches, watches results and retries failures. The city administrator decides whether agents stay awake.",
         "start": "Wake the agents and run the next batch.",
@@ -575,7 +581,9 @@ def persona_options(session: Session) -> list[dict[str, str]]:
     for row in rows:
         option = {"actor_id": row.actor_id, "label": row.label}
         profile = PERSONA_PROFILES.get(row.label, {})
-        option.update({key: profile.get(key, "") for key in ("who", "does", "start", "next")})
+        option.update(
+            {key: profile.get(key, "") for key in ("line", "who", "does", "start", "next")}
+        )
         option["summary"] = _persona_summary(profile)
         icon = profile.get("icon", "")
         option["icon"] = (
@@ -591,9 +599,9 @@ def persona_options(session: Session) -> list[dict[str, str]]:
 def _persona_summary(profile: dict[str, str]) -> str:
     """Return the hover text of one persona card.
 
-    The card shows only the name of the persona.  The three sentences that say
-    who the person is, what the job is and where to start are the hover text
-    and the accessible description of the card.
+    The card shows the name of the persona and one short line about the job.
+    The three sentences that say who the person is, what the job is and where
+    to start are the hover text and the accessible description of the card.
     """
     parts = [profile.get("who", ""), profile.get("does", "")]
     start = profile.get("start", "")

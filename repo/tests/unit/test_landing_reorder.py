@@ -103,6 +103,17 @@ def test_the_card_names_the_persona_and_the_button_says_it(landing: str) -> None
         assert ">Continue</button>" in landing, label
 
 
+def test_every_card_shows_one_line_about_the_persona(landing: str) -> None:
+    """Each card carries one short line that says who the person is."""
+    lines = re.findall(
+        r'<p class="persona-line" data-testid="persona-line">([^<]*)</p>', landing
+    )
+    assert len(lines) == len(PERSONA_ORDER), lines
+    for label, line in zip(PERSONA_ORDER, lines):
+        assert line == PERSONA_PROFILES[label]["line"], label
+        assert line.endswith("."), (label, line)
+
+
 def test_every_persona_posts_its_own_start_screen(landing: str) -> None:
     for actor_id, _, target in PERSONAS:
         form = re.search(

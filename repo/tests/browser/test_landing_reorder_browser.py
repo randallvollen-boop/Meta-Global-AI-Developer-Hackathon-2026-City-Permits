@@ -10,13 +10,13 @@ from __future__ import annotations
 import pytest
 from conftest import BrowserServer
 
-#: The five personas and the screen each one lands on.
+#: The five personas, the one sentence on each card, and the screen each opens.
 PERSONAS = (
-    ("persona_applicant", "Applicant", "/city/"),
-    ("persona_agent_operator", "Agent Operator", "/agents"),
-    ("persona_data_steward", "Data Steward", "/steward"),
-    ("persona_permit_reviewer", "Permit Reviewer", "/queue"),
-    ("persona_city_administrator", "City Administrator", "/overview"),
+    ("persona_applicant", "Applicant", "A resident who applies for a permit and tracks it.", "/city/"),
+    ("persona_agent_operator", "Agent Operator", "Runs the agents that read and route new applications.", "/agents"),
+    ("persona_data_steward", "Data Steward", "Links people and properties so every record matches.", "/steward"),
+    ("persona_permit_reviewer", "Permit Reviewer", "Checks each case and records the decision.", "/queue"),
+    ("persona_city_administrator", "City Administrator", "Sets the rules and fees and watches the whole system.", "/overview"),
 )
 
 
@@ -54,8 +54,16 @@ def test_every_persona_button_fits_inside_its_card(page, server: BrowserServer, 
 
 
 def test_every_persona_card_opens_the_screen_of_that_persona(page, server: BrowserServer) -> None:
-    for actor_id, label, target in PERSONAS:
+    for actor_id, label, line, target in PERSONAS:
         page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
+        # The card says in one sentence who the person is before it is pressed.
+        card = page.locator('[data-testid="persona-card"]').filter(
+            has=page.get_by_role("heading", name=label, exact=True)
+        )
+        assert card.count() == 1, label
+        shown = card.locator('[data-testid="persona-line"]')
+        assert shown.count() == 1, label
+        assert " ".join(shown.inner_text().split()) == line, label
         page.locator(f'button[data-persona="{actor_id}"]').click()
         page.wait_for_url(f"{server.base_url}{target}")
         assert label in page.content(), (actor_id, page.url)

@@ -150,6 +150,18 @@ DESIGN_FIX_ADDED = (
     ".landing",
 )
 
+#: The design lane of 2026-11-02 (the second round) changed these selectors
+#: on purpose: the persona card shows one line about the job, and the column
+#: that holds a status pill is as wide as the pill needs, so the word never
+#: breaks.  The rules of the pill, the badge and the ops badge changed their
+#: box, not their name.  No selector was removed.
+DESIGN_FIX_2_ADDED = (
+    ".persona-line",
+    "td:has(> .pill)",
+    "td:has(> .badge)",
+    "td:has(> .ops-badge)",
+)
+
 
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -251,6 +263,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         + LANDING_ADDED
         + THEME_ADDED
         + DESIGN_FIX_ADDED
+        + DESIGN_FIX_2_ADDED
     )
     old = [selector for selector in old if selector not in removed]
     new = [selector for selector in new if selector not in removed and selector not in added]

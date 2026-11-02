@@ -157,6 +157,9 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 }
 .city .btn.primary, .city a.btn.primary { text-decoration: none; }
 .city .btn { text-decoration: none; }
+/* The quiet button of the City frame: a link that carries the quiet class
+   keeps the quiet ink of the button it looks like. */
+.city a.button-quiet { color: var(--fg-2); }
 .city .btn:focus-visible, .city a:focus-visible, .city button:focus-visible, .city summary:focus-visible, .city input:focus-visible, .city select:focus-visible, .city textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .city-cta-quiet { background: #fff; color: var(--city-navy) !important; border: 2px solid var(--city-navy); }
 .city-cta-quiet:hover { background: var(--accent-soft); }
@@ -234,6 +237,22 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
 .drop-zone input[type=file] { max-width: 100%; }
 .doc-pick { font-weight: 600; font-size: .9rem; }
 .sent-separately { font-size: .92rem; }
+/* The actions of the application form: one row of controls that share one
+   height.  The submit stays the primary action.  Save draft and the change
+   of project are the quiet buttons.  On a phone the row wraps; a control
+   does not. */
+.portal-form .form-buttons {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
+}
+.portal-form .form-buttons > .btn,
+.portal-form .form-buttons > .button {
+  height: 40px; min-height: 40px; padding: 0 14px; line-height: 1;
+  align-items: center; justify-content: center; flex: 0 0 auto;
+  text-decoration: none; white-space: nowrap;
+}
+.portal-form .form-buttons > .button-quiet {
+  background: var(--surface); color: var(--fg-2); border-color: var(--line);
+}
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* U5 Receipt */
@@ -269,7 +288,7 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
 .permit-addr .pin { width: 16px; height: 16px; flex: none; }
 .permit-ref { margin: 0; color: var(--fg-2); font-size: .92rem; overflow-wrap: anywhere; }
 .permit-badge { margin: 0; display: inline-flex; align-items: center; }
-.badge { display: inline-block; padding: 3px 12px; border-radius: 99px; font-weight: 700; font-size: .85rem; border: 1px solid transparent; }
+.badge { display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; height: 20px; padding: 0 8px; border-radius: 99px; font-weight: 600; font-size: .7rem; line-height: 1; border: 1px solid transparent; white-space: nowrap; overflow-wrap: normal; }
 .badge-warn { background: var(--amber-bg); color: var(--amber-fg); border-color: var(--amber-line); }
 .badge-ok { background: #e1f3e9; color: #14603a; border-color: #8fcaa8; }
 .badge-info { background: #e4eef8; color: #12457a; border-color: #9cbfe0; }

@@ -182,15 +182,27 @@ def test_the_when_group_note_is_gone(client: TestClient) -> None:
 def test_choosing_a_different_project_leads_to_the_chooser(
     client: TestClient,
 ) -> None:
-    """Click test: the link in the form's last fieldset."""
+    """Click test: the quiet link in the form's last fieldset."""
     page = client.get(f"/apply/{TYPE_KEY}").text
     link = re.search(
-        r'<a class="btn" href="([^"]+)">Choose a different project</a>', page
+        r'<a class="button button-quiet btn" href="([^"]+)"[^>]*>'
+        r"Choose a different project</a>",
+        page,
     )
     assert link is not None
     landing = client.get(link.group(1))
     assert landing.status_code == 200
     assert "Start an application" in landing.text
+
+
+def test_the_draft_and_the_change_of_project_are_quiet_buttons(
+    client: TestClient,
+) -> None:
+    """The submit is the primary action; the draft and the change are quiet."""
+    page = client.get(f"/apply/{TYPE_KEY}").text
+    assert 'class="btn primary" data-testid="submit-application"' in page
+    assert 'class="button button-quiet btn" data-testid="save-draft"' in page
+    assert 'class="button button-quiet btn" href="/apply"' in page
 
 
 def test_saving_a_draft_lands_on_the_drafts_tab(client: TestClient) -> None:

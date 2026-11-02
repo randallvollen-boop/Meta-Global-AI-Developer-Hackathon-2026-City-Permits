@@ -286,9 +286,9 @@ main { padding-top: 0.9rem; }
 }
 
 .pill {
-  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px;
+  display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; height: 20px; padding: 0 8px;
   border-radius: 99px; font-size: .7rem; font-weight: 600; letter-spacing: .01em;
-  white-space: nowrap; background: var(--surface-2); color: var(--fg-2);
+  line-height: 1; white-space: nowrap; overflow-wrap: normal; background: var(--surface-2); color: var(--fg-2);
 }
 .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; }
 .pill.plain::before { display: none; }
@@ -300,10 +300,13 @@ main { padding-top: 0.9rem; }
 .pill.live::before { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
 
+/* A badge is a status pill of the second kind.  It has the same box as a
+   pill: one crisp line, one height, one size, on every screen. */
 .badge {
-  display: inline-flex; align-items: center; gap: 5px; padding: 0.05rem 0.4rem;
+  display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; height: 20px; padding: 0 8px;
   border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2);
-  color: var(--fg-2); font-size: 0.74rem; max-width: 100%; overflow-wrap: anywhere;
+  color: var(--fg-2); font-size: .7rem; font-weight: 600; line-height: 1;
+  white-space: nowrap; overflow-wrap: normal;
 }
 .badge-current { background: var(--accent-soft); border-color: var(--current); color: var(--current); }
 .badge-submitted { background: var(--warn-soft); border-color: var(--submitted); color: var(--submitted); }
@@ -323,6 +326,11 @@ main { padding-top: 0.9rem; }
 .badge-live { background: var(--accent-soft); border-color: var(--current); color: var(--current); }
 .badge-replay { background: var(--warn-soft); border-color: var(--submitted); color: var(--submitted); }
 .badge-cached { background: var(--info-soft); border-color: var(--info); color: var(--info); }
+
+/* A status pill is one crisp line.  The column that holds it is as wide as
+   the pill needs, so the word never breaks; on a phone the table scrolls
+   inside its own region instead of wrapping the pill. */
+td:has(> .pill), td:has(> .badge), td:has(> .ops-badge) { min-width: max-content; white-space: nowrap; }
 
 /* KPI strip */
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
@@ -978,7 +986,7 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .ops-figure .v { font: 600 1.6rem/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
 .ops-figure .d { font-size: .78rem; color: var(--fg-2); }
 .ops-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
-.ops-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; border: 1px solid var(--line); background: var(--surface-2); }
+.ops-badge { display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: .7rem; font-weight: 600; line-height: 1; border: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; overflow-wrap: normal; }
 .ops-badge.person { background: var(--accent-soft); color: var(--accent); }
 .ops-badge.agent { background: var(--muse-soft); color: var(--muse); }
 .ops-badge.system { background: var(--surface-2); color: var(--fg-2); }
@@ -1049,9 +1057,10 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
    a box inside a box. */
 .landing { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 
-/* Persona selector: one card per persona.  The card names the persona; the
-   sentences that say who they are, what they do and where to start are the
-   hover text and the accessible description of the card. */
+/* Persona selector: one card per persona.  The card names the persona and
+   holds one short line about the job; the sentences that say who they are,
+   what they do and where to start are the hover text and the accessible
+   description of the card. */
 .persona-cards { list-style: none; padding-left: 0; display: grid; gap: 0.75rem; font-size: 0.92rem; }
 @media (min-width: 720px) { .persona-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .persona-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
@@ -1063,6 +1072,12 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .persona-icon { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 .persona-text { display: grid; gap: 0.35rem; min-width: 0; }
 .persona-name { font-size: 1.05rem; margin: 0; min-height: 3em; }
+/* One sentence on the card.  Five cards share the row, so the sentence wraps
+   inside the card; it stays one sentence and does not break a word. */
+.persona-line {
+  margin: 0; color: var(--fg-2); font-size: 0.86rem; line-height: 1.35;
+  overflow-wrap: normal; text-wrap: pretty; min-height: calc(1.35em * 3);
+}
 .persona-text p { margin: 0; }
 .persona-text form { margin-top: 0.25rem; }
 
