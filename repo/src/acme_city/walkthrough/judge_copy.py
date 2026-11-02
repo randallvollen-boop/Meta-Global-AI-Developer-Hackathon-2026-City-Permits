@@ -4,7 +4,7 @@ The hosted demonstration is shared, so every judge needs a case of their own
 to walk.  This module builds that copy:
 
 * the three owner records of the café, each one a new source record with a
-  candidate link that waits for the Data Steward;
+  candidate link that needs a Data Steward decision;
 * the case of the café itself, with the facts, the site and the fee of the
   seeded case and with fresh identifiers;
 * the receipt of the fee, paid from the old finance account of the copy and
@@ -215,7 +215,7 @@ def create_judge_copy(session: Session, *, nonce: str | None = None, actor: Any 
     """Create the copy of the café case for one judge.
 
     The copy holds three source records of the owner, each one with a
-    candidate link that waits for the Data Steward, the case itself and the
+    candidate link that needs a Data Steward decision, the case itself and the
     receipt of the fee that was paid from the old finance account.
 
     Args:

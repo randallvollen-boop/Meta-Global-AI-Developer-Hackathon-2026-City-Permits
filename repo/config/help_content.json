@@ -196,7 +196,7 @@
           },
           {
             "do": "Click \"Start\" under \"Record review decision\". Choose \"Approve\", write the \"Rationale (internal record)\" and click \"Record the decision\".",
-            "see": "An open parcel or identity link does not refuse the approval. The case shows Data follow-up, and the Data Steward can confirm it afterwards. A check that was not run because the parcel is not confirmed is listed as Not checked and needs an exception reason to approve. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled. The payer account is still required to apply a payment and to issue.",
+            "see": "An open parcel or identity link does not refuse the approval. The case shows Data follow-up, and the Data Steward can confirm it afterwards. A check that was not run because the parcel is not confirmed is listed as Not checked; the reviewer decides whether to approve against it and records an exception reason when required. After an approval, \"Issue permit\" is refused until the fee is assessed, paid and reconciled. The payer account is still required to apply a payment and to issue.",
             "href": "/queue/review"
           }
         ]
@@ -325,7 +325,7 @@
         "screen_label": "Review queue",
         "screen_href": "/queue/review",
         "steps": [
-          "Open \"Review queue\". Read \"Stage\" and \"Next action\" for each case. Stage shows where the case is, for example \"Checks (3 of 6)\". Next action is what is needed now: \"Ready to decide\", \"Ready to issue\", \"Waiting on Data Steward\", \"Needs checks\", \"Fee not settled\", \"In early resolution\" or \"Submitted with known issues\". \"Ready to decide\" and \"Ready to issue\" come first. To find one case, type its reference, the applicant name or the site address in Search and press Search. A number such as 617 matches SYN-APP-617. Tags on the row show what the agents recommend, and a chip filters to one tag. Click the reference of a case.",
+          "Open \"Review queue\". Read \"Stage\" and \"Next action\" for each case. Stage shows where the case is, for example \"Checks (3 of 6)\". Next action is what is needed now: \"Ready to decide\", \"Ready to issue\", \"Needs checks\", \"Fee not settled\", \"In early resolution\" or \"Submitted with known issues\". \"Ready to decide\" and \"Ready to issue\" come first. An open parcel or identity link is a \"Data follow-up\" tag, not the next-action blocker. To find one case, type its reference, the applicant name or the site address in Search and press Search. A number such as 617 matches SYN-APP-617. Tags on the row show what the agents recommend, and a chip filters to one tag. Click the reference of a case.",
           "Read the tabs \"Documents\", \"People and organizations\", \"Activity\" and \"Review\".",
           "On the \"People and organizations\" tab, click \"Start\" under \"Confirm parcel\" and submit it.",
           "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit the form.",

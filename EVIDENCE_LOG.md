@@ -336,3 +336,10 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Source inspection: held-form hints were flex children, making their wrappers determine the desktop row height and width. They are below the row now, and both related controls retain their `aria-describedby` links.
 - Source inspection: feedback markup hid every persisted outcome, so non-success feedback depended on script timing. Refused, denied, and error results now render visible; the existing client opens each non-success outcome once per audit event.
 - Local checks: `node --check src/acme_city/static/app.js`; `node --check src/acme_city/static/property.js`; and `python -m compileall -q src tests/unit/test_portal_form.py tests/unit/test_stylesheet_scopes.py tests/integration/test_presubmit.py` exited 0. The focused `pytest --collect-only` command collected 86 tests. Focused test execution and browser tests did not complete in this sandbox, so no test-pass claim is made.
+
+## 2026-11-02 — Non-blocking steward data (retest item 6)
+
+- Final post-change `uv run pytest -q` group spanning changed adjudication,
+  plain-reason, intake, queue, workspace, guide, policy-parity, protected
+  fixture/outcome snapshot, and D01–D11 tests — 112 passed in 16.53s.
+- The protected fixture and outcome-snapshot tests passed without changing their data. Browser tests were not run; lead browser verification remains required.

@@ -619,11 +619,10 @@ class ParcelMatchService:
     def parcel_confirmed(self, application_id: str) -> bool:
         """Return whether the Data Steward confirmed the property of the case.
 
-        A case that carries no parcel match has no property to wait for, so
-        nothing holds it.  A case with a match waits for the Data Steward to
-        approve the link the address locator proposed: the parcel inputs
-        (zoning, flood zone) are read from that parcel, so until it is
-        approved the case is not evaluated on the whole rule set.
+        A case that carries no parcel match has no property follow-up. A case
+        with a match may have parcel-dependent rules marked Not checked until
+        the Data Steward approves the link; the review still proceeds on the
+        checks that ran.
         """
         match = self.for_application(application_id)
         if match is None:

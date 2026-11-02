@@ -21,11 +21,6 @@ from typing import Any
 
 from acme_city.triage.service import unit_for_field
 
-#: What the agent could not check while the parcel is not confirmed.
-PARCEL_NOT_CHECKED = (
-    "Not checked: zoning and flood zone, because the parcel is not confirmed."
-)
-
 #: The first words of the recommendation of each outcome.
 _APPROVE = "Recommend approve"
 _APPROVE_WITH_CONDITIONS = "Recommend approve with conditions"
@@ -108,8 +103,13 @@ def plain_reason(
     else:
         lines.append(kernel_reason or f"Recommendation: {outcome}.")
 
-    if not parcel_confirmed:
-        lines.append(PARCEL_NOT_CHECKED)
+    unchecked = [
+        row
+        for row in rows
+        if str(row.get("reason") or "") == "parcel_not_confirmed"
+    ]
+    if unchecked:
+        lines.append(_not_checked_line(unchecked, names))
     if precedent_outcome is not None:
         lines.append(
             f"An earlier decided case on the same parcel was {precedent_outcome}."
@@ -235,6 +235,14 @@ def describe_row(session: Any, row: Any) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------- lines
+
+
+def _not_checked_line(
+    unchecked: list[dict[str, Any]], titles: Mapping[str, str]
+) -> str:
+    """Name every parcel-dependent rule the agent did not run."""
+    labels = "; ".join(rule_label(row, titles) for row in unchecked)
+    return f"Not checked: {labels}, because the parcel is not confirmed."
 
 
 def _deny_lines(failing: list[dict[str, Any]], titles: Mapping[str, str]) -> list[str]:
@@ -420,7 +428,6 @@ def _capital(text: str) -> str:
 
 
 __all__ = [
-    "PARCEL_NOT_CHECKED",
     "PlainReason",
     "condition_line",
     "describe_recommendation",

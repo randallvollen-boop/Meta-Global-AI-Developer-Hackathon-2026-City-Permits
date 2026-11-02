@@ -191,7 +191,7 @@ PATHS: tuple[Path, ...] = (
                 "/queue/review",
                 "Open Review queue, read Stage and Next action, where Stage for a "
                 "case in checks reads Checks (3 of 6) and Next action is Ready "
-                "to decide, Ready to issue, Waiting on Data Steward, Needs "
+                "to decide, Ready to issue, Needs "
                 "checks, Fee not settled, In early resolution, or Submitted with "
                 "known issues, with Ready to decide and Ready to issue first, "
                 "then open the case of the café, press Start under Confirm "
@@ -207,7 +207,8 @@ PATHS: tuple[Path, ...] = (
                 "to the failed rule once Exception reason is written.",
                 "We are here because a person decides the case, an open parcel "
                 "or identity link is Data follow-up that does not block the "
-                "decision, and the applicant is told by email at this point "
+                "decision; open parcel and identity work is marked Data follow-up, "
+                "and the applicant is told by email at this point "
                 "while the demonstration sends no email.",
             ),
             Step(

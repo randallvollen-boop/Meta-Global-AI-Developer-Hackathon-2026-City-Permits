@@ -449,6 +449,21 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - G39: kept `Check my application` and its `/review` path, marked it with the tour's Muse badge and a no-send hint, and labels live feedback and offline wording as Muse notes. Submit still uses the deterministic rules path with `muse=False`.
 - No fixture, hash, rule, persona, grant, acceptance assertion, or live provider setting changed. No provider call was made.
 
+## 2026-11-02 — Non-blocking steward data (retest item 6)
+
+- Changed the adjudication kernel so a `parcel_not_confirmed` rule result is
+  data follow-up, not an agent hold. The agent now recommends from checked
+  rules and the reason names every parcel-dependent rule marked Not checked.
+- Review and work queues no longer make open parcel/identity work the next
+  action. The tag is Data follow-up; payer-account linkage and fee settlement
+  remain issuance blockers.
+- Inspected parcel and registry link decisions: they already permit authorized
+  correction after a decision or issuance. No state guard was relaxed.
+- Updated the permit workspace support copy, queue tag, guide, walkthrough,
+  runbook, and architecture facts. No live model call, fixture, migration,
+  rule, protected hash, D/AT outcome, persona, grant, commit, push, or
+  publication was made.
+
 ## 2026-10-30 — Steward autolink lane, review 4 fixes (`lane/steward-autolink`)
 
 - The worker works every job inside a savepoint, so a job that stops after it wrote a link leaves nothing of its work behind: no link, no event, no review item and no record of the application. The job is left failed, so it is tried again, and the next job of the cycle is worked as if the failure never happened.
