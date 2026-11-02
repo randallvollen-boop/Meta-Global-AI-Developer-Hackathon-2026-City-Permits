@@ -12,8 +12,9 @@ it is never rewritten in place.
 # A reviewer confirm, modify, deny or request-information action is
 # authenticated, authorized and persisted with the actor, the time, the reason
 # and the versions it used.  A hard blocker refuses an approval.  A failed or
-# review rule can be approved only as a recorded exception, and a request that
-# only supplies a ruling is not a transition at all.
+# review rule can be approved only as a recorded exception.  An open parcel or
+# identity link does not refuse the decision: it is recorded as data follow-up.
+# A request that only supplies a ruling is not a transition at all.
 
 from __future__ import annotations
 
@@ -50,6 +51,15 @@ OUTCOMES_REQUIRING_CLEARANCE: frozenset[str] = frozenset({"approved", "modified"
 
 #: Rule results a reviewer may approve against, and only with a written reason.
 RULE_EXCEPTION_CODES: frozenset[str] = frozenset({"rule_fail", "rule_review"})
+
+#: Parcel and identity links the Data Steward may close after the decision.
+#: They stay on the blocker list and do not refuse an approval or a denial.
+DATA_FOLLOW_UP_CODES: frozenset[str] = frozenset(
+    {"parcel_link_unapproved", "identity_link_unapproved"}
+)
+
+#: The sentence a decision's audit event records while those links are open.
+DATA_FOLLOW_UP_STATEMENT = "decided with data follow-up open"
 
 #: The statuses an application may hold when a decision is recorded.
 DECIDABLE_STATUSES: frozenset[str] = frozenset(
@@ -109,10 +119,16 @@ def _exception_statement(outcome: str, titles: list[str]) -> str:
     return f"Recorded as an exception to {named}"
 
 
-def _audit_reason(rationale: str, exception: dict[str, Any] | None) -> str | None:
-    """Return the audit reason: the exception sentence, or the rationale."""
+def _audit_reason(
+    rationale: str,
+    exception: dict[str, Any] | None,
+    follow_up: list[dict[str, str]] | None,
+) -> str | None:
+    """Return the audit reason: the exception sentence, the follow-up, or the rationale."""
     if exception:
         return str(exception.get("statement") or "") or None
+    if follow_up:
+        return DATA_FOLLOW_UP_STATEMENT
     return rationale or None
 
 
@@ -120,6 +136,7 @@ def _audit_metadata(
     rationale: str,
     reason_code: ReasonCodeSnapshot | None,
     exception: dict[str, Any] | None,
+    follow_up: list[dict[str, str]] | None,
 ) -> dict[str, Any]:
     """Return the audit detail of a decision."""
     metadata: dict[str, Any] = {}
@@ -135,6 +152,9 @@ def _audit_metadata(
         ]
         metadata["exception_statement"] = exception.get("statement") or ""
         metadata["reviewer_rationale"] = rationale
+    if follow_up:
+        metadata["data_follow_up"] = DATA_FOLLOW_UP_STATEMENT
+        metadata.setdefault("reviewer_rationale", rationale)
     return metadata
 
 
@@ -269,6 +289,7 @@ class PermitDecisionService:
                 ),
             )
 
+        follow_up = self._open_data_follow_up(application, evaluation)
         exception = self._approval_exception(
             application, evaluation, outcome, command.exception_reason
         )
@@ -283,6 +304,7 @@ class PermitDecisionService:
             conditions=conditions,
             reason_code=reason_code,
             exception=exception,
+            follow_up=follow_up,
         )
         event = self._audit.append(
             action="permit.decide",
@@ -290,10 +312,10 @@ class PermitDecisionService:
             target_type="decision",
             target_id=decision.id,
             after_version=decision.version,
-            reason=_audit_reason(rationale, exception),
+            reason=_audit_reason(rationale, exception, follow_up),
             references=[application.id, evaluation.id],
             correlation_id=application.correlation_id,
-            metadata=_audit_metadata(rationale, reason_code, exception),
+            metadata=_audit_metadata(rationale, reason_code, exception, follow_up),
         )
         self._session.flush()
         return VersionedResult(
@@ -371,6 +393,7 @@ class PermitDecisionService:
                 ),
             )
 
+        follow_up = self._open_data_follow_up(application, evaluation)
         exception = self._approval_exception(
             application, evaluation, outcome, command.exception_reason
         )
@@ -385,6 +408,7 @@ class PermitDecisionService:
             conditions=conditions,
             reason_code=reason_code,
             exception=exception,
+            follow_up=follow_up,
         )
         previous.status = "superseded"
         previous.version += 1
@@ -395,10 +419,10 @@ class PermitDecisionService:
             target_type="decision",
             target_id=decision.id,
             after_version=decision.version,
-            reason=_audit_reason(rationale, exception),
+            reason=_audit_reason(rationale, exception, follow_up),
             references=[application.id, evaluation.id, previous.id],
             correlation_id=application.correlation_id,
-            metadata=_audit_metadata(rationale, reason_code, exception),
+            metadata=_audit_metadata(rationale, reason_code, exception, follow_up),
         )
         self._session.flush()
         return VersionedResult(
@@ -446,10 +470,11 @@ class PermitDecisionService:
     ) -> list[Blocker]:
         """Return the unresolved conditions of an application.
 
-        A missing or invalid identity link, an unresolved site and an invalid
-        credential block an approval.  A failed or review rule result is
-        reported here too.  An approval against only those rules is a recorded
-        exception and still leaves the rule result in this list.
+        An unresolved site, an unconfirmed parcel and an invalid credential
+        block an approval.  An open parcel link or identity link is reported
+        here and does not refuse the decision.  A failed or review rule result
+        is reported here too.  An approval against only those rules is a
+        recorded exception and still leaves the rule result in this list.
         """
         blockers: list[Blocker] = []
         stored = dict(evaluation.source_versions or {}).get("blockers") or []
@@ -487,14 +512,20 @@ class PermitDecisionService:
     ) -> dict[str, Any] | None:
         """Return the recorded exception, or refuse an approval that cannot proceed.
 
-        A hard blocker always refuses.  A failed or review rule refuses until
-        the reviewer writes why the approval goes against it.  A denial does
-        not need that reason.
+        A hard blocker always refuses.  An open parcel or identity link does
+        not.  A failed, review or unchecked parcel rule refuses until the
+        reviewer writes why the approval goes against it.  A denial does not
+        need that reason.
         """
         if outcome not in OUTCOMES_REQUIRING_CLEARANCE:
             return None
         found = self.blockers(application, evaluation)
-        hard = [blocker for blocker in found if blocker.code not in RULE_EXCEPTION_CODES]
+        hard = [
+            blocker
+            for blocker in found
+            if blocker.code not in RULE_EXCEPTION_CODES
+            and blocker.code not in DATA_FOLLOW_UP_CODES
+        ]
         rules = [blocker for blocker in found if blocker.code in RULE_EXCEPTION_CODES]
         if hard:
             raise ValidationError(
@@ -508,8 +539,15 @@ class PermitDecisionService:
             titles.get(str(blocker.subject_id or ""), str(blocker.subject_id or "a rule"))
             for blocker in rules
         ]
+        unchecked = self._unchecked_rule_ids(evaluation)
         reason = str(exception_reason or "").strip()
         if not reason:
+            if unchecked and all(str(blocker.subject_id or "") in unchecked for blocker in rules):
+                verb = "was" if len(named) == 1 else "were"
+                raise ValidationError(
+                    f"{_join_titles(named)} {verb} not checked because the parcel is not "
+                    "confirmed. Write an exception reason before approving."
+                )
             raise ValidationError(
                 f"This approval goes against {_join_titles(named)}. Write an exception "
                 "reason, for example a variance that was granted."
@@ -518,7 +556,13 @@ class PermitDecisionService:
             {
                 "rule_id": str(blocker.subject_id or ""),
                 "title": titles.get(str(blocker.subject_id or ""), str(blocker.subject_id or "")),
-                "status": "fail" if blocker.code == "rule_fail" else "review",
+                "status": (
+                    "not_checked"
+                    if str(blocker.subject_id or "") in unchecked
+                    else "fail"
+                    if blocker.code == "rule_fail"
+                    else "review"
+                ),
             }
             for blocker in rules
         ]
@@ -526,6 +570,25 @@ class PermitDecisionService:
             "reason": reason,
             "rules": recorded,
             "statement": _exception_statement(outcome, named),
+        }
+
+    def _open_data_follow_up(
+        self, application: permit.Application, evaluation: permit.Evaluation
+    ) -> list[dict[str, str]] | None:
+        """Return the open parcel and identity links, if a decision leaves any."""
+        rows = [
+            {"code": blocker.code, "detail": blocker.detail}
+            for blocker in self.blockers(application, evaluation)
+            if blocker.code in DATA_FOLLOW_UP_CODES
+        ]
+        return rows or None
+
+    def _unchecked_rule_ids(self, evaluation: permit.Evaluation) -> set[str]:
+        """Return rules that did not run because the parcel is not confirmed."""
+        return {
+            str(result.get("rule_id") or "")
+            for result in evaluation.results or []
+            if str(result.get("reason") or "") == "parcel_not_confirmed"
         }
 
     def _rule_titles(self, rule_ids: list[str]) -> dict[str, str]:
@@ -568,6 +631,7 @@ class PermitDecisionService:
         conditions: list[str] | None = None,
         reason_code: ReasonCodeSnapshot | None = None,
         exception: dict[str, Any] | None = None,
+        follow_up: list[dict[str, str]] | None = None,
     ) -> permit.Decision:
         """Write one decision and move the application to its new state."""
         from acme_city.agents.findings import waiver_snapshot
@@ -583,6 +647,11 @@ class PermitDecisionService:
         }
         if exception:
             input_versions["exception"] = exception
+        if follow_up:
+            input_versions["data_follow_up"] = {
+                "statement": DATA_FOLLOW_UP_STATEMENT,
+                "items": follow_up,
+            }
         decision = permit.Decision(
             id=new_id("decision"),
             application_id=application.id,

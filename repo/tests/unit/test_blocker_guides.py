@@ -256,7 +256,8 @@ def test_a_617_style_case_links_the_plain_blocker_to_the_steward_task(
         )
         assert panel is not None
         body = panel.group(0)
-        assert "1 blocker still prevents a decision." in body
+        assert "Data follow-up" in body
+        assert "1 blocker still prevents a decision." not in body
         assert guides[0]["text"] in body
         assert "Data Steward" in body
         assert f'href="{href}"' in body

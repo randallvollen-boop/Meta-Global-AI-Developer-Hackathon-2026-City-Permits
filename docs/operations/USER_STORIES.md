@@ -139,9 +139,13 @@ first entry of the City website menu.
     standardized address, the score and status, the candidates and a small map
     of the submitted point against the candidate parcels; **Approve parcel link
     for ...** records my decision and reason; it never approves the permit.
-    Until the parcel link and the identity link are approved, a reviewer's
-    approval is refused with the blockers `parcel_link_unapproved` and
-    `identity_link_unapproved`.
+    The reviewer may approve or deny while the parcel link or the identity
+    link is still open. The case shows Data follow-up, and the Data Steward
+    can close that task after the permit is issued. The decision's audit
+    event records "decided with data follow-up open". A parcel rule that
+    could not run because the parcel is not confirmed is listed as Not
+    checked, and approving it needs an exception reason. The payer account
+    stays required to apply a payment and to issue the permit.
 - As a Data Steward, I want to accept or correct Muse's proposed values, so
   that proposed values never silently become submitted facts.
   - Acceptance: in the Permit workspace, **Accept or correct extracted …**
@@ -208,8 +212,9 @@ first entry of the City website menu.
     decision**. The walkthrough uses that path, and it does not require the recommendation.
 - As a Permit Reviewer, I want issuance to stay a separate action, so that an
   approval never issues by itself.
-  - Acceptance: **Issue permit** requires a current approved decision, valid
-    links/credentials and an exact reconciliation; the command key is
+  - Acceptance: **Issue permit** requires a current approved decision, an exact
+    reconciliation, and the payer account when a payment needs one. An open
+    parcel or identity link does not refuse issuance. The command key is
     idempotent.
 
 - As a Permit Reviewer, I want to confirm that the matched parcel is the right
@@ -218,8 +223,10 @@ first entry of the City website menu.
     address the applicant typed, the standardized address, the parcel number
     (the key the city uses), the locator score and the other candidates, with
     **Confirm parcel**, **Choose another candidate**, **Find parcel by number**
-    and **Flag address correction to GIS** (geographic information system); approval stays blocked until the
-    parcel link is approved and confirmed.
+    and **Flag address correction to GIS** (geographic information system). An
+    open parcel link does not block the decision. Once the Data Steward has
+    approved the link, approval stays blocked until the Permit Reviewer
+    confirms the parcel.
 
 ## City Administrator
 

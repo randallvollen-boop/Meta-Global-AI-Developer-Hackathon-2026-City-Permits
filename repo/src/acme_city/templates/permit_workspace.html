@@ -19,6 +19,7 @@
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
       {% if detail.permit_type.icon %}<img class="type-ic" src="{{ detail.permit_type.icon.url }}" alt="" data-testid="permit-type-icon">{% endif %}
       <span class="pill {{ state_tones.get(detail.current.status, 'info') }}" data-testid="case-stage">{{ rv.header.stage }}</span>
+      {% if rv.data_follow_up %}<span class="pill warn" data-testid="data-follow-up">Data follow-up</span>{% endif %}
     </div>
     <h1 data-testid="case-title">{{ rv.header.project_type }}</h1>
     <p class="sub" data-testid="case-address">{{ rv.header.address or 'Property address not recorded' }}{% if rv.header.submitted_address and rv.header.submitted_address != rv.header.address %} <span class="muted">(submitted as &ldquo;{{ rv.header.submitted_address }}&rdquo;)</span>{% endif %}</p>
@@ -84,10 +85,14 @@
           <p><strong>{{ detail.next_step_text }}</strong></p>
           {% if rv.blocker_guides %}
           {% set decision_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'decision') | list %}
+          {% set follow_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'follow_up') | list %}
           {% set issuance_guides = rv.blocker_guides | selectattr('scope', 'equalto', 'issuance') | list %}
           <div data-testid="blocker-summary">
             {% if decision_guides %}
             <p>{{ decision_guides|length }} blocker{{ 's' if decision_guides|length != 1 else '' }} still prevent{{ 's' if decision_guides|length == 1 else '' }} a decision.</p>
+            {% endif %}
+            {% if follow_guides %}
+            <p data-testid="data-follow-up-note">Data follow-up is still open. It does not prevent a decision.</p>
             {% endif %}
             {% if issuance_guides %}
             <p>{{ issuance_guides|length }} blocker{{ 's' if issuance_guides|length != 1 else '' }} still prevent{{ 's' if issuance_guides|length == 1 else '' }} issuance.</p>
@@ -779,7 +784,7 @@
                 {% set failing_rules = detail.evaluation.results | selectattr('status', 'in', ['fail', 'review']) | list %}
                 {% if failing_rules %}
                 <div class="fieldset" data-testid="exception-rules">
-                  <p>Approving goes against these checks. A denial does not need an exception reason.</p>
+                  <p>Approving goes against these checks. A check that says Not checked did not run because the parcel is not confirmed. A denial does not need an exception reason.</p>
                   <ul>
                     {% for result in failing_rules %}
                     <li data-testid="exception-rule">{{ result.rule_title or result.rule_id }}. {{ result.wording }}</li>

@@ -554,7 +554,10 @@ def label_workspace(session: Session, detail: dict[str, Any]) -> None:
             session, evaluation.get("performed_by_actor_id")
         )
         for result in evaluation.get("results") or []:
-            result["status_label"] = ops_views.display_word("values", result.get("status"))
+            if result.get("reason") == "parcel_not_confirmed":
+                result["status_label"] = "Not checked"
+            else:
+                result["status_label"] = ops_views.display_word("values", result.get("status"))
             rule_ids.add(str(result.get("rule_id") or ""))
     for row in detail.get("evaluations") or []:
         row["outcome_label"] = ops_views.display_word("values", row.get("outcome"))
@@ -856,6 +859,7 @@ def blocker_guide(
 
     if code == "parcel_link_unapproved":
         owner = "Data Steward"
+        scope = "follow_up"
         href = _off_case(f"/steward/issues/parcel/{case_id}", case_id)
         text = (
             f"The property match for {place} has not been approved by the Data Steward."
@@ -873,6 +877,7 @@ def blocker_guide(
             f"The property match for {place} has not been confirmed by the Permit Reviewer."
         )
     elif code == "identity_link_unapproved":
+        scope = "follow_up"
         party_id = str(blocker.subject_id or "")
         owner = "Data Steward"
         href = _identity_href(session, party_id, case_id)
@@ -1081,4 +1086,16 @@ def workspace_extras(
         "revisions": _revision_rows(session, application),
         "decision_record": "Recommendation" if not review_target else "Decision",
         "blocker_guides": workspace_blocker_guides(session, application),
+        "data_follow_up": _data_follow_up_open(session, application),
     }
+
+
+def _data_follow_up_open(session: Session, application: permit.Application) -> bool:
+    """Return whether a parcel or identity link is still open on the case."""
+    from acme_city.permits.decisions import DATA_FOLLOW_UP_CODES
+    from acme_city.permits.service import PermitService
+
+    return any(
+        item.code in DATA_FOLLOW_UP_CODES
+        for item in PermitService(session).identity_link_blockers(application)
+    )

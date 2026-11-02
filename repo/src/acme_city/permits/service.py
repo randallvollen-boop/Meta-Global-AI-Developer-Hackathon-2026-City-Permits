@@ -46,8 +46,58 @@ from acme_city.persistence.models import finance, permit, registry
 from acme_city.kernel.inputs import build_inputs, missing_required_fields
 from acme_city.rules.evaluator import evaluate as evaluate_inputs
 from acme_city.rules.evaluator import overall_status, worst_status
-from acme_city.rules.schemas import RuleResult, RuleSetVersion
+from acme_city.rules.schemas import RuleResult, RuleSetVersion, RuleVersionView
+
+#: Inputs that come only from a parcel the reviewer has confirmed.
+PARCEL_RULE_FIELDS = frozenset({"parcel_zoning", "parcel_flood_zone"})
+
+#: The result reason of a parcel rule that could not run.
+PARCEL_NOT_CONFIRMED = "parcel_not_confirmed"
 from acme_city.rules.service import RuleCatalogService
+
+
+def _rule_reads_parcel(rule: RuleVersionView) -> bool:
+    """Return whether a rule reads zoning or flood zone from the parcel."""
+    if (rule.field_path or "") in PARCEL_RULE_FIELDS:
+        return True
+    condition = rule.condition or {}
+    if any(str(key) in PARCEL_RULE_FIELDS for key in condition if key != "field_above"):
+        return True
+    above = condition.get("field_above")
+    if isinstance(above, dict) and str(above.get("field") or "") in PARCEL_RULE_FIELDS:
+        return True
+    return False
+
+
+def _mark_unchecked_parcel_rules(
+    results: list[RuleResult], rule_set: RuleSetVersion
+) -> list[RuleResult]:
+    """Mark parcel rules that could not run because the parcel is not confirmed.
+
+    The stored status stays ``review`` so an approval still takes the
+    exception path.  The reason tells the case page to say Not checked.
+    """
+    marked: list[RuleResult] = []
+    for result in results:
+        rule = rule_set.rule_by_id(result.rule_id)
+        if rule is None or not _rule_reads_parcel(rule):
+            marked.append(result)
+            continue
+        marked.append(
+            result.model_copy(
+                update={
+                    "status": "review",
+                    "applicable": False,
+                    "reason": PARCEL_NOT_CONFIRMED,
+                    "detail": (
+                        "Not checked. The parcel is not confirmed, so zoning and "
+                        "flood zone were not read."
+                    ),
+                    "observed_value": None,
+                }
+            )
+        )
+    return marked
 
 
 def _canonical(value: Any) -> str:
@@ -378,7 +428,10 @@ class PermitService:
         inputs = build_inputs(dict(facts))
         if extra_inputs:
             inputs.update(dict(extra_inputs))
-        return evaluate_inputs(inputs, rule_set), rule_set, inputs
+        results = list(evaluate_inputs(inputs, rule_set))
+        if not (extra_inputs or {}).get("parcel_inputs_source"):
+            results = _mark_unchecked_parcel_rules(results, rule_set)
+        return results, rule_set, inputs
 
     def evaluate(self, application_id: str, actor: ActorContext) -> EvaluationView:
         """Evaluate the current revision against the selected rule versions."""
@@ -893,9 +946,11 @@ class PermitService:
     def identity_link_blockers(self, application: permit.Application) -> list[Blocker]:
         """Return the identity links that a dependent action requires.
 
-        The applicant, the contractor and the payer need an approved canonical
-        link before a decision may be recorded.  A party that is only
-        referenced, such as the property owner of the site, does not.
+        The applicant, the contractor and the payer are reported when they
+        have no approved canonical link.  That report does not refuse a
+        decision: the reviewer may decide, and the Data Steward confirms the
+        link afterwards.  A party that is only referenced, such as the
+        property owner of the site, is not reported.
         """
         parties = self.parties(application.id)
         required = [
@@ -926,11 +981,13 @@ class PermitService:
         return blockers
 
     def parcel_link_blockers(self, application: permit.Application) -> list[Blocker]:
-        """Return the parcel-link conditions that block an approval.
+        """Return the parcel-link conditions of an application.
 
-        A case the address locator matched needs its parcel link approved by
-        the Data Steward and the parcel confirmed by the Permit Reviewer.  A
-        case with no parcel match (a seeded demonstration case) is unchanged.
+        A case the address locator matched reports an unapproved parcel link
+        and, once that link is approved, an unconfirmed parcel.  The open
+        link does not refuse a decision.  The reviewer's own confirmation
+        still does.  A case with no parcel match (a seeded demonstration
+        case) is unchanged.
         """
         from acme_city.gis.matching import ParcelMatchService
 

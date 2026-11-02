@@ -2643,6 +2643,11 @@ def rule_result_wording(result: dict[str, Any]) -> str:
     reason = str(result.get("reason") or "").strip()
     detail = str(result.get("detail") or "").strip()
     note = str(result.get("condition_note") or "").strip()
+    if reason == "parcel_not_confirmed":
+        return (
+            "Not checked. The parcel is not confirmed, so zoning and flood zone "
+            "were not read."
+        )
     if not message:
         return reason.replace("_", " ") or note
     if status in ("pass", "passed"):
