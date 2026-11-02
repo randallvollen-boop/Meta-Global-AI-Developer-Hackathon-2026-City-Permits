@@ -39,6 +39,27 @@
   </div>
 </div>
 
+{% if assistant.may_run or assistant.may_toggle %}
+<section class="panel card" aria-labelledby="assistant-state-heading" data-testid="assistant-state">
+  <div class="card-b">
+    <h2 id="assistant-state-heading" class="sr-only">Steward assistant</h2>
+    <p>
+      The steward assistant is
+      <span class="pill {{ 'ok' if assistant.awake else 'warn' }}" data-testid="assistant-mode">{{ 'awake' if assistant.awake else 'asleep' }}</span>
+      {% if assistant.may_toggle %}
+      <form method="post" action="/ui/actions/agent.toggle" class="action-form" style="display:inline" data-testid="assistant-toggle-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action_id" value="agent.toggle">
+        <input type="hidden" name="next" value="{{ queue_path }}">
+        <input type="hidden" name="agent_key" value="steward_assist">
+        <input type="hidden" name="mode" value="{{ 'asleep' if assistant.awake else 'awake' }}">
+        <button type="submit" class="btn sm" data-testid="assistant-toggle">{{ 'Put to sleep' if assistant.awake else 'Wake' }}</button>
+      </form>
+      {% endif %}
+    </p>
+  </div>
+</section>
+{% endif %}
 {% if assistant.may_run and not assistant.awake %}
 <p class="lock" id="assistant-sleep-note" data-testid="assistant-sleep-note">
   <svg aria-hidden="true"><use href="#i-lock"/></svg> {{ assistant.sleep_note }}

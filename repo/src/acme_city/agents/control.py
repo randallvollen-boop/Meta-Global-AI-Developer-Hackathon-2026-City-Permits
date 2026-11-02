@@ -1,9 +1,9 @@
 """The awake/asleep control of the three agents.
 
 An agent is asleep by default.  Only a persona with the ``agent.toggle``
-grant (the City Administrator, the Agent Operator) may wake it or put it back
-to sleep, and every change is a governed, audited action.  A run
-of an agent is refused while the agent sleeps: the browser never decides that
+grant (the Agent Operator), or with the scoped grant of that one agent (the Data
+Steward for the steward assistant), may wake it or put it back to sleep, and
+every change is a governed, audited action.  A run of an agent is refused while the agent sleeps: the browser never decides that
 an agent may act.
 """
 # REQUIRES: PER-01, PER-04, SEC-02
@@ -35,6 +35,13 @@ AGENT_KEYS: tuple[str, ...] = (
 
 #: The grant that wakes an agent and puts it back to sleep.
 PERMISSION_TOGGLE = "agent.toggle"
+
+#: The scoped wake grant of one agent.  It wakes and puts to sleep that one
+#: agent and no other, so the Data Steward holds the switch of the steward
+#: assistant while the intake and adjudication agents stay with the operator.
+PERMISSION_TOGGLE_SCOPED: dict[str, str] = {
+    agent_models.AGENT_STEWARD_ASSIST: "agent.toggle.steward_assist",
+}
 
 #: The grant each agent needs to run.
 #:
@@ -137,11 +144,7 @@ class AgentControlService:
             raise ValidationError(f"unknown agent: {agent_key!r}")
         if mode not in (agent_models.AGENT_AWAKE, agent_models.AGENT_ASLEEP):
             raise ValidationError("an agent is either awake or asleep")
-        self._permissions.authorize(
-            actor,
-            PERMISSION_TOGGLE,
-            ResourceContext(domain_id=None, record_ids=()),
-        )
+        self.authorize_toggle(actor, agent_key)
         self.ensure_defaults()
         row = self.state(agent_key)
         assert row is not None  # ensure_defaults always creates both rows
@@ -164,6 +167,28 @@ class AgentControlService:
             metadata={"agent_key": agent_key, "before": before, "after": mode},
         )
         return row
+
+    def may_toggle(self, actor: ActorContext, agent_key: str) -> bool:
+        """Return whether the actor may wake or put to sleep one agent.
+
+        The general grant covers every agent.  A scoped grant covers the one
+        agent it names, and no other.
+        """
+        resource = ResourceContext(domain_id=None, record_ids=())
+        if self._permissions.allows(actor, PERMISSION_TOGGLE, resource):
+            return True
+        scoped = PERMISSION_TOGGLE_SCOPED.get(agent_key)
+        return scoped is not None and self._permissions.allows(actor, scoped, resource)
+
+    def authorize_toggle(self, actor: ActorContext, agent_key: str) -> None:
+        """Refuse a wake or sleep change the acting persona may not make."""
+        if self.may_toggle(actor, agent_key):
+            return
+        self._permissions.authorize(
+            actor,
+            PERMISSION_TOGGLE,
+            ResourceContext(domain_id=None, record_ids=()),
+        )
 
     def require_awake(self, agent_key: str) -> None:
         """Refuse to run an agent that is asleep."""
@@ -231,6 +256,7 @@ __all__ = [
     "PERMISSION_RUN",
     "PERMISSION_RUN_DOMAIN",
     "PERMISSION_TOGGLE",
+    "PERMISSION_TOGGLE_SCOPED",
     "AgentControlService",
     "agent_mode",
     "authorize_processing",

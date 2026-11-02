@@ -229,7 +229,7 @@ def test_the_queue_offers_the_prepare_button_to_the_steward(
     body = client.get("/steward").text
     assert 'data-testid="assistant-prepare"' in body
     assert 'data-testid="assistant-sleep-note"' in body
-    assert "Agent Operator must wake it" in body
+    assert "Press Wake to wake it" in body
 
 
 def test_the_prepare_button_is_off_while_the_assistant_sleeps(
@@ -768,3 +768,102 @@ def test_the_assistant_sleeps_again_and_the_recommendation_stays(
     button = re.search(r'<button[^>]*data-testid="assistant-recommend"[^>]*>', body)
     assert button is not None
     assert "disabled" in button.group(0)
+
+
+# ----------------------------------------------- the steward's own wake switch
+
+
+def toggle_events(environment: Settings, outcome: str = "accepted") -> list[audit.AuditEvent]:
+    action = "agent.toggle" if outcome == "accepted" else "ui.agent.toggle"
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            return list(
+                session.execute(
+                    select(audit.AuditEvent)
+                    .where(audit.AuditEvent.action == action)
+                    .where(audit.AuditEvent.outcome == outcome)
+                ).scalars().all()
+            )
+    finally:
+        factory.dispose()
+
+
+def steward_toggle(client: TestClient, agent_key: str, mode: str):
+    return post(client, "agent.toggle", {"agent_key": agent_key, "mode": mode}, "/steward")
+
+
+def test_the_steward_wakes_and_sleeps_the_assistant_from_data_issues(
+    client: TestClient, environment: Settings
+) -> None:
+    """The home of the steward shows the state and the switch; the audit names the steward."""
+    choose(client, "persona_data_steward")
+    body = client.get("/steward").text
+    assert 'data-testid="assistant-mode"' in body
+    assert "asleep" in body.split('data-testid="assistant-mode"', 1)[1][:40]
+    assert 'data-testid="assistant-toggle"' in body
+    assert ">Wake<" in body
+
+    woken = steward_toggle(client, "steward_assist", "awake")
+    assert woken.status_code == 200, woken.text
+    body = client.get("/steward").text
+    assert "awake" in body.split('data-testid="assistant-mode"', 1)[1][:40]
+    assert ">Put to sleep<" in body
+    button = re.search(r'<button[^>]*data-testid="assistant-prepare"[^>]*>', body)
+    assert button is not None and "disabled" not in button.group(0)
+
+    slept = steward_toggle(client, "steward_assist", "asleep")
+    assert slept.status_code == 200, slept.text
+    assert "asleep" in client.get("/steward").text.split('data-testid="assistant-mode"', 1)[1][:40]
+
+    events = toggle_events(environment)
+    assert [event.actor_id for event in events] == ["persona_data_steward"] * 2
+    assert [event.metadata_json["after"] for event in events] == ["awake", "asleep"]
+    assert all(event.metadata_json["agent_key"] == "steward_assist" for event in events)
+
+
+def test_the_steward_cannot_wake_the_intake_or_adjudication_agent(
+    client: TestClient, environment: Settings
+) -> None:
+    """The scoped grant covers the steward assistant and no other agent."""
+    choose(client, "persona_data_steward")
+    for agent_key in ("intake", "adjudication"):
+        response = steward_toggle(client, agent_key, "awake")
+        assert response.status_code == 403, response.text
+        assert response.json()["status"] == "denied"
+    assert toggle_events(environment) == []
+    assert len(toggle_events(environment, outcome="denied")) == 2
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            from acme_city.agents.control import is_awake
+
+            assert not is_awake(session, "intake")
+            assert not is_awake(session, "adjudication")
+    finally:
+        factory.dispose()
+
+
+def test_the_operator_still_wakes_every_agent(client: TestClient, environment: Settings) -> None:
+    choose(client, "persona_agent_operator")
+    for agent_key in ("intake", "adjudication", "steward_assist"):
+        response = post(
+            client,
+            "agent.toggle",
+            {"agent_key": agent_key, "mode": "awake"},
+            f"/agent/{agent_key}",
+        )
+        assert response.status_code == 200, response.text
+    assert {e.metadata_json["agent_key"] for e in toggle_events(environment)} == {
+        "intake",
+        "adjudication",
+        "steward_assist",
+    }
+
+
+def test_a_persona_without_the_switch_is_refused(client: TestClient) -> None:
+    choose(client, "persona_permit_reviewer")
+    response = post(
+        client, "agent.toggle", {"agent_key": "steward_assist", "mode": "awake"}, "/queue/intake"
+    )
+    assert response.status_code == 403, response.text

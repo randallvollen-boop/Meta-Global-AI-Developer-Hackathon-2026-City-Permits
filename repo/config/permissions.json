@@ -264,6 +264,13 @@
       "sensitive": false
     },
     {
+      "permission_id": "agent.toggle.steward_assist",
+      "action": "agent.toggle.steward_assist",
+      "category": "agent",
+      "description": "Wake the steward assistant or put it back to sleep, and no other agent. The Data Steward holds this grant; the Agent Operator holds the general wake grant.",
+      "sensitive": false
+    },
+    {
       "permission_id": "agent.run.intake",
       "action": "agent.run.intake",
       "category": "agent",

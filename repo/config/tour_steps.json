@@ -18,7 +18,7 @@
           "target": "[data-testid=\"assistant-prepare\"]",
           "permission": "registry.crosswalk.propose",
           "fresh": true,
-          "caption": "The steward assistant prepares a recommendation and the Data Steward records the decision. The button is off until the Agent Operator wakes the Steward assistant. Accept all high-confidence (N) shows the list it is sure of."
+          "caption": "The steward assistant prepares a recommendation and the Data Steward records the decision. The button is off until the Data Steward wakes the assistant. Accept all high-confidence (N) shows the list it is sure of."
         },
         {
           "id": "agent",

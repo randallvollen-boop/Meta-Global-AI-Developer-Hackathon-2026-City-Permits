@@ -32,11 +32,17 @@ from acme_city.ui import view_models
 #: kind of evidence.
 _DISPLAY_PATH = REPO_ROOT / "config" / "ui_display.json"
 
-#: The note a steward reads when the assistant sleeps.  The wake and sleep
-#: switch belongs to the Agent Operator alone.
+#: The note a steward reads when the assistant sleeps.  The Data Steward and
+#: the Agent Operator hold the switch of this one assistant.
 SLEEP_NOTE = (
     "The steward assistant is asleep, so it prepares no new recommendation. "
-    "The Agent Operator must wake it."
+    "Press Wake to wake it."
+)
+
+#: The note a persona reads when the assistant sleeps and it holds no switch.
+SLEEP_NOTE_NO_SWITCH = (
+    "The steward assistant is asleep, so it prepares no new recommendation. "
+    "The Agent Operator or the Data Steward must wake it."
 )
 
 #: The label of a recommendation that was prepared while the assistant was
@@ -506,13 +512,19 @@ def recommendation_view(
 
 def assistant_state(session: Any, actor: ActorContext) -> dict[str, Any]:
     """Return the state of the assistant and what the steward may press."""
+    from acme_city.agents.control import AgentControlService
+
     awake = is_awake(session)
     may = may_run(session, actor)
+    may_toggle = AgentControlService(session).may_toggle(
+        actor, agent_models.AGENT_STEWARD_ASSIST
+    )
     return {
         "awake": awake,
         "may_run": may,
+        "may_toggle": may_toggle,
         "can_prepare": may and awake,
-        "sleep_note": SLEEP_NOTE,
+        "sleep_note": SLEEP_NOTE if may_toggle else SLEEP_NOTE_NO_SWITCH,
         "grant_note": (
             ""
             if may

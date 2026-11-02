@@ -734,6 +734,12 @@
           "domains": [],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "agent.toggle.steward_assist",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,

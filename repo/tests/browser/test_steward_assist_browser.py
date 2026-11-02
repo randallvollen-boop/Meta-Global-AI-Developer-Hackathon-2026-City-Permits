@@ -128,7 +128,7 @@ def test_the_prepare_button_is_off_while_the_assistant_sleeps(
     assert button.is_disabled()
     note = page.locator('[data-testid="assistant-sleep-note"]')
     assert note.count() == 1
-    assert "Agent Operator must wake it" in note.inner_text()
+    assert "Press Wake to wake it" in note.inner_text()
     assert page.recorded_errors == []
 
 

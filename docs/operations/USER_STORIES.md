@@ -19,7 +19,9 @@ demonstration, listed here in the order a permit moves through them:
 
 The five personas are the only selectable actors. The two agents and every
 other organizational identity are service identities. Only the Agent Operator
-wakes the agents and asks them to run; the City Administrator sees the agent
+wakes the intake and adjudication agents and asks the agents to run; the Data
+Steward alone may also wake and sleep the steward assistant (and no other
+agent) from **Data issues**; the City Administrator sees the agent
 policy and the roles that may wake and run agents, but does not wake, sleep
 or run an agent.
 
@@ -111,6 +113,12 @@ first entry of the City website menu.
   - Acceptance: **Adjudication agent** runs **Process the next 20 cases** or **Process
     one** and the five-step run is recorded; the recommendation waits under
     **Waiting for a person**. I record no permit decision.
+- As a Data Steward, I want to wake and put to sleep the steward assistant
+  myself, so that I need not ask the Agent Operator before I use it.
+  - Acceptance: **Data issues** (`/steward`) shows whether the assistant is
+    awake or asleep and a **Wake** / **Put to sleep** button; the change is
+    audited in my name. I cannot wake or sleep the intake or adjudication
+    agent.
 - As an Agent Operator, I want to wake and sleep the steward assistant, so
   that the Data Steward can ask it for recommendations only when the City
   allows it.
@@ -151,14 +159,15 @@ first entry of the City website menu.
 - As a Data Steward, I want the steward assistant to gather the evidence and
   propose a decision for each task, so that I start from the facts and still
   decide every task myself.
-  - Acceptance: once the Agent Operator has woken it, **Prepare
+  - Acceptance: once it is awake (I press **Wake** on **Data issues**, or the Agent Operator
+    does), **Prepare
     recommendations** on **Data issues** works up to 20 tasks per press, and
     **Get recommendation** works one task. Each row gets a **High**, **Review**
     or **Held** pill and a one-line reason. On the task page **Accept
     recommendation** records the decision in my name; it is refused when the
     record changed since the recommendation was prepared, and a held
     recommendation is never accepted. While the assistant sleeps the buttons
-    are off and the note says the Agent Operator must wake it.
+    are off and the note says to press **Wake**.
 - As a Data Steward, I want to accept the recommendations the assistant is
   sure of in one batch, after seeing the exact list, so that easy tasks go
   quickly without anything being accepted unseen.

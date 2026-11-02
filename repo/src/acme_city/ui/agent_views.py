@@ -19,7 +19,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from acme_city.agents import graphs
-from acme_city.agents.control import AGENT_KEYS, AGENT_LABELS, AgentControlService
+from acme_city.agents.control import (
+    AGENT_KEYS,
+    AGENT_LABELS,
+    PERMISSION_TOGGLE_SCOPED,
+    AgentControlService,
+)
 from acme_city.agents.intake import waiting_applications
 from acme_city.agents.runtime import (
     BUILTIN_ENGINE,
@@ -345,7 +350,8 @@ def agent_screen(
         "agent_label": AGENT_LABELS.get(agent_key, agent_key),
         "state": state,
         "is_awake": state["mode"] == agent_models.AGENT_AWAKE,
-        "can_toggle": _holds(session, actor, "agent.toggle"),
+        "can_toggle": _holds(session, actor, "agent.toggle")
+        or _holds(session, actor, PERMISSION_TOGGLE_SCOPED.get(agent_key, "")),
         "can_run": _holds(session, actor, f"agent.run.{agent_key}"),
         # The most cases one manual batch may name, so the button on the
         # screen says what it will do.
