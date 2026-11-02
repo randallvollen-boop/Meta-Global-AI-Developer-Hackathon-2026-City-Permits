@@ -423,6 +423,10 @@
           {% if d %}
           <dl class="pair-list" id="decision-summary" data-testid="decision-summary">
             <dt>Outcome</dt><dd>{{ d.outcome_label }}{% if d.stale %} <span class="pill warn">stale: needs reconfirming</span>{% endif %}</dd>
+            {% if d.exception_statement %}
+            <dt>Exception</dt><dd data-testid="decision-exception">{{ d.exception_statement }}</dd>
+            <dt>Exception reason</dt><dd>{{ d.exception_reason }}</dd>
+            {% endif %}
             <dt>Decided by</dt><dd>{{ d.decided_by_label }}</dd>
             <dt>Date</dt><dd>{{ d.decided_at }}</dd>
             <dt>Revision</dt><dd>Revision {{ rv.header.revision }}{% if detail.evaluation %}, application checks version {{ detail.evaluation.version }}{% endif %}</dd>
@@ -743,6 +747,20 @@
                     <option value="denied">Deny</option>
                   </select>
                 </div>
+                {% set failing_rules = detail.evaluation.results | selectattr('status', 'in', ['fail', 'review']) | list %}
+                {% if failing_rules %}
+                <div class="fieldset" data-testid="exception-rules">
+                  <p>Approving goes against these checks. A denial does not need an exception reason.</p>
+                  <ul>
+                    {% for result in failing_rules %}
+                    <li data-testid="exception-rule">{{ result.rule_title or result.rule_id }}. {{ result.wording }}</li>
+                    {% endfor %}
+                  </ul>
+                  <label for="exception-reason">Exception reason</label>
+                  <textarea id="exception-reason" name="exception_reason" rows="3" data-testid="exception-reason"></textarea>
+                  <p class="muted">Required when you approve against a check that failed or needs a person. For example, a variance that was granted.</p>
+                </div>
+                {% endif %}
                 <div class="fieldset">
                   <label for="decision-conditions">Conditions of approval (one per line)</label>
                   <textarea id="decision-conditions" name="conditions" rows="3" data-testid="decision-conditions"></textarea>

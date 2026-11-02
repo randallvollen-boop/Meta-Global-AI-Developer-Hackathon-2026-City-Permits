@@ -1743,6 +1743,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         reason=ctx.text("reason"),
         conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
+        exception_reason=ctx.text("exception_reason"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )
@@ -1769,6 +1770,7 @@ def _permit_reconfirm(ctx: ActionContext) -> Outcome:
         reason=ctx.text("reason"),
         conditions=_decision_conditions(ctx),
         reason_code=ctx.text("reason_code"),
+        exception_reason=ctx.text("exception_reason"),
         expected_application_version=ctx.integer("expected_application_version"),
         expected_evaluation_version=ctx.integer("expected_evaluation_version"),
     )

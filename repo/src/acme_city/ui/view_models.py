@@ -3573,6 +3573,11 @@ def permit_workspace(
         ).scalars().all()
     ]
     current_decision = service.current_decision(application.id)
+    exception_record: dict[str, Any] = {}
+    if current_decision is not None:
+        stored_exception = (current_decision.input_versions or {}).get("exception") or {}
+        if isinstance(stored_exception, dict):
+            exception_record = stored_exception
     recommendations = [
         {
             "recommendation_id": row.id,
@@ -3866,6 +3871,8 @@ def permit_workspace(
                 "reason": current_decision.reason,
                 "stale": current_decision.stale,
                 "version": current_decision.version,
+                "exception_statement": str(exception_record.get("statement") or ""),
+                "exception_reason": str(exception_record.get("reason") or ""),
             }
             if current_decision is not None
             else None
