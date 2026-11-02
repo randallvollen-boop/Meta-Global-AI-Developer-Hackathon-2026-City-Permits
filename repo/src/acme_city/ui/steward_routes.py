@@ -24,19 +24,23 @@ navigation uses.  ``HANDLERS`` holds the lane's interface actions, which
 
 from __future__ import annotations
 
+import hashlib
+import re
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
-from acme_city.persistence.models import registry
+from acme_city.documents.service import DOCUMENT_ROOT
+from acme_city.persistence.models import permit, registry
 from acme_city.permits import queues
 from acme_city.ui import (
     agent_views,
@@ -569,6 +573,107 @@ def ui_steward_application(
         quiet_feedback=True,
     )
     return render(request, "steward_application.html", context)
+
+
+#: The media type each stored extension is served as.  Only the extensions an
+#: applicant upload may carry are served; nothing is ever served as HTML or SVG.
+_OPEN_MEDIA_TYPES: dict[str, str] = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".txt": "text/plain; charset=utf-8",
+}
+
+
+def _safe_download_name(document_type: str, version: int, extension: str) -> str:
+    """Return a file name made of letters, digits, dots, dashes and underscores."""
+    stem = re.sub(r"[^A-Za-z0-9_-]+", "-", str(document_type)).strip("-") or "document"
+    return f"{stem[:60]}-v{int(version)}{extension}"
+
+
+@router.get(
+    "/steward/applications/{application_id}/documents/{document_id}",
+    operation_id="ui_steward_application_document",
+)
+def ui_steward_application_document(
+    application_id: str,
+    document_id: str,
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Open one stored document of an application in its own form.
+
+    The page that lists the document needs the read grant and the record
+    scope of the application, and so does this one.  Only the file types an
+    applicant may upload are served, each as its own type and never as HTML or
+    SVG; the file must lie inside the document store and match its recorded
+    hash.
+    """
+    if actor is None:
+        return RedirectResponse("/select", status_code=303)
+    back = view_models.home_for(session, actor)["href"]
+    if not view_models.holds_grant(
+        session, actor, steward_views.APPLICATION_READ_PERMISSION
+    ):
+        return error_response(
+            request, session, actor, status_code=403,
+            title="This screen is outside your grants",
+            message="Your persona does not hold the grant that reads an application.",
+            code="permission_denied", back=back,
+        )
+    application = session.get(permit.Application, application_id)
+    row = session.get(permit.Document, document_id)
+    if (
+        application is None
+        or row is None
+        or row.application_id != application.id
+        or not view_models._application_in_scope(actor, application)
+    ):
+        return error_response(
+            request, session, actor, status_code=404,
+            title="That document was not found",
+            message="The document does not exist or it is outside your record scope.",
+            code="not_found", back="/steward",
+        )
+    extension = Path(row.file_ref).suffix.lower()
+    media_type = _OPEN_MEDIA_TYPES.get(extension)
+    root = (Path.cwd() / DOCUMENT_ROOT).resolve()
+    path = Path(row.file_ref)
+    path = (path if path.is_absolute() else Path.cwd() / path).resolve()
+    if media_type is None:
+        return error_response(
+            request, session, actor, status_code=415,
+            title="This file type is not shown",
+            message="Only PDF, PNG, JPG and plain text files open in the browser.",
+            code="unsupported_media_type", back=f"/steward/applications/{application.id}",
+        )
+    if not path.is_relative_to(root) or not path.is_file():
+        return error_response(
+            request, session, actor, status_code=404,
+            title="That document was not found",
+            message="The stored file is not available.",
+            code="not_found", back=f"/steward/applications/{application.id}",
+        )
+    content = path.read_bytes()
+    if hashlib.sha256(content).hexdigest() != row.content_hash:
+        return error_response(
+            request, session, actor, status_code=409,
+            title="That document does not match its record",
+            message="The stored file no longer matches its recorded hash, so it is not shown.",
+            code="conflict", back=f"/steward/applications/{application.id}",
+        )
+    name = _safe_download_name(row.document_type, row.version, extension)
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{name}"',
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("/source-records", operation_id="ui_source_records")

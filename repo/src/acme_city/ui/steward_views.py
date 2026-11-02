@@ -3600,7 +3600,7 @@ def application_view(
     offers no action and decides nothing.
     """
     application = session.get(permit.Application, application_id)
-    if application is None:
+    if application is None or not view_models._application_in_scope(actor, application):
         return {}
     facts = dict(application.submitted_facts or {})
     applicant = (
@@ -3616,10 +3616,12 @@ def application_view(
     permit_type = session.get(permit.PermitType, application.permit_type_id)
     documents = [
         {
+            "document_id": row.id,
             "document_type": display.pretty(row.document_type),
             "version": row.version,
             "received_at": _iso(row.received_at),
             "content_hash": row.content_hash,
+            "open_href": f"/steward/applications/{application_id}/documents/{row.id}",
         }
         for row in session.execute(
             select(permit.Document)

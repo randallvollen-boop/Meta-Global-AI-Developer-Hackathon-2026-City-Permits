@@ -49,13 +49,14 @@
     {% if application.documents %}
     <table class="data-table" data-testid="application-document-table">
       <caption class="visually-hidden">The documents that came with the application</caption>
-      <thead><tr><th scope="col">Document</th><th scope="col">Version</th><th scope="col">Received</th></tr></thead>
+      <thead><tr><th scope="col">Document</th><th scope="col">Version</th><th scope="col">Received</th><th scope="col">Original</th></tr></thead>
       <tbody>
         {% for item in application.documents %}
         <tr data-testid="application-document-row">
           <th scope="row" data-label="Document">{{ item.document_type }}</th>
           <td data-label="Version">{{ item.version }}</td>
           <td data-label="Received">{{ ui_time(item.received_at) }}</td>
+          <td data-label="Original"><a href="{{ item.open_href }}" target="_blank" rel="noopener" data-testid="application-document-open">Open</a></td>
         </tr>
         {% endfor %}
       </tbody>
