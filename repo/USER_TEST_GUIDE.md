@@ -18,7 +18,7 @@ The fictional City of Acme website is at <http://127.0.0.1:8266/city/>. The Perm
 The selector offers exactly five personas, in the order a permit moves through them:
 
 1. Applicant: applies for a permit on the City website and tracks it.
-2. Agent Operator: wakes the intake and adjudication agents and asks them to process waiting cases (Wake agent, then Process the next 20 cases or Process one). Under More tools the Intake queue holds the batch action "Process selected with agent". The Agent Operator records no permit decision.
+2. Agent Operator: wakes the intake and adjudication agents and asks them to process waiting cases (Wake agent, then the batch button, which reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting, or Process one). Under More tools the Intake queue holds the batch action "Process selected with agent". The Agent Operator records no permit decision. The Data Steward can also wake the Steward assistant from Data issues with Wake or Put to sleep.
 3. Data Steward: approves identity and parcel links and works the Data issues queue.
 4. Permit Reviewer: confirms the parcel, runs the application checks, records the review decision and issues the permit.
 5. City Administrator: assesses fees, reconciles payments, configures the app and reads the audit log.

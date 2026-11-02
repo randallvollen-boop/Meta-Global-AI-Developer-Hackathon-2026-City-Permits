@@ -85,10 +85,10 @@ There are two agents that people run. Both are **service identities** and neithe
 **An agent is engaged only when it is awake, and only when a person runs
 it.** After a reset both agents sleep. The Agent Operator wakes one on its
 screen (**Wake agent** / **Put agent to sleep**); until then every run is
-refused. A person then runs it: **Process one** / **Process the next 20 cases** on
-the Intake agent screen, **Process one** / **Process the next 20 cases** on the Adjudication agent
+refused. A person then runs it: **Process one** or the batch button on
+the Intake agent screen, **Process one** or the batch button on the Adjudication agent
 screen, or **Re-run intake agent** / **Re-run adjudication** on the permit
-workspace. The same rules apply to a re-run.
+workspace. The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting. The same rules apply to a re-run.
 
 Each run is recorded as an `agent_runs` row (agent, application, start and
 finish, the acting service identity, the triggering person, the outcome) with
@@ -161,13 +161,13 @@ the audit trail.
 |---|---|---|---|
 | City Administrator | Governance and sources | Simulate incoming permits | Records arrive via `intake_portal` and wait as **Awaiting intake agent** |
 | Agent Operator | Intake agent / Adjudication agent | Wake agent / Put agent to sleep | The agent may now be run by a person |
-| Agent Operator | Intake agent | Process one / Process the next 20 cases | The seven-node intake graph runs; the case is routed |
+| Agent Operator | Intake agent | Process one, or the batch button (Process N cases, or Process the next 20 of N when more than 20 cases are waiting) | The seven-node intake graph runs; the case is routed |
 | Agent Operator | Intake queue | Process selected with agent | The intake graph runs on a bounded selection of cases that wait for it; the batch is all-or-nothing |
 | Data Steward | Steward review | Confirm/Reject link, Record no match | Identity links the reviewer will rely on become approved or stay unapproved; proposals remain evidence |
 | Data Steward | Permit workspace | Accept or correct extracted … | Proposed Muse values become accepted/corrected; submitted revisions are never rewritten |
-| Agent Operator | Adjudication agent | Process one / Process the next 20 cases | The five-node adjudication graph runs and leaves a pending recommendation |
+| Agent Operator | Adjudication agent | Process one, or the batch button (Process N cases, or Process the next 20 of N when more than 20 cases are waiting) | The five-node adjudication graph runs and leaves a pending recommendation |
 | Permit Reviewer | Permit workspace | Confirm / Revert the recommendation | The decision of record is the reviewer's, or the case returns to manual review |
-| Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions; approval is refused while blockers (identity links, site, credentials, rule fails) stand |
+| Permit Reviewer | Permit workspace | Record reviewer decision | The actual decision (`approved`/`denied`/`modified`/`information_requested`) with reason and versions. An open identity or parcel link is Data follow-up and does not block the decision. A failed rule still blocks a decision. The payer link and the fee still block issuing. |
 | Permit Reviewer | Permit workspace | Approve with conditions | An `approved` decision with a non-empty list of conditions; the rationale is required and a denial needs a denial reason code |
 | City Administrator | Administration | Permit types, users, reason codes, Agent processing policy | Every change is a governed, audited action and appears in the configuration log |
 | City Administrator | Reconciliation | Assess application, Import ERP payment, Confirm allocation, Reconcile assessment | Fee assessed from the published schedule; reconciliation must be exact (balance 0.00) before issuance |
@@ -694,8 +694,7 @@ HTTP. `ACME_GIS_BASE_URL` (default: the in-app simulator) plus
 | Confirm the parcel ("Is this the right property?") | Permit Reviewer | `parcel.confirm` |
 | Flag a wrong address to GIS | anyone with `correction.request.submit` | `change.request` |
 
-No approval is possible until the parcel link is approved **and** confirmed
-(blockers `parcel_link_unapproved`, `parcel_unconfirmed`). Rule inputs that
+An open parcel link or identity link is Data follow-up. It does not block the decision. The payer link and the fee still block issuing. Rule inputs that
 come from the parcel (zoning, flood zone) are read from the confirmed parcel
 only. A seeded case without a locator match is unchanged.
 
@@ -816,12 +815,12 @@ sequenceDiagram
     P->>I: stage raw, create application + revision + documents
     I->>I: wait as "Awaiting intake agent"
     A->>I: wake the intake agent
-    A->>I: Process the next 20 cases (seven-node graph; the locator corrects the address and proposes the parcel)
+    A->>I: Process N cases, or Process the next 20 of N (seven-node graph; the locator corrects the address and proposes the parcel)
     I->>I: route to ready_for_review with the review area
     S->>I: approve identity links, the parcel link and extracted values
     A->>J: wake the adjudication agent
     R->>R: confirm the parcel (Is this the right property?)
-    A->>J: Process the next 20 cases (five-node graph)
+    A->>J: Process N cases, or Process the next 20 of N (five-node graph)
     J->>J: recommendation pending (for example deny, DF-1), advisory
     R->>J: Confirm (decision of record) or Revert (reason required)
     M->>I: assess fee, import payment, allocate, reconcile (exact)

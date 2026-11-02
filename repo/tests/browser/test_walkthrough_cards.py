@@ -65,7 +65,9 @@ def test_the_steps_button_of_the_walkthrough_page_opens_the_written_steps(
     ).click()
     page.wait_for_url(f"{server.base_url}/walkthrough#path-steps-resident")
     card = page.locator('[data-testid="walkthrough-path"][data-path="resident"]')
-    assert card.locator('[data-testid="walkthrough-step"]').count() == 4
+    # Changed deliberately (applicant notices): the resident track adds the
+    # messages step, so the card lists five written steps.
+    assert card.locator('[data-testid="walkthrough-step"]').count() == 5
     assert page.recorded_errors == []
 
 

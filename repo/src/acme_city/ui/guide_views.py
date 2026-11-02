@@ -83,16 +83,16 @@ PATHS: tuple[Path, ...] = (
             "The case starts on Apply, before a form is filled, because the "
             "permit and the documents are not known yet."
         ),
-        minutes=3,
+        minutes=4,
         steps=(
             Step(
                 "Apply for a permit",
                 "Applicant",
                 "/apply",
-                "Choose Residential deck or fence, type 400 Lantern Row, answer "
-                "the questions for a 6 ft fence in the front yard, attach a file "
-                "for each of the two required documents and tick the "
-                "certification.",
+                "Choose Residential deck or fence, press Use a sample address and "
+                "pick 400 Lantern Row, answer the questions for a 4 ft fence in "
+                "the side or rear yard, attach a file for each of the two required "
+                "documents, and tick the certification.",
                 "The form asks only the questions that project needs, and the "
                 "assistant names the published rule behind each answer.",
                 "We are here because the resident asks Muse which fence permit "
@@ -102,9 +102,9 @@ PATHS: tuple[Path, ...] = (
                 "Check the application before it is sent",
                 "Applicant",
                 "/apply",
-                "Press Check my application, then change the 6 ft front yard "
-                "fence to 4 ft and press Submit application, or write why in Why "
-                "submit now and press Submit anyway.",
+                "Press Fill in the story's answers, press Check my application, "
+                "then set the fence to 6 ft in the front yard and press Check my "
+                "application again to see Must fix, or press Submit application.",
                 "The findings are grouped under Must fix, Should check and "
                 "Looks good, and each one names the published rule behind it.",
                 "We are here because Check my application asks Muse for feedback "
@@ -114,11 +114,13 @@ PATHS: tuple[Path, ...] = (
                 "Let the agent route the application",
                 "Agent Operator",
                 "/agent/intake",
-                "Press Wake agent, then press Process the next 20 cases.",
+                "Press Wake agent, then press the batch button, which reads "
+                "Process N cases, or Process the next 20 of N when more than 20 "
+                "cases are waiting.",
                 "The Router line sends an application that breaks a rule to Early "
                 "resolution and says which rule.",
-                "We are here because Muse reads the documents and the agent "
-                "sends the application to the right queue.",
+                "We are here because document reading is a recorded Muse run "
+                "(replay) and the agent sends the application to the right queue.",
             ),
             Step(
                 "Track the application",
@@ -130,6 +132,15 @@ PATHS: tuple[Path, ...] = (
                 "the application.",
                 "We are here because the resident needs to see what the City "
                 "has recorded so far.",
+            ),
+            Step(
+                "Read the messages from the City",
+                "Applicant",
+                "/apply/track",
+                "Open the application in the list and read Messages from the City.",
+                "The tracker shows Messages from the City and says the City would "
+                "also send this by email while the demonstration sends no email.",
+                "We are here because the applicant is told of each decision.",
             ),
         ),
     ),
@@ -151,13 +162,17 @@ PATHS: tuple[Path, ...] = (
                 "Match the café to its owner",
                 "Data Steward",
                 "/steward",
-                "Press Start fresh, then open Data issues, press Prepare "
+                "Press Start fresh, then on Data issues press Wake if the steward "
+                "assistant is asleep, or open Steward assistant in the left menu "
+                "as the Agent Operator and press Wake agent, then press Prepare "
                 "recommendations, press Accept recommendation on each task that "
-                "carries a High pill and approve the link of the property.",
+                "carries a High pill, and approve the link of the property.",
                 "Every task of the café carries a High pill and a reason in one "
-                "line, and the decision is recorded in your name.",
+                "line, Put to sleep is beside Wake once the assistant is awake, "
+                "and the decision is recorded in your name.",
                 "We are here because the owner is three records until a steward "
-                "decides, and Explain with Muse only rewrites the reason.",
+                "decides, and the Agent Operator or the Data Steward wakes the "
+                "Steward assistant.",
             ),
             Step(
                 "Let the agent route the case",
@@ -167,22 +182,33 @@ PATHS: tuple[Path, ...] = (
                 "the café.",
                 "The run shows Completed and the Router line says Ready for "
                 "review in the Building area.",
-                "We are here because Muse has read the documents and a person "
-                "has to send the case on.",
+                "We are here because document reading is a recorded Muse run "
+                "(replay) and a person has to send the case on.",
             ),
             Step(
                 "Run the checks and approve the case",
                 "Permit Reviewer",
                 "/queue/review",
-                "Open the case of the café from the Review queue, press Start "
-                "under Confirm parcel on the People and organizations tab and "
-                "submit it, press Start under Run application checks and submit "
-                "it, then press Start under Record review decision, choose "
-                "Approve and write your reason.",
-                "The rule results show Passed and the decision is recorded in "
-                "the case history with your reason.",
-                "We are here because the identity is clear, so a person can "
-                "decide the case.",
+                "Open Review queue, read Stage and Next action, where Stage for a "
+                "case in checks reads Checks (3 of 6) and Next action is Ready "
+                "to decide, Ready to issue, Waiting on Data Steward, Needs "
+                "checks, Fee not settled, In early resolution, or Submitted with "
+                "known issues, with Ready to decide and Ready to issue first, "
+                "then open the case of the café, press Start under Confirm "
+                "parcel, press Start under Run application checks or Run checks "
+                "again, and record the decision.",
+                "The checks summary reads Checks finished or These checks already "
+                "ran on this revision, Next: record the decision appears when a "
+                "decision is open, the Recommendation section reads Recommend "
+                "deny: with the reason when the rules fail or Passed when they "
+                "do not, Needs information is prefilled, plain blockers link to "
+                "the fix, Data follow-up does not block the decision, and an "
+                "approval against a failed rule reads Approved as an exception "
+                "to the failed rule once Exception reason is written.",
+                "We are here because a person decides the case, an open parcel "
+                "or identity link is Data follow-up that does not block the "
+                "decision, and the applicant is told by email at this point "
+                "while the demonstration sends no email.",
             ),
             Step(
                 "Apply the café's payment",
@@ -204,17 +230,21 @@ PATHS: tuple[Path, ...] = (
                 "Issue the permit",
                 "Permit Reviewer",
                 "/queue/review",
-                "Open the case of the café again and press Start under Issue "
-                "permit.",
-                "The permit number appears on the case and the issued artifact "
-                "opens.",
-                "We are here because deciding and issuing are separate.",
+                "When the fee is settled, Stage reads Fee (5 of 6) and Next action "
+                "reads Ready to issue, so open the case of the café and press "
+                "Start under Issue permit.",
+                "After issuance, Stage reads Issued (6 of 6) and Next action "
+                "reads Issued, and the applicant is told by email at this point "
+                "while the demonstration sends no email.",
+                "We are here because deciding and issuing are separate, and the "
+                "payer link and the fee still block issuing.",
             ),
             Step(
                 "Find it as a resident",
                 "",
                 "/city/community",
-                "Search for the permit number on the City of Acme website.",
+                "Search for the permit number or the address, or press Search for "
+                "my permit.",
                 "The public record shows the permit, the parcel and the outcome, "
                 "and never a homeowner's name, documents or fees.",
                 "We are here because a resident should find the permit without "
@@ -226,46 +256,68 @@ PATHS: tuple[Path, ...] = (
         key="city",
         title="Run the city",
         one_line=(
-            "The record of the café decision, the City at a glance and a what "
-            "if on a fee change."
+            "Cafés like Cedarline waited weeks, and the City asks whether to "
+            "change the commercial fee or the process."
         ),
         story=(
-            "The café permit is on the public record. The City starts with the "
-            "audit log, because it has to see who decided."
+            "Cafés like Cedarline waited weeks for a permit. Should the City "
+            "change the commercial fee, or the process? The City starts with "
+            "the counts, because that is where the wait shows up."
         ),
-        minutes=3,
+        minutes=5,
         steps=(
             Step(
-                "Check the record of the decision",
+                "See where the weeks went",
+                "City Administrator",
+                "/insight/city",
+                "Open the City view and read the counts, the map and the "
+                "definition beside each figure for commercial cases.",
+                "Each figure has its definition printed beside it.",
+                "We are here because the weeks cafés waited should show up in "
+                "the counts.",
+            ),
+            Step(
+                "Follow where the café's time went",
                 "City Administrator",
                 "/ops/audit",
                 "Choose Recorded permit decision in the Action filter, press "
                 "Apply filters, then press View details on the top row.",
                 "The actor, the time, the decision and the case it belongs to "
                 "are recorded together.",
-                "We are here because the decision has to stay tied to the "
-                "person who made it.",
+                "We are here because the counts raise where the café's weeks "
+                "went.",
             ),
             Step(
-                "See the city at a glance",
-                "City Administrator",
-                "/insight/city",
-                "Filter the City view by permit type and outcome.",
-                "The map, the counts and the definition printed beside each "
-                "figure.",
-                "We are here because the City needs the counts and the map with "
-                "a definition beside each figure.",
-            ),
-            Step(
-                "Try a what if on a fee change",
+                "Ask Muse what the pattern is",
                 "City Administrator",
                 "/policy/scenarios",
-                "Open What-if, save a new what-if, change a fee and run it over "
-                "the cases.",
-                "The run writes down what the change would do and it decides "
+                "Open What-if, open More details and press Ask Muse to propose "
+                "so Muse summarises the pattern.",
+                "Muse summarises the pattern in the policy briefing and the run "
+                "decides nothing.",
+                "We are here because the record shows a pattern and a person "
+                "should read it before any rule changes.",
+            ),
+            Step(
+                "Try the fee change",
+                "City Administrator",
+                "/policy/scenarios",
+                "Open What-if, press Create a what-if, change a fee and run it "
+                "over the cases.",
+                "The run writes down what the fee change would do and it decides "
                 "nothing.",
-                "We are here because Muse writes the briefing for a fee change, "
-                "and the run decides nothing.",
+                "We are here because the City should see the effect of a fee "
+                "change before it changes a rule.",
+            ),
+            Step(
+                "Leave the change for a person",
+                "City Administrator",
+                "/policy/scenarios",
+                "Draft the change and submit it for approval on Rules and fees, "
+                "because a person must approve and publish it.",
+                "A person must approve and publish it.",
+                "We are here because the fee question is answered only when a "
+                "person approves the change.",
             ),
         ),
     ),
@@ -421,14 +473,74 @@ def fresh_copy_context(session: Session) -> dict[str, Any]:
         "permitted": room > 0,
         "room": room,
         "max": judge_copy.MAX_JUDGE_COPIES,
-        "reason": (
-            ""
-            if room > 0
-            else (
-                f"the demonstration already holds {judge_copy.MAX_JUDGE_COPIES} copies of "
-                "the café case, the whole allowance"
-            )
-        ),
+        "reason": "" if room > 0 else judge_copy.COPIES_IN_USE,
+    }
+
+
+#: Plain words for a stored decision outcome.  The card never shows the key.
+_OUTCOME_WORDS = {
+    "approved": "Approved",
+    "denied": "Denied",
+    "modified": "Modified",
+    "information_requested": "Needs information",
+    "approved_with_conditions": "Approved with conditions",
+}
+
+
+def permit_card(session: Session, case_id: str) -> dict[str, str] | None:
+    """Return the issued permit of one case, for the tour card.
+
+    The card names the permit, the address, the parcel, the outcome, the
+    conditions and the date.  It leaves out names, documents and fees.
+    """
+    from acme_city.persistence.models.registry import Parcel
+
+    row = session.execute(
+        select(permit.Permit)
+        .where(permit.Permit.application_id == case_id)
+        .order_by(permit.Permit.issued_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    site = session.execute(
+        select(permit.ApplicationSite)
+        .where(permit.ApplicationSite.application_id == case_id)
+        .order_by(permit.ApplicationSite.is_primary.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    address = ""
+    parcel_number = ""
+    if site is not None:
+        address = (site.submitted_address_text or "").strip()
+        if site.parcel_id:
+            found = session.execute(
+                select(Parcel).where(
+                    (Parcel.id == site.parcel_id) | (Parcel.parcel_id == site.parcel_id)
+                )
+            ).scalars().first()
+            if found is not None:
+                parcel_number = found.source_parcel_number
+    decision = session.get(permit.Decision, row.decision_id) if row.decision_id else None
+    outcome_key = decision.outcome if decision is not None else ""
+    conditions: list[str] = []
+    if decision is not None and decision.conditions:
+        conditions = [str(item).strip() for item in decision.conditions if str(item).strip()]
+    when = row.issued_at
+    date = f"{when:%b} {when.day}, {when.year}" if when is not None else ""
+    place = address or parcel_number
+    number = row.permit_number
+    return {
+        "title": "Permit issued",
+        "number": number,
+        "address": address,
+        "parcel": parcel_number,
+        "outcome": _OUTCOME_WORDS.get(outcome_key, outcome_key.replace("_", " ")),
+        "conditions": "; ".join(conditions) if conditions else "none recorded",
+        "date": date,
+        "search_label": "Search for my permit",
+        "search_href": "/city/community?q=" + number,
+        "search_line": f"Search for permit {number} or {place}.",
     }
 
 

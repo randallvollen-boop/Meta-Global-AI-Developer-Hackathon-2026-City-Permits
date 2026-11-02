@@ -53,6 +53,13 @@
       </form>
       {% endif %}
     </p>
+    {% if path.key == 'cafe' %}
+    <p class="muted" data-testid="path-copy-note">Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way.</p>
+    {% elif path.key == 'resident' %}
+    <p class="muted" data-testid="path-copy-note">This track makes its own application, so it needs no copy.</p>
+    {% elif path.key == 'city' %}
+    <p class="muted" data-testid="path-copy-note">This track does not change any case, so it needs no copy.</p>
+    {% endif %}
     {% if path.key == 'cafe' and not walkthrough.fresh.permitted %}
     <p class="muted" id="path-fresh-note" data-testid="path-fresh-note">{{ walkthrough.fresh.reason }}</p>
     {% endif %}

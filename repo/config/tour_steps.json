@@ -6,7 +6,7 @@
   "paths": {
     "resident": {
       "title": "Apply as a resident",
-      "minutes": 3,
+      "minutes": 4,
       "steps": [
         {
           "id": "intro",
@@ -17,6 +17,7 @@
           "path": "/apply",
           "target": "",
           "permission": "application.submit",
+          "copy_note": "This track makes its own application, so it needs no copy.",
           "caption": "We are here because a resident at 400 Lantern Row wants a fence for the back yard. The case starts on Apply, before a form is filled, because the permit and the documents are not known yet."
         },
         {
@@ -55,7 +56,31 @@
           "muse": true,
           "muse_surface": "presubmit",
           "muse_line": "Muse gives feedback on Check my application before the application is sent.",
-          "caption": "We are here because the resident should see what must change before the City does. Press Check my application."
+          "fill": {
+            "fields": {
+              "address_text": "400 Lantern Row, ACME City",
+              "applicant_name": "Demo Applicant",
+              "applicant_email": "demo.applicant@example.invalid",
+              "structure_kind": "fence",
+              "height_ft": "4",
+              "fence_material": "cedar",
+              "location": "side_rear",
+              "setback_ft": "5",
+              "property_line_ack": "on",
+              "project_description": "A 4 ft cedar fence in the back yard."
+            },
+            "files": {
+              "file__site_plan": {
+                "name": "site-plan.txt",
+                "text": "Site plan: 4 ft fence in the back yard at 400 Lantern Row.\n"
+              },
+              "file__material_spec": {
+                "name": "material-spec.txt",
+                "text": "Cedar panels, 4 ft.\n"
+              }
+            }
+          },
+          "caption": "We are here because the resident should see what must change before the City does. Press Fill in the story's answers, then Check my application. Try 6 ft in the front yard to see the check catch it."
         },
         {
           "id": "agent",
@@ -68,8 +93,8 @@
           "permission": "agent.run.intake",
           "muse": true,
           "muse_surface": "intake",
-          "muse_line": "Muse reads the documents on intake and proposes the fields, and a person still decides.",
-          "caption": "We are here because the new application has to be read and sent to the right queue. Press Wake agent."
+          "muse_line": "Muse reads the documents on intake as a recorded Muse run (replay), and a person still decides.",
+          "caption": "We are here because the new application has to be read and sent to the right queue. Document reading is a recorded Muse run (replay). Press Wake agent."
         },
         {
           "id": "track",
@@ -81,6 +106,17 @@
           "target": "[data-testid=\"permit-list\"]",
           "permission": "application.submit",
           "caption": "We are here because the resident needs to see what the City has recorded so far. Open the application in the list."
+        },
+        {
+          "id": "messages",
+          "walkthrough_step": 5,
+          "title": "Read the messages from the City",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply/track",
+          "target": "[data-testid=\"permit-list\"]",
+          "permission": "application.submit",
+          "caption": "We are here because the applicant is told of each decision. Open the application and read Messages from the City. The City would also send this by email. The demonstration sends no email."
         }
       ]
     },
@@ -97,7 +133,8 @@
           "path": "/steward",
           "target": "",
           "permission": "registry.crosswalk.propose",
-          "caption": "We are here because Cedarline Coffee cannot open until its permit is issued. The case starts with the Data Steward, because the owner is recorded three ways."
+          "copy_note": "Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way.",
+          "caption": "We are here because Cedarline Coffee cannot open until its permit is issued. Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way."
         },
         {
           "id": "steward",
@@ -109,10 +146,11 @@
           "target": "[data-testid=\"assistant-prepare\"]",
           "permission": "registry.crosswalk.propose",
           "fresh": true,
+          "copy_note": "Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way.",
           "muse": true,
           "muse_surface": "explain",
           "muse_line": "Explain with Muse rewrites the reason in plain words, and a person records the decision.",
-          "caption": "We are here because the owner is three records until a steward decides they are one. Press Prepare recommendations."
+          "caption": "We are here because the owner is three records until a steward decides they are one. The Agent Operator or the Data Steward wakes the Steward assistant. Press Wake, or Wake agent, then Prepare recommendations."
         },
         {
           "id": "agent",
@@ -125,8 +163,8 @@
           "permission": "agent.run.intake",
           "muse": true,
           "muse_surface": "intake",
-          "muse_line": "Muse reads the documents on intake and proposes the fields, and a person still decides.",
-          "caption": "We are here because the café case has to reach a reviewer, and only a person may approve it. Press Wake agent."
+          "muse_line": "Muse reads the documents on intake as a recorded Muse run (replay), and a person still decides.",
+          "caption": "We are here because the café case has to reach a reviewer, and only a person may approve it. Document reading is a recorded Muse run (replay). Press Wake agent."
         },
         {
           "id": "reviewer",
@@ -137,7 +175,7 @@
           "path": "/permits/{case}",
           "target": "[data-action-id=\"permit.evaluate\"]",
           "permission": "permit.decide",
-          "caption": "We are here because the identity and the payer account are clear, so a person can decide. Press Run application checks."
+          "caption": "We are here because a person decides the case, and Data follow-up does not block it. Press Run application checks or Run checks again. The applicant is told by email at this point. The demonstration sends no email."
         },
         {
           "id": "finance",
@@ -159,7 +197,8 @@
           "path": "/permits/{case}",
           "target": "[data-action-id=\"permit.issue\"]",
           "permission": "permit.issue",
-          "caption": "We are here because deciding and issuing are separate, and the balance is now exact. Press Issue permit."
+          "permit_card": true,
+          "caption": "We are here because deciding and issuing are separate, and the payer link and the fee still block issuing until both are clear. Press Issue permit. The applicant is told by email at this point. The demonstration sends no email."
         },
         {
           "id": "public",
@@ -170,51 +209,67 @@
           "path": "/city/community",
           "target": "[data-testid=\"community-q\"]",
           "permission": "",
+          "permit_card": true,
           "caption": "We are here because a resident should find the permit without a homeowner's name, the documents or the fees. Search the public record."
         }
       ]
     },
     "city": {
       "title": "Run the city",
-      "minutes": 3,
+      "minutes": 5,
       "steps": [
         {
           "id": "intro",
           "kind": "intro",
-          "title": "After the permit is issued",
+          "title": "Should the City change the fee or the process?",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
-          "path": "/ops/audit",
+          "path": "/insight/city",
           "target": "",
-          "permission": "ops.audit_log.view",
-          "caption": "We are here because the café permit is on the public record and the City has to see who decided. The case continues in the audit log."
-        },
-        {
-          "id": "audit",
-          "walkthrough_step": 1,
-          "title": "Check the record of the decision",
-          "persona": "City Administrator",
-          "actor_id": "persona_city_administrator",
-          "path": "/ops/audit",
-          "target": "[data-testid=\"audit-filter-apply\"]",
-          "permission": "ops.audit_log.view",
-          "caption": "We are here because the decision has to stay tied to the person who made it. Press Apply filters."
+          "permission": "insight.city.view",
+          "copy_note": "This track does not change any case, so it needs no copy.",
+          "caption": "We are here because cafés like Cedarline waited weeks for a permit. Should the City change the commercial fee, or the process? Start with the counts, because that is where the wait shows up."
         },
         {
           "id": "insight",
-          "walkthrough_step": 2,
-          "title": "See the city at a glance",
+          "walkthrough_step": 1,
+          "title": "See where the weeks went",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
           "path": "/insight/city",
           "target": "[data-testid=\"filter-apply\"]",
           "permission": "insight.city.view",
-          "caption": "We are here because the City needs the counts and the map, with the definition beside each figure. Press Apply."
+          "caption": "We are here because the weeks cafés waited should show up in the counts. Open the City view and read the counts, the map and the definition beside each figure for commercial cases."
+        },
+        {
+          "id": "audit",
+          "walkthrough_step": 2,
+          "title": "Follow where the café's time went",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/ops/audit",
+          "target": "[data-testid=\"audit-filter-apply\"]",
+          "permission": "ops.audit_log.view",
+          "caption": "We are here because the counts raise where the café's weeks went. Choose Recorded permit decision, press Apply filters, then press View details."
+        },
+        {
+          "id": "pattern",
+          "walkthrough_step": 3,
+          "title": "Ask Muse what the pattern is",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/policy/scenarios",
+          "target": "[data-testid=\"policy-muse-examples\"]",
+          "permission": "policy.scenario.manage",
+          "muse": true,
+          "muse_surface": "policy",
+          "muse_line": "Muse summarises the pattern in the policy briefing, and it decides nothing.",
+          "caption": "We are here because the record shows a pattern and Muse should summarise it before any rule changes. Open More details and press Ask Muse to propose."
         },
         {
           "id": "whatif",
-          "walkthrough_step": 3,
-          "title": "Try a what if on a fee change",
+          "walkthrough_step": 4,
+          "title": "Try the fee change",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
           "path": "/policy/scenarios",
@@ -223,7 +278,29 @@
           "muse": true,
           "muse_surface": "policy",
           "muse_line": "Muse writes the policy briefing for the what-if, and the run decides nothing.",
-          "caption": "We are here because the City wants to see what a fee change would do before it changes a rule. Press Create a what-if."
+          "caption": "We are here because the question is whether a fee change would shorten the wait. Press Create a what-if and see the effect before any rule changes."
+        },
+        {
+          "id": "close",
+          "walkthrough_step": 5,
+          "title": "Leave the change for a person",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/policy/scenarios",
+          "target": "[data-testid=\"policy-create-anchor\"]",
+          "permission": "policy.scenario.manage",
+          "caption": "We are here because the fee question is answered only when a person approves the change. A person must approve and publish it."
+        },
+        {
+          "id": "learn",
+          "kind": "intro",
+          "title": "Learn more",
+          "persona": "",
+          "actor_id": "",
+          "path": "/help",
+          "target": "",
+          "permission": "",
+          "caption": "We are here because the question has an answer only when a person approves it. The video, the permit life cycle and Help and documentation are there when you want them."
         }
       ]
     },

@@ -112,11 +112,11 @@
           },
           {
             "do": "Click \"Wake agent\".",
-            "see": "The button now reads \"Put agent to sleep\". Process one and Process the next 20 cases turn on.",
+            "see": "The button now reads \"Put agent to sleep\". The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.",
             "href": "/agent/intake"
           },
           {
-            "do": "Under \"Waiting work\", click \"Process one\" on the fence case, or press Process the next 20 cases.",
+            "do": "Under \"Waiting work\", click \"Process one\" on the fence case, or press the batch button. It reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.",
             "see": "The case leaves the table. Open \"More details\" and read \"Recent results\". If the table says \"Nothing is waiting for this agent.\", send an application as the Applicant first.",
             "href": "/agent/intake"
           },

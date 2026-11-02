@@ -57,9 +57,9 @@ Both cases now wait. Nothing has been triaged.
    **Adjudication agent** and **Agent runs**, and under More tools the
    **Intake queue**, where a selected batch is processed with the agent. The
    **Agents** page shows both agents as **asleep** and 2 cases waiting.
-2. Click **Intake agent**. The state reads **asleep**, **Process the next 20 cases** is
+2. Click **Intake agent**. The state reads **asleep**, the batch button is
    disabled, and the page says "The agent is asleep, so the run buttons are
-   off. Use Wake agent above to turn them on."
+   off. Use Wake agent above to turn them on." The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.
 3. Press **Wake agent**. The state reads **awake**, the
    button becomes **Put agent to sleep**, and under **More details** the counts show **Waiting 2**,
    **Processed 0**, **Needs human 0**, **Errors 0**. Under **Waiting work**
@@ -74,7 +74,7 @@ Both cases now wait. Nothing has been triaged.
 
 ## 4. As Agent Operator, run the intake agent
 
-1. Press **Process the next 20 cases** (or **Process one** beside each case).
+1. Press the batch button (or **Process one** beside each case). With two cases waiting it reads Process 2 cases. In general it reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.
    Under **More details** the counts now show **Waiting 0**, **Processed 2**, **Needs human 0**,
    **Errors 0**, and **Recent results** lists one run for each case with the
    result **Completed** and "7 step(s)".
@@ -121,7 +121,7 @@ Both cases now wait. Nothing has been triaged.
 
 ## 7. As Agent Operator, run the adjudication agent
 
-1. Press **Process the next 20 cases**. Under **More details** the counts show **In review 2**,
+1. Press the batch button. Under **More details** the counts show **In review 2**,
    **Recommended 2**, **Awaiting confirmation 2**, **Held for a person 0**.
    "Waiting for a person" lists `SYN-APP-015` with **approve** and
    `SYN-APP-014` with **deny**.

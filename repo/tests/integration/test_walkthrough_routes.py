@@ -220,7 +220,7 @@ def test_the_start_fresh_button_is_off_when_the_allowance_is_gone(
     assert 'data-testid="path-fresh" disabled' in body
     assert 'aria-describedby="path-fresh-note"' in body
     assert 'data-testid="path-fresh-note"' in body
-    assert "allowance" in body
+    assert "Every copy is in use. Continue with the café case already open." in body
 
     landing = client.get("/select").text
     assert 'data-testid="landing-path-fresh" disabled' in landing

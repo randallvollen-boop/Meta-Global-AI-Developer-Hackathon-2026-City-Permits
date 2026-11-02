@@ -140,7 +140,9 @@ def test_the_copy_is_capped(session: Session) -> None:
 
     with pytest.raises(ValidationError) as refused:
         judge_copy.create_judge_copy(session, nonce="CAP9999")
-    assert "allowance" in str(refused.value)
+    assert str(refused.value) == (
+        "Every copy is in use. Continue with the café case already open."
+    )
 
 
 def test_two_copies_never_share_an_identifier(session: Session) -> None:

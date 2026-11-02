@@ -101,16 +101,16 @@ first entry of the City website menu.
     and Agent runs, and the Intake queue under More tools.
 - As an Agent Operator, I want to run the intake agent when it is awake, so
   that incoming cases are processed the way the City decided they should be.
-  - Acceptance: **Intake agent** shows whether the agent is awake; **Process
-    the next 20 cases** and **Process one** are disabled while it sleeps ("The agent is
-    asleep, so the run buttons are off. Use Wake agent above to turn them on.");
+  - Acceptance: **Intake agent** shows whether the agent is awake; the batch
+    button and **Process one** are disabled while it sleeps ("The agent is
+    asleep, so the run buttons are off. Use Wake agent above to turn them on."). The batch button reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.
     the seven-step run is recorded. Open **Agent runs** and press **View run**.
     **All runs**, **Processing** and **Engine** are under **More details** on the agent screen.
     The page updates in place after each action.
 - As an Agent Operator, I want to run the adjudication agent on the cases in
   review, so that each has a deterministic recommendation before a reviewer
   looks at it.
-  - Acceptance: **Adjudication agent** runs **Process the next 20 cases** or **Process
+  - Acceptance: **Adjudication agent** runs the batch button (Process N cases, or Process the next 20 of N when more than 20 cases are waiting) or **Process
     one** and the five-step run is recorded; the recommendation waits under
     **Waiting for a person**. I record no permit decision.
 - As a Data Steward, I want to wake and put to sleep the steward assistant
@@ -291,7 +291,7 @@ first entry of the City website menu.
     and make the permit decisions." **Administration** → **Users and roles**
     shows the table "Role permissions" with the column "Can wake and run
     agents" and **Save role permissions**. The Administrator has no **Wake
-    agent** or **Process the next 20 cases** button: the agent screens return 403 for
+    agent** button and no batch button: the agent screens return 403 for
     this persona.
 - As a City Administrator, I want to simulate incoming permits from the
   outside portal, so that I can watch data arrive and wait for the agent.

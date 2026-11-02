@@ -254,6 +254,7 @@ def test_the_route_serves_the_steps_of_the_chosen_path(client: TestClient) -> No
         ("resident", "check"),
         ("resident", "agent"),
         ("resident", "track"),
+        ("resident", "messages"),
         ("cafe", "bridge-cafe"),
         ("cafe", "intro"),
         ("cafe", "steward"),
@@ -264,9 +265,12 @@ def test_the_route_serves_the_steps_of_the_chosen_path(client: TestClient) -> No
         ("cafe", "public"),
         ("city", "bridge-city"),
         ("city", "intro"),
-        ("city", "audit"),
         ("city", "insight"),
+        ("city", "audit"),
+        ("city", "pattern"),
         ("city", "whatif"),
+        ("city", "close"),
+        ("city", "learn"),
     ]
     first = steps[0]
     assert first["kind"] == "intro"
@@ -278,8 +282,9 @@ def test_the_route_serves_the_steps_of_the_chosen_path(client: TestClient) -> No
     assert [step["caption"] for step in bridges] == [
         "The resident's case is in. Now the City clears a café that has been waiting for weeks.",
         (
-            "The café permit is on the public record. Now the City checks "
-            "who decided, the map and a fee change."
+            "The café permit is on the public record. Cafés like Cedarline "
+            "waited weeks. Should the City change the commercial fee, or the "
+            "process?"
         ),
     ]
     for index, step in enumerate(steps):
@@ -311,6 +316,44 @@ def test_the_route_serves_the_steps_of_every_path(client: TestClient) -> None:
         assert len(payload["steps"]) == len(path["steps"])
         assert [item["key"] for item in payload["paths"]] == [item.key for item in PATHS]
         assert {item["key"] for item in payload["paths"]} == set(tour_steps()["paths"])
+
+
+def test_the_permit_card_names_the_issued_permit_of_this_visit(client: TestClient) -> None:
+    """After Issue permit the tour names that permit, and nothing private."""
+    plain = client.get("/tour/steps?path=cafe").json()
+    for step in plain["steps"]:
+        assert "permit" not in step, step.get("id")
+    client.cookies.set("acme_judge_case", "app_d07")
+    payload = client.get("/tour/steps?path=cafe").json()
+    by_id = {step["id"]: step for step in payload["steps"]}
+    expected = {
+        "title", "number", "address", "parcel", "outcome", "conditions",
+        "date", "search_label", "search_href", "search_line",
+    }
+    for key in ("issue", "public"):
+        card = by_id[key]["permit"]
+        assert set(card) == expected
+        assert card["title"] == "Permit issued"
+        assert card["number"] == "ACME-2026-000731"
+        assert card["address"] == "12 Marrow Creek Road, ACME City"
+        assert card["parcel"] == "ACME-P-1002"
+        assert card["outcome"] == "Approved"
+        assert card["conditions"] == "none recorded"
+        assert card["date"] == "Jun 10, 2026"
+        assert card["search_label"] == "Search for my permit"
+        assert card["search_href"] == "/city/community?q=ACME-2026-000731"
+        assert card["search_line"] == (
+            "Search for permit ACME-2026-000731 or 12 Marrow Creek Road, ACME City."
+        )
+    assert by_id["public"]["path"] == "/city/community"
+    assert "Search for permit ACME-2026-000731 or 12 Marrow Creek Road, ACME City." in (
+        by_id["public"]["caption"]
+    )
+    assert by_id["issue"]["path"] == "/permits/app_d07"
+    for step in payload["steps"]:
+        if step.get("muse_surface") == "intake":
+            assert "recorded replay" in step["replay_note"].lower()
+            assert "recorded Muse run (replay)" in step["muse_line"]
 
 
 def test_the_route_refuses_a_path_that_does_not_exist(client: TestClient) -> None:
@@ -431,6 +474,7 @@ def test_every_muse_step_names_what_muse_does(paths: dict[str, dict]) -> None:
         ("resident", "agent"): "intake",
         ("cafe", "steward"): "explain",
         ("cafe", "agent"): "intake",
+        ("city", "pattern"): "policy",
         ("city", "whatif"): "policy",
     }
     found = {}

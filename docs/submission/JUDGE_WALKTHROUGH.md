@@ -12,14 +12,14 @@ A resident applies for a fence, checks the application before it is sent and fol
 
 A resident at 400 Lantern Row wants a fence for the back yard. The case starts on Apply, before a form is filled, because the permit and the documents are not known yet.
 
-4 steps, about 3 minutes.
+5 steps, about 4 minutes.
 
 ### 1. Apply for a permit
 
 As **Applicant**, open `/apply`.
 
 - Why: We are here because the resident asks Muse which fence permit fits, then names the project.
-- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents and tick the certification.
+- Do: Choose Residential deck or fence, press Use a sample address and pick 400 Lantern Row, answer the questions for a 4 ft fence in the side or rear yard, attach a file for each of the two required documents, and tick the certification.
 - Look for: The form asks only the questions that project needs, and the assistant names the published rule behind each answer.
 
 ### 2. Check the application before it is sent
@@ -27,15 +27,15 @@ As **Applicant**, open `/apply`.
 As **Applicant**, open `/apply`.
 
 - Why: We are here because Check my application asks Muse for feedback before the application is sent.
-- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Submit application, or write why in Why submit now and press Submit anyway.
+- Do: Press Fill in the story's answers, press Check my application, then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application.
 - Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
 
 ### 3. Let the agent route the application
 
 As **Agent Operator**, open `/agent/intake`.
 
-- Why: We are here because Muse reads the documents and the agent sends the application to the right queue.
-- Do: Press Wake agent, then press Process the next 20 cases.
+- Why: We are here because document reading is a recorded Muse run (replay) and the agent sends the application to the right queue.
+- Do: Press Wake agent, then press the batch button, which reads Process N cases, or Process the next 20 of N when more than 20 cases are waiting.
 - Look for: The Router line sends an application that breaks a rule to Early resolution and says which rule.
 
 ### 4. Track the application
@@ -45,6 +45,14 @@ As **Applicant**, open `/apply/track`.
 - Why: We are here because the resident needs to see what the City has recorded so far.
 - Do: Press Track application on the City of Acme website and open the application.
 - Look for: The tracker lists both documents as received and the status of the application.
+
+### 5. Read the messages from the City
+
+As **Applicant**, open `/apply/track`.
+
+- Why: We are here because the applicant is told of each decision.
+- Do: Open the application in the list and read Messages from the City.
+- Look for: The tracker shows Messages from the City and says the City would also send this by email while the demonstration sends no email.
 
 ## Get the café open
 
@@ -58,15 +66,15 @@ Cedarline Coffee cannot open until its permit is issued. The case starts with th
 
 As **Data Steward**, open `/steward`.
 
-- Why: We are here because the owner is three records until a steward decides, and Explain with Muse only rewrites the reason.
-- Do: Press Start fresh, then open Data issues, press Prepare recommendations, press Accept recommendation on each task that carries a High pill and approve the link of the property.
-- Look for: Every task of the café carries a High pill and a reason in one line, and the decision is recorded in your name.
+- Why: We are here because the owner is three records until a steward decides, and the Agent Operator or the Data Steward wakes the Steward assistant.
+- Do: Press Start fresh, then on Data issues press Wake if the steward assistant is asleep, or open Steward assistant in the left menu as the Agent Operator and press Wake agent, then press Prepare recommendations, press Accept recommendation on each task that carries a High pill, and approve the link of the property.
+- Look for: Every task of the café carries a High pill and a reason in one line, Put to sleep is beside Wake once the assistant is awake, and the decision is recorded in your name.
 
 ### 2. Let the agent route the case
 
 As **Agent Operator**, open `/agent/intake`.
 
-- Why: We are here because Muse has read the documents and a person has to send the case on.
+- Why: We are here because document reading is a recorded Muse run (replay) and a person has to send the case on.
 - Do: Press Wake agent, then press Process one beside the case of the café.
 - Look for: The run shows Completed and the Router line says Ready for review in the Building area.
 
@@ -74,9 +82,9 @@ As **Agent Operator**, open `/agent/intake`.
 
 As **Permit Reviewer**, open `/queue/review`.
 
-- Why: We are here because the identity is clear, so a person can decide the case.
-- Do: Open the case of the café from the Review queue, press Start under Confirm parcel on the People and organizations tab and submit it, press Start under Run application checks and submit it, then press Start under Record review decision, choose Approve and write your reason.
-- Look for: The rule results show Passed and the decision is recorded in the case history with your reason.
+- Why: We are here because a person decides the case, an open parcel or identity link is Data follow-up that does not block the decision, and the applicant is told by email at this point while the demonstration sends no email.
+- Do: Open Review queue, read Stage and Next action, where Stage for a case in checks reads Checks (3 of 6) and Next action is Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution, or Submitted with known issues, with Ready to decide and Ready to issue first, then open the case of the café, press Start under Confirm parcel, press Start under Run application checks or Run checks again, and record the decision.
+- Look for: The checks summary reads Checks finished or These checks already ran on this revision, Next: record the decision appears when a decision is open, the Recommendation section reads Recommend deny: with the reason when the rules fail or Passed when they do not, Needs information is prefilled, plain blockers link to the fix, Data follow-up does not block the decision, and an approval against a failed rule reads Approved as an exception to the failed rule once Exception reason is written.
 
 ### 4. Apply the café's payment
 
@@ -90,49 +98,65 @@ As **City Administrator**, open `/reconciliation`.
 
 As **Permit Reviewer**, open `/queue/review`.
 
-- Why: We are here because deciding and issuing are separate.
-- Do: Open the case of the café again and press Start under Issue permit.
-- Look for: The permit number appears on the case and the issued artifact opens.
+- Why: We are here because deciding and issuing are separate, and the payer link and the fee still block issuing.
+- Do: When the fee is settled, Stage reads Fee (5 of 6) and Next action reads Ready to issue, so open the case of the café and press Start under Issue permit.
+- Look for: After issuance, Stage reads Issued (6 of 6) and Next action reads Issued, and the applicant is told by email at this point while the demonstration sends no email.
 
 ### 6. Find it as a resident
 
 Open `/city/community`.
 
 - Why: We are here because a resident should find the permit without a homeowner's name.
-- Do: Search for the permit number on the City of Acme website.
+- Do: Search for the permit number or the address, or press Search for my permit.
 - Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner's name, documents or fees.
 
 ## Run the city
 
-The record of the café decision, the City at a glance and a what if on a fee change.
+Cafés like Cedarline waited weeks, and the City asks whether to change the commercial fee or the process.
 
-The café permit is on the public record. The City starts with the audit log, because it has to see who decided.
+Cafés like Cedarline waited weeks for a permit. Should the City change the commercial fee, or the process? The City starts with the counts, because that is where the wait shows up.
 
-3 steps, about 3 minutes.
+5 steps, about 5 minutes.
 
-### 1. Check the record of the decision
-
-As **City Administrator**, open `/ops/audit`.
-
-- Why: We are here because the decision has to stay tied to the person who made it.
-- Do: Choose Recorded permit decision in the Action filter, press Apply filters, then press View details on the top row.
-- Look for: The actor, the time, the decision and the case it belongs to are recorded together.
-
-### 2. See the city at a glance
+### 1. See where the weeks went
 
 As **City Administrator**, open `/insight/city`.
 
-- Why: We are here because the City needs the counts and the map with a definition beside each figure.
-- Do: Filter the City view by permit type and outcome.
-- Look for: The map, the counts and the definition printed beside each figure.
+- Why: We are here because the weeks cafés waited should show up in the counts.
+- Do: Open the City view and read the counts, the map and the definition beside each figure for commercial cases.
+- Look for: Each figure has its definition printed beside it.
 
-### 3. Try a what if on a fee change
+### 2. Follow where the café's time went
+
+As **City Administrator**, open `/ops/audit`.
+
+- Why: We are here because the counts raise where the café's weeks went.
+- Do: Choose Recorded permit decision in the Action filter, press Apply filters, then press View details on the top row.
+- Look for: The actor, the time, the decision and the case it belongs to are recorded together.
+
+### 3. Ask Muse what the pattern is
 
 As **City Administrator**, open `/policy/scenarios`.
 
-- Why: We are here because Muse writes the briefing for a fee change, and the run decides nothing.
-- Do: Open What-if, save a new what-if, change a fee and run it over the cases.
-- Look for: The run writes down what the change would do and it decides nothing.
+- Why: We are here because the record shows a pattern and a person should read it before any rule changes.
+- Do: Open What-if, open More details and press Ask Muse to propose so Muse summarises the pattern.
+- Look for: Muse summarises the pattern in the policy briefing and the run decides nothing.
+
+### 4. Try the fee change
+
+As **City Administrator**, open `/policy/scenarios`.
+
+- Why: We are here because the City should see the effect of a fee change before it changes a rule.
+- Do: Open What-if, press Create a what-if, change a fee and run it over the cases.
+- Look for: The run writes down what the fee change would do and it decides nothing.
+
+### 5. Leave the change for a person
+
+As **City Administrator**, open `/policy/scenarios`.
+
+- Why: We are here because the fee question is answered only when a person approves the change.
+- Do: Draft the change and submit it for approval on Rules and fees, because a person must approve and publish it.
+- Look for: A person must approve and publish it.
 
 ## Before you start
 

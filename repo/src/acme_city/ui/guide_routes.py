@@ -111,6 +111,9 @@ def judge_walkthrough(
 #: The label the intake screen prints on a recorded reading.
 INTAKE_REPLAY_LABEL = "Recorded replay"
 
+#: The link on the permit card.  It opens the public search already filled in.
+SEARCH_FOR_MY_PERMIT = "Search for my permit"
+
 #: The note the what-if screen prints when live Muse is off.
 POLICY_REPLAY_LABEL = (
     "Live Muse calls are off. Muse answers come from recorded demonstration fixtures only."
@@ -129,8 +132,9 @@ _BRIDGE_COPY = {
     "city": (
         "Run the city",
         (
-            "The café permit is on the public record. Now the City checks "
-            "who decided, the map and a fee change."
+            "The café permit is on the public record. Cafés like Cedarline "
+            "waited weeks. Should the City change the commercial fee, or the "
+            "process?"
         ),
     ),
 }
@@ -162,7 +166,10 @@ def _surface_live(session: Session, settings: Any, surface: str) -> bool:
     if surface == "presubmit":
         return bool(getattr(settings, "presubmit_review_live_enabled", False))
     if surface == "intake":
-        return bool(getattr(settings, "muse_live_calls_allowed", False))
+        # Document reading is a recorded Muse run by design. The tour says so
+        # even when a live flag is on. Live Muse is the help assistant, Check
+        # my application, Explain with Muse, and the policy briefing.
+        return False
     if surface == "policy":
         return bool(getattr(settings, "policy_assist_live_enabled", False))
     if surface == "explain":
@@ -227,6 +234,16 @@ def _present_step(
     item["path_key"] = key
     item["path_title"] = title
     item["replay_note"] = _replay_note(step, session, settings, spent)
+    if step.get("permit_card"):
+        card = guide_views.permit_card(session, case_id)
+        if card:
+            card["search_label"] = SEARCH_FOR_MY_PERMIT
+            item["permit"] = card
+            # The public step names this judge's permit, so the search is not a guess.
+            ending = "Search the public record."
+            caption = str(item.get("caption") or "")
+            if step.get("id") == "public" and caption.endswith(ending):
+                item["caption"] = caption[: -len(ending)] + card["search_line"]
     return item
 
 

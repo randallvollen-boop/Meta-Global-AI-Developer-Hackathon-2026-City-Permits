@@ -55,6 +55,9 @@ JUDGE_ACCOUNT_PREFIX = "facct_judge_"
 #: data of the demonstration is capped the same way.
 MAX_JUDGE_COPIES = 20
 
+#: Said when Start fresh cannot make another copy.  There is no nightly reset.
+COPIES_IN_USE = "Every copy is in use. Continue with the café case already open."
+
 #: The canonical identity of the café.  The copy is the café's own case, so it
 #: names the same owner.
 CAFE_PARTY_ID = "party_cedarline"
@@ -226,15 +229,11 @@ def create_judge_copy(session: Session, *, nonce: str | None = None, actor: Any 
         The copy that was created.
 
     Raises:
-        ValidationError: When the demonstration holds the whole allowance of
-            copies already.
+        ValidationError: When every copy is already in use.
     """
     room = room_for_copies(session)
     if room == 0:
-        raise ValidationError(
-            f"the demonstration already holds {MAX_JUDGE_COPIES} copies of the café "
-            "case, the whole allowance"
-        )
+        raise ValidationError(COPIES_IN_USE)
     token = (nonce or new_nonce()).upper()
     now = utc_now()
 
@@ -452,6 +451,7 @@ __all__ = [
     "JUDGE_APPLICATION_PREFIX",
     "JUDGE_PAYMENT_PREFIX",
     "JUDGE_REFERENCE_PREFIX",
+    "COPIES_IN_USE",
     "MAX_JUDGE_COPIES",
     "JudgeCopy",
     "create_judge_copy",
