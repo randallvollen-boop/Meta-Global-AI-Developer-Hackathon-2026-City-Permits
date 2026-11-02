@@ -102,9 +102,11 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
             "reason": "the validated inputs and the approved links support the application",
         },
     )
-    assert "Recorded the reviewer decision" in message
+    assert "Recorded the decision: approved." in message
     page.reload(wait_until="domcontentloaded")
-    # The decision history is a closed disclosure; the current decision stays above it.
+    # After an approval the Decision section starts closed. The history is a
+    # second disclosure inside it. Open both, then read the recorded outcome.
+    page.locator('[data-testid="stage-decision"] > summary').click()
     page.locator('[data-testid="decision-history"] > summary').click()
     assert "approved" in page.locator('[data-testid="decision-table"]').inner_text()
 

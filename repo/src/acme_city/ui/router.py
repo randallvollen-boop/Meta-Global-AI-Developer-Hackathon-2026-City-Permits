@@ -1765,6 +1765,20 @@ def _decision_conditions(ctx: ActionContext) -> list[str]:
 
 from acme_city.permits.notices import ACTION_NOTE  # noqa: E402
 
+#: Plain words for a stored decision outcome.  The success line never shows the key.
+_DECISION_WORDS = {
+    "approved": "approved",
+    "denied": "denied",
+    "modified": "modified",
+    "information_requested": "more information requested",
+    "approved_with_conditions": "approved with conditions",
+}
+
+
+def _decision_words(outcome: str) -> str:
+    """Return the outcome in plain words."""
+    return _DECISION_WORDS.get(outcome, outcome.replace("_", " "))
+
 
 def _permit_decide(ctx: ActionContext) -> Outcome:
     """Record an actual reviewer decision."""
@@ -1783,7 +1797,7 @@ def _permit_decide(ctx: ActionContext) -> Outcome:
         raise _conflict(result)
     view = result.value
     return Outcome(
-        message=f"Recorded the reviewer decision '{view.outcome}'. {ACTION_NOTE}",
+        message=f"Recorded the decision: {_decision_words(view.outcome)}. {ACTION_NOTE}",
         destination="Permitting decision record",
         state=view.outcome,
         target_type="decision",
