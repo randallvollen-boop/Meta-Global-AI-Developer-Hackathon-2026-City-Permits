@@ -59,6 +59,8 @@ LABELS = (
     "Approve",
     "Issue permit",
     "Assess application",
+    "Confirm allocation",
+    "Reconcile assessment",
     "Reconciliation",
     "Ready for review",
     "Building",

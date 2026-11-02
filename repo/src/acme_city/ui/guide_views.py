@@ -185,17 +185,20 @@ PATHS: tuple[Path, ...] = (
                 "decide the case.",
             ),
             Step(
-                "Pay the fee",
+                "Apply the café's payment",
                 "City Administrator",
                 "/reconciliation",
                 "Open Reconciliation, press Start under Assess application, type "
                 "the reference of the café's case and press Assess application, "
-                "then allocate the 150.00 receipt from the old finance account "
-                "and reconcile the assessment.",
-                "The receipt from the old account is matched and the balance "
-                "shows 0.00.",
-                "We are here because the fee has to be paid before a permit can "
-                "be issued.",
+                "then press Start under Confirm allocation and press Confirm "
+                "allocation, then press Start under Reconcile assessment and "
+                "press Reconcile assessment.",
+                "The fee from the approved schedule is assessed, the café's "
+                "payment is applied, and the balance shows 0.00, so the permit "
+                "can be issued.",
+                "We are here because the café paid its 150.00 fee when it "
+                "applied, but the payment came in under its old finance "
+                "account, so nobody could match it to the case.",
             ),
             Step(
                 "Issue the permit",

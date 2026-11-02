@@ -78,13 +78,13 @@ As **Permit Reviewer**, open `/queue/review`.
 - Do: Open the case of the café from the Review queue, press Start under Confirm parcel on the People and organizations tab and submit it, press Start under Run application checks and submit it, then press Start under Record review decision, choose Approve and write your reason.
 - Look for: The rule results show Passed and the decision is recorded in the case history with your reason.
 
-### 4. Pay the fee
+### 4. Apply the café's payment
 
 As **City Administrator**, open `/reconciliation`.
 
-- Why: We are here because the fee has to be paid before a permit can be issued.
-- Do: Open Reconciliation, press Start under Assess application, type the reference of the café's case and press Assess application, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
-- Look for: The receipt from the old account is matched and the balance shows 0.00.
+- Why: We are here because the café paid its 150.00 fee when it applied, but the payment came in under its old finance account, so nobody could match it to the case.
+- Do: Open Reconciliation, press Start under Assess application, type the reference of the café's case and press Assess application, then press Start under Confirm allocation and press Confirm allocation, then press Start under Reconcile assessment and press Reconcile assessment.
+- Look for: The fee from the approved schedule is assessed, the café's payment is applied, and the balance shows 0.00, so the permit can be issued.
 
 ### 5. Issue the permit
 

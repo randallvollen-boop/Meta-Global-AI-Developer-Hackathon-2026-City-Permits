@@ -333,7 +333,7 @@
         "card",
         "wire"
       ],
-      "text": "Fees: the City assesses the fee of your application and tells you the amount before you pay. The portal never asks for a permit fee by gift card or wire transfer."
+      "text": "Fees: the City assesses the fee of your application and tells you the amount before you pay. If you already paid when you applied, the City applies that payment to the assessed fee. The portal never asks for a permit fee by gift card or wire transfer."
     },
     {
       "id": "steps.the_permit",

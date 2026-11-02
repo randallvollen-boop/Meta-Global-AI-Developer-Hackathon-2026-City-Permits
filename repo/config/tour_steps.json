@@ -142,13 +142,13 @@
         {
           "id": "finance",
           "walkthrough_step": 4,
-          "title": "Pay the fee",
+          "title": "Apply the café's payment",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
           "path": "/reconciliation",
           "target": "[data-action-id=\"finance.assess\"]",
           "permission": "finance.assessment.create",
-          "caption": "We are here because the fee has to reach 0.00 before a permit can be issued. Press Assess application."
+          "caption": "We are here because the café paid its 150.00 fee when it applied, but the payment came in under its old finance account, so nobody could match it to the case. Press Assess application, Confirm allocation and Reconcile assessment."
         },
         {
           "id": "issue",
