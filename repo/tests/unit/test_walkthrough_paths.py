@@ -59,7 +59,6 @@ LABELS = (
     "Checks (3 of 6)",
     "Ready to decide",
     "Ready to issue",
-    "Waiting on Data Steward",
     "Needs checks",
     "Fee not settled",
     "In early resolution",

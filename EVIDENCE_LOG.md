@@ -343,3 +343,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Regression check before the implementation: `uv run pytest tests/integration/test_missing_tour_case.py -q` failed because the generic response had no `data-case-missing` marker. After the implementation, `uv run pytest tests/integration/test_missing_tour_case.py tests/api/test_pages.py tests/integration/test_walkthrough_routes.py tests/unit/test_tour.py -q` passed: 57 passed in 12.31s.
 - `uv run python -m py_compile tests/browser/test_missing_tour_case_browser.py` exited 0. The browser regression is not recorded as passed because this sandbox cannot run browser tests.
 - Final full non-browser verification: `uv run pytest tests/acceptance tests/api tests/evaluator tests/integration tests/regression tests/scenarios tests/security tests/supplementary tests/ui tests/unit -q -n auto` passed: 3237 passed in 77.76s.
+## 2026-11-02 — Non-blocking steward data (retest item 6)
+
+- Final post-change `uv run pytest -q` group spanning changed adjudication,
+  plain-reason, intake, queue, workspace, guide, policy-parity, protected
+  fixture/outcome snapshot, and D01–D11 tests — 112 passed in 16.53s.
+- The protected fixture and outcome-snapshot tests passed without changing their data. Browser tests were not run; lead browser verification remains required.

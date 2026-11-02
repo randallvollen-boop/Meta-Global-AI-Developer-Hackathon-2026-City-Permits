@@ -24,7 +24,7 @@ TAGS: tuple[tuple[str, str, str], ...] = (
     ("agent_verify", "Agent: verify", "warn"),
     ("intake_early", "Intake: early resolution", "warn"),
     ("intake_duplicate", "Intake: duplicate?", "warn"),
-    ("parcel_unconfirmed", "Cannot recommend: parcel not confirmed", "bad"),
+    ("parcel_unconfirmed", "Data follow-up: parcel not confirmed", "warn"),
 )
 TAG_KEYS = frozenset(key for key, _label, _tone in TAGS)
 _TAG_BY_KEY = {key: (label, tone) for key, label, tone in TAGS}
@@ -130,11 +130,9 @@ def _parcel_tag(match: gis.ApplicationParcelMatch | None) -> dict[str, str] | No
             "the parcel link proposed by the address locator has not been approved "
             "by the Data Steward"
         )
-    # The second sentence is the one the adjudication agent records when it
-    # cannot read the parcel. ``plain_reason`` keeps the first real sentence.
     return _tag(
         "parcel_unconfirmed",
-        plain_reason(detail, "The parcel is not confirmed yet, so none were used."),
+        plain_reason(detail, "Parcel-dependent checks are listed as Not checked."),
     )
 
 

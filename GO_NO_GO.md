@@ -91,3 +91,12 @@ The old statements that no remote, commit or deployment existed are historical a
 | The work of one job | GO / built | Every job of the worker runs inside a savepoint, so a job that stops leaves no link, no event, no review item and no record of the application behind, and the next job of the cycle still runs |
 | The take back of an applied link | GO / built | A link that was applied on top of an open proposal of a person is handed back as that proposal, and the take back of the screen needs the version of the link |
 | The mode that only records suggestions | HOLD | The screen does not offer it: a suggestion reaches no steward in this release. The stored value stays, and the delivery of the suggestions is written down as a future feature |
+
+## 2026-11-02 — Non-blocking steward data (retest item 6)
+
+| Item | Decision | Note |
+| --- | --- | --- |
+| Merits recommendation with open steward data | GO / locally verified | The adjudication agent recommends from checked rules and names any parcel-dependent Not checked rules; an open parcel or identity link remains Data follow-up. |
+| Payer link and fee gate | GO / locally verified | Data follow-up does not replace the finance gate; payer-account linkage and fee settlement still block issuance. |
+| D01–D11, AT01–AT20, DF-1/DF-2 expected data | GO / unchanged | Protected hashes and fixture outcomes were not edited; D evaluator, policy parity, and protected-fixture checks pass. |
+| Browser confirmation | PENDING | The lead must run the browser suite; this task did not run browser tests. |

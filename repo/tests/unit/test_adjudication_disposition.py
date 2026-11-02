@@ -1,20 +1,17 @@
 """Unit tests for the disposition of the adjudication agent.
 
-The disposition is a pure function of the type, the rule results and the
-state of the property of the case.  A case whose parcel the Data Steward has
-not confirmed is never recommended on: the parcel inputs (zoning, flood zone)
-come from that parcel, so the agent holds the case and waits for the steward.
+The disposition is a pure function of the type and rule results. A parcel rule
+that did not run is data follow-up: the agent recommends from checked rules
+and the plain reason names the omitted rule.
 """
 
 from __future__ import annotations
 
 from acme_city.kernel.adjudication import (
-    HOLD_PARCEL_UNCONFIRMED,
     OUTCOME_APPROVE,
     OUTCOME_CONDITIONS,
     OUTCOME_DENY,
     OUTCOME_HOLD,
-    PARCEL_UNCONFIRMED_REASON,
     disposition,
 )
 
@@ -48,22 +45,31 @@ def test_a_confirmed_parcel_recommends_approval() -> None:
     assert "recommends approval" in chosen.reason
 
 
-def test_an_unconfirmed_parcel_is_never_approved() -> None:
-    chosen = choose(results=passing(), conditions=[], parcel_confirmed=False)
-    assert chosen.outcome == OUTCOME_HOLD
-    assert chosen.hold_reason == HOLD_PARCEL_UNCONFIRMED
-    assert chosen.reason == PARCEL_UNCONFIRMED_REASON
-    assert "Waiting on Data Steward" in chosen.reason
+def test_an_unconfirmed_parcel_recommends_on_the_checked_rules() -> None:
+    chosen = choose(
+        results=passing()
+        + [
+            {
+                "rule_id": "FZ-1",
+                "status": "review",
+                "reason": "parcel_not_confirmed",
+            }
+        ],
+        conditions=[],
+        parcel_confirmed=False,
+    )
+    assert chosen.outcome == OUTCOME_APPROVE
+    assert chosen.hold_reason is None
+    assert "recommends approval" in chosen.reason
 
 
-def test_an_unconfirmed_parcel_is_never_approved_with_conditions() -> None:
+def test_an_unconfirmed_parcel_can_recommend_approval_with_conditions() -> None:
     chosen = choose(
         results=[{"rule_id": "DF-4", "status": "condition", "field_path": "height_ft"}],
         conditions=["DF-4: a footing inspection is required"],
         parcel_confirmed=False,
     )
-    assert chosen.outcome == OUTCOME_HOLD
-    assert chosen.hold_reason == HOLD_PARCEL_UNCONFIRMED
+    assert chosen.outcome == OUTCOME_CONDITIONS
 
 
 def test_a_failing_rule_still_recommends_denial() -> None:

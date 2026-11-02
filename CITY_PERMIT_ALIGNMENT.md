@@ -188,3 +188,15 @@ No milestone is verified from a screenshot, static report, generated role label,
 - Full event/Rules acceptance and any submission-format requirements.
 - Independent confirmation of credit balance, expiration, eligible products, and no-cash controls.
 - Live Muse city-permit task and evidence.
+
+### 2026-11-02 — Non-blocking steward data
+
+- An open parcel or identity link is Data follow-up, not an adjudication hold.
+  The adjudication agent recommends from checked deterministic rules and names
+  every parcel-dependent rule that remains Not checked. A Permit Reviewer still
+  records the decision and any required exception rationale.
+- Authorized parcel and identity corrections remain available after review,
+  decision, and issuance; neither changes source-owned facts. Payer linkage
+  and the assessed, settled fee remain issuance gates.
+- D01–D11, AT01–AT20, DF-1, and DF-2 expected data remain unchanged. Browser
+  verification of this design change remains pending with the lead.

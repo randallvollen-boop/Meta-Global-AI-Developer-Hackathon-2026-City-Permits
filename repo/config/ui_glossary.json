@@ -320,7 +320,7 @@
       "purpose": "The cases with the Permit Reviewer. Stage shows where each case is in the life cycle. Next action shows what is needed now and by whom.",
       "can_do": [
         "Read Stage and Next action on each case. Stage uses the life cycle names, for example Checks (3 of 6).",
-        "Filter by Next action. The chips are Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution and Submitted with known issues.",
+        "Filter by Next action. The chips are Ready to decide, Ready to issue, Needs checks, Fee not settled, In early resolution and Submitted with known issues. An open parcel or identity link appears as a Data follow-up tag instead of a next-action chip.",
         "Search by reference, applicant name or site address. One match offers Open. Clear drops the search and keeps the chip.",
         "Read the agent tags on a row, and filter to one tag. The tooltip is the reason in one sentence.",
         "Open a case to read the recommendation and record a decision."

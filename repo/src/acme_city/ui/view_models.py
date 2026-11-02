@@ -1054,9 +1054,6 @@ def denied_action_explanations(actions: list[dict[str, Any]]) -> list[dict[str, 
     ]
 
 
-#: The next action of a case whose parcel link waits for the Data Steward.
-WAITING_ON_STEWARD = "Waiting on Data Steward"
-
 #: The grant a persona holds to create the sample cases of the demonstration.
 SAMPLE_DATA_PERMISSION = "config.manage"
 
@@ -2703,14 +2700,17 @@ def _application_step(
 def _blocker_action(blockers: list[dict[str, str]]) -> str:
     """Return the plain next action of the blockers of one application.
 
-    The parcel link of a case is the Data Steward's decision, so a case whose
-    link the locator proposed and the steward has not approved yet waits for
-    the steward instead of naming a technical blocker.
+    Parcel and identity links are recorded as data follow-up; they do not
+    displace the next action for a permit decision or issuance.
     """
-    codes = [blocker["code"] for blocker in blockers]
-    if "parcel_link_unapproved" in codes:
-        return WAITING_ON_STEWARD
-    return f"Resolve {codes[0].replace('_', ' ')}"
+    actionable = [
+        blocker
+        for blocker in blockers
+        if blocker["code"] not in {"parcel_link_unapproved", "identity_link_unapproved"}
+    ]
+    if not actionable:
+        return "Continue review; data follow-up is open"
+    return f"Resolve {actionable[0]['code'].replace('_', ' ')}"
 
 
 def _next_action(
@@ -2737,7 +2737,7 @@ def _next_action(
             return _blocker_action(blockers)
         if allows(session, actor, "permit.case.advance", "permits"):
             return "Advance the case to review"
-        return "Waiting for the Data Steward"
+        return "Waiting for the applicant's answer"
     if blockers:
         return _blocker_action(blockers)
     if evaluation is None:

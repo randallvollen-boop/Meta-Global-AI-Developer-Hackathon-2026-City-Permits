@@ -257,10 +257,10 @@ def test_tags_render_for_deny_approve_and_early_resolution(client: TestClient) -
     assert _title(denied, "Agent: deny") == DENY_REASON
     assert _title(denied, "Intake: duplicate?") == DUPLICATE_REASON
     assert "Agent: approve" in approved
-    assert "Cannot recommend: parcel not confirmed" in approved
+    assert "Data follow-up: parcel not confirmed" in approved
     assert "Agent: deny" not in approved
     assert _title(approved, "Agent: approve") == APPROVE_REASON
-    assert _title(approved, "Cannot recommend: parcel not confirmed") == PARCEL_REASON
+    assert _title(approved, "Data follow-up: parcel not confirmed") == PARCEL_REASON
     assert "Intake: early resolution" in early
     assert _title(early, "Intake: early resolution") == EARLY_REASON
 
@@ -288,4 +288,4 @@ def test_a_tag_chip_filters_and_combines_with_search(client: TestClient) -> None
     review = client.get("/queue/review?tag=agent_approve").text
     assert APPROVE in review
     assert DENY not in review
-    assert "Cannot recommend: parcel not confirmed" in review
+    assert "Data follow-up: parcel not confirmed" in review

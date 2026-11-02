@@ -1242,7 +1242,6 @@ _CHECK_AGAIN = frozenset({"no_current_evaluation", "evaluation_stale"})
 NEXT_ACTIONS: tuple[tuple[str, str], ...] = (
     ("ready_to_decide", "Ready to decide"),
     ("ready_to_issue", "Ready to issue"),
-    ("waiting_on_steward", "Waiting on Data Steward"),
     ("needs_checks", "Needs checks"),
     ("fee_not_settled", "Fee not settled"),
     ("early_resolution", "In early resolution"),
@@ -1353,16 +1352,12 @@ def _approved_action(
     issuance: Any,
 ) -> str:
     """Return the next action of an approved case."""
-    if _steward(permits.identity_link_blockers(application)):
-        return "waiting_on_steward"
     if _fee_open(finance_service, application):
         return "fee_not_settled"
     decision = permits.current_decision(application.id)
     if decision is None:
         return "ready_to_decide"
     blockers = issuance.blockers(application, decision)
-    if _steward(blockers):
-        return "waiting_on_steward"
     if not blockers:
         return "ready_to_issue"
     codes = {blocker.code for blocker in blockers}
@@ -1404,8 +1399,6 @@ def _next_action_key(
     if _known_issues(application):
         return "submitted_issues"
     evaluation, blockers = _open_blockers(application, permits, decisions)
-    if _steward(blockers):
-        return "waiting_on_steward"
     if status == "needs_information":
         return "early_resolution"
     if evaluation is None or evaluation.stale:

@@ -49,21 +49,21 @@ ADMINISTRATOR = "persona_city_administrator"
 
 #: Seeded applications, by scenario, as reference, stage text, next action.
 EXPECTED_CASES: dict[str, list[tuple[str, str, str]]] = {
-    "D01": [("SYN-APP-001", "Submitted (1 of 6)", "Waiting on Data Steward")],
-    "D02": [("SYN-APP-002", "Submitted (1 of 6)", "Waiting on Data Steward")],
-    "D03": [("SYN-APP-003", "Submitted (1 of 6)", "Waiting on Data Steward")],
-    "D04": [("SYN-APP-004", "Submitted (1 of 6)", "Waiting on Data Steward")],
-    "D05": [("SYN-APP-005", "Submitted (1 of 6)", "Waiting on Data Steward")],
-    "D06": [("SYN-APP-006", "Submitted (1 of 6)", "Waiting on Data Steward")],
+    "D01": [("SYN-APP-001", "Submitted (1 of 6)", "Needs checks")],
+    "D02": [("SYN-APP-002", "Submitted (1 of 6)", "Needs checks")],
+    "D03": [("SYN-APP-003", "Submitted (1 of 6)", "Needs checks")],
+    "D04": [("SYN-APP-004", "Submitted (1 of 6)", "Needs checks")],
+    "D05": [("SYN-APP-005", "Submitted (1 of 6)", "Needs checks")],
+    "D06": [("SYN-APP-006", "Submitted (1 of 6)", "Needs checks")],
     "D07": [("SYN-APP-007", "Issued (6 of 6)", "Issued")],
-    "D08": [("SYN-APP-008", "Submitted (1 of 6)", "Waiting on Data Steward")],
+    "D08": [("SYN-APP-008", "Submitted (1 of 6)", "Needs checks")],
     "D09": [
-        ("SYN-APP-009", "Submitted (1 of 6)", "Waiting on Data Steward"),
-        ("SYN-APP-010", "Submitted (1 of 6)", "Waiting on Data Steward"),
-        ("SYN-APP-011", "Submitted (1 of 6)", "Waiting on Data Steward"),
-        ("SYN-APP-012", "Submitted (1 of 6)", "Waiting on Data Steward"),
+        ("SYN-APP-009", "Submitted (1 of 6)", "Needs checks"),
+        ("SYN-APP-010", "Submitted (1 of 6)", "Needs checks"),
+        ("SYN-APP-011", "Submitted (1 of 6)", "Needs checks"),
+        ("SYN-APP-012", "Submitted (1 of 6)", "Needs checks"),
     ],
-    "D11": [("SYN-APP-013", "Submitted (1 of 6)", "Waiting on Data Steward")],
+    "D11": [("SYN-APP-013", "Submitted (1 of 6)", "Needs checks")],
 }
 
 
@@ -229,7 +229,7 @@ def test_seeded_cases_and_a_fresh_submission_map_stage_and_next_action(
             assert fresh.id not in {row.id for row in rows}
             assert _place(session, fresh) == (
                 "Submitted (1 of 6)",
-                "Waiting on Data Steward",
+                "Needs checks",
             )
     finally:
         factory.dispose()
@@ -266,11 +266,11 @@ def test_next_action_follows_status_blockers_fee_and_the_presubmit_flag(
             session.flush()
             assert _place(session, plain) == (
                 "Submitted (1 of 6)",
-                "Waiting on Data Steward",
+                "Needs checks",
             )
             plain.status = "needs_information"
             session.flush()
-            assert _place(session, plain)[1] == "Waiting on Data Steward"
+            assert _place(session, plain)[1] == "In early resolution"
             match.link_state = "approved"
             match.confirmed_at = None
             session.flush()
@@ -285,7 +285,7 @@ def test_next_action_follows_status_blockers_fee_and_the_presubmit_flag(
             assert _place(session, plain) == (STAGE_EXAMPLE, "Ready to decide")
             match.link_state = "proposed"
             session.flush()
-            assert _place(session, plain) == (STAGE_EXAMPLE, "Waiting on Data Steward")
+            assert _place(session, plain) == (STAGE_EXAMPLE, "Ready to decide")
             match.link_state = "approved"
             session.flush()
             assert _place(session, plain) == (STAGE_EXAMPLE, "Ready to decide")
@@ -369,7 +369,7 @@ def test_next_action_follows_status_blockers_fee_and_the_presubmit_flag(
             assert [row["next_action"] for row in presented["rows"]] == [
                 "Ready to decide",
                 "Ready to issue",
-                "Waiting on Data Steward",
+                "Needs checks",
             ]
             chips = presented["next_actions"]
             assert [chip["key"] for chip in chips[:2]] == [

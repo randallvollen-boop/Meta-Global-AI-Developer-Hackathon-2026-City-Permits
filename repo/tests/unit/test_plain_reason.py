@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from acme_city.agents.plain_reason import (
-    PARCEL_NOT_CHECKED,
     condition_line,
     describe_recommendation,
     plain_reason,
@@ -122,18 +121,23 @@ def test_an_approval_lists_the_rules_that_passed_in_one_line() -> None:
 
 def test_an_unconfirmed_parcel_says_what_was_not_checked() -> None:
     reason = plain_reason(
-        outcome="hold",
-        hold_reason="parcel_unconfirmed",
-        results=[row("DF-2", "pass", "5")],
-        kernel_reason="Cannot recommend yet: the parcel is not confirmed. Waiting on Data Steward.",
+        outcome="approve",
+        hold_reason=None,
+        results=[
+            row("DF-2", "pass", "5"),
+            {
+                "rule_id": "FZ-1",
+                "status": "review",
+                "reason": "parcel_not_confirmed",
+                "title": "Flood zone",
+            },
+        ],
         parcel_confirmed=False,
     )
     assert reason.lines == (
-        "Cannot recommend yet: the parcel is not confirmed. Waiting on Data Steward.",
-        PARCEL_NOT_CHECKED,
-    )
-    assert PARCEL_NOT_CHECKED == (
-        "Not checked: zoning and flood zone, because the parcel is not confirmed."
+        "Recommend approve: the one rule that applies passes: "
+        "ACME Code §14-306, Fence height, side and rear yard.",
+        "Not checked: Flood zone, because the parcel is not confirmed.",
     )
 
 
@@ -141,10 +145,18 @@ def test_a_denial_on_an_unconfirmed_parcel_still_says_what_was_not_checked() -> 
     reason = plain_reason(
         outcome="deny",
         hold_reason=None,
-        results=[row("DF-1", "fail", "6")],
+        results=[
+            row("DF-1", "fail", "6"),
+            {
+                "rule_id": "FZ-1",
+                "status": "review",
+                "reason": "parcel_not_confirmed",
+                "title": "Flood zone",
+            },
+        ],
         parcel_confirmed=False,
     )
-    assert reason.lines[-1] == PARCEL_NOT_CHECKED
+    assert reason.lines[-1] == "Not checked: Flood zone, because the parcel is not confirmed."
 
 
 def test_the_earlier_case_is_one_line_of_its_own() -> None:

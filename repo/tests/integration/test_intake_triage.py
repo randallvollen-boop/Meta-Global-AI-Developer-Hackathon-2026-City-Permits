@@ -429,16 +429,10 @@ def test_the_adjudication_agent_recommends_deny_and_approve(
         factory.dispose()
 
 
-def test_the_adjudication_agent_waits_for_the_steward_while_the_parcel_is_unconfirmed(
+def test_the_adjudication_agent_recommends_with_data_follow_up_while_the_parcel_is_unconfirmed(
     client: TestClient, environment
 ) -> None:
-    """An unresolved property is not a case the agent may recommend on.
-
-    The parcel inputs (zoning, flood zone) come from the parcel the Data
-    Steward confirms.  While the link the address locator proposed is not
-    confirmed, the agent does not recommend approval: it holds the case and
-    the case waits for the Data Steward.
-    """
+    """An unresolved property does not make the agent hold the case."""
     choose(client, "persona_data_steward")
     (rear,) = simulate(client, "fence-conforming-rear")
     application_id = rear["application_id"]
@@ -463,19 +457,16 @@ def test_the_adjudication_agent_waits_for_the_steward_while_the_parcel_is_unconf
                     permit.Recommendation.status == "pending",
                 )
             ).scalar_one()
-            assert recommendation.proposed_outcome == "hold"
-            assert (
-                "Cannot recommend yet: the parcel is not confirmed. "
-                "Waiting on Data Steward." in (recommendation.rationale or "")
-            )
+            assert recommendation.proposed_outcome == "approve"
+            assert "Recommend approve" in (recommendation.rationale or "")
     finally:
         factory.dispose()
 
-    # The case waits for the Data Steward, and the page says so.
+    # The reviewer receives a recommendation and visible data follow-up.
     choose(client, "persona_permit_reviewer")
     page = client.get(f"/permits/{application_id}").text
-    assert 'data-testid="recommendation-outcome">Hold<' in page
-    assert "Waiting on Data Steward" in page
+    assert 'data-testid="recommendation-outcome">Approve<' in page
+    assert 'data-testid="data-follow-up">Data follow-up' in page
 
     # Once the steward confirms the parcel, a re-run evaluates all the rules.
     approve_parcel_link(client, environment, application_id)
