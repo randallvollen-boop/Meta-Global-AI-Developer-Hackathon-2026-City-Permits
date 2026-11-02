@@ -21,6 +21,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} | City of Acme</title>
+  {# The description of the link preview: one plain sentence about the
+     fictional City of Acme website. #}
+  <meta name="description" content="{{ title }}: the fictional City of Acme permit website, with synthetic records only.">
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/city.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
@@ -106,7 +109,13 @@
 
 <footer class="city-footer">
   <div class="city-wrap">
-    <p class="city-footer-links" data-testid="city-footer-links"><b>City of Acme</b> <span aria-hidden="true">&middot;</span> <a href="/city/accessibility">Accessibility</a> <span aria-hidden="true">&middot;</span> <a href="/city/privacy">Privacy</a> <span aria-hidden="true">&middot;</span> <a href="/city/contact" data-testid="city-footer-help">Help</a> <span aria-hidden="true">&middot;</span> <a href="/help" data-testid="help-link-footer">Help and guides</a></p>
+    <ul class="city-footer-links" data-testid="city-footer-links">
+      <li><b>City of Acme</b></li>
+      <li><a href="/city/accessibility">Accessibility</a></li>
+      <li><a href="/city/privacy">Privacy</a></li>
+      <li><a href="/city/contact" data-testid="city-footer-help">Help</a></li>
+      <li><a href="/help" data-testid="help-link-footer">Help and guides</a></li>
+    </ul>
     <p class="city-footer-note" data-testid="city-footer-note">{{ portal_text.footer_note }}</p>
   </div>
 </footer>

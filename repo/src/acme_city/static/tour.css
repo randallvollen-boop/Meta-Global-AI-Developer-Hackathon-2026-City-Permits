@@ -10,14 +10,14 @@
 
 .tour-panel {
   position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
-  width: min(40rem, calc(100vw - 2rem)); max-height: 60vh; overflow-y: auto;
+  box-sizing: border-box; width: min(40rem, calc(100% - 2rem)); max-height: 60vh; overflow-y: auto;
   background: var(--surface, #fff); color: var(--fg, #142230);
   border: 1px solid var(--line, #dde3e9); border-radius: var(--radius, 10px);
   box-shadow: var(--shadow, 0 4px 14px rgba(20, 34, 48, .1));
   padding: 0.9rem 1rem; pointer-events: auto;
 }
 
-.tour-count { margin: 0; font-size: .78rem; letter-spacing: .04em; color: var(--fg-2, #4a5b6b); }
+.tour-count { margin: 0; font-size: .76rem; letter-spacing: normal; color: var(--fg-2, #4a5b6b); }
 .tour-path { margin: 0 0 .1rem; font-size: .78rem; letter-spacing: .04em; color: var(--fg-2, #4a5b6b); font-weight: 600; }
 .tour-title { margin: .15rem 0 .35rem; font-size: 1.1rem; }
 .tour-caption { margin: 0 0 .5rem; font-size: .95rem; }
@@ -37,7 +37,12 @@
 .tour-auto { display: inline-flex; flex-direction: column; gap: .2rem; min-width: 5.5rem; }
 .tour-countdown { font-size: .78rem; color: var(--fg-2, #4a5b6b); white-space: nowrap; }
 .tour-progress { display: block; height: 3px; border-radius: 2px; background: var(--line, #dde3e9); overflow: hidden; }
-.tour-progress-fill { display: block; height: 100%; width: 0; background: var(--accent, #1f5f8b); transition: width 1s linear; }
+/* The bar grows by a scale, not by a width: the browser animates the
+   transform, so the bar never reflows the panel around it. */
+.tour-progress-fill {
+  display: block; height: 100%; width: 100%; background: var(--accent, #1f5f8b);
+  transform: scaleX(0); transform-origin: left center; transition: transform 1s linear;
+}
 
 @media (max-width: 720px) {
   .tour-panel { bottom: 4.5rem; max-height: 50vh; }

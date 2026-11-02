@@ -21,11 +21,15 @@
 .guide-steps { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
 .guide-step h2 { display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0; }
 .guide-step h3 { display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0; font-size: 1.05rem; }
-.guide-step-n { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.95rem; }
+.guide-step-n { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 0.95rem; }
 .guide-persona { margin: 0 0 0.4rem; font-weight: 600; }
-.guide-k { display: block; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+.guide-k { display: block; font-size: 0.76rem; letter-spacing: normal; color: var(--ink-soft); }
 .guide-path-card { margin-bottom: 1rem; }
-.guide-path-cards { margin-top: 1rem; }
+/* The section holds the path cards; it is not a card itself, so the page
+   has one card level. */
+.guide-path-cards {
+  margin-top: 1rem; background: transparent; border: 0; border-radius: 0; box-shadow: none;
+}
 .guide-path-list { list-style: none; padding-left: 0; margin: 0; display: grid; gap: 0.75rem; }
 @media (min-width: 900px) { .guide-path-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .guide-path-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

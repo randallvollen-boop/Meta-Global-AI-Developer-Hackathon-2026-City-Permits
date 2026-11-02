@@ -37,7 +37,7 @@ As **Permit Reviewer**, open `/queue/review`.
 
 As **City Administrator**, open `/reconciliation`.
 
-- Do: Open Reconciliation, press Start under Assess application, type the reference of the café's case and press Assess application, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
+- Do: Open Reconciliation, press Start under Assess application, type the reference of the café’s case and press Assess application, then allocate the 150.00 receipt from the old finance account and reconcile the assessment.
 - Look for: The receipt from the old account is matched and the balance shows 0.00.
 
 ### 5. Issue the permit
@@ -52,7 +52,7 @@ As **Permit Reviewer**, open `/queue/review`.
 Open `/city/community`.
 
 - Do: Search for the permit number on the City of Acme website.
-- Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner's name, documents or fees.
+- Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner’s name, documents or fees.
 
 ## Apply as a resident
 

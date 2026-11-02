@@ -163,7 +163,7 @@ PERSONA_PROFILES: dict[str, dict[str, str]] = {
         "icon": "admin",
     },
     "Agent Operator": {
-        "who": "The operations specialist who runs the city's automated helper agents.",
+        "who": "The operations specialist who runs the city’s automated helper agents.",
         "does": "Wakes the agents, runs processing batches, watches results and retries failures. The city administrator decides whether agents stay awake.",
         "start": "Wake the agents and run the next batch.",
         "next": "/agents",

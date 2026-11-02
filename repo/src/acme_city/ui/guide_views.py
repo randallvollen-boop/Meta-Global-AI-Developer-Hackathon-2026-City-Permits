@@ -111,7 +111,7 @@ PATHS: tuple[Path, ...] = (
                 "City Administrator",
                 "/reconciliation",
                 "Open Reconciliation, press Start under Assess application, type "
-                "the reference of the café's case and press Assess application, "
+                "the reference of the café’s case and press Assess application, "
                 "then allocate the 150.00 receipt from the old finance account "
                 "and reconcile the assessment.",
                 "The receipt from the old account is matched and the balance "
@@ -132,7 +132,7 @@ PATHS: tuple[Path, ...] = (
                 "/city/community",
                 "Search for the permit number on the City of Acme website.",
                 "The public record shows the permit, the parcel and the outcome, "
-                "and never a homeowner's name, documents or fees.",
+                "and never a homeowner’s name, documents or fees.",
             ),
         ),
     ),

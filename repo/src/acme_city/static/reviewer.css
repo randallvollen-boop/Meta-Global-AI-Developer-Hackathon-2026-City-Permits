@@ -1,6 +1,6 @@
 /* Permit Reviewer screens: queue views, case header, Review tab.
    Uses the tokens of app.css only, so light and dark both follow. */
-.eyebrow { margin: 0 0 4px; font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); }
+.eyebrow { margin: 0 0 4px; font-size: .72rem; font-weight: 700; letter-spacing: normal; color: var(--fg-2); }
 .queue-views { margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
 .queue-table td { vertical-align: top; }
 .queue-table .dates { white-space: nowrap; font-size: .8rem; }
