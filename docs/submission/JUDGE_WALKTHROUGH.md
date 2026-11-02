@@ -16,7 +16,7 @@ Cedarline Coffee cannot open until its permit is issued, and its owner is record
 
 As **Data Steward**, open `/steward`.
 
-- Do: Press Start fresh, then open Data issues, press Prepare recommendations, press Accept recommendation on each task that carries a High pill and approve the link of the property.
+- Do: Press Start fresh, then open Data issues, press Prepare recommendations, and if that button is off open Steward assistant in the left menu as the Agent Operator and press Wake agent, then press Accept recommendation on each task that carries a High pill and approve the link of the property.
 - Look for: Every task of the café carries a High pill and a reason in one line, and the decision is recorded in your name.
 
 ### 2. Let the agent route the case

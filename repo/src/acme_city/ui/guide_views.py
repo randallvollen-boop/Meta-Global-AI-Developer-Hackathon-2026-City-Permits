@@ -80,7 +80,9 @@ PATHS: tuple[Path, ...] = (
                 "Data Steward",
                 "/steward",
                 "Press Start fresh, then open Data issues, press Prepare "
-                "recommendations, press Accept recommendation on each task that "
+                "recommendations, and if that button is off open Steward "
+                "assistant in the left menu as the Agent Operator and press "
+                "Wake agent, then press Accept recommendation on each task that "
                 "carries a High pill and approve the link of the property.",
                 "Every task of the café carries a High pill and a reason in one "
                 "line, and the decision is recorded in your name.",
