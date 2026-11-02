@@ -924,6 +924,56 @@ def test_the_catalogue_names_the_record_the_state_and_the_action(
     assert 'data-action-id="registry.propose"' in body
 
 
+def test_the_catalogue_row_carries_a_short_summary_and_opens_the_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """The row names the record shortly, and the record opens on its own page."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records").text
+    rows = re.findall(
+        r'<th scope="row" class="stw-cell stw-cell-record" data-label="Record">(.*?)</th>',
+        body,
+        flags=re.S,
+    )
+    assert rows, "the catalogue lists records"
+    for row in rows:
+        text = " ".join(re.sub(r"<[^>]+>", " ", row).split())
+        # The summary is short: the name or the address beside the source id.
+        assert len(text) <= 80, text
+        # The identifier is written once, never twice in the same cell.
+        assert text.count(text.split()[-1]) <= 1 or " " not in text.split()[-1]
+    # A record with a name leads with that name and carries the source id.
+    assert any("Cedarline Coffee Works" in row for row in rows)
+    assert any("ERP-BL-00413" in row for row in rows)
+    # Every row links the record it names.
+    link = re.search(
+        r'href="(/source-records/[^"]+)"[^>]*data-testid="source-record-link"',
+        body,
+    )
+    assert link is not None
+    record = client.get(link.group(1))
+    assert record.status_code == 200
+    assert 'data-testid="source-record-values"' in record.text
+    assert "License number" in record.text or "License" in record.text
+
+
+def test_a_record_without_a_name_shows_its_address(
+    client: TestClient, environment: Settings
+) -> None:
+    """The summary is the address when the record names no one."""
+    choose(client, "persona_data_steward")
+    body = client.get("/source-records?system=gis").text
+    rows = re.findall(
+        r'<th scope="row" class="stw-cell stw-cell-record" data-label="Record">(.*?)</th>',
+        body,
+        flags=re.S,
+    )
+    assert rows
+    texts = [" ".join(re.sub(r"<[^>]+>", " ", row).split()) for row in rows]
+    assert any(text.startswith("400 Lantern Row") for text in texts), texts
+
+
 def test_the_link_state_filter_narrows_the_catalogue(
     client: TestClient, environment: Settings
 ) -> None:

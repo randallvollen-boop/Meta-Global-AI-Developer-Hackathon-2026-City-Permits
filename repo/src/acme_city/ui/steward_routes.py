@@ -606,6 +606,46 @@ def ui_source_records(
     return render(request, "source_records.html", context)
 
 
+@router.get("/source-records/{detail_id}", operation_id="ui_source_record")
+def ui_source_record(
+    detail_id: str,
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show one source record as its own page.
+
+    The page holds the whole record as label and value pairs, so a reader
+    sees every value the source sent without opening a drawer.
+    """
+    resolved, refused = _guard(request, session, actor, "source_records")
+    if refused is not None:
+        return refused
+    record = steward_views.source_record(session, resolved, request, detail_id)
+    if not record:
+        return error_response(
+            request,
+            session,
+            resolved,
+            status_code=404,
+            title="That source record was not found",
+            message="The source record does not exist.",
+            code="not_found",
+            back="/source-records",
+        )
+    context = page_context(
+        request,
+        session,
+        resolved,
+        screen="source_records",
+        title="Source record",
+        record=record,
+        help_screen="source_records",
+        quiet_feedback=True,
+    )
+    return render(request, "source_record.html", context)
+
+
 @router.get("/activity", operation_id="ui_activity")
 def ui_activity(
     request: Request,

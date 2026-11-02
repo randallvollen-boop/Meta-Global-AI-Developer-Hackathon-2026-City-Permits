@@ -45,8 +45,8 @@
       {% for row in catalogue.rows %}
       <tr data-link-state="{{ row.state }}">
         <th scope="row" class="stw-cell stw-cell-record" data-label="Record">
-          {{ row.name }}
-          <span class="stw-reference" data-testid="source-reference">{{ row.record_id }}</span>
+          <a href="{{ row.detail_href }}" data-testid="source-record-link">{{ row.summary or row.record_id }}</a>
+          {% if row.summary %}<span class="stw-reference" data-testid="source-reference">{{ row.record_id }}</span>{% endif %}
         </th>
         <td class="stw-cell" data-label="Source">{{ row.source }}</td>
         <td class="stw-cell" data-label="Link state">{{ st.source_state(row) }}</td>

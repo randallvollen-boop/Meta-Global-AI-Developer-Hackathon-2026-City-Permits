@@ -3795,7 +3795,19 @@ def source_records(
                 "name",
             ),
         )
-        text = f"{record_id} {name} {display.source_name(session, system_id, dataset)}".lower()
+        address = _payload_values(
+            payload,
+            (
+                "business_address",
+                "submitted_site_text",
+                "source_string",
+                "address",
+            ),
+        )
+        # The row carries a short summary: the name a person knows, or the
+        # address, or nothing but the identifier of the source record.
+        summary = name or address
+        text = f"{record_id} {name} {address} {display.source_name(session, system_id, dataset)}".lower()
         if needle and needle not in text:
             continue
         by_system[system_id] += 1
@@ -3849,6 +3861,8 @@ def source_records(
             {
                 "source": display.source_name(session, system_id, dataset),
                 "name": name or record_id,
+                "summary": summary,
+                "address": address,
                 "record_id": record_id,
                 "version": snapshot.source_record_version or "",
                 "changed": _iso(snapshot.source_updated_at),
@@ -3862,6 +3876,7 @@ def source_records(
                 "action_href": action_href,
                 "action": action,
                 "detail_id": f"{system_id}:{dataset}:{record_id}",
+                "detail_href": f"/source-records/{system_id}:{dataset}:{record_id}",
                 "scenario": snapshot.scenario_id or "",
             }
         )
@@ -3898,6 +3913,42 @@ def source_records(
         "system": system,
         "query": query,
         "link_state": link_state,
+    }
+
+
+def source_record(
+    session: Session, actor: ActorContext, request: Any, detail_id: str
+) -> dict[str, Any]:
+    """Return one source record as its own page.
+
+    The page shows the whole record as label and value pairs: the values the
+    source sent, where the record came from, who owns it and the link it
+    holds.  It reads and decides nothing.
+    """
+    from acme_city.ui.patterns import DetailContext
+
+    ctx = DetailContext(session=session, actor=actor, request=request)
+    view = _resolve_source(ctx, detail_id)
+    if view is None:
+        return {}
+    system_id, dataset_key, record_id = _split_source_id(detail_id)
+    return {
+        "title": "Source record",
+        "subtitle": view.subtitle,
+        "record_id": record_id,
+        "system_id": system_id,
+        "dataset_key": dataset_key,
+        "sections": [
+            {
+                "heading": section.heading,
+                "rows": [
+                    {"label": row.label, "value": row.value, "mono": row.mono}
+                    for row in section.rows
+                ],
+                "lines": list(section.lines),
+            }
+            for section in view.sections
+        ],
     }
 
 

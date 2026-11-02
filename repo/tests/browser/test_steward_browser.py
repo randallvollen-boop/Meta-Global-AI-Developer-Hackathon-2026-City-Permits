@@ -169,6 +169,26 @@ def test_the_task_shows_what_was_submitted_and_opens_the_application(
     assert page.recorded_errors == []
 
 
+def test_the_catalogue_row_opens_the_record_on_its_own_page(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """The row names the record shortly, and the record opens as label and value."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/source-records", wait_until="domcontentloaded")
+    link = page.locator('[data-testid="source-record-link"]').first
+    assert link.count() == 1
+    summary = link.inner_text().strip()
+    assert summary, "the row names the record"
+    link.click()
+    page.wait_for_selector('[data-testid="source-record-values"]')
+    values = page.locator('[data-testid="source-record-values"] dt')
+    assert values.count() > 0, "the record reads as label and value pairs"
+    for width in (1280, 390):
+        page.set_viewport_size({"width": width, "height": 900})
+        assert overflow(page) <= 1, ("source record", width, overflow(page))
+    assert page.recorded_errors == []
+
+
 def test_a_decision_made_in_the_browser_shows_on_the_case(page, server: BrowserServer, login, cedarline, submit_action) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")
