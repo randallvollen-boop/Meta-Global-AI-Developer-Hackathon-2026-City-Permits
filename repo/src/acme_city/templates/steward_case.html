@@ -177,6 +177,14 @@
 <section class="panel" aria-labelledby="q1" data-question="1" data-testid="case-q1">
   <h2 id="q1">1. What is the problem?</h2>
   <p>{{ c.problem }}</p>
+  {% if c.technical %}
+  <details class="stw-disclosure" data-testid="case-technical">
+    <summary>More details</summary>
+    <dl class="stw-facts">
+      {% for item in c.technical %}<div><dt>{{ item.label }}</dt><dd class="mono">{{ item.value }}</dd></div>{% endfor %}
+    </dl>
+  </details>
+  {% endif %}
 </section>
 </li>
 
@@ -262,7 +270,7 @@
     </div>
   </dl>
   {% else %}
-  <p class="muted">There are no values to compare for this issue.</p>
+  <p class="muted">{% if c.kind == 'issue' %}No source or master value is on file to compare. This issue is about which source the City trusts, not about one value.{% else %}There are no values to compare for this issue.{% endif %}</p>
   {% endif %}
 </section>
 </li>

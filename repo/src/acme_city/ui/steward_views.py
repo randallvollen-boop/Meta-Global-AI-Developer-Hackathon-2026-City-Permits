@@ -1967,17 +1967,17 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
     for row in session.execute(
         select(change.GovernanceIssue).order_by(change.GovernanceIssue.created_at, change.GovernanceIssue.id)
     ).scalars():
-        if row.subject_id in synthetic:
+        if row.subject_id in synthetic or row.subject_id.partition(":")[0] in synthetic:
             continue
-        party = session.get(registry.Party, row.subject_id)
+        party = session.get(registry.Party, row.subject_id.partition(":")[0])
         issues.append(
             Issue(
                 kind="issue",
                 item_id=row.id,
-                title=row.description,
+                title=issue_plain_words(session, row),
                 record=party.display_name if party is not None else display.pretty(row.subject_type) + " " + row.subject_id,
                 record_ref=_ref("record", party.id) if party is not None else "",
-                applications=_applications_of(session, [row.subject_id], synthetic) if party is not None else [],
+                applications=_applications_of(session, [party.id], synthetic) if party is not None else [],
                 source=row.responsible_queue_id or "Steward queue",
                 status="needs_review" if row.status == "open" else "resolved",
                 assignee_id=row.assigned_actor_id,
@@ -2830,37 +2830,291 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
     }
 
 
+#: The plain sentence of each kind of recorded issue.  ``{record}`` is the name
+#: of the record the issue is about and ``{field}`` the field in plain words.
+ISSUE_PLAIN_WORDS: dict[str, str] = {
+    "unresolved_field_authority": (
+        "{record}'s {field} comes from a source nobody has approved yet, so the "
+        "City cannot say which value is right."
+    ),
+    "late_source_version": (
+        "A source sent an older version of {record} after a newer one was already "
+        "accepted. The newer version stands and the late copy is kept as history."
+    ),
+    "source_version_payload_conflict": (
+        "Two versions of the same business record were delivered with different "
+        "content, so the City cannot tell which one is right."
+    ),
+    "unregistered_dataset": (
+        "A source sent records from a dataset the City has not registered, so "
+        "those records cannot be published yet."
+    ),
+}
+
+#: The words of the preview of closing an issue, by kind of issue.
+ISSUE_CLOSE_PREVIEW: dict[str, str] = {
+    "unresolved_field_authority": (
+        "The issue closes. The field stays without a declared owner until a "
+        "source link is approved, and it can be raised again."
+    ),
+    "late_source_version": "The issue closes. The accepted version stands; the late copy stays as history.",
+    "source_version_payload_conflict": (
+        "The issue closes. The copy the City accepted stays; the other copy "
+        "stays as history."
+    ),
+    "unregistered_dataset": "The issue closes. The dataset stays unregistered until it is registered.",
+}
+
+
+def _issue_field(row: change.GovernanceIssue) -> tuple[str, str, str]:
+    """Return the record id, the field name and the field in plain words."""
+    entity_id, _, attribute = row.subject_id.partition(":")
+    label = ""
+    if attribute:
+        from acme_city.registry.provenance import ENTITY_ATTRIBUTES
+
+        for rules in ENTITY_ATTRIBUTES.values():
+            for rule in rules:
+                if rule.attribute_path == attribute:
+                    label = rule.label.lower()
+        label = label or display.pretty(attribute).lower()
+    return entity_id, attribute, label
+
+
+def issue_plain_words(session: Session, row: change.GovernanceIssue) -> str:
+    """Return what a recorded issue means, in a sentence a steward can read.
+
+    The sentence names the record and the field by name and never by their
+    internal identifiers; those stay under "More details".
+    """
+    entity_id, _attribute, field = _issue_field(row)
+    party = session.get(registry.Party, entity_id)
+    record = party.display_name if party is not None else display.pretty(entity_id)
+    template = ISSUE_PLAIN_WORDS.get(row.issue_type)
+    if template is None:
+        return str(row.description or "").strip() or "A data issue was recorded for this record."
+    return template.format(record=record, field=field or "value")
+
+
+def _pending_authority_link(
+    session: Session, row: change.GovernanceIssue
+) -> tuple[registry.Crosswalk | None, str]:
+    """Return the pending source link that would settle an unknown authority.
+
+    The link is a proposed link of the record from the source the authority
+    policy of the field names.  The second value is the domain of the policy.
+    """
+    from acme_city.registry.provenance import ENTITY_ATTRIBUTES, policy_for
+
+    entity_id, attribute, _label = _issue_field(row)
+    entity = session.execute(
+        select(registry.CanonicalEntity).where(registry.CanonicalEntity.entity_id == entity_id)
+    ).scalars().first()
+    if entity is None or not attribute:
+        return None, "applicants"
+    rule = next(
+        (item for item in ENTITY_ATTRIBUTES.get(entity.entity_type, ()) if item.attribute_path == attribute),
+        None,
+    )
+    policy = policy_for(session, rule.policy_id) if rule is not None else None
+    if policy is None or not policy.authoritative_source_system_id:
+        return None, "applicants"
+    candidates = session.execute(
+        select(registry.Crosswalk)
+        .where(
+            registry.Crosswalk.entity_id == entity_id,
+            registry.Crosswalk.link_status == "proposed",
+            registry.Crosswalk.source_system_id == policy.authoritative_source_system_id,
+        )
+        .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
+    ).scalars().all()
+    if policy.authoritative_dataset_key:
+        candidates = [
+            item
+            for item in candidates
+            if not item.source_dataset_key or item.source_dataset_key == policy.authoritative_dataset_key
+        ]
+    return (candidates[-1] if candidates else None), (policy.domain_id or "applicants")
+
+
+def _issue_actions(
+    session: Session,
+    actor: ActorContext,
+    row: change.GovernanceIssue,
+    record: str,
+    plain: str,
+) -> list[dict[str, Any]]:
+    """Return what a steward may do about an open recorded issue.
+
+    Every kind of issue offers "Close with a reason".  An issue about an
+    unknown field authority also offers to approve the pending source link
+    when one exists.  Each action carries a preview of what will change.
+    """
+    from acme_city.governance.service import (
+        ISSUE_OUTCOMES,
+        ISSUE_REASON_CODES,
+        PERMISSION_RESOLVE_ISSUE,
+    )
+
+    actions: list[dict[str, Any]] = []
+    if row.issue_type == "unresolved_field_authority":
+        pending, domain = _pending_authority_link(session, row)
+        if pending is not None:
+            source_label = display.source_name(
+                session, pending.source_system_id, pending.source_dataset_key or ""
+            )
+            actions.append(
+                {
+                    **_action(
+                        session,
+                        actor,
+                        action_id="governance.issue.approve_link",
+                        label=f"Approve the link to {source_label}",
+                        path="/ui/actions/governance.issue.approve_link",
+                        permission="registry.crosswalk.decide",
+                        domain_id=domain,
+                        destination="Registry crosswalk",
+                        description=(
+                            "Approve the source link that is waiting. The decision, your "
+                            "name, the time and the note are recorded."
+                        ),
+                        expected_version=pending.version,
+                        fields=(
+                            view_models._field("issue_id", "Issue", value=row.id, field_type="hidden"),
+                            view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
+                            view_models._field("entity_id", "Master record", value=pending.entity_id, field_type="hidden"),
+                            view_models._field("source_system_id", "Source system", value=pending.source_system_id, field_type="hidden"),
+                            view_models._field("dataset_key", "Dataset", value=pending.source_dataset_key or "", field_type="hidden"),
+                            view_models._field("source_record_id", "Source record", value=pending.source_record_id, field_type="hidden"),
+                            view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
+                            view_models._field("reason", "Decision note", field_type="textarea", required=True),
+                        ),
+                    ),
+                    "dom_id": "approve-source-link",
+                    "preview": _preview(
+                        f"Links {pending.source_record_id} ({source_label}) to {record}.",
+                        "No application relationship changes; applications that name this record are rechecked.",
+                        "The source record is not edited and no master value is overwritten.",
+                        "The source becomes the owner of the field. When that settles it, this issue closes.",
+                    ),
+                }
+            )
+    actions.append(
+        {
+            **_action(
+                session,
+                actor,
+                action_id="governance.issue.resolve",
+                label="Close with a reason",
+                path="/ui/actions/governance.issue.resolve",
+                permission=PERMISSION_RESOLVE_ISSUE,
+                destination="Governance issue queue",
+                description=(
+                    "Close this issue as resolved or not applicable. The reason code, "
+                    "your note, your name and the time are recorded."
+                ),
+                expected_version=row.version,
+                fields=(
+                    view_models._field("issue_id", "Issue", value=row.id, field_type="hidden"),
+                    view_models._field("expected_version", "Expected issue version", value=str(row.version), field_type="hidden"),
+                    view_models._field(
+                        "outcome", "Close as", field_type="select",
+                        options=tuple((key, label) for key, label in ISSUE_OUTCOMES.items()),
+                        required=True,
+                    ),
+                    view_models._field(
+                        "reason_code", "Reason", field_type="select",
+                        options=tuple((key, label) for key, label in ISSUE_REASON_CODES.items()),
+                        required=True,
+                    ),
+                    view_models._field("note", "Note", field_type="textarea", required=True),
+                ),
+            ),
+            "dom_id": "close-issue",
+            "preview": _preview(
+                "No record is linked or unlinked.",
+                "No application relationship changes.",
+                "Every source value stays as received.",
+                ISSUE_CLOSE_PREVIEW.get(
+                    row.issue_type,
+                    "The issue closes as the outcome you choose, with your reason.",
+                ),
+            ),
+        }
+    )
+    return actions
+
+
+def _issue_result(session: Session, row: change.GovernanceIssue) -> dict[str, Any] | None:
+    """Return who closed a recorded issue, when, and with which note."""
+    if row.status == "open":
+        return None
+    from acme_city.governance.service import ISSUE_OUTCOMES, ISSUE_REASON_CODES
+
+    event = session.execute(
+        select(audit.AuditEvent)
+        .where(
+            audit.AuditEvent.target_id == row.id,
+            audit.AuditEvent.action == "governance.issue.resolve",
+            audit.AuditEvent.outcome == "accepted",
+        )
+        .order_by(audit.AuditEvent.occurred_at.desc())
+    ).scalars().first()
+    text = ISSUE_OUTCOMES.get(row.status, display.pretty(row.status))
+    if event is None:
+        return {"text": text, "who": "Not recorded", "when": None, "note": ""}
+    code = str((event.metadata_json or {}).get("reason_code", ""))
+    if code in ISSUE_REASON_CODES:
+        text = f"{text}: {ISSUE_REASON_CODES[code]}"
+    return {
+        "text": text,
+        "who": view_models.actor_label(session, event.actor_id),
+        "when": _iso(event.occurred_at),
+        "note": event.reason or "",
+    }
+
+
 def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dict[str, Any]:
     """Return the focused case of a recorded governance issue."""
     row = session.get(change.GovernanceIssue, issue_id)
     if row is None:
         return {}
     synthetic = _synthetic_ids(session)
-    party = session.get(registry.Party, row.subject_id)
+    entity_id = row.subject_id.partition(":")[0]
+    party = session.get(registry.Party, entity_id)
     applications = (
-        _outstanding_for(session, _applications_of(session, [row.subject_id], synthetic)) if party is not None else []
+        _outstanding_for(session, _applications_of(session, [party.id], synthetic)) if party is not None else []
     )
     status = "needs_review" if row.status == "open" else "resolved"
+    record = party.display_name if party is not None else str(row.subject_id)
+    plain = issue_plain_words(session, row)
+    actions = _issue_actions(session, actor, row, record, plain) if row.status == "open" else []
     return {
         "kind": "issue",
         "id": row.id,
         "subject_id": row.subject_id,
-        "record_name": party.display_name if party is not None else str(row.subject_id),
-        "record_reference": row.id,
+        "record_name": record,
+        "record_reference": "",
         "source_name": row.responsible_queue_id or "Steward queue",
         "record_type": "issue",
-        "title": row.description,
+        "title": plain,
         "status": status,
         "status_label": STATUS_LABELS[status],
-        "problem": row.description,
+        "problem": plain,
+        "technical": [
+            {"label": "Issue", "value": row.id},
+            {"label": "Kind of issue", "value": row.issue_type},
+            {"label": "About", "value": row.subject_id},
+            {"label": "As recorded", "value": row.description},
+        ],
         "why": "This issue is recorded against "
-        + (party.display_name if party is not None else row.subject_id)
+        + record
         + (" and blocks work until it is resolved." if row.blocking else "."),
         "applications": applications,
         "compare_rows": [],
-        "actions": [],
-        "result": None,
-        "events": _events_for(session, [row.id, row.subject_id], ("change.", "registry.", "source.")),
+        "actions": actions,
+        "result": _issue_result(session, row),
+        "events": _events_for(session, [row.id, entity_id], ("change.", "registry.", "source.", "governance.")),
         "target_ids": {row.id},
         "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",

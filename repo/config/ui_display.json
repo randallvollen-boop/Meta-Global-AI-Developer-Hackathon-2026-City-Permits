@@ -168,6 +168,7 @@
     "permit.icon.generate": "Generate permit type icons",
     "agent.toggle": "Wake or sleep an agent",
     "agent.toggle.steward_assist": "Wake or sleep the steward assistant",
+    "governance.issue.resolve": "Close a data issue with a reason",
     "agent.run.intake": "Run the intake agent",
     "agent.run.adjudication": "Run the adjudication agent",
     "agent.run.steward_assist": "Run the steward assistant",

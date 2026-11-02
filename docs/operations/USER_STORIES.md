@@ -168,6 +168,14 @@ first entry of the City website menu.
     record changed since the recommendation was prepared, and a held
     recommendation is never accepted. While the assistant sleeps the buttons
     are off and the note says to press **Wake**.
+- As a Data Steward, I want to fix a data issue by hand, so that an issue
+  never sits in my queue with nothing I can do about it.
+  - Acceptance: every data issue page says in plain words what the issue means
+    (the technical identifiers sit under **More details**) and offers **Close
+    with a reason** (resolved or not applicable, a reason code and a note);
+    an issue about an unknown field authority also offers **Approve the link
+    to** the source when one is waiting. Each action shows what will change
+    before I press it, and the audit trail records the change in my name.
 - As a Data Steward, I want to accept the recommendations the assistant is
   sure of in one batch, after seeing the exact list, so that easy tasks go
   quickly without anything being accepted unseen.

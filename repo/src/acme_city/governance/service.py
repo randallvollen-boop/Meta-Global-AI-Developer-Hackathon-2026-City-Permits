@@ -45,8 +45,27 @@ from acme_city.governance.schemas import (
     PublishAuthorityChangeCommand,
     RegisterDatasetCommand,
     ReassignStewardCommand,
+    ResolveIssueCommand,
 )
 from acme_city.persistence.models import change, governance, permit, source
+
+#: How a steward may close a recorded issue, with the plain words of each.
+ISSUE_OUTCOMES: dict[str, str] = {
+    "resolved": "Resolved",
+    "not_applicable": "Not applicable",
+}
+
+#: Why a steward closes an issue, with the plain words of each reason.
+ISSUE_REASON_CODES: dict[str, str] = {
+    "fixed_at_source": "Fixed at the source",
+    "link_approved": "The source link was approved",
+    "accepted_as_is": "Accepted as it stands",
+    "duplicate": "Duplicate of another issue",
+    "raised_in_error": "Raised in error",
+}
+
+#: The grant that closes a recorded issue.
+PERMISSION_RESOLVE_ISSUE = "governance.issue.resolve"
 
 #: The bindings a dataset needs before it may publish trusted facts.
 REQUIRED_DATASET_BINDINGS: tuple[str, ...] = (
@@ -682,6 +701,67 @@ class GovernanceService:
             after_version=issue.version,
             reason=command.reason,
             references=[command.domain_id, owner],
+        )
+        view = IssueView(
+            issue_id=issue.id,
+            subject_type=issue.subject_type,
+            subject_id=issue.subject_id,
+            issue_type=issue.issue_type,
+            description=issue.description,
+            responsible_queue_id=issue.responsible_queue_id,
+            assigned_actor_id=issue.assigned_actor_id,
+            blocking=issue.blocking,
+            status=issue.status,
+            version=issue.version,
+        )
+        return VersionedResult(value=view, version=issue.version, audit_event_id=event.id)
+
+    def resolve_issue(
+        self, command: ResolveIssueCommand, actor: ActorContext
+    ) -> VersionedResult[IssueView]:
+        """Close one open issue as resolved or not applicable, with a reason.
+
+        The reason code and the note are required and are written to the audit
+        trail with the steward who closed the issue.  An issue that is no
+        longer open, or that changed since the steward read it, is refused.
+        """
+        self._permissions.authorize(
+            actor,
+            PERMISSION_RESOLVE_ISSUE,
+            ResourceContext(domain_id=None, record_type="governance_issue"),
+        )
+        if command.outcome not in ISSUE_OUTCOMES:
+            raise ValidationError("choose whether the issue is resolved or not applicable")
+        if command.reason_code not in ISSUE_REASON_CODES:
+            raise ValidationError("choose the reason the issue is closed")
+        note = (command.note or "").strip()
+        if not note:
+            raise ValidationError("a note is required to close an issue")
+        issue = self._session.get(change.GovernanceIssue, command.issue_id)
+        if issue is None:
+            raise NotFoundError(f"unknown issue {command.issue_id!r}")
+        if issue.status != "open":
+            raise ConflictError("this issue is already closed")
+        if command.expected_version is not None and command.expected_version != issue.version:
+            raise ConflictError("this issue changed since you read it; open it again")
+        before = issue.version
+        issue.status = command.outcome
+        issue.version += 1
+        self._session.flush()
+        event = self._audit.append(
+            action="governance.issue.resolve",
+            actor=actor,
+            target_type="governance_issue",
+            target_id=issue.id,
+            before_version=before,
+            after_version=issue.version,
+            reason=note,
+            metadata={
+                "outcome": command.outcome,
+                "reason_code": command.reason_code,
+                "issue_type": issue.issue_type,
+                "subject_id": issue.subject_id,
+            },
         )
         view = IssueView(
             issue_id=issue.id,

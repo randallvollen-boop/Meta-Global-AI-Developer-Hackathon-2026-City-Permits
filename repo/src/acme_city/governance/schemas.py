@@ -170,6 +170,16 @@ class EscalateIssueCommand(GovernanceModel):
     reason: str | None = None
 
 
+class ResolveIssueCommand(GovernanceModel):
+    """Close a recorded issue as resolved or as not applicable, with a reason."""
+
+    issue_id: str
+    outcome: str
+    reason_code: str
+    note: str
+    expected_version: int | None = None
+
+
 class IssueView(GovernanceModel):
     """A governance issue and who now owns it."""
 
@@ -198,4 +208,5 @@ __all__ = [
     "PublishAuthorityChangeCommand",
     "RegisterDatasetCommand",
     "ReassignStewardCommand",
+    "ResolveIssueCommand",
 ]

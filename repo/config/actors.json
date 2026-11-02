@@ -740,6 +740,12 @@
           "domains": [],
           "record_scope": [],
           "source": "explicit"
+        },
+        {
+          "permission_id": "governance.issue.resolve",
+          "domains": [],
+          "record_scope": [],
+          "source": "explicit"
         }
       ],
       "fictional": true,

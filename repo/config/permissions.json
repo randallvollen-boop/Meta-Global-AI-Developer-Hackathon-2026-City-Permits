@@ -271,6 +271,13 @@
       "sensitive": false
     },
     {
+      "permission_id": "governance.issue.resolve",
+      "action": "governance.issue.resolve",
+      "category": "governance",
+      "description": "Close a recorded data issue as resolved or not applicable, with a reason code and a note. The Data Steward holds this grant; it approves no link and decides no permit.",
+      "sensitive": false
+    },
+    {
       "permission_id": "agent.run.intake",
       "action": "agent.run.intake",
       "category": "agent",
