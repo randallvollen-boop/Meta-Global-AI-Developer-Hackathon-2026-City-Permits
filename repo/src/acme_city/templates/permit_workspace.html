@@ -775,10 +775,11 @@
                 <input type="hidden" name="expected_evaluation_version" value="{{ detail.evaluation.version }}">
                 <div class="fieldset">
                   <label for="decision-outcome">Outcome *</label>
-                  <select id="decision-outcome" name="outcome" required>
-                    <option value="approved">Approve</option>
+                  <select id="decision-outcome" name="outcome" required data-testid="decision-outcome">
+                    <option value="approved"{% if not rv.information_request %} selected{% endif %}>Approve</option>
                     <option value="approved_with_conditions">Approve with conditions</option>
                     <option value="denied">Deny</option>
+                    <option value="information_requested"{% if rv.information_request %} selected{% endif %}>Needs information</option>
                   </select>
                 </div>
                 {% set failing_rules = detail.evaluation.results | selectattr('status', 'in', ['fail', 'review']) | list %}
@@ -801,7 +802,7 @@
                 </div>
                 <div class="fieldset">
                   <label for="decision-reason">Rationale (internal record) *</label>
-                  <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason"></textarea>
+                  <textarea id="decision-reason" name="reason" rows="3" required data-testid="decision-reason">{% if rv.information_request %}{{ rv.information_request.text }}{% endif %}</textarea>
                 </div>
                 <div class="fieldset">
                   <label for="decision-code">Denial reason code</label>

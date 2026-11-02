@@ -1024,6 +1024,94 @@ def workspace_blocker_guides(
     return guides
 
 
+#: Findings the applicant can clear. A city-only judgment is not one of them.
+APPLICANT_FIX_TYPES = frozenset(
+    {"missing_field", "missing_document", "unreadable", "wrong_type", "duplicate"}
+)
+
+
+def information_request_text(findings: list[dict[str, Any]]) -> str:
+    """Return the request a reviewer would send for these open findings."""
+    lines = [
+        sentence
+        for row in findings
+        if (sentence := _request_sentence(row))
+    ]
+    return "\n\n".join(lines)
+
+
+def information_request_preset(
+    status: str, findings: list[dict[str, Any]]
+) -> dict[str, str] | None:
+    """Return the decision-form defaults for a needs-information case.
+
+    A case already in needs information, or one with an open finding the
+    applicant must fix, opens on that outcome.  Anything else keeps Approve.
+    """
+    text = information_request_text(findings)
+    if status != "needs_information" and not text:
+        return None
+    return {"outcome": "information_requested", "text": text}
+
+
+def _request_sentence(row: dict[str, Any]) -> str:
+    """Return one plain sentence for a finding the applicant must fix."""
+    if row.get("state") != "current" or row.get("waived"):
+        return ""
+    kind = str(row.get("finding_type") or "")
+    if kind not in APPLICANT_FIX_TYPES:
+        return ""
+    message = str(row.get("message") or "").strip()
+    citation = _citation(str(row.get("rule") or ""))
+    if kind == "duplicate":
+        number = _case_number(message) or _case_number(str(row.get("applicant_must") or ""))
+        if not number:
+            return ""
+        return (
+            "This looks like a second application for the same project as "
+            f"{number}. Please confirm whether it replaces that one."
+        )
+    if not str(row.get("applicant_must") or "").strip():
+        return ""
+    label = _subject_label(message)
+    if kind == "missing_document" and label and citation:
+        return f"Please upload the {label} ({citation})."
+    if kind == "missing_field" and label and citation:
+        return f"Please state the {label} ({citation})."
+    must = str(row.get("applicant_must") or "").strip().rstrip(".")
+    if must and citation:
+        return f"{must} ({citation})."
+    return must
+
+
+def _citation(rule: str) -> str:
+    """Return the code citation without the permit-type note."""
+    text = rule.strip()
+    if " (" in text:
+        return text.split(" (", 1)[0].strip()
+    return text
+
+
+def _subject_label(message: str) -> str:
+    """Return the thing a completeness finding says is missing."""
+    included = re.search(r"does not include the (.+?)\.", message, re.I)
+    if included:
+        return included.group(1).strip()
+    stated = re.search(r"does not state (.+?)\.", message, re.I)
+    if stated:
+        return stated.group(1).strip()
+    return ""
+
+
+def _case_number(text: str) -> str:
+    """Return the other application's number named in a duplicate finding."""
+    named = re.search(r"\bin ([A-Za-z0-9][A-Za-z0-9_-]*)\b", text)
+    if named:
+        return named.group(1)
+    named = re.search(r"\bof ([A-Za-z0-9][A-Za-z0-9_-]*)\b", text)
+    return named.group(1) if named else ""
+
+
 def workspace_extras(
     session: Session,
     actor: Any,
@@ -1087,6 +1175,9 @@ def workspace_extras(
         "decision_record": "Recommendation" if not review_target else "Decision",
         "blocker_guides": workspace_blocker_guides(session, application),
         "data_follow_up": _data_follow_up_open(session, application),
+        "information_request": information_request_preset(
+            application.status, list(detail.get("findings") or [])
+        ),
     }
 
 
