@@ -169,11 +169,10 @@ def test_the_café_path_runs_on_the_copy_of_the_judge(
     assert "parcel" in message.lower()
 
     # 3. The Permit Reviewer runs the checks and approves the copy.
-    copy_id = (
-        page.request.get(f"{server.base_url}/tour/steps?path=cafe")
-        .json()["steps"][2]["path"]
-        .rsplit("/", 1)[-1]
-    )
+    cafe_steps = page.request.get(f"{server.base_url}/tour/steps?path=cafe").json()["steps"]
+    copy_id = next(
+        step["path"] for step in cafe_steps if "/permits/" in step["path"]
+    ).rsplit("/", 1)[-1]
     login("persona_permit_reviewer")
     page.goto(f"{server.base_url}/permits/{copy_id}", wait_until="domcontentloaded")
     page.locator('[data-testid="workspace-tab"][data-tab="people"]').click()

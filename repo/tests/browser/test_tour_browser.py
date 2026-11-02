@@ -33,20 +33,56 @@ def load_engine(page, server: BrowserServer) -> None:
     page.add_script_tag(url=f"{server.base_url}/ui/static/tour.js")
 
 
-def steps_of(page, server: BrowserServer, path: str = "cafe") -> list[dict[str, str]]:
-    """Return the steps of one path the server serves to the browser."""
-    return page.request.get(f"{server.base_url}/tour/steps?path={path}").json()["steps"]
+def steps_of(page, server: BrowserServer, path: str = "") -> list[dict[str, str]]:
+    """Return the steps the server serves. No path is the full story."""
+    url = f"{server.base_url}/tour/steps"
+    if path:
+        url = f"{url}?path={path}"
+    return page.request.get(url).json()["steps"]
 
 
-def wait_for_step(page, server: BrowserServer, step: dict[str, str]) -> None:
+def assert_step_mark(page, step: dict[str, str]) -> None:
+    """A control is ringed. A story step centres the panel and hides the ring."""
+    if step.get("target"):
+        assert page.locator('[data-testid="tour-ring"]').is_visible()
+        assert page.evaluate(
+            """(selector) => { const target = document.querySelector(selector);
+                 const ring = document.querySelector('[data-testid="tour-ring"]');
+                 if (!target || !ring) return false;
+                 const place = target.getBoundingClientRect();
+                 const marked = ring.getBoundingClientRect();
+                 return Math.abs(marked.top - place.top) < 12
+                   && Math.abs(marked.left - place.left) < 12; }""",
+            step["target"],
+        )
+    else:
+        assert page.locator('[data-testid="tour-ring"]').is_hidden()
+        panel = page.locator('[data-testid="tour-panel"]')
+        assert "is-centred" in (panel.get_attribute("class") or "")
+        assert page.locator('[data-testid="tour-warning"]').is_hidden()
+    if step.get("muse"):
+        badge = page.locator('[data-testid="tour-muse-badge"]')
+        assert badge.is_visible()
+        assert badge.inner_text().strip() == "Muse"
+        replay = page.locator('[data-testid="tour-replay"]')
+        assert replay.is_visible()
+        assert "recorded replay" in replay.inner_text().lower()
+    else:
+        assert page.locator('[data-testid="tour-muse"]').is_hidden()
+
+
+def wait_for_step(
+    page, server: BrowserServer, step: dict[str, str], timeout: int = 30_000
+) -> None:
     """Wait until the tour shows the given step on its screen."""
-    page.wait_for_url(f"{server.base_url}{step['path']}")
+    page.wait_for_url(f"{server.base_url}{step['path']}", timeout=timeout)
     load_engine(page, server)
-    page.wait_for_selector('[data-testid="tour-overlay"]:not([hidden])')
+    page.wait_for_selector('[data-testid="tour-overlay"]:not([hidden])', timeout=timeout)
     page.wait_for_function(
         "(title) => { const element = document.querySelector('[data-testid=\"tour-title\"]');"
         " return element !== null && element.textContent.trim() === title; }",
         arg=step["title"],
+        timeout=timeout,
     )
 
 
@@ -64,18 +100,7 @@ def test_the_tour_walks_every_step(page, server: BrowserServer, viewport) -> Non
             f"Step {number} of {len(steps)}"
         )
         assert page.locator('[data-testid="tour-caption"]').inner_text().strip() == step["caption"]
-        # The control of the step is ringed, not hidden.
-        assert page.locator('[data-testid="tour-ring"]').is_visible()
-        assert page.evaluate(
-            """(selector) => { const target = document.querySelector(selector);
-                 const ring = document.querySelector('[data-testid="tour-ring"]');
-                 if (!target || !ring) return false;
-                 const place = target.getBoundingClientRect();
-                 const marked = ring.getBoundingClientRect();
-                 return Math.abs(marked.top - place.top) < 12
-                   && Math.abs(marked.left - place.left) < 12; }""",
-            step["target"],
-        )
+        assert_step_mark(page, step)
         if number < len(steps):
             page.locator('[data-testid="tour-next"]').click()
     # The last step finishes the tour.
@@ -322,7 +347,7 @@ def test_the_auto_play_stops_at_the_last_step(page, server: BrowserServer) -> No
     wait_for_step(page, server, steps[0])
     page.locator('[data-testid="tour-play"]').click()
     # The tour walks on by itself to the last step of the story.
-    wait_for_step(page, server, steps[-1])
+    wait_for_step(page, server, steps[-1], timeout=180_000)
     # There the auto-play stops, and the panel says the tour is finished.
     assert "finished" in page.locator('[data-testid="tour-note"]').inner_text()
     assert page.locator('[data-testid="tour-play"]').inner_text().strip() == "Auto-play"
@@ -368,15 +393,28 @@ def test_the_start_button_opens_the_first_step(page, server: BrowserServer) -> N
     assert page.recorded_errors == []
 
 
-def test_the_first_step_of_the_café_path_offers_a_fresh_copy(
-    page, server: BrowserServer
-) -> None:
-    """The one write of the tour is offered on the first step of the café path."""
-    steps = steps_of(page, server, "cafe")
-    assert steps[0].get("fresh")
+def _open_cafe_steward(page, server: BrowserServer, steps: list[dict[str, str]]) -> None:
+    """Start the café path and move from its story to the steward step."""
     page.goto(f"{server.base_url}/select", wait_until="networkidle")
     page.evaluate("(key) => window.acmeTour.start(key)", "cafe")
-    wait_for_step(page, server, steps[0])
+    for step in steps:
+        wait_for_step(page, server, step)
+        if step.get("id") == "steward":
+            return
+        page.locator('[data-testid="tour-next"]').click()
+    raise AssertionError("the café path has no steward step")
+
+
+def test_the_steward_step_of_the_café_path_offers_a_fresh_copy(
+    page, server: BrowserServer
+) -> None:
+    """The one write of the tour is offered on the steward step, after the story."""
+    steps = steps_of(page, server, "cafe")
+    assert steps[0].get("kind") == "intro"
+    assert not steps[0].get("fresh")
+    steward = next(step for step in steps if step.get("id") == "steward")
+    assert steward.get("fresh")
+    _open_cafe_steward(page, server, steps)
     fresh = page.locator('[data-testid="tour-fresh"]')
     assert fresh.is_visible()
     assert page.locator('[data-testid="tour-fresh-button"]').is_visible()
@@ -386,9 +424,7 @@ def test_the_first_step_of_the_café_path_offers_a_fresh_copy(
 def test_the_fresh_copy_button_makes_a_copy(page, server: BrowserServer) -> None:
     """The button asks the server for a copy and the server makes one."""
     steps = steps_of(page, server, "cafe")
-    page.goto(f"{server.base_url}/select", wait_until="networkidle")
-    page.evaluate("(key) => window.acmeTour.start(key)", "cafe")
-    wait_for_step(page, server, steps[0])
+    _open_cafe_steward(page, server, steps)
     # The Data Steward opens the screen of the tour, and the queue is empty.
     assert page.locator('[data-issue-row]').count() == 0
     page.locator('[data-testid="tour-fresh-button"]').click()
@@ -396,6 +432,42 @@ def test_the_fresh_copy_button_makes_a_copy(page, server: BrowserServer) -> None
     # the Data Steward.
     page.wait_for_selector('[data-issue-row]')
     assert page.locator('[data-issue-row]').count() == 3
+    assert page.recorded_errors == []
+
+
+def test_auto_play_crosses_the_intro_and_the_track_bridge(
+    page, server: BrowserServer
+) -> None:
+    """Auto-play stays on through the fence story and the line into the café."""
+    steps = steps_of(page, server)
+    bridge = next(number for number, step in enumerate(steps) if step.get("kind") == "bridge")
+    cafe_intro = bridge + 1
+    assert steps[0].get("kind") == "intro"
+    assert not steps[0].get("target")
+    assert steps[cafe_intro].get("kind") == "intro"
+    assert steps[cafe_intro].get("path_key") == "cafe"
+    page.goto(f"{server.base_url}/select", wait_until="networkidle")
+    # A long step leaves room to press Next before the timer moves the tour.
+    page.evaluate("(ms) => window.acmeTour.setInterval(ms)", 20000)
+    page.evaluate("() => window.acmeTour.start()")
+    wait_for_step(page, server, steps[0])
+    page.locator('[data-testid="tour-play"]').click()
+    assert page.locator('[data-testid="tour-play"]').inner_text().strip() == "Pause"
+    for step in steps[1 : cafe_intro + 1]:
+        page.locator('[data-testid="tour-next"]').click()
+        wait_for_step(page, server, step)
+        assert page.locator('[data-testid="tour-play"]').inner_text().strip() == "Pause"
+        if step.get("kind") == "bridge":
+            assert page.locator('[data-testid="tour-caption"]').inner_text().strip() == (
+                "The resident's case is in. Now the City clears a café that "
+                "has been waiting for weeks."
+            )
+            assert "is-centred" in (
+                page.locator('[data-testid="tour-panel"]').get_attribute("class") or ""
+            )
+    assert page.locator('[data-testid="tour-caption"]').inner_text().strip() == (
+        steps[cafe_intro]["caption"]
+    )
     assert page.recorded_errors == []
 
 

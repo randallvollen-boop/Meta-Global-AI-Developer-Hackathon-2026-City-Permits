@@ -117,7 +117,7 @@ def test_the_paths_hold_a_key_a_title_a_line_and_a_length() -> None:
 def test_every_step_says_one_sentence_to_do_and_one_to_notice() -> None:
     """A step is short: one sentence to do, one sentence to notice."""
     for key, step in every_step():
-        for field, text in (("do", step.do), ("look_for", step.look_for)):
+        for field, text in (("do", step.do), ("look_for", step.look_for), ("why", step.why)):
             assert text.strip(), (key, step.title, field)
             assert text.endswith("."), (key, step.title, field)
             assert ". " not in text, (key, step.title, field)
@@ -128,7 +128,7 @@ def test_every_step_says_one_sentence_to_do_and_one_to_notice() -> None:
 def test_no_step_uses_a_dash_as_punctuation() -> None:
     """The words of a step are plain: no dash stands in for a pause."""
     for key, step in every_step():
-        for field, text in (("do", step.do), ("look_for", step.look_for)):
+        for field, text in (("do", step.do), ("look_for", step.look_for), ("why", step.why)):
             assert "—" not in text, (key, step.title, field)
             assert "–" not in text, (key, step.title, field)
             assert " - " not in text, (key, step.title, field)
@@ -137,7 +137,7 @@ def test_no_step_uses_a_dash_as_punctuation() -> None:
 def test_no_step_names_an_internal_code() -> None:
     """A judge reads the steps, so they never name a code of the City."""
     for key, step in every_step():
-        for field, text in (("do", step.do), ("look_for", step.look_for)):
+        for field, text in (("do", step.do), ("look_for", step.look_for), ("why", step.why)):
             for pattern in CODE_PATTERNS:
                 assert not pattern.search(text), (key, step.title, field, text)
 
@@ -177,6 +177,25 @@ def test_the_café_path_walks_the_whole_journey() -> None:
         "Permit Reviewer",
         "",
     ]
+
+
+def test_each_track_names_where_its_story_starts() -> None:
+    """Each of the three tracks says who the person is and why the case starts."""
+    for key in ("resident", "cafe", "city"):
+        path = guide_views.path_by_key(key)
+        assert path is not None
+        assert path.story.strip(), key
+        assert path.story.endswith("."), key
+        assert "—" not in path.story and "–" not in path.story and " - " not in path.story
+        for pattern in CODE_PATTERNS:
+            assert not pattern.search(path.story), (key, path.story)
+    resident = guide_views.path_by_key("resident")
+    assert resident is not None
+    assert "fence" in resident.story
+    assert "back yard" in resident.story
+    before = guide_views.path_by_key("before")
+    assert before is not None
+    assert before.story == ""
 
 
 def test_the_paths_are_the_four_the_plan_names() -> None:

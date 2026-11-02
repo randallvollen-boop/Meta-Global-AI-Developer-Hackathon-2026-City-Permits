@@ -51,6 +51,7 @@ class Step:
     path: str
     do: str
     look_for: str
+    why: str = ""
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ class Path:
     one_line: str
     minutes: int
     steps: tuple[Step, ...]
+    story: str = ""
 
 
 #: The paths of the walkthrough, in the order the page and the landing
@@ -76,6 +78,11 @@ PATHS: tuple[Path, ...] = (
             "A resident applies for a fence, checks the application before it "
             "is sent and follows it through the City."
         ),
+        story=(
+            "A resident at 400 Lantern Row wants a fence for the back yard. "
+            "The case starts on Apply, before a form is filled, because the "
+            "permit and the documents are not known yet."
+        ),
         minutes=3,
         steps=(
             Step(
@@ -88,6 +95,8 @@ PATHS: tuple[Path, ...] = (
                 "certification.",
                 "The form asks only the questions that project needs, and the "
                 "assistant names the published rule behind each answer.",
+                "We are here because the resident asks Muse which fence permit "
+                "fits, then names the project.",
             ),
             Step(
                 "Check the application before it is sent",
@@ -98,6 +107,8 @@ PATHS: tuple[Path, ...] = (
                 "anyway and write why you send it now.",
                 "The findings are grouped under Must fix, Should check and "
                 "Looks good, and each one names the published rule behind it.",
+                "We are here because Check my application asks Muse for feedback "
+                "before the application is sent.",
             ),
             Step(
                 "Let the agent route the application",
@@ -106,6 +117,8 @@ PATHS: tuple[Path, ...] = (
                 "Press Wake agent, then press Process the next 20 cases.",
                 "The Router line sends an application that breaks a rule to Early "
                 "resolution and says which rule.",
+                "We are here because Muse reads the documents and the agent "
+                "sends the application to the right queue.",
             ),
             Step(
                 "Track the application",
@@ -115,6 +128,8 @@ PATHS: tuple[Path, ...] = (
                 "the application.",
                 "The tracker lists both documents as received and the status of "
                 "the application.",
+                "We are here because the resident needs to see what the City "
+                "has recorded so far.",
             ),
         ),
     ),
@@ -124,6 +139,11 @@ PATHS: tuple[Path, ...] = (
         one_line=(
             "Cedarline Coffee cannot open until its permit is issued, and its "
             "owner is recorded three ways in three city systems."
+        ),
+        story=(
+            "Cedarline Coffee cannot open until its permit is issued. The case "
+            "starts with the Data Steward, because the owner is recorded three "
+            "ways."
         ),
         minutes=6,
         steps=(
@@ -136,6 +156,8 @@ PATHS: tuple[Path, ...] = (
                 "carries a High pill and approve the link of the property.",
                 "Every task of the café carries a High pill and a reason in one "
                 "line, and the decision is recorded in your name.",
+                "We are here because the owner is three records until a steward "
+                "decides, and Explain with Muse only rewrites the reason.",
             ),
             Step(
                 "Let the agent route the case",
@@ -145,6 +167,8 @@ PATHS: tuple[Path, ...] = (
                 "the café.",
                 "The run shows Completed and the Router line says Ready for "
                 "review in the Building area.",
+                "We are here because Muse has read the documents and a person "
+                "has to send the case on.",
             ),
             Step(
                 "Run the checks and approve the case",
@@ -157,6 +181,8 @@ PATHS: tuple[Path, ...] = (
                 "Approve and write your reason.",
                 "The rule results show Passed and the decision is recorded in "
                 "the case history with your reason.",
+                "We are here because the identity is clear, so a person can "
+                "decide the case.",
             ),
             Step(
                 "Pay the fee",
@@ -168,6 +194,8 @@ PATHS: tuple[Path, ...] = (
                 "and reconcile the assessment.",
                 "The receipt from the old account is matched and the balance "
                 "shows 0.00.",
+                "We are here because the fee has to be paid before a permit can "
+                "be issued.",
             ),
             Step(
                 "Issue the permit",
@@ -177,6 +205,7 @@ PATHS: tuple[Path, ...] = (
                 "permit.",
                 "The permit number appears on the case and the issued artifact "
                 "opens.",
+                "We are here because deciding and issuing are separate.",
             ),
             Step(
                 "Find it as a resident",
@@ -185,6 +214,8 @@ PATHS: tuple[Path, ...] = (
                 "Search for the permit number on the City of Acme website.",
                 "The public record shows the permit, the parcel and the outcome, "
                 "and never a homeowner's name, documents or fees.",
+                "We are here because a resident should find the permit without "
+                "a homeowner's name.",
             ),
         ),
     ),
@@ -194,6 +225,10 @@ PATHS: tuple[Path, ...] = (
         one_line=(
             "The record of the café decision, the City at a glance and a what "
             "if on a fee change."
+        ),
+        story=(
+            "The café permit is on the public record. The City starts with the "
+            "audit log, because it has to see who decided."
         ),
         minutes=3,
         steps=(
@@ -205,6 +240,8 @@ PATHS: tuple[Path, ...] = (
                 "Apply filters, then press View details on the top row.",
                 "The actor, the time, the decision and the case it belongs to "
                 "are recorded together.",
+                "We are here because the decision has to stay tied to the "
+                "person who made it.",
             ),
             Step(
                 "See the city at a glance",
@@ -213,6 +250,8 @@ PATHS: tuple[Path, ...] = (
                 "Filter the City view by permit type and outcome.",
                 "The map, the counts and the definition printed beside each "
                 "figure.",
+                "We are here because the City needs the counts and the map with "
+                "a definition beside each figure.",
             ),
             Step(
                 "Try a what if on a fee change",
@@ -222,6 +261,8 @@ PATHS: tuple[Path, ...] = (
                 "the cases.",
                 "The run writes down what the change would do and it decides "
                 "nothing.",
+                "We are here because Muse writes the briefing for a fee change, "
+                "and the run decides nothing.",
             ),
         ),
     ),
@@ -241,6 +282,8 @@ PATHS: tuple[Path, ...] = (
                 "Open the video below the persona cards and play it.",
                 "It runs under three minutes and every record it shows is "
                 "fictional.",
+                "We are here because the video shows the same journey before "
+                "you walk it.",
             ),
             Step(
                 "Read the permit life cycle",
@@ -250,6 +293,7 @@ PATHS: tuple[Path, ...] = (
                 "can move to instead.",
                 "Each move names who makes it, an agent only routes cases and a "
                 "person decides and issues.",
+                "We are here because each move names who makes it.",
             ),
             Step(
                 "See what the City plans next",
@@ -258,13 +302,16 @@ PATHS: tuple[Path, ...] = (
                 "Open Help and documentation and read the plan for assistants "
                 "through MCP.",
                 "The plan says plainly that none of it is built yet.",
+                "We are here because the help hub holds the plan for what is "
+                "not built yet.",
             ),
         ),
     ),
 )
 
-#: The path the guided tour opens when no other path is named. The page
-#: lists the resident path first. An unnamed tour still opens the café path.
+#: The path an unknown tour name opens. Take the tour, with no path named,
+#: runs the three tracks in order. A name that is not a path still opens
+#: the café path.
 DEFAULT_PATH = "cafe"
 
 
@@ -404,6 +451,7 @@ def walkthrough_view(session: Session, *, case_id: str = DEFAULT_CASE_ID) -> dic
                 "key": path.key,
                 "title": path.title,
                 "one_line": path.one_line,
+                "story": path.story,
                 "minutes": path.minutes,
                 "steps": [
                     {
@@ -414,6 +462,7 @@ def walkthrough_view(session: Session, *, case_id: str = DEFAULT_CASE_ID) -> dic
                         "path": resolve_path(step.path, case_id),
                         "do": step.do,
                         "look_for": step.look_for,
+                        "why": step.why,
                     }
                     for number, step in enumerate(path.steps, start=1)
                 ],
@@ -474,6 +523,9 @@ def walkthrough_markdown() -> str:
         lines.append("")
         lines.append(path.one_line)
         lines.append("")
+        if path.story:
+            lines.append(path.story)
+            lines.append("")
         lines.append(f"{len(path.steps)} steps, about {path.minutes} minutes.")
         lines.append("")
         for number, step in enumerate(path.steps, start=1):
@@ -484,6 +536,8 @@ def walkthrough_markdown() -> str:
             else:
                 lines.append(f"Open `{step.path}`.")
             lines.append("")
+            if step.why:
+                lines.append(f"- Why: {step.why}")
             lines.append(f"- Do: {step.do}")
             lines.append(f"- Look for: {step.look_for}")
             lines.append("")

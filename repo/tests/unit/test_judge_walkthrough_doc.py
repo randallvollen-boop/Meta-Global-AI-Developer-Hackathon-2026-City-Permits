@@ -31,10 +31,13 @@ def test_the_document_holds_every_path_with_its_steps() -> None:
     for path in PATHS:
         assert f"## {path.title}" in text
         assert path.one_line in text
+        if path.story:
+            assert path.story in text
         for number, step in enumerate(path.steps, start=1):
             assert f"### {number}. {step.title}" in text
             assert step.do in text
             assert step.look_for in text
+            assert step.why in text
             if step.persona:
                 assert f"As **{step.persona}**" in text
 

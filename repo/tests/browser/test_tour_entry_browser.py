@@ -13,9 +13,42 @@ from conftest import BrowserServer
 VIEWPORTS = ({"width": 1280, "height": 900}, {"width": 390, "height": 844})
 
 
-def steps_of(page, server: BrowserServer, path: str = "cafe") -> list[dict[str, str]]:
-    """Return the steps of one path the server serves to the browser."""
-    return page.request.get(f"{server.base_url}/tour/steps?path={path}").json()["steps"]
+def steps_of(page, server: BrowserServer, path: str = "") -> list[dict[str, str]]:
+    """Return the steps the server serves. No path is the full story."""
+    url = f"{server.base_url}/tour/steps"
+    if path:
+        url = f"{url}?path={path}"
+    return page.request.get(url).json()["steps"]
+
+
+def assert_step_mark(page, step: dict[str, str]) -> None:
+    """A control is ringed. A story step centres the panel and hides the ring."""
+    if step.get("target"):
+        assert page.locator('[data-testid="tour-ring"]').is_visible()
+        assert page.evaluate(
+            """(selector) => { const target = document.querySelector(selector);
+                 const ring = document.querySelector('[data-testid="tour-ring"]');
+                 if (!target || !ring) return false;
+                 const place = target.getBoundingClientRect();
+                 const marked = ring.getBoundingClientRect();
+                 return Math.abs(marked.top - place.top) < 12
+                   && Math.abs(marked.left - place.left) < 12; }""",
+            step["target"],
+        )
+    else:
+        assert page.locator('[data-testid="tour-ring"]').is_hidden()
+        panel = page.locator('[data-testid="tour-panel"]')
+        assert "is-centred" in (panel.get_attribute("class") or "")
+        assert page.locator('[data-testid="tour-warning"]').is_hidden()
+    if step.get("muse"):
+        badge = page.locator('[data-testid="tour-muse-badge"]')
+        assert badge.is_visible()
+        assert badge.inner_text().strip() == "Muse"
+        replay = page.locator('[data-testid="tour-replay"]')
+        assert replay.is_visible()
+        assert "recorded replay" in replay.inner_text().lower()
+    else:
+        assert page.locator('[data-testid="tour-muse"]').is_hidden()
 
 
 def wait_for_step(page, server: BrowserServer, step: dict[str, str]) -> None:
@@ -90,17 +123,7 @@ def test_the_tour_walks_every_step_from_the_landing(
     for number, step in enumerate(steps, start=1):
         wait_for_step(page, server, step)
         assert page.locator('[data-testid="tour-caption"]').inner_text().strip() == step["caption"]
-        assert page.locator('[data-testid="tour-ring"]').is_visible()
-        assert page.evaluate(
-            """(selector) => { const target = document.querySelector(selector);
-                 const ring = document.querySelector('[data-testid="tour-ring"]');
-                 if (!target || !ring) return false;
-                 const place = target.getBoundingClientRect();
-                 const marked = ring.getBoundingClientRect();
-                 return Math.abs(marked.top - place.top) < 12
-                   && Math.abs(marked.left - place.left) < 12; }""",
-            step["target"],
-        )
+        assert_step_mark(page, step)
         if number < len(steps):
             page.locator('[data-testid="tour-next"]').click()
     page.locator('[data-testid="tour-next"]').click()

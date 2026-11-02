@@ -1,13 +1,37 @@
 {
   "version": "2",
   "title": "Take the tour",
-  "note": "The guided tour of one path through the City. The tour only opens screens and points at controls; it never changes a record. Each step names the walkthrough step of the same path.",
+  "note": "The guided tour. Take the tour with no path named walks the fence, the café and the city. Each of those tracks opens on a story. The tour only opens screens and points at controls. It never changes a record.",
   "default_path": "cafe",
   "paths": {
     "resident": {
       "title": "Apply as a resident",
       "minutes": 3,
       "steps": [
+        {
+          "id": "intro",
+          "kind": "intro",
+          "title": "A fence for the back yard",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply",
+          "target": "",
+          "permission": "application.submit",
+          "caption": "We are here because a resident at 400 Lantern Row wants a fence for the back yard. The case starts on Apply, before a form is filled, because the permit and the documents are not known yet."
+        },
+        {
+          "id": "ask",
+          "title": "Ask which permit a fence needs",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply",
+          "target": "[data-testid=\"help-chat-launcher\"]",
+          "permission": "application.submit",
+          "muse": true,
+          "muse_surface": "help",
+          "muse_line": "Muse, in the help assistant, names the fence permit, the 4 ft front yard limit and the documents.",
+          "caption": "We are here because the resident does not yet know which permit a back yard fence needs. Press Ask."
+        },
         {
           "id": "apply",
           "walkthrough_step": 1,
@@ -17,7 +41,7 @@
           "path": "/apply",
           "target": "[data-testid=\"type-card\"]",
           "permission": "application.submit",
-          "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
+          "caption": "We are here because the City asks only the questions this fence project needs. Press Residential deck or fence."
         },
         {
           "id": "check",
@@ -26,9 +50,12 @@
           "persona": "Applicant",
           "actor_id": "persona_applicant",
           "path": "/apply/deck_fence",
-          "target": "[data-testid=\"submit-application\"]",
+          "target": "[data-testid=\"check-application\"]",
           "permission": "application.submit",
-          "caption": "Press Check my application to see what the published rules say about the answers, and fix what the panel lists under Must fix before the application is sent."
+          "muse": true,
+          "muse_surface": "presubmit",
+          "muse_line": "Muse gives feedback on Check my application before the application is sent.",
+          "caption": "We are here because the resident should see what must change before the City does. Press Check my application."
         },
         {
           "id": "agent",
@@ -39,7 +66,10 @@
           "path": "/agent/intake",
           "target": "[data-testid=\"agent-toggle\"]",
           "permission": "agent.run.intake",
-          "caption": "The intake agent reads each new application and routes it to the right queue. An application that breaks a rule waits in Early resolution, and the Router line gives the reason."
+          "muse": true,
+          "muse_surface": "intake",
+          "muse_line": "Muse reads the documents on intake and proposes the fields, and a person still decides.",
+          "caption": "We are here because the new application has to be read and sent to the right queue. Press Wake agent."
         },
         {
           "id": "track",
@@ -50,7 +80,7 @@
           "path": "/apply/track",
           "target": "[data-testid=\"permit-list\"]",
           "permission": "application.submit",
-          "caption": "The resident follows the application on the City of Acme website and reads what the City has recorded so far."
+          "caption": "We are here because the resident needs to see what the City has recorded so far. Open the application in the list."
         }
       ]
     },
@@ -58,6 +88,17 @@
       "title": "Get the café open",
       "minutes": 6,
       "steps": [
+        {
+          "id": "intro",
+          "kind": "intro",
+          "title": "A café that has been waiting",
+          "persona": "Data Steward",
+          "actor_id": "persona_data_steward",
+          "path": "/steward",
+          "target": "",
+          "permission": "registry.crosswalk.propose",
+          "caption": "We are here because Cedarline Coffee cannot open until its permit is issued. The case starts with the Data Steward, because the owner is recorded three ways."
+        },
         {
           "id": "steward",
           "walkthrough_step": 1,
@@ -68,7 +109,10 @@
           "target": "[data-testid=\"assistant-prepare\"]",
           "permission": "registry.crosswalk.propose",
           "fresh": true,
-          "caption": "The steward assistant prepares a recommendation and the Data Steward records the decision. Accept all high-confidence (N) shows the list it is sure of. The identity and the payer account must be cleared before a reviewer may approve."
+          "muse": true,
+          "muse_surface": "explain",
+          "muse_line": "Explain with Muse rewrites the reason in plain words, and a person records the decision.",
+          "caption": "We are here because the owner is three records until a steward decides they are one. Press Prepare recommendations."
         },
         {
           "id": "agent",
@@ -79,7 +123,10 @@
           "path": "/agent/intake",
           "target": "[data-testid=\"agent-toggle\"]",
           "permission": "agent.run.intake",
-          "caption": "The intake agent reads each new case and routes it to the right queue. It never decides: a person does that."
+          "muse": true,
+          "muse_surface": "intake",
+          "muse_line": "Muse reads the documents on intake and proposes the fields, and a person still decides.",
+          "caption": "We are here because the café case has to reach a reviewer, and only a person may approve it. Press Wake agent."
         },
         {
           "id": "reviewer",
@@ -90,7 +137,7 @@
           "path": "/permits/{case}",
           "target": "[data-action-id=\"permit.evaluate\"]",
           "permission": "permit.decide",
-          "caption": "Open the case of the café, run the application checks and record the decision with its reason. The identity and the payer account must be cleared first."
+          "caption": "We are here because the identity and the payer account are clear, so a person can decide. Press Run application checks."
         },
         {
           "id": "finance",
@@ -101,7 +148,7 @@
           "path": "/reconciliation",
           "target": "[data-action-id=\"finance.assess\"]",
           "permission": "finance.assessment.create",
-          "caption": "The fee is assessed on the case, the receipt from the old finance account is allocated to it and the assessment is reconciled. A permit is issued only at a 0.00 balance."
+          "caption": "We are here because the fee has to reach 0.00 before a permit can be issued. Press Assess application."
         },
         {
           "id": "issue",
@@ -112,7 +159,7 @@
           "path": "/permits/{case}",
           "target": "[data-action-id=\"permit.issue\"]",
           "permission": "permit.issue",
-          "caption": "Deciding and issuing are separate. The permit is issued from the case once the finance position is exact, and the issued artifact never changes afterwards."
+          "caption": "We are here because deciding and issuing are separate, and the balance is now exact. Press Issue permit."
         },
         {
           "id": "public",
@@ -123,7 +170,7 @@
           "path": "/city/community",
           "target": "[data-testid=\"community-q\"]",
           "permission": "",
-          "caption": "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees."
+          "caption": "We are here because a resident should find the permit without a homeowner's name, the documents or the fees. Search the public record."
         }
       ]
     },
@@ -131,6 +178,17 @@
       "title": "Run the city",
       "minutes": 3,
       "steps": [
+        {
+          "id": "intro",
+          "kind": "intro",
+          "title": "After the permit is issued",
+          "persona": "City Administrator",
+          "actor_id": "persona_city_administrator",
+          "path": "/ops/audit",
+          "target": "",
+          "permission": "ops.audit_log.view",
+          "caption": "We are here because the café permit is on the public record and the City has to see who decided. The case continues in the audit log."
+        },
         {
           "id": "audit",
           "walkthrough_step": 1,
@@ -140,7 +198,7 @@
           "path": "/ops/audit",
           "target": "[data-testid=\"audit-filter-apply\"]",
           "permission": "ops.audit_log.view",
-          "caption": "Every action is recorded. Filter the log for the recorded permit decision and open its details."
+          "caption": "We are here because the decision has to stay tied to the person who made it. Press Apply filters."
         },
         {
           "id": "insight",
@@ -151,7 +209,7 @@
           "path": "/insight/city",
           "target": "[data-testid=\"filter-apply\"]",
           "permission": "insight.city.view",
-          "caption": "The City view: the counts, the map, and the definition printed beside each figure."
+          "caption": "We are here because the City needs the counts and the map, with the definition beside each figure. Press Apply."
         },
         {
           "id": "whatif",
@@ -162,7 +220,10 @@
           "path": "/policy/scenarios",
           "target": "[data-testid=\"policy-create-anchor\"]",
           "permission": "policy.scenario.manage",
-          "caption": "A what-if runs a change over the cases and writes down what it would do. It decides nothing and changes nothing."
+          "muse": true,
+          "muse_surface": "policy",
+          "muse_line": "Muse writes the policy briefing for the what-if, and the run decides nothing.",
+          "caption": "We are here because the City wants to see what a fee change would do before it changes a rule. Press Create a what-if."
         }
       ]
     },
@@ -179,7 +240,7 @@
           "path": "/select",
           "target": "[data-testid=\"demo-video\"]",
           "permission": "",
-          "caption": "The video shows the same journey in under three minutes. Every record in the app is fictional."
+          "caption": "We are here because the video shows the same journey before you walk it. Press play on the video."
         },
         {
           "id": "lifecycle",
@@ -190,7 +251,7 @@
           "path": "/lifecycle",
           "target": "[data-testid=\"lifecycle-main-path\"]",
           "permission": "",
-          "caption": "The life cycle lists every status and every move, and it names who makes each move. An agent only routes cases, a person decides and issues."
+          "caption": "We are here because each move names who makes it, and an agent only routes. Read the main path."
         },
         {
           "id": "help",
@@ -201,7 +262,7 @@
           "path": "/help",
           "target": "[data-testid=\"help-cards\"]",
           "permission": "",
-          "caption": "The help hub lists the guides, the glossary and the technical documents, including the plan for assistants through MCP."
+          "caption": "We are here because the help hub holds the guides and the plan for what is not built yet. Open the help cards."
         }
       ]
     }

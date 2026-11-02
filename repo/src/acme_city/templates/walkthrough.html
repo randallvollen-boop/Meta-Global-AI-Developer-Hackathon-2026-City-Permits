@@ -36,6 +36,9 @@
   </div>
   <div class="card-b">
     <p class="guide-path-line" data-testid="path-line">{{ path.one_line }}</p>
+    {% if path.story %}
+    <p class="guide-path-story" data-testid="path-story">{{ path.story }}</p>
+    {% endif %}
     <p class="guide-path-actions">
       <button type="button" class="button btn" data-tour-start="{{ path.key }}" data-testid="path-start">Start</button>
       <a class="button btn ghost" href="#path-steps-{{ path.key }}" data-testid="path-steps-link">Steps</a>
@@ -59,6 +62,7 @@
       <li class="panel guide-step" data-testid="walkthrough-step">
         <h3><span class="guide-step-n">{{ step.number }}</span> {{ step.title }}</h3>
         {% if step.persona %}<p class="guide-persona">As {{ step.persona }}</p>{% endif %}
+        {% if step.why %}<p><span class="guide-k">Why</span> {{ step.why }}</p>{% endif %}
         <p><span class="guide-k">Do</span> {{ step.do }}</p>
         <details class="guide-more">
           <summary>More details</summary>

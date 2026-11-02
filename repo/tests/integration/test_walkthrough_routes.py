@@ -84,6 +84,11 @@ def test_the_walkthrough_page_lists_every_path(client: TestClient) -> None:
     assert tracks_html.count('data-testid="walkthrough-step"') == sum(
         len(path.steps) for path in tracks
     )
+    resident = next(path for path in tracks if path.key == "resident")
+    assert resident.story in tracks_html
+    assert resident.steps[0].why in tracks_html
+    assert tracks_html.count('data-testid="path-story"') == len(tracks)
+    assert '<span class="guide-k">Why</span>' not in row_html
 
 
 def test_the_landing_lists_every_path_under_the_personas(client: TestClient) -> None:
@@ -111,7 +116,10 @@ def test_the_tour_is_served_one_path_at_a_time(client: TestClient) -> None:
         assert payload["steps"], path.key
         for step in payload["steps"]:
             assert step["path"].startswith("/")
-            assert step["target"]
+            if step.get("kind") == "intro":
+                assert step["target"] == ""
+            else:
+                assert step["target"]
 
 
 def test_the_tour_of_the_café_path_opens_the_case_of_the_café(client: TestClient) -> None:

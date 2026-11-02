@@ -1,14 +1,16 @@
 /* The guided tour of the ACME City demonstration.
 
    The tour walks one path through the City, in the order of the written
-   walkthrough of that path.  It switches persona through the ordinary
-   persona switch, opens the real screen, rings the control the person would
-   press and explains in one or two lines what happens there and why it
-   matters.  It never changes a record: it opens screens and points.
+   walkthrough of that path.  Take the tour with no path named walks the
+   fence, then the café, then the city.  A story step has no control: the
+   panel sits in the centre and says why the case starts there.  The tour
+   switches persona through the ordinary persona switch, opens the real
+   screen, rings the control the person would press and says why that step
+   happens.  It never changes a record: it opens screens and points.
 
-   The steps live in config/tour_steps.json and are served by /tour/steps,
-   one path at a time.  The browser asks for the path it walks, so every path
-   has its own tour and its own Auto-play.  The overlay is built here, so the
+   The steps live in config/tour_steps.json and are served by /tour/steps.
+   The browser asks for the path it walks, so every path has its own tour
+   and its own Auto-play.  The overlay is built here, so the
    tour works on every page that loads this script.  The state of the tour
    lives in the session storage, so the tour survives the page change between
    two steps and keeps the path it walks.  The auto-play lives in the same
@@ -118,6 +120,11 @@
       '  <p class="tour-count" data-testid="tour-count"></p>',
       '  <h2 class="tour-title" data-testid="tour-title"></h2>',
       '  <p class="tour-caption" data-testid="tour-caption" aria-live="polite"></p>',
+      '  <p class="tour-muse" data-testid="tour-muse" hidden>',
+      '    <span class="tour-muse-badge" data-testid="tour-muse-badge">Muse</span>',
+      '    <span data-testid="tour-muse-line"></span>',
+      '  </p>',
+      '  <p class="tour-replay" data-testid="tour-replay" hidden></p>',
       '  <p class="tour-warning" data-testid="tour-warning" hidden></p>',
       '  <p class="tour-note" id="tour-note" data-testid="tour-note" hidden></p>',
       '  <p class="tour-fresh" data-testid="tour-fresh" hidden>',
@@ -165,6 +172,31 @@
     if (!element) return;
     element.textContent = text || "";
     element.hidden = !text;
+  }
+
+  /* The Muse badge and the one line that says what Muse does on this step.
+     A step that does not use Muse hides both. */
+  function paintMuse(current) {
+    var block = part("tour-muse");
+    if (!block) return;
+    var line = part("tour-muse-line");
+    if (current.muse) {
+      block.hidden = false;
+      if (line) line.textContent = current.muse_line || "";
+    } else {
+      block.hidden = true;
+      if (line) line.textContent = "";
+    }
+  }
+
+  /* The replay line is separate from the caption.  It is empty when live
+     Muse can still answer, and the panel hides it then. */
+  function paintReplay(current) {
+    var block = part("tour-replay");
+    if (!block) return;
+    var text = current.replay_note || "";
+    block.textContent = text;
+    block.hidden = !text;
   }
 
   /* The note of the panel.  It explains why the tour does not play on its
@@ -334,7 +366,18 @@
       if (freshButton) freshButton.disabled = false;
     }
     paintNote();
-    if (!ring(current)) {
+    paintMuse(current);
+    paintReplay(current);
+    /* A story intro and the line between tracks name no control.  The panel
+       sits in the centre, and the tour does not warn that a control is missing. */
+    var panel = part("tour-panel");
+    var centred = !current.target;
+    if (panel) panel.classList.toggle("is-centred", centred);
+    if (centred) {
+      var ringBox = part("tour-ring");
+      if (ringBox) ringBox.hidden = true;
+      warning("");
+    } else if (!ring(current)) {
       warning("The control of this step is not on this screen.");
     } else {
       warning("");
@@ -385,8 +428,8 @@
       });
   }
 
-  /* Start the tour of one path.  A path with no name opens the path the
-     server offers by default. */
+  /* Start the tour of one path.  A path with no name opens the full story
+     the server builds: the fence, then the café, then the city. */
   function start(pathKey) {
     var key = pathKey || "";
     state.path = key;

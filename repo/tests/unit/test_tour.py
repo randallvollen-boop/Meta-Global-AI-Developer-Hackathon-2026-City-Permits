@@ -93,10 +93,20 @@ def test_every_step_names_a_persona_a_screen_a_control_and_a_caption(
 ) -> None:
     for key, path in paths.items():
         for step in path["steps"]:
-            for field in ("id", "title", "path", "target", "caption"):
+            for field in ("id", "title", "path", "caption"):
                 assert str(step.get(field, "")).strip(), (key, step.get("id"), field)
             assert str(step.get("path", "")).startswith("/"), step.get("id")
-            assert len(str(step.get("caption", ""))) < 240, step.get("id")
+            caption = str(step.get("caption", ""))
+            assert "We are here because" in caption, (key, step.get("id"))
+            assert len(caption) < 240, step.get("id")
+            assert "—" not in caption and "–" not in caption and " - " not in caption
+            # A story intro names no control. Every other step still points at one.
+            # An intro stays under 400 characters, and under 240 with the rest.
+            if str(step.get("kind") or "") == "intro":
+                assert step.get("target") == "", (key, step.get("id"))
+                assert len(caption) < 400, step.get("id")
+            else:
+                assert str(step.get("target", "")).strip(), (key, step.get("id"), "target")
 
 
 def test_the_tour_of_every_path_follows_the_written_steps_of_that_path(
@@ -107,20 +117,36 @@ def test_the_tour_of_every_path_follows_the_written_steps_of_that_path(
         tour = paths[path.key]
         seen = []
         for step in tour["steps"]:
+            # A story intro is not one of the numbered written steps.
+            if str(step.get("kind") or "") == "intro":
+                assert "walkthrough_step" not in step, (path.key, step["id"])
+                assert step.get("target") == "", (path.key, step["id"])
+                continue
+            # An extra Muse highlight has a real control and no written number.
+            if "walkthrough_step" not in step:
+                assert step.get("muse") is True, (path.key, step.get("id"))
+                assert str(step.get("target") or "").strip(), (path.key, step.get("id"))
+                continue
             number = int(step["walkthrough_step"])
             assert 1 <= number <= len(path.steps), (path.key, step["id"])
             written = path.steps[number - 1]
             assert step["title"] == written.title, (path.key, step["id"])
             assert step["persona"] == written.persona, (path.key, step["id"])
             seen.append(number)
-        assert seen == sorted(seen), f"the tour of {path.key} does not follow the order of the story"
+        assert seen == list(range(1, len(path.steps) + 1)), (
+            f"the tour of {path.key} does not follow the order of the story"
+        )
 
 
 def test_the_tour_of_the_café_path_starts_at_the_first_step(paths: dict[str, dict]) -> None:
-    """The café path opens with the task of the Data Steward."""
+    """The café path opens on its story, then the task of the Data Steward."""
     steps = paths["cafe"]["steps"]
-    assert int(steps[0]["walkthrough_step"]) == 1
-    assert steps[0]["persona"] == "Data Steward"
+    assert steps[0].get("kind") == "intro"
+    assert steps[0].get("target") == ""
+    numbered = [step for step in steps if "walkthrough_step" in step]
+    assert int(numbered[0]["walkthrough_step"]) == 1
+    assert numbered[0]["persona"] == "Data Steward"
+    assert numbered[0]["id"] == "steward"
 
 
 def test_the_tour_of_every_path_acts_as_the_personas_of_that_path(
@@ -180,6 +206,9 @@ def test_every_step_points_at_a_control_of_its_screen(
             screen = resolve_path(str(step["path"]), DEFAULT_CASE_ID)
             response = client.get(screen)
             assert response.status_code == 200, (key, step["id"], response.status_code)
+            if str(step.get("kind") or "") == "intro":
+                assert step.get("target") == "", (key, step["id"])
+                continue
             assert needle(step["target"]) in response.text, (
                 key,
                 step["id"],
@@ -210,15 +239,67 @@ def test_only_the_first_step_of_the_café_path_offers_a_fresh_copy(
 
 
 def test_the_route_serves_the_steps_of_the_chosen_path(client: TestClient) -> None:
+    """Take the tour, with no path named, opens on the fence story."""
     response = client.get("/tour/steps")
     assert response.status_code == 200, response.text[:200]
     payload = response.json()
     assert payload["title"] == "Take the tour"
-    assert payload["path"] == "cafe"
-    assert len(payload["steps"]) == len(tour_steps()["paths"]["cafe"]["steps"])
-    for step in payload["steps"]:
+    assert payload["path"] == "story"
+    assert [item["key"] for item in payload["paths"]] == [item.key for item in PATHS]
+    steps = payload["steps"]
+    assert [(step.get("path_key"), step.get("id")) for step in steps] == [
+        ("resident", "intro"),
+        ("resident", "ask"),
+        ("resident", "apply"),
+        ("resident", "check"),
+        ("resident", "agent"),
+        ("resident", "track"),
+        ("cafe", "bridge-cafe"),
+        ("cafe", "intro"),
+        ("cafe", "steward"),
+        ("cafe", "agent"),
+        ("cafe", "reviewer"),
+        ("cafe", "finance"),
+        ("cafe", "issue"),
+        ("cafe", "public"),
+        ("city", "bridge-city"),
+        ("city", "intro"),
+        ("city", "audit"),
+        ("city", "insight"),
+        ("city", "whatif"),
+    ]
+    first = steps[0]
+    assert first["kind"] == "intro"
+    assert first["target"] == ""
+    assert first["persona"] == "Applicant"
+    assert "fence" in first["title"].lower()
+    assert "back yard" in first["caption"]
+    bridges = [step for step in steps if step.get("kind") == "bridge"]
+    assert [step["caption"] for step in bridges] == [
+        "The resident's case is in. Now the City clears a café that has been waiting for weeks.",
+        (
+            "The café permit is on the public record. Now the City checks "
+            "who decided, the map and a fee change."
+        ),
+    ]
+    for index, step in enumerate(steps):
         assert step["path"].startswith("/")
-        assert step["target"]
+        if step.get("kind") in {"intro", "bridge"}:
+            assert step["target"] == ""
+        else:
+            assert step["target"]
+        if step.get("kind") != "bridge":
+            continue
+        assert step["path"] == steps[index - 1]["path"]
+        assert step["actor_id"] == ""
+        assert step["persona"] == ""
+        assert not step.get("muse")
+        assert steps[index + 1]["kind"] == "intro"
+        assert step["title"] != steps[index + 1]["title"]
+    again = client.get("/tour/steps?path=story")
+    assert again.status_code == 200
+    assert again.json()["path"] == "story"
+    assert again.json()["steps"] == steps
 
 
 def test_the_route_serves_the_steps_of_every_path(client: TestClient) -> None:
@@ -314,6 +395,95 @@ def test_the_engine_keeps_the_reduced_motion_rule() -> None:
     body = re.search(r"function startAuto\(\) \{(.*?)\n  \}", script, re.S)
     assert body is not None
     assert "reducedMotion()" in body.group(1)
+
+
+def test_the_engine_centres_a_story_step_and_marks_muse() -> None:
+    """A step with no control is centred, and a Muse step shows the badge."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    style = STYLE.read_text(encoding="utf-8")
+    assert "is-centred" in script
+    assert 'data-testid="tour-muse-badge"' in script
+    assert ">Muse<" in script
+    assert ".tour-panel.is-centred" in style
+    assert ".tour-panel:not(.is-centred)" in style
+    body = re.search(r"function startAuto\(\) \{(.*?)\n  \}", script, re.S)
+    assert body is not None
+    assert "reducedMotion()" in body.group(1)
+    assert "target" not in body.group(1)
+
+
+def test_each_track_opens_on_its_own_story(paths: dict[str, dict]) -> None:
+    """The fence is first. The café and the city each open on a story too."""
+    for key in ("resident", "cafe", "city"):
+        first = paths[key]["steps"][0]
+        assert first.get("kind") == "intro", key
+        assert first.get("target") == "", key
+        assert "We are here because" in first["caption"], key
+    assert "fence" in paths["resident"]["steps"][0]["title"].lower()
+    assert paths["before"]["steps"][0].get("kind") != "intro"
+
+
+def test_every_muse_step_names_what_muse_does(paths: dict[str, dict]) -> None:
+    """Every Muse step names the surface and what Muse does there."""
+    expected = {
+        ("resident", "ask"): "help",
+        ("resident", "check"): "presubmit",
+        ("resident", "agent"): "intake",
+        ("cafe", "steward"): "explain",
+        ("cafe", "agent"): "intake",
+        ("city", "whatif"): "policy",
+    }
+    found = {}
+    for key, path in paths.items():
+        for step in path["steps"]:
+            if not step.get("muse"):
+                assert not step.get("muse_line"), (key, step.get("id"))
+                continue
+            line = str(step.get("muse_line") or "")
+            assert "Muse" in line, (key, step.get("id"))
+            assert "Spark" not in line and "GPT" not in line and "Claude" not in line
+            assert str(step.get("target") or "").strip(), (key, step.get("id"))
+            found[(key, step["id"])] = step.get("muse_surface")
+    assert found == expected
+
+
+def test_muse_steps_name_the_recorded_replay_when_live_muse_is_off(
+    client: TestClient, session: Session, settings
+) -> None:
+    """Live Muse is off in the tests, so every Muse step names the recorded replay."""
+    from acme_city.applicant_help.config import load_config
+    from acme_city.applicant_portal.presubmit import ASSISTANT_OFFLINE
+    from acme_city.ui.guide_routes import INTAKE_REPLAY_LABEL, POLICY_REPLAY_LABEL
+    from acme_city.ui.steward_assist_views import explain_state
+
+    reviewer = (ROOT / "src" / "acme_city" / "ui" / "reviewer_views.py").read_text(encoding="utf-8")
+    policy = (ROOT / "src" / "acme_city" / "ui" / "policy_routes.py").read_text(encoding="utf-8")
+    assert INTAKE_REPLAY_LABEL in reviewer
+    assert POLICY_REPLAY_LABEL in policy
+    expected = {
+        "help": load_config().replay_label,
+        "presubmit": ASSISTANT_OFFLINE,
+        "intake": INTAKE_REPLAY_LABEL,
+        "explain": explain_state(session, settings)["note"],
+        "policy": POLICY_REPLAY_LABEL,
+    }
+    payload = client.get("/tour/steps").json()
+    surfaces = set()
+    for step in payload["steps"]:
+        note = str(step.get("replay_note") or "")
+        if not step.get("muse"):
+            assert note == "", step.get("id")
+            continue
+        surface = str(step.get("muse_surface") or "")
+        surfaces.add(surface)
+        assert "recorded replay" in note.lower(), step.get("id")
+        assert expected[surface] in note, (step.get("id"), surface, note)
+        assert "Muse" in str(step.get("muse_line") or "")
+        for banned in ("Spark", "GPT", "Claude"):
+            assert banned not in note
+            assert banned not in str(step.get("muse_line") or "")
+            assert banned not in str(step.get("caption") or "")
+    assert surfaces == {"help", "presubmit", "intake", "explain", "policy"}
 
 
 def test_the_engine_finishes_the_tour_at_the_last_step() -> None:

@@ -22,6 +22,29 @@
 .tour-title { margin: .15rem 0 .35rem; font-size: 1.1rem; }
 .tour-caption { margin: 0 0 .5rem; font-size: .95rem; }
 .tour-warning { margin: 0 0 .5rem; font-size: .88rem; color: var(--warn, #a5650b); }
+
+/* A story step and the line between tracks have no control to ring, so the
+   panel sits in the centre of the screen. */
+.tour-panel.is-centred {
+  top: 50%; bottom: auto; transform: translate(-50%, -50%);
+}
+
+/* The Muse mark.  The hidden attribute hides the block.  The rule below
+   applies only when the block is shown, so it does not override hidden. */
+.tour-muse:not([hidden]) {
+  display: flex; flex-wrap: wrap; gap: .35rem; align-items: baseline;
+  margin: 0 0 .5rem;
+}
+.tour-muse-badge {
+  display: inline-block; flex: none;
+  font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+  text-transform: none; line-height: 1.2;
+  padding: .12rem .4rem; border-radius: 999px;
+  background: var(--accent, #1f5f8b); color: #fff;
+}
+.tour-replay:not([hidden]) {
+  display: block; margin: 0 0 .5rem; font-size: .85rem; color: var(--fg-2, #4a5b6b);
+}
 .tour-note { margin: 0 0 .5rem; font-size: .85rem; color: var(--fg-2, #4a5b6b); }
 
 /* Start fresh: the one write the tour may offer, on the first step of the
@@ -40,7 +63,8 @@
 .tour-progress-fill { display: block; height: 100%; width: 0; background: var(--accent, #1f5f8b); transition: width 1s linear; }
 
 @media (max-width: 720px) {
-  .tour-panel { bottom: 4.5rem; max-height: 50vh; }
+  .tour-panel:not(.is-centred) { bottom: 4.5rem; max-height: 50vh; }
+  .tour-panel.is-centred { max-height: 50vh; }
 }
 
 @media (prefers-reduced-motion: reduce) {
