@@ -657,6 +657,25 @@
     }
   }
 
+  function openRefusalOnLoad() {
+    /* A refused action reloads the page with its reason in the panel. The
+       panel opens once for that refusal, without a click; the same refusal
+       does not open it again on later pages. */
+    var panel = feedbackPanel();
+    if (!panel || panel.getAttribute("data-outcome") !== "denied") return;
+    if (panel.getAttribute("data-opened")) return;
+    var id = panel.getAttribute("data-event-id") || "";
+    var key = "acme-refusal-shown";
+    try {
+      if (window.sessionStorage.getItem(key) === id) return;
+      window.sessionStorage.setItem(key, id);
+    } catch (error) {
+      /* Without storage the refusal opens on every page; that is safe. */
+    }
+    panel.setAttribute("data-opened", "yes");
+    openPanel(false);
+  }
+
   function initLastAction() {
     /* The bell of the last action and the panel it opens.  Both live outside
        the content of the screen, so they survive the reading of the page
@@ -674,6 +693,7 @@
         }
       });
     }
+    openRefusalOnLoad();
     var close = document.querySelector('[data-testid="feedback-panel-close"]');
     if (close && !close.getAttribute("data-bound")) {
       close.setAttribute("data-bound", "yes");

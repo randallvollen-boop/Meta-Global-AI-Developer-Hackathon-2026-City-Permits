@@ -57,7 +57,7 @@ Open https://acme-city-permits.onrender.com. The landing page lists the five per
 
 On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. The landing page has its own "Take the tour" button in the line of guides.
 
-The walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It has four paths, and each path has a guided tour and "Auto-play". The paths are "Apply as a resident", "Get the café open", "Run the city", and "Before you start". "Get the café open" is the main journey: the Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record. "Start fresh" gives each judge a fresh copy of the café case, so other visitors' changes don't get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
+The walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It has four paths, and each path has a guided tour and "Auto-play". The paths are "Apply as a resident", "Get the café open", "Run the city", and "Before you start". "Get the café open" is the main journey: the Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record. "Start fresh" gives each judge a fresh copy of the café case, so other visitors’ changes don’t get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
 
 What the demonstration has now:
 
@@ -106,7 +106,7 @@ Production behaviour:
 * Waiting agent work sits in a durable queue. A run records each of its nodes.
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries by itself, labels live and recorded results, and cannot approve, price, or issue a permit.
 * Live Muse calls have a daily cap, and icon generation has its own daily cap.
-* The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case, so other visitors' changes don't get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
+* The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case, so other visitors’ changes don’t get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
 * "Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
 
 Architecture:

@@ -80,7 +80,7 @@
               }
             }
           },
-          "caption": "We are here because the resident should see what must change before the City does. Press Fill in the story's answers, then Check my application. Try 6 ft in the front yard to see the check catch it."
+          "caption": "We are here because the resident should see what must change before the City does. Press Fill in the story’s answers, then Check my application. Try 6 ft in the front yard to see the check catch it."
         },
         {
           "id": "agent",
@@ -133,8 +133,8 @@
           "path": "/steward",
           "target": "",
           "permission": "registry.crosswalk.propose",
-          "copy_note": "Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way.",
-          "caption": "We are here because Cedarline Coffee cannot open until its permit is issued. Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way."
+          "copy_note": "Start fresh: get your own copy of the café case, so other visitors’ changes don’t get in your way.",
+          "caption": "We are here because Cedarline Coffee cannot open until its permit is issued. Start fresh: get your own copy of the café case, so other visitors’ changes don’t get in your way."
         },
         {
           "id": "steward",
@@ -146,7 +146,7 @@
           "target": "[data-testid=\"assistant-prepare\"]",
           "permission": "registry.crosswalk.propose",
           "fresh": true,
-          "copy_note": "Start fresh: get your own copy of the café case, so other visitors' changes don't get in your way.",
+          "copy_note": "Start fresh: get your own copy of the café case, so other visitors’ changes don’t get in your way.",
           "muse": true,
           "muse_surface": "explain",
           "muse_line": "Explain with Muse rewrites the reason in plain words, and a person records the decision.",
@@ -180,7 +180,7 @@
         {
           "id": "finance",
           "walkthrough_step": 4,
-          "title": "Apply the café's payment",
+          "title": "Apply the café’s payment",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
           "path": "/reconciliation",
@@ -210,7 +210,7 @@
           "target": "[data-testid=\"community-q\"]",
           "permission": "",
           "permit_card": true,
-          "caption": "We are here because a resident should find the permit without a homeowner's name, the documents or the fees. Search the public record."
+          "caption": "We are here because a resident should find the permit without a homeowner’s name, the documents or the fees. Search the public record."
         }
       ]
     },
@@ -244,13 +244,13 @@
         {
           "id": "audit",
           "walkthrough_step": 2,
-          "title": "Follow where the café's time went",
+          "title": "Follow where the café’s time went",
           "persona": "City Administrator",
           "actor_id": "persona_city_administrator",
           "path": "/ops/audit",
           "target": "[data-testid=\"audit-filter-apply\"]",
           "permission": "ops.audit_log.view",
-          "caption": "We are here because the counts raise where the café's weeks went. Choose Recorded permit decision, press Apply filters, then press View details."
+          "caption": "We are here because the counts raise where the café’s weeks went. Choose Recorded permit decision, press Apply filters, then press View details."
         },
         {
           "id": "pattern",

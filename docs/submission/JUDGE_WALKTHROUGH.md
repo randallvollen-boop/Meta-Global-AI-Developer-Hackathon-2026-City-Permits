@@ -27,7 +27,7 @@ As **Applicant**, open `/apply`.
 As **Applicant**, open `/apply`.
 
 - Why: We are here because Check my application asks Muse for feedback before the application is sent.
-- Do: Press Fill in the story's answers, press Check my application, then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application.
+- Do: Press Fill in the story’s answers, press Check my application, then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application.
 - Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
 
 ### 3. Let the agent route the application
@@ -86,13 +86,13 @@ As **Permit Reviewer**, open `/queue/review`.
 - Do: Open Review queue, read Stage and Next action, where Stage for a case in checks reads Checks (3 of 6) and Next action is Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution, or Submitted with known issues, with Ready to decide and Ready to issue first, then open the case of the café, press Start under Confirm parcel, press Start under Run application checks or Run checks again, and record the decision.
 - Look for: The checks summary reads Checks finished or These checks already ran on this revision, Next: record the decision appears when a decision is open, the Recommendation section reads Recommend deny: with the reason when the rules fail or Passed when they do not, Needs information is prefilled, plain blockers link to the fix, Data follow-up does not block the decision, and an approval against a failed rule reads Approved as an exception to the failed rule once Exception reason is written.
 
-### 4. Apply the café's payment
+### 4. Apply the café’s payment
 
 As **City Administrator**, open `/reconciliation`.
 
 - Why: We are here because the café paid its 150.00 fee when it applied, but the payment came in under its old finance account, so nobody could match it to the case.
-- Do: Open Reconciliation, press Start under Assess application, type the reference of the café's case and press Assess application, then press Start under Confirm allocation and press Confirm allocation, then press Start under Reconcile assessment and press Reconcile assessment.
-- Look for: The fee from the approved schedule is assessed, the café's payment is applied, and the balance shows 0.00, so the permit can be issued.
+- Do: Open Reconciliation, press Start under Assess application, type the reference of the café’s case and press Assess application, then press Start under Confirm allocation and press Confirm allocation, then press Start under Reconcile assessment and press Reconcile assessment.
+- Look for: The fee from the approved schedule is assessed, the café’s payment is applied, and the balance shows 0.00, so the permit can be issued.
 
 ### 5. Issue the permit
 
@@ -106,9 +106,9 @@ As **Permit Reviewer**, open `/queue/review`.
 
 Open `/city/community`.
 
-- Why: We are here because a resident should find the permit without a homeowner's name.
+- Why: We are here because a resident should find the permit without a homeowner’s name.
 - Do: Search for the permit number or the address, or press Search for my permit.
-- Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner's name, documents or fees.
+- Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner’s name, documents or fees.
 
 ## Run the city
 
@@ -126,11 +126,11 @@ As **City Administrator**, open `/insight/city`.
 - Do: Open the City view and read the counts, the map and the definition beside each figure for commercial cases.
 - Look for: Each figure has its definition printed beside it.
 
-### 2. Follow where the café's time went
+### 2. Follow where the café’s time went
 
 As **City Administrator**, open `/ops/audit`.
 
-- Why: We are here because the counts raise where the café's weeks went.
+- Why: We are here because the counts raise where the café’s weeks went.
 - Do: Choose Recorded permit decision in the Action filter, press Apply filters, then press View details on the top row.
 - Look for: The actor, the time, the decision and the case it belongs to are recorded together.
 

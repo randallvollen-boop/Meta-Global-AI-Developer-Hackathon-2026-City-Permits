@@ -56,6 +56,10 @@ def test_the_data_steward_cannot_decide_or_issue_a_permit(
         details = page.locator(f'details[data-action-id="{action_id}"]')
         assert details.count() == 1
         assert details.get_attribute("data-permitted") == "false"
+        # The action sits in a collapsed section; a user opens it first.
+        closed = details.locator("xpath=ancestor::details[not(@open)]")
+        while closed.count():
+            closed.first.locator("> summary").click()
         details.locator("summary").click()
         reason = details.locator('[data-testid="action-denied-reason"]')
         assert reason.is_visible()

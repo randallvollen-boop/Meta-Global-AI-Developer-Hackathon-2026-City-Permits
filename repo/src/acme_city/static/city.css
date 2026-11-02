@@ -268,7 +268,11 @@ html.ui-js .when-group.is-inactive, .when-group[hidden] { display: none; }
 .portal-form .override-field[hidden] { display: none; }
 .portal-form .submit-anyway { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .portal-form .submit-anyway[hidden] { display: none; }
-.portal-form .submit-anyway .btn { flex: none; }
+.portal-form .submit-anyway .btn {
+  flex: none; height: 40px; min-height: 40px; padding: 0 14px; line-height: 1;
+  transition: none; /* the fill changes at once when the reason is typed */
+  align-items: center; justify-content: center; white-space: nowrap;
+}
 .portal-form .submit-anyway .btn[disabled] { opacity: .6; border-color: var(--line); }
 .portal-form .submit-anyway-why { color: var(--fg-2); font-size: .85rem; }
 .portal-form .submit-anyway-why[hidden] { display: none; }

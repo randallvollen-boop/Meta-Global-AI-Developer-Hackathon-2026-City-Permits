@@ -102,7 +102,7 @@ PATHS: tuple[Path, ...] = (
                 "Check the application before it is sent",
                 "Applicant",
                 "/apply",
-                "Press Fill in the story's answers, press Check my application, "
+                "Press Fill in the story’s answers, press Check my application, "
                 "then set the fence to 6 ft in the front yard and press Check my "
                 "application again to see Must fix, or press Submit application.",
                 "The findings are grouped under Must fix, Should check and "
@@ -211,15 +211,15 @@ PATHS: tuple[Path, ...] = (
                 "while the demonstration sends no email.",
             ),
             Step(
-                "Apply the café's payment",
+                "Apply the café’s payment",
                 "City Administrator",
                 "/reconciliation",
                 "Open Reconciliation, press Start under Assess application, type "
-                "the reference of the café's case and press Assess application, "
+                "the reference of the café’s case and press Assess application, "
                 "then press Start under Confirm allocation and press Confirm "
                 "allocation, then press Start under Reconcile assessment and "
                 "press Reconcile assessment.",
-                "The fee from the approved schedule is assessed, the café's "
+                "The fee from the approved schedule is assessed, the café’s "
                 "payment is applied, and the balance shows 0.00, so the permit "
                 "can be issued.",
                 "We are here because the café paid its 150.00 fee when it "
@@ -246,9 +246,9 @@ PATHS: tuple[Path, ...] = (
                 "Search for the permit number or the address, or press Search for "
                 "my permit.",
                 "The public record shows the permit, the parcel and the outcome, "
-                "and never a homeowner's name, documents or fees.",
+                "and never a homeowner’s name, documents or fees.",
                 "We are here because a resident should find the permit without "
-                "a homeowner's name.",
+                "a homeowner’s name.",
             ),
         ),
     ),
@@ -277,14 +277,14 @@ PATHS: tuple[Path, ...] = (
                 "the counts.",
             ),
             Step(
-                "Follow where the café's time went",
+                "Follow where the café’s time went",
                 "City Administrator",
                 "/ops/audit",
                 "Choose Recorded permit decision in the Action filter, press "
                 "Apply filters, then press View details on the top row.",
                 "The actor, the time, the decision and the case it belongs to "
                 "are recorded together.",
-                "We are here because the counts raise where the café's weeks "
+                "We are here because the counts raise where the café’s weeks "
                 "went.",
             ),
             Step(

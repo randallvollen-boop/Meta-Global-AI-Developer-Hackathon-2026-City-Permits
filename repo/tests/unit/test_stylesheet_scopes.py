@@ -166,6 +166,26 @@ DESIGN_FIX_2_ADDED = (
     "td:has(> .ops-badge)",
 )
 
+#: Two later branches added these on purpose and the merge keeps both: the
+#: result list of the Checks page (slice checks-outcome) and the collapsible
+#: sections of the permit workspace (slice G14).  No selector was removed.
+MERGED_BRANCHES_ADDED = (
+    ".checks-outcome",
+    ".checks-result-list",
+    ".checks-result-list li",
+    ".checks-last-run",
+    ".checks-next",
+    ".ws-section",
+    ".ws-section > summary",
+    ".ws-section > summary::-webkit-details-marker",
+    ".ws-section > summary::marker",
+    ".ws-section > summary::before",
+    ".ws-section[open] > summary::before",
+    ".ws-section > summary h2",
+    ".ws-section > summary:focus-visible",
+    ".ws-section-body",
+)
+
 
 def _strip_comments(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -269,6 +289,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         + THEME_ADDED
         + DESIGN_FIX_ADDED
         + DESIGN_FIX_2_ADDED
+        + MERGED_BRANCHES_ADDED
     )
     old = [selector for selector in old if selector not in removed]
     new = [selector for selector in new if selector not in removed and selector not in added]

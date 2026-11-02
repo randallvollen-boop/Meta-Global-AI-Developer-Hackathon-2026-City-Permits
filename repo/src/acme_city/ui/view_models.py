@@ -2610,13 +2610,15 @@ def workspace_open_sections(
     blockers: list[dict[str, Any]],
     issued: bool,
     has_assessment: bool,
+    has_recommendation: bool = False,
 ) -> dict[str, bool]:
     """Return which workspace sections start open.
 
     The page chooses this from the case each time it is rendered. Nothing
     is stored. Checks stay open until the case is approved or issued, so the
     result remains on screen. The decision section opens when a decision can
-    be recorded or read. Fee and Actions open after an approval. The permit
+    be recorded or read, or when an agent recommendation waits for a person.
+    Fee and Actions open after an approval. The permit
     section opens once the permit is issued.
     """
     has_decision = decision is not None
@@ -2633,7 +2635,9 @@ def workspace_open_sections(
         "next": True,
         "checks": (not issued) and not approved,
         "issues": bool(blockers) and has_evaluation and not has_decision and not issued,
-        "decision": ready or read_decision,
+        "decision": ready
+        or read_decision
+        or (has_recommendation and not has_decision and not issued),
         "actions": approved or ready,
         "fee": approved and has_assessment,
         "permit": issued,
@@ -4105,6 +4109,7 @@ def permit_workspace(
         blockers=blockers,
         issued=bool(issued),
         has_assessment=bool((workspace.get("finance") or {}).get("assessment")),
+        has_recommendation=bool(workspace.get("current_recommendation")),
     )
     workspace["reviewer"] = reviewer_views.workspace_extras(
         session, actor, application, workspace, return_from=return_from
