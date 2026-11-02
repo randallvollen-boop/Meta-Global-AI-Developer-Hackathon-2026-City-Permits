@@ -276,7 +276,7 @@ def test_an_action_performs_the_real_transition_and_survives_a_reload(
     )
     assert response.status_code == 200
     assert "data-testid=\"feedback\"" in response.text
-    assert "Validation finished" in response.text
+    assert "Checks finished" in response.text
     factory = SessionFactory(settings.database_url)
     try:
         with factory() as session:
@@ -287,7 +287,7 @@ def test_an_action_performs_the_real_transition_and_survives_a_reload(
     assert evaluations[0].performed_by_actor_id == "persona_permit_reviewer"
 
     reloaded = client.get("/permits/app_synth_001")
-    assert "Validation finished" in reloaded.text
+    assert "Checks finished" in reloaded.text
 
 
 def test_the_browser_may_not_send_an_authority(client: TestClient) -> None:

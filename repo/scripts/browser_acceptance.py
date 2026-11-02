@@ -165,7 +165,7 @@ def check_actions(page: Page, base_url: str) -> list[dict[str, Any]]:
     page.goto(f"{base_url}/permits/app_synth_001", wait_until="domcontentloaded")
     outcome = submit(page, "permit.evaluate", {"application_id": "app_synth_001"})
     page.reload(wait_until="domcontentloaded")
-    survived = "Validation finished" in page.locator('[data-testid="feedback-message"]').inner_text()
+    survived = "Checks finished" in page.locator('[data-testid="feedback-message"]').inner_text()
     results.append(
         {
             "action_id": "permit.evaluate",

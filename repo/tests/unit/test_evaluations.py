@@ -160,6 +160,49 @@ def test_a_second_evaluation_supersedes_the_first(seeded: Settings) -> None:
         factory.dispose()
 
 
+def test_an_unchanged_revision_reuses_the_current_evaluation(seeded: Settings) -> None:
+    """The review screen can show the stored result without a second row.
+
+    ``evaluate`` itself still records a new row. The reuse path is the one
+    the Run checks again button uses.
+    """
+    factory = SessionFactory(seeded.database_url)
+    try:
+        with factory() as session:
+            service = PermitService(session)
+            reviewer = context_for(session, "persona_permit_reviewer")
+            first = service.evaluate("app_synth_001", reviewer)
+            session.flush()
+            again = service.unchanged_evaluation("app_synth_001", reviewer)
+            assert again is not None
+            assert again.evaluation_id == first.evaluation_id
+            assert again.version == first.version
+            rows = session.execute(
+                select(permit.Evaluation).where(
+                    permit.Evaluation.application_id == "app_synth_001"
+                )
+            ).scalars().all()
+            assert len(rows) == 1
+
+            stored = rows[0]
+            original_results = list(stored.results or [])
+            stored.results = []
+            session.flush()
+            assert service.unchanged_evaluation("app_synth_001", reviewer) is None
+            stored.results = original_results
+            stored.stale = True
+            session.flush()
+            assert service.unchanged_evaluation("app_synth_001", reviewer) is None
+            still = session.execute(
+                select(permit.Evaluation).where(
+                    permit.Evaluation.application_id == "app_synth_001"
+                )
+            ).scalars().all()
+            assert len(still) == 1
+    finally:
+        factory.dispose()
+
+
 def test_an_expired_credential_is_recorded_as_a_blocker(seeded: Settings) -> None:
     """The contractor registration of D03 expired before the decision date."""
     factory = SessionFactory(seeded.database_url)

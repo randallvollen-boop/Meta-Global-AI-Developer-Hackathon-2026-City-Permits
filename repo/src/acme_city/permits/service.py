@@ -16,6 +16,7 @@ the cases it affects.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any
 
@@ -47,6 +48,31 @@ from acme_city.rules.evaluator import evaluate as evaluate_inputs
 from acme_city.rules.evaluator import overall_status, worst_status
 from acme_city.rules.schemas import RuleResult, RuleSetVersion
 from acme_city.rules.service import RuleCatalogService
+
+
+def _canonical(value: Any) -> str:
+    """Return one stable JSON form of a stored or freshly computed document.
+
+    Lists of objects compare as a set of rows. A query can return the same
+    blockers in another order, and that is still the same evaluation.
+    """
+
+    def normalize(item: Any) -> Any:
+        if isinstance(item, dict):
+            return {str(key): normalize(child) for key, child in item.items()}
+        if isinstance(item, (list, tuple)):
+            rows = [normalize(child) for child in item]
+            if rows and all(isinstance(row, dict) for row in rows):
+                rows.sort(key=lambda row: json.dumps(row, sort_keys=True, default=str))
+            return rows
+        return item
+
+    return json.dumps(normalize(value), sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _same_document(left: Any, right: Any) -> bool:
+    """Return whether two evaluation documents are the same facts."""
+    return _canonical(left) == _canonical(right)
 
 #: The domain every permit action is authorized in.
 PERMIT_DOMAIN = "permits"
@@ -440,6 +466,64 @@ class PermitService:
         )
         self._session.flush()
         return self.evaluation_view(evaluation)
+
+    def unchanged_evaluation(
+        self, application_id: str, actor: ActorContext
+    ) -> EvaluationView | None:
+        """Return the current evaluation when this revision would produce it again.
+
+        ``evaluate`` always records a new row. The review screen calls this
+        first, so a second run on an unchanged revision shows the result that
+        is already stored and writes nothing. A stale row, a new revision, or
+        any change in the inputs, the rules, the blockers or the results
+        returns ``None`` and the caller records a new evaluation.
+        """
+        application = self.load_application(application_id)
+        self._permissions.authorize(
+            actor,
+            "application.evaluate",
+            ResourceContext(
+                domain_id=PERMIT_DOMAIN,
+                record_ids=(
+                    application.source_application_number,
+                    application.applicant_party_id or "",
+                ),
+            ),
+        )
+        revision = self.current_revision(application.id)
+        permit_type = self.permit_type(application)
+        require_mutable(application, action="evaluating the application")
+        require_not_returned(application, action="evaluating the application")
+        previous = self.current_evaluation(application.id)
+        if previous is None or previous.stale or previous.status != "current":
+            return None
+        if previous.revision_id != revision.id:
+            return None
+        basis_at = application.initial_submitted_at or revision.submitted_at
+        results, rule_set, inputs = self.rule_results(
+            permit_type.key,
+            revision.snapshot or {},
+            basis_at=basis_at,
+            extra_inputs=self.parcel_inputs(application),
+        )
+        blockers = self.evaluation_blockers(application, inputs, permit_type)
+        _dependencies, dependency_versions = self.dependency_state(
+            application, revision, rule_set
+        )
+        stored = dict(previous.source_versions or {})
+        fresh_results = [result.model_dump(mode="json") for result in results]
+        fresh_blockers = [blocker.model_dump(mode="json") for blocker in blockers]
+        if not _same_document(previous.rule_versions or {}, rule_set.version_labels()):
+            return None
+        if not _same_document(stored.get("inputs") or {}, inputs):
+            return None
+        if not _same_document(stored.get("blockers") or [], fresh_blockers):
+            return None
+        if not _same_document(stored.get("dependency_versions") or {}, dependency_versions):
+            return None
+        if not _same_document(list(previous.results or []), fresh_results):
+            return None
+        return self.evaluation_view(previous)
 
     # ------------------------------------------------------- delegated actions
 

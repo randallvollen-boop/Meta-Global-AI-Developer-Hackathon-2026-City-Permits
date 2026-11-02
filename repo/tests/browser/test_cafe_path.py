@@ -184,7 +184,7 @@ def test_the_café_path_runs_on_the_copy_of_the_judge(
     assert "parcel" in message.lower()
     page.reload(wait_until="domcontentloaded")
     message = submit_action("permit.evaluate", {"application_id": copy_id})
-    assert "Validation finished" in message
+    assert "Checks finished" in message
     page.reload(wait_until="domcontentloaded")
     assert "Passed" in page.locator('[data-testid="rule-results"]').inner_text()
 
@@ -313,7 +313,7 @@ def test_the_café_path_runs_from_the_link_to_the_public_record(
     login("persona_permit_reviewer")
     page.goto(f"{server.base_url}/permits/{CASE_ID}", wait_until="domcontentloaded")
     message = submit_action("permit.evaluate", {"application_id": CASE_ID})
-    assert "Validation finished" in message
+    assert "Checks finished" in message
     page.reload(wait_until="domcontentloaded")
     assert page.locator('[data-testid="rule-results"]').count() == 1
     assert "Passed" in page.locator('[data-testid="rule-results"]').inner_text()

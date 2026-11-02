@@ -175,6 +175,40 @@
         <section data-testid="application-checks">
           <h2>Application checks {{ ui.info('application_checks') }}</h2>
           <p class="muted">Rules run against the application itself. These are separate from the extraction checks above.</p>
+          {% if detail.evaluation %}
+          <div class="checks-outcome" data-testid="checks-outcome">
+            <p data-testid="checks-result-summary">{{ detail.check_summary }}</p>
+            <ul class="checks-result-list" data-testid="checks-result-list">
+              {% for result in detail.evaluation.results %}
+              <li data-testid="check-result">
+                <span data-testid="check-plain">{{ result.status_label }}</span>.
+                {{ result.rule_title or result.rule_id }}.
+                Published rule: <span class="mono" data-testid="check-citation">{{ result.citation }}</span>.
+              </li>
+              {% endfor %}
+            </ul>
+            <p class="checks-next" data-testid="checks-next">
+              {% if detail.ready_to_decide %}
+              Ready to decide:
+              <a class="btn sm primary" href="#decision-form" data-testid="checks-next-button">Record review decision</a>
+              {% elif detail.blockers %}
+              {{ detail.blockers|length }} blocker{{ 's' if detail.blockers|length != 1 else '' }} still prevent{{ 's' if detail.blockers|length == 1 else '' }} a decision.
+              <a class="btn sm" href="#application-blockers" data-testid="checks-next-button">Review the blockers</a>
+              {% elif detail.current_decision %}
+              The decision is recorded.
+              <a class="btn sm" href="#decision-summary" data-testid="checks-next-button">Read the decision</a>
+              {% else %}
+              The checks are recorded.
+              {% endif %}
+            </p>
+          </div>
+          {% endif %}
+          {% for item in actions if item.action_id == 'permit.evaluate' %}
+            {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
+          {% endfor %}
+          {% if detail.evaluation %}
+          <p class="muted checks-last-run" data-testid="checks-last-run">Last run {{ ui_time(detail.evaluation.performed_at) }}</p>
+          {% endif %}
           <div data-testid="findings-panel">
         {% if detail.blockers %}
         <p class="notice" role="status" data-testid="checks-summary">
@@ -372,7 +406,7 @@
           {% if detail.current_decision or detail.decisions or detail.current_recommendation or detail.recommendations %}
           {% set d = detail.current_decision %}
           {% if d %}
-          <dl class="pair-list" data-testid="decision-summary">
+          <dl class="pair-list" id="decision-summary" data-testid="decision-summary">
             <dt>Outcome</dt><dd>{{ d.outcome_label }}{% if d.stale %} <span class="pill warn">stale: needs reconfirming</span>{% endif %}</dd>
             <dt>Decided by</dt><dd>{{ d.decided_by_label }}</dd>
             <dt>Date</dt><dd>{{ d.decided_at }}</dd>
@@ -655,12 +689,12 @@
         <section class="review-actions" data-testid="review-actions" aria-labelledby="review-actions-heading">
           <h2 id="review-actions-heading">Actions</h2>
           <div class="act">
-            {% for item in actions if item.group == 'review' and not (item.action_id == 'permit.decide' and decision_form_shown) %}
+            {% for item in actions if item.group == 'review' and item.action_id != 'permit.evaluate' and not (item.action_id == 'permit.decide' and decision_form_shown) %}
               {{ forms.action_form(item, csrf_token, '/permits/' ~ app.application_id) }}
             {% endfor %}
 
             {% if detail.can_decide and detail.evaluation and not detail.current_decision %}
-            <details class="action act-card" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
+            <details class="action act-card" id="decision-form" data-testid="decision-form" data-action-id="permit.decide" data-permitted="true">
               <summary class="act-summary">
                 <span class="act-main">
                   <span class="action-label act-title">Record review decision</span>

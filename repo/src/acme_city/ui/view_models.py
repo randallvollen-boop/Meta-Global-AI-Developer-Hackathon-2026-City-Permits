@@ -1526,12 +1526,15 @@ def allowed_actions_for(
             for item in actions[-4:]:
                 item["group"] = "property"
             actions[-1]["dom_id"] = "address-correction"
+        checks_already_ran = bool(
+            evaluation.get("evaluation_id") or evaluation.get("results")
+        )
         actions.append(
             action(
                 session,
                 actor,
                 action_id="permit.evaluate",
-                label="Run application checks",
+                label="Run checks again" if checks_already_ran else "Run application checks",
                 path="/ui/actions/permit.evaluate",
                 permission="application.evaluate",
                 domain_id="permits",
@@ -2493,6 +2496,100 @@ def open_blockers(session: Session, application_id: str) -> list[dict[str, str]]
     service = PermitService(session)
     application = service.load_application(application_id)
     return _application_blockers(service, application)
+
+
+_FAIL_STATUSES = frozenset({"fail", "failed", "violation"})
+_PERSON_STATUSES = frozenset({"review", "condition"})
+
+
+def _result_status(result: Any) -> str:
+    """Return the stored status of one rule result."""
+    if isinstance(result, dict):
+        return str(result.get("status") or "")
+    return str(getattr(result, "status", "") or "")
+
+
+def _check_counts(results: list[Any]) -> tuple[int, int, int]:
+    """Return ``(total, failed, needs a person)`` for one evaluation."""
+    failed = 0
+    needs_person = 0
+    for result in results:
+        status = _result_status(result)
+        if status in _FAIL_STATUSES:
+            failed += 1
+        elif status in _PERSON_STATUSES:
+            needs_person += 1
+    return len(results), failed, needs_person
+
+
+def checks_summary_line(results: list[Any]) -> str:
+    """Return the one line the Review tab shows above the rule list.
+
+    A single check does not say "All 1 checks". Failures are counted. A
+    review or a condition is not a failure; it needs a person.
+    """
+    count, failed, needs_person = _check_counts(results)
+    if count == 0:
+        return "No checks were recorded."
+    if failed:
+        return f"{failed} of {count} checks failed"
+    if needs_person:
+        if count == 1:
+            return "The check needs a person"
+        return f"{needs_person} of {count} checks need a person"
+    if count == 1:
+        return "The check passed"
+    return f"All {count} checks passed"
+
+
+def _finished_body(count: int, failed: int, needs_person: int) -> str:
+    """Return the short outcome clause of the Last action sentence."""
+    if count == 0:
+        return "no checks were recorded"
+    if failed:
+        if count == 1:
+            return "the check failed"
+        return f"{failed} of {count} checks failed"
+    if needs_person:
+        if count == 1:
+            return "the check needs a person"
+        return f"{needs_person} of {count} checks need a person"
+    if count == 1:
+        return "the check passed"
+    return f"all {count} passed"
+
+
+def checks_finished_message(
+    results: list[Any],
+    blocker_count: int,
+    *,
+    reused: bool,
+    ready_to_decide: bool,
+) -> str:
+    """Return the plain Last action sentence after Run application checks.
+
+    Blockers still standing are named, with their count, and the sentence
+    does not say the next step is a decision. A second run on the same
+    revision says the stored result was shown again.
+    """
+    count, failed, needs_person = _check_counts(list(results or []))
+    body = _finished_body(count, failed, needs_person)
+    lead = (
+        "These checks already ran on this revision: " if reused else "Checks finished: "
+    )
+    if blocker_count:
+        holding = (
+            "1 blocker still prevents"
+            if blocker_count == 1
+            else f"{blocker_count} blockers still prevent"
+        )
+        return (
+            f"{lead}{body}. {holding} a decision. "
+            "The blockers are listed under Application checks."
+        )
+    if ready_to_decide:
+        return f"{lead}{body}. Next: record the decision."
+    return f"{lead}{body}."
 
 
 def rule_result_wording(result: dict[str, Any]) -> str:
@@ -3807,6 +3904,15 @@ def permit_workspace(
             subject_ids=(application.id,),
         ),
     }
+    workspace["check_summary"] = (
+        checks_summary_line(evaluation_view["results"]) if evaluation_view else ""
+    )
+    workspace["ready_to_decide"] = bool(
+        evaluation_view
+        and current_decision is None
+        and workspace["can_decide"]
+        and not blockers
+    )
     workspace["reviewer"] = reviewer_views.workspace_extras(
         session, actor, application, workspace
     )

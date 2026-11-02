@@ -4,7 +4,9 @@ Two defects found by the smoke check (findings 2 and 3):
 
 * "Run application checks" reported the rule outcome ("pass") in a message that
   said "Validation finished", while the same page listed blockers (identity,
-  parcel and payer links) that the validation does not measure.
+  parcel and payer links) that the validation does not measure. The sentence
+  now says the checks finished, names how many passed, and still names the
+  blockers that prevent a decision.
 * A passing rule showed its violation message ("Occupancy load is above 49")
   next to "Observed: 42", so a reader saw a failure text on a pass.
 """
@@ -17,7 +19,12 @@ import re
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 
+from acme_city.core.config import Settings
+from acme_city.fixtures.loader import FixtureBundle
+from acme_city.persistence.models import audit, permit
+from acme_city.persistence.session import SessionFactory
 from acme_city.ui import view_models
 
 from tests.api.test_pages import (  # noqa: F401  (fixtures)
@@ -55,11 +62,117 @@ def test_the_check_message_names_the_blockers_that_still_stand(client: TestClien
     blocker_count = html.count("Blocker</span>")
     assert blocker_count >= 1, "the case under test must list blockers"
     message = _feedback_message(html)
-    assert message.startswith("Validation finished")
-    assert "outcome '" in message
-    assert "rule" in message.lower()
-    assert "still prevent" in message or "still prevents" in message
-    assert str(blocker_count) in message
+    assert message.startswith("Checks finished:")
+    assert "passed" in message
+    assert "record the decision" not in message
+    assert "Application checks" in message
+    if blocker_count == 1:
+        assert "1 blocker still prevents a decision." in message
+    else:
+        assert f"{blocker_count} blockers still prevent a decision." in message
+    summary = re.search(r'data-testid="checks-result-summary"[^>]*>(.*?)</p>', html, re.S)
+    assert summary is not None
+    shown = len(re.findall(r'data-testid="check-result"', html))
+    summary_text = " ".join(re.sub(r"<[^>]+>", " ", summary.group(1)).split())
+    assert summary_text == (
+        "The check passed" if shown == 1 else f"All {shown} checks passed"
+    )
+    citations = re.findall(r'data-testid="check-citation"[^>]*>(.*?)</span>', html, re.S)
+    assert citations
+    assert all(item.strip() for item in citations)
+    next_step = re.search(r'data-testid="checks-next".*?</p>', html, re.S)
+    assert next_step is not None
+    assert "Ready to decide" not in next_step.group(0)
+    assert "Review the blockers" in next_step.group(0)
+    assert "Run checks again" in html
+    assert 'data-testid="checks-last-run"' in html
+
+
+def test_a_second_run_on_the_same_revision_shows_the_stored_result(
+    client: TestClient,
+    environment: tuple[Settings, FixtureBundle],
+) -> None:
+    """A second press writes no evaluation and no application.evaluate audit."""
+    settings, _ = environment
+    _run_checks(client, "app_synth_001")
+    page = client.get("/permits/app_synth_001")
+    second = client.post(
+        "/ui/actions/permit.evaluate",
+        data={
+            "application_id": "app_synth_001",
+            "csrf_token": csrf_of(page.text),
+            "next": "/permits/app_synth_001",
+        },
+        follow_redirects=True,
+    )
+    assert second.status_code == 200
+    message = _feedback_message(second.text)
+    assert message.startswith("These checks already ran on this revision:")
+    assert "record the decision" not in message
+    assert "still prevent" in message
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            evaluations = session.execute(
+                select(func.count())
+                .select_from(permit.Evaluation)
+                .where(permit.Evaluation.application_id == "app_synth_001")
+            ).scalar_one()
+            service_audits = session.execute(
+                select(func.count())
+                .select_from(audit.AuditEvent)
+                .where(audit.AuditEvent.action == "application.evaluate")
+            ).scalar_one()
+            clicks = session.execute(
+                select(func.count())
+                .select_from(audit.AuditEvent)
+                .where(
+                    audit.AuditEvent.action == "ui.permit.evaluate",
+                    audit.AuditEvent.outcome == "accepted",
+                )
+            ).scalar_one()
+    finally:
+        factory.dispose()
+    assert evaluations == 1
+    assert service_audits == 1
+    assert clicks == 2
+
+
+def test_the_summary_line_counts_passes_failures_and_a_single_check() -> None:
+    passed = [{"status": "pass"} for _ in range(6)]
+    assert view_models.checks_summary_line(passed) == "All 6 checks passed"
+    assert view_models.checks_summary_line([{"status": "pass"}]) == "The check passed"
+    mixed = [{"status": "pass"} for _ in range(4)] + [{"status": "fail"}, {"status": "fail"}]
+    assert view_models.checks_summary_line(mixed) == "2 of 6 checks failed"
+    assert (
+        view_models.checks_finished_message(passed, 0, reused=False, ready_to_decide=True)
+        == "Checks finished: all 6 passed. Next: record the decision."
+    )
+    blocked = view_models.checks_finished_message(
+        [{"status": "pass"}, {"status": "pass"}],
+        3,
+        reused=False,
+        ready_to_decide=False,
+    )
+    assert blocked.startswith("Checks finished: all 2 passed.")
+    assert "3 blockers still prevent a decision." in blocked
+    assert "record the decision" not in blocked
+    reused = view_models.checks_finished_message(
+        passed, 0, reused=True, ready_to_decide=True
+    )
+    assert reused == (
+        "These checks already ran on this revision: all 6 passed. "
+        "Next: record the decision."
+    )
+    assert (
+        view_models.checks_finished_message(
+            [{"status": "review", "message": "Needs judgment"}],
+            0,
+            reused=False,
+            ready_to_decide=True,
+        )
+        == "Checks finished: the check needs a person. Next: record the decision."
+    )
 
 
 def test_the_page_summarises_rule_outcome_and_blockers_together(client: TestClient) -> None:

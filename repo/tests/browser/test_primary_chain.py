@@ -89,7 +89,7 @@ def test_the_primary_chain_runs_through_the_forms_and_survives_a_reload(
     login("persona_permit_reviewer")
     page.goto(f"{server.base_url}/permits/app_synth_001", wait_until="domcontentloaded")
     message = submit_action("permit.evaluate", {"application_id": "app_synth_001"})
-    assert "Validation finished" in message
+    assert "Checks finished" in message
     page.reload(wait_until="domcontentloaded")
     assert page.locator('[data-testid="rule-results"]').count() == 1
     assert "Passed" in page.locator('[data-testid="rule-results"]').inner_text()

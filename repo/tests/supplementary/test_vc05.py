@@ -120,7 +120,7 @@ def test_an_action_reports_its_destination_its_state_and_its_version(
     )
     assert response.status_code == 200
     feedback = feedback_of(response.text)
-    assert "Validation finished" in feedback["feedback-message"]
+    assert "Checks finished" in feedback["feedback-message"]
     assert feedback["feedback-destination"] == "Permitting validation"
     assert feedback["feedback-state"]
     assert feedback["feedback-version"] == "1"
@@ -139,11 +139,11 @@ def test_the_feedback_survives_a_refresh_and_a_navigation(client: TestClient) ->
         follow_redirects=True,
     )
     refreshed = client.get("/permits/app_synth_001")
-    assert "Validation finished" in feedback_of(refreshed.text)["feedback-message"]
+    assert "Checks finished" in feedback_of(refreshed.text)["feedback-message"]
     elsewhere = client.get("/queue")
-    assert "Validation finished" in feedback_of(elsewhere.text)["feedback-message"]
+    assert "Checks finished" in feedback_of(elsewhere.text)["feedback-message"]
     back = client.get("/permits/app_synth_001")
-    assert "Validation finished" in feedback_of(back.text)["feedback-message"]
+    assert "Checks finished" in feedback_of(back.text)["feedback-message"]
 
 
 def test_a_proposal_is_reported_as_pending_and_not_as_a_decision(
@@ -185,6 +185,7 @@ def test_a_refused_action_never_shows_a_success(client: TestClient) -> None:
     assert response.status_code == 403
     assert "data-testid=\"error-panel\"" in response.text
     assert "Validation finished" not in response.text
+    assert "Checks finished" not in response.text
 
 
 def test_the_feedback_is_recorded_in_the_append_only_audit_trail(
