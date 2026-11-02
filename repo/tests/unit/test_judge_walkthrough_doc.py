@@ -27,6 +27,7 @@ def test_the_document_holds_every_path_with_its_steps() -> None:
     headings = [match.group(0) for match in re.finditer(r"^## .*$", text, flags=re.M)]
     paths = [heading for heading in headings if heading[3:] in {path.title for path in PATHS}]
     assert len(paths) == len(PATHS)
+    assert paths == [f"## {path.title}" for path in PATHS]
     for path in PATHS:
         assert f"## {path.title}" in text
         assert path.one_line in text

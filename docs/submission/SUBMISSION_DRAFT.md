@@ -130,7 +130,7 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 * The agents' "Incoming" list, the step graph of each run, and a "Replay run" button behind "More details".
 * The "Sample data" tab in Administration, which creates the fictional cases the agents work on.
 * Screens that stay slim, with the secondary detail behind "More details", and a light theme by default.
-* The walkthrough has four paths, each with a guided tour and "Auto-play": "Get the café open", "Apply as a resident", "Run the city", and "Before you start". "Start fresh" gives each judge a fresh copy of the café case.
+* The walkthrough has four paths, each with a guided tour and "Auto-play": "Apply as a resident", "Get the café open", "Run the city", and "Before you start". "Start fresh" gives each judge a fresh copy of the café case.
 * "Check my application" on the applicant form. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
 
 ## How to try it
@@ -139,18 +139,18 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 2. On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. All five are available.
 
-3. Open the walkthrough. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour. The Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record.
+3. Open the walkthrough. On "Apply as a resident", press "Check my application". Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
 
-4. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
+4. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour. The Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record.
 
-5. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
+5. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
 
-6. As Permit Reviewer, open the case from the "Review queue", press "Start" under "Confirm parcel" on the "People and organizations" tab, press "Start" under "Run application checks", then press "Start" under "Record review decision" and choose "Approve".
+6. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
 
-7. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
+7. As Permit Reviewer, open the case from the "Review queue", press "Start" under "Confirm parcel" on the "People and organizations" tab, press "Start" under "Run application checks", then press "Start" under "Record review decision" and choose "Approve".
 
-8. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
+8. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
 
-9. On "Apply as a resident", press "Check my application". Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+9. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
 
 Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme.

@@ -25,7 +25,7 @@ VIEWPORTS = ({"width": 1280, "height": 900}, {"width": 390, "height": 844})
 AUTO_PLAY_MS = 2000
 
 #: The paths of the tour, as the configuration names them.
-PATHS = ("cafe", "resident", "city", "before")
+PATHS = ("resident", "cafe", "city", "before")
 
 
 def load_engine(page, server: BrowserServer) -> None:

@@ -64,8 +64,60 @@ class Path:
     steps: tuple[Step, ...]
 
 
-#: The paths of the walkthrough, in the order the landing lists them.
+#: The paths of the walkthrough, in the order the page and the landing
+#: list them. Apply as a resident, then Get the café open, then Run the
+#: city. Before you start stays last in this list. The walkthrough draws
+#: it as one row above the three tracks.
 PATHS: tuple[Path, ...] = (
+    Path(
+        key="resident",
+        title="Apply as a resident",
+        one_line=(
+            "A resident applies for a fence, checks the application before it "
+            "is sent and follows it through the City."
+        ),
+        minutes=3,
+        steps=(
+            Step(
+                "Apply for a permit",
+                "Applicant",
+                "/apply",
+                "Choose Residential deck or fence, type 400 Lantern Row, answer "
+                "the questions for a 6 ft fence in the front yard, attach a file "
+                "for each of the two required documents and tick the "
+                "certification.",
+                "The form asks only the questions that project needs, and the "
+                "assistant names the published rule behind each answer.",
+            ),
+            Step(
+                "Check the application before it is sent",
+                "Applicant",
+                "/apply",
+                "Press Check my application, then change the 6 ft front yard "
+                "fence to 4 ft and press Submit application, or press Submit "
+                "anyway and write why you send it now.",
+                "The findings are grouped under Must fix, Should check and "
+                "Looks good, and each one names the published rule behind it.",
+            ),
+            Step(
+                "Let the agent route the application",
+                "Agent Operator",
+                "/agent/intake",
+                "Press Wake agent, then press Process the next 20 cases.",
+                "The Router line sends an application that breaks a rule to Early "
+                "resolution and says which rule.",
+            ),
+            Step(
+                "Track the application",
+                "Applicant",
+                "/apply/track",
+                "Press Track application on the City of Acme website and open "
+                "the application.",
+                "The tracker lists both documents as received and the status of "
+                "the application.",
+            ),
+        ),
+    ),
     Path(
         key="cafe",
         title="Get the café open",
@@ -133,55 +185,6 @@ PATHS: tuple[Path, ...] = (
                 "Search for the permit number on the City of Acme website.",
                 "The public record shows the permit, the parcel and the outcome, "
                 "and never a homeowner's name, documents or fees.",
-            ),
-        ),
-    ),
-    Path(
-        key="resident",
-        title="Apply as a resident",
-        one_line=(
-            "A resident applies for a fence, checks the application before it "
-            "is sent and follows it through the City."
-        ),
-        minutes=3,
-        steps=(
-            Step(
-                "Apply for a permit",
-                "Applicant",
-                "/apply",
-                "Choose Residential deck or fence, type 400 Lantern Row, answer "
-                "the questions for a 6 ft fence in the front yard, attach a file "
-                "for each of the two required documents and tick the "
-                "certification.",
-                "The form asks only the questions that project needs, and the "
-                "assistant names the published rule behind each answer.",
-            ),
-            Step(
-                "Check the application before it is sent",
-                "Applicant",
-                "/apply",
-                "Press Check my application, then change the 6 ft front yard "
-                "fence to 4 ft and press Submit application, or press Submit "
-                "anyway and write why you send it now.",
-                "The findings are grouped under Must fix, Should check and "
-                "Looks good, and each one names the published rule behind it.",
-            ),
-            Step(
-                "Let the agent route the application",
-                "Agent Operator",
-                "/agent/intake",
-                "Press Wake agent, then press Process the next 20 cases.",
-                "The Router line sends an application that breaks a rule to Early "
-                "resolution and says which rule.",
-            ),
-            Step(
-                "Track the application",
-                "Applicant",
-                "/apply/track",
-                "Press Track application on the City of Acme website and open "
-                "the application.",
-                "The tracker lists both documents as received and the status of "
-                "the application.",
             ),
         ),
     ),
@@ -260,8 +263,9 @@ PATHS: tuple[Path, ...] = (
     ),
 )
 
-#: The path the guided tour opens when no other path is named.
-DEFAULT_PATH = PATHS[0].key
+#: The path the guided tour opens when no other path is named. The page
+#: lists the resident path first. An unnamed tour still opens the café path.
+DEFAULT_PATH = "cafe"
 
 
 def resolve_path(path: str, case_id: str = DEFAULT_CASE_ID) -> str:

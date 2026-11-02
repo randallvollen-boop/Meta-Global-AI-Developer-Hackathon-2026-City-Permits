@@ -15,8 +15,21 @@
 <p class="notice" role="status" data-testid="judge-copy-notice">Your copy of the café case is {{ walkthrough.copy_reference }}. The café path walks your copy.</p>
 {% endif %}
 
-{% for path in walkthrough.paths %}
-<section class="panel card guide-path-card" aria-labelledby="path-heading-{{ path.key }}" data-testid="walkthrough-path" data-path="{{ path.key }}" id="path-{{ path.key }}">
+{% for path in walkthrough.paths if path.key == 'before' %}
+<nav class="guide-before" aria-label="{{ path.title }}" data-testid="walkthrough-before" data-path="{{ path.key }}" id="path-{{ path.key }}">
+  <span class="guide-before-title" id="path-heading-{{ path.key }}">{{ path.title }}</span>
+  <span class="muted" data-testid="path-minutes">{{ path.minutes }} minutes</span>
+  <button type="button" class="button btn sm" data-tour-start="{{ path.key }}" data-testid="path-start">Start</button>
+  {% for step in path.steps %}
+  <a class="guide-before-link" href="{{ step.path }}" data-testid="walkthrough-link">{{ step.title }}</a>
+  {% endfor %}
+  <span class="visually-hidden">{{ path.one_line }}</span>
+</nav>
+{% endfor %}
+
+<div class="guide-tracks" data-testid="walkthrough-tracks">
+{% for path in walkthrough.paths if path.key != 'before' %}
+<section class="panel card guide-track" aria-labelledby="path-heading-{{ path.key }}" data-testid="walkthrough-path" data-path="{{ path.key }}" id="path-{{ path.key }}">
   <div class="card-h">
     <h2 id="path-heading-{{ path.key }}">{{ path.title }}</h2>
     <p class="muted" data-testid="path-minutes">{{ path.minutes }} minutes</p>
@@ -62,4 +75,5 @@
   </div>
 </section>
 {% endfor %}
+</div>
 {% endblock %}

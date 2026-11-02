@@ -116,9 +116,12 @@ def tour_step_list(request: Request, path: str = "") -> Any:
     """
     payload = tour_steps()
     paths = dict(payload.get("paths") or {})
-    key = path or str(payload.get("default_path") or "")
+    # An unnamed request, and a name that is not a path, opens the configured
+    # default. That stays the café path when the file lists the resident path first.
+    named = str(payload.get("default_path") or "")
+    key = path or named
     if key not in paths:
-        key = next(iter(paths), "")
+        key = named if named in paths else next(iter(paths), "")
     chosen = dict(paths.get(key) or {})
     case_id = judge.copy_case_id(request) or guide_views.DEFAULT_CASE_ID
     steps = [

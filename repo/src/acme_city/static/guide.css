@@ -40,3 +40,26 @@
 .guide-path-actions form { margin: 0; }
 .guide-path-fresh-form { display: inline-flex; margin: 0; }
 .guide-path-minutes { font-size: 0.85rem; }
+/* Before you start is one row above the three tracks. The tracks stand side by side from 1000px. */
+.guide-before {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.85rem;
+  margin: 0 0 1rem; min-width: 0; padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+}
+.guide-before > * { min-width: 0; }
+.guide-before-title { font-weight: 600; }
+.guide-before-link { color: var(--accent); }
+.guide-tracks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; min-width: 0; }
+@media (min-width: 1000px) {
+  .guide-tracks { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+}
+.guide-track { min-width: 0; margin-bottom: 0; }
+.guide-track .card-h,
+.guide-track .card-b,
+.guide-track .guide-steps,
+.guide-track .guide-step,
+.guide-track .guide-path-actions,
+.guide-track .guide-open-as { min-width: 0; max-width: 100%; }
+.guide-track .btn,
+.guide-track .button { white-space: normal; max-width: 100%; height: auto; }
+.guide-track .guide-step h3 { min-width: 0; flex-wrap: wrap; }

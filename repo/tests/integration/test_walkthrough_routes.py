@@ -53,13 +53,37 @@ def test_the_walkthrough_page_lists_every_path(client: TestClient) -> None:
     response = client.get("/walkthrough")
     assert response.status_code == 200
     body = response.text
+    tracks = [path for path in PATHS if path.key != "before"]
+    before = next(path for path in PATHS if path.key == "before")
     for path in PATHS:
         assert f'data-path="{path.key}"' in body
         assert path.title in body
         assert path.one_line in body
         assert f"{path.minutes} minutes" in body
     assert body.count('data-testid="path-start"') == len(PATHS)
-    assert body.count('data-testid="path-steps-link"') == len(PATHS)
+    before_html, tracks_html = body.split('data-testid="walkthrough-tracks"', 1)
+    assert 'data-testid="walkthrough-before"' in before_html
+    assert 'data-testid="walkthrough-path"' not in before_html
+    row = re.search(
+        r'data-testid="walkthrough-before".*?</nav>',
+        before_html,
+        flags=re.S,
+    )
+    assert row is not None, "Before you start is not one row"
+    row_html = row.group(0)
+    for step in before.steps:
+        assert step.title in row_html
+        assert f'href="{step.path}"' in row_html
+    found = re.findall(
+        r'data-testid="walkthrough-path" data-path="([^"]+)"',
+        tracks_html,
+    )
+    assert found == [path.key for path in tracks]
+    assert tracks_html.count('data-testid="path-steps-link"') == len(tracks)
+    assert tracks_html.count('data-testid="path-fresh"') == 1
+    assert tracks_html.count('data-testid="walkthrough-step"') == sum(
+        len(path.steps) for path in tracks
+    )
 
 
 def test_the_landing_lists_every_path_under_the_personas(client: TestClient) -> None:
@@ -72,6 +96,8 @@ def test_the_landing_lists_every_path_under_the_personas(client: TestClient) -> 
     for path in PATHS:
         assert f'data-path="{path.key}"' in body
         assert path.one_line in body
+    found = re.findall(r'data-testid="landing-path" data-path="([^"]+)"', body)
+    assert found == [path.key for path in PATHS]
     assert body.count('data-testid="landing-path-start"') == len(PATHS)
     assert body.count('data-testid="landing-path-steps"') == len(PATHS)
 

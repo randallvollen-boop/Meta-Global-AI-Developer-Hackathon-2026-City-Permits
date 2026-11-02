@@ -57,7 +57,7 @@ Open https://acme-city-permits.onrender.com. The landing page lists the five per
 
 On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. The landing page has its own "Take the tour" button in the line of guides.
 
-The walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It has four paths, and each path has a guided tour and "Auto-play". "Get the café open" is the main journey: the Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record. "Start fresh" gives each judge a fresh copy of the café case. The other paths are "Apply as a resident", "Run the city", and "Before you start".
+The walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It has four paths, and each path has a guided tour and "Auto-play". The paths are "Apply as a resident", "Get the café open", "Run the city", and "Before you start". "Get the café open" is the main journey: the Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record. "Start fresh" gives each judge a fresh copy of the café case.
 
 What the demonstration has now:
 
@@ -70,14 +70,13 @@ What the demonstration has now:
 
 How to try it:
 
-1. Open the walkthrough. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour.
-2. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
-3. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
-4. As Permit Reviewer, open the case from the "Review queue", press "Start" under "Confirm parcel" on the "People and organizations" tab, press "Start" under "Run application checks", then press "Start" under "Record review decision" and choose "Approve".
-5. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
-6. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
-
-On "Apply as a resident", press "Check my application". That runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+1. Open the walkthrough. On "Apply as a resident", press "Check my application". That runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+2. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour.
+3. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
+4. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
+5. As Permit Reviewer, open the case from the "Review queue", press "Start" under "Confirm parcel" on the "People and organizations" tab, press "Start" under "Run application checks", then press "Start" under "Record review decision" and choose "Approve".
+6. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
+7. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
 
 The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
 

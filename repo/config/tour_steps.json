@@ -4,6 +4,56 @@
   "note": "The guided tour of one path through the City. The tour only opens screens and points at controls; it never changes a record. Each step names the walkthrough step of the same path.",
   "default_path": "cafe",
   "paths": {
+    "resident": {
+      "title": "Apply as a resident",
+      "minutes": 3,
+      "steps": [
+        {
+          "id": "apply",
+          "walkthrough_step": 1,
+          "title": "Apply for a permit",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply",
+          "target": "[data-testid=\"type-card\"]",
+          "permission": "application.submit",
+          "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
+        },
+        {
+          "id": "check",
+          "walkthrough_step": 2,
+          "title": "Check the application before it is sent",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply/deck_fence",
+          "target": "[data-testid=\"submit-application\"]",
+          "permission": "application.submit",
+          "caption": "Press Check my application to see what the published rules say about the answers, and fix what the panel lists under Must fix before the application is sent."
+        },
+        {
+          "id": "agent",
+          "walkthrough_step": 3,
+          "title": "Let the agent route the application",
+          "persona": "Agent Operator",
+          "actor_id": "persona_agent_operator",
+          "path": "/agent/intake",
+          "target": "[data-testid=\"agent-toggle\"]",
+          "permission": "agent.run.intake",
+          "caption": "The intake agent reads each new application and routes it to the right queue. An application that breaks a rule waits in Early resolution, and the Router line gives the reason."
+        },
+        {
+          "id": "track",
+          "walkthrough_step": 4,
+          "title": "Track the application",
+          "persona": "Applicant",
+          "actor_id": "persona_applicant",
+          "path": "/apply/track",
+          "target": "[data-testid=\"permit-list\"]",
+          "permission": "application.submit",
+          "caption": "The resident follows the application on the City of Acme website and reads what the City has recorded so far."
+        }
+      ]
+    },
     "cafe": {
       "title": "Get the café open",
       "minutes": 6,
@@ -74,56 +124,6 @@
           "target": "[data-testid=\"community-q\"]",
           "permission": "",
           "caption": "The public record shows the permit, the parcel and the outcome. It never shows a homeowner's name, documents or fees."
-        }
-      ]
-    },
-    "resident": {
-      "title": "Apply as a resident",
-      "minutes": 3,
-      "steps": [
-        {
-          "id": "apply",
-          "walkthrough_step": 1,
-          "title": "Apply for a permit",
-          "persona": "Applicant",
-          "actor_id": "persona_applicant",
-          "path": "/apply",
-          "target": "[data-testid=\"type-card\"]",
-          "permission": "application.submit",
-          "caption": "The applicant starts here: pick the project you need a permit for. The form asks only the questions that project needs."
-        },
-        {
-          "id": "check",
-          "walkthrough_step": 2,
-          "title": "Check the application before it is sent",
-          "persona": "Applicant",
-          "actor_id": "persona_applicant",
-          "path": "/apply/deck_fence",
-          "target": "[data-testid=\"submit-application\"]",
-          "permission": "application.submit",
-          "caption": "Press Check my application to see what the published rules say about the answers, and fix what the panel lists under Must fix before the application is sent."
-        },
-        {
-          "id": "agent",
-          "walkthrough_step": 3,
-          "title": "Let the agent route the application",
-          "persona": "Agent Operator",
-          "actor_id": "persona_agent_operator",
-          "path": "/agent/intake",
-          "target": "[data-testid=\"agent-toggle\"]",
-          "permission": "agent.run.intake",
-          "caption": "The intake agent reads each new application and routes it to the right queue. An application that breaks a rule waits in Early resolution, and the Router line gives the reason."
-        },
-        {
-          "id": "track",
-          "walkthrough_step": 4,
-          "title": "Track the application",
-          "persona": "Applicant",
-          "actor_id": "persona_applicant",
-          "path": "/apply/track",
-          "target": "[data-testid=\"permit-list\"]",
-          "permission": "application.submit",
-          "caption": "The resident follows the application on the City of Acme website and reads what the City has recorded so far."
         }
       ]
     },

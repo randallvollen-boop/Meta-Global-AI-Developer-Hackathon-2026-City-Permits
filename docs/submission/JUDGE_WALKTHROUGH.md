@@ -6,6 +6,40 @@ Start at https://acme-city-permits.onrender.com/walkthrough. The same steps are 
 
 The permit life cycle behind these steps is at `/lifecycle`: every status, every move, and who makes each move.
 
+## Apply as a resident
+
+A resident applies for a fence, checks the application before it is sent and follows it through the City.
+
+4 steps, about 3 minutes.
+
+### 1. Apply for a permit
+
+As **Applicant**, open `/apply`.
+
+- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents and tick the certification.
+- Look for: The form asks only the questions that project needs, and the assistant names the published rule behind each answer.
+
+### 2. Check the application before it is sent
+
+As **Applicant**, open `/apply`.
+
+- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Submit application, or press Submit anyway and write why you send it now.
+- Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
+
+### 3. Let the agent route the application
+
+As **Agent Operator**, open `/agent/intake`.
+
+- Do: Press Wake agent, then press Process the next 20 cases.
+- Look for: The Router line sends an application that breaks a rule to Early resolution and says which rule.
+
+### 4. Track the application
+
+As **Applicant**, open `/apply/track`.
+
+- Do: Press Track application on the City of Acme website and open the application.
+- Look for: The tracker lists both documents as received and the status of the application.
+
 ## Get the café open
 
 Cedarline Coffee cannot open until its permit is issued, and its owner is recorded three ways in three city systems.
@@ -53,40 +87,6 @@ Open `/city/community`.
 
 - Do: Search for the permit number on the City of Acme website.
 - Look for: The public record shows the permit, the parcel and the outcome, and never a homeowner's name, documents or fees.
-
-## Apply as a resident
-
-A resident applies for a fence, checks the application before it is sent and follows it through the City.
-
-4 steps, about 3 minutes.
-
-### 1. Apply for a permit
-
-As **Applicant**, open `/apply`.
-
-- Do: Choose Residential deck or fence, type 400 Lantern Row, answer the questions for a 6 ft fence in the front yard, attach a file for each of the two required documents and tick the certification.
-- Look for: The form asks only the questions that project needs, and the assistant names the published rule behind each answer.
-
-### 2. Check the application before it is sent
-
-As **Applicant**, open `/apply`.
-
-- Do: Press Check my application, then change the 6 ft front yard fence to 4 ft and press Submit application, or press Submit anyway and write why you send it now.
-- Look for: The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it.
-
-### 3. Let the agent route the application
-
-As **Agent Operator**, open `/agent/intake`.
-
-- Do: Press Wake agent, then press Process the next 20 cases.
-- Look for: The Router line sends an application that breaks a rule to Early resolution and says which rule.
-
-### 4. Track the application
-
-As **Applicant**, open `/apply/track`.
-
-- Do: Press Track application on the City of Acme website and open the application.
-- Look for: The tracker lists both documents as received and the status of the application.
 
 ## Run the city
 

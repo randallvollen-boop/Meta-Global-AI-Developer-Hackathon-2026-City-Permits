@@ -181,8 +181,8 @@ def test_the_café_path_walks_the_whole_journey() -> None:
 
 def test_the_paths_are_the_four_the_plan_names() -> None:
     assert [path.key for path in guide_views.PATHS] == [
-        "cafe",
         "resident",
+        "cafe",
         "city",
         "before",
     ]

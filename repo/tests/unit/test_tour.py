@@ -76,7 +76,8 @@ def needle(selector: str) -> str:
 def test_the_configuration_holds_one_path_for_every_path_of_the_walkthrough(
     paths: dict[str, dict],
 ) -> None:
-    """The tour and the written walkthrough offer the same paths."""
+    """The tour and the written walkthrough offer the same paths, in the same order."""
+    assert list(paths) == [path.key for path in PATHS]
     assert set(paths) == {path.key for path in PATHS}
 
 
@@ -227,6 +228,7 @@ def test_the_route_serves_the_steps_of_every_path(client: TestClient) -> None:
         payload = response.json()
         assert payload["path"] == key
         assert len(payload["steps"]) == len(path["steps"])
+        assert [item["key"] for item in payload["paths"]] == [item.key for item in PATHS]
         assert {item["key"] for item in payload["paths"]} == set(tour_steps()["paths"])
 
 
