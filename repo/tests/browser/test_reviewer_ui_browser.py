@@ -42,6 +42,10 @@ def test_workspace_tabs_switch_and_the_drawer_opens(page, server: BrowserServer,
     page.locator('#tab-documents').click()
     assert page.locator("#panel-documents").is_visible()
     assert page.locator("#panel-review").is_hidden()
+    documents = page.locator('[data-testid="documents-section"]')
+    assert documents.get_attribute("open") is None
+    assert page.locator('[data-testid="document-table"]').is_hidden()
+    documents.locator("summary").click()
     assert page.locator('[data-testid="document-table"]').is_visible()
     page.locator('#tab-review').click()
     assert page.locator('[data-testid="next-action"]').is_visible()

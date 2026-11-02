@@ -135,6 +135,9 @@ def test_the_case_shows_the_stored_state_after_the_checks(
     expect(page.locator("[data-testid='rule-results']")).to_be_visible()
     expect(page.locator("[data-testid='checks-result-summary']")).to_be_visible()
     expect(page.locator("[data-testid='checks-next']")).to_contain_text("Ready to decide")
+    assert page.locator("[data-testid='application-checks']").get_attribute("open") is not None
+    assert page.locator("[data-testid='stage-decision']").get_attribute("open") is not None
+    assert page.locator("[data-testid='review-actions']").get_attribute("open") is not None
     next_button = page.locator("[data-testid='checks-next-button']")
     expect(next_button).to_have_text("Record review decision")
     next_button.click()
@@ -152,6 +155,8 @@ def test_the_case_shows_the_stored_state_after_the_checks(
             "reason_code": "DOES_NOT_MEET_CODE",
         },
     )
+    assert page.locator("[data-testid='application-checks']").get_attribute("open") is not None
+    assert page.locator("[data-testid='stage-decision']").get_attribute("open") is not None
     read_decision = page.locator("[data-testid='checks-next-button']")
     expect(read_decision).to_have_text("Read the decision")
     read_decision.click()

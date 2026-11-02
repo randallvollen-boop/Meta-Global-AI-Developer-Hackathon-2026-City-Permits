@@ -2,14 +2,10 @@
 {# The Property card of the permit workspace: "Is this the right property?"  #}
 {% set prop = detail.property %}
 {% if prop %}
-<section class="panel card" aria-labelledby="property-heading" data-testid="property-card">
-  <div class="card-h">
-    <h2 id="property-heading">Property: is this the right property?</h2>
-    <span class="right">
-      <span class="pill {{ 'ok' if prop.confirmed else 'warn' }}" data-testid="parcel-confirmation">{{ 'Parcel confirmed by the reviewer' if prop.confirmed else 'Parcel not confirmed' }}</span>
-    </span>
-  </div>
-  <div class="card-b">
+<details class="ws-section panel card" data-testid="property-card" {% if detail.open_sections.property %}open{% endif %}>
+  <summary><h2 id="property-heading">Property: is this the right property?</h2></summary>
+  <div class="ws-section-body">
+    <p><span class="pill {{ 'ok' if prop.confirmed else 'warn' }}" data-testid="parcel-confirmation">{{ 'Parcel confirmed by the reviewer' if prop.confirmed else 'Parcel not confirmed' }}</span></p>
     <div class="prop-grid">
       <dl class="prop-facts" data-testid="property-facts">
         <dt>Address the applicant typed</dt><dd data-testid="property-typed">{{ prop.submitted_text }}</dd>
@@ -54,5 +50,5 @@
       {% endfor %}
     </div>
   </div>
-</section>
+</details>
 {% endif %}

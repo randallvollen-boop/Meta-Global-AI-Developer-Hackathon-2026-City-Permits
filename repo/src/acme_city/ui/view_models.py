@@ -2592,6 +2592,44 @@ def checks_finished_message(
     return f"{lead}{body}."
 
 
+def workspace_open_sections(
+    *,
+    has_evaluation: bool,
+    decision: dict[str, Any] | None,
+    blockers: list[dict[str, Any]],
+    issued: bool,
+    has_assessment: bool,
+) -> dict[str, bool]:
+    """Return which workspace sections start open.
+
+    The page chooses this from the case each time it is rendered. Nothing
+    is stored. Checks stay open until the case is approved or issued, so the
+    result remains on screen. The decision section opens when a decision can
+    be recorded or read. Fee and Actions open after an approval. The permit
+    section opens once the permit is issued.
+    """
+    has_decision = decision is not None
+    approved = bool(decision) and decision.get("outcome") == "approved" and not issued
+    ready = has_evaluation and not has_decision and not blockers and not issued
+    read_decision = has_decision and not approved and not issued
+    parcel_next = (
+        not issued
+        and not has_decision
+        and bool(blockers)
+        and blockers[0].get("code") == "parcel_unconfirmed"
+    )
+    return {
+        "next": True,
+        "checks": (not issued) and not approved,
+        "issues": bool(blockers) and has_evaluation and not has_decision and not issued,
+        "decision": ready or read_decision,
+        "actions": approved or ready,
+        "fee": approved and has_assessment,
+        "permit": issued,
+        "property": parcel_next,
+    }
+
+
 def rule_result_wording(result: dict[str, Any]) -> str:
     """Return the text one rule row shows, labelled by what the rule result is.
 
@@ -3912,6 +3950,13 @@ def permit_workspace(
         and current_decision is None
         and workspace["can_decide"]
         and not blockers
+    )
+    workspace["open_sections"] = workspace_open_sections(
+        has_evaluation=evaluation_view is not None,
+        decision=workspace["current_decision"],
+        blockers=blockers,
+        issued=bool(issued),
+        has_assessment=bool((workspace.get("finance") or {}).get("assessment")),
     )
     workspace["reviewer"] = reviewer_views.workspace_extras(
         session, actor, application, workspace
