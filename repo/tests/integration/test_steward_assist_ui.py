@@ -243,16 +243,42 @@ def test_the_prepare_button_is_off_while_the_assistant_sleeps(
     assert "disabled" in button.group(0)
 
 
-def test_the_operator_may_not_press_the_steward_buttons(
+def test_the_operator_may_prepare_the_recommendations(
     client: TestClient, environment: Settings
 ) -> None:
-    """The run grant of the assistant belongs to the Data Steward alone."""
+    """The operator wakes the assistant and asks it to prepare the work."""
     wake_the_assistant(client)
     choose(client, "persona_agent_operator")
     response = post(
         client,
         "steward.assist.prepare",
         {"next": "/agent/steward_assist"},
+        "/agent/steward_assist",
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "accepted"
+    stored = stored_recommendations(environment)
+    assert stored, "the press recorded a recommendation"
+
+
+def test_the_operator_may_not_accept_a_recommendation(
+    client: TestClient, environment: Settings
+) -> None:
+    """The operator prepares the work; the Data Steward decides it."""
+    wake_the_assistant(client)
+    choose(client, "persona_agent_operator")
+    post(
+        client,
+        "steward.assist.prepare",
+        {"next": "/agent/steward_assist"},
+        "/agent/steward_assist",
+    )
+    stored = stored_recommendations(environment)
+    assert stored, "the press recorded a recommendation"
+    response = post(
+        client,
+        "steward.assist.accept",
+        {"next": "/agent/steward_assist", "recommendation_id": stored[0].id},
         "/agent/steward_assist",
     )
     assert response.status_code == 403, response.text

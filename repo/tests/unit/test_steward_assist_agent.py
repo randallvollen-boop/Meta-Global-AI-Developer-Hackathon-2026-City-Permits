@@ -1,9 +1,10 @@
 """The steward assistant as an agent: the grants, the bounds and the refusals.
 
 The assistant prepares the work of the queue; the steward decides.  The
-tests prove that the assistant runs only when the Data Steward asks it to and
-only while it is awake, that one press is bounded, that every press leaves a
-run trace, and that a recommendation that is held or stale is never accepted.
+tests prove that the assistant runs only when the Data Steward or the Agent
+Operator asks it to and only while it is awake, that one press is bounded,
+that every press leaves a run trace, and that a recommendation that is held
+or stale is never accepted.
 """
 # REQUIRES: PER-01, PER-04, SEC-01
 
@@ -256,19 +257,25 @@ def rename_the_target_of_the_applied_link(settings: Settings, application_id: st
 # ------------------------------------------------------------------- the grants
 
 
-def test_the_data_steward_holds_the_run_grant_of_the_assistant(seeded: Settings) -> None:
-    """Only the Data Steward may ask the assistant for a recommendation."""
+def test_the_data_steward_and_the_operator_hold_the_run_grant_of_the_assistant(
+    seeded: Settings,
+) -> None:
+    """The Data Steward and the Agent Operator may ask the assistant to work.
+
+    The operator wakes the assistant and may prepare the work of the queue.
+    The reviewer holds no grant of the assistant.
+    """
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
             resolver = PermissionResolver(session)
-            assert "agent.run.steward_assist" in {
-                grant.permission_id for grant in resolver.grants_for(STEWARD.actor_id)
+            for holder in (STEWARD.actor_id, OPERATOR.actor_id):
+                assert "agent.run.steward_assist" in {
+                    grant.permission_id for grant in resolver.grants_for(holder)
+                }, holder
+            assert "agent.run.steward_assist" not in {
+                grant.permission_id for grant in resolver.grants_for(REVIEWER.actor_id)
             }
-            for other in ("persona_agent_operator", "persona_permit_reviewer"):
-                assert "agent.run.steward_assist" not in {
-                    grant.permission_id for grant in resolver.grants_for(other)
-                }
     finally:
         factory.dispose()
 
@@ -290,19 +297,21 @@ def test_a_persona_without_the_grant_may_not_ask_the_assistant(seeded: Settings)
         factory.dispose()
 
 
-def test_the_agent_operator_may_not_ask_the_assistant(seeded: Settings) -> None:
-    """The Agent Operator runs the agents of the City; the queue is not its work."""
+def test_the_agent_operator_may_ask_the_assistant(seeded: Settings) -> None:
+    """The Agent Operator wakes the assistant and may prepare its work."""
     wake(seeded)
     proposal_id = propose(seeded)
     factory = SessionFactory(seeded.database_url)
     try:
         with transaction(factory) as session:
-            with pytest.raises(PermissionDeniedError):
-                assistant.prepare(
-                    session,
-                    tasks=[recommenders.Task("link", proposal_id)],
-                    actor=OPERATOR,
-                )
+            result = assistant.prepare(
+                session,
+                tasks=[recommenders.Task("link", proposal_id)],
+                actor=OPERATOR,
+            )
+            assert len(result.recommendations) == 1
+            # The operator prepared the work; the Data Steward still decides.
+            assert result.recommendations[0].made_by_actor_id == assistant.SERVICE_ACTOR_ID
     finally:
         factory.dispose()
 

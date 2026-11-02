@@ -197,11 +197,12 @@
     {
       "role_id": "agent_operator",
       "label": "Agent Operator",
-      "boundary": "Wakes and runs the intake and adjudication agents and processes a selection of waiting cases; no permit decision.",
+      "boundary": "Wakes and runs the intake, adjudication and steward assistant agents and processes a selection of waiting cases; no permit decision.",
       "permission_ids": [
         "agent.ops.read",
         "agent.run.adjudication",
         "agent.run.intake",
+        "agent.run.steward_assist",
         "agent.toggle",
         "permit.intake.process_selected"
       ]
@@ -1326,6 +1327,12 @@
           "domains": [
             "permits"
           ],
+          "record_scope": [],
+          "source": "explicit"
+        },
+        {
+          "permission_id": "agent.run.steward_assist",
+          "domains": [],
           "record_scope": [],
           "source": "explicit"
         },

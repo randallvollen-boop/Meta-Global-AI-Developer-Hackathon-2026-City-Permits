@@ -16,7 +16,14 @@ from __future__ import annotations
 
 #: The screens that count as agent screens.  A persona module never lists one.
 AGENT_SCREENS: frozenset[str] = frozenset(
-    {"agent_intake", "agent_adjudication", "agents_home", "agent_runs", "agent_case"}
+    {
+        "agent_intake",
+        "agent_adjudication",
+        "agent_steward_assist",
+        "agents_home",
+        "agent_runs",
+        "agent_case",
+    }
 )
 
 #: The cross-persona grant-driven navigation entries, by actor id.
@@ -25,14 +32,22 @@ AGENT_SCREENS: frozenset[str] = frozenset(
 #: the intake-queue read permission to the Permit Reviewer and City
 #: Administrator.  The City Administrator lists the queue under More tools;
 #: the Permit Reviewer may open it but does not list it.
-#: The order of the Agent Operator's list is the order of its four
-#: destinations, with the operational summary as its home (OPR-16).
+#: The order of the Agent Operator's list is the order of its five
+#: destinations, with the operational summary as its home (OPR-16).  The
+#: steward assistant sits next to the other two agents: the operator wakes it
+#: and asks it to prepare the work of the queue.
 PRIMARY: dict[str, tuple[str, ...]] = {
     "persona_applicant": (),
     "persona_data_steward": (),
     "persona_permit_reviewer": (),
     "persona_city_administrator": (),
-    "persona_agent_operator": ("agents_home", "agent_intake", "agent_adjudication", "agent_runs"),
+    "persona_agent_operator": (
+        "agents_home",
+        "agent_intake",
+        "agent_adjudication",
+        "agent_steward_assist",
+        "agent_runs",
+    ),
 }
 
 #: The agent screens under More tools, by actor id.

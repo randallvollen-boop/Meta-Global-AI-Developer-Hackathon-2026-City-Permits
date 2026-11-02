@@ -18,6 +18,7 @@ from sqlalchemy import select
 
 from acme_city.fixtures.steward_demo import seed_cedarline
 from acme_city.persistence.models import registry
+from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.persistence.session import SessionFactory, transaction
 
 #: The source record the demonstration compares with the master records.
@@ -107,32 +108,61 @@ def test_the_prepare_button_is_off_while_the_assistant_sleeps(
     assert page.recorded_errors == []
 
 
-def test_the_operator_may_not_press_the_steward_buttons(
+def test_the_operator_may_prepare_the_recommendations(
     page, server: BrowserServer, login
 ) -> None:
-    """The run grant of the assistant belongs to the Data Steward alone."""
+    """The operator wakes the assistant and asks it to prepare the work."""
     prepare_queue(server)
     wake_the_assistant(page, server, login)
-    token = page.locator('[data-testid="agent-toggle-form"] input[name="csrf_token"]')
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    page.wait_for_selector('[data-testid="agent-prepare"]')
+    message = click_action(page, "agent-prepare", "steward.assist.prepare")
+    assert "recommendation" in message
+    assert page.recorded_errors == []
+
+
+def test_the_operator_may_not_accept_a_recommendation(
+    page, server: BrowserServer, login
+) -> None:
+    """The operator prepares the work; the Data Steward decides it."""
+    prepare_queue(server)
+    wake_the_assistant(page, server, login)
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    click_action(page, "agent-prepare", "steward.assist.prepare")
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            recommendation = session.execute(
+                select(StewardRecommendation).where(
+                    StewardRecommendation.cleared.is_(False)
+                )
+            ).scalars().first()
+            assert recommendation is not None, "the operator prepared a recommendation"
+            recommendation_id = recommendation.id
+    finally:
+        factory.dispose()
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    token = page.locator('input[name="csrf_token"]').first
     assert token.count() == 1
     csrf_token = token.get_attribute("value") or ""
     with page.expect_response(
         lambda response: response.request.method == "POST"
-        and "/ui/actions/steward.assist.prepare" in response.url
+        and "/ui/actions/steward.assist.accept" in response.url
     ) as posted:
         page.evaluate(
-            """(token) => {
+            """([token, recommendation]) => {
               const form = document.createElement('form');
               form.method = 'post';
-              form.action = '/ui/actions/steward.assist.prepare';
+              form.action = '/ui/actions/steward.assist.accept';
               form.innerHTML =
                 '<input name="csrf_token" value="' + token + '">' +
-                '<input name="action_id" value="steward.assist.prepare">' +
-                '<input name="next" value="/agents">';
+                '<input name="action_id" value="steward.assist.accept">' +
+                '<input name="next" value="/agent/steward_assist">' +
+                '<input name="recommendation_id" value="' + recommendation + '">';
               document.body.appendChild(form);
               form.submit();
             }""",
-            csrf_token,
+            [csrf_token, recommendation_id],
         )
     response = posted.value
     assert response.status == 403, response.text()

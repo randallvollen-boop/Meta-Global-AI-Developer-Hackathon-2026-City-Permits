@@ -114,10 +114,12 @@ first entry of the City website menu.
 - As an Agent Operator, I want to wake and sleep the steward assistant, so
   that the Data Steward can ask it for recommendations only when the City
   allows it.
-  - Acceptance: **Steward assistant** (`/agent/steward_assist`) has **Wake
-    agent** / **Put agent to sleep** and counts the recommendations as High,
-    Review and Held. It runs only when the steward presses a button, never on
-    a timer. I cannot press the steward's buttons: they return 403 for me.
+  - Acceptance: **Steward assistant** (`/agent/steward_assist`) is in the left
+    menu and has **Wake agent** / **Put agent to sleep** and counts the
+    recommendations as High, Review and Held. It runs only when a person
+    presses a button, never on a timer. I press **Prepare recommendations**
+    on that screen to prepare the work of the queue; the Data Steward still
+    decides every recommendation and I decide none.
 
 ## Data Steward
 

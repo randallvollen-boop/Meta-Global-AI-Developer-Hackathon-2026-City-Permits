@@ -133,16 +133,35 @@ def act(client: TestClient, action_id: str, fields: dict, next_path: str) -> dic
     return response.json()
 
 
-def test_operator_lands_on_agents_and_all_four_navigation_links_work(client: TestClient) -> None:
+def test_operator_lands_on_agents_and_all_five_navigation_links_work(client: TestClient) -> None:
     response = client.post("/ui/actor", data={"actor_id": "persona_agent_operator", "next": "/agents"}, follow_redirects=False)
     assert response.status_code == 303
     assert response.headers["location"] == "/agents"
     page = client.get("/agents")
     assert page.status_code == 200
     assert "<h1>Agents</h1>" in page.text
-    for href in ("/agents", "/agent/intake", "/agent/adjudication", "/agents/runs"):
+    for href in (
+        "/agents",
+        "/agent/intake",
+        "/agent/adjudication",
+        "/agent/steward_assist",
+        "/agents/runs",
+    ):
         assert f'href="{href}"' in page.text
         assert client.get(href).status_code == 200
+
+
+def test_the_steward_assistant_screen_offers_the_wake_and_the_prepare(
+    client: TestClient,
+) -> None:
+    """The operator wakes the assistant and asks it to prepare the work."""
+    client.post("/ui/actor", data={"actor_id": "persona_agent_operator", "next": "/agents"}, follow_redirects=False)
+    body = client.get("/agent/steward_assist").text
+    assert 'data-testid="agent-toggle"' in body
+    assert 'data-testid="agent-prepare"' in body
+    # The assistant works on tasks, not on cases, so it has no batch of cases.
+    assert 'data-testid="agent-run-all"' not in body
+    assert "Prepare recommendations" in body
 
 
 def test_a_controlled_case_is_refused_by_a_direct_run(
