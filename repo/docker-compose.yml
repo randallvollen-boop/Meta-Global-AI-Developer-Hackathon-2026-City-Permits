@@ -15,7 +15,7 @@ services:
       target: demo
     environment:
       ACME_DEPLOYMENT_MODE: demo
-      ACME_SCENARIO_CLOCK: ${ACME_SCENARIO_CLOCK:-auto}
+      ACME_SCENARIO_CLOCK: ${ACME_SCENARIO_CLOCK:-}
       ACME_DATABASE_URL: sqlite:////app/var/acme_city.db
       # Demo works with an ephemeral key; set one for stable sessions.
       ACME_SECRET_KEY: ${ACME_SECRET_KEY:-}
