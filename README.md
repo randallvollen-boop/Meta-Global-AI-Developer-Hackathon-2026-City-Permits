@@ -90,6 +90,10 @@ The plan is that an assistant acts as one of the five personas, with that person
 
 The plan is written up in [docs/operations/MCP_PLAN.md](docs/operations/MCP_PLAN.md).
 
+## Future feature: applicant email
+
+Real email delivery of applicant notices. The demonstration records each notice and shows it to the applicant, and sends no email.
+
 ## Technical depth
 
 Production behaviour:

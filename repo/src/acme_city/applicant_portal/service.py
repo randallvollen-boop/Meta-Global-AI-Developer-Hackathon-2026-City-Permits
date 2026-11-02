@@ -877,6 +877,7 @@ class PortalService:
     def track(self, reference: str, actor: ActorContext) -> dict[str, Any] | None:
         """Return the tracking view of an application the actor may see."""
         from acme_city.permits.comments import comments_for
+        from acme_city.permits.notices import applicant_notices
         from acme_city.ui.view_models import _application_in_scope
 
         reference = reference.strip()
@@ -938,6 +939,7 @@ class PortalService:
             "status": application.status,
             "status_word": STATUS_WORDS.get(application.status, application.status),
             "messages": messages,
+            "notices": applicant_notices(self._session, application),
             "decision_reason": decision.reason if decision is not None and decision.reason else "",
             # The conditions of approval are the applicant's instructions, so
             # they are shown on the tracker next to the decision note.

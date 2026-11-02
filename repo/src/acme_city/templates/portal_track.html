@@ -110,6 +110,14 @@
     {{ app_card(tracked.card, true, next_step) }}
     <p class="detail-more">{{ ui.detail_link('my-permit', tracked.reference, 'Record details') }}</p>
     <h3>Messages from the City</h3>
+    {% if tracked.notices %}
+    <ul data-testid="city-notices">
+      {% for n in tracked.notices %}
+      <li><strong>{{ n.subject }}</strong> <span class="muted">{{ n.when }}</span><br>{{ n.body }}</li>
+      {% endfor %}
+    </ul>
+    <p class="muted" data-testid="city-notices-note">The City would also send this by email. The demonstration sends no email.</p>
+    {% endif %}
     <ul data-testid="city-messages">
       {% for item in tracked.messages %}
       <li>{{ item.message }}</li>
