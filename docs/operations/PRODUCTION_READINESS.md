@@ -39,7 +39,7 @@ Every existing test, the start scripts, and the judged deployment run in demo mo
 | `ACME_TRUST_PROXY_HEADERS` | off | off | `true` makes the app honour `X-Forwarded-Proto` from a reverse proxy. Enable only when clients cannot reach the service directly |
 | `ACME_MUSE_PROVIDER_ENABLED` | on | off | Global switch for every call to the external AI provider. Enforced in `muse/client.py` and `muse/image_client.py` |
 | `ACME_DATABASE_URL` | `sqlite:///var/acme_city.db` | same (container image: `sqlite:////app/var/acme_city.db`) | Database location |
-| `ACME_SCENARIO_CLOCK` | empty (start script uses `auto`) | ignored | Demo date |
+| `ACME_SCENARIO_CLOCK` | empty (real clock) | ignored | Demo date; an explicit date remains available for controlled tests |
 | `META_API_KEY` | none | none | Provider credential. Leave unset until the AI controls below are closed |
 | `ACME_APPLICANT_ASSIST_LIVE_ENABLED`, `ACME_POLICY_ASSIST_LIVE_ENABLED` | off | off | Task switches, checked in addition to the global switch |
 | `ACME_MUSE_LIVE_CALL_CAP`, `ACME_MUSE_IMAGE_DAILY_CAP`, `ACME_MUSE_MODEL_ALLOWLIST` | 2, 10, `muse-spark-1.3` | same | Live calls in total since the data was last rebuilt (not per visitor; one provider error also stops live calls), image calls per day, allowed model. See the Live Muse section of `DEPLOY_RENDER.md` |

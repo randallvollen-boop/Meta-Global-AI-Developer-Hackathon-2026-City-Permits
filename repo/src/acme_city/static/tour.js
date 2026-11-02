@@ -244,6 +244,35 @@
     input.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  /* A story arrival may fill only the pristine form the visitor was shown.
+     Default selections count as pristine.  Any typed value, changed choice,
+     or selected file belongs to the visitor and is never replaced. */
+  function formIsPristine(form) {
+    var controls = form.elements || [];
+    for (var i = 0; i < controls.length; i++) {
+      var control = controls[i];
+      if (!control || control.disabled) continue;
+      var type = String(control.type || "").toLowerCase();
+      if (type === "hidden" || type === "submit" || type === "button" || type === "reset") continue;
+      if (type === "file") {
+        if (control.files && control.files.length) return false;
+        continue;
+      }
+      if (type === "checkbox" || type === "radio") {
+        if (control.checked !== control.defaultChecked) return false;
+        continue;
+      }
+      if (control.tagName === "SELECT") {
+        for (var option = 0; option < control.options.length; option++) {
+          if (control.options[option].selected !== control.options[option].defaultSelected) return false;
+        }
+        continue;
+      }
+      if (control.value !== control.defaultValue) return false;
+    }
+    return true;
+  }
+
   function fillStory() {
     var current = step();
     var spec = current && current.fill;
@@ -261,6 +290,12 @@
     for (var i = 0; i < names.length; i++) setControl(form, names[i], fields[names[i]]);
     var files = spec.files || {};
     Object.keys(files).forEach(function (name) { attachFile(form, name, files[name]); });
+  }
+
+  function fillStoryOnArrival(current) {
+    var form = formOnScreen();
+    if (!current || !current.fill || !form || !formIsPristine(form)) return;
+    fillStory();
   }
 
   function paintFill(current) {
@@ -506,6 +541,7 @@
     }
     paintCopy(current);
     paintFill(current);
+    fillStoryOnArrival(current);
     paintPermit(current);
     paintNote();
     paintMuse(current);

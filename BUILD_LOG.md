@@ -433,6 +433,21 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - STW-31B: the demo preparation. A separate prepare mode activates the policy, runs the worker once and leaves one applied link in the queue for a person to keep or undo. The Cedarline demonstration is unchanged: three proposals and nothing decided.
 - No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
 
+## 2026-11-02 — Retest item 2: resident tour fill
+
+- The resident tour now fills the untouched fence form on arrival at its Check step, including the two synthetic text documents. It does not submit or run Check. Any visitor edit or chosen file prevents automatic filling; the existing Fill in the story’s answers button still deliberately refills the form.
+- Updated the tour caption and the generated walkthrough wording. The browser regression now expects automatic fill and proves a typed address and height remain unchanged. No rule text, fixture, protected hash, acceptance outcome, persona or grant changed.
+
+## 2026-11-02 — Retest item 3: café case screens
+
+- The café tour already switches to Permit Reviewer and opens `/permits/{case}`. The in-app and submission walkthrough had drifted to `/queue/review` for reviewer and issuance, which made the written route stop before the workspace actions. Both now open the visitor’s café-case workspace directly.
+- The café route assertions pin the reviewer persona and the shared reviewer/issue copy URL. No track id, caption, rule, fixture, protected hash, acceptance outcome, persona grant or permission changed.
+
+## 2026-11-02 — Retest item 4: real deployment dates
+
+- Render no longer sets `ACME_SCENARIO_CLOCK=auto`, and the entrypoint gives seed commands an empty clock setting. Demo starts therefore use the real clock unless a controlled test or caller explicitly supplies a date.
+- The scenario-clock implementation remains intact. Deployment documentation and default assertions now describe the real-clock behavior. No fixture, rule, protected hash, acceptance outcome, persona, grant or provider setting changed.
+
 ## 2026-11-02 — Wave 3 integration repairs
 
 - Reviewed WIP commits `2e1eab2` and `b5a2989` against G14–G39. Disclosure-aware browser paths open collapsed ancestor summaries before interacting, and the workspace model opens Decision when a pending recommendation needs human review.

@@ -501,7 +501,7 @@ def test_entrypoint_seed_runs_in_order_with_a_safe_environment(entrypoint, monke
     seen = calls[0][1]
     assert "META_API_KEY" not in seen
     assert seen["ACME_COOKIE_SECURE"] == "0" and seen["ACME_RATE_LIMIT_WRITE_PER_MINUTE"] == "0"
-    assert seen["ACME_SCENARIO_CLOCK"] == "auto"
+    assert seen["ACME_SCENARIO_CLOCK"] == ""
     assert not stale.exists()  # each start rebuilds the database from nothing
 
 
@@ -567,10 +567,10 @@ def test_blueprint_limits_match_the_documented_defaults() -> None:
         ("ACME_MUSE_IMAGE_DAILY_CAP", "10"),
         ("ACME_COOKIE_SECURE", "1"),
         ("ACME_TRUST_PROXY_HEADERS", "1"),
-        ("ACME_SCENARIO_CLOCK", "auto"),
         ("ACME_PUBLIC_DEMO", "1"),
     ):
         assert re.search(rf"key: {key}\n\s+value: \"?{value}\"?\n", BLUEPRINT), key
+    assert not re.search(r"key: ACME_SCENARIO_CLOCK\n", BLUEPRINT)
 
 
 def test_demo_dockerfile_shares_the_recipe_and_production_has_no_scripts() -> None:
