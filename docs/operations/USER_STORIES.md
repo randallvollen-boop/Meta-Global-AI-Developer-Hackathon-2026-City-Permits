@@ -208,6 +208,14 @@ first entry of the City website menu.
     without JavaScript and finds a match past the first page. The page says
     how many matches and offers **Clear**. It combines with the filter chips.
     One match shows an **Open** button.
+- As a Permit Reviewer, I want the queue to show what the agents recommend,
+  so that I can see the suggestion before I open the case.
+  - Acceptance: each row on the **Work queue** and the **Review queue** shows
+    compact tags: **Agent: approve**, **Agent: deny**, **Agent: verify**,
+    **Intake: early resolution**, **Intake: duplicate?** and **Cannot
+    recommend: parcel not confirmed**. The tag's tooltip is one short sentence
+    of the reason. Chips next to the other filters keep only the cases with
+    that tag, and they combine with search.
 - As a Permit Reviewer, I want the recommendation card at the Decision step,
   so that I see the outcome, the rule rows with their citations, the
   conditions of approval and the pipeline trace before I decide.

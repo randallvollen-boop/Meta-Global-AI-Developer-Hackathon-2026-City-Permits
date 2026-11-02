@@ -930,11 +930,11 @@ def review_row_sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
     return (rank, -age_value, str(row.get("reference") or ""))
 
 
-def _review_href(area: str, action: str, query: str = "") -> str:
-    """Return a review-queue address that keeps the area, the action and the search."""
+def _review_href(area: str, action: str, query: str = "", tag: str = "") -> str:
+    """Return a review-queue address that keeps the area, the action, the search and the tag."""
     from acme_city.ui.queue_find import review_href
 
-    return review_href(area, action, query)
+    return review_href(area, action, query, tag)
 
 
 def present_review_queue(
@@ -943,6 +943,7 @@ def present_review_queue(
     next_action: str = "",
     query: str = "",
     page: int = 1,
+    tag: str = "",
 ) -> dict[str, Any]:
     """Copy a review queue, then add stage, next action, chips, search and sort.
 
@@ -952,6 +953,7 @@ def present_review_queue(
     action filter, so the selected chip's count is the number of rows
     in that action. The search runs after the chip and before the page,
     so a match is not dropped because it would have been on a later page.
+    A recommendation tag narrows the same list and combines with both.
     """
     from acme_city.ui.queue_find import (
         matches_query,
@@ -961,6 +963,7 @@ def present_review_queue(
         search_summary,
         sole_open,
     )
+    from acme_city.ui.queue_tags import load_tags, normalize_tag, tag_chips
 
     presented = dict(queue)
     area = str(queue.get("area") or "")
@@ -981,6 +984,16 @@ def present_review_queue(
             place = queue_place(session, application)
         row.update(place)
         annotated.append(row)
+    tagged = load_tags(
+        session,
+        [
+            (str(row.get("application_id") or ""), str(row.get("status") or ""))
+            for row in annotated
+        ],
+    )
+    for row in annotated:
+        row["tags"] = tagged.get(str(row.get("application_id") or ""), [])
+    chosen = normalize_tag(tag)
     counts: dict[str, int] = {}
     for row in annotated:
         key = str(row["next_action_key"])
@@ -990,7 +1003,7 @@ def present_review_queue(
             "key": key,
             "label": label,
             "count": counts[key],
-            "href": _review_href(area, key, text),
+            "href": _review_href(area, key, text, chosen),
         }
         for key, label in NEXT_ACTIONS
         if counts.get(key, 0) > 0
@@ -998,6 +1011,18 @@ def present_review_queue(
     visible = annotated
     if selected:
         visible = [row for row in annotated if row["next_action_key"] == selected]
+    # Tag counts stay on this list, before the tag itself and before the search.
+    tag_all_count = len(visible)
+    recommendation_chips = tag_chips(
+        [list(row.get("tags") or []) for row in visible],
+        lambda key: _review_href(area, selected, text, key),
+    )
+    if chosen:
+        visible = [
+            row
+            for row in visible
+            if any(item["key"] == chosen for item in row.get("tags") or [])
+        ]
     if text:
         visible = [
             row
@@ -1010,21 +1035,25 @@ def present_review_queue(
             )
         ]
     visible.sort(key=review_row_sort_key)
-    back = _review_href(area, selected, text)
+    back = _review_href(area, selected, text, chosen)
     shown, paging = paginate(visible, page)
     paging.update(paging_links(back, paging["page"], paging["pages"]))
     names = list(queue.get("areas") or [])
-    presented["area_hrefs"] = {"": _review_href("", selected, text)}
+    presented["area_hrefs"] = {"": _review_href("", selected, text, chosen)}
     for name in names:
-        presented["area_hrefs"][name] = _review_href(str(name), selected, text)
+        presented["area_hrefs"][name] = _review_href(str(name), selected, text, chosen)
     presented["rows"] = shown
     presented["next_action"] = selected
-    presented["next_all_href"] = _review_href(area, "", text)
+    presented["next_all_href"] = _review_href(area, "", text, chosen)
     presented["next_all_count"] = len(annotated)
     presented["next_actions"] = chips
+    presented["tag"] = chosen
+    presented["tag_filters"] = recommendation_chips
+    presented["tag_all_href"] = _review_href(area, selected, text, "")
+    presented["tag_all_count"] = tag_all_count
     presented["query"] = text
     presented["search_summary"] = search_summary(len(visible), text) if text else ""
-    presented["clear_href"] = _review_href(area, selected, "")
+    presented["clear_href"] = _review_href(area, selected, "", chosen)
     presented["sole"] = sole_open(visible, text, back)
     presented["paging"] = paging
     presented["match_total"] = len(visible)

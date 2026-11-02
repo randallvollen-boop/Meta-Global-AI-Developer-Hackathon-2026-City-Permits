@@ -569,6 +569,7 @@ def ui_work_queue(
     focus: str = "all",
     q: str = "",
     page: int = 1,
+    tag: str = "",
 ) -> Any:
     """Show the work queue of the acting persona."""
     resolved, refused = _guard(request, session, actor, "queue")
@@ -586,6 +587,7 @@ def ui_work_queue(
         focus=focus,
         query=q,
         page=page,
+        tag=tag,
     )
     context = page_context(
         request,
@@ -610,6 +612,7 @@ def ui_review_queue(
     next_action: str = "",
     q: str = "",
     page: int = 1,
+    tag: str = "",
 ) -> Any:
     """Show the review queue of the Permit Reviewer."""
     resolved, refused = _guard(request, session, actor, "review_queue")
@@ -623,6 +626,7 @@ def ui_review_queue(
         next_action=next_action,
         query=q,
         page=page,
+        tag=tag,
     )
     context = page_context(
         request,

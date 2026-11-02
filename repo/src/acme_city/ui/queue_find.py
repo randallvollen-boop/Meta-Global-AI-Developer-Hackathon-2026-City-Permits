@@ -48,8 +48,13 @@ def search_summary(count: int, query: str) -> str:
     return f"{count} matches for {shown}"
 
 
-def review_href(area: str = "", action: str = "", query: str = "") -> str:
-    """Return a review-queue address that keeps the area, the action and the search."""
+def review_href(
+    area: str = "",
+    action: str = "",
+    query: str = "",
+    tag: str = "",
+) -> str:
+    """Return a review-queue address that keeps the area, the action, the search and the tag."""
     params: list[tuple[str, str]] = []
     if area:
         params.append(("area", area))
@@ -58,6 +63,8 @@ def review_href(area: str = "", action: str = "", query: str = "") -> str:
     text = normalize_query(query)
     if text:
         params.append(("q", text))
+    if tag:
+        params.append(("tag", tag))
     if not params:
         return "/queue/review"
     return "/queue/review?" + urlencode(params)
@@ -71,8 +78,9 @@ def work_href(
     object_type: str = "",
     state: str = "",
     query: str = "",
+    tag: str = "",
 ) -> str:
-    """Return a work-queue address that keeps the filters and, when set, the search."""
+    """Return a work-queue address that keeps the filters and, when set, the search and the tag."""
     payload: dict[str, str] = {
         "focus": focus or "all",
         "view": view or "my",
@@ -83,6 +91,8 @@ def work_href(
     text = normalize_query(query)
     if text:
         payload["q"] = text
+    if tag:
+        payload["tag"] = tag
     return "/queue?" + urlencode(payload)
 
 

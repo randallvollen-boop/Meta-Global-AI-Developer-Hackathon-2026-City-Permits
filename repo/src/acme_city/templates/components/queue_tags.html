@@ -1,0 +1,7 @@
+{% if tags %}
+<span class="queue-tags" data-testid="queue-tags">
+  {% for tag in tags %}
+  <span class="pill {{ tag.tone }} queue-tag" data-testid="queue-tag" data-tag="{{ tag.key }}"{% if tag.title %} title="{{ tag.title }}"{% endif %}>{{ tag.label }}</span>
+  {% endfor %}
+</span>
+{% endif %}

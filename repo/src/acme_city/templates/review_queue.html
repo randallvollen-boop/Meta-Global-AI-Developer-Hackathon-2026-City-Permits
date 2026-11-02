@@ -32,9 +32,11 @@
   </a>
   {% endfor %}
 </nav>
+{% include "components/queue_tag_filters.html" %}
 <form class="queue-find" method="get" action="/queue/review" role="search" data-testid="queue-find">
   {% if queue.area %}<input type="hidden" name="area" value="{{ queue.area }}">{% endif %}
   {% if queue.next_action %}<input type="hidden" name="next_action" value="{{ queue.next_action }}">{% endif %}
+  {% if queue.tag %}<input type="hidden" name="tag" value="{{ queue.tag }}">{% endif %}
   <label for="review-q">Search</label>
   <input id="review-q" type="search" name="q" value="{{ queue.query }}" placeholder="Reference, name or address" data-testid="queue-find-input">
   <button type="submit" class="button btn" data-testid="queue-find-submit">Search</button>
@@ -79,6 +81,7 @@
         </td>
         <td data-label="Next action" data-testid="review-next-action">{{ row.next_action }}</td>
         <td data-label="Recommendation">
+          {% with tags=row.tags %}{% include "components/queue_tags.html" %}{% endwith %}
           {% if row.recommendation %}
           <span class="pill {{ 'ok' if row.recommendation.proposed_outcome == 'approve' else 'bad' if row.recommendation.proposed_outcome == 'deny' else 'warn' }}"
                 data-testid="review-recommendation">{{ row.recommendation.proposed_outcome|pretty }}</span>

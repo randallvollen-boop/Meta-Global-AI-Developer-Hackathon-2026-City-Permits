@@ -200,6 +200,7 @@
       "can_do": [
         "Choose a view: needs checks, needs data resolution, waiting for the applicant, issued or all.",
         "Search by reference, applicant name or site address. A number such as 617 matches the full reference, including a case past the first page.",
+        "Read the agent tags on a row, and filter to one tag. The tag names the recommendation and its tooltip gives the reason.",
         "Open a case from its action button, or open the exact issue code and ids from Details."
       ],
       "next": "Open a case to act on it; what you may change there depends on your persona's grants."
@@ -321,6 +322,7 @@
         "Read Stage and Next action on each case. Stage uses the life cycle names, for example Checks (3 of 6).",
         "Filter by Next action. The chips are Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution and Submitted with known issues.",
         "Search by reference, applicant name or site address. One match offers Open. Clear drops the search and keeps the chip.",
+        "Read the agent tags on a row, and filter to one tag. The tooltip is the reason in one sentence.",
         "Open a case to read the recommendation and record a decision."
       ],
       "next": "Ready to decide and Ready to issue are listed first. A recorded decision is reconfirmed or issued from the case."

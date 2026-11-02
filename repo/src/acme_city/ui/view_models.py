@@ -2600,6 +2600,7 @@ def work_queue(
     focus: str = "all",
     query: str = "",
     page: int = 1,
+    tag: str = "",
 ) -> dict[str, Any]:
     """Return the work queue of the acting persona.
 
@@ -2844,6 +2845,7 @@ def work_queue(
         sole_open,
         work_href,
     )
+    from acme_city.ui.queue_tags import load_tags, normalize_tag, tag_chips
 
     focus = focus if focus in reviewer_views.QUEUE_VIEW_KEYS else "all"
     views = reviewer_views.queue_views(items, focus)
@@ -2857,8 +2859,43 @@ def work_queue(
         "state": state or "",
     }
     text = normalize_query(query)
-    # The chip (the view) is applied first. The search then runs on that
-    # whole list, and only the matching rows are paged.
+    chosen = normalize_tag(tag)
+    tagged = load_tags(
+        session,
+        [
+            (str(item["id"]), str(item.get("state") or ""))
+            for item in items
+            if item.get("kind") == "application"
+        ],
+    )
+    for item in items:
+        if item.get("kind") == "application":
+            item["tags"] = tagged.get(str(item["id"]), [])
+        else:
+            item["tags"] = []
+    # The view chip is applied first. Tag counts use that list, before the
+    # tag itself and before the search. The search then runs, and only the
+    # matching rows are paged.
+    tag_all_count = len(items)
+
+    def _tag_href(key: str) -> str:
+        return work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+            query=text,
+            tag=key,
+        )
+
+    recommendation_chips = tag_chips([list(item.get("tags") or []) for item in items], _tag_href)
+    if chosen:
+        items = [
+            item
+            for item in items
+            if any(entry["key"] == chosen for entry in item.get("tags") or [])
+        ]
     if text:
         items = [
             item
@@ -2880,6 +2917,7 @@ def work_queue(
         object_type=object_type or "",
         state=state or "",
         query=text,
+        tag=chosen,
     )
     shown, paging = paginate(items, page)
     paging.update(paging_links(back, paging["page"], paging["pages"]))
@@ -2894,6 +2932,17 @@ def work_queue(
         "departments": sorted({item["department"] for item in items}),
         "object_types": sorted({item["object_type"] for item in items}),
         "query": text,
+        "tag": chosen,
+        "tag_filters": recommendation_chips,
+        "tag_all_href": work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+            query=text,
+        ),
+        "tag_all_count": tag_all_count,
         "search_summary": search_summary(len(items), text) if text else "",
         "clear_href": work_href(
             focus=focus,
@@ -2901,6 +2950,7 @@ def work_queue(
             department=department or "",
             object_type=object_type or "",
             state=state or "",
+            tag=chosen,
         ),
         "sole": sole_open(items, text, back),
         "paging": paging,

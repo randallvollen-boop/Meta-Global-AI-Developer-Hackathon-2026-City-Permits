@@ -29,6 +29,24 @@
   min-width: 0;
 }
 .queue-find-summary { padding: 10px 16px 0; margin: 0; }
+.queue-tags {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+.queue-tag {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  height: 18px;
+  padding: 0 6px;
+  font-size: .68rem;
+  line-height: 18px;
+}
+.tag-filters { margin: 0; flex: 1 1 auto; min-width: 0; }
 .queue-find-hit {
   display: flex;
   flex-wrap: wrap;
