@@ -122,6 +122,45 @@ def _declared(form: Any, spec: forms.FormSpec) -> set[str]:
     }
 
 
+def _open_draft(service: PortalService, form: Any, actor: ActorContext) -> Any:
+    """Return the caller's draft, or None when the form does not name one."""
+    reference = str(form.get("draft", "") or "").strip()
+    if not reference:
+        return None
+    return service.draft(reference, actor)
+
+
+def _ticks(form: Any, spec: forms.FormSpec, draft: Any) -> set[str]:
+    """Return the ticks that count for this check.
+
+    A reload cannot put a chosen file back into the input, and it cannot
+    re-send a tick the browser dropped.  The ticks stored on the draft still
+    count.  A check that says it posted the ticks (``sent_separately_posted``)
+    is believed instead, so unticking one is seen.
+    """
+    declared = _declared(form, spec)
+    stated = str(form.get("sent_separately_posted", "") or "").lower() in {"on", "true", "1"}
+    if stated or draft is None:
+        return declared
+    stored = draft.data or {}
+    return declared | {str(item) for item in stored.get("sent_separately") or []}
+
+
+def _already_provided(form: Any, documents: dict[str, Any]) -> set[str]:
+    """Return document types already on the draft or named by the browser.
+
+    ``have__`` is how the browser reports a file it could not post again:
+    the input is empty after a reload, and the copy kept on the draft counts.
+    """
+    have = set(documents)
+    have |= {
+        str(key)[len("have__"):]
+        for key in form.keys()
+        if str(key).startswith("have__")
+    }
+    return have
+
+
 def _values(form: Any, spec: forms.FormSpec) -> dict[str, str]:
     """Return the typed values of a posted form (text only)."""
     names = {field.key for field in spec.fields} | {
@@ -636,17 +675,19 @@ async def ui_portal_check(
         return refused
     service = _service(request, session)
     spec = service.form(type_key)
-    row = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
+    row = _open_draft(service, form, resolved)
     documents = service.draft_documents(row)
-    have = set(documents)
+    # Stored copies count.  A refused submit reloads with empty file inputs,
+    # so a check that only saw those inputs would call a complete application
+    # incomplete and the browser would hide Submit anyway.
+    have = _already_provided(form, documents)
     for doc_type, _filename, _content in await _files(form, spec):
         have.add(doc_type)
-    have |= {key[len("have__"):] for key in form.keys() if key.startswith("have__")}
     values = _values(form, spec)
     certification_accepted = (
         str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"}
     )
-    declared = _declared(form, spec)
+    declared = _ticks(form, spec, row)
     state = service.completeness(
         spec,
         values,
@@ -673,13 +714,6 @@ async def ui_portal_check(
             # still true, and the server decides again on every submit.
             pass
     return JSONResponse(state)
-
-
-def _posted_types(form: Any, draft_types: set[str]) -> set[str]:
-    """Return document types the request already has, without storing a new file."""
-    have = set(draft_types)
-    have |= {str(key)[len("have__"):] for key in form.keys() if str(key).startswith("have__")}
-    return have
 
 
 def _run_review(
@@ -725,10 +759,10 @@ async def ui_portal_review(
         return refused
     service = _service(request, session)
     spec = service.form(type_key)
-    row = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
+    row = _open_draft(service, form, resolved)
     documents = service.draft_documents(row)
     posted = await _files(form, spec)
-    have = _posted_types(form, set(documents))
+    have = _already_provided(form, documents)
     for doc_type, _filename, _content in posted:
         have.add(doc_type)
     review = _run_review(
@@ -738,7 +772,7 @@ async def ui_portal_review(
         _values(form, spec),
         resolved,
         certification_accepted=str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"},
-        declared=_declared(form, spec),
+        declared=_ticks(form, spec, row),
         uploaded_types=have,
         documents=documents,
         muse=True,
@@ -855,6 +889,31 @@ async def ui_portal_post(
             return RedirectResponse(
                 f"/apply/submitted/{application.source_application_number}", status_code=303
             )
+        elif intent == "update":
+            # The browser's implicit submitter is this intent.  It must keep
+            # a held page held: after a reload the file inputs are empty but
+            # the draft still owns the documents that make the form complete.
+            complete = service.completeness(
+                spec,
+                values,
+                set(documents),
+                certification_accepted=certification_accepted,
+                sent_separately=declared,
+            )
+            if complete["can_submit"]:
+                review = _run_review(
+                    request, service, spec, values, resolved,
+                    certification_accepted=certification_accepted,
+                    declared=declared,
+                    uploaded_types=set(documents),
+                    documents=documents,
+                    muse=False,
+                )
+                if review["must_fix"]:
+                    session.commit()
+                    raise _Held(review)
+            session.commit()
+            notice = notice or "Your changes are kept in a draft. Nothing has been submitted."
         else:
             session.commit()
             if intent == "save":

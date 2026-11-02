@@ -193,15 +193,48 @@
     // live check answers again without the assistant.
     var lastNote = "";
     var lastFeedback = {};
+    // Set from the page the server rendered, before any live check.  A check
+    // that cannot see the files (they are empty after a reload) must not
+    // clear a hold the server already showed.
+    var serverHeld = form.getAttribute("data-server-held") === "true";
+    function setDisabled(button, off) {
+      if (!button) { return; }
+      // The property alone is not enough in every browser: a button the
+      // server rendered as disabled stays grey until the attribute is gone.
+      button.disabled = !!off;
+      if (off) { button.setAttribute("disabled", ""); }
+      else { button.removeAttribute("disabled"); }
+    }
+    function showNode(node, on) {
+      if (!node) { return; }
+      node.hidden = !on;
+      if (on) { node.removeAttribute("hidden"); }
+      else { node.setAttribute("hidden", ""); }
+    }
+    function markProvided(data, keepChosenFiles) {
+      // A reload leaves every file input empty.  The copy on the draft, and
+      // a tick for "Sent to the City separately", still counts as provided.
+      form.querySelectorAll("input[type=file]").forEach(function (input) {
+        var type = input.name.replace(/^file__/, "");
+        var row = input.closest(".doc-row");
+        var chosen = !!(input.files && input.files.length);
+        if (!chosen || !keepChosenFiles) { data.delete(input.name); }
+        if (chosen || (row && row.getAttribute("data-added") === "true")) {
+          data.append("have__" + type, "1");
+        }
+        var sep = row && row.querySelector("[data-sent-separately]");
+        if (sep && sep.checked) { data.set("sent_separately__" + type, "on"); }
+      });
+      data.set("sent_separately_posted", "1");
+      var certify = form.querySelector("[name='certification_accepted']");
+      if (certify && certify.checked) { data.set("certification_accepted", "on"); }
+    }
     function refresh() {
       if (!window.fetch || !window.FormData) { return; }
       var data = new FormData(form);
       data.delete("csrf_token");
       if (reviewShown) { data.set("review", "1"); }
-      form.querySelectorAll("input[type=file]").forEach(function (input) {
-        data.delete(input.name);
-        if (input.files && input.files.length) { data.append("have__" + input.name.replace("file__", ""), "1"); }
-      });
+      markProvided(data, false);
       fetch(form.getAttribute("data-check-url"), { method: "POST", body: data, credentials: "same-origin", headers: { Accept: "application/json" } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (state) {
@@ -211,12 +244,13 @@
             statusLine.setAttribute("data-complete", state.can_submit ? "true" : "false");
           }
           renderNeeds(state);
-          if (state.review) { renderReview(state.review); }
+          if (state.review) { renderReview(state.review, state.can_submit); }
         }).catch(function () { /* the server still checks on submit */ });
     }
     // After a refused Submit the errors stay up; each one clears as the person fixes it.
-    // Completeness never disables Submit.  Only a Must fix on a complete application does,
-    // and only after Check my application or a refused Submit.
+    // Completeness alone never disables Submit.  Only a Must fix on a complete
+    // application does, and only after Check my application or a refused Submit.
+    // A check that calls a held application incomplete does not lift that hold.
     function renderNeeds(state) {
       if (!summary) { return; }
       var anchors = {};
@@ -243,7 +277,7 @@
       var why = document.getElementById("submit-anyway-why");
       if (!box || !button) { return; }
       var ready = box.value.trim().length > 0;
-      button.disabled = !ready;
+      setDisabled(button, !ready);
       if (ready) {
         button.removeAttribute("aria-describedby");
         if (why) { why.hidden = true; }
@@ -252,18 +286,22 @@
         if (why) { why.hidden = false; }
       }
     }
+    function bindReason() {
+      var bound = document.getElementById("override-reason");
+      if (!bound || bound.getAttribute("data-bound")) { return; }
+      bound.setAttribute("data-bound", "1");
+      bound.addEventListener("input", syncAnyway);
+      bound.addEventListener("change", syncAnyway);
+    }
     function ensureOverride() {
       // The block is always in the page: the browser only shows it while the
-      // hold is on, so there is one markup and not two.
+      // hold is on, so there is one markup and not two.  Showing it does not
+      // depend on a live check: the server already rendered it for a hold.
       var field = form.querySelector("[data-override-field]");
-      if (field) { field.hidden = false; }
+      showNode(field, true);
       var group = form.querySelector("[data-override-action]");
-      if (group) { group.hidden = false; }
-      var bound = document.getElementById("override-reason");
-      if (bound && !bound.getAttribute("data-bound")) {
-        bound.setAttribute("data-bound", "1");
-        bound.addEventListener("input", syncAnyway);
-      }
+      showNode(group, true);
+      bindReason();
       syncAnyway();
     }
     function holdNotice() {
@@ -284,23 +322,27 @@
       }
       return why;
     }
-    function applyHold(review) {
+    function applyHold(review, canSubmit) {
       if (!submit) { return; }
-      if (review.held) {
-        submit.disabled = true;
+      var hold = !!review.held;
+      // An incomplete answer is not "no longer held".  After a reload the
+      // file inputs are empty; that must not hide the block the server showed.
+      if (!hold && serverHeld && canSubmit === false) { hold = true; }
+      if (hold) {
+        serverHeld = true;
+        setDisabled(submit, true);
         var why = holdNotice();
-        why.hidden = false;
+        showNode(why, true);
         submit.setAttribute("aria-describedby", "submit-held-why");
         ensureOverride();
       } else {
-        submit.disabled = false;
+        serverHeld = false;
+        form.removeAttribute("data-server-held");
+        setDisabled(submit, false);
         submit.removeAttribute("aria-describedby");
-        var heldWhy = document.getElementById("submit-held-why");
-        if (heldWhy) { heldWhy.hidden = true; }
-        var field = form.querySelector("[data-override-field]");
-        if (field) { field.hidden = true; }
-        var group = form.querySelector("[data-override-action]");
-        if (group) { group.hidden = true; }
+        showNode(document.getElementById("submit-held-why"), false);
+        showNode(form.querySelector("[data-override-field]"), false);
+        showNode(form.querySelector("[data-override-action]"), false);
       }
     }
     function groupSection(review, key) {
@@ -323,15 +365,26 @@
         row.textContent = item.sentence || "";
         if (item.feedback) {
           var note = document.createElement("span");
+          note.className = "muse-note";
           note.setAttribute("data-testid", "presubmit-feedback");
-          note.textContent = " " + item.feedback;
+          var badge = document.createElement("span");
+          badge.className = "tour-muse-badge";
+          badge.setAttribute("data-testid", "presubmit-muse-badge");
+          badge.textContent = "Muse";
+          var lead = document.createElement("span");
+          lead.setAttribute("data-testid", "presubmit-muse-lead");
+          lead.textContent = "Muse says:";
+          note.appendChild(badge);
+          note.appendChild(document.createTextNode(" "));
+          note.appendChild(lead);
+          note.appendChild(document.createTextNode(" " + item.feedback));
           row.appendChild(note);
         }
         section.appendChild(row);
       });
       return section;
     }
-    function renderReview(review) {
+    function renderReview(review, canSubmit) {
       var root = form.querySelector("[data-presubmit-root]");
       if (!root) { return; }
       reviewShown = true;
@@ -355,10 +408,20 @@
       if (review.assistant_note) {
         var note = document.createElement("p");
         note.setAttribute("data-testid", "assistant-note");
-        note.textContent = review.assistant_note;
+        var badge = document.createElement("span");
+        badge.className = "tour-muse-badge";
+        badge.setAttribute("data-testid", "presubmit-muse-badge");
+        badge.textContent = "Muse";
+        var lead = document.createElement("span");
+        lead.setAttribute("data-testid", "presubmit-muse-lead");
+        lead.textContent = "Muse says:";
+        note.appendChild(badge);
+        note.appendChild(document.createTextNode(" "));
+        note.appendChild(lead);
+        note.appendChild(document.createTextNode(" " + review.assistant_note));
         root.appendChild(note);
       }
-      applyHold(review);
+      applyHold(review, canSubmit);
     }
     // Read the review the server rendered, so a page that was answered by
     // the server (a refused Submit) asks about the hold again as well.
@@ -374,11 +437,14 @@
       });
     }
     function reviewData() {
-      // The files stay on the request so the assistant can read a text file.
-      // The review path is a read, so this does not spend the upload allowance.
+      // A file the applicant just chose stays on the request so the assistant
+      // can read a text file.  The review path is a read, so this does not
+      // spend the upload allowance.  A file already on the draft is named
+      // instead: the input is empty after a reload.
       var data = new FormData(form);
       data.delete("csrf_token");
       data.set("intent", "review");
+      markProvided(data, true);
       return data;
     }
     function runReview() {
@@ -399,13 +465,20 @@
       event.preventDefault();
       runReview();
     });
-    var existingReason = document.getElementById("override-reason");
-    if (existingReason) {
-      if (!existingReason.getAttribute("data-bound")) {
-        existingReason.setAttribute("data-bound", "1");
-        existingReason.addEventListener("input", syncAnyway);
-      }
-      syncAnyway();
+    // Follow the review the server rendered, before any live check.  A hold
+    // shows the reason and Submit anyway, and Submit application stays off.
+    // Anything else leaves Submit application usable.  The script may disable
+    // Submit anyway until a reason is typed; if this script never runs, the
+    // button stays usable and the form posts the reason.
+    bindReason();
+    if (serverHeld) {
+      setDisabled(submit, true);
+      showNode(document.getElementById("submit-held-why"), true);
+      if (submit) { submit.setAttribute("aria-describedby", "submit-held-why"); }
+      ensureOverride();
+    } else if (submit) {
+      setDisabled(submit, false);
+      submit.removeAttribute("aria-describedby");
     }
     rememberRenderedReview();
     if (summary) { summary.focus(); }

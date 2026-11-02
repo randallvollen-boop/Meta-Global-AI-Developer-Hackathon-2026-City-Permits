@@ -319,3 +319,13 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Every new test was run against the code without its fix, and every one of them failed: the per-job savepoint, the take back of the proposal, the required version of the link, the family guard, the suggested parcel and the refused mode. The files were restored after each check.
 - No live provider call was made. The worker compares with the built in deterministic logic of the City. No fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
 - Final full suite on the finished tree: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2726 passed in 815.58s (13:35). The tree of the lane before this work passed 2718, and the eight tests of this pass are the eight new ones.
+
+## 2026-11-02 — Submit anyway held-form evidence
+
+- Source evidence at `4b502a1`: a rejected submit reloads with empty browser file inputs; its former live `/check` could report incomplete and `held=false`, after which `applyHold` hid the server-rendered override controls. The current stored-document accounting and `serverHeld` guard cover this path.
+- Source evidence in this revision: the hidden first submit button posts `intent=update`; prior server code treated it as a plain draft save and returned no `review`, removing the held markup. The added branch re-evaluates a complete draft deterministically and raises the existing held response when Must fix remains.
+- Added checks: the server test covers the `intent=update` held response; the browser test covers suggestion selection, typing `/check`, stored widget uploads, Enter, the tour route and successful override; unit/integration assertions cover G38 wording, the Muse button badge/hint, live fake-provider feedback attribution and offline wording.
+- `python -m compileall -q src tests/unit/test_portal_form.py tests/integration/test_presubmit.py tests/browser/test_presubmit_browser.py` exited 0. `git diff --check` exited 0.
+- `node --check src/acme_city/static/property.js` exited 0. The required pytest invocation with `--collect-only` collected 46 tests across the changed unit, integration and browser modules in 0.36s.
+- Browser test command was attempted with the required venv and Chromium. It could not launch in this sandbox: Chromium exited at `sandbox_host_linux.cc:41` with `shutdown: Operation not permitted`. It is not recorded as a pass.
+- Focused pytest commands began database migration but did not complete in this sandbox before interruption; they are not recorded as passes. No test assertion was weakened or skipped.

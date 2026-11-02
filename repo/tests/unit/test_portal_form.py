@@ -232,15 +232,40 @@ def test_check_my_application_shows_the_three_groups(client: TestClient) -> None
     assert "Front yard fence is above the 4 ft maximum." in must_fix
     assert "Use 4 or less." in must_fix
     assert "The assistant is offline." in page
+    offline_note = page.split('data-testid="assistant-note"')[1].split("</p>")[0]
+    assert 'data-testid="presubmit-muse-badge">Muse<' in offline_note
+    assert 'data-testid="presubmit-muse-lead">Muse says:<' in offline_note
     submit = re.search(r'<button[^>]*data-testid="submit-application"[^>]*>', page)
     assert submit is not None and "disabled" in submit.group(0)
     assert 'aria-describedby="submit-held-why"' in submit.group(0)
     assert "Fix the items under Must fix, or use Submit anyway." in page
+    # Submit anyway is a plain post.  The page must not disable it: a browser
+    # with no script can type the reason and send it.  The script disables it
+    # until a reason is typed, and the browser tests hold it to that.
     anyway = re.search(r'<button[^>]*data-testid="submit-anyway"[^>]*>', page)
-    assert anyway is not None and "disabled" in anyway.group(0)
+    assert anyway is not None and "disabled" not in anyway.group(0)
     assert 'aria-describedby="submit-anyway-why"' in anyway.group(0)
-    assert "Enter why submit now." in page
+    assert "Write why you are submitting now." in page
     assert "Why submit now" in page
+    reason_label = page.split('for="override-reason"')[1].split("</label>")[0]
+    assert 'data-testid="required-star"' in reason_label
+    assert "Required to use Submit anyway." in page
+    assert 'data-server-held="true"' in page
+    field = re.search(r'<div class="override-field"[^>]*>', page)
+    assert field is not None and "hidden" not in field.group(0), field
+    action = re.search(r'<span class="submit-anyway"[^>]*>', page)
+    assert action is not None and "hidden" not in action.group(0), action
+
+
+def test_check_my_application_names_muse_and_its_boundary(client: TestClient) -> None:
+    """The optional review says what Muse does without sending a submission."""
+    page = client.get(f"/apply/{TYPE_KEY}").text
+    button = page.split('data-testid="check-application"')[1].split("</button>")[0]
+    assert 'data-testid="check-application-muse-badge">Muse<' in button
+    assert (
+        "Muse reviews your answers and documents and explains what to change. "
+        "Nothing is sent to the City."
+    ) in page
 
 
 def test_the_first_page_has_no_presubmit_panel(client: TestClient) -> None:
