@@ -27,7 +27,7 @@ A permit passes through many hands, and the facts about it sit in several system
 
 Who it helps:
 
-* **Applicants** apply, save a draft, upload documents, answer a request for information, track the case, and read the messages from the City.
+* **Applicants** apply, save a draft, press "Check my application", upload documents, answer a request for information, track the case, and read the messages from the City.
 * **Agent operators** wake the intake and adjudication agents and run them over the waiting cases.
 * **Data stewards** clear the findings that block a case and keep the master records consistent.
 * **Permit reviewers** check the facts against the City rules and record the decision.
@@ -44,6 +44,7 @@ Muse is the model inside the application.
 * It writes a cited answer for the applicant's help chat.
 * It explains a policy scenario and writes a policy briefing.
 * It explains a steward recommendation in plain words.
+* It explains the "Check my application" result in plain words when live.
 * It generates the fictional permit type icons through a governed administrator action.
 
 Every proposal is checked against a strict schema, recorded with its source and its usage, and decided by a named person. The model never approves a permit, never sets a fee, and never issues a permit.
@@ -56,7 +57,7 @@ Open https://acme-city-permits.onrender.com. The landing page lists the five per
 
 On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. The landing page has its own "Take the tour" button in the line of guides.
 
-The guided walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It takes about ten minutes, and every step names the persona and the screen.
+The walkthrough is at https://acme-city-permits.onrender.com/walkthrough. It has four paths, and each path has a guided tour and "Auto-play". "Get the café open" is the main journey: the Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record. "Start fresh" gives each judge a fresh copy of the café case. The other paths are "Apply as a resident", "Run the city", and "Before you start".
 
 What the demonstration has now:
 
@@ -69,11 +70,14 @@ What the demonstration has now:
 
 How to try it:
 
-1. As Applicant, start a "Residential deck or fence" application, save it, submit it, and open the tracker.
-2. As Agent Operator, open "Agents", press "Wake agent" on the intake agent, the adjudication agent, and the steward assistant, then run the intake agent on a waiting case and the adjudication agent on that case.
-3. As Data Steward, open "Data issues", press "Prepare recommendations", read the evidence behind each proposal, and accept one with "Accept recommendation".
-4. As Permit Reviewer, open the "Review queue", open the case, press "Run application checks", and record the decision with "Record review decision".
-5. As City Administrator, open "Planning overview", "Operations dashboard", and "Audit log", and try a what-if policy scenario.
+1. Open the walkthrough. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour.
+2. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
+3. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
+4. As Permit Reviewer, open the case from the "Review queue", press "Start" under "Confirm parcel" on the "People and organizations" tab, press "Start" under "Run application checks", then press "Start" under "Record review decision" and choose "Approve".
+5. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
+6. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
+
+On "Apply as a resident", press "Check my application". That runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
 
 The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
 
@@ -99,6 +103,8 @@ Production behaviour:
 * Waiting agent work sits in a durable queue. A run records each of its nodes.
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries by itself, labels live and recorded results, and cannot approve, price, or issue a permit.
 * Live Muse calls have a daily cap, and icon generation has its own daily cap.
+* The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case.
+* "Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
 
 Architecture:
 
