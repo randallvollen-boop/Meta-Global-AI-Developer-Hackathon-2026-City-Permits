@@ -602,6 +602,34 @@ class ParcelMatchService:
             return None
         return self._session.get(registry.Parcel, match.parcel_id) if match.parcel_id else None
 
+    def approved_parcel(self, application_id: str) -> registry.Parcel | None:
+        """Return the parcel the Data Steward approved, or ``None``.
+
+        The approved link is the property the City resolved for the case: the
+        Data Steward compared the address the applicant typed with the parcel
+        of the locator and approved that link.  The Permit Reviewer confirms
+        the parcel afterwards, before the decision; until then the case keeps
+        the blocker ``parcel_unconfirmed``.
+        """
+        match = self.for_application(application_id)
+        if match is None or match.link_state != MATCH_APPROVED:
+            return None
+        return self._session.get(registry.Parcel, match.parcel_id) if match.parcel_id else None
+
+    def parcel_confirmed(self, application_id: str) -> bool:
+        """Return whether the Data Steward confirmed the property of the case.
+
+        A case that carries no parcel match has no property to wait for, so
+        nothing holds it.  A case with a match waits for the Data Steward to
+        approve the link the address locator proposed: the parcel inputs
+        (zoning, flood zone) are read from that parcel, so until it is
+        approved the case is not evaluated on the whole rule set.
+        """
+        match = self.for_application(application_id)
+        if match is None:
+            return True
+        return match.link_state == MATCH_APPROVED
+
 
 __all__ = [
     "AMBIGUOUS_MESSAGE",

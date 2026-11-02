@@ -22,7 +22,7 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.portal_intake.scenarios import build_scenario
 from acme_city.persistence.models import agent as agent_models
-from acme_city.persistence.models import permit
+from acme_city.persistence.models import gis, permit
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -125,6 +125,37 @@ def application_row(settings, application_id: str) -> dict:
             }
     finally:
         factory.dispose()
+
+
+def parcel_match_row(settings, application_id: str) -> gis.ApplicationParcelMatch:
+    """Return the parcel match of one case."""
+    factory = SessionFactory(settings.database_url)
+    try:
+        with factory() as session:
+            return session.execute(
+                select(gis.ApplicationParcelMatch).where(
+                    gis.ApplicationParcelMatch.application_id == application_id
+                )
+            ).scalar_one()
+    finally:
+        factory.dispose()
+
+
+def approve_parcel_link(client: TestClient, settings, application_id: str) -> None:
+    """The Data Steward confirms the parcel the address locator proposed."""
+    choose(client, "persona_data_steward")
+    result = act(
+        client,
+        "parcel.link.decide",
+        {
+            "application_id": application_id,
+            "decision": "approve",
+            "expected_version": str(parcel_match_row(settings, application_id).version),
+            "reason": "the corrected address falls inside this parcel",
+        },
+        "/steward",
+    )
+    assert result["status"] == "accepted", result
 
 
 def test_intake_portal_is_registered_and_shows_in_governance(client: TestClient) -> None:
@@ -347,6 +378,10 @@ def test_the_adjudication_agent_recommends_deny_and_approve(
     choose(client, "persona_agent_operator")
     act(client, "agent.run.intake", {"application_id": front["application_id"]}, "/agent/intake")
     act(client, "agent.run.intake", {"application_id": rear["application_id"]}, "/agent/intake")
+    # The Data Steward confirms the parcel of both cases: the parcel inputs
+    # come from the parcel the steward confirms.
+    approve_parcel_link(client, environment, front["application_id"])
+    approve_parcel_link(client, environment, rear["application_id"])
 
     wake(client, "adjudication")
     choose(client, "persona_agent_operator")
@@ -386,6 +421,85 @@ def test_the_adjudication_agent_recommends_deny_and_approve(
             assert "DF-2" in (rear_rec.rationale or "")
             # The rationale cites each rule once.
             assert (rear_rec.rationale or "").count("DF-2") == 1
+    finally:
+        factory.dispose()
+
+
+def test_the_adjudication_agent_waits_for_the_steward_while_the_parcel_is_unconfirmed(
+    client: TestClient, environment
+) -> None:
+    """An unresolved property is not a case the agent may recommend on.
+
+    The parcel inputs (zoning, flood zone) come from the parcel the Data
+    Steward confirms.  While the link the address locator proposed is not
+    confirmed, the agent does not recommend approval: it holds the case and
+    the case waits for the Data Steward.
+    """
+    choose(client, "persona_data_steward")
+    (rear,) = simulate(client, "fence-conforming-rear")
+    application_id = rear["application_id"]
+    wake(client, "intake")
+    choose(client, "persona_agent_operator")
+    act(client, "agent.run.intake", {"application_id": application_id}, "/agent/intake")
+    wake(client, "adjudication")
+    choose(client, "persona_agent_operator")
+    act(
+        client,
+        "agent.run.adjudication",
+        {"application_id": application_id},
+        "/agent/adjudication",
+    )
+
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            recommendation = session.execute(
+                select(permit.Recommendation).where(
+                    permit.Recommendation.application_id == application_id,
+                    permit.Recommendation.status == "pending",
+                )
+            ).scalar_one()
+            assert recommendation.proposed_outcome == "hold"
+            assert (
+                "Cannot recommend yet: the parcel is not confirmed. "
+                "Waiting on Data Steward." in (recommendation.rationale or "")
+            )
+    finally:
+        factory.dispose()
+
+    # The case waits for the Data Steward, and the page says so.
+    choose(client, "persona_permit_reviewer")
+    page = client.get(f"/permits/{application_id}").text
+    assert 'data-testid="recommendation-outcome">Hold<' in page
+    assert "Waiting on Data Steward" in page
+
+    # Once the steward confirms the parcel, a re-run evaluates all the rules.
+    approve_parcel_link(client, environment, application_id)
+    choose(client, "persona_agent_operator")
+    act(
+        client,
+        "agent.run.adjudication",
+        {"application_id": application_id},
+        "/agent/adjudication",
+    )
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            recommendation = session.execute(
+                select(permit.Recommendation).where(
+                    permit.Recommendation.application_id == application_id,
+                    permit.Recommendation.status == "pending",
+                )
+            ).scalar_one()
+            assert recommendation.proposed_outcome == "approve"
+            assert "DF-2" in (recommendation.rationale or "")
+            evaluation = session.execute(
+                select(permit.Evaluation).where(
+                    permit.Evaluation.application_id == application_id,
+                    permit.Evaluation.status == "current",
+                )
+            ).scalar_one()
+            assert [row["rule_id"] for row in evaluation.results or []] == ["DF-2"]
     finally:
         factory.dispose()
 

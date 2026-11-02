@@ -61,6 +61,7 @@ from acme_city.policy.loader import (
     CARRIED_FINDING_RULES,
     case_input_from_application,
     current_applications_population,
+    parcel_confirmed,
 )
 from acme_city.rules import catalog
 from acme_city.ui.router import router as ui_router
@@ -323,7 +324,12 @@ def test_the_intake_and_adjudication_agents_agree_with_the_pure_kernel(client, e
             ]
             # Findings of the outside-world steps are frozen inputs of the case.
             carried = [r for r in rows if r.rule in CARRIED_FINDING_RULES]
-            case = intake_case_with(before[app_id], carried)
+            # The state of the parcel link is an outside-world fact of the
+            # case, like the findings of the locator: it is read after the
+            # agents ran, so the kernel sees the property the agent saw.
+            case = intake_case_with(
+                before[app_id], carried, parcel_confirmed=parcel_confirmed(session, app_id)
+            )
             outcome = evaluate_case(case, config, rules_at="case")
             produced = [r for r in rows if r.rule not in CARRIED_FINDING_RULES and r.source_node != "adjudication"
                         and not _is_adjudication_finding(r)]
@@ -351,7 +357,7 @@ def _is_adjudication_finding(row) -> bool:
     return row.rule in {"ACME Code §13-601", "ACME Code §13-602", "ACME Code §13-604"}
 
 
-def intake_case_with(case, carried_rows):
+def intake_case_with(case, carried_rows, parcel_confirmed=True):
     import dataclasses
 
     from acme_city.kernel.findings import FindingSpec
@@ -361,6 +367,7 @@ def intake_case_with(case, carried_rows):
         carried_findings=tuple(
             FindingSpec(r.finding_type, r.message, r.rule, r.applicant_must, r.severity,
                         r.related_application_id) for r in carried_rows),
+        parcel_confirmed=parcel_confirmed,
     )
 
 

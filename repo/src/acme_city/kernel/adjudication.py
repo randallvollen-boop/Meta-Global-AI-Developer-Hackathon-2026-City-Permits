@@ -26,6 +26,15 @@ OUTCOME_APPROVE = "approve"
 HOLD_DISCRETIONARY = "discretionary"
 HOLD_NO_RULES = "no_rules"
 HOLD_RULE_REVIEW = "rule_review"
+HOLD_PARCEL_UNCONFIRMED = "parcel_unconfirmed"
+
+#: What the agent says while the Data Steward has not confirmed the parcel.
+#: The parcel inputs (zoning, flood zone) are read from the parcel the Data
+#: Steward confirms, so a case whose property is still unresolved cannot be
+#: recommended on.
+PARCEL_UNCONFIRMED_REASON = (
+    "Cannot recommend yet: the parcel is not confirmed. Waiting on Data Steward."
+)
 
 
 def hold_findings(
@@ -91,12 +100,14 @@ def disposition(
     results: Iterable[Mapping[str, Any]],
     conditions: Iterable[str],
     precedent_outcome: str | None = None,
+    parcel_confirmed: bool = True,
 ) -> Disposition:
     """Choose the recommendation for a case.
 
     A discretionary type is held, a type without a rule is held, a result that
-    needs judgement holds the case, any failure recommends denial, any
-    condition recommends approval with conditions, else approval.
+    needs judgement holds the case, any failure recommends denial, a case whose
+    parcel the Data Steward has not confirmed is held, any condition recommends
+    approval with conditions, else approval.
     """
     rows = list(results)
     condition_list = list(conditions)
@@ -124,6 +135,14 @@ def disposition(
     elif failing:
         outcome = OUTCOME_DENY
         reason = f"Rule(s) {', '.join(failing)} fail, so the agent recommends denial."
+    elif not parcel_confirmed:
+        # The parcel inputs (zoning, flood zone) come from the parcel the Data
+        # Steward confirms.  Until the steward confirms the property, the case
+        # is not evaluated on the whole rule set, so the agent does not
+        # recommend approval; it waits for the steward.
+        outcome = OUTCOME_HOLD
+        hold_reason = HOLD_PARCEL_UNCONFIRMED
+        reason = PARCEL_UNCONFIRMED_REASON
     elif condition_list:
         outcome = OUTCOME_CONDITIONS
         reason = (
@@ -141,11 +160,13 @@ def disposition(
 __all__ = [
     "HOLD_DISCRETIONARY",
     "HOLD_NO_RULES",
+    "HOLD_PARCEL_UNCONFIRMED",
     "HOLD_RULE_REVIEW",
     "OUTCOME_APPROVE",
     "OUTCOME_CONDITIONS",
     "OUTCOME_DENY",
     "OUTCOME_HOLD",
+    "PARCEL_UNCONFIRMED_REASON",
     "Disposition",
     "conditions_of",
     "disposition",

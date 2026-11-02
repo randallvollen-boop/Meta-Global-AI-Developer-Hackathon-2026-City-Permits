@@ -176,6 +176,7 @@ def evaluate_case(
         results=result_rows,
         conditions=conditions,
         precedent_outcome=case.precedent_outcome,
+        parcel_confirmed=case.parcel_confirmed,
     )
     return CaseOutcome(
         case_ref=case.case_ref,

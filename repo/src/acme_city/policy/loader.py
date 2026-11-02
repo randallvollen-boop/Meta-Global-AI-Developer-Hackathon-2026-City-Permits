@@ -46,6 +46,18 @@ CARRIED_FINDING_RULES: frozenset[str] = frozenset(
 _NOT_CURRENT = frozenset({"draft", "archived", "returned"})
 
 
+def parcel_confirmed(session: Session, application_id: str) -> bool:
+    """Return whether the Data Steward confirmed the property of the case.
+
+    The rule is the one the adjudication agent uses, read from the same
+    place: the parcel link the address locator proposed is the Data Steward's
+    to confirm.
+    """
+    from acme_city.gis.matching import ParcelMatchService
+
+    return ParcelMatchService(session).parcel_confirmed(application_id)
+
+
 def case_input_from_application(
     session: Session,
     application: permit.Application,
@@ -109,6 +121,7 @@ def case_input_from_application(
                 else None
             ),
             parcel_inputs=permits.parcel_inputs(application),
+            parcel_confirmed=parcel_confirmed(session, application.id),
             duplicate_of=(
                 None if duplicate is None else (duplicate.id, duplicate.source_application_number)
             ),

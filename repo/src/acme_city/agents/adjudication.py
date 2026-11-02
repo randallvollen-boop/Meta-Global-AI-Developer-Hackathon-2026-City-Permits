@@ -22,6 +22,7 @@ record.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -138,11 +139,13 @@ class AdjudicationAgent:
         # had, and the attempt is recorded as failed, so a person sees what
         # happened and a retry starts from the same revision.
         with self._session.begin_nested():
-            rules = self._node_rule_loader(run, application, findings)
+            loaded = self._node_rule_loader(run, application, findings)
             results = self._node_rule_evaluator(run, application, actor)
             conditions = self._node_condition_builder(run, results)
             precedent = self._node_precedent_check(run, application, findings)
-            self._node_disposition(run, application, rules, results, conditions, precedent)
+            self._node_disposition(
+                run, application, loaded, results, conditions, precedent
+            )
 
             run.finished_at = utc_now()
             self._session.flush()
@@ -225,8 +228,14 @@ class AdjudicationAgent:
         run: agent_models.AgentRun,
         application: permit.Application,
         findings: FindingWriter,
-    ) -> list[LoadedRule]:
-        """Find the published rules of the permit type."""
+    ) -> LoadedRules:
+        """Find the published rules of the permit type.
+
+        The loader also reports the state of the property of the case.  The
+        parcel inputs (zoning, flood zone) are read from the parcel the Data
+        Steward confirms, so a case whose property is still waiting for the
+        steward is not a case the agent may recommend on.
+        """
         node = graphs.ADJUDICATION_GRAPH[0]
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
@@ -253,9 +262,20 @@ class AdjudicationAgent:
         from acme_city.gis.matching import ParcelMatchService
 
         parcel_service = ParcelMatchService(self._session, now=self._now)
+        # A case without a locator match keeps the behaviour of the seeded
+        # demonstration cases: there is no parcel to wait for.
+        parcel_confirmed = parcel_service.parcel_confirmed(application.id)
         if parcel_service.for_application(application.id) is not None:
+            approved = parcel_service.approved_parcel(application.id)
             confirmed = parcel_service.confirmed_parcel(application.id)
-            if confirmed is not None:
+            if approved is None:
+                # The Data Steward has not confirmed the property yet.
+                status = "warn"
+                notes.append(
+                    "The parcel link has not been confirmed by the Data Steward yet, "
+                    "so the parcel inputs (zoning, flood zone) were not used."
+                )
+            elif confirmed is not None:
                 notes.append(
                     f"Parcel inputs come from the confirmed parcel {confirmed.source_parcel_number}: "
                     f"zoning {confirmed.zoning_code}, flood zone {confirmed.flood_zone}."
@@ -264,7 +284,9 @@ class AdjudicationAgent:
                 status = "warn"
                 notes.append(
                     "Parcel inputs (zoning, flood zone) are read from the confirmed parcel "
-                    "only. The parcel is not confirmed yet, so none were used."
+                    f"only. The Data Steward confirmed the parcel link "
+                    f"{approved.source_parcel_number}; the Permit Reviewer confirms the "
+                    "parcel before the decision, so none were used."
                 )
         if permit_type.discretionary:
             status = "warn"
@@ -282,7 +304,7 @@ class AdjudicationAgent:
             )
         )
         self._finish(run, row, status=status, note=" ".join(notes))
-        return rules
+        return LoadedRules(rules=rules, parcel_confirmed=parcel_confirmed)
 
     def _node_rule_evaluator(
         self,
@@ -413,7 +435,7 @@ class AdjudicationAgent:
         self,
         run: agent_models.AgentRun,
         application: permit.Application,
-        rules: list[LoadedRule],
+        loaded: LoadedRules,
         results: list[dict[str, Any]],
         conditions: list[str],
         precedent: dict[str, Any] | None,
@@ -423,6 +445,7 @@ class AdjudicationAgent:
         row = self._begin(run, node)
         permits = PermitService(self._session, now=self._now)
         permit_type = permits.permit_type(application)
+        rules = loaded.rules
         explicit_units = {rule.rule_id: rule.unit for rule in rules if rule.unit}
         units: dict[str, str] = {}
         for result in results:
@@ -441,20 +464,21 @@ class AdjudicationAgent:
             results=results,
             conditions=conditions,
             precedent_outcome=None if precedent is None else str(precedent["outcome"]),
+            parcel_confirmed=loaded.parcel_confirmed,
         )
         outcome = chosen.outcome
         reason = chosen.reason
 
         # A pending recommendation of an earlier run is superseded, so the
         # case never carries two live recommendations.
-        for row in self._session.execute(
+        for previous in self._session.execute(
             select(permit.Recommendation).where(
                 permit.Recommendation.application_id == application.id,
                 permit.Recommendation.status == STATUS_PENDING,
             )
         ).scalars().all():
-            row.status = "superseded"
-            row.version += 1
+            previous.status = "superseded"
+            previous.version += 1
 
         recommendation = permit.Recommendation(
             id=new_id("rec"),
@@ -527,6 +551,21 @@ class LoadedRule:
         self.unit = unit
 
 
+@dataclass(frozen=True)
+class LoadedRules:
+    """What the rule loader found for one case.
+
+    The rules are the published rules of the permit type.  ``parcel_confirmed``
+    says whether the Data Steward confirmed the property of the case: the
+    parcel inputs (zoning, flood zone) are read from that parcel, so a case
+    whose parcel is still waiting for the steward is not evaluated on the
+    whole rule set.
+    """
+
+    rules: list[LoadedRule]
+    parcel_confirmed: bool = True
+
+
 __all__ = [
     "ADJUDICATION_AGENT_ID",
     "OUTCOME_APPROVE",
@@ -539,4 +578,5 @@ __all__ = [
     "STATUS_SUPERSEDED",
     "AdjudicationAgent",
     "LoadedRule",
+    "LoadedRules",
 ]

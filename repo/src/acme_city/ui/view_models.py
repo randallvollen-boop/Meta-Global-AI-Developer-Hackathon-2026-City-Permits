@@ -1046,6 +1046,9 @@ def denied_action_explanations(actions: list[dict[str, Any]]) -> list[dict[str, 
     ]
 
 
+#: The next action of a case whose parcel link waits for the Data Steward.
+WAITING_ON_STEWARD = "Waiting on Data Steward"
+
 #: The grant a persona holds to create the sample cases of the demonstration.
 SAMPLE_DATA_PERMISSION = "config.manage"
 
@@ -2545,6 +2548,19 @@ def _application_step(
     return 0, "current"
 
 
+def _blocker_action(blockers: list[dict[str, str]]) -> str:
+    """Return the plain next action of the blockers of one application.
+
+    The parcel link of a case is the Data Steward's decision, so a case whose
+    link the locator proposed and the steward has not approved yet waits for
+    the steward instead of naming a technical blocker.
+    """
+    codes = [blocker["code"] for blocker in blockers]
+    if "parcel_link_unapproved" in codes:
+        return WAITING_ON_STEWARD
+    return f"Resolve {codes[0].replace('_', ' ')}"
+
+
 def _next_action(
     session: Session,
     actor: ActorContext,
@@ -2566,12 +2582,12 @@ def _next_action(
         return "Waiting for the applicant's answer"
     if application.status == "needs_information":
         if blockers:
-            return f"Resolve {blockers[0]['code'].replace('_', ' ')}"
+            return _blocker_action(blockers)
         if allows(session, actor, "permit.case.advance", "permits"):
             return "Advance the case to review"
         return "Waiting for the Data Steward"
     if blockers:
-        return f"Resolve {blockers[0]['code'].replace('_', ' ')}"
+        return _blocker_action(blockers)
     if evaluation is None:
         if application.status == "submitted" and application.scenario_id is None:
             return "Waiting for the intake agent"
