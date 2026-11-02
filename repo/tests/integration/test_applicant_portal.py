@@ -256,6 +256,9 @@ def test_check_endpoint_mirrors_the_server_answer(client) -> None:
     located = client.get("/apply/locate", params={"text": "412 Mapel Rdg Dr"}).json()
     assert located["found"] and located["parcel_number"] == "ACME-P-1004"
     assert "Did you mean 412 Maple Ridge Drive" in located["message"]
+    exact = client.get("/apply/locate", params={"text": "401 Lantern Row, ACME City"}).json()
+    assert exact["exact"] and not exact["ambiguous"], exact
+    assert exact["message"] == "Found: 401 Lantern Row, ACME City. Parcel ACME-P-1031."
     assert client.get("/apply/suggest", params={"text": "412 Map"}).json()["suggestions"]
 
 

@@ -476,6 +476,17 @@ class PortalService:
         ]
         strong = [item for item in candidates if item.score >= 90]
         parcel_number = parcel.parcel_number if parcel else ""
+        exact = top.address.lower().startswith(text.lower().split(",")[0].strip())
+        ambiguous = len(strong) != 1
+        parcel_note = f" Parcel {parcel.parcel_number}." if parcel else ""
+        if exact and not ambiguous:
+            # An exact, single match is a confirmation, not a question.  The
+            # street and town are enough; the locator's state and postal code
+            # read as noise to an applicant.
+            shown = ", ".join(part.strip() for part in top.address.split(",")[:2])
+            message = f"Found: {shown}.{parcel_note}"
+        else:
+            message = f"Did you mean {top.address}?{parcel_note}"
         return {
             "found": True,
             "address": top.address,
@@ -484,14 +495,10 @@ class PortalService:
             "parcel_number": parcel_number,
             "parcel_matched": bool(parcel_number),
             "locator_available": True,
-            "exact": top.address.lower().startswith(text.lower().split(",")[0].strip()),
-            "ambiguous": len(strong) != 1,
+            "exact": exact,
+            "ambiguous": ambiguous,
             "alternatives": alternatives,
-            "message": (
-                f"Did you mean {top.address}? Parcel {parcel.parcel_number}."
-                if parcel
-                else f"Did you mean {top.address}?"
-            ),
+            "message": message,
         }
 
     # ------------------------------------------------------------------ drafts
