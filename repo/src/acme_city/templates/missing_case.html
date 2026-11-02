@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel card" aria-labelledby="missing-case-heading" data-case-missing="true" data-testid="missing-case">
+  <div class="card-b">
+    <h1 id="missing-case-heading">This case is no longer here</h1>
+    <p>The demonstration data was reset, so this copy of the case is gone.</p>
+    <p class="actions">
+      {% if fresh.permitted %}
+      <form method="post" action="{{ fresh.url }}">
+        <input type="hidden" name="csrf_token" value="{{ judge.csrf_token }}">
+        <button type="submit" class="button btn primary" data-testid="missing-case-start-fresh">{{ fresh.label }}</button>
+      </form>
+      {% else %}
+      <button type="button" class="button btn primary" data-testid="missing-case-start-fresh" disabled aria-describedby="missing-case-fresh-note">{{ fresh.label }}</button>
+      {% endif %}
+      <a class="button btn ghost" href="/walkthrough" data-testid="missing-case-walkthrough">Back to the walkthrough</a>
+    </p>
+    {% if not fresh.permitted %}
+    <p class="muted" id="missing-case-fresh-note">{{ fresh.reason }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

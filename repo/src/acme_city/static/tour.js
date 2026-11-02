@@ -90,6 +90,14 @@
     }
   }
 
+  /* A per-visitor café copy can disappear when the demonstration data is
+     reset. Do not resume the saved tour into that missing case. */
+  function clearMissingCaseState() {
+    if (!document.body || document.body.getAttribute("data-case-missing") !== "true") return false;
+    clearState();
+    return true;
+  }
+
   /* The state of the tour is written whenever it changes, so the next screen
      finds the tour where it was left, playing or paused. */
   function persist() {
@@ -773,6 +781,7 @@
   function init() {
     if (bound) return;
     bound = true;
+    if (clearMissingCaseState()) return;
     ensureStyles();
     bindStarters();
     window.addEventListener("scroll", follow, { passive: true });

@@ -440,6 +440,11 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Refused, denied, and error last-action results render visible before JavaScript and are opened automatically; accepted results remain behind the bell. No rule text, fixture, hash, acceptance outcome, persona, or permission changed.
 - `node --check` passed for `static/app.js` and `static/property.js`; `compileall` passed for the changed Python/test scope; focused collection found 86 tests. Focused pytest execution did not complete in this sandbox and browser execution remains unavailable, so neither is recorded as a pass.
 
+## 2026-11-02 — Missing café tour-case recovery
+
+- A reset café copy now receives a normal 404 recovery page from `/permits/{application_id}` only when the application is absent. It offers the existing Start fresh flow and a walkthrough return; a real case outside the persona's scope retains the ordinary indistinguishable 404.
+- The recovery response removes the matching HTTP-only café-copy cookie, and `tour.js` discards its persisted session state when the page marks the missing case. No provider, fixture, rule, persona, grant, or acceptance arithmetic changed.
+
 ## 2026-11-02 — Submit anyway held form, G38 and G39
 
 - Traced the reported loss of the override panel across the server-rendered held form, `property.js`, `/apply/{type}/check`, and the implicit `intent=update` submitter. The prior commit `4b502a1` already preserves stored draft documents on a reload and treats a server-rendered hold as authoritative while a live `/check` reports an incomplete file control.

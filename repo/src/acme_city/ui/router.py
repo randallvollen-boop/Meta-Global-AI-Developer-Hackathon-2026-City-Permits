@@ -67,6 +67,7 @@ from acme_city.governance.schemas import (
 from acme_city.governance.service import GovernanceService
 from acme_city.muse.image_client import IMAGE_COST_ESTIMATE_USD
 from acme_city.persistence.models import finance as finance_models
+from acme_city.persistence.models import permit as permit_models
 from acme_city.permits import icons as permit_icons
 from acme_city.permits import queues
 from acme_city.permits.decisions import PermitDecisionCommand
@@ -398,6 +399,38 @@ def error_response(
         },
     }
     return render(request, "base.html", context, status_code=status_code)
+
+
+def missing_case_response(
+    request: Request,
+    session: Session,
+    actor: ActorContext,
+    application_id: str,
+) -> Any:
+    """Recover the tour when its per-visitor café copy was reset.
+
+    This is deliberately limited to an absent application.  A real case that
+    falls outside the actor's scope still uses the ordinary indistinguishable
+    not-found response.
+    """
+    from acme_city.ui import guide_views, judge
+
+    visitor = judge.page_context(request)
+    context = page_context(
+        request,
+        session,
+        actor,
+        screen="permit",
+        title="This case is no longer here",
+        case_missing=True,
+        fresh=guide_views.fresh_copy_context(session),
+        judge=visitor,
+    )
+    response = render(request, "missing_case.html", context, status_code=404)
+    judge.attach(response, request, visitor)
+    if judge.copy_case_id(request) == application_id:
+        judge.forget_copy(response, request)
+    return response
 
 
 # ------------------------------------------------------------------ persona
@@ -747,6 +780,8 @@ def ui_permit_workspace(
         return_from=request.query_params.get("from"),
     )
     if not detail:
+        if session.get(permit_models.Application, application_id) is None:
+            return missing_case_response(request, session, resolved, application_id)
         return error_response(
             request,
             session,

@@ -101,6 +101,16 @@ def remember_copy(response: Response, request: Request, application_id: str) -> 
     set_cookie(response, request, CASE_COOKIE, application_id)
 
 
+def forget_copy(response: Response, request: Request) -> None:
+    """Forget a café copy that no longer exists in the demonstration."""
+    response.delete_cookie(
+        CASE_COOKIE,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+        path="/",
+    )
+
+
 def expected_tokens(settings: Settings, request: Request, actor: ActorContext | None) -> tuple[str, ...]:
     """Return the tokens a write of the visitor may carry."""
     from acme_city.ui.router import csrf_token
@@ -154,6 +164,7 @@ __all__ = [
     "attach",
     "copy_case_id",
     "expected_tokens",
+    "forget_copy",
     "judge_id",
     "judge_token",
     "new_judge_id",

@@ -336,3 +336,10 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - Source inspection: held-form hints were flex children, making their wrappers determine the desktop row height and width. They are below the row now, and both related controls retain their `aria-describedby` links.
 - Source inspection: feedback markup hid every persisted outcome, so non-success feedback depended on script timing. Refused, denied, and error results now render visible; the existing client opens each non-success outcome once per audit event.
 - Local checks: `node --check src/acme_city/static/app.js`; `node --check src/acme_city/static/property.js`; and `python -m compileall -q src tests/unit/test_portal_form.py tests/unit/test_stylesheet_scopes.py tests/integration/test_presubmit.py` exited 0. The focused `pytest --collect-only` command collected 86 tests. Focused test execution and browser tests did not complete in this sandbox, so no test-pass claim is made.
+
+## 2026-11-02 — Missing café tour-case recovery evidence
+
+- Root cause: `/permits/{application_id}` used the generic not-found renderer for both an absent application and a real application outside the current persona's scope. The tour then resumed from its persisted state while the HTTP-only café-copy cookie continued to supply the deleted ID.
+- Regression check before the implementation: `uv run pytest tests/integration/test_missing_tour_case.py -q` failed because the generic response had no `data-case-missing` marker. After the implementation, `uv run pytest tests/integration/test_missing_tour_case.py tests/api/test_pages.py tests/integration/test_walkthrough_routes.py tests/unit/test_tour.py -q` passed: 57 passed in 12.31s.
+- `uv run python -m py_compile tests/browser/test_missing_tour_case_browser.py` exited 0. The browser regression is not recorded as passed because this sandbox cannot run browser tests.
+- Final full non-browser verification: `uv run pytest tests/acceptance tests/api tests/evaluator tests/integration tests/regression tests/scenarios tests/security tests/supplementary tests/ui tests/unit -q -n auto` passed: 3237 passed in 77.76s.
