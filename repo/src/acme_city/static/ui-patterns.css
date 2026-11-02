@@ -51,7 +51,8 @@ html.ui-js .ui-info-fallback { display: none; }
 
 /* -------------------------------------------------------------- P3 drawer */
 .ui-drawer {
-  position: fixed; z-index: var(--z-drawer); right: 0; width: var(--ui-drawer-w); max-width: 100vw;
+  position: fixed; z-index: var(--z-drawer); right: 0;
+  box-sizing: border-box; width: var(--ui-drawer-w); max-width: calc(100% - 16px);
   top: var(--ui-clear-top); bottom: var(--ui-clear-bottom);
   background: var(--surface, #fff); color: var(--fg, #142230);
   border: 1px solid var(--line, #dde3e9); border-right: 0; border-radius: 12px 0 0 12px;
@@ -98,7 +99,7 @@ html.ui-js .ui-info-fallback { display: none; }
 /* Narrow screens: a full-width sheet.  The top and bottom bands stay free for
    the toasts and for the mobile navigation. */
 @media (max-width: 640px) {
-  .ui-drawer { width: 100vw; border-radius: 12px 12px 0 0; border: 1px solid var(--line, #dde3e9); border-left: 0; }
+  .ui-drawer { width: 100%; max-width: 100%; left: 0; border-radius: 12px 12px 0 0; border: 1px solid var(--line, #dde3e9); border-left: 0; }
   .ui-drawer-section dl > div { grid-template-columns: 1fr; gap: 2px; }
 }
 @media (prefers-reduced-motion: no-preference) {

@@ -4,7 +4,7 @@
 .nav-more { margin-top: 4px; }
 .nav-more-summary {
   display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px;
-  color: var(--fg-3); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--fg-2); font-size: .64rem; letter-spacing: normal;
   cursor: pointer; list-style: none;
 }
 .nav-more-summary::-webkit-details-marker { display: none; }
@@ -20,7 +20,7 @@
 .nav-more-mobile { flex: 1 0 auto; margin-top: 0; }
 .nav-more-mobile > .nav-more-summary {
   display: grid; justify-items: center; gap: 2px; padding: 5px 8px;
-  font-size: .64rem; text-transform: none; letter-spacing: 0; color: var(--fg-3);
+  font-size: .64rem; letter-spacing: normal; color: var(--fg-2);
 }
 .nav-more-mobile > .nav-more-summary::after { content: none; }
 .nav-more-mobile > .nav-more-summary svg { width: 18px; height: 18px; }
@@ -39,4 +39,4 @@
 }
 .nav-more-panel svg { width: 18px; height: 18px; }
 .nav-more-panel a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
-.nav-more-panel .nav-disabled { opacity: .45; }
+.nav-more-panel .nav-disabled { background: var(--surface-2); color: var(--fg-2); opacity: 1; cursor: not-allowed; }

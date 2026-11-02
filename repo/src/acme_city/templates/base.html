@@ -17,6 +17,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} | City of Acme permit demonstration</title>
+  {# The description of the link preview: one plain sentence about the
+     fictional City of Acme demonstration. #}
+  <meta name="description" content="{{ title }}: a fictional City of Acme demonstration of the permit process, with synthetic records only.">
   <script src="/ui/static/theme.js"></script>
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
@@ -150,7 +153,7 @@
   {% endif %}
 
   {% if screen == 'select' %}
-  <section class="panel card landing" aria-labelledby="select-heading">
+  <section class="panel landing" aria-labelledby="select-heading">
     <div class="card-b">
     <h1 id="select-heading">Choose a persona</h1>
     {% include "_public_demo_notice.html" %}
@@ -161,6 +164,7 @@
         {% if persona.icon %}<img class="persona-icon" src="{{ persona.icon }}" alt="" width="64" height="64" loading="lazy">{% endif %}
         <div class="persona-text">
           <h2 class="persona-name">{{ persona.label }}</h2>
+          <p class="persona-line" data-testid="persona-line">{{ persona.line }}</p>
           <p class="persona-who visually-hidden" id="persona-who-{{ persona.actor_id }}">{{ persona.who }}</p>
           <p class="persona-does visually-hidden" id="persona-does-{{ persona.actor_id }}">{{ persona.does }}</p>
           <p class="persona-start visually-hidden" id="persona-start-{{ persona.actor_id }}">{{ persona.start }}</p>
@@ -180,7 +184,7 @@
     </div>
   </section>
 
-  <section class="panel card guide-path-cards" aria-labelledby="landing-paths-heading">
+  <section class="panel guide-path-cards" aria-labelledby="landing-paths-heading">
     <div class="card-b">
     <h2 id="landing-paths-heading">Pick a path</h2>
     <p class="landing-line" data-testid="landing-paths-line">Each path is one journey with its own steps and its own guided tour. Every record in the app is fictional.</p>

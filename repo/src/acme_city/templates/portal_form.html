@@ -214,8 +214,8 @@
         <button type="submit" name="intent" value="override" class="btn ghost" data-testid="submit-anyway"{% if not override_reason %} disabled aria-describedby="submit-anyway-why"{% endif %}>Submit anyway</button>
         <span id="submit-anyway-why" class="submit-anyway-why" data-testid="submit-anyway-why"{% if override_reason %} hidden{% endif %}>Enter why submit now.</span>
       </span>
-      <button type="submit" name="intent" value="save" class="btn" data-testid="save-draft" formnovalidate>Save draft</button>
-      <a class="btn" href="/apply">Choose a different project</a>
+      <button type="submit" name="intent" value="save" class="button button-quiet btn" data-testid="save-draft" formnovalidate>Save draft</button>
+      <a class="button button-quiet btn" href="/apply" data-testid="change-project">Choose a different project</a>
     </div>
   </fieldset>
 </form>

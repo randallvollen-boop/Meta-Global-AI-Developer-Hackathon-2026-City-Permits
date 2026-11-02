@@ -66,7 +66,7 @@ STATUSES: tuple[Status, ...] = (
     Status(
         "needs_information",
         "Needs information",
-        "Something is missing, or a finding needs a person's judgement. The case waits in early resolution.",
+        "Something is missing, or a finding needs a person’s judgement. The case waits in early resolution.",
         "active",
     ),
     Status(
@@ -79,7 +79,7 @@ STATUSES: tuple[Status, ...] = (
     Status(
         "under_review",
         "Under review",
-        "A reviewer set the agent's recommendation aside and is reviewing the case in person.",
+        "A reviewer set the agent’s recommendation aside and is reviewing the case in person.",
         "active",
     ),
     Status(

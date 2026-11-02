@@ -556,7 +556,7 @@
       var text = part("tour-countdown");
       if (text) text.textContent = "";
       var fill = part("tour-progress-fill");
-      if (fill) fill.style.width = "0%";
+      if (fill) fill.style.transform = "scaleX(0)";
     }
   }
 
@@ -579,7 +579,9 @@
     var fill = part("tour-progress-fill");
     if (fill) {
       var done = ms > 0 ? Math.min(1, Math.max(0, 1 - left / ms)) : 1;
-      fill.style.width = Math.round(done * 100) + "%";
+      /* The bar grows by a scale, so the browser animates a transform
+         instead of a width. */
+      fill.style.transform = "scaleX(" + done.toFixed(4) + ")";
     }
   }
 

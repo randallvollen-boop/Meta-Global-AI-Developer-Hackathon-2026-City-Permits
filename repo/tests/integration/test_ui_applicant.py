@@ -210,7 +210,7 @@ def test_portal_chrome_header_nav_account_and_footer(client) -> None:
         assert content.content()["footer_note"] in page
         # the extra "Fictional demonstration" text under the logo is gone
         assert "<small>Fictional demonstration</small>" not in page
-        footer = page.split('data-testid="city-footer-links"')[1].split("</p>")[0]
+        footer = page.split('data-testid="city-footer-links"')[1].split("</ul>")[0]
         for label in ("City of Acme", "Accessibility", "Privacy", "Help"):
             assert label in footer
         assert 'href="/city/contact"' in footer

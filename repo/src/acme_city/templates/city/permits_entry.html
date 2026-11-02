@@ -26,8 +26,9 @@
   </section>
 
   <section class="city-entry" aria-labelledby="need-h" data-testid="permits-need">
+    <h2 id="need-h">What you&rsquo;ll need</h2>
     <details>
-      <summary id="need-h">What you'll need</summary>
+      <summary>Show the list</summary>
       <ul class="city-need">
         {% for item in what_you_need %}<li data-testid="need-item"><strong>{{ item.title }}</strong><span>{{ item.text }}</span></li>{% endfor %}
       </ul>

@@ -128,8 +128,10 @@ def test_the_permits_entry_keeps_its_two_calls_to_action(client: TestClient) -> 
     assert 'data-testid="permits-start"' in body
     assert 'data-testid="permits-track"' in body
     assert 'data-testid="permits-community-link"' in body
-    # What you need sits behind a disclosure.
-    assert "<summary id=\"need-h\">What you'll need</summary>" in body
+    # The section has a heading of its own, and the list of what you need
+    # sits behind a disclosure.
+    assert "<h2 id=\"need-h\">What you&rsquo;ll need</h2>" in body
+    assert "<summary>Show the list</summary>" in body
     assert "In this demonstration these buttons switch" not in body
 
 
