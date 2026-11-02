@@ -189,18 +189,22 @@
     {% else %}
     <div data-presubmit-root hidden></div>
     {% endif %}
+    {% if review and review.held %}
+    <p id="submit-held-why" class="hold-why" data-testid="submit-held-why">Fix the items under Must fix, or use Submit anyway.</p>
+    {% endif %}
+    <div class="override-field" data-override-field{% if not (review and review.held) %} hidden{% endif %}>
+      <p class="field">
+        <label for="override-reason">Why submit now</label>
+        <textarea id="override-reason" name="override_reason" data-testid="why-submit-now" maxlength="500">{{ override_reason }}</textarea>
+      </p>
+    </div>
     <div class="form-buttons">
       <button type="submit" name="intent" value="review" class="btn" data-testid="check-application" formnovalidate>Check my application</button>
       <button type="submit" name="intent" value="submit" class="btn primary" data-testid="submit-application"{% if review and review.held %} disabled aria-describedby="submit-held-why"{% endif %}>Submit application</button>
-      {% if review and review.held %}
-      <p id="submit-held-why" data-testid="submit-held-why">Fix the items under Must fix, or use Submit anyway.</p>
-      <div data-override>
-        <label for="override-reason">Why submit now</label>
-        <textarea id="override-reason" name="override_reason" data-testid="why-submit-now" maxlength="500">{{ override_reason }}</textarea>
-        <button type="submit" name="intent" value="override" class="btn" data-testid="submit-anyway" disabled aria-describedby="submit-anyway-why">Submit anyway</button>
-        <p id="submit-anyway-why" data-testid="submit-anyway-why">Enter why submit now.</p>
-      </div>
-      {% endif %}
+      <span class="submit-anyway" data-override-action{% if not (review and review.held) %} hidden{% endif %}>
+        <button type="submit" name="intent" value="override" class="btn ghost" data-testid="submit-anyway"{% if not override_reason %} disabled aria-describedby="submit-anyway-why"{% endif %}>Submit anyway</button>
+        <span id="submit-anyway-why" class="submit-anyway-why" data-testid="submit-anyway-why"{% if override_reason %} hidden{% endif %}>Enter why submit now.</span>
+      </span>
       <button type="submit" name="intent" value="save" class="btn" data-testid="save-draft" formnovalidate>Save draft</button>
       <a class="btn" href="/apply">Choose a different project</a>
     </div>

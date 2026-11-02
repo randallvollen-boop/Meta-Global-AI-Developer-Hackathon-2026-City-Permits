@@ -225,40 +225,12 @@
       }
     }
     function ensureOverride() {
-      var wrap = form.querySelector("[data-override]");
-      if (!wrap) {
-        wrap = document.createElement("div");
-        wrap.setAttribute("data-override", "");
-        var label = document.createElement("label");
-        label.htmlFor = "override-reason";
-        label.textContent = "Why submit now";
-        var box = document.createElement("textarea");
-        box.id = "override-reason";
-        box.name = "override_reason";
-        box.setAttribute("data-testid", "why-submit-now");
-        box.maxLength = 500;
-        var button = document.createElement("button");
-        button.type = "submit";
-        button.name = "intent";
-        button.value = "override";
-        button.className = "btn";
-        button.setAttribute("data-testid", "submit-anyway");
-        button.disabled = true;
-        button.setAttribute("aria-describedby", "submit-anyway-why");
-        button.textContent = "Submit anyway";
-        var why = document.createElement("p");
-        why.id = "submit-anyway-why";
-        why.setAttribute("data-testid", "submit-anyway-why");
-        why.textContent = "Enter why submit now.";
-        wrap.appendChild(label);
-        wrap.appendChild(box);
-        wrap.appendChild(button);
-        wrap.appendChild(why);
-        var save = form.querySelector("[data-testid='save-draft']");
-        if (save && save.parentNode) { save.parentNode.insertBefore(wrap, save); }
-        else { form.appendChild(wrap); }
-      }
-      wrap.hidden = false;
+      // The block is always in the page: the browser only shows it while the
+      // hold is on, so there is one markup and not two.
+      var field = form.querySelector("[data-override-field]");
+      if (field) { field.hidden = false; }
+      var group = form.querySelector("[data-override-action]");
+      if (group) { group.hidden = false; }
       var bound = document.getElementById("override-reason");
       if (bound && !bound.getAttribute("data-bound")) {
         bound.setAttribute("data-bound", "1");
@@ -266,18 +238,29 @@
       }
       syncAnyway();
     }
+    function holdNotice() {
+      // The note that says why Submit application is off.  It sits with the
+      // block, not inside the row of the buttons.
+      var why = document.getElementById("submit-held-why");
+      if (!why) {
+        why = document.createElement("p");
+        why.id = "submit-held-why";
+        why.className = "hold-why";
+        why.setAttribute("data-testid", "submit-held-why");
+        why.textContent = "Fix the items under Must fix, or use Submit anyway.";
+        var field = form.querySelector("[data-override-field]");
+        var buttons = form.querySelector(".form-buttons");
+        var anchor = field || buttons;
+        if (anchor && anchor.parentNode) { anchor.parentNode.insertBefore(why, anchor); }
+        else { form.appendChild(why); }
+      }
+      return why;
+    }
     function applyHold(review) {
       if (!submit) { return; }
       if (review.held) {
         submit.disabled = true;
-        var why = document.getElementById("submit-held-why");
-        if (!why) {
-          why = document.createElement("p");
-          why.id = "submit-held-why";
-          why.setAttribute("data-testid", "submit-held-why");
-          why.textContent = "Fix the items under Must fix, or use Submit anyway.";
-          submit.insertAdjacentElement("afterend", why);
-        }
+        var why = holdNotice();
         why.hidden = false;
         submit.setAttribute("aria-describedby", "submit-held-why");
         ensureOverride();
@@ -286,8 +269,10 @@
         submit.removeAttribute("aria-describedby");
         var heldWhy = document.getElementById("submit-held-why");
         if (heldWhy) { heldWhy.hidden = true; }
-        var wrap = form.querySelector("[data-override]");
-        if (wrap) { wrap.hidden = true; }
+        var field = form.querySelector("[data-override-field]");
+        if (field) { field.hidden = true; }
+        var group = form.querySelector("[data-override-action]");
+        if (group) { group.hidden = true; }
       }
     }
     function groupSection(review, key) {
