@@ -257,7 +257,7 @@ Sources are the code on that commit under `repo/`. Every item below was checked 
 - Daily Muse allowance: `muse/budget.py`, `ACME_MUSE_DAILY_CALL_CAP`, default 10 (`core/config_operator.py`). Live call cap default 2.
 - Applicant help answer, council briefing and what-if proposals use the same adapter. On the hosted demonstration `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` are 1, with a daily cap of 100. When live Muse is off, or that allowance is used up, recorded answers are used.
 - Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were generated at build time with a local image model (commits `5eddb89`, `6e96c36`), a build-time asset only.
-- Demo video: `static/video/demo-video.mp4` is draft 8 at 720p (commit `426bc5a`), 164.2 s (2:44), 7.96 MB, preload none, no autoplay. Picture lock and final export remain open.
+- Demo video: `static/video/demo-video.mp4` is the final cut (picture lock 2026-11-02, Randall) at 720p, 177.5 s (2:57), 8.08 MB, preload none, no autoplay.
 - Tests: 2741 collected on merged main (`python -m pytest --collect-only -q`, 2026-10-30). Last recorded full run 2726 passed in 815.58 s (`EVIDENCE_LOG.md`). Phase counts 762 and 879 are historical. 10 gates unchanged.
 - Licence: all rights reserved, copyright Randy Vollen and VollenData; the repository is public for transparency, hackathon evaluation and demonstration only (`LICENSE`, `NOTICE`). The earlier Apache 2.0 statement is withdrawn.
 - Approval policy: `config/approval_policy.json`, default `single` (one administrator may approve); `independent` requires a different administrator.
