@@ -36,6 +36,8 @@ CONFIG = Path(__file__).resolve().parents[2] / "config" / "tour_steps.json"
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "src" / "acme_city" / "static" / "tour.js"
 STYLE = ROOT / "src" / "acme_city" / "static" / "tour.css"
+TOUR_AUDIO_DIR = ROOT / "src" / "acme_city" / "static" / "tour-audio"
+TOUR_AUDIO_MANIFEST = TOUR_AUDIO_DIR / "manifest.json"
 
 #: The tour points at one control of a screen with an attribute selector.
 TARGET = re.compile(r'^\[data-(?P<attribute>[a-z-]+)="(?P<value>[^"]+)"\]$')
@@ -375,6 +377,46 @@ def test_the_overlay_loads_the_script_and_the_stylesheet() -> None:
     assert (root / "static" / "tour.css").is_file()
 
 
+def expected_tour_audio_keys(paths: dict[str, dict]) -> set[str]:
+    """Return configured track clips plus the two combined-story bridges."""
+    clips = {
+        f"{track}-{step['id']}"
+        for track, path in paths.items()
+        for step in path["steps"]
+    }
+    return clips | {"bridge-cafe", "bridge-city"}
+
+
+def test_tour_audio_manifest_entries_name_existing_files_and_tour_steps(
+    paths: dict[str, dict],
+) -> None:
+    """A staged narration clip must name a real file and a tour step."""
+    manifest = json.loads(TOUR_AUDIO_MANIFEST.read_text(encoding="utf-8"))
+    assert isinstance(manifest, dict)
+    expected = expected_tour_audio_keys(paths)
+    for key, filename in manifest.items():
+        assert key in expected, key
+        assert isinstance(filename, str) and filename.endswith(".mp3"), (key, filename)
+        assert (TOUR_AUDIO_DIR / filename).is_file(), (key, filename)
+
+
+def test_tour_audio_manifest_builder_lists_only_top_level_mp3_files(tmp_path: Path) -> None:
+    """The delivery script produces the exact local static-file mapping."""
+    import importlib.util
+
+    module_path = ROOT / "scripts" / "build_tour_audio_manifest.py"
+    specification = importlib.util.spec_from_file_location("tour_audio_manifest", module_path)
+    assert specification is not None and specification.loader is not None
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    (tmp_path / "resident-intro.mp3").write_bytes(b"test clip")
+    (tmp_path / "readme.txt").write_text("not a clip", encoding="utf-8")
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "cafe-intro.mp3").write_bytes(b"not listed")
+    assert module.build_manifest(tmp_path) == {"resident-intro": "resident-intro.mp3"}
+
+
 def test_the_script_never_writes_a_record() -> None:
     """The engine only reads the steps and switches persona."""
     script = SCRIPT.read_text(encoding="utf-8")
@@ -383,8 +425,20 @@ def test_the_script_never_writes_a_record() -> None:
     assert "/ui/actions/" not in script
     # The only requests the engine makes are the persona switch, the steps of
     # the path and the one copy the café path may offer.
-    assert script.count("fetch(") == 3
+    assert script.count("fetch(") == 4
     assert "/walkthrough/start-fresh" in script
+
+
+def test_the_engine_loads_opt_in_voice_clips_from_the_local_manifest() -> None:
+    """Voice stays absent until a manifest entry names the current step."""
+    script = SCRIPT.read_text(encoding="utf-8")
+    assert 'AUDIO_MANIFEST_URL = "/ui/static/tour-audio/manifest.json"' in script
+    assert 'data-testid="tour-voice"' in script
+    assert '"Play voice"' in script and '"Mute voice"' in script
+    assert 'VOICE_KEY = "acme-tour-voice"' in script
+    assert "function voiceKey(current)" in script
+    assert 'current.kind === "bridge"' in script
+    assert "function stopVoice()" in script
 
 
 def test_the_engine_starts_the_path_it_is_given() -> None:

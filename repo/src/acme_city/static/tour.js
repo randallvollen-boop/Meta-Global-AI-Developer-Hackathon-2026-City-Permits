@@ -30,9 +30,12 @@
   if (window.acmeTour) return;
 
   var STEPS_URL = "/tour/steps";
+  var AUDIO_MANIFEST_URL = "/ui/static/tour-audio/manifest.json";
+  var AUDIO_ROOT = "/ui/static/tour-audio/";
   var ACTOR_URL = "/ui/actor";
   var FRESH_URL = "/walkthrough/start-fresh?format=json";
   var STATE_KEY = "acme-tour";
+  var VOICE_KEY = "acme-tour-voice";
   var AUTO_PLAY_MS = 9000;
   var COUNTDOWN_MS = 1000;
 
@@ -44,6 +47,10 @@
   var stepMs = 0;
   var overlay = null;
   var bound = false;
+  var audioManifest = null;
+  var audioManifestRequest = null;
+  var audioElement = null;
+  var voiceOn = false;
 
   /* Where the tour is, and whether it plays on its own.  The state travels
      in the session storage: a step that opens another screen comes back to
@@ -87,6 +94,27 @@
       store.removeItem(STATE_KEY);
     } catch (error) {
       /* Nothing to clear. */
+    }
+  }
+
+  function readVoicePreference() {
+    var store = memory();
+    if (!store) return false;
+    try {
+      return store.getItem(VOICE_KEY) === "on";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function writeVoicePreference(on) {
+    var store = memory();
+    if (!store) return;
+    try {
+      if (on) store.setItem(VOICE_KEY, "on");
+      else store.removeItem(VOICE_KEY);
+    } catch (error) {
+      /* The visitor can still turn narration on for this screen. */
     }
   }
 
@@ -145,6 +173,7 @@
       '  <div class="tour-permit" data-testid="tour-permit-card" hidden></div>',
       '  <div class="tour-controls">',
       '    <button type="button" class="btn sm" data-tour-back data-testid="tour-back">Back</button>',
+      '    <button type="button" class="btn sm" data-tour-voice data-testid="tour-voice" aria-pressed="false" hidden>Play voice</button>',
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',
       '    <span class="tour-auto" data-testid="tour-auto" hidden>',
       '      <span class="tour-countdown" data-testid="tour-countdown" aria-live="off"></span>',
@@ -162,6 +191,7 @@
     overlay.querySelector("[data-tour-back]").addEventListener("click", goBack);
     overlay.querySelector("[data-tour-next]").addEventListener("click", goNext);
     overlay.querySelector("[data-tour-play]").addEventListener("click", toggleAuto);
+    overlay.querySelector("[data-tour-voice]").addEventListener("click", toggleVoice);
     overlay.querySelector("[data-tour-exit]").addEventListener("click", exit);
     overlay.querySelector("[data-tour-fresh]").addEventListener("click", startFresh);
     overlay.querySelector("[data-tour-fill]").addEventListener("click", fillStory);
@@ -432,6 +462,102 @@
     return steps && steps[index] ? steps[index] : null;
   }
 
+  /* -------------------------------------------------------------- voice */
+
+  function voiceKey(current) {
+    if (!current || !current.id) return "";
+    /* Bridges belong to the combined story, not to either adjacent track. */
+    if (current.kind === "bridge") return String(current.id);
+    return current.path_key ? String(current.path_key) + "-" + String(current.id) : "";
+  }
+
+  function clipFor(current) {
+    if (!audioManifest) return "";
+    var clip = audioManifest[voiceKey(current)];
+    /* Filenames come from the local generated manifest, never from tour copy. */
+    return typeof clip === "string" && /^[A-Za-z0-9_.-]+\\.mp3$/.test(clip) ? clip : "";
+  }
+
+  function loadAudioManifest() {
+    if (audioManifestRequest) return audioManifestRequest;
+    audioManifestRequest = fetch(AUDIO_MANIFEST_URL, { credentials: "same-origin" })
+      .then(function (answer) {
+        if (!answer.ok) throw new Error("The voice manifest is unavailable.");
+        return answer.json();
+      })
+      .then(function (payload) {
+        audioManifest = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? payload : {};
+        return audioManifest;
+      })
+      .catch(function () {
+        audioManifest = {};
+        return audioManifest;
+      })
+      .then(function (manifest) {
+        if (overlay && !overlay.hidden) paintVoice(step());
+        return manifest;
+      });
+    return audioManifestRequest;
+  }
+
+  function voicePlayer() {
+    if (audioElement) return audioElement;
+    audioElement = document.createElement("audio");
+    audioElement.preload = "auto";
+    audioElement.hidden = true;
+    document.body.appendChild(audioElement);
+    return audioElement;
+  }
+
+  function stopVoice() {
+    if (!audioElement) return;
+    audioElement.pause();
+    try {
+      audioElement.currentTime = 0;
+    } catch (error) {
+      /* A clip that has not loaded has no time to reset. */
+    }
+  }
+
+  function playVoice(current, clip) {
+    if (!voiceOn || !clip) return;
+    var player = voicePlayer();
+    var source = AUDIO_ROOT + clip;
+    if (player.getAttribute("src") !== source) player.setAttribute("src", source);
+    try {
+      player.currentTime = 0;
+    } catch (error) {
+      /* Playback still begins when the browser has loaded the clip. */
+    }
+    var playing = player.play();
+    if (playing && playing.catch) playing.catch(function () {});
+  }
+
+  function paintVoice(current) {
+    var button = part("tour-voice");
+    if (!button) return;
+    var clip = clipFor(current);
+    button.hidden = !clip;
+    if (!clip) {
+      stopVoice();
+      return;
+    }
+    button.textContent = voiceOn ? "Mute voice" : "Play voice";
+    button.setAttribute("aria-pressed", voiceOn ? "true" : "false");
+    if (voiceOn) playVoice(current, clip);
+  }
+
+  function toggleVoice() {
+    var current = step();
+    var clip = clipFor(current);
+    if (!clip) return;
+    voiceOn = !voiceOn;
+    writeVoicePreference(voiceOn);
+    if (!voiceOn) stopVoice();
+    paintVoice(current);
+  }
+
   /* ----------------------------------------------------------- highlight */
 
   function ring(current) {
@@ -555,6 +681,7 @@
     paintFill(current);
     fillStoryOnArrival(current);
     paintPermit(current);
+    paintVoice(current);
     paintNote();
     paintMuse(current);
     paintReplay(current);
@@ -603,6 +730,7 @@
     /* The page is going away.  The wish to play on stays in the state, so
        the next screen carries the tour on without another click. */
     clearTimers();
+    stopVoice();
     var current = step();
     var target = current.path;
     if (!current.actor_id) {
@@ -777,6 +905,7 @@
 
   function exit() {
     stopAuto();
+    stopVoice();
     state.active = false;
     state.index = 0;
     state.playing = false;
@@ -831,6 +960,8 @@
     bound = true;
     if (clearMissingCaseState()) return;
     ensureStyles();
+    voiceOn = readVoicePreference();
+    loadAudioManifest();
     bindStarters();
     window.addEventListener("scroll", follow, { passive: true });
     window.addEventListener("resize", follow);

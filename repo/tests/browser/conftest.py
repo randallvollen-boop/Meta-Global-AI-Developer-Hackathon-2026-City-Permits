@@ -113,9 +113,10 @@ def wait_for(base_url: str, process: subprocess.Popen[bytes], timeout: float = 3
     raise RuntimeError("the isolated server did not become ready in time")
 
 
-@pytest.fixture()
-def server(tmp_path: Path) -> BrowserServer:
-    """Start an isolated server with its own seeded database."""
+def start_server(
+    tmp_path: Path, *, tour_audio_dir: Path | None = None
+):
+    """Start an isolated server, optionally with test-only tour narration."""
     database = tmp_path / "browser-demo.db"
     settings = Settings.load(
         environ={
@@ -156,6 +157,8 @@ def server(tmp_path: Path) -> BrowserServer:
         "ACME_PORT": str(port),
         "PYTHONPATH": str(REPO_ROOT / "src"),
     }
+    if tour_audio_dir is not None:
+        environment["ACME_TOUR_AUDIO_DIR"] = str(tour_audio_dir)
     process = subprocess.Popen(
         [sys.executable, "-c", BOOTSTRAP],
         cwd=str(REPO_ROOT),
@@ -181,6 +184,12 @@ def server(tmp_path: Path) -> BrowserServer:
         except subprocess.TimeoutExpired:  # pragma: no cover - defensive cleanup
             process.kill()
         pid_file.unlink(missing_ok=True)
+
+
+@pytest.fixture()
+def server(tmp_path: Path) -> BrowserServer:
+    """Start an isolated server with its own seeded database."""
+    yield from start_server(tmp_path)
 
 
 def _approve_payer_link(session) -> None:
