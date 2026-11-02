@@ -4,7 +4,7 @@
   "brand": "vds",
   "client": "ACME City",
   "output": "vollen_acme-city-permits_solution-architecture_2026-10-26.html",
-  "banner": "Internal draft. [REVIEW REQUIRED] before external use. As built, local candidate.",
+  "banner": "",
   "denylist": [
     "RailFlow",
     "Westerville",

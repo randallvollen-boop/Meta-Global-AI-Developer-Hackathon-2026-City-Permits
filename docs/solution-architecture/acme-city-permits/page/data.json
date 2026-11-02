@@ -2326,7 +2326,7 @@
     "Standard mode only, and never a contributor model.",
     "The live primary-chain run succeeded. Replay never counts as live evidence.",
     "The provider balance and the no-cash path are unverified.",
-    "The same endpoint also writes the applicant help answers, the council briefing and the what-if proposals. Replay is the default for all of them. They share the live call cap 2, the daily allowance 10 and the error stop."
+    "The same endpoint also carries the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals. Those five are the live paths of the City. The document extraction is a recorded Muse run and is replayed. They share the live call cap 2, the daily allowance 10 and the error stop."
    ],
    "status": "ex",
    "sl": "Succeeded"
@@ -2416,7 +2416,7 @@
    "b": "The shared parcel record at /property/{parcel} and a server-rendered SVG town map at /map. The map loads no outside tiles and makes no network calls.",
    "f": [
     "The address locator proposes a parcel link and never approves it.",
-    "A permit decision is blocked until the parcel link is approved and confirmed.",
+    "An open parcel or identity link is Data follow-up. It never holds a case, and the agent recommends from the rules it could check.",
     "Parcels are textured with 17 bundled local WebP image tiles, generated at build time with a local image model. The City view uses them too."
    ],
    "status": "ga",
@@ -2465,7 +2465,7 @@
    "r": "Applicant help assistant",
    "b": "Answers an applicant's questions about the permit process, the rules for their project and their own application, from a cited source bundle the server builds. Offered on /apply, on the application form and on the tracker.",
    "f": [
-    "Muse Spark writes the answer when live use is on, and a labelled replay fixture answers by default. A validator refuses any answer that is uncited, misquotes a source or promises an outcome.",
+    "Muse Spark writes the answer when live use is on, and a labelled replay fixture answers when it is off. A validator refuses any answer that is uncited, misquotes a source or promises an outcome.",
     "If the answer is refused or nothing matches, the applicant sees the matching ACME rule text. Ask the City sends the question to the support desk.",
     "The audit record carries identifiers and the outcome, never the text of the question."
    ],

@@ -1,6 +1,6 @@
 # ACME City Permits architecture page, project note
 
-Date: 2026-10-30 (accuracy rebuild; originally 2026-10-26). Status: AS BUILT. Internal draft.
+Date: 2026-11-02 (final rebuild; originally 2026-10-26). Status: AS BUILT.
 
 ## Revision 2026-10-28
 
@@ -8,13 +8,15 @@ The diagram now shows the parts built through repo commit `4ea0497`. See the rev
 
 ## Revision 2026-10-29, hosting copy
 
-The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact remains an internal draft and was not published.
+The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact was not published.
 
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 362944 bytes. SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 364254 bytes. SHA-256 `a98428b9e385a5e3624a04711029f132c63c68bc54948105a6f63ae939aed68d` (2026-11-02 final rebuild). It loads nothing from the network and renders offline in a browser.
+
+The application serves this file at `/help/technical/architecture`. It is the only copy in the repository, and `repo/tests/integration/test_help_docs.py` checks that the served bytes are the committed bytes.
 
 ## Rebuild
 
@@ -75,7 +77,7 @@ The library article identifier is `acme-city-permits-architecture`, as recorded 
 
 The private AVA Library article is published under `acme-city-permits-architecture`, as recorded in the status record under `library.article_id`. Each accepted phase update replaces the previous content under that same identifier and never creates a new article.
 
-The article remains an internal draft with the review banner. Brand, delivery-owner and security approvals are still open. AVA was updated offline while its service remained inactive.
+The review banner was removed from the page by the project owner's decision of 2026-11-02. Brand and delivery-owner approvals are still open, and the security review has run. AVA was updated offline while its service remained inactive.
 
 ## Boundaries
 
@@ -88,7 +90,7 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 
 ## Planned content
 
-The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections are planned content only. They claim no result, and nothing in them is built, published or submitted.
+The `roadmap` section (Phase 3: built) and the `video` section (the demo video in production) state what is built and what is still being recorded. Neither publishes or submits anything.
 
 ## Revision 2026-10-29, permit life cycle section
 
@@ -106,3 +108,12 @@ The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections 
 ## Revision 2026-10-30, master data as the spine
 
 - New section "Why master data is central", a registry-first standfirst, and a System view with the registry master data node at the centre (class `core`, heavier outline in `page/extra.css`). Edges: proposes link, decides, reads. Non-Muse product and model names were removed from the sources and the page.
+
+## Revision 2026-11-02, final rebuild
+
+- The internal-review banner is gone. The project owner's decision of 2026-11-02 overrides the banner rule of the build skill for this page, so `page/page.json` carries an empty banner and no internal-review or draft marker stays on the page. The byline and the "Example with fictional data" labels stay.
+- The facts of 2026-11-02 are on the page: steward data no longer holds a case, approving against a failed rule is a recorded exception, the pre-submit check with Check my application and Submit anyway, the real clock in the demonstration, 85 permissions, and the current test figures.
+- The Muse passage names the live paths: the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals. The document extraction stays a recorded run that is replayed.
+- The video rows carry no draft number. The page says the demo video is being recorded from the final build.
+- The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` were not touched.
+- Kit builder and the Linux checker ran clean, and `check/verify_page.py` passes. The AVA Library copy was not replaced in this revision.
