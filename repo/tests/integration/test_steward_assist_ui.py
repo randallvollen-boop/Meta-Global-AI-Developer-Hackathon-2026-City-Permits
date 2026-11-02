@@ -524,8 +524,123 @@ def test_a_held_recommendation_is_never_accepted(
         path,
     )
     assert response.status_code == 422, response.text
-    assert "held" in response.json()["message"]
+    assert response.json()["message"] == "Held: decide this one yourself."
     assert crosswalk_of(environment)[-1].link_status != "approved"
+
+
+def test_the_held_button_is_off_and_says_who_decides(
+    client: TestClient, environment: Settings
+) -> None:
+    """The button is off, and the note beside it says who decides."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    path = case_path(client)
+    post(
+        client,
+        "steward.assist.recommend",
+        {"task_kind": "link", "task_id": task_id(path), "next": path},
+        path,
+    )
+    identifier = recommendation_of(client, path)
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, identifier)
+            assert row is not None
+            row.confidence = "held"
+    finally:
+        factory.dispose()
+    body = client.get(path).text
+    button = re.search(r'<button[^>]*data-testid="assistant-accept"[^>]*>', body)
+    assert button is not None
+    assert "disabled" in button.group(0)
+    note = re.search(r'data-testid="assistant-accept-note">(.*?)</p>', body, flags=re.S)
+    assert note is not None
+    assert " ".join(note.group(1).split()) == "Held: decide this one yourself."
+
+
+def test_the_stale_button_is_off_and_names_the_button_that_fixes_it(
+    client: TestClient, environment: Settings
+) -> None:
+    """The button is off, and the note says to ask for the recommendation again."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    path = case_path(client)
+    post(
+        client,
+        "steward.assist.recommend",
+        {"task_kind": "link", "task_id": task_id(path), "next": path},
+        path,
+    )
+    identifier = recommendation_of(client, path)
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            party = session.get(registry.Party, "party_cedarline")
+            assert party is not None
+            party.version += 1
+    finally:
+        factory.dispose()
+    body = client.get(path).text
+    button = re.search(r'<button[^>]*data-testid="assistant-accept"[^>]*>', body)
+    assert button is not None
+    assert "disabled" in button.group(0)
+    note = re.search(r'data-testid="assistant-accept-note">(.*?)</p>', body, flags=re.S)
+    assert note is not None
+    assert " ".join(note.group(1).split()) == (
+        "This record changed since the recommendation; press Get recommendation again."
+    )
+    # The note names a button, so the button carries that label.
+    prepare = re.search(
+        r'data-testid="assistant-recommend".*?>\s*(.*?)\s*</button>', body, flags=re.S
+    )
+    assert prepare is not None
+    assert prepare.group(1) == "Get recommendation again"
+
+
+def test_a_refused_acceptance_shows_the_reason_in_the_feedback_area(
+    client: TestClient, environment: Settings
+) -> None:
+    """The page the steward came from carries the reason of the refusal."""
+    wake_the_assistant(client)
+    choose(client, "persona_data_steward")
+    path = case_path(client)
+    post(
+        client,
+        "steward.assist.recommend",
+        {"task_kind": "link", "task_id": task_id(path), "next": path},
+        path,
+    )
+    identifier = recommendation_of(client, path)
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            row = session.get(StewardRecommendation, identifier)
+            assert row is not None
+            row.confidence = "held"
+    finally:
+        factory.dispose()
+    response = client.post(
+        "/ui/actions/steward.assist.accept",
+        data={
+            "csrf_token": csrf(client, path),
+            "action_id": "steward.assist.accept",
+            "next": path,
+            "recommendation_id": identifier,
+        },
+        follow_redirects=False,
+    )
+    # The page the work is on is read again, and the refusal is reported in
+    # the feedback region of that page.
+    assert response.status_code == 303, response.text
+    assert response.headers["location"] == path
+    body = client.get(path).text
+    outcome = re.search(r'data-testid="feedback" data-outcome="([^"]*)"', body)
+    assert outcome is not None
+    assert outcome.group(1) == "denied"
+    message = re.search(r'data-testid="feedback-message">([^<]*)<', body)
+    assert message is not None
+    assert message.group(1) == "Held: decide this one yourself."
 
 
 def test_a_stale_recommendation_is_never_accepted(
@@ -557,7 +672,9 @@ def test_a_stale_recommendation_is_never_accepted(
         path,
     )
     assert response.status_code == 422, response.text
-    assert response.json()["message"] == "This record changed; refresh the recommendation"
+    assert response.json()["message"] == (
+        "This record changed since the recommendation; press Get recommendation again."
+    )
     assert crosswalk_of(environment)[-1].link_status != "approved"
 
 
@@ -584,7 +701,9 @@ def test_a_link_decided_since_the_recommendation_is_never_accepted(
         path,
     )
     assert response.status_code == 422, response.text
-    assert response.json()["message"] == "This record changed; refresh the recommendation"
+    assert response.json()["message"] == (
+        "This record changed since the recommendation; press Get recommendation again."
+    )
     assert crosswalk_of(environment)[-1].link_status != "approved"
 
 

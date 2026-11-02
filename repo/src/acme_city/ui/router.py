@@ -193,6 +193,10 @@ class Outcome:
     before_version: int | None = None
     after_version: int | None = None
     extra: dict[str, Any] = field(default_factory=dict)
+    #: True when the action was refused by a rule of the City and nothing
+    #: changed.  The interface reports the refusal in the feedback region of
+    #: the page the person came from, so the reason is read where the work is.
+    refused: bool = False
 
 
 # ------------------------------------------------------------------ security
@@ -2910,7 +2914,8 @@ async def run_ui_action(
         before_version=outcome.before_version,
         after_version=outcome.after_version,
         reason=outcome.message,
-        outcome="accepted",
+        outcome="denied" if outcome.refused else "accepted",
+        denial_reason=outcome.state if outcome.refused else None,
         metadata={
             "destination": outcome.destination,
             "state": outcome.state,
@@ -2920,6 +2925,25 @@ async def run_ui_action(
         },
     )
     session.commit()
+    if outcome.refused:
+        # The action changed nothing, so the page the person came from is
+        # read again and the feedback region carries the reason of the
+        # refusal.  The person stays where the work is.
+        if wants_json:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "status": "denied",
+                    "message": outcome.message,
+                    "code": outcome.state,
+                    "destination": outcome.destination,
+                    "state": outcome.state,
+                    "pending": False,
+                    "affected": [],
+                    "version": None,
+                },
+            )
+        return RedirectResponse(destination, status_code=303)
     if wants_json:
         return JSONResponse(
             status_code=200,

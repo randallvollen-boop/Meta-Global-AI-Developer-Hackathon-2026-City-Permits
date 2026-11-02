@@ -82,9 +82,7 @@
         </button>
       </p>
       <p class="muted" id="assistant-accept-note" data-testid="assistant-accept-note">
-        {% if rec.held %}A held recommendation is never accepted; use the controls of the case.
-        {% elif rec.stale %}The record changed, so the recommendation must be prepared again.
-        {% else %}The decision is recorded with your name, as the decision of record.{% endif %}
+        {{ case.assistant.accept_note }}
       </p>
     </form>
     <details class="stw-disclosure" data-testid="assistant-more">
