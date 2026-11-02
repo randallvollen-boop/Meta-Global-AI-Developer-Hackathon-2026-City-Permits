@@ -510,3 +510,9 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 
 - Source tracing found that the resident tour's synthetic fill dispatched the normal form `input` and `change` events. The applicant portal therefore queued its live completeness check and address lookup while the tour immediately switched to the Agent Operator. Those applicant-only endpoints could then see the new staff session and return 403.
 - `tour.js` now marks only the synchronous synthetic fill. `property.js` keeps local form affordances current but does not start live validation or address lookup while that marker is present. Visitor edits retain their existing live requests, and the tour still fills only a pristine form, leaving pre-existing typed values and files unchanged.
+
+## 2026-11-02 — G10 tour voice
+
+- Added an optional, manifest-driven narration control to the guided tour. It remains absent when the manifest is empty or unavailable, uses one audio element, stops on step changes, and only begins after the visitor presses Play voice. The session preference allows later narrated steps to play automatically.
+- Added the empty checked-in tour-audio manifest, its deterministic builder script, manifest validation, and a browser test with a test-only static audio directory and a 549-byte silent MP3 fixture.
+- No visible tour caption changed, no live model call was made, and no persona, grant, rule, fixture, acceptance arithmetic, deployment, or publication changed.

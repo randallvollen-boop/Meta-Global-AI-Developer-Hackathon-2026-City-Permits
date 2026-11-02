@@ -14,6 +14,7 @@ the browser.
 from __future__ import annotations
 
 import hashlib
+import os
 from types import SimpleNamespace
 import hmac
 import json
@@ -102,6 +103,10 @@ TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 #: The local stylesheet and script of the interface.
 STATIC_ROOT = Path(__file__).resolve().parents[1] / "static"
 
+#: An isolated browser test may substitute only the optional tour narration
+#: directory.  The ordinary application always serves the checked-in folder.
+TOUR_AUDIO_ROOT = Path(os.environ.get("ACME_TOUR_AUDIO_DIR", STATIC_ROOT / "tour-audio"))
+
 #: The prefix of the local assets.  No external script, font or image is used.
 STATIC_PREFIX = "/ui/static"
 
@@ -111,6 +116,11 @@ persona_router = APIRouter(tags=["ui"])
 #: The /select page in production mode: the "Sign-in is not configured" page.
 signin_router = APIRouter(tags=["ui"])
 templates = Jinja2Templates(directory=str(TEMPLATE_ROOT))
+router.mount(
+    f"{STATIC_PREFIX}/tour-audio",
+    StaticFiles(directory=str(TOUR_AUDIO_ROOT)),
+    name="tour-audio-static",
+)
 router.mount(STATIC_PREFIX, StaticFiles(directory=str(STATIC_ROOT)), name="ui-static")
 
 #: Interface actions that exist only in the demonstration (simulators).  In
