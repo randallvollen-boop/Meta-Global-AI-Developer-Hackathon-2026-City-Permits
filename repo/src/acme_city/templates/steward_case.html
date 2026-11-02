@@ -26,6 +26,10 @@
     <dt>Next step</dt>
     <dd data-testid="case-summary-next">{{ c.summary.next_step }}</dd>
   </dl>
+  {% if c.application_link %}
+  <p class="actions"><a class="button btn" href="{{ c.application_link.href }}" data-testid="case-application-link">{{ c.application_link.label }}</a>
+    <span class="muted">{{ c.application_link.number }}</span></p>
+  {% endif %}
 </section>
 
 {{ guide_ui.panel(guide) }}
@@ -82,9 +86,7 @@
         </button>
       </p>
       <p class="muted" id="assistant-accept-note" data-testid="assistant-accept-note">
-        {% if rec.held %}A held recommendation is never accepted; use the controls of the case.
-        {% elif rec.stale %}The record changed, so the recommendation must be prepared again.
-        {% else %}The decision is recorded with your name, as the decision of record.{% endif %}
+        {{ case.assistant.accept_note }}
       </p>
     </form>
     <details class="stw-disclosure" data-testid="assistant-more">
@@ -143,12 +145,46 @@
 </section>
 {% endif %}
 
-<ol class="case-questions" data-testid="case-questions">
+{% if c.panel and not c.panel.empty %}
+<section class="panel stw-submitted-panel" aria-labelledby="submitted-heading" data-testid="submitted-panel">
+  <div class="card-h">
+    <h2 id="submitted-heading">Submitted vs record</h2>
+  </div>
+  <div class="card-b">
+    <p class="muted">What was submitted beside what the record holds today. The difference is written in words.</p>
+    <table class="data-table stw-comparison" data-testid="submitted-table">
+      <caption class="visually-hidden">What was submitted beside what the record holds</caption>
+      <thead><tr><th scope="col">Field</th><th scope="col">{{ c.panel.submitted_label }}</th><th scope="col">{{ c.panel.record_label }}</th><th scope="col">Difference</th></tr></thead>
+      <tbody>
+        {% for row in c.panel.rows %}
+        <tr data-testid="submitted-row" data-differs="{{ row.differs }}">
+          <th scope="row" class="stw-cell-field" data-label="Field">{{ row.field }}</th>
+          <td class="stw-cell-source" data-label="{{ c.panel.submitted_label }}">{{ row.submitted }}</td>
+          <td class="stw-cell-master" data-label="{{ c.panel.record_label }}">{{ row.record }}</td>
+          <td class="nowrap stw-cell-result" data-label="Difference">
+            <span class="result result-{{ 'conflicts' if row.differs == 'yes' else 'agrees' }}" data-testid="submitted-difference" data-differs="{{ row.differs }}">{{ row.difference }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
 
+<ol class="case-questions" data-testid="case-questions">
 <li>
 <section class="panel" aria-labelledby="q1" data-question="1" data-testid="case-q1">
   <h2 id="q1">1. What is the problem?</h2>
   <p>{{ c.problem }}</p>
+  {% if c.technical %}
+  <details class="stw-disclosure" data-testid="case-technical">
+    <summary>More details</summary>
+    <dl class="stw-facts">
+      {% for item in c.technical %}<div><dt>{{ item.label }}</dt><dd class="mono">{{ item.value }}</dd></div>{% endfor %}
+    </dl>
+  </details>
+  {% endif %}
 </section>
 </li>
 
@@ -234,7 +270,7 @@
     </div>
   </dl>
   {% else %}
-  <p class="muted">There are no values to compare for this issue.</p>
+  <p class="muted">{% if c.kind == 'issue' %}No source or master value is on file to compare. This issue is about which source the City trusts, not about one value.{% else %}There are no values to compare for this issue.{% endif %}</p>
   {% endif %}
 </section>
 </li>

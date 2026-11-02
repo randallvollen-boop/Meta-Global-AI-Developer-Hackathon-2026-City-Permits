@@ -50,7 +50,19 @@
   <div class="card-h">
     <h2 id="agent-waiting-heading">Waiting work</h2>
     <span class="right">
+      {% if agent.agent_key == 'steward_assist' %}
       {% if agent.can_run %}
+      <form method="post" action="/ui/actions/steward.assist.prepare" class="action-form" data-testid="agent-prepare-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action_id" value="steward.assist.prepare">
+        <input type="hidden" name="next" value="/agent/{{ agent.agent_key }}">
+        <button type="submit" class="btn sm primary" data-testid="agent-prepare"
+                {% if not agent.is_awake %}disabled aria-describedby="agent-sleep-notice"{% endif %}>
+          Prepare recommendations
+        </button>
+      </form>
+      {% endif %}
+      {% elif agent.can_run %}
       <form method="post" action="/ui/actions/agent.run.{{ agent.agent_key }}" class="action-form" data-testid="agent-run-all-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="action_id" value="agent.run.{{ agent.agent_key }}">
@@ -66,7 +78,7 @@
   <div class="card-b">
     <p class="muted" data-testid="agent-waiting-note">
       {% if agent.agent_key == 'intake' %}The intake agent works on these cases.
-      {% elif agent.agent_key == 'steward_assist' %}The steward assistant works on the tasks of the Data Steward.
+      {% elif agent.agent_key == 'steward_assist' %}The steward assistant works on the tasks of the Data Steward. "Prepare recommendations" prepares the work of the queue. The Data Steward reads every recommendation and decides.
       {% else %}The adjudication agent works on these cases.{% endif %}
     </p>
     {% if not agent.is_awake %}

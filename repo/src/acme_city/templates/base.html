@@ -115,7 +115,7 @@
 {% if feedback %}
 <section id="ui-feedback-region" class="feedback {% if feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
          role="status" aria-live="polite" data-testid="feedback" data-outcome="{{ feedback.outcome }}">
-  <h2 class="feedback-title">Last action</h2>
+  <h2 class="feedback-title">{% if feedback.outcome == 'denied' %}The action was refused{% else %}Last action{% endif %}</h2>
   <p class="feedback-message" data-testid="feedback-message">{{ feedback.reason }}</p>
   <details class="feedback-more" data-testid="feedback-more">
     <summary>More details</summary>

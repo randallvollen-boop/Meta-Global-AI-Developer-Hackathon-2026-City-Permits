@@ -16,7 +16,8 @@ OPERATOR_ACTOR_ID = "persona_agent_operator"
 OPERATOR_HOME = "/agents"
 
 _OPERATOR_SCREENS: tuple[str, ...] = (
-    "agents_home", "agent_intake", "agent_adjudication", "agent_runs",
+    "agents_home", "agent_intake", "agent_adjudication", "agent_steward_assist",
+    "agent_runs",
 )
 
 #: The intake queue, where the operator processes a selected batch of waiting
@@ -24,14 +25,16 @@ _OPERATOR_SCREENS: tuple[str, ...] = (
 _OPERATOR_SECONDARY_SCREENS: tuple[str, ...] = ("intake_queue",)
 
 #: The screen of the steward assistant.  The Agent Operator wakes and sleeps
-#: the assistant there; the Data Steward never opens it.
+#: the assistant there and asks it to prepare the work of the queue; the Data
+#: Steward asks for a recommendation on the queue and decides every one of
+#: them.
 STEWARD_ASSIST_SCREEN = "agent_steward_assist"
 
 
 def _operator_navigation(items: list[dict]) -> list[dict]:
-    """Limit the operator to the four operational destinations.
+    """Limit the operator to the five operational destinations.
 
-    The intake queue is the fifth: the operator holds the grant that runs a
+    The intake queue is the sixth: the operator holds the grant that runs a
     selected batch, so the queue that lists the cases is under More tools.
     """
     by_key = {item["key"]: item for item in items}
@@ -47,7 +50,7 @@ def _operator_navigation(items: list[dict]) -> list[dict]:
 
 
 def register() -> None:
-    """Register the home and four-destination navigation of the operator."""
+    """Register the home and five-destination navigation of the operator."""
     view_models.HOME_OVERRIDES[OPERATOR_ACTOR_ID] = OPERATOR_HOME
     view_models.NAV_PROFILES[OPERATOR_ACTOR_ID] = _operator_navigation
     if not any(

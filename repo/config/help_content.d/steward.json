@@ -43,7 +43,7 @@
         "screen_label": "Data issues",
         "screen_href": "/steward",
         "steps": [
-          "The Agent Operator wakes the assistant on its \"Steward assistant\" screen. While it sleeps, \"Prepare recommendations\" is off and the note says \"The Agent Operator must wake it.\"",
+          "On \"Data issues\" the steward assistant shows whether it is awake or asleep. Click \"Wake\" to wake it, and \"Put to sleep\" to stop it; the change is recorded with your name. While it sleeps, \"Prepare recommendations\" is off and the note says \"Press Wake to wake it.\" The Agent Operator can also wake it. Only the Agent Operator wakes the intake and adjudication agents.",
           "Open \"Data issues\" and click \"Prepare recommendations\". The assistant works on up to 20 tasks per press. It never runs on a timer or on its own.",
           "Read the pill on each row: \"High\" when the assistant is sure, \"Review\" when you should read the evidence first, \"Held\" when the facts disagree and only a person may settle it. A one-line reason sits under the record.",
           "Open a task. The panel \"The steward assistant\" shows the pill, the reason and the evidence it rests on. On a task with no recommendation yet, click \"Get recommendation\".",

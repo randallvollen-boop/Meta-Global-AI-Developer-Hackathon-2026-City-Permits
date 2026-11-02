@@ -16,12 +16,17 @@ import pytest
 from conftest import BrowserServer, assert_no_horizontal_overflow, assert_not_covered
 from sqlalchemy import select
 
+from acme_city.fixtures.steward_assist_demo import seed_steward_assistant_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
 from acme_city.persistence.models import registry
+from acme_city.persistence.models.steward_recommendation import StewardRecommendation
 from acme_city.persistence.session import SessionFactory, transaction
 
 #: The source record the demonstration compares with the master records.
 RECORD = "PER-AP-0003"
+
+#: The words of the task whose two versions of the record disagree.
+HELD = "Two versions of the same business record"
 
 
 def prepare_queue(server: BrowserServer) -> None:
@@ -30,6 +35,16 @@ def prepare_queue(server: BrowserServer) -> None:
     try:
         with transaction(factory) as session:
             seed_cedarline(session)
+    finally:
+        factory.dispose()
+
+
+def prepare_the_held_issue(server: BrowserServer) -> None:
+    """Put the conflicting issue of the demonstration in the queue."""
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            seed_steward_assistant_demo(session)
     finally:
         factory.dispose()
 
@@ -51,6 +66,16 @@ def open_case(page, server: BrowserServer) -> str:
     page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
     row = page.locator(f'[data-issue-row]:has-text("{RECORD}")').first
     assert row.count() == 1, "the queue holds the task of the source record"
+    row.locator('[data-testid="issue-link"]').click()
+    page.wait_for_selector('[data-testid="case-summary"]')
+    return page.url
+
+
+def open_the_held_task(page, server: BrowserServer) -> str:
+    """Open the task whose two versions of the record disagree."""
+    page.goto(f"{server.base_url}/steward?filter=needs_review", wait_until="load")
+    row = page.locator(f'[data-issue-row]:has-text("{HELD}")').first
+    assert row.count() == 1, "the queue holds the conflicting task"
     row.locator('[data-testid="issue-link"]').click()
     page.wait_for_selector('[data-testid="case-summary"]')
     return page.url
@@ -103,36 +128,65 @@ def test_the_prepare_button_is_off_while_the_assistant_sleeps(
     assert button.is_disabled()
     note = page.locator('[data-testid="assistant-sleep-note"]')
     assert note.count() == 1
-    assert "Agent Operator must wake it" in note.inner_text()
+    assert "Press Wake to wake it" in note.inner_text()
     assert page.recorded_errors == []
 
 
-def test_the_operator_may_not_press_the_steward_buttons(
+def test_the_operator_may_prepare_the_recommendations(
     page, server: BrowserServer, login
 ) -> None:
-    """The run grant of the assistant belongs to the Data Steward alone."""
+    """The operator wakes the assistant and asks it to prepare the work."""
     prepare_queue(server)
     wake_the_assistant(page, server, login)
-    token = page.locator('[data-testid="agent-toggle-form"] input[name="csrf_token"]')
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    page.wait_for_selector('[data-testid="agent-prepare"]')
+    message = click_action(page, "agent-prepare", "steward.assist.prepare")
+    assert "recommendation" in message
+    assert page.recorded_errors == []
+
+
+def test_the_operator_may_not_accept_a_recommendation(
+    page, server: BrowserServer, login
+) -> None:
+    """The operator prepares the work; the Data Steward decides it."""
+    prepare_queue(server)
+    wake_the_assistant(page, server, login)
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    click_action(page, "agent-prepare", "steward.assist.prepare")
+    factory = SessionFactory(server.settings.database_url)
+    try:
+        with transaction(factory) as session:
+            recommendation = session.execute(
+                select(StewardRecommendation).where(
+                    StewardRecommendation.cleared.is_(False)
+                )
+            ).scalars().first()
+            assert recommendation is not None, "the operator prepared a recommendation"
+            recommendation_id = recommendation.id
+    finally:
+        factory.dispose()
+    page.goto(f"{server.base_url}/agent/steward_assist", wait_until="load")
+    token = page.locator('input[name="csrf_token"]').first
     assert token.count() == 1
     csrf_token = token.get_attribute("value") or ""
     with page.expect_response(
         lambda response: response.request.method == "POST"
-        and "/ui/actions/steward.assist.prepare" in response.url
+        and "/ui/actions/steward.assist.accept" in response.url
     ) as posted:
         page.evaluate(
-            """(token) => {
+            """([token, recommendation]) => {
               const form = document.createElement('form');
               form.method = 'post';
-              form.action = '/ui/actions/steward.assist.prepare';
+              form.action = '/ui/actions/steward.assist.accept';
               form.innerHTML =
                 '<input name="csrf_token" value="' + token + '">' +
-                '<input name="action_id" value="steward.assist.prepare">' +
-                '<input name="next" value="/agents">';
+                '<input name="action_id" value="steward.assist.accept">' +
+                '<input name="next" value="/agent/steward_assist">' +
+                '<input name="recommendation_id" value="' + recommendation + '">';
               document.body.appendChild(form);
               form.submit();
             }""",
-            csrf_token,
+            [csrf_token, recommendation_id],
         )
     response = posted.value
     assert response.status == 403, response.text()
@@ -263,6 +317,78 @@ def test_the_task_page_clears_the_recommendation_with_a_click(
     message = click_action(page, "assistant-clear", "steward.assist.clear")
     assert "cleared" in message.lower()
     page.wait_for_selector('[data-testid="assistant-empty"]')
+    assert page.recorded_errors == []
+
+
+# -------------------------------------------------------------- the refusals
+
+
+def test_the_held_recommendation_cannot_be_accepted_and_says_why(
+    page, server: BrowserServer, login
+) -> None:
+    """The button is off, and the note beside it says who decides."""
+    prepare_the_held_issue(server)
+    wake_the_assistant(page, server, login)
+    login("persona_data_steward")
+    open_the_held_task(page, server)
+    click_action(page, "assistant-recommend", "steward.assist.recommend")
+    page.wait_for_selector('[data-testid="assistant-pill"]')
+    assert "Held" in page.locator('[data-testid="assistant-pill"]').inner_text()
+    button = page.locator('[data-testid="assistant-accept"]')
+    assert button.is_disabled()
+    note = page.locator('[data-testid="assistant-accept-note"]')
+    assert note.count() == 1
+    assert "Held: decide this one yourself." in note.inner_text()
+    assert page.recorded_errors == []
+
+
+def test_a_refused_acceptance_shows_the_reason_in_the_feedback_area(
+    page, server: BrowserServer, login
+) -> None:
+    """The page says why the acceptance was refused."""
+    prepare_the_held_issue(server)
+    wake_the_assistant(page, server, login)
+    login("persona_data_steward")
+    open_the_held_task(page, server)
+    click_action(page, "assistant-recommend", "steward.assist.recommend")
+    page.wait_for_selector('[data-testid="assistant-pill"]')
+    token = page.locator(
+        '[data-testid="assistant-accept-form"] input[name="csrf_token"]'
+    )
+    assert token.count() == 1
+    csrf_token = token.get_attribute("value") or ""
+    recommendation = page.locator(
+        '[data-testid="assistant-accept-form"] input[name="recommendation_id"]'
+    )
+    assert recommendation.count() == 1
+    recommendation_id = recommendation.get_attribute("value") or ""
+    # The button is off, so the acceptance is sent the way a browser sends
+    # a form.  The server refuses it and sends the person back to the page
+    # the work is on, where the reason stands in the feedback area.
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+        and "/ui/actions/steward.assist.accept" in response.url
+    ) as posted:
+        page.evaluate(
+            """([token, recommendation, next]) => {
+              const form = document.createElement('form');
+              form.method = 'post';
+              form.action = '/ui/actions/steward.assist.accept';
+              form.innerHTML =
+                '<input name="csrf_token" value="' + token + '">' +
+                '<input name="action_id" value="steward.assist.accept">' +
+                '<input name="next" value="' + next + '">' +
+                '<input name="recommendation_id" value="' + recommendation + '">';
+              document.body.appendChild(form);
+              form.submit();
+            }""",
+            [csrf_token, recommendation_id, page.url],
+        )
+    response = posted.value
+    assert response.status == 303, response.status
+    page.wait_for_selector('[data-testid="feedback"][data-outcome="denied"]')
+    message = page.locator('[data-testid="feedback-message"]')
+    assert "Held: decide this one yourself." in message.inner_text()
     assert page.recorded_errors == []
 
 

@@ -264,6 +264,20 @@
       "sensitive": false
     },
     {
+      "permission_id": "agent.toggle.steward_assist",
+      "action": "agent.toggle.steward_assist",
+      "category": "agent",
+      "description": "Wake the steward assistant or put it back to sleep, and no other agent. The Data Steward holds this grant; the Agent Operator holds the general wake grant.",
+      "sensitive": false
+    },
+    {
+      "permission_id": "governance.issue.resolve",
+      "action": "governance.issue.resolve",
+      "category": "governance",
+      "description": "Close a recorded data issue as resolved or not applicable, with a reason code and a note. The Data Steward holds this grant; it approves no link and decides no permit.",
+      "sensitive": false
+    },
+    {
       "permission_id": "agent.run.intake",
       "action": "agent.run.intake",
       "category": "agent",
@@ -281,7 +295,7 @@
       "permission_id": "agent.run.steward_assist",
       "action": "agent.run.steward_assist",
       "category": "agent",
-      "description": "Ask the steward assistant to prepare a recommendation for a task of the Data Steward's queue. The Data Steward holds this grant; the assistant decides nothing.",
+      "description": "Ask the steward assistant to prepare a recommendation for a task of the Data Steward's queue. The Data Steward and the Agent Operator hold this grant; the assistant decides nothing.",
       "sensitive": false
     },
     {

@@ -398,6 +398,10 @@ def _accept(ctx: ActionContext) -> Outcome:
     steward is the decider of record and the service of the City writes as
     it always does.  The recommendation is recorded in the audit trail and
     cleared, so the task holds no answer twice.
+
+    A recommendation that may not be accepted is refused with the reason of
+    the guard, in the words the button carries beside it, so the person reads
+    why on the page the work is on.
     """
     recommendation_id = ctx.text("recommendation_id")
     if not recommendation_id:
@@ -409,10 +413,38 @@ def _accept(ctx: ActionContext) -> Outcome:
     AgentControlService(ctx.session).authorize_run(ctx.actor, assistant.AGENT_KEY)
     recommendation = assistant.recommendation_by_id(ctx.session, recommendation_id)
     if recommendation.cleared:
-        raise ValidationError("this recommendation was cleared; prepare it again")
-    assistant.refuse_unless_acceptable(ctx.session, recommendation)
+        return _refused(
+            recommendation,
+            steward_assist_views.CLEARED_ACCEPT_NOTE,
+            "cleared",
+        )
+    try:
+        assistant.refuse_unless_acceptable(ctx.session, recommendation)
+    except ValidationError:
+        refusal = steward_assist_views.accept_refusal(ctx.session, recommendation)
+        if not refusal:
+            raise
+        return _refused(recommendation, refusal, "refused")
     reason = ctx.text("reason") or recommendation.reason
     return _accept_one(ctx, recommendation, reason)
+
+
+def _refused(recommendation: Any, message: str, state: str) -> Outcome:
+    """Return the refusal of an acceptance, with nothing changed.
+
+    The refusal is recorded in the audit trail and reported in the feedback
+    region of the page the person came from, so the reason is read where the
+    work is.
+    """
+    return Outcome(
+        message=message,
+        destination="Data issues",
+        state=state,
+        target_type="steward_recommendation",
+        target_id=recommendation.id,
+        refused=True,
+        extra={"detail": message},
+    )
 
 
 def _batch_accept(ctx: ActionContext) -> Outcome:

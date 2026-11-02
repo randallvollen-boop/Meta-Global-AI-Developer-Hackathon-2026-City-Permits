@@ -1967,17 +1967,17 @@ def collect_issues(session: Session, actor: ActorContext) -> list[Issue]:
     for row in session.execute(
         select(change.GovernanceIssue).order_by(change.GovernanceIssue.created_at, change.GovernanceIssue.id)
     ).scalars():
-        if row.subject_id in synthetic:
+        if row.subject_id in synthetic or row.subject_id.partition(":")[0] in synthetic:
             continue
-        party = session.get(registry.Party, row.subject_id)
+        party = session.get(registry.Party, row.subject_id.partition(":")[0])
         issues.append(
             Issue(
                 kind="issue",
                 item_id=row.id,
-                title=row.description,
+                title=issue_plain_words(session, row),
                 record=party.display_name if party is not None else display.pretty(row.subject_type) + " " + row.subject_id,
                 record_ref=_ref("record", party.id) if party is not None else "",
-                applications=_applications_of(session, [row.subject_id], synthetic) if party is not None else [],
+                applications=_applications_of(session, [party.id], synthetic) if party is not None else [],
                 source=row.responsible_queue_id or "Steward queue",
                 status="needs_review" if row.status == "open" else "resolved",
                 assignee_id=row.assigned_actor_id,
@@ -2830,36 +2830,291 @@ def case_case(session: Session, actor: ActorContext, case_id: str) -> dict[str, 
     }
 
 
+#: The plain sentence of each kind of recorded issue.  ``{record}`` is the name
+#: of the record the issue is about and ``{field}`` the field in plain words.
+ISSUE_PLAIN_WORDS: dict[str, str] = {
+    "unresolved_field_authority": (
+        "{record}'s {field} comes from a source nobody has approved yet, so the "
+        "City cannot say which value is right."
+    ),
+    "late_source_version": (
+        "A source sent an older version of {record} after a newer one was already "
+        "accepted. The newer version stands and the late copy is kept as history."
+    ),
+    "source_version_payload_conflict": (
+        "Two versions of the same business record were delivered with different "
+        "content, so the City cannot tell which one is right."
+    ),
+    "unregistered_dataset": (
+        "A source sent records from a dataset the City has not registered, so "
+        "those records cannot be published yet."
+    ),
+}
+
+#: The words of the preview of closing an issue, by kind of issue.
+ISSUE_CLOSE_PREVIEW: dict[str, str] = {
+    "unresolved_field_authority": (
+        "The issue closes. The field stays without a declared owner until a "
+        "source link is approved, and it can be raised again."
+    ),
+    "late_source_version": "The issue closes. The accepted version stands; the late copy stays as history.",
+    "source_version_payload_conflict": (
+        "The issue closes. The copy the City accepted stays; the other copy "
+        "stays as history."
+    ),
+    "unregistered_dataset": "The issue closes. The dataset stays unregistered until it is registered.",
+}
+
+
+def _issue_field(row: change.GovernanceIssue) -> tuple[str, str, str]:
+    """Return the record id, the field name and the field in plain words."""
+    entity_id, _, attribute = row.subject_id.partition(":")
+    label = ""
+    if attribute:
+        from acme_city.registry.provenance import ENTITY_ATTRIBUTES
+
+        for rules in ENTITY_ATTRIBUTES.values():
+            for rule in rules:
+                if rule.attribute_path == attribute:
+                    label = rule.label.lower()
+        label = label or display.pretty(attribute).lower()
+    return entity_id, attribute, label
+
+
+def issue_plain_words(session: Session, row: change.GovernanceIssue) -> str:
+    """Return what a recorded issue means, in a sentence a steward can read.
+
+    The sentence names the record and the field by name and never by their
+    internal identifiers; those stay under "More details".
+    """
+    entity_id, _attribute, field = _issue_field(row)
+    party = session.get(registry.Party, entity_id)
+    record = party.display_name if party is not None else display.pretty(entity_id)
+    template = ISSUE_PLAIN_WORDS.get(row.issue_type)
+    if template is None:
+        return str(row.description or "").strip() or "A data issue was recorded for this record."
+    return template.format(record=record, field=field or "value")
+
+
+def _pending_authority_link(
+    session: Session, row: change.GovernanceIssue
+) -> tuple[registry.Crosswalk | None, str]:
+    """Return the pending source link that would settle an unknown authority.
+
+    The link is a proposed link of the record from the source the authority
+    policy of the field names.  The second value is the domain of the policy.
+    """
+    from acme_city.registry.provenance import ENTITY_ATTRIBUTES, policy_for
+
+    entity_id, attribute, _label = _issue_field(row)
+    entity = session.execute(
+        select(registry.CanonicalEntity).where(registry.CanonicalEntity.entity_id == entity_id)
+    ).scalars().first()
+    if entity is None or not attribute:
+        return None, "applicants"
+    rule = next(
+        (item for item in ENTITY_ATTRIBUTES.get(entity.entity_type, ()) if item.attribute_path == attribute),
+        None,
+    )
+    policy = policy_for(session, rule.policy_id) if rule is not None else None
+    if policy is None or not policy.authoritative_source_system_id:
+        return None, "applicants"
+    candidates = session.execute(
+        select(registry.Crosswalk)
+        .where(
+            registry.Crosswalk.entity_id == entity_id,
+            registry.Crosswalk.link_status == "proposed",
+            registry.Crosswalk.source_system_id == policy.authoritative_source_system_id,
+        )
+        .order_by(registry.Crosswalk.created_at, registry.Crosswalk.id)
+    ).scalars().all()
+    if policy.authoritative_dataset_key:
+        candidates = [
+            item
+            for item in candidates
+            if not item.source_dataset_key or item.source_dataset_key == policy.authoritative_dataset_key
+        ]
+    return (candidates[-1] if candidates else None), (policy.domain_id or "applicants")
+
+
+def _issue_actions(
+    session: Session,
+    actor: ActorContext,
+    row: change.GovernanceIssue,
+    record: str,
+    plain: str,
+) -> list[dict[str, Any]]:
+    """Return what a steward may do about an open recorded issue.
+
+    Every kind of issue offers "Close with a reason".  An issue about an
+    unknown field authority also offers to approve the pending source link
+    when one exists.  Each action carries a preview of what will change.
+    """
+    from acme_city.governance.service import (
+        ISSUE_OUTCOMES,
+        ISSUE_REASON_CODES,
+        PERMISSION_RESOLVE_ISSUE,
+    )
+
+    actions: list[dict[str, Any]] = []
+    if row.issue_type == "unresolved_field_authority":
+        pending, domain = _pending_authority_link(session, row)
+        if pending is not None:
+            source_label = display.source_name(
+                session, pending.source_system_id, pending.source_dataset_key or ""
+            )
+            actions.append(
+                {
+                    **_action(
+                        session,
+                        actor,
+                        action_id="governance.issue.approve_link",
+                        label=f"Approve the link to {source_label}",
+                        path="/ui/actions/governance.issue.approve_link",
+                        permission="registry.crosswalk.decide",
+                        domain_id=domain,
+                        destination="Registry crosswalk",
+                        description=(
+                            "Approve the source link that is waiting. The decision, your "
+                            "name, the time and the note are recorded."
+                        ),
+                        expected_version=pending.version,
+                        fields=(
+                            view_models._field("issue_id", "Issue", value=row.id, field_type="hidden"),
+                            view_models._field("crosswalk_id", "Link", value=pending.id, field_type="hidden"),
+                            view_models._field("entity_id", "Master record", value=pending.entity_id, field_type="hidden"),
+                            view_models._field("source_system_id", "Source system", value=pending.source_system_id, field_type="hidden"),
+                            view_models._field("dataset_key", "Dataset", value=pending.source_dataset_key or "", field_type="hidden"),
+                            view_models._field("source_record_id", "Source record", value=pending.source_record_id, field_type="hidden"),
+                            view_models._field("expected_version", "Expected link version", value=str(pending.version), field_type="hidden"),
+                            view_models._field("reason", "Decision note", field_type="textarea", required=True),
+                        ),
+                    ),
+                    "dom_id": "approve-source-link",
+                    "preview": _preview(
+                        f"Links {pending.source_record_id} ({source_label}) to {record}.",
+                        "No application relationship changes; applications that name this record are rechecked.",
+                        "The source record is not edited and no master value is overwritten.",
+                        "The source becomes the owner of the field. When that settles it, this issue closes.",
+                    ),
+                }
+            )
+    actions.append(
+        {
+            **_action(
+                session,
+                actor,
+                action_id="governance.issue.resolve",
+                label="Close with a reason",
+                path="/ui/actions/governance.issue.resolve",
+                permission=PERMISSION_RESOLVE_ISSUE,
+                destination="Governance issue queue",
+                description=(
+                    "Close this issue as resolved or not applicable. The reason code, "
+                    "your note, your name and the time are recorded."
+                ),
+                expected_version=row.version,
+                fields=(
+                    view_models._field("issue_id", "Issue", value=row.id, field_type="hidden"),
+                    view_models._field("expected_version", "Expected issue version", value=str(row.version), field_type="hidden"),
+                    view_models._field(
+                        "outcome", "Close as", field_type="select",
+                        options=tuple((key, label) for key, label in ISSUE_OUTCOMES.items()),
+                        required=True,
+                    ),
+                    view_models._field(
+                        "reason_code", "Reason", field_type="select",
+                        options=tuple((key, label) for key, label in ISSUE_REASON_CODES.items()),
+                        required=True,
+                    ),
+                    view_models._field("note", "Note", field_type="textarea", required=True),
+                ),
+            ),
+            "dom_id": "close-issue",
+            "preview": _preview(
+                "No record is linked or unlinked.",
+                "No application relationship changes.",
+                "Every source value stays as received.",
+                ISSUE_CLOSE_PREVIEW.get(
+                    row.issue_type,
+                    "The issue closes as the outcome you choose, with your reason.",
+                ),
+            ),
+        }
+    )
+    return actions
+
+
+def _issue_result(session: Session, row: change.GovernanceIssue) -> dict[str, Any] | None:
+    """Return who closed a recorded issue, when, and with which note."""
+    if row.status == "open":
+        return None
+    from acme_city.governance.service import ISSUE_OUTCOMES, ISSUE_REASON_CODES
+
+    event = session.execute(
+        select(audit.AuditEvent)
+        .where(
+            audit.AuditEvent.target_id == row.id,
+            audit.AuditEvent.action == "governance.issue.resolve",
+            audit.AuditEvent.outcome == "accepted",
+        )
+        .order_by(audit.AuditEvent.occurred_at.desc())
+    ).scalars().first()
+    text = ISSUE_OUTCOMES.get(row.status, display.pretty(row.status))
+    if event is None:
+        return {"text": text, "who": "Not recorded", "when": None, "note": ""}
+    code = str((event.metadata_json or {}).get("reason_code", ""))
+    if code in ISSUE_REASON_CODES:
+        text = f"{text}: {ISSUE_REASON_CODES[code]}"
+    return {
+        "text": text,
+        "who": view_models.actor_label(session, event.actor_id),
+        "when": _iso(event.occurred_at),
+        "note": event.reason or "",
+    }
+
+
 def governance_case(session: Session, actor: ActorContext, issue_id: str) -> dict[str, Any]:
     """Return the focused case of a recorded governance issue."""
     row = session.get(change.GovernanceIssue, issue_id)
     if row is None:
         return {}
     synthetic = _synthetic_ids(session)
-    party = session.get(registry.Party, row.subject_id)
+    entity_id = row.subject_id.partition(":")[0]
+    party = session.get(registry.Party, entity_id)
     applications = (
-        _outstanding_for(session, _applications_of(session, [row.subject_id], synthetic)) if party is not None else []
+        _outstanding_for(session, _applications_of(session, [party.id], synthetic)) if party is not None else []
     )
     status = "needs_review" if row.status == "open" else "resolved"
+    record = party.display_name if party is not None else str(row.subject_id)
+    plain = issue_plain_words(session, row)
+    actions = _issue_actions(session, actor, row, record, plain) if row.status == "open" else []
     return {
         "kind": "issue",
         "id": row.id,
-        "record_name": party.display_name if party is not None else str(row.subject_id),
-        "record_reference": row.id,
+        "subject_id": row.subject_id,
+        "record_name": record,
+        "record_reference": "",
         "source_name": row.responsible_queue_id or "Steward queue",
         "record_type": "issue",
-        "title": row.description,
+        "title": plain,
         "status": status,
         "status_label": STATUS_LABELS[status],
-        "problem": row.description,
+        "problem": plain,
+        "technical": [
+            {"label": "Issue", "value": row.id},
+            {"label": "Kind of issue", "value": row.issue_type},
+            {"label": "About", "value": row.subject_id},
+            {"label": "As recorded", "value": row.description},
+        ],
         "why": "This issue is recorded against "
-        + (party.display_name if party is not None else row.subject_id)
+        + record
         + (" and blocks work until it is resolved." if row.blocking else "."),
         "applications": applications,
         "compare_rows": [],
-        "actions": [],
-        "result": None,
-        "events": _events_for(session, [row.id, row.subject_id], ("change.", "registry.", "source.")),
+        "actions": actions,
+        "result": _issue_result(session, row),
+        "events": _events_for(session, [row.id, entity_id], ("change.", "registry.", "source.", "governance.")),
         "target_ids": {row.id},
         "separate_note": SEPARATE_NOTE,
         "evidence_detail_id": "",
@@ -2885,7 +3140,27 @@ def focused_case(
         case["assistant"] = steward_assist_views.case_panel(
             session, actor, kind, item_id, settings=settings
         )
+        # The panel that shows what was submitted beside what the record
+        # holds, and the read-only view of the application it came from.
+        case["panel"] = submitted_vs_record(session, actor, case)
+        case["application_link"] = _application_link(session, case)
     return case
+
+
+def _application_link(session: Session, case: dict[str, Any]) -> dict[str, str]:
+    """Return the link to the read-only view of the application of the task.
+
+    The link names the application the issue came from.  A task with no
+    application has no link: there is nothing to open.
+    """
+    application = _first_application(session, case)
+    if application is None:
+        return {}
+    return {
+        "href": f"/steward/applications/{application.id}",
+        "number": application.source_application_number,
+        "label": "Open the application",
+    }
 
 
 def _case_evidence(case: dict[str, Any]) -> tuple[str, ...]:
@@ -3162,8 +3437,473 @@ def _linked_case(session: Session, actor: ActorContext, crosswalk: registry.Cros
     }
 
 
-# ------------------------------------------------------------ evidence drawer
+# --------------------------------------------- the application and the panel
 
+
+#: The fields the "Submitted vs record" panel compares, in the order a
+#: reader needs them.
+COMPARED_FIELDS: tuple[str, ...] = (
+    "Name",
+    "Address",
+    "Email",
+    "Phone",
+    "Business licence",
+    "Contractor registration",
+)
+
+#: The credential kinds the panel compares, by the field that holds them.
+CREDENTIAL_FIELDS: dict[str, str] = {
+    "business_license": "Business licence",
+    "contractor_registration": "Contractor registration",
+}
+
+#: The words the panel uses when the two sides hold the same value.
+SAME_VALUE_WORDS = "The same."
+
+#: The words the panel uses when the two sides hold different values.
+DIFFERENT_VALUE_WORDS = "They differ."
+
+#: The grant that opens the read-only view of an application.  It is a read
+#: grant: the page shows what the applicant submitted and decides nothing.
+APPLICATION_READ_PERMISSION = "records.document.view"
+
+
+def _same_value(field: str, submitted: str, record: str) -> bool:
+    """Whether two values of one field are the same value.
+
+    The comparison follows the rules of the City: an address is compared by
+    its building and its unit, a name by its words and a licence by its
+    characters.  Two spellings of one value are the same value.
+    """
+    if field == "Address":
+        left = normalize_address(submitted)
+        right = normalize_address(record)
+        return (
+            left.building_key == right.building_key
+            and left.unit_key == right.unit_key
+        )
+    if field == "Email":
+        return normalize_email(submitted) == normalize_email(record)
+    if field == "Phone":
+        return normalize_phone(submitted) == normalize_phone(record)
+    if field == "Name":
+        return (
+            normalize_name(submitted).normalized == normalize_name(record).normalized
+        )
+    return _norm(submitted) == _norm(record)
+
+
+def _difference_words(submitted: str, record: str, field: str = "") -> str:
+    """Return how two values differ, in words.
+
+    The words carry the difference, so a reader never has to rely on a
+    colour to see it.
+    """
+    if not submitted and not record:
+        return "Neither side holds a value."
+    if not submitted:
+        return "Only the record holds this value."
+    if not record:
+        return "Only the submission holds this value."
+    if _same_value(field, submitted, record):
+        return SAME_VALUE_WORDS
+    return DIFFERENT_VALUE_WORDS
+
+
+def _panel_rows(
+    submitted: dict[str, str], record: dict[str, str]
+) -> list[dict[str, str]]:
+    """Return the rows of the panel: the fields in question, side by side.
+
+    A field neither side holds is left out: there is nothing to compare.
+    """
+    rows: list[dict[str, str]] = []
+    for field in COMPARED_FIELDS:
+        left = str(submitted.get(field, "") or "")
+        right = str(record.get(field, "") or "")
+        if not left and not right:
+            continue
+        words = _difference_words(left, right, field)
+        rows.append(
+            {
+                "field": field,
+                "submitted": left or "No value",
+                "record": right or "No value",
+                "difference": words,
+                "differs": "yes" if words != SAME_VALUE_WORDS else "no",
+            }
+        )
+    return rows
+
+
+def _party_record_values(session: Session, party_id: str) -> dict[str, str]:
+    """Return the values a master record holds, by field.
+
+    A licence of one kind is never compared with a licence of another kind:
+    the business licence and the contractor registration sit in their own
+    fields.
+    """
+    from acme_city.registry.candidates import _party_addresses
+
+    party = session.get(registry.Party, party_id)
+    if party is None:
+        return {}
+    contacts = session.execute(
+        select(registry.PartyContact).where(
+            registry.PartyContact.party_id == party_id
+        )
+    ).scalars().all()
+    credentials = session.execute(
+        select(registry.Credential).where(
+            registry.Credential.holder_party_id == party_id
+        )
+    ).scalars().all()
+    values = {
+        "Name": party.display_name or "",
+        "Address": ", ".join(_party_addresses(session, party_id)),
+        "Email": next(
+            (row.value for row in contacts if row.contact_type == "email"), ""
+        ),
+        "Phone": next(
+            (row.value for row in contacts if row.contact_type == "phone"), ""
+        ),
+    }
+    for credential_type, field in CREDENTIAL_FIELDS.items():
+        numbers = sorted(
+            row.number for row in credentials if row.credential_type == credential_type
+        )
+        values[field] = ", ".join(numbers)
+    return values
+
+
+def _submitted_values(session: Session, application: Any) -> dict[str, str]:
+    """Return the values the applicant submitted on one application, by field."""
+    facts = dict(application.submitted_facts or {})
+    applicant = (
+        session.get(registry.Party, application.applicant_party_id)
+        if application.applicant_party_id
+        else None
+    )
+    site = session.execute(
+        select(permit.ApplicationSite).where(
+            permit.ApplicationSite.application_id == application.id
+        )
+    ).scalars().first()
+    return {
+        "Name": str(
+            facts.get("organization_name")
+            or facts.get("applicant_name")
+            or (applicant.display_name if applicant is not None else "")
+        ),
+        "Address": str(
+            (site.submitted_address_text if site is not None else "")
+            or facts.get("submitted_site_text")
+            or facts.get("business_address")
+            or ""
+        ),
+        "Email": str(facts.get("contact_email") or ""),
+        "Phone": str(facts.get("contact_phone") or ""),
+        "Business licence": str(facts.get("license_number") or ""),
+        "Contractor registration": str(facts.get("contractor_license") or ""),
+    }
+
+
+def _first_application(session: Session, case: dict[str, Any]) -> Any:
+    """Return the application the task came from, when it names one.
+
+    The application of the record the steward is reading comes first: a case
+    that compares two organizations opens the application of the one on the
+    screen, not the one of its neighbour.
+    """
+    candidates = list(case.get("candidates") or [])
+    shown = next((item for item in candidates if item.get("open")), None)
+    if shown is None and candidates:
+        shown = candidates[0]
+    if shown is not None:
+        entity_id = str(shown.get("entity_id", ""))
+        for application in view_models._party_applications(session, entity_id):
+            return application
+    for item in case.get("applications") or []:
+        application_id = str(item.get("href", "")).rsplit("/", 1)[-1]
+        application = session.get(permit.Application, application_id)
+        if application is not None:
+            return application
+    return None
+
+
+def _link_panel(
+    session: Session, case: dict[str, Any]
+) -> tuple[list[dict[str, str]], str, str, str]:
+    """Return the panel of a record match: the application against the record."""
+    candidates = list(case.get("candidates") or [])
+    shown = next((item for item in candidates if item.get("open")), None)
+    if shown is None and candidates:
+        shown = candidates[0]
+    if shown is None:
+        return [], "", "", ""
+    record = _party_record_values(session, str(shown.get("entity_id", "")))
+    application = _first_application(session, case)
+    if application is None:
+        return [], "", "What the master record holds", ""
+    submitted = _submitted_values(session, application)
+    return (
+        _panel_rows(submitted, record),
+        "What the applicant submitted",
+        "What the master record holds",
+        application.id,
+    )
+
+
+def _parcel_panel(
+    session: Session, case: dict[str, Any]
+) -> tuple[list[dict[str, str]], str, str, str]:
+    """Return the panel of a property link: the application against the parcel."""
+    application = session.get(permit.Application, str(case.get("id", "")))
+    if application is None:
+        return [], "", "", ""
+    parcel = case.get("parcel") or {}
+    submitted = _submitted_values(session, application)
+    record = {
+        "Address": str(parcel.get("matched_address") or ""),
+        "Name": "",
+        "Email": "",
+        "Phone": "",
+        "Business licence": "",
+        "Contractor registration": "",
+    }
+    return (
+        _panel_rows(submitted, record),
+        "What the applicant submitted",
+        "What the parcel record holds",
+        application.id,
+    )
+
+
+def _case_panel(case: dict[str, Any]) -> tuple[list[dict[str, str]], str, str, str]:
+    """Return the panel of a correction: the proposed value against the source."""
+    rows: list[dict[str, str]] = []
+    for row in (case.get("comparison") or {}).get("rows") or []:
+        left = str(row.get("master", "") or "")
+        right = str(row.get("source", "") or "")
+        words = _difference_words(left, right, str(row.get("field", "")))
+        rows.append(
+            {
+                "field": str(row.get("field", "")),
+                "submitted": left or "No value",
+                "record": right or "No value",
+                "difference": words,
+                "differs": "yes" if words != SAME_VALUE_WORDS else "no",
+            }
+        )
+    return rows, "What the correction proposes", "What the source record holds", ""
+
+
+def _issue_panel(
+    session: Session, case: dict[str, Any]
+) -> tuple[list[dict[str, str]], str, str, str]:
+    """Return the panel of a recorded issue: the field the issue is about.
+
+    The issue names a field of a master record.  The panel shows what the
+    source records sent for that field beside what the master record holds
+    today, so a person sees what the record is missing.
+    """
+    subject = str(case.get("subject_id", "") or "")
+    entity_id, _, attribute = subject.partition(":")
+    if not entity_id or not attribute:
+        return [], "", "", ""
+    party = session.get(registry.Party, entity_id)
+    if party is None:
+        return [], "", "", ""
+    master = _entity_attribute_value(session, party, attribute)
+    sent = _source_attribute_value(session, entity_id, attribute)
+    if not master and not sent:
+        return [], "", "", ""
+    field = display.pretty(attribute)
+    words = _difference_words(sent, master, field)
+    row = {
+        "field": field,
+        "submitted": sent or "No value",
+        "record": master or "No value",
+        "difference": words,
+        "differs": "yes" if words != SAME_VALUE_WORDS else "no",
+    }
+    return (
+        [row],
+        "What the source record sent",
+        "What the master record holds",
+        "",
+    )
+
+
+def _entity_attribute_value(session: Session, party: Any, attribute: str) -> str:
+    """Return the value of one field of a master record, in plain words."""
+    from acme_city.registry.candidates import _party_addresses
+
+    if attribute in ("postal_address", "address", "site_address"):
+        return ", ".join(_party_addresses(session, party.id))
+    if attribute in ("display_name", "name", "legal_name", "organization_name"):
+        return party.display_name or party.legal_name or ""
+    contacts = session.execute(
+        select(registry.PartyContact).where(
+            registry.PartyContact.party_id == party.id
+        )
+    ).scalars().all()
+    if attribute in ("contact_email", "email"):
+        return next((row.value for row in contacts if row.contact_type == "email"), "")
+    if attribute in ("contact_phone", "phone"):
+        return next((row.value for row in contacts if row.contact_type == "phone"), "")
+    return ""
+
+
+#: The payload keys that hold a value of a named field, in the order they
+#: are read.
+SOURCE_ATTRIBUTE_KEYS: dict[str, tuple[str, ...]] = {
+    "postal_address": (
+        "business_address",
+        "submitted_site_text",
+        "source_string",
+    ),
+    "address": ("business_address", "submitted_site_text", "source_string"),
+    "display_name": (
+        "holder_name",
+        "organization_name",
+        "display_name",
+        "applicant_name",
+        "name",
+    ),
+    "name": ("holder_name", "organization_name", "display_name", "name"),
+    "legal_name": ("holder_name", "organization_name", "legal_name"),
+    "contact_email": ("contact_email",),
+    "email": ("contact_email",),
+    "contact_phone": ("contact_phone",),
+    "phone": ("contact_phone",),
+}
+
+
+def _source_attribute_value(session: Session, entity_id: str, attribute: str) -> str:
+    """Return the value the source records sent for one field of a record."""
+    from acme_city.registry.provenance import current_accepted_snapshot
+
+    keys = SOURCE_ATTRIBUTE_KEYS.get(attribute, (attribute,))
+    values: list[str] = []
+    for crosswalk in session.execute(
+        select(registry.Crosswalk).where(registry.Crosswalk.entity_id == entity_id)
+    ).scalars():
+        snapshot = current_accepted_snapshot(
+            session,
+            crosswalk.source_system_id,
+            crosswalk.source_dataset_key or "",
+            crosswalk.source_record_id,
+        )
+        if snapshot is None:
+            continue
+        payload = dict(snapshot.raw_payload or {})
+        for key in keys:
+            value = str(payload.get(key, "") or "")
+            if value and value not in values:
+                values.append(value)
+    return ", ".join(values)
+
+
+def submitted_vs_record(
+    session: Session, actor: ActorContext, case: dict[str, Any]
+) -> dict[str, Any]:
+    """Return the panel that compares the submission with the record.
+
+    The panel lists every field in question side by side: what was
+    submitted, what the source or master record holds today, and how the two
+    differ.  The difference is written in words, so a reader never has to
+    rely on a colour to see it.
+
+    The panel reads and decides nothing: it is the evidence a person reads
+    before deciding whether the assistant was right.
+    """
+    kind = str(case.get("kind", ""))
+    rows: list[dict[str, str]] = []
+    submitted_label = ""
+    record_label = ""
+    application_id = ""
+    if kind in ("link", "automatic_link"):
+        rows, submitted_label, record_label, application_id = _link_panel(session, case)
+    elif kind == "parcel":
+        rows, submitted_label, record_label, application_id = _parcel_panel(session, case)
+    elif kind == "case":
+        rows, submitted_label, record_label, application_id = _case_panel(case)
+    elif kind == "issue":
+        rows, submitted_label, record_label, application_id = _issue_panel(session, case)
+    return {
+        "rows": rows,
+        "submitted_label": submitted_label or "What was submitted",
+        "record_label": record_label or "What the record holds",
+        "application_id": application_id,
+        "empty": not rows,
+        "empty_note": (
+            "This task compares no submitted value with a record, so there is "
+            "nothing to show side by side."
+        ),
+    }
+
+
+def application_view(
+    session: Session, actor: ActorContext, application_id: str
+) -> dict[str, Any]:
+    """Return one application as the steward reads it.
+
+    The view is read only: it shows what the applicant submitted, the
+    documents that came with it, the address it names and the applicant.  It
+    offers no action and decides nothing.
+    """
+    application = session.get(permit.Application, application_id)
+    if application is None or not view_models._application_in_scope(actor, application):
+        return {}
+    facts = dict(application.submitted_facts or {})
+    applicant = (
+        session.get(registry.Party, application.applicant_party_id)
+        if application.applicant_party_id
+        else None
+    )
+    site = session.execute(
+        select(permit.ApplicationSite).where(
+            permit.ApplicationSite.application_id == application_id
+        )
+    ).scalars().first()
+    permit_type = session.get(permit.PermitType, application.permit_type_id)
+    documents = [
+        {
+            "document_id": row.id,
+            "document_type": display.pretty(row.document_type),
+            "version": row.version,
+            "received_at": _iso(row.received_at),
+            "content_hash": row.content_hash,
+            "open_href": f"/steward/applications/{application_id}/documents/{row.id}",
+        }
+        for row in session.execute(
+            select(permit.Document)
+            .where(permit.Document.application_id == application_id)
+            .order_by(permit.Document.document_type, permit.Document.version)
+        ).scalars()
+    ]
+    fields = [
+        {"label": display.pretty(key), "value": str(value)}
+        for key, value in sorted(facts.items())
+        if not isinstance(value, (dict, list))
+    ]
+    return {
+        "application_id": application.id,
+        "number": application.source_application_number,
+        "permit_type": permit_type.label if permit_type is not None else "",
+        "status": display.pretty(application.status),
+        "applicant": applicant.display_name if applicant is not None else "Not named",
+        "address": (site.submitted_address_text if site is not None else "")
+        or str(facts.get("submitted_site_text") or ""),
+        "fields": fields,
+        "documents": documents,
+        "no_documents": not documents,
+        "submitted_at": _iso(application.initial_submitted_at),
+    }
+
+
+# ------------------------------------------------------------ evidence drawer
 
 def _resolve_evidence(ctx: DetailContext, proposal_id: str) -> DetailView | None:
     proposal = ctx.session.get(registry.MatchProposal, proposal_id)
@@ -3311,7 +4051,19 @@ def source_records(
                 "name",
             ),
         )
-        text = f"{record_id} {name} {display.source_name(session, system_id, dataset)}".lower()
+        address = _payload_values(
+            payload,
+            (
+                "business_address",
+                "submitted_site_text",
+                "source_string",
+                "address",
+            ),
+        )
+        # The row carries a short summary: the name a person knows, or the
+        # address, or nothing but the identifier of the source record.
+        summary = name or address
+        text = f"{record_id} {name} {address} {display.source_name(session, system_id, dataset)}".lower()
         if needle and needle not in text:
             continue
         by_system[system_id] += 1
@@ -3365,6 +4117,8 @@ def source_records(
             {
                 "source": display.source_name(session, system_id, dataset),
                 "name": name or record_id,
+                "summary": summary,
+                "address": address,
                 "record_id": record_id,
                 "version": snapshot.source_record_version or "",
                 "changed": _iso(snapshot.source_updated_at),
@@ -3378,6 +4132,7 @@ def source_records(
                 "action_href": action_href,
                 "action": action,
                 "detail_id": f"{system_id}:{dataset}:{record_id}",
+                "detail_href": f"/source-records/{system_id}:{dataset}:{record_id}",
                 "scenario": snapshot.scenario_id or "",
             }
         )
@@ -3414,6 +4169,42 @@ def source_records(
         "system": system,
         "query": query,
         "link_state": link_state,
+    }
+
+
+def source_record(
+    session: Session, actor: ActorContext, request: Any, detail_id: str
+) -> dict[str, Any]:
+    """Return one source record as its own page.
+
+    The page shows the whole record as label and value pairs: the values the
+    source sent, where the record came from, who owns it and the link it
+    holds.  It reads and decides nothing.
+    """
+    from acme_city.ui.patterns import DetailContext
+
+    ctx = DetailContext(session=session, actor=actor, request=request)
+    view = _resolve_source(ctx, detail_id)
+    if view is None:
+        return {}
+    system_id, dataset_key, record_id = _split_source_id(detail_id)
+    return {
+        "title": "Source record",
+        "subtitle": view.subtitle,
+        "record_id": record_id,
+        "system_id": system_id,
+        "dataset_key": dataset_key,
+        "sections": [
+            {
+                "heading": section.heading,
+                "rows": [
+                    {"label": row.label, "value": row.value, "mono": row.mono}
+                    for row in section.rows
+                ],
+                "lines": list(section.lines),
+            }
+            for section in view.sections
+        ],
     }
 
 

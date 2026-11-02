@@ -98,7 +98,7 @@
       {
         "persona": "Agent Operator",
         "persona_id": "persona_agent_operator",
-        "intro": "The agent operator wakes the intake agent, asks it to prepare the fence case, and reads what it did. An agent proposes and a person decides: the operator makes no permit decision. Leave the steward assistant awake for the next section.",
+        "intro": "The agent operator wakes the intake agent, asks it to prepare the fence case, and reads what it did. An agent proposes and a person decides: the operator makes no permit decision. The operator also wakes and runs the steward assistant; the Data Steward still decides every recommendation. Leave the steward assistant awake for the next section.",
         "steps": [
           {
             "do": "Open \"Demo controls\" and choose \"Agent Operator\".",
@@ -126,9 +126,9 @@
             "href": "/agents/runs"
           },
           {
-            "do": "Go back to \"Agents\", click \"Steward assistant\" under \"Agent status\", and click \"Wake agent\". Leave it awake.",
-            "see": "The steward assistant reads awake, so the Data Steward can press \"Prepare recommendations\".",
-            "href": "/agents"
+            "do": "Open \"Steward assistant\" in the left menu and click \"Wake agent\". Leave it awake.",
+            "see": "The steward assistant reads awake. Click \"Prepare recommendations\" to prepare the work of the queue, or leave it to the Data Steward.",
+            "href": "/agent/steward_assist"
           }
         ]
       },

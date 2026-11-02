@@ -41,7 +41,7 @@
       </span>
     </p>
   </div>
-  <div class="actions"><a class="btn ghost" href="{{ rv.header.back_href }}" data-testid="back-link">{{ rv.header.back_label }}</a> {{ ui.detail_link('case-tech', app.application_id, 'Technical details') }} {{ ui.help_button('permit') }}</div>
+  <div class="actions"><a class="btn ghost" href="{{ rv.header.back_href }}" data-testid="back-link">{{ rv.header.back_label }}</a> {% if detail.can_open_submission %}<a class="btn" href="/steward/applications/{{ app.application_id }}" target="_blank" rel="noopener" data-testid="open-original-submission">Open the original submission</a> {% endif %}{{ ui.detail_link('case-tech', app.application_id, 'Technical details') }} {{ ui.help_button('permit') }}</div>
 </div>
 
 <details data-testid="case-pipeline">

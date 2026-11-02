@@ -1,9 +1,10 @@
 """The steward assistant as an agent: the grants, the bounds and the refusals.
 
 The assistant prepares the work of the queue; the steward decides.  The
-tests prove that the assistant runs only when the Data Steward asks it to and
-only while it is awake, that one press is bounded, that every press leaves a
-run trace, and that a recommendation that is held or stale is never accepted.
+tests prove that the assistant runs only when the Data Steward or the Agent
+Operator asks it to and only while it is awake, that one press is bounded,
+that every press leaves a run trace, and that a recommendation that is held
+or stale is never accepted.
 """
 # REQUIRES: PER-01, PER-04, SEC-01
 
@@ -256,19 +257,25 @@ def rename_the_target_of_the_applied_link(settings: Settings, application_id: st
 # ------------------------------------------------------------------- the grants
 
 
-def test_the_data_steward_holds_the_run_grant_of_the_assistant(seeded: Settings) -> None:
-    """Only the Data Steward may ask the assistant for a recommendation."""
+def test_the_data_steward_and_the_operator_hold_the_run_grant_of_the_assistant(
+    seeded: Settings,
+) -> None:
+    """The Data Steward and the Agent Operator may ask the assistant to work.
+
+    The operator wakes the assistant and may prepare the work of the queue.
+    The reviewer holds no grant of the assistant.
+    """
     factory = SessionFactory(seeded.database_url)
     try:
         with factory() as session:
             resolver = PermissionResolver(session)
-            assert "agent.run.steward_assist" in {
-                grant.permission_id for grant in resolver.grants_for(STEWARD.actor_id)
+            for holder in (STEWARD.actor_id, OPERATOR.actor_id):
+                assert "agent.run.steward_assist" in {
+                    grant.permission_id for grant in resolver.grants_for(holder)
+                }, holder
+            assert "agent.run.steward_assist" not in {
+                grant.permission_id for grant in resolver.grants_for(REVIEWER.actor_id)
             }
-            for other in ("persona_agent_operator", "persona_permit_reviewer"):
-                assert "agent.run.steward_assist" not in {
-                    grant.permission_id for grant in resolver.grants_for(other)
-                }
     finally:
         factory.dispose()
 
@@ -290,33 +297,39 @@ def test_a_persona_without_the_grant_may_not_ask_the_assistant(seeded: Settings)
         factory.dispose()
 
 
-def test_the_agent_operator_may_not_ask_the_assistant(seeded: Settings) -> None:
-    """The Agent Operator runs the agents of the City; the queue is not its work."""
+def test_the_agent_operator_may_ask_the_assistant(seeded: Settings) -> None:
+    """The Agent Operator wakes the assistant and may prepare its work."""
     wake(seeded)
     proposal_id = propose(seeded)
     factory = SessionFactory(seeded.database_url)
     try:
         with transaction(factory) as session:
-            with pytest.raises(PermissionDeniedError):
-                assistant.prepare(
-                    session,
-                    tasks=[recommenders.Task("link", proposal_id)],
-                    actor=OPERATOR,
-                )
+            result = assistant.prepare(
+                session,
+                tasks=[recommenders.Task("link", proposal_id)],
+                actor=OPERATOR,
+            )
+            assert len(result.recommendations) == 1
+            # The operator prepared the work; the Data Steward still decides.
+            assert result.recommendations[0].made_by_actor_id == assistant.SERVICE_ACTOR_ID
     finally:
         factory.dispose()
 
 
-def test_only_the_operator_may_wake_the_assistant(seeded: Settings) -> None:
-    """The wake and sleep switch belongs to the Agent Operator."""
+def test_the_steward_and_the_operator_may_wake_the_assistant_and_only_it(
+    seeded: Settings,
+) -> None:
+    """The steward holds the switch of this one assistant; the other agents stay with the operator."""
     factory = SessionFactory(seeded.database_url)
     try:
         with transaction(factory) as session:
-            with pytest.raises(PermissionDeniedError):
-                AgentControlService(session).set_mode(
-                    assistant.AGENT_KEY, "awake", STEWARD
-                )
             control = AgentControlService(session)
+            for other in ("intake", "adjudication"):
+                with pytest.raises(PermissionDeniedError):
+                    control.set_mode(other, "awake", STEWARD)
+            control.set_mode(assistant.AGENT_KEY, "awake", STEWARD)
+            assert control.state(assistant.AGENT_KEY).mode == "awake"
+            control.set_mode(assistant.AGENT_KEY, "asleep", OPERATOR)
             control.set_mode(assistant.AGENT_KEY, "awake", OPERATOR)
             assert control.state(assistant.AGENT_KEY).mode == "awake"
     finally:

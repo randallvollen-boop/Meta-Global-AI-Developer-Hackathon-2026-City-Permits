@@ -58,6 +58,7 @@ from acme_city.finance.schemas import (
 from acme_city.finance.service import FinanceService
 from acme_city.governance.schemas import (
     EscalateIssueCommand,
+    ResolveIssueCommand,
     PreviewAuthorityChangeCommand,
     PublishAuthorityChangeCommand,
     ReassignStewardCommand,
@@ -193,6 +194,10 @@ class Outcome:
     before_version: int | None = None
     after_version: int | None = None
     extra: dict[str, Any] = field(default_factory=dict)
+    #: True when the action was refused by a rule of the City and nothing
+    #: changed.  The interface reports the refusal in the feedback region of
+    #: the page the person came from, so the reason is read where the work is.
+    refused: bool = False
 
 
 # ------------------------------------------------------------------ security
@@ -2285,6 +2290,79 @@ def _governance_escalate(ctx: ActionContext) -> Outcome:
     )
 
 
+def _governance_resolve(ctx: ActionContext) -> Outcome:
+    """Close a recorded data issue as resolved or not applicable, with a reason."""
+    command = ResolveIssueCommand(
+        issue_id=ctx.text("issue_id"),
+        outcome=ctx.text("outcome"),
+        reason_code=ctx.text("reason_code"),
+        note=ctx.text("note"),
+        expected_version=ctx.integer("expected_version"),
+    )
+    result = GovernanceService(ctx.session).resolve_issue(command, ctx.actor)
+    return Outcome(
+        message="Closed the issue as " + result.value.status.replace("_", " ") + ".",
+        destination="Governance issue queue",
+        state=result.value.status,
+        target_type="governance_issue",
+        target_id=result.value.issue_id,
+        after_version=result.version,
+    )
+
+
+def _governance_approve_link(ctx: ActionContext) -> Outcome:
+    """Approve the pending source link of a field whose authority is unknown.
+
+    The approval is the existing link approval.  When the link settles the
+    authority of the field, the issue is closed in the same step with the
+    reason that the link was approved; otherwise the issue stays open and the
+    message says so.
+    """
+    from acme_city.governance.service import GovernanceService as _Governance
+    from acme_city.persistence.models import change as _change
+
+    issue = ctx.session.get(_change.GovernanceIssue, ctx.text("issue_id"))
+    if issue is None or issue.issue_type != "unresolved_field_authority":
+        raise ValidationError("the request names no issue about an unknown field authority")
+    if issue.status != "open":
+        raise ValidationError("this issue is already closed")
+    outcome = _registry_decide(ctx)
+    entity_id, _, attribute = issue.subject_id.partition(":")
+    view = RegistryService(ctx.session).trusted_view(entity_id)
+    settled = view is not None and any(
+        field.attribute_path == attribute and field.state == "authoritative"
+        for field in view.fields
+    )
+    if not settled:
+        return Outcome(
+            message=outcome.message
+            + " The authority of the field is still not settled, so the issue stays open.",
+            destination=outcome.destination,
+            state=outcome.state,
+            target_type=outcome.target_type,
+            target_id=outcome.target_id,
+            after_version=outcome.after_version,
+        )
+    _Governance(ctx.session).resolve_issue(
+        ResolveIssueCommand(
+            issue_id=issue.id,
+            outcome="resolved",
+            reason_code="link_approved",
+            note=ctx.text("reason") or "The source link was approved.",
+            expected_version=issue.version,
+        ),
+        ctx.actor,
+    )
+    return Outcome(
+        message=outcome.message + " The authority of the field is settled and the issue is closed.",
+        destination=outcome.destination,
+        state=outcome.state,
+        target_type="governance_issue",
+        target_id=issue.id,
+        after_version=issue.version,
+    )
+
+
 def _intake_simulate(ctx: ActionContext) -> Outcome:
     """Simulate a batch of incoming permits and run triage for each."""
     from acme_city.portal_intake.router import SimulateCommand
@@ -2807,6 +2885,8 @@ ACTION_HANDLERS: dict[str, Callable[[ActionContext], Outcome]] = {
     "governance.authority_preview": _governance_authority_preview,
     "governance.authority_publish": _governance_authority_publish,
     "governance.escalate": _governance_escalate,
+    "governance.issue.resolve": _governance_resolve,
+    "governance.issue.approve_link": _governance_approve_link,
     "permit.icon.generate": lambda ctx: permit_icons.generate_icon(ctx),
     "permit.icon.save": lambda ctx: permit_icons.save_icon(ctx),
 }
@@ -2910,7 +2990,8 @@ async def run_ui_action(
         before_version=outcome.before_version,
         after_version=outcome.after_version,
         reason=outcome.message,
-        outcome="accepted",
+        outcome="denied" if outcome.refused else "accepted",
+        denial_reason=outcome.state if outcome.refused else None,
         metadata={
             "destination": outcome.destination,
             "state": outcome.state,
@@ -2920,6 +3001,25 @@ async def run_ui_action(
         },
     )
     session.commit()
+    if outcome.refused:
+        # The action changed nothing, so the page the person came from is
+        # read again and the feedback region carries the reason of the
+        # refusal.  The person stays where the work is.
+        if wants_json:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "status": "denied",
+                    "message": outcome.message,
+                    "code": outcome.state,
+                    "destination": outcome.destination,
+                    "state": outcome.state,
+                    "pending": False,
+                    "affected": [],
+                    "version": None,
+                },
+            )
+        return RedirectResponse(destination, status_code=303)
     if wants_json:
         return JSONResponse(
             status_code=200,

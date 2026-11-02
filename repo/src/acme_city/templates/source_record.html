@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{# One source record on its own page: every value the source sent, as label
+   and value pairs.  The page reads and decides nothing. #}
+
+{% block content %}
+<p class="crumb"><a href="/source-records">&larr; Source records</a></p>
+
+<section class="stw-case-summary" aria-labelledby="source-record-heading" data-testid="source-record-summary">
+  <div class="page-head">
+    <div>
+      <h1 id="source-record-heading" data-testid="source-record-title">{{ record.title }}</h1>
+      <p class="sub" data-testid="source-record-subtitle">{{ record.subtitle }}</p>
+    </div>
+    <div class="actions">{{ ui.help_button('source_records') }}</div>
+  </div>
+</section>
+
+{% for section in record.sections %}
+<section class="panel" aria-labelledby="source-section-{{ loop.index }}" data-testid="source-record-section">
+  <div class="card-h"><h2 id="source-section-{{ loop.index }}">{{ section.heading }}</h2></div>
+  <div class="card-b">
+    {% for line in section.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if section.rows %}
+    <dl class="stw-facts" data-testid="source-record-values">
+      {% for row in section.rows %}
+      <div><dt>{{ row.label }}</dt><dd{% if row.mono %} class="mono"{% endif %}>{{ row.value }}</dd></div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

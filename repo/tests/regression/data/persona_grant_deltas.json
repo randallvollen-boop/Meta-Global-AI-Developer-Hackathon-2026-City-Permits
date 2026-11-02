@@ -1,5 +1,5 @@
 {
-  "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. OPR-3 and STW-18 add entries; STW-19 adds the preview permission together with the route it builds, because a reserved screen is gated on a permission no persona holds until its own slice grants it. STW-32 adds the run grant of the steward assistant to the Data Steward, which is the only persona that works the queue. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
+  "note": "The allowed grant changes of the four original personas against persona_grants_snapshot.json, applied in order. OPR-3 and STW-18 add entries; STW-19 adds the preview permission together with the route it builds, because a reserved screen is gated on a permission no persona holds until its own slice grants it. STW-32 adds the run grant of the steward assistant to the Data Steward, which is the only persona that works the queue. G21 adds the scoped wake grant of that one assistant. G22 adds the grant that closes a recorded data issue with a reason. An entry is {\"actor_id\", \"permission_id\", \"change\": \"add\" | \"remove\", \"domains\", \"record_scope\", \"slice\", \"reason\"}; a removal names only the actor and the permission.",
   "deltas": [
     {
       "actor_id": "persona_data_steward",
@@ -180,6 +180,24 @@
       "record_scope": [],
       "slice": "STW-32",
       "reason": "The Data Steward asks the steward assistant for the evidence and the proposed decision of a task. The assistant decides nothing, and the Agent Operator keeps the wake and sleep switch."
+    },
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "agent.toggle.steward_assist",
+      "change": "add",
+      "domains": [],
+      "record_scope": [],
+      "slice": "G21",
+      "reason": "The Data Steward wakes and puts to sleep the steward assistant, and no other agent. The intake and adjudication agents stay with the Agent Operator."
+    },
+    {
+      "actor_id": "persona_data_steward",
+      "permission_id": "governance.issue.resolve",
+      "change": "add",
+      "domains": [],
+      "record_scope": [],
+      "slice": "G22",
+      "reason": "The Data Steward closes a recorded data issue as resolved or not applicable, with a reason code and a note. The grant approves no link and decides no permit."
     }
   ]
 }

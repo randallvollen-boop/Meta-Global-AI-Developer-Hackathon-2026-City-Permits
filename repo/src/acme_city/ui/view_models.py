@@ -3712,6 +3712,9 @@ def permit_workspace(
         "proposed": proposed,
         "issued": issued,
         "documents": documents,
+        # The button that opens the original submission in a new tab needs the
+        # same read grant as the page it opens.
+        "can_open_submission": holds_grant(session, actor, "records.document.view"),
         "documents_declared_separately": documents_declared_separately,
         "evaluations": evaluations,
         "evaluation": evaluation_view,

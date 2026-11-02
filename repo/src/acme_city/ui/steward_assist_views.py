@@ -32,11 +32,17 @@ from acme_city.ui import view_models
 #: kind of evidence.
 _DISPLAY_PATH = REPO_ROOT / "config" / "ui_display.json"
 
-#: The note a steward reads when the assistant sleeps.  The wake and sleep
-#: switch belongs to the Agent Operator alone.
+#: The note a steward reads when the assistant sleeps.  The Data Steward and
+#: the Agent Operator hold the switch of this one assistant.
 SLEEP_NOTE = (
     "The steward assistant is asleep, so it prepares no new recommendation. "
-    "The Agent Operator must wake it."
+    "Press Wake to wake it."
+)
+
+#: The note a persona reads when the assistant sleeps and it holds no switch.
+SLEEP_NOTE_NO_SWITCH = (
+    "The steward assistant is asleep, so it prepares no new recommendation. "
+    "The Agent Operator or the Data Steward must wake it."
 )
 
 #: The label of a recommendation that was prepared while the assistant was
@@ -44,8 +50,29 @@ SLEEP_NOTE = (
 AWAKE_NOTE = "Made while awake"
 
 #: The grant the Data Steward holds to ask the assistant for a
-#: recommendation.
+#: recommendation.  The Agent Operator holds it too: it wakes the assistant
+#: and may prepare the work of the queue.
 RUN_PERMISSION = "agent.run.steward_assist"
+
+#: The note beside the Accept recommendation button when the recommendation
+#: may be accepted.  It says what the button does.
+ACCEPT_OK_NOTE = "The decision is recorded with your name, as the decision of record."
+
+#: The note beside the Accept recommendation button when the recommendation
+#: is held for a person.  The facts disagree, so a person decides.
+HELD_ACCEPT_NOTE = "Held: decide this one yourself."
+
+#: The note beside the Accept recommendation button when the record changed
+#: since the recommendation was prepared.  It names the button that fixes it.
+STALE_ACCEPT_NOTE = (
+    "This record changed since the recommendation; press Get recommendation again."
+)
+
+#: The note beside the Accept recommendation button when the recommendation
+#: was cleared before it could be accepted.
+CLEARED_ACCEPT_NOTE = (
+    "This recommendation was cleared; press Get recommendation again."
+)
 
 #: The most tasks one press of the assistant prepares.
 MAX_TASKS_PER_PRESS = assistant.MAX_TASKS_PER_PRESS
@@ -485,19 +512,39 @@ def recommendation_view(
 
 def assistant_state(session: Any, actor: ActorContext) -> dict[str, Any]:
     """Return the state of the assistant and what the steward may press."""
+    from acme_city.agents.control import AgentControlService
+
     awake = is_awake(session)
     may = may_run(session, actor)
+    may_toggle = AgentControlService(session).may_toggle(
+        actor, agent_models.AGENT_STEWARD_ASSIST
+    )
     return {
         "awake": awake,
         "may_run": may,
+        "may_toggle": may_toggle,
         "can_prepare": may and awake,
-        "sleep_note": SLEEP_NOTE,
+        "sleep_note": SLEEP_NOTE if may_toggle else SLEEP_NOTE_NO_SWITCH,
         "grant_note": (
             ""
             if may
             else "Your role cannot ask the steward assistant for a recommendation."
         ),
     }
+
+
+def accept_refusal(session: Any, recommendation: Any) -> str:
+    """Return why a recommendation may not be accepted, in the words of the screen.
+
+    An empty string means the recommendation may be accepted.  The words are
+    the ones the button carries beside it, so the screen and the server say
+    the same thing.
+    """
+    if recommendation.confidence == recommenders.CONFIDENCE_HELD:
+        return HELD_ACCEPT_NOTE
+    if assistant.is_stale(session, recommendation):
+        return STALE_ACCEPT_NOTE
+    return ""
 
 
 def case_panel(
@@ -508,7 +555,7 @@ def case_panel(
     The panel carries the recommendation the assistant prepared, the evidence
     it read and the controls the steward may press.  A recommendation that is
     held for a person is shown with its reason, but it is never accepted by
-    a button.
+    a button: the button is off and the note beside it says why.
     """
     state = assistant_state(session, actor)
     row = assistant.recommendation_for(session, kind, item_id)
@@ -518,9 +565,8 @@ def case_panel(
     # The assistant prepares the work of five kinds of task.  A task of any
     # other kind carries no control, so the panel says nothing it cannot do.
     panel["supported"] = kind in recommenders.TASK_KINDS
-    panel["prepare_label"] = (
-        "Prepare the recommendation again" if row is not None else "Get recommendation"
-    )
+    panel["prepare_label"] = "Get recommendation"
+    panel["accept_note"] = ACCEPT_OK_NOTE
     explain = explain_state(session, settings)
     panel["explain_note"] = explain["note"]
     panel["can_explain"] = False
@@ -529,9 +575,18 @@ def case_panel(
     recommendation = recommendation_view(session, row)
     panel["recommendation"] = recommendation
     # A held recommendation is never accepted: the person reads the
-    # conflicting facts and uses the normal controls of the case.
-    panel["can_accept"] = (
-        state["may_run"] and not recommendation["held"] and not recommendation["stale"]
+    # conflicting facts and uses the normal controls of the case.  A record
+    # that changed since the recommendation was prepared is stale: the
+    # steward asks for the recommendation again.
+    refusal = accept_refusal(session, row)
+    panel["can_accept"] = state["may_run"] and not refusal
+    panel["accept_note"] = refusal or ACCEPT_OK_NOTE
+    # The button that prepares the recommendation names what it does: it asks
+    # for the recommendation again when the one on screen is stale.
+    panel["prepare_label"] = (
+        "Get recommendation again"
+        if recommendation["stale"]
+        else "Prepare the recommendation again"
     )
     panel["can_clear"] = state["may_run"]
     # Muse only rewrites the words of the recommendation, so it may be asked
@@ -541,20 +596,25 @@ def case_panel(
 
 
 __all__ = [
+    "ACCEPT_OK_NOTE",
     "AGREEMENT_DAYS",
     "AGREEMENT_EMPTY_NOTE",
     "AWAKE_NOTE",
     "BATCH_EMPTY_NOTE",
     "BATCH_GRANT_NOTE",
+    "CLEARED_ACCEPT_NOTE",
     "EXPLAIN_NO_KEY_NOTE",
     "EXPLAIN_OFF_NOTE",
     "EXPLAIN_ON_NOTE",
+    "HELD_ACCEPT_NOTE",
     "MAX_TASKS_PER_PRESS",
     "PREVIEW_DIGEST_FIELD",
     "PREVIEW_FIELD",
     "PREVIEW_MISMATCH_MESSAGE",
     "RUN_PERMISSION",
     "SLEEP_NOTE",
+    "STALE_ACCEPT_NOTE",
+    "accept_refusal",
     "agreement_figure",
     "assistant_state",
     "batch_state",

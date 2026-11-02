@@ -15,6 +15,7 @@ from conftest import assert_no_horizontal_overflow, assert_not_covered
 OPERATOR_SCREENS = (
     ("/agent/intake", "Intake agent"),
     ("/agent/adjudication", "Adjudication agent"),
+    ("/agent/steward_assist", "Steward assistant"),
 )
 
 #: The operational home of the operator and the runs it opens.
@@ -30,15 +31,16 @@ OUTSIDE = (
 )
 
 
-def test_operator_navigation_has_four_visible_destinations_at_390(viewport_390, login) -> None:
+def test_operator_navigation_has_five_visible_destinations_at_390(viewport_390, login) -> None:
     page = viewport_390
     login("persona_agent_operator")
     links = page.locator(".mobile-nav > a")
-    assert links.count() == 4
-    assert [links.nth(index).get_attribute("href") for index in range(4)] == [
-        "/agents", "/agent/intake", "/agent/adjudication", "/agents/runs",
+    assert links.count() == 5
+    assert [links.nth(index).get_attribute("href") for index in range(5)] == [
+        "/agents", "/agent/intake", "/agent/adjudication", "/agent/steward_assist",
+        "/agents/runs",
     ]
-    # The intake queue is the fifth screen: the operator holds the grant that
+    # The intake queue is the sixth screen: the operator holds the grant that
     # runs a selected batch, so the queue that lists the cases is reachable.
     more = page.locator('.mobile-nav [data-testid="nav-more-mobile"] a')
     assert [more.nth(index).get_attribute("href") for index in range(more.count())] == [

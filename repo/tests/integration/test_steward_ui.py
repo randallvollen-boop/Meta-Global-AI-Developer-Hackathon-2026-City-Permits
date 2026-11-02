@@ -555,6 +555,86 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert "Does not decide the permit." in html.split('data-question="6"')[1]
 
 
+def test_the_task_page_shows_what_was_submitted_beside_what_the_record_holds(
+    client: TestClient, environment: Settings
+) -> None:
+    """The panel lists every field in question and says how it differs."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00412")
+    html = client.get(path).text
+    assert 'data-testid="submitted-panel"' in html
+    panel = html.split('data-testid="submitted-panel"')[1].split("</section>")[0]
+    assert "What the applicant submitted" in panel
+    assert "What the master record holds" in panel
+    rows = re.findall(
+        r'data-testid="submitted-row" data-differs="([^"]*)">(.*?)</tr>', panel, re.S
+    )
+    assert rows, "the panel lists the fields in question"
+    fields = {}
+    for differs, row in rows:
+        cells = re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row, re.S)
+        fields[cells[0].strip()] = (
+            differs,
+            " ".join(re.sub(r"<[^>]+>", " ", cells[-1]).split()),
+        )
+    # The name the applicant submitted and the name the record holds differ.
+    assert fields["Name"][0] == "yes"
+    assert fields["Name"][1] == "They differ."
+    # The address the applicant typed and the address of the record differ.
+    assert fields["Address"][0] == "yes"
+    assert fields["Address"][1] == "They differ."
+    # The email is the same on both sides, and the words say so.
+    assert fields["Email"][0] == "no"
+    assert fields["Email"][1] == "The same."
+
+
+def test_the_task_page_links_the_application_and_the_page_is_read_only(
+    client: TestClient, environment: Settings
+) -> None:
+    """The link opens the application, and the page decides nothing."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    link = re.search(
+        r'href="(/steward/applications/[^"]+)"[^>]*data-testid="case-application-link"',
+        html,
+    )
+    assert link is not None, "the task links the application it came from"
+    application = client.get(link.group(1))
+    assert application.status_code == 200
+    body = application.text
+    assert 'data-testid="application-number"' in body
+    assert 'data-testid="application-applicant"' in body
+    assert 'data-testid="application-address"' in body
+    assert 'data-testid="application-field-list"' in body
+    assert 'data-testid="application-documents"' in body
+    assert "read only" in body
+    # The page offers no action at all: it is a reading, not a decision.
+    assert 'data-action-id=' not in body
+    assert "/ui/actions/" not in body
+
+
+def test_the_application_page_is_forbidden_to_a_persona_without_the_read_grant(
+    client: TestClient, environment: Settings
+) -> None:
+    """Reading an application needs the read grant and nothing else."""
+    seed(environment)
+    choose(client, "persona_data_steward")
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    link = re.search(
+        r'href="(/steward/applications/[^"]+)"[^>]*data-testid="case-application-link"',
+        html,
+    )
+    assert link is not None
+    choose(client, "persona_agent_operator")
+    refused = client.get(link.group(1))
+    assert refused.status_code == 403
+    assert "grant" in refused.text
+
+
 def test_missing_values_read_no_comparison(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     factory = SessionFactory(environment.database_url)
@@ -842,6 +922,56 @@ def test_the_catalogue_names_the_record_the_state_and_the_action(
     )
     # A record that was never compared offers the comparison of the records.
     assert 'data-action-id="registry.propose"' in body
+
+
+def test_the_catalogue_row_carries_a_short_summary_and_opens_the_record(
+    client: TestClient, environment: Settings
+) -> None:
+    """The row names the record shortly, and the record opens on its own page."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    body = client.get("/source-records").text
+    rows = re.findall(
+        r'<th scope="row" class="stw-cell stw-cell-record" data-label="Record">(.*?)</th>',
+        body,
+        flags=re.S,
+    )
+    assert rows, "the catalogue lists records"
+    for row in rows:
+        text = " ".join(re.sub(r"<[^>]+>", " ", row).split())
+        # The summary is short: the name or the address beside the source id.
+        assert len(text) <= 80, text
+        # The identifier is written once, never twice in the same cell.
+        assert text.count(text.split()[-1]) <= 1 or " " not in text.split()[-1]
+    # A record with a name leads with that name and carries the source id.
+    assert any("Cedarline Coffee Works" in row for row in rows)
+    assert any("ERP-BL-00413" in row for row in rows)
+    # Every row links the record it names.
+    link = re.search(
+        r'href="(/source-records/[^"]+)"[^>]*data-testid="source-record-link"',
+        body,
+    )
+    assert link is not None
+    record = client.get(link.group(1))
+    assert record.status_code == 200
+    assert 'data-testid="source-record-values"' in record.text
+    assert "License number" in record.text or "License" in record.text
+
+
+def test_a_record_without_a_name_shows_its_address(
+    client: TestClient, environment: Settings
+) -> None:
+    """The summary is the address when the record names no one."""
+    choose(client, "persona_data_steward")
+    body = client.get("/source-records?system=gis").text
+    rows = re.findall(
+        r'<th scope="row" class="stw-cell stw-cell-record" data-label="Record">(.*?)</th>',
+        body,
+        flags=re.S,
+    )
+    assert rows
+    texts = [" ".join(re.sub(r"<[^>]+>", " ", row).split()) for row in rows]
+    assert any(text.startswith("400 Lantern Row") for text in texts), texts
 
 
 def test_the_link_state_filter_narrows_the_catalogue(
