@@ -103,8 +103,8 @@ PATHS: tuple[Path, ...] = (
                 "Applicant",
                 "/apply",
                 "Press Check my application, then change the 6 ft front yard "
-                "fence to 4 ft and press Submit application, or press Submit "
-                "anyway and write why you send it now.",
+                "fence to 4 ft and press Submit application, or write why in Why "
+                "submit now and press Submit anyway.",
                 "The findings are grouped under Must fix, Should check and "
                 "Looks good, and each one names the published rule behind it.",
                 "We are here because Check my application asks Muse for feedback "

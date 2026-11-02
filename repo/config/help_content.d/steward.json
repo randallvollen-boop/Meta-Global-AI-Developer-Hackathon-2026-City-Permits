@@ -50,7 +50,7 @@
           "Edit the \"Reason\" if you wish, then click \"Accept recommendation\". The decision is recorded with your name. A held recommendation is never accepted, and if the record changed since it was prepared you are asked to prepare it again.",
           "Click \"Explain with Muse\" to have Muse rewrite the reason in plain words. It never changes the decision or its certainty. On the hosted demonstration live Muse is on, with a daily allowance of 100 calls. When live Muse is off, or that allowance is used up, the button is off and a note beside it says why.",
           "Click \"Clear recommendation\" to set a recommendation aside and decide the task with the six questions below it.",
-          "Back on \"Data issues\", click \"Accept all high-confidence (N)\". A page lists exactly the recommendations the batch would accept. Click the button \"Accept these\" with the count to confirm that list. An item that changed since the list was made is skipped and named, never accepted silently.",
+          "Back on \"Data issues\", click \"Accept all high-confidence\" (the button shows how many). A page lists exactly the recommendations the batch would accept. Click the button \"Accept these\" with the count to confirm that list. An item that changed since the list was made is skipped and named, never accepted silently.",
           "Read \"Agreement with the assistant\". It gives the share you accepted unchanged and the counts behind it, over the last 7 days."
         ],
         "result": "The assistant prepares; you decide. Every accepted recommendation is a decision of record in your name, and the agreement figure shows how often you took its advice unchanged."
