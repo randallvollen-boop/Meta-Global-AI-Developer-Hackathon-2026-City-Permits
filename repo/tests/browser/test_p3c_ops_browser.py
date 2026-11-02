@@ -16,6 +16,7 @@ from conftest import (
     BrowserServer,
     assert_no_horizontal_overflow,
     assert_not_covered,
+    open_the_last_action,
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "integration"))
@@ -122,7 +123,7 @@ def test_the_dashboard_fits_a_phone_and_keeps_the_figures_readable(
     assert page.recorded_errors == []
 
 
-def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserServer, login) -> None:
+def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserServer, login, open_last_action) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/ops/checks", wait_until="domcontentloaded")
     assert page.locator('[data-testid="checks-result"]').count() == 0
@@ -130,6 +131,7 @@ def test_run_checks_shows_eight_results_and_the_feedback(page, server: BrowserSe
     page.wait_for_selector('[data-testid="checks-result"]')
     assert page.locator('[data-testid="check-row"]').count() == 8
     assert "not applicable (historical seed)" in page.locator('[data-testid="checks-table"]').inner_text()
+    open_last_action()
     assert page.locator('[data-testid="feedback-message"]').inner_text().startswith("Ran the checks")
     assert page.recorded_errors == []
 
@@ -207,7 +209,11 @@ def test_the_administrator_answers_and_the_applicant_reads_the_reply(browser, se
         assert "BROWSER-QUESTION-7781" in admin.locator('[data-testid="support-requests"]').inner_text()
         admin.locator('[data-testid="help-reply"]').fill("Your review has not started; it is next in line.")
         admin.locator('[data-testid="help-answer"]').click()
-        admin.wait_for_selector('[data-testid="feedback-message"]')
+        admin.wait_for_function(
+            "() => { const region = document.querySelector('[data-testid=feedback-message]');"
+            " return region !== null && region.textContent.trim() === 'Answered the help request.'; }"
+        )
+        open_the_last_action(admin)
         assert admin.locator('[data-testid="feedback-message"]').inner_text() == "Answered the help request."
     finally:
         admin_context.close()

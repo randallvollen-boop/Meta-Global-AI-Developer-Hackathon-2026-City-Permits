@@ -309,6 +309,24 @@ def submit_action(page, server: BrowserServer):
     return perform
 
 
+def open_the_last_action(page) -> None:
+    """Open the panel of the last action if it is shut.
+
+    The result of an action sits in the panel that opens from the bell in the
+    header, so a test that reads the result opens the panel first.
+    """
+    panel = page.locator('[data-testid="feedback"]')
+    if panel.get_attribute("hidden") is not None:
+        page.locator('[data-testid="last-action-toggle"]').click()
+    panel.wait_for(state="visible")
+
+
+@pytest.fixture()
+def open_last_action(page):
+    """Return a callable that opens the panel of the last action."""
+    return lambda: open_the_last_action(page)
+
+
 @pytest.fixture()
 def screenshot_dir(tmp_path: Path) -> Path:
     """Return the directory that holds the captured screenshots."""

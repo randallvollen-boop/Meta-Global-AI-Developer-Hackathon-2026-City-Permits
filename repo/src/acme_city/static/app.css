@@ -66,6 +66,7 @@
       58  --z-help-launcher  the Ask launcher
       59  --z-help-sheet     the help chat sheet
       60  --z-drawer         a detail drawer, and the skip link
+      65  --z-feedback-panel the panel of the last action
       70  --z-popover        an information popover
       80  --z-tour           the guided tour
       90  --z-persona-menu   the open persona menu
@@ -84,6 +85,7 @@
   --z-help-launcher: 58;
   --z-help-sheet: 59;
   --z-drawer: 60;
+  --z-feedback-panel: 65;
   --z-popover: 70;
   --z-tour: 80;
   --z-persona-menu: 90;
@@ -723,13 +725,14 @@ textarea.inp { resize: vertical; min-height: 64px; }
 .history img { width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .history img[aria-pressed="true"] { border-color: var(--muse); }
 
-/* Feedback region */
+/* The last action.  The box around it belongs to the notices of the policy
+   screens; the sentence, the message and the detail list behind one
+   disclosure are shared with the panel of the last action. */
 .feedback {
   border: 1px solid var(--accepted); border-left-width: 6px; background: var(--ok-soft);
   border-radius: var(--radius); padding: 0.6rem 0.8rem; margin: 0.8rem 0.9rem 0;
 }
 .feedback-denied { border-color: var(--denied); background: var(--bad-soft); }
-.feedback-empty { border-color: var(--line); background: var(--surface-2); }
 .feedback-title { font-size: 0.9rem; margin: 0 0 0.2rem; }
 .feedback-message { font-weight: 600; }
 /* The detail list of the last action sits behind one disclosure. */
@@ -779,6 +782,7 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
   .rnode::after { display: none; }
 }
 @media (max-width: 860px) {
+  /* nav-more-boot.js and app.js use this same width for More tools. */
   .shell { grid-template-columns: minmax(0,1fr); }
   .side { display: none; }
   .mobile-nav {

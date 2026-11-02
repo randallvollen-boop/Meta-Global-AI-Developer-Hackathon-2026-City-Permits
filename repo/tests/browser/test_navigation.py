@@ -223,15 +223,30 @@ def test_every_control_of_a_screen_is_labelled(page, server: BrowserServer, logi
     assert unlabelled == []
 
 
-def test_the_feedback_region_announces_the_outcome(
+def test_the_live_region_announces_the_outcome(
     page, server: BrowserServer, login
 ) -> None:
+    """The hidden region speaks the result, the panel holds it."""
     login("persona_permit_reviewer")
     page.goto(f"{server.base_url}/permits/app_synth_001", wait_until="domcontentloaded")
-    region = page.locator('[data-testid="feedback"]')
+    region = page.locator('[data-testid="feedback-live"]')
     assert region.count() == 1
     assert region.get_attribute("role") == "status"
     assert region.get_attribute("aria-live") == "polite"
+    assert region.get_attribute("aria-atomic") == "true"
+    # The region is hidden from the eye, not from the screen reader.
+    box = region.bounding_box()
+    assert box is not None
+    assert box["width"] <= 1 and box["height"] <= 1, box
+    # The panel of the last action holds the result and opens from the bell.
+    panel = page.locator('[data-testid="feedback"]')
+    assert panel.count() == 1
+    assert panel.get_attribute("role") == "dialog"
+    assert panel.get_attribute("hidden") is not None
+    bell = page.locator('[data-testid="last-action-toggle"]')
+    assert bell.count() == 1
+    assert bell.get_attribute("aria-controls") == "ui-feedback-panel"
+    assert bell.get_attribute("aria-expanded") == "false"
 
 
 def test_the_evidence_and_history_panels_stay_present(

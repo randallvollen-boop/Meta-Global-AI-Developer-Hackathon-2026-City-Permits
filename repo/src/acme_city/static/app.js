@@ -2,8 +2,8 @@
 
    The script is an enhancement, not a requirement: every action works
    without it.  When it is present an action form is submitted in the
-   background and the typed outcome of the action is rendered in the
-   feedback region, so the user learns what changed, where it was written
+   background and the typed outcome of the action is rendered in the panel of
+   the last action, so the user learns what changed, where it was written
    and whether a source or a consumer still has to acknowledge it.
 
    Progressive enhancements (no server round-trip for chrome):
@@ -15,12 +15,17 @@
      the page (static/agent-progress.js) moves the cards of the graph and
      never sends a request;
    - work-queue rows navigate to their case;
-   - toast mirrors the feedback outcome. */
+   - the bell of the last action opens its panel, and the toast mirrors the
+     outcome of the action;
+   - More tools in the side navigation starts open on a desktop and shut on
+     a phone, and the person's choice is kept for the session. */
 
 (function () {
   "use strict";
 
   var REGION_ID = "ui-feedback-region";
+  var PANEL_ID = "ui-feedback-panel";
+  var TOGGLE_ID = "last-action-toggle";
 
   function reducedMotion() {
     try {
@@ -68,55 +73,98 @@
   }
 
   /* -------------------------------------------------------------- toast */
-  function toast(message) {
+  function toast(message, sticky) {
     var node = document.getElementById("toast");
     if (!node) return;
-    node.textContent = message;
+    /* The hidden region of the last action speaks the result for a screen
+       reader, so the toast is only its picture: without this the message
+       would be read twice. */
+    node.setAttribute("aria-live", "off");
+    node.innerHTML = "";
+    var line = document.createElement("span");
+    line.className = "toast-text";
+    line.textContent = message || "";
+    node.appendChild(line);
+    if (sticky) {
+      /* A refusal stays until it is dismissed. */
+      var dismiss = document.createElement("button");
+      dismiss.type = "button";
+      dismiss.className = "toast-dismiss";
+      dismiss.setAttribute("data-testid", "toast-dismiss");
+      dismiss.setAttribute("aria-label", "Dismiss the message");
+      dismiss.textContent = "×";
+      dismiss.addEventListener("click", hideToast);
+      node.appendChild(dismiss);
+    }
+    node.classList.toggle("toast-sticky", Boolean(sticky));
     node.classList.add("on");
     window.clearTimeout(toast.timer);
-    toast.timer = window.setTimeout(function () {
-      node.classList.remove("on");
-    }, 2400);
+    if (!sticky) {
+      toast.timer = window.setTimeout(function () {
+        node.classList.remove("on");
+      }, 2400);
+    }
   }
 
-  /* ----------------------------------------------------------- feedback */
-  function feedbackRegion() {
-    var region = document.getElementById(REGION_ID);
-    if (region) {
-      return region;
-    }
-    region = document.createElement("section");
-    region.id = REGION_ID;
-    region.className = "feedback";
-    region.setAttribute("role", "status");
-    region.setAttribute("aria-live", "polite");
-    region.setAttribute("data-testid", "feedback");
-    var main = document.getElementById("main");
-    if (main && main.parentNode) {
-      main.parentNode.insertBefore(region, main);
-    } else {
-      document.body.insertBefore(region, document.body.firstChild);
-    }
-    return region;
+  function hideToast() {
+    var node = document.getElementById("toast");
+    if (!node) return;
+    window.clearTimeout(toast.timer);
+    node.classList.remove("on", "toast-sticky");
   }
 
-  function renderOutcome(region, outcome) {
-    var accepted = outcome.status === "accepted";
-    region.className = "feedback " + (accepted ? "feedback-accepted" : "feedback-denied");
-    region.setAttribute("data-outcome", outcome.status || "denied");
-    region.innerHTML = "";
+  /* ------------------------------------------------------- the last action */
+  /* The result of the last action of the acting persona lives in a panel that
+     opens from the bell in the header.  The bell carries a dot while the
+     result has not been opened, the toast shows the one line of the result
+     for a moment, and the hidden region announces the result to a screen
+     reader whether the panel is open or not. */
+  function liveRegion() {
+    return document.getElementById(REGION_ID);
+  }
 
-    var title = document.createElement("h2");
-    title.className = "feedback-title";
-    title.textContent = accepted ? "Last action" : "The action was refused";
-    region.appendChild(title);
+  function feedbackPanel() {
+    return document.getElementById(PANEL_ID);
+  }
 
-    var message = document.createElement("p");
-    message.className = "feedback-message";
-    message.setAttribute("data-testid", "feedback-message");
-    message.textContent = outcome.message || "";
-    region.appendChild(message);
+  function lastActionToggle() {
+    return document.getElementById(TOGGLE_ID);
+  }
 
+  function markNewAction() {
+    var dot = document.querySelector('[data-testid="last-action-dot"]');
+    if (dot) dot.removeAttribute("hidden");
+  }
+
+  function clearNewAction() {
+    var dot = document.querySelector('[data-testid="last-action-dot"]');
+    if (dot) dot.setAttribute("hidden", "hidden");
+  }
+
+  function openPanel(moveFocus) {
+    var panel = feedbackPanel();
+    if (!panel) return;
+    panel.hidden = false;
+    var toggle = lastActionToggle();
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
+    clearNewAction();
+    if (moveFocus) {
+      var title = panel.querySelector(".feedback-panel-title");
+      if (title) title.focus();
+    }
+  }
+
+  function closePanel(restoreFocus) {
+    var panel = feedbackPanel();
+    if (!panel) return;
+    panel.hidden = true;
+    var toggle = lastActionToggle();
+    if (!toggle) return;
+    toggle.setAttribute("aria-expanded", "false");
+    if (restoreFocus) toggle.focus();
+  }
+
+  function feedbackDetails(outcome) {
     var details = document.createElement("details");
     details.className = "feedback-more";
     details.setAttribute("data-testid", "feedback-more");
@@ -157,8 +205,50 @@
       list.appendChild(wrapper);
     });
     details.appendChild(list);
-    region.appendChild(details);
-    if (outcome.message) toast(outcome.message);
+    return details;
+  }
+
+  function renderOutcome(outcome) {
+    var accepted = outcome.status === "accepted";
+    var message = outcome.message || "";
+    var toggle = lastActionToggle();
+    if (toggle) toggle.setAttribute("data-outcome", outcome.status || "denied");
+
+    var panel = feedbackPanel();
+    if (panel) {
+      panel.setAttribute("data-outcome", outcome.status || "denied");
+      panel.classList.toggle("feedback-accepted", accepted);
+      panel.classList.toggle("feedback-denied", !accepted);
+      var heading = panel.querySelector(".feedback-panel-title");
+      if (heading) {
+        heading.textContent = accepted ? "Last action" : "The action was refused";
+      }
+      var body = panel.querySelector(".feedback-panel-body");
+      if (body) {
+        body.innerHTML = "";
+        var line = document.createElement("p");
+        line.className = "feedback-message";
+        line.setAttribute("data-testid", "feedback-message");
+        line.textContent = message;
+        body.appendChild(line);
+        body.appendChild(feedbackDetails(outcome));
+      }
+    }
+
+    /* The hidden region speaks the result, so a screen reader hears it even
+       when the panel stays shut. */
+    var live = liveRegion();
+    if (live) live.textContent = message;
+
+    markNewAction();
+    if (accepted) {
+      toast(message);
+    } else {
+      /* A refusal is shown without a click: the panel opens on the spot and
+         the toast stays until it is dismissed. */
+      openPanel(false);
+      toast(message, true);
+    }
   }
 
   /* ------------------------------------------- the page after a changed record */
@@ -259,7 +349,7 @@
   function swapThePage(next, sent) {
     /* The live parts of the page are replaced by the ones the server just
        rendered: the content of the screen and the navigation with its
-       counts.  The banner, the feedback region and the theme stay. */
+       counts.  The banner, the panel of the last action and the theme stay. */
     var tab = activeTab();
     var main = document.getElementById("main");
     var freshMain = next.getElementById("main");
@@ -271,6 +361,9 @@
     var side = document.querySelector(".shell > aside");
     var freshSide = next.querySelector(".shell > aside");
     if (side && freshSide) side.replaceWith(freshSide);
+    /* The fresh navigation is open in the markup. Put back the choice of
+       this session before the page is painted again. */
+    syncNavMore(document);
     initUi();
     if (tab) {
       /* The person keeps the tab of the screen they were working in. */
@@ -332,7 +425,7 @@
         });
       })
       .then(function (result) {
-        renderOutcome(feedbackRegion(), result.payload);
+        renderOutcome(result.payload);
         if (button) {
           button.disabled = false;
           button.removeAttribute("aria-busy");
@@ -349,7 +442,7 @@
         }
       })
       .catch(function () {
-        renderOutcome(feedbackRegion(), {
+        renderOutcome({
           status: "denied",
           message: "The action could not be sent. Use the screen again to retry."
         });
@@ -498,17 +591,118 @@
     initIconPicker();
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    var region = document.querySelector(".feedback");
-    if (region && !region.id) {
-      region.id = REGION_ID;
+  /* ---------------------------------------------------------- More tools */
+  /* The side navigation's More tools starts open on a desktop and shut on a
+     phone. The width is the one in app.css that hides the side navigation.
+     The choice is kept in sessionStorage for the session; without storage
+     the default still applies. The bottom bar has its own More and is left
+     alone. */
+  var NAV_MORE_PHONE = "(max-width: 860px)";
+  var NAV_MORE_KEY = "acme-nav-more";
+
+  function navMoreIsPhone() {
+    try {
+      return window.matchMedia(NAV_MORE_PHONE).matches;
+    } catch (error) {
+      return false;
     }
+  }
+
+  function navMoreChoice() {
+    try {
+      return window.sessionStorage.getItem(NAV_MORE_KEY);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function rememberNavMore(open) {
+    try {
+      window.sessionStorage.setItem(NAV_MORE_KEY, open ? "open" : "closed");
+    } catch (error) {
+      /* The choice then lasts for this page only. */
+    }
+  }
+
+  function syncNavMore(root) {
+    var details = (root || document).querySelector('[data-testid="nav-more"]');
+    /* The head mark hid the list before paint. The open attribute is the
+       truth from here, so the mark must not keep hiding a group the person
+       opens. */
+    document.documentElement.removeAttribute("data-nav-more");
+    if (!details) return;
+    var open = !navMoreIsPhone() && navMoreChoice() !== "closed";
+    if (details.open !== open) details.open = open;
+    if (details.getAttribute("data-bound")) return;
+    details.setAttribute("data-bound", "yes");
+    details.addEventListener("toggle", function () {
+      /* A phone load shuts the side group because the bar is hidden. That
+         is not a choice, and it must not close the group on the next desktop
+         page of this session. */
+      if (navMoreIsPhone()) return;
+      rememberNavMore(details.open);
+    });
+  }
+
+  function initNavMore() {
+    syncNavMore(document);
+    if (initNavMore.bound) return;
+    initNavMore.bound = true;
+    try {
+      window.matchMedia(NAV_MORE_PHONE).addEventListener("change", function () {
+        syncNavMore(document);
+      });
+    } catch (error) {
+      /* The width is read again on the next page. */
+    }
+  }
+
+  function initLastAction() {
+    /* The bell of the last action and the panel it opens.  Both live outside
+       the content of the screen, so they survive the reading of the page
+       again after an action and are bound once. */
+    var toggle = lastActionToggle();
+    if (toggle && !toggle.getAttribute("data-bound")) {
+      toggle.setAttribute("data-bound", "yes");
+      toggle.addEventListener("click", function () {
+        var panel = feedbackPanel();
+        if (!panel) return;
+        if (panel.hidden) {
+          openPanel(true);
+        } else {
+          closePanel(true);
+        }
+      });
+    }
+    var close = document.querySelector('[data-testid="feedback-panel-close"]');
+    if (close && !close.getAttribute("data-bound")) {
+      close.setAttribute("data-bound", "yes");
+      close.addEventListener("click", function () {
+        closePanel(true);
+      });
+    }
+  }
+
+  document.addEventListener("keydown", function (event) {
+    /* Escape closes the panel of the last action and gives the focus back to
+       the bell that opened it. */
+    if (event.key !== "Escape") return;
+    var panel = feedbackPanel();
+    if (!panel || panel.hidden) return;
+    closePanel(true);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
     initTheme();
+    initLastAction();
+    initNavMore();
     initUi();
   });
   // The script is deferred, so DOMContentLoaded may already have fired in
   // some embedding contexts; initTheme is idempotent, run it now as well.
   if (document.readyState !== "loading") {
     initTheme();
+    initLastAction();
+    initNavMore();
   }
 })();

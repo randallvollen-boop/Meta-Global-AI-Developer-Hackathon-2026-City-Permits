@@ -108,6 +108,87 @@ html.ui-js .ui-info-fallback { display: none; }
 }
 @media print { .ui-drawer, .ui-help, .ui-info { display: none !important; } }
 
+/* ------------------------------------------------- P4 the last action panel */
+/* The bell in the header of the staff frame and the panel it opens.  The panel
+   stands at the right edge like the drawer and keeps the same bands free: the
+   toast above it and the mobile navigation below it.  It sits above the other
+   overlays (--z-feedback-panel) and below the guided tour and the persona
+   menu, which stay on top of everything. */
+
+.last-action-toggle {
+  position: relative; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--line, #dde3e9); border-radius: 10px;
+  background: var(--surface, #fff); color: var(--fg-2, #4a5b6b); cursor: pointer;
+}
+.last-action-toggle:hover { background: var(--surface-2, #eef2f5); color: var(--fg, #142230); }
+.last-action-toggle:focus-visible { outline: 3px solid var(--accent, #1f5f8b); outline-offset: 2px; }
+.last-action-toggle[aria-expanded="true"] { background: var(--accent-soft, #e3eef6); color: var(--accent, #1f5f8b); }
+.last-action-icon { width: 18px; height: 18px; }
+/* The dot marks a result the person has not opened yet. */
+.last-action-dot {
+  position: absolute; top: 4px; right: 4px; width: 9px; height: 9px;
+  border-radius: 50%; background: var(--accent, #1f5f8b); border: 2px solid var(--surface, #fff);
+}
+.last-action-dot[hidden] { display: none; }
+.last-action-toggle[data-outcome="denied"] .last-action-dot { background: var(--denied, #f0786d); }
+
+.feedback-panel {
+  position: fixed; z-index: var(--z-feedback-panel); right: 0; left: auto;
+  top: var(--ui-clear-top); bottom: var(--ui-clear-bottom);
+  width: min(24rem, 100%); max-width: 100%;
+  display: flex; flex-direction: column;
+  background: var(--surface, #fff); color: var(--fg, #142230);
+  border: 1px solid var(--line, #dde3e9); border-right: 0; border-radius: 12px 0 0 12px;
+  box-shadow: -8px 0 28px rgba(0,0,0,.18);
+}
+.feedback-panel[hidden] { display: none; }
+.feedback-panel.feedback-accepted { border-left: 5px solid var(--accepted, #4cc488); }
+.feedback-panel.feedback-denied { border-left: 5px solid var(--denied, #f0786d); }
+.feedback-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--line, #dde3e9);
+}
+.feedback-panel-title { font-size: 1rem; margin: 0; }
+.feedback-panel-title:focus { outline: none; }
+.feedback-panel-close {
+  flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid var(--line, #dde3e9); background: var(--surface-2, #eef2f5);
+  color: var(--fg, #142230); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.feedback-panel-close:hover { background: var(--accent-soft, #e3eef6); }
+.feedback-panel-close:focus-visible { outline: 3px solid var(--accent, #1f5f8b); outline-offset: 2px; }
+.feedback-panel-body { padding: 12px 14px 18px; overflow-y: auto; min-height: 0; flex: 1; }
+/* The panel is narrow, so the detail list stands in one column. */
+.feedback-panel .feedback-detail { grid-template-columns: minmax(0, 1fr); }
+.feedback-panel-empty { margin: 0; font-size: .88rem; color: var(--fg-2, #4a5b6b); }
+
+/* The toast of the last action.  It is only the picture of the result: the
+   hidden region of the frame speaks it for a screen reader.  A refusal stays
+   on the screen until it is dismissed, so only its button takes the clicks. */
+.toast-text { max-width: 44ch; }
+.toast-sticky { pointer-events: none; }
+.toast-sticky .toast-dismiss { pointer-events: auto; }
+.toast-dismiss {
+  flex: none; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid currentColor; background: transparent;
+  color: inherit; font-size: 16px; line-height: 1; cursor: pointer; opacity: .75;
+}
+.toast-dismiss:hover { opacity: 1; }
+.toast-dismiss:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* Narrow screens: a full-width sheet above the mobile navigation. */
+@media (max-width: 640px) {
+  .feedback-panel {
+    /* The sheet fills the screen without the scrollbar of the page. */
+    width: auto; max-width: none; left: 0; right: 0; top: auto;
+    bottom: var(--ui-clear-bottom); max-height: 72vh;
+    border-radius: 14px 14px 0 0; border-bottom: 0;
+  }
+}
+@media print { .feedback-panel { display: none !important; } }
+
 /* Help and documentation (/help).  Colours come from the shared tokens, so the
    pages follow the light and dark themes of both frames. */
 .top-help-link { flex: none; font-size: .9rem; font-weight: 600; color: var(--accent); text-decoration: none; padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); }

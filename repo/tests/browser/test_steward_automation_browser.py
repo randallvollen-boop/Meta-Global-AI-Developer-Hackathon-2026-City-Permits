@@ -185,7 +185,8 @@ def test_activating_a_policy_records_the_reason_and_the_version(
     assert response.status == 200
     assert response.json()["status"] == "accepted"
     page.wait_for_function(
-        "() => document.querySelector('[data-testid=feedback-message]') !== null"
+        "() => { const region = document.querySelector('[data-testid=feedback-message]');"
+        " return region !== null && region.textContent.trim() !== ''; }"
     )
     page.reload(wait_until="load")
     open_details(page)
@@ -217,7 +218,8 @@ def test_pausing_the_automation_records_a_paused_policy(
     assert response.status == 200
     assert response.json()["status"] == "accepted"
     page.wait_for_function(
-        "() => document.querySelector('[data-testid=feedback-message]') !== null"
+        "() => { const region = document.querySelector('[data-testid=feedback-message]');"
+        " return region !== null && region.textContent.trim() !== ''; }"
     )
     page.reload(wait_until="load")
     open_details(page)
