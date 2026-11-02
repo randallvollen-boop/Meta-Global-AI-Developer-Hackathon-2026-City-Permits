@@ -18,6 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} | City of Acme permit demonstration</title>
   <script src="/ui/static/theme.js"></script>
+  <script src="/ui/static/nav-more-boot.js"></script>
   <link rel="stylesheet" href="/ui/static/app.css">
   <link rel="stylesheet" href="/ui/static/ui-patterns.css">
   <link rel="stylesheet" href="/ui/static/reviewer.css">
@@ -76,7 +77,10 @@
       </ul>
       {%- set more_items = navigation | selectattr("group", "equalto", "secondary") | list %}
       {%- if more_items %}
-      <details class="nav-more" data-testid="nav-more"{% if more_items | selectattr("key", "equalto", screen) | first %} open{% endif %}>
+      {# Open in the markup so a desktop shows the group before any script.
+         nav-more-boot.js marks a phone, or a session that closed the group,
+         and the page script then shuts it. The bottom bar has its own More. #}
+      <details class="nav-more" data-testid="nav-more" open>
         <summary class="nav-more-summary">More tools</summary>
         <ul>
           {% for item in more_items %}

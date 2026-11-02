@@ -16,7 +16,9 @@
      never sends a request;
    - work-queue rows navigate to their case;
    - the bell of the last action opens its panel, and the toast mirrors the
-     outcome of the action. */
+     outcome of the action;
+   - More tools in the side navigation starts open on a desktop and shut on
+     a phone, and the person's choice is kept for the session. */
 
 (function () {
   "use strict";
@@ -359,6 +361,9 @@
     var side = document.querySelector(".shell > aside");
     var freshSide = next.querySelector(".shell > aside");
     if (side && freshSide) side.replaceWith(freshSide);
+    /* The fresh navigation is open in the markup. Put back the choice of
+       this session before the page is painted again. */
+    syncNavMore(document);
     initUi();
     if (tab) {
       /* The person keeps the tab of the screen they were working in. */
@@ -586,6 +591,72 @@
     initIconPicker();
   }
 
+  /* ---------------------------------------------------------- More tools */
+  /* The side navigation's More tools starts open on a desktop and shut on a
+     phone. The width is the one in app.css that hides the side navigation.
+     The choice is kept in sessionStorage for the session; without storage
+     the default still applies. The bottom bar has its own More and is left
+     alone. */
+  var NAV_MORE_PHONE = "(max-width: 860px)";
+  var NAV_MORE_KEY = "acme-nav-more";
+
+  function navMoreIsPhone() {
+    try {
+      return window.matchMedia(NAV_MORE_PHONE).matches;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function navMoreChoice() {
+    try {
+      return window.sessionStorage.getItem(NAV_MORE_KEY);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function rememberNavMore(open) {
+    try {
+      window.sessionStorage.setItem(NAV_MORE_KEY, open ? "open" : "closed");
+    } catch (error) {
+      /* The choice then lasts for this page only. */
+    }
+  }
+
+  function syncNavMore(root) {
+    var details = (root || document).querySelector('[data-testid="nav-more"]');
+    /* The head mark hid the list before paint. The open attribute is the
+       truth from here, so the mark must not keep hiding a group the person
+       opens. */
+    document.documentElement.removeAttribute("data-nav-more");
+    if (!details) return;
+    var open = !navMoreIsPhone() && navMoreChoice() !== "closed";
+    if (details.open !== open) details.open = open;
+    if (details.getAttribute("data-bound")) return;
+    details.setAttribute("data-bound", "yes");
+    details.addEventListener("toggle", function () {
+      /* A phone load shuts the side group because the bar is hidden. That
+         is not a choice, and it must not close the group on the next desktop
+         page of this session. */
+      if (navMoreIsPhone()) return;
+      rememberNavMore(details.open);
+    });
+  }
+
+  function initNavMore() {
+    syncNavMore(document);
+    if (initNavMore.bound) return;
+    initNavMore.bound = true;
+    try {
+      window.matchMedia(NAV_MORE_PHONE).addEventListener("change", function () {
+        syncNavMore(document);
+      });
+    } catch (error) {
+      /* The width is read again on the next page. */
+    }
+  }
+
   function initLastAction() {
     /* The bell of the last action and the panel it opens.  Both live outside
        the content of the screen, so they survive the reading of the page
@@ -624,6 +695,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     initTheme();
     initLastAction();
+    initNavMore();
     initUi();
   });
   // The script is deferred, so DOMContentLoaded may already have fired in
@@ -631,5 +703,6 @@
   if (document.readyState !== "loading") {
     initTheme();
     initLastAction();
+    initNavMore();
   }
 })();

@@ -67,7 +67,8 @@ def test_the_more_tools_group_fits_at_390_pixels(page, server: BrowserServer) ->
     page.goto(probe, wait_until="load")
     desktop = page.locator('.side [data-testid="nav-more"]')
     assert desktop.is_visible()
-    desktop.locator("summary").click()
+    # More tools starts open on a desktop, so the entries are already in view.
+    assert desktop.evaluate("element => element.open") is True
     assert desktop.locator("a").count() == 2
     assert desktop.locator("a").first.is_visible()
     assert page.evaluate(OVERFLOW) <= 1

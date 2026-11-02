@@ -421,6 +421,20 @@ def test_a_secondary_item_renders_the_more_tools_group(client: TestClient) -> No
     )
     assert desktop is not None and mobile is not None
     assert "More tools" in desktop.group(0) and "More tools" in mobile.group(0)
+    # The side group is open in the markup (a desktop default). The phone bar's
+    # More is a separate disclosure and stays shut.
+    desktop_tag = re.search(
+        r'<details class="nav-more" data-testid="nav-more"([^>]*)>', html
+    )
+    mobile_tag = re.search(
+        r'<details class="nav-more nav-more-mobile" data-testid="nav-more-mobile"([^>]*)>',
+        html,
+    )
+    assert desktop_tag is not None and "open" in desktop_tag.group(1).split()
+    assert mobile_tag is not None and "open" not in mobile_tag.group(1).split()
+    # The head script runs before the body is painted, so a phone or a closed
+    # choice does not flash the open list.
+    assert html.index("/ui/static/nav-more-boot.js") < html.index("<body")
     # The dummy profile moves the last two accessible steward entries under
     # More tools. STW-19 appends its now-routable automation screen.
     for key, href in (("early_resolution", "/queue/early-resolution"), ("steward_automation", "/steward/automation")):

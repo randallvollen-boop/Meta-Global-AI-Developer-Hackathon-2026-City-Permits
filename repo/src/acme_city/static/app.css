@@ -759,6 +759,7 @@ textarea { min-height: 3rem; font-family: var(--f-mono); font-size: 0.85rem; }
   .rnode::after { display: none; }
 }
 @media (max-width: 860px) {
+  /* nav-more-boot.js and app.js use this same width for More tools. */
   .shell { grid-template-columns: minmax(0,1fr); }
   .side { display: none; }
   .mobile-nav {

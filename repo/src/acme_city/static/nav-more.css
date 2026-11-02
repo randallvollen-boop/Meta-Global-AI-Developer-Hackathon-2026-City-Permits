@@ -40,3 +40,14 @@
 .nav-more-panel svg { width: 18px; height: 18px; }
 .nav-more-panel a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
 .nav-more-panel .nav-disabled { opacity: .45; }
+
+/* A phone, or a desktop that closed the group: the head script marks the
+   root before paint, while the disclosure is still open in the markup. The
+   list stays hidden, and the mark reads as shut, until the page script sets
+   the open attribute. The bottom bar's More is a separate disclosure. */
+.nav-more:not(.nav-more-mobile):is(html[data-nav-more="shut"] .nav-more) > ul {
+  display: none;
+}
+.nav-more:not(.nav-more-mobile):is(html[data-nav-more="shut"] .nav-more) > .nav-more-summary::after {
+  content: "+";
+}
