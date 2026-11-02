@@ -315,11 +315,13 @@
     },
     "review_queue": {
       "title": "Review queue",
-      "purpose": "The cases with the Permit Reviewer, by review area, and the decisions recorded recently.",
+      "purpose": "The cases with the Permit Reviewer. Stage shows where each case is in the life cycle. Next action shows what is needed now and by whom.",
       "can_do": [
+        "Read Stage and Next action on each case. Stage uses the life cycle names, for example Checks (3 of 6).",
+        "Filter by Next action. The chips are Ready to decide, Ready to issue, Waiting on Data Steward, Needs checks, Fee not settled, In early resolution and Submitted with known issues.",
         "Open a case to read the recommendation and record a decision."
       ],
-      "next": "A recorded decision is reconfirmed or issued from the case."
+      "next": "Ready to decide and Ready to issue are listed first. A recorded decision is reconfirmed or issued from the case."
     },
     "apply": {
       "title": "Start an application",

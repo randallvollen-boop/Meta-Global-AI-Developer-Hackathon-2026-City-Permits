@@ -325,7 +325,7 @@
         "screen_label": "Review queue",
         "screen_href": "/queue/review",
         "steps": [
-          "Open \"Review queue\" and click the reference of a case. The queue holds the cases with the Permit Reviewer and the recommendation of each one.",
+          "Open \"Review queue\". Read \"Stage\" and \"Next action\" for each case. Stage shows where the case is, for example \"Checks (3 of 6)\". Next action is what is needed now: \"Ready to decide\", \"Ready to issue\", \"Waiting on Data Steward\", \"Needs checks\", \"Fee not settled\", \"In early resolution\" or \"Submitted with known issues\". \"Ready to decide\" and \"Ready to issue\" come first. Click the reference of a case.",
           "Read the tabs \"Documents\", \"People and organizations\", \"Activity\" and \"Review\".",
           "On the \"People and organizations\" tab, click \"Start\" under \"Confirm parcel\" and submit it.",
           "On the \"Review\" tab, click \"Start\" under \"Run application checks\" and submit the form.",

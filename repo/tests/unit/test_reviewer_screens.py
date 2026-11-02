@@ -186,7 +186,13 @@ def test_the_review_queue_keeps_the_decision_and_collapses_the_rest(
     table = re.search(r'data-testid="review-table".*?</table>', page, re.S)
     assert table is not None
     headers = re.findall(r'<th scope="col">([^<]+)</th>', table.group(0))
-    assert headers == ["Reference", "Type", "Recommendation", "Age"]
+    assert headers == ["Reference", "Type", "Stage", "Next action", "Recommendation", "Age"]
+    assert 'data-testid="next-action-filters"' in page
+    assert 'data-testid="review-stage"' in page
+    assert 'data-testid="review-next-action"' in page
+    assert "Checks (3 of 6)" in page
+    assert not inside_details(page, 'data-testid="review-stage"')
+    assert not inside_details(page, 'data-testid="review-next-action"')
     recent = re.search(r'data-testid="recent-decisions".*?</table>', page, re.S)
     assert recent is not None
     assert REVIEWER not in recent.group(0)

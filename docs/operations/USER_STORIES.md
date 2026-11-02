@@ -190,6 +190,16 @@ first entry of the City website menu.
     reviewer's navigation holds Work queue, Permit workspace and Review
     queue. The reviewer cannot wake or run an agent: the agent screens return
     403.
+- As a Permit Reviewer, I want the review queue to show where a case is in
+  the cycle and what is needed now, so that I can pick up the right work.
+  - Acceptance: the **Review queue** table shows **Stage** and **Next action**
+    beside Reference, Type, Recommendation and Age. Stage names the life cycle
+    place, for example **Checks (3 of 6)**. Next action is one of **Waiting on
+    Data Steward**, **Needs checks**, **Ready to decide**, **Fee not settled**,
+    **Ready to issue**, **In early resolution** or **Submitted with known
+    issues**. Filter chips above the table count each Next action. **Ready to
+    decide** and **Ready to issue** sort first. Area and owner stay under More
+    details.
 - As a Permit Reviewer, I want the recommendation card at the Decision step,
   so that I see the outcome, the rule rows with their citations, the
   conditions of approval and the pipeline trace before I decide.

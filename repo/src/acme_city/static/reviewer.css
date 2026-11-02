@@ -25,4 +25,42 @@
 @media (max-width: 560px) {
   .queue-table .dates { white-space: normal; }
   .case-head .actions { width: 100%; }
+  /* The review queue becomes one card per case. Stage and Next action stay
+     on the card. The table wrap must not scroll sideways at phone width. */
+  body[data-screen="review_queue"] .tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  body[data-screen="review_queue"] .review-table-wrap {
+    overflow-x: visible;
+    max-width: 100%;
+  }
+  body[data-screen="review_queue"] .review-queue-table,
+  body[data-screen="review_queue"] .review-queue-table tbody,
+  body[data-screen="review_queue"] .review-queue-table tr,
+  body[data-screen="review_queue"] .review-queue-table td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+  body[data-screen="review_queue"] .review-queue-table thead { display: none; }
+  body[data-screen="review_queue"] .review-row {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+  body[data-screen="review_queue"] .review-queue-table td {
+    border: 0;
+    overflow-wrap: anywhere;
+    padding: 2px 0;
+    text-align: left;
+  }
+  body[data-screen="review_queue"] .review-queue-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--fg-3);
+    font-size: 0.72rem;
+  }
 }
