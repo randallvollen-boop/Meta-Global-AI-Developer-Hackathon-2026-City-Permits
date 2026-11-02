@@ -131,6 +131,44 @@ def test_data_issues_and_a_focused_case_at_both_widths(page, server: BrowserServ
     assert page.recorded_errors == []
 
 
+def test_the_task_shows_what_was_submitted_and_opens_the_application(
+    page, server: BrowserServer, login, cedarline
+) -> None:
+    """The panel reads side by side, and the link opens the application."""
+    login("persona_data_steward")
+    page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")
+    page.locator("[data-issue-row]", has_text="ERP-BL-00413").locator(
+        '[data-testid="issue-link"]'
+    ).click()
+    page.wait_for_selector('[data-testid="submitted-panel"]')
+    rows = page.locator('[data-testid="submitted-row"]')
+    assert rows.count() > 0, "the panel lists the fields in question"
+    # Every row says in words how the two sides differ.
+    for index in range(rows.count()):
+        difference = rows.nth(index).locator('[data-testid="submitted-difference"]')
+        assert difference.count() == 1
+        assert difference.inner_text().strip() in {
+            "The same.",
+            "They differ.",
+            "Only the record holds this value.",
+            "Only the submission holds this value.",
+            "Neither side holds a value.",
+        }
+    # The link opens the application the issue came from.
+    link = page.locator('[data-testid="case-application-link"]')
+    assert link.count() == 1
+    link.click()
+    page.wait_for_selector('[data-testid="application-number"]')
+    assert page.locator('[data-testid="application-field-list"]').count() == 1
+    assert page.locator('[data-testid="application-documents"]').count() == 1
+    # The application page is read only: it carries no action at all.
+    assert page.locator("[data-action-id]").count() == 0
+    for width in (1280, 390):
+        page.set_viewport_size({"width": width, "height": 900})
+        assert overflow(page) <= 1, ("application", width, overflow(page))
+    assert page.recorded_errors == []
+
+
 def test_a_decision_made_in_the_browser_shows_on_the_case(page, server: BrowserServer, login, cedarline, submit_action) -> None:
     login("persona_data_steward")
     page.goto(f"{server.base_url}/steward", wait_until="domcontentloaded")

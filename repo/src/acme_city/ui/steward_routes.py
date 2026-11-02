@@ -4,6 +4,7 @@ Routes:
 
 * ``GET /steward``                            Data issues, the steward's queue
 * ``GET /steward/issues/{kind}/{id}``         one focused case
+* ``GET /steward/applications/{id}``          one application, read only
 * ``GET /masters``                            Master records, four tabs
 * ``GET /masters/{party_id}``                 one record profile
 * ``GET /applicants``                         the People and organizations tab
@@ -29,6 +30,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -509,6 +511,64 @@ def ui_steward_case(
         quiet_feedback=True,
     )
     return render(request, "steward_case.html", context)
+
+
+@router.get("/steward/applications/{application_id}", operation_id="ui_steward_application")
+def ui_steward_application(
+    application_id: str,
+    request: Request,
+    session: Session = Depends(get_session, scope="function"),
+    actor: ActorContext | None = Depends(ui_actor),
+) -> Any:
+    """Show one application as the steward reads it.
+
+    The view is read only: it shows what the applicant submitted, the
+    documents that came with it, the address it names and the applicant.  It
+    offers no action and decides nothing, so it opens with a read grant
+    alone.
+    """
+    if actor is None:
+        return RedirectResponse("/select", status_code=303)
+    if not view_models.holds_grant(
+        session, actor, steward_views.APPLICATION_READ_PERMISSION
+    ):
+        return error_response(
+            request,
+            session,
+            actor,
+            status_code=403,
+            title="This screen is outside your grants",
+            message=(
+                "Your persona does not hold the grant that reads an "
+                "application. Reading an application never carries the right "
+                "to decide one."
+            ),
+            code="permission_denied",
+            back=view_models.home_for(session, actor)["href"],
+        )
+    application = steward_views.application_view(session, actor, application_id)
+    if not application:
+        return error_response(
+            request,
+            session,
+            actor,
+            status_code=404,
+            title="That application was not found",
+            message="The application does not exist.",
+            code="not_found",
+            back="/steward",
+        )
+    context = page_context(
+        request,
+        session,
+        actor,
+        screen="steward",
+        title=f"Application {application['number']}",
+        application=application,
+        help_screen="steward",
+        quiet_feedback=True,
+    )
+    return render(request, "steward_application.html", context)
 
 
 @router.get("/source-records", operation_id="ui_source_records")

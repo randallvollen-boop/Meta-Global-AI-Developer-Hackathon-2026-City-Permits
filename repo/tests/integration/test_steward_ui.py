@@ -555,6 +555,86 @@ def test_the_focused_case_answers_six_questions_in_order(client: TestClient, env
     assert "Does not decide the permit." in html.split('data-question="6"')[1]
 
 
+def test_the_task_page_shows_what_was_submitted_beside_what_the_record_holds(
+    client: TestClient, environment: Settings
+) -> None:
+    """The panel lists every field in question and says how it differs."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00412")
+    html = client.get(path).text
+    assert 'data-testid="submitted-panel"' in html
+    panel = html.split('data-testid="submitted-panel"')[1].split("</section>")[0]
+    assert "What the applicant submitted" in panel
+    assert "What the master record holds" in panel
+    rows = re.findall(
+        r'data-testid="submitted-row" data-differs="([^"]*)">(.*?)</tr>', panel, re.S
+    )
+    assert rows, "the panel lists the fields in question"
+    fields = {}
+    for differs, row in rows:
+        cells = re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", row, re.S)
+        fields[cells[0].strip()] = (
+            differs,
+            " ".join(re.sub(r"<[^>]+>", " ", cells[-1]).split()),
+        )
+    # The name the applicant submitted and the name the record holds differ.
+    assert fields["Name"][0] == "yes"
+    assert fields["Name"][1] == "They differ."
+    # The address the applicant typed and the address of the record differ.
+    assert fields["Address"][0] == "yes"
+    assert fields["Address"][1] == "They differ."
+    # The email is the same on both sides, and the words say so.
+    assert fields["Email"][0] == "no"
+    assert fields["Email"][1] == "The same."
+
+
+def test_the_task_page_links_the_application_and_the_page_is_read_only(
+    client: TestClient, environment: Settings
+) -> None:
+    """The link opens the application, and the page decides nothing."""
+    choose(client, "persona_data_steward")
+    seed(environment)
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    link = re.search(
+        r'href="(/steward/applications/[^"]+)"[^>]*data-testid="case-application-link"',
+        html,
+    )
+    assert link is not None, "the task links the application it came from"
+    application = client.get(link.group(1))
+    assert application.status_code == 200
+    body = application.text
+    assert 'data-testid="application-number"' in body
+    assert 'data-testid="application-applicant"' in body
+    assert 'data-testid="application-address"' in body
+    assert 'data-testid="application-field-list"' in body
+    assert 'data-testid="application-documents"' in body
+    assert "read only" in body
+    # The page offers no action at all: it is a reading, not a decision.
+    assert 'data-action-id=' not in body
+    assert "/ui/actions/" not in body
+
+
+def test_the_application_page_is_forbidden_to_a_persona_without_the_read_grant(
+    client: TestClient, environment: Settings
+) -> None:
+    """Reading an application needs the read grant and nothing else."""
+    seed(environment)
+    choose(client, "persona_data_steward")
+    path = case_path(client, "ERP-BL-00413")
+    html = client.get(path).text
+    link = re.search(
+        r'href="(/steward/applications/[^"]+)"[^>]*data-testid="case-application-link"',
+        html,
+    )
+    assert link is not None
+    choose(client, "persona_agent_operator")
+    refused = client.get(link.group(1))
+    assert refused.status_code == 403
+    assert "grant" in refused.text
+
+
 def test_missing_values_read_no_comparison(client: TestClient, environment: Settings) -> None:
     choose(client, "persona_data_steward")
     factory = SessionFactory(environment.database_url)

@@ -43,8 +43,10 @@ STEWARD = ActorContext(
 #: The domain the issue of the demonstration belongs to.
 CONFLICT_DOMAIN = "businesses"
 
-#: The record the issue of the demonstration is about.
-CONFLICT_SUBJECT = "party_quarrylane:postal_address"
+#: The record the issue of the demonstration is about.  The field is the
+#: postal address of the organization, which the source sent and the master
+#: record does not hold.
+CONFLICT_SUBJECT = "party_quarry:postal_address"
 
 #: The kind of issue: two versions of the same record disagree.
 CONFLICT_ISSUE_TYPE = "source_version_payload_conflict"

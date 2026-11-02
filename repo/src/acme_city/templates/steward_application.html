@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui with context %}
+
+{# The application as the steward reads it: what the applicant submitted,
+   the documents that came with it, the address it names and the applicant.
+   The page is read only.  It offers no action and decides nothing, so a
+   person may read it without any decision right. #}
+
+{% block content %}
+<p class="crumb"><a href="{{ back_href or '/steward' }}">&larr; Data issues</a></p>
+
+<section class="stw-case-summary" aria-labelledby="application-heading" data-testid="application-summary">
+  <div class="page-head">
+    <div>
+      <h1 id="application-heading" data-testid="application-number">{{ application.number }}</h1>
+      <p class="sub" data-testid="application-sub">{{ application.permit_type }} · {{ application.status }}</p>
+    </div>
+    <div class="actions">{{ ui.help_button('steward') }}</div>
+  </div>
+  <dl class="stw-case-facts">
+    <dt>Applicant</dt>
+    <dd data-testid="application-applicant">{{ application.applicant }}</dd>
+    <dt>Address</dt>
+    <dd data-testid="application-address">{{ application.address or 'No address was submitted' }}</dd>
+    <dt>Submitted</dt>
+    <dd data-testid="application-submitted">{{ ui_time(application.submitted_at) }}</dd>
+  </dl>
+  <p class="muted" data-testid="application-read-only">This page is read only. It shows what the applicant submitted and decides nothing.</p>
+</section>
+
+<section class="panel" aria-labelledby="application-fields-heading" data-testid="application-fields">
+  <div class="card-h"><h2 id="application-fields-heading">What the applicant submitted</h2></div>
+  <div class="card-b">
+    {% if application.fields %}
+    <dl class="stw-facts" data-testid="application-field-list">
+      {% for item in application.fields %}
+      <div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p class="muted" data-testid="application-fields-empty">The application holds no submitted field.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="application-documents-heading" data-testid="application-documents">
+  <div class="card-h"><h2 id="application-documents-heading">Documents</h2></div>
+  <div class="card-b">
+    {% if application.documents %}
+    <table class="data-table" data-testid="application-document-table">
+      <caption class="visually-hidden">The documents that came with the application</caption>
+      <thead><tr><th scope="col">Document</th><th scope="col">Version</th><th scope="col">Received</th></tr></thead>
+      <tbody>
+        {% for item in application.documents %}
+        <tr data-testid="application-document-row">
+          <th scope="row" data-label="Document">{{ item.document_type }}</th>
+          <td data-label="Version">{{ item.version }}</td>
+          <td data-label="Received">{{ ui_time(item.received_at) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted" data-testid="application-documents-empty">No document came with this application.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
