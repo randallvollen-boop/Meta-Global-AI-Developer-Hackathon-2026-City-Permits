@@ -635,12 +635,6 @@ def test_muse_feedback_is_shown_only_when_it_cites_a_real_rule(environment) -> N
         assert "Cedar panels." in sent
         assert "demo.applicant@example.invalid" not in sent
         assert "555-0100" not in sent
-        rendered = post_form(test_client, FRONT_SIX, files=fence_files(), intent="review")
-        assert rendered.status_code == 200, rendered.text
-        feedback = rendered.text.split('data-testid="presubmit-feedback"')[1].split("</p>")[0]
-        assert 'data-testid="presubmit-muse-badge">Muse<' in feedback
-        assert 'data-testid="presubmit-muse-lead">Muse says:<' in feedback
-        assert "Lower the front fence to 4 ft." in rendered.text
         app.state.presubmit_muse_client = MuseClient(live, transport=invented)
         second = test_client.post("/apply/deck_fence/review", data=payload, files=fence_files())
         assert second.status_code == 200, second.text
@@ -670,3 +664,30 @@ def test_muse_feedback_is_shown_only_when_it_cites_a_real_rule(environment) -> N
                 assert "99-999" not in blob
     finally:
         factory.dispose()
+
+
+def test_muse_feedback_in_the_rendered_page_is_attributed_to_muse(environment) -> None:
+    """The server-rendered review labels Muse's note.
+
+    This is its own test: the live call cap of a build run is two, and the
+    test above spends both on its accepted and its invented reply.
+    """
+    live = environment.model_copy(
+        update={
+            "presubmit_review_live_enabled": True,
+            "meta_api_key": SecretStr("test-presubmit-key-not-real"),
+        }
+    )
+    accepted = FakeTransport(_feedback("DF-1", "Lower the front fence to 4 ft."))
+    app = create_app(live)
+    app.include_router(ui_router)
+    app.state.presubmit_muse_client = MuseClient(live, transport=accepted)
+    with TestClient(app) as test_client:
+        choose(test_client, "persona_applicant")
+        rendered = post_form(test_client, FRONT_SIX, files=fence_files(), intent="review")
+        assert rendered.status_code == 200, rendered.text
+        feedback = rendered.text.split('data-testid="presubmit-feedback"')[1].split("</p>")[0]
+        assert 'data-testid="presubmit-muse-badge">Muse<' in feedback
+        assert 'data-testid="presubmit-muse-lead">Muse says:<' in feedback
+        assert "Lower the front fence to 4 ft." in rendered.text
+        assert len(accepted.requests) == 1

@@ -345,8 +345,9 @@
           badge.textContent = "Muse";
           var lead = document.createElement("span");
           lead.setAttribute("data-testid", "presubmit-muse-lead");
-          lead.textContent = " Muse says:";
+          lead.textContent = "Muse says:";
           note.appendChild(badge);
+          note.appendChild(document.createTextNode(" "));
           note.appendChild(lead);
           note.appendChild(document.createTextNode(" " + item.feedback));
           row.appendChild(note);
@@ -385,8 +386,9 @@
         badge.textContent = "Muse";
         var lead = document.createElement("span");
         lead.setAttribute("data-testid", "presubmit-muse-lead");
-        lead.textContent = " Muse says:";
+        lead.textContent = "Muse says:";
         note.appendChild(badge);
+        note.appendChild(document.createTextNode(" "));
         note.appendChild(lead);
         note.appendChild(document.createTextNode(" " + review.assistant_note));
         root.appendChild(note);
