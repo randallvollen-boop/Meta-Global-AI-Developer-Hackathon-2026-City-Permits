@@ -42,8 +42,6 @@ services:
       # only because Render is the sole way in; see DEPLOY_RENDER.md.
       - key: ACME_TRUST_PROXY_HEADERS
         value: "1"
-      - key: ACME_SCENARIO_CLOCK
-        value: auto
       - key: ACME_DEMO_SEED_ON_START
         value: "1"
       # Sample intake cases the seed adds, so the agents' Incoming list has work.

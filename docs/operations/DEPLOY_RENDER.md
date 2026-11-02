@@ -15,7 +15,7 @@ The blueprint is `render.yaml` at the repository root. It was written and tested
   2. `load_synthetic_year.py --seed 20261028 --count 600`;
   3. `load_steward_demo.py`.
 
-  `ACME_SCENARIO_CLOCK=auto` sets the demonstration date from the data. A failed step stops the start, so Render keeps the previous deploy running. On a laptop the whole sequence took about 10 seconds before the readiness check passed.
+  Render leaves `ACME_SCENARIO_CLOCK` empty, so the demonstration uses the real clock. A failed step stops the start, so Render keeps the previous deploy running. On a laptop the whole sequence took about 10 seconds before the readiness check passed.
 - **Nightly reset.** A Render cron job calls the web service's deploy hook at 02:00 Coordinated Universal Time (UTC). The redeploy rebuilds the data. Render keeps the old instance serving until the new one passes `/readyz`.
 - **Port.** The entrypoint listens on `PORT` (set by Render), then `ACME_BIND_PORT`, then 8000.
 

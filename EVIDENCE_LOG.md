@@ -347,3 +347,8 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 
 - Root cause: the live tour configuration already resolved `reviewer` and `issue` to `/permits/{case}`, but `guide_views.PATHS` and its generated submission document still named `/queue/review`. The documented route did not put the reviewer on the workspace that has the case controls and recorded state.
 - Focused non-browser checks passed: `38 passed` across `tests/unit/test_tour.py`, `test_judge_walkthrough_doc.py`, and `test_walkthrough_paths.py`. `tests/browser/test_cafe_path.py --collect-only` collected 2 tests. Browser execution remains for the lead.
+
+## 2026-11-02 — Retest item 4: real deployment-date evidence
+
+- Root cause: both `render.yaml` and the entrypoint seed override explicitly set `ACME_SCENARIO_CLOCK` to `auto`, pinning the running demo to scenario data rather than the real date.
+- Static compilation passed for the entrypoint and focused protection test. The changed default checks passed (`2 passed, 46 deselected`), and `tests/unit/test_scenario_clock.py` passed (`10 passed`), preserving explicit controlled dates.
