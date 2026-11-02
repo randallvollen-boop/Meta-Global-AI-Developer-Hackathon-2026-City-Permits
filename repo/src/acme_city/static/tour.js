@@ -280,18 +280,28 @@
     var spec = current && current.fill;
     var form = formOnScreen();
     if (!spec || !form) return;
-    var fields = spec.fields || {};
-    var names = Object.keys(fields);
-    names.sort(function (left, right) {
-      var leftNode = form.querySelector('[name="' + left + '"]');
-      var rightNode = form.querySelector('[name="' + right + '"]');
-      var leftRadio = leftNode && leftNode.type === "radio" ? 0 : 1;
-      var rightRadio = rightNode && rightNode.type === "radio" ? 0 : 1;
-      return leftRadio - rightRadio;
-    });
-    for (var i = 0; i < names.length; i++) setControl(form, names[i], fields[names[i]]);
-    var files = spec.files || {};
-    Object.keys(files).forEach(function (name) { attachFile(form, name, files[name]); });
+    /* The normal form change listeners provide live completeness and address
+       lookup.  A tour fill is a local demonstration setup, not a visitor
+       edit, and must not leave asynchronous requests racing the next persona
+       switch.  The form listener recognizes this short-lived marker while
+       still updating purely local controls such as conditional questions. */
+    form.setAttribute("data-tour-filling", "true");
+    try {
+      var fields = spec.fields || {};
+      var names = Object.keys(fields);
+      names.sort(function (left, right) {
+        var leftNode = form.querySelector('[name="' + left + '"]');
+        var rightNode = form.querySelector('[name="' + right + '"]');
+        var leftRadio = leftNode && leftNode.type === "radio" ? 0 : 1;
+        var rightRadio = rightNode && rightNode.type === "radio" ? 0 : 1;
+        return leftRadio - rightRadio;
+      });
+      for (var i = 0; i < names.length; i++) setControl(form, names[i], fields[names[i]]);
+      var files = spec.files || {};
+      Object.keys(files).forEach(function (name) { attachFile(form, name, files[name]); });
+    } finally {
+      form.removeAttribute("data-tour-filling");
+    }
   }
 
   function fillStoryOnArrival(current) {

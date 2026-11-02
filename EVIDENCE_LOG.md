@@ -374,3 +374,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 
 - Verified after the final edits: `tests/unit/test_judge_walkthrough_doc.py` — 3 passed; `tests/unit/test_walkthrough_paths.py` — 9 passed; `node --check repo/src/acme_city/static/tour.js` — passed; and the checked submission document equals `walkthrough_markdown()` byte for byte.
 - The five affected browser tests were not run because browsers are unavailable in this sandbox; they remain for the browser gate.
+
+## 2026-11-02 — Tour-fill request race evidence
+
+- Root cause traced from `tour.js` to `property.js`: tour `setControl` and `attachFile` dispatch normal `input`/`change` events; `property.js` reacts with `POST /apply/deck_fence/check` and, for the story address, `GET /apply/locate?text=400%20Lantern...`. Both endpoints use `_portal_guard`, which rejects an Agent Operator session with 403. The full tour advances to that persona before delayed requests necessarily leave the browser.
+- The synthetic-fill marker is present only while those events dispatch. The portal listener checks it before scheduling live `refresh()` or `locate()`, preserving its file-status and conditional-question listeners.
+- Post-change static checks: `node --check src/acme_city/static/tour.js`; `node --check src/acme_city/static/property.js`; `git diff --check`; and `PYTHONPATH=src ... pytest tests/unit/test_tour.py --collect-only -q` (26 tests collected) completed successfully. Browser execution was not run by instruction; the original browser assertions remain unchanged.

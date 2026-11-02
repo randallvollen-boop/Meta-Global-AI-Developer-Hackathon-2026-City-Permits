@@ -492,9 +492,14 @@
       pill.className = "pill " + (text === "Add file" ? "warn" : "ok");
     }
     var slow = debounce(refresh, 250);
-    form.addEventListener("input", slow);
+    function tourIsFilling() {
+      return form.getAttribute("data-tour-filling") === "true";
+    }
+    form.addEventListener("input", function () {
+      if (!tourIsFilling()) { slow(); }
+    });
     form.addEventListener("change", function (event) {
-      refresh();
+      if (!tourIsFilling()) { refresh(); }
       var input = event.target;
       if (input && input.type === "file") {
         var row = input.closest(".doc-row");
@@ -517,7 +522,12 @@
           dym.textContent = body.message || "";
         }).catch(function () {});
     }
-    if (address) { address.addEventListener("input", debounce(locate, 300)); }
+    if (address) {
+      var delayedLocate = debounce(locate, 300);
+      address.addEventListener("input", function () {
+        if (!tourIsFilling()) { delayedLocate(); }
+      });
+    }
     initSampleAddresses(form, address);
     form.querySelectorAll("[data-drop-zone]").forEach(function (zone) {
       var row = zone.closest(".doc-row");

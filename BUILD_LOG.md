@@ -505,3 +505,8 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The generated judge walkthrough is synchronized with `guide_views.PATHS`, including the Data follow-up wording. The route browser check resolves the `{case}` placeholder as the rendered page does, and the held-submit viewport check uses its existing DOM-box helper.
 - The resident tour now treats a browser-selected first select option as untouched, so an otherwise pristine form is filled on arrival while visitor-entered values still prevent filling.
 - Local verification after these edits: `tests/unit/test_judge_walkthrough_doc.py` passed (3), `tests/unit/test_walkthrough_paths.py` passed (9), `node --check repo/src/acme_city/static/tour.js` passed, and a direct comparison confirmed the document exactly equals `walkthrough_markdown()`. Browser execution was not run in this sandbox.
+
+## 2026-11-02 — Tour-fill request race repair
+
+- Source tracing found that the resident tour's synthetic fill dispatched the normal form `input` and `change` events. The applicant portal therefore queued its live completeness check and address lookup while the tour immediately switched to the Agent Operator. Those applicant-only endpoints could then see the new staff session and return 403.
+- `tour.js` now marks only the synchronous synthetic fill. `property.js` keeps local form affordances current but does not start live validation or address lookup while that marker is present. Visitor edits retain their existing live requests, and the tour still fills only a pristine form, leaving pre-existing typed values and files unchanged.
