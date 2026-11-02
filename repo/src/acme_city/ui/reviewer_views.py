@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from acme_city.agents.plain_reason import describe_recommendation
+from acme_city.applicant_portal.presubmit import FLAG as SUBMITTED_WITH_KNOWN_ISSUES
 from acme_city.core.clock import utc_now
 from acme_city.persistence.models import audit, change, finance, permit, registry
 from acme_city.ui import display, ops_views
@@ -684,3 +685,390 @@ def workspace_extras(
         "revisions": _revision_rows(session, application),
         "decision_record": "Recommendation" if not review_target else "Decision",
     }
+
+
+# --- Review queue: where the case is, and what is needed now -----------------
+#
+# Stage is the life-cycle place of the recorded status. Next action is what
+# that status and its blockers need now. Neither writes a record.
+
+#: How many places the main path shows.
+STAGE_TOTAL = 6
+
+#: The stage text a case at Checks shows. Help quotes this literal.
+STAGE_EXAMPLE = "Checks (3 of 6)"
+
+#: Status to (stage key, label, 1-based position). Off this map, the life
+#: cycle's own label is used and the track is omitted.
+#: ``revisions_requested`` shares Decision with ``under_review``: the
+#: applicant was sent back from review, so the case is still at the decision.
+_PATH_STAGES: dict[str, tuple[str, str, int]] = {
+    "submitted": ("submitted", "Submitted", 1),
+    "needs_information": ("records_matching", "Records matching", 2),
+    "ready_for_review": ("checks", "Checks", 3),
+    "revisions_requested": ("decision", "Decision", 4),
+    "under_review": ("decision", "Decision", 4),
+    "approved": ("fee", "Fee", 5),
+    "issued": ("issued", "Issued", 6),
+}
+
+#: The six statuses whose life-cycle order is the six steps, first to last.
+STAGE_PATH: tuple[str, ...] = (
+    "submitted",
+    "needs_information",
+    "ready_for_review",
+    "under_review",
+    "approved",
+    "issued",
+)
+
+#: Only these two codes mean the Data Steward still has to approve a link.
+#: ``parcel_unconfirmed`` is the reviewer's own confirmation.
+STEWARD_CODES = frozenset({"identity_link_unapproved", "parcel_link_unapproved"})
+
+#: A missing or stale evaluation means the checks have to be run again.
+_CHECK_AGAIN = frozenset({"no_current_evaluation", "evaluation_stale"})
+
+#: Filter chips, in display order. Ready to decide and Ready to issue are first.
+NEXT_ACTIONS: tuple[tuple[str, str], ...] = (
+    ("ready_to_decide", "Ready to decide"),
+    ("ready_to_issue", "Ready to issue"),
+    ("waiting_on_steward", "Waiting on Data Steward"),
+    ("needs_checks", "Needs checks"),
+    ("fee_not_settled", "Fee not settled"),
+    ("early_resolution", "In early resolution"),
+    ("submitted_issues", SUBMITTED_WITH_KNOWN_ISSUES),
+    ("waiting_for_applicant", "Waiting for the applicant"),
+    ("decision_recorded", "Decision recorded"),
+    ("issued", "Issued"),
+    ("returned", "Returned"),
+    ("withdrawn", "Withdrawn"),
+    ("archived", "Archived"),
+)
+NEXT_ACTION_LABELS: dict[str, str] = dict(NEXT_ACTIONS)
+NEXT_ACTION_KEYS = frozenset(NEXT_ACTION_LABELS)
+
+_SORT_RANK = {"ready_to_decide": 0, "ready_to_issue": 1}
+
+
+def _life_cycle_label(status: str) -> str:
+    """Return the life-cycle page's own label for a status."""
+    from acme_city.permits.lifecycle_map import STATUSES
+
+    for item in STATUSES:
+        if item.key == status:
+            return item.label
+    if not status:
+        return "Unknown"
+    return status.replace("_", " ").capitalize()
+
+
+def stage_of(status: str) -> dict[str, Any]:
+    """Return the life-cycle place of one recorded status.
+
+    The place depends only on the status. Blockers change the next action,
+    not where the case sits.
+    """
+    mapped = _PATH_STAGES.get(status or "")
+    if mapped is None:
+        key, label, position = status or "unknown", _life_cycle_label(status), 0
+    else:
+        key, label, position = mapped
+    text = f"{label} ({position} of {STAGE_TOTAL})" if position else label
+    return {
+        "stage_key": key,
+        "stage_label": label,
+        "stage_position": position,
+        "stage_total": STAGE_TOTAL,
+        "stage_text": text,
+    }
+
+
+def _known_issues(application: permit.Application) -> bool:
+    """Return whether the applicant submitted anyway with a reason.
+
+    The same gate as the permit workspace flag: a presubmit override dict
+    with a non-blank reason.
+    """
+    raw = application.presubmit_override
+    if not isinstance(raw, dict):
+        return False
+    reason = " ".join(str(raw.get("reason") or "").split())
+    return bool(reason)
+
+
+def _steward(blockers: list[Any]) -> bool:
+    """Return whether a blocker list still waits on the Data Steward."""
+    return any(blocker.code in STEWARD_CODES for blocker in blockers)
+
+
+def _fee_open(finance_service: Any, application: permit.Application) -> bool:
+    """Return whether an approved case still has a fee to settle.
+
+    No assessment, a balance other than 0.00, or a reconciliation that is
+    not exact. The read does not write a reconciliation row.
+    """
+    assessment = finance_service.current_assessment(application.id)
+    if assessment is None:
+        return True
+    reconciliation = finance_service.compute_reconciliation(assessment, persist=False)
+    if reconciliation.balance_cents != 0:
+        return True
+    return reconciliation.status != "exact"
+
+
+def _open_blockers(
+    application: permit.Application, permits: Any, decisions: Any
+) -> tuple[Any, list[Any]]:
+    """Return the current evaluation and the blockers the decision path uses.
+
+    A current evaluation goes through ``PermitDecisionService.blockers``.
+    With no evaluation, or a stale one, the same permit-service reads that
+    method calls are used: site, identity (which includes the parcel link)
+    and finance.
+    """
+    evaluation = permits.current_evaluation(application.id)
+    if evaluation is not None and not evaluation.stale:
+        return evaluation, decisions.blockers(application, evaluation)
+    blockers: list[Any] = []
+    blockers.extend(permits.site_blockers(application))
+    blockers.extend(permits.identity_link_blockers(application))
+    blockers.extend(permits.finance_link_blockers(application))
+    return evaluation, blockers
+
+
+def _approved_action(
+    application: permit.Application,
+    permits: Any,
+    finance_service: Any,
+    issuance: Any,
+) -> str:
+    """Return the next action of an approved case."""
+    if _steward(permits.identity_link_blockers(application)):
+        return "waiting_on_steward"
+    if _fee_open(finance_service, application):
+        return "fee_not_settled"
+    decision = permits.current_decision(application.id)
+    if decision is None:
+        return "ready_to_decide"
+    blockers = issuance.blockers(application, decision)
+    if _steward(blockers):
+        return "waiting_on_steward"
+    if not blockers:
+        return "ready_to_issue"
+    codes = {blocker.code for blocker in blockers}
+    if codes & _CHECK_AGAIN:
+        return "needs_checks"
+    return "ready_to_decide"
+
+
+def _next_action_key(
+    application: permit.Application,
+    permits: Any,
+    decisions: Any,
+    finance_service: Any,
+    issuance: Any,
+) -> str:
+    """Return the key of the one next action.
+
+    An approved case is on the fee and issue path before the presubmit flag
+    is considered, so an approval is not labelled as submitted with known
+    issues. On every earlier status that flag wins, including over an
+    unapproved steward link: it is the phrase the reviewer sees when the
+    applicant submitted anyway.
+    """
+    status = application.status
+    if status == "issued":
+        return "issued"
+    if status == "archived":
+        return "archived"
+    if status == "withdrawn":
+        return "withdrawn"
+    if status == "returned":
+        return "returned"
+    if status == "revisions_requested":
+        return "waiting_for_applicant"
+    if status == "denied":
+        return "decision_recorded"
+    if status == "approved":
+        return _approved_action(application, permits, finance_service, issuance)
+    if _known_issues(application):
+        return "submitted_issues"
+    evaluation, blockers = _open_blockers(application, permits, decisions)
+    if _steward(blockers):
+        return "waiting_on_steward"
+    if status == "needs_information":
+        return "early_resolution"
+    if evaluation is None or evaluation.stale:
+        return "needs_checks"
+    from acme_city.permits.decisions import DECIDABLE_STATUSES
+
+    if status in DECIDABLE_STATUSES:
+        return "ready_to_decide"
+    return "needs_checks"
+
+
+def queue_place(session: Session, application: permit.Application) -> dict[str, Any]:
+    """Return the stage and the next action of one case.
+
+    Read-only. The services are the ones the decision and issuance paths
+    already use. Nothing here evaluates, decides, issues or submits.
+    """
+    from acme_city.finance.service import FinanceService
+    from acme_city.permits.decisions import PermitDecisionService
+    from acme_city.permits.issuance import PermitIssuanceService
+    from acme_city.permits.service import PermitService
+
+    permits = PermitService(session)
+    stage = stage_of(application.status)
+    key = _next_action_key(
+        application,
+        permits,
+        PermitDecisionService(session),
+        FinanceService(session),
+        PermitIssuanceService(session),
+    )
+    stage["next_action_key"] = key
+    stage["next_action"] = NEXT_ACTION_LABELS[key]
+    return stage
+
+
+def review_row_sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
+    """Sort ready to decide, then ready to issue, then the older cases first."""
+    rank = _SORT_RANK.get(str(row.get("next_action_key") or ""), 2)
+    age = row.get("age_days")
+    try:
+        age_value = int(age) if age is not None else 0
+    except (TypeError, ValueError):
+        age_value = 0
+    return (rank, -age_value, str(row.get("reference") or ""))
+
+
+def _review_href(area: str, action: str, query: str = "", tag: str = "") -> str:
+    """Return a review-queue address that keeps the area, the action, the search and the tag."""
+    from acme_city.ui.queue_find import review_href
+
+    return review_href(area, action, query, tag)
+
+
+def present_review_queue(
+    session: Session,
+    queue: dict[str, Any],
+    next_action: str = "",
+    query: str = "",
+    page: int = 1,
+    tag: str = "",
+) -> dict[str, Any]:
+    """Copy a review queue, then add stage, next action, chips, search and sort.
+
+    Membership and area counts stay as the queue service returned them.
+    The action filter and the sort happen here. An unknown action shows
+    every row. Counts are taken after the area filter and before the
+    action filter, so the selected chip's count is the number of rows
+    in that action. The search runs after the chip and before the page,
+    so a match is not dropped because it would have been on a later page.
+    A recommendation tag narrows the same list and combines with both.
+    """
+    from acme_city.ui.queue_find import (
+        matches_query,
+        normalize_query,
+        paginate,
+        paging_links,
+        search_summary,
+        sole_open,
+    )
+    from acme_city.ui.queue_tags import load_tags, normalize_tag, tag_chips
+
+    presented = dict(queue)
+    area = str(queue.get("area") or "")
+    selected = next_action if next_action in NEXT_ACTION_KEYS else ""
+    text = normalize_query(query)
+    annotated: list[dict[str, Any]] = []
+    for source in queue.get("rows") or []:
+        row = dict(source)
+        application_id = row.get("application_id")
+        application = (
+            session.get(permit.Application, application_id) if application_id else None
+        )
+        if application is None:
+            place = stage_of(str(row.get("status") or ""))
+            place["next_action_key"] = "needs_checks"
+            place["next_action"] = NEXT_ACTION_LABELS["needs_checks"]
+        else:
+            place = queue_place(session, application)
+        row.update(place)
+        annotated.append(row)
+    tagged = load_tags(
+        session,
+        [
+            (str(row.get("application_id") or ""), str(row.get("status") or ""))
+            for row in annotated
+        ],
+    )
+    for row in annotated:
+        row["tags"] = tagged.get(str(row.get("application_id") or ""), [])
+    chosen = normalize_tag(tag)
+    counts: dict[str, int] = {}
+    for row in annotated:
+        key = str(row["next_action_key"])
+        counts[key] = counts.get(key, 0) + 1
+    chips = [
+        {
+            "key": key,
+            "label": label,
+            "count": counts[key],
+            "href": _review_href(area, key, text, chosen),
+        }
+        for key, label in NEXT_ACTIONS
+        if counts.get(key, 0) > 0
+    ]
+    visible = annotated
+    if selected:
+        visible = [row for row in annotated if row["next_action_key"] == selected]
+    # Tag counts stay on this list, before the tag itself and before the search.
+    tag_all_count = len(visible)
+    recommendation_chips = tag_chips(
+        [list(row.get("tags") or []) for row in visible],
+        lambda key: _review_href(area, selected, text, key),
+    )
+    if chosen:
+        visible = [
+            row
+            for row in visible
+            if any(item["key"] == chosen for item in row.get("tags") or [])
+        ]
+    if text:
+        visible = [
+            row
+            for row in visible
+            if matches_query(
+                str(row.get("reference") or ""),
+                str(row.get("applicant_name") or ""),
+                str(row.get("address") or ""),
+                text,
+            )
+        ]
+    visible.sort(key=review_row_sort_key)
+    back = _review_href(area, selected, text, chosen)
+    shown, paging = paginate(visible, page)
+    paging.update(paging_links(back, paging["page"], paging["pages"]))
+    names = list(queue.get("areas") or [])
+    presented["area_hrefs"] = {"": _review_href("", selected, text, chosen)}
+    for name in names:
+        presented["area_hrefs"][name] = _review_href(str(name), selected, text, chosen)
+    presented["rows"] = shown
+    presented["next_action"] = selected
+    presented["next_all_href"] = _review_href(area, "", text, chosen)
+    presented["next_all_count"] = len(annotated)
+    presented["next_actions"] = chips
+    presented["tag"] = chosen
+    presented["tag_filters"] = recommendation_chips
+    presented["tag_all_href"] = _review_href(area, selected, text, "")
+    presented["tag_all_count"] = tag_all_count
+    presented["query"] = text
+    presented["search_summary"] = search_summary(len(visible), text) if text else ""
+    presented["clear_href"] = _review_href(area, selected, "", chosen)
+    presented["sole"] = sole_open(visible, text, back)
+    presented["paging"] = paging
+    presented["match_total"] = len(visible)
+    return presented

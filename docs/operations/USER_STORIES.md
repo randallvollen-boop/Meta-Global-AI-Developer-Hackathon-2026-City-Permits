@@ -209,6 +209,32 @@ first entry of the City website menu.
     reviewer's navigation holds Work queue, Permit workspace and Review
     queue. The reviewer cannot wake or run an agent: the agent screens return
     403.
+- As a Permit Reviewer, I want the review queue to show where a case is in
+  the cycle and what is needed now, so that I can pick up the right work.
+  - Acceptance: the **Review queue** table shows **Stage** and **Next action**
+    beside Reference, Type, Recommendation and Age. Stage names the life cycle
+    place, for example **Checks (3 of 6)**. Next action is one of **Waiting on
+    Data Steward**, **Needs checks**, **Ready to decide**, **Fee not settled**,
+    **Ready to issue**, **In early resolution** or **Submitted with known
+    issues**. Filter chips above the table count each Next action. **Ready to
+    decide** and **Ready to issue** sort first. Area and owner stay under More
+    details.
+- As a Permit Reviewer, I want to search the queue for one application, so
+  that I can find a case such as 617 without paging through the list.
+  - Acceptance: a search box on the **Work queue** and the **Review queue**
+    matches the reference (**SYN-APP-617** or **617**), the applicant name and
+    the site address. The search is in the page address (`q`), so it works
+    without JavaScript and finds a match past the first page. The page says
+    how many matches and offers **Clear**. It combines with the filter chips.
+    One match shows an **Open** button.
+- As a Permit Reviewer, I want the queue to show what the agents recommend,
+  so that I can see the suggestion before I open the case.
+  - Acceptance: each row on the **Work queue** and the **Review queue** shows
+    compact tags: **Agent: approve**, **Agent: deny**, **Agent: verify**,
+    **Intake: early resolution**, **Intake: duplicate?** and **Cannot
+    recommend: parcel not confirmed**. The tag's tooltip is one short sentence
+    of the reason. Chips next to the other filters keep only the cases with
+    that tag, and they combine with search.
 - As a Permit Reviewer, I want the recommendation card at the Decision step,
   so that I see the outcome, the rule rows with their citations, the
   conditions of approval and the pipeline trace before I decide.

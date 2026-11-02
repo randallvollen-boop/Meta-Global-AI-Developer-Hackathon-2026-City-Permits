@@ -11,34 +11,77 @@
 </div>
 
 <nav class="tabs" aria-label="Review areas" data-testid="review-areas">
-  <a href="/queue/review" data-testid="review-area" data-area="" aria-selected="{{ 'true' if not queue.area else 'false' }}">
+  <a href="{{ queue.area_hrefs[''] }}" data-testid="review-area" data-area="" aria-selected="{{ 'true' if not queue.area else 'false' }}">
     Every area <span class="n" data-testid="review-area-count">{{ queue.total_in_review }}</span>
   </a>
   {% for area in queue.areas %}
-  <a href="/queue/review?area={{ area | urlencode }}" data-testid="review-area" data-area="{{ area }}" aria-selected="{{ 'true' if queue.area == area else 'false' }}">
+  <a href="{{ queue.area_hrefs[area] }}" data-testid="review-area" data-area="{{ area }}" aria-selected="{{ 'true' if queue.area == area else 'false' }}">
     {{ area }} <span class="n" data-testid="review-area-count">{{ queue.area_counts[area] }}</span>
   </a>
   {% endfor %}
 </nav>
 
+<div class="queue-toolbar">
+<nav class="tabs next-action-filters" aria-label="Next action" data-testid="next-action-filters">
+  <a href="{{ queue.next_all_href }}" data-testid="next-action-filter" data-next="" aria-selected="{{ 'true' if not queue.next_action else 'false' }}">
+    All <span class="n" data-testid="next-action-count">{{ queue.next_all_count }}</span>
+  </a>
+  {% for chip in queue.next_actions %}
+  <a href="{{ chip.href }}" data-testid="next-action-filter" data-next="{{ chip.key }}" aria-selected="{{ 'true' if queue.next_action == chip.key else 'false' }}">
+    {{ chip.label }} <span class="n" data-testid="next-action-count">{{ chip.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+{% include "components/queue_tag_filters.html" %}
+<form class="queue-find" method="get" action="/queue/review" role="search" data-testid="queue-find">
+  {% if queue.area %}<input type="hidden" name="area" value="{{ queue.area }}">{% endif %}
+  {% if queue.next_action %}<input type="hidden" name="next_action" value="{{ queue.next_action }}">{% endif %}
+  {% if queue.tag %}<input type="hidden" name="tag" value="{{ queue.tag }}">{% endif %}
+  <label for="review-q">Search</label>
+  <input id="review-q" type="search" name="q" value="{{ queue.query }}" placeholder="Reference, name or address" data-testid="queue-find-input">
+  <button type="submit" class="button btn" data-testid="queue-find-submit">Search</button>
+</form>
+</div>
+
 <section class="card">
-  <div class="tbl-wrap">
-  <table class="data-table" data-testid="review-table">
+  {% if queue.query %}
+  <p class="muted queue-find-summary" data-testid="queue-find-summary">{{ queue.search_summary }} <a href="{{ queue.clear_href }}" data-testid="queue-find-clear">Clear</a></p>
+  {% endif %}
+  {% if queue.sole %}
+  <div class="queue-find-hit" data-testid="queue-find-hit">
+    <span class="ref">{{ queue.sole.reference }}</span>
+    {% if queue.sole.applicant_name %}<span>{{ queue.sole.applicant_name }}</span>{% endif %}
+    {% if queue.sole.address %}<span>{{ queue.sole.address }}</span>{% endif %}
+    <a class="btn sm" href="{{ queue.sole.href }}" data-testid="queue-find-open">Open</a>
+  </div>
+  {% endif %}
+  <div class="tbl-wrap review-table-wrap" data-testid="review-table-wrap">
+  <table class="data-table review-queue-table" data-testid="review-table">
     <caption class="visually-hidden">The cases that are in review</caption>
     <thead>
       <tr>
         <th scope="col">Reference</th>
         <th scope="col">Type</th>
+        <th scope="col">Stage</th>
+        <th scope="col">Next action</th>
         <th scope="col">Recommendation</th>
         <th scope="col">Age</th>
       </tr>
     </thead>
     <tbody>
       {% for row in queue.rows %}
-      <tr class="row" data-testid="review-row" data-area="{{ row.review_area }}">
-        <td><span class="ref"><a href="{{ row.href }}">{{ row.reference }}</a></span><div class="t2">{{ row.applicant_name }}</div></td>
-        <td>{{ row.permit_type_label }}</td>
-        <td>
+      <tr class="row review-row" data-testid="review-row" data-area="{{ row.review_area }}" data-next="{{ row.next_action_key }}">
+        <td data-label="Reference"><span class="ref"><a href="{{ row.href }}">{{ row.reference }}</a></span><div class="t2">{{ row.applicant_name }}</div></td>
+        <td data-label="Type">{{ row.permit_type_label }}</td>
+        <td data-label="Stage" data-testid="review-stage">
+          {% if row.stage_position %}
+          <div class="mini-steps" aria-hidden="true">{% for i in range(row.stage_total) %}<i class="{{ 'd' if i + 1 < row.stage_position else 'c' if i + 1 == row.stage_position else '' }}"></i>{% endfor %}</div>
+          {% endif %}
+          <span data-testid="review-stage-label">{{ row.stage_text }}</span>
+        </td>
+        <td data-label="Next action" data-testid="review-next-action">{{ row.next_action }}</td>
+        <td data-label="Recommendation">
+          {% with tags=row.tags %}{% include "components/queue_tags.html" %}{% endwith %}
           {% if row.recommendation %}
           <span class="pill {{ 'ok' if row.recommendation.proposed_outcome == 'approve' else 'bad' if row.recommendation.proposed_outcome == 'deny' else 'warn' }}"
                 data-testid="review-recommendation">{{ row.recommendation.proposed_outcome|pretty }}</span>
@@ -64,14 +107,21 @@
             {% endif %}
           </details>
         </td>
-        <td>{% if row.age_days is not none %}<span class="age">{{ row.age_days }} days</span>{% else %}-{% endif %}</td>
+        <td data-label="Age">{% if row.age_days is not none %}<span class="age">{{ row.age_days }} days</span>{% else %}-{% endif %}</td>
       </tr>
       {% else %}
-      <tr><td colspan="4" class="muted" data-testid="review-empty">No case is in review in this area.</td></tr>
+      <tr><td colspan="6" class="muted" data-testid="review-empty">{% if queue.query %}No match for {{ queue.query }}.{% elif queue.next_action %}No case needs that action in this area.{% else %}No case is in review in this area.{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
+  {% if queue.paging and queue.paging.pages > 1 %}
+  <nav class="pager" data-testid="queue-pager" aria-label="Pages">
+    {% if queue.paging.prev_href %}<a href="{{ queue.paging.prev_href }}" data-testid="queue-page-prev">Previous</a>{% endif %}
+    <span data-testid="queue-page-status">Page {{ queue.paging.page }} of {{ queue.paging.pages }}</span>
+    {% if queue.paging.next_href %}<a href="{{ queue.paging.next_href }}" data-testid="queue-page-next">Next</a>{% endif %}
+  </nav>
+  {% endif %}
 </section>
 
 <details data-testid="review-more">

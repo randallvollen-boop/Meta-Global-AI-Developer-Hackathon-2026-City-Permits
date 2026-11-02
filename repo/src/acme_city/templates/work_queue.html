@@ -10,13 +10,27 @@
   <div class="actions">{{ ui.help_button('queue') }}{% if can_apply %} <a class="btn primary" href="/apply" data-testid="start-application">Start a new application</a>{% endif %}</div>
 </div>
 
+<div class="queue-toolbar">
 <nav class="tabs queue-views" aria-label="Queue views" data-testid="queue-views">
   {% for v in queue.views %}
-  <a href="/queue?{{ {'focus': v.key, 'view': queue.filters.view, 'department': queue.filters.department, 'object_type': queue.filters.object_type, 'state': queue.filters.state}|urlencode }}" data-testid="queue-view" data-view="{{ v.key }}" aria-selected="{{ 'true' if v.active else 'false' }}" title="{{ v.note }}">
+  <a href="/queue?{{ {'focus': v.key, 'view': queue.filters.view, 'department': queue.filters.department, 'object_type': queue.filters.object_type, 'state': queue.filters.state}|urlencode }}{% if queue.query %}&amp;q={{ queue.query|urlencode }}{% endif %}{% if queue.tag %}&amp;tag={{ queue.tag|urlencode }}{% endif %}" data-testid="queue-view" data-view="{{ v.key }}" aria-selected="{{ 'true' if v.active else 'false' }}" title="{{ v.note }}">
     {{ v.label }} <span class="n" data-testid="queue-view-count">{{ v.count }}</span>
   </a>
   {% endfor %}
 </nav>
+{% include "components/queue_tag_filters.html" %}
+<form class="queue-find" method="get" action="/queue" role="search" data-testid="queue-find">
+  <input type="hidden" name="focus" value="{{ queue.filters.focus }}">
+  <input type="hidden" name="view" value="{{ queue.filters.view }}">
+  <input type="hidden" name="department" value="{{ queue.filters.department }}">
+  <input type="hidden" name="object_type" value="{{ queue.filters.object_type }}">
+  <input type="hidden" name="state" value="{{ queue.filters.state }}">
+  {% if queue.tag %}<input type="hidden" name="tag" value="{{ queue.tag }}">{% endif %}
+  <label for="work-q">Search</label>
+  <input id="work-q" type="search" name="q" value="{{ queue.query }}" placeholder="Reference, name or address" data-testid="queue-find-input">
+  <button type="submit" class="button btn" data-testid="queue-find-submit">Search</button>
+</form>
+</div>
 
 {% if saved_queues %}
 <details class="opr-details" data-testid="saved-queues-details"><summary>Saved queues</summary>
@@ -35,6 +49,8 @@
 <section class="card">
   <form class="filters toolbar" method="get" action="/queue" data-testid="queue-filters">
     <input type="hidden" name="focus" value="{{ queue.filters.focus }}">
+    {% if queue.query %}<input type="hidden" name="q" value="{{ queue.query }}">{% endif %}
+    {% if queue.tag %}<input type="hidden" name="tag" value="{{ queue.tag }}">{% endif %}
     <p class="field">
       <label for="filter-view">Work shown</label>
       <select id="filter-view" name="view">
@@ -73,6 +89,18 @@
     <p><button type="submit" class="button btn">Apply filters</button></p>
   </form>
 
+  {% if queue.query %}
+  <p class="muted queue-find-summary" data-testid="queue-find-summary">{{ queue.search_summary }} <a href="{{ queue.clear_href }}" data-testid="queue-find-clear">Clear</a></p>
+  {% endif %}
+  {% if queue.sole %}
+  <div class="queue-find-hit" data-testid="queue-find-hit">
+    <span class="ref">{{ queue.sole.reference }}</span>
+    {% if queue.sole.applicant_name %}<span>{{ queue.sole.applicant_name }}</span>{% endif %}
+    {% if queue.sole.address %}<span>{{ queue.sole.address }}</span>{% endif %}
+    <a class="btn sm" href="{{ queue.sole.href }}" data-testid="queue-find-open">Open</a>
+  </div>
+  {% endif %}
+
   <p class="muted" data-testid="queue-count" style="padding:0 16px">{{ queue.entries|length }} item{{ '' if queue.entries|length == 1 else 's' }} in view.</p>
 
   <div class="tbl-wrap">
@@ -104,6 +132,7 @@
             {% endif %}
             <div style="min-width:0">
               <div class="t1" data-testid="queue-row-title"><span class="ref">{{ item.title }}</span> &middot; {{ item.project_type }}{% if item.applicant_name %} &middot; {{ item.applicant_name }}{% endif %}{% if item.address %} &middot; {{ item.address }}{% endif %}</div>
+              {% with tags=item.tags %}{% include "components/queue_tags.html" %}{% endwith %}
               <div class="t2">{{ item.object_type }}{% if item.owner_label %} &middot; Assigned to {{ item.owner_label }}{% endif %}
                 {% if item.kind == 'application' %} &middot; {{ ui.detail_link('case-tech', item.id, 'Details') }}{% endif %}</div>
             </div>
@@ -138,11 +167,18 @@
         <td><a class="btn sm" href="{{ item.href }}" data-testid="queue-action">{{ item.action_label }}</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted">Nothing is waiting in this view.</td></tr>
+      <tr><td colspan="6" class="muted" data-testid="queue-empty">{% if queue.query %}No match for {{ queue.query }}.{% else %}Nothing is waiting in this view.{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
+  {% if queue.paging and queue.paging.pages > 1 %}
+  <nav class="pager" data-testid="queue-pager" aria-label="Pages">
+    {% if queue.paging.prev_href %}<a href="{{ queue.paging.prev_href }}" data-testid="queue-page-prev">Previous</a>{% endif %}
+    <span data-testid="queue-page-status">Page {{ queue.paging.page }} of {{ queue.paging.pages }}</span>
+    {% if queue.paging.next_href %}<a href="{{ queue.paging.next_href }}" data-testid="queue-page-next">Next</a>{% endif %}
+  </nav>
+  {% endif %}
   <p class="muted" style="padding:0 16px 12px" data-testid="queue-age-note">{{ queue.age_note }}</p>
 </section>
 

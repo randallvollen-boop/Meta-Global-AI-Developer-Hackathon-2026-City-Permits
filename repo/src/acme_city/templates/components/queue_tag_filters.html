@@ -1,0 +1,12 @@
+{% if queue.tag_filters %}
+<nav class="tabs tag-filters" aria-label="Agent recommendations" data-testid="queue-tag-filters">
+  <a href="{{ queue.tag_all_href }}" data-testid="queue-tag-filter" data-tag="" aria-selected="{{ 'true' if not queue.tag else 'false' }}">
+    All <span class="n" data-testid="queue-tag-count">{{ queue.tag_all_count }}</span>
+  </a>
+  {% for chip in queue.tag_filters %}
+  <a href="{{ chip.href }}" data-testid="queue-tag-filter" data-tag="{{ chip.key }}" aria-selected="{{ 'true' if queue.tag == chip.key else 'false' }}">
+    {{ chip.label }} <span class="n" data-testid="queue-tag-count">{{ chip.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+{% endif %}

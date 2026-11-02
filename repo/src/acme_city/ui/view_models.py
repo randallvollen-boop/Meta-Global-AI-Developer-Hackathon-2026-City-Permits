@@ -2614,6 +2614,9 @@ def work_queue(
     object_type: str | None = None,
     state: str | None = None,
     focus: str = "all",
+    query: str = "",
+    page: int = 1,
+    tag: str = "",
 ) -> dict[str, Any]:
     """Return the work queue of the acting persona.
 
@@ -2849,29 +2852,125 @@ def work_queue(
     if state:
         items = [item for item in items if item["state"] == state]
 
+    from acme_city.ui.queue_find import (
+        matches_query,
+        normalize_query,
+        paginate,
+        paging_links,
+        search_summary,
+        sole_open,
+        work_href,
+    )
+    from acme_city.ui.queue_tags import load_tags, normalize_tag, tag_chips
+
     focus = focus if focus in reviewer_views.QUEUE_VIEW_KEYS else "all"
     views = reviewer_views.queue_views(items, focus)
     if focus != "all":
         items = [item for item in items if item["bucket"] == focus]
+    filters = {
+        "focus": focus,
+        "view": view,
+        "department": department or "",
+        "object_type": object_type or "",
+        "state": state or "",
+    }
+    text = normalize_query(query)
+    chosen = normalize_tag(tag)
+    tagged = load_tags(
+        session,
+        [
+            (str(item["id"]), str(item.get("state") or ""))
+            for item in items
+            if item.get("kind") == "application"
+        ],
+    )
+    for item in items:
+        if item.get("kind") == "application":
+            item["tags"] = tagged.get(str(item["id"]), [])
+        else:
+            item["tags"] = []
+    # The view chip is applied first. Tag counts use that list, before the
+    # tag itself and before the search. The search then runs, and only the
+    # matching rows are paged.
+    tag_all_count = len(items)
+
+    def _tag_href(key: str) -> str:
+        return work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+            query=text,
+            tag=key,
+        )
+
+    recommendation_chips = tag_chips([list(item.get("tags") or []) for item in items], _tag_href)
+    if chosen:
+        items = [
+            item
+            for item in items
+            if any(entry["key"] == chosen for entry in item.get("tags") or [])
+        ]
+    if text:
+        items = [
+            item
+            for item in items
+            if matches_query(
+                str(item.get("title") or ""),
+                str(item.get("applicant_name") or ""),
+                str(item.get("address") or ""),
+                text,
+            )
+        ]
     counts: dict[str, int] = {}
     for item in items:
         counts[item["object_type"]] = counts.get(item["object_type"], 0) + 1
+    back = work_href(
+        focus=focus,
+        view=view,
+        department=department or "",
+        object_type=object_type or "",
+        state=state or "",
+        query=text,
+        tag=chosen,
+    )
+    shown, paging = paginate(items, page)
+    paging.update(paging_links(back, paging["page"], paging["pages"]))
     return {
-        "entries": items,
+        "entries": shown,
         "counts": counts,
         "views": views,
         "has_owner": any(item.get("owner_label") for item in items),
         "age_note": reviewer_views.scenario_clock_note(now),
-        "filters": {
-            "focus": focus,
-            "view": view,
-            "department": department or "",
-            "object_type": object_type or "",
-            "state": state or "",
-        },
+        "filters": filters,
         "states": sorted({item["state"] for item in items}),
         "departments": sorted({item["department"] for item in items}),
         "object_types": sorted({item["object_type"] for item in items}),
+        "query": text,
+        "tag": chosen,
+        "tag_filters": recommendation_chips,
+        "tag_all_href": work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+            query=text,
+        ),
+        "tag_all_count": tag_all_count,
+        "search_summary": search_summary(len(items), text) if text else "",
+        "clear_href": work_href(
+            focus=focus,
+            view=view,
+            department=department or "",
+            object_type=object_type or "",
+            state=state or "",
+            tag=chosen,
+        ),
+        "sole": sole_open(items, text, back),
+        "paging": paging,
+        "match_total": len(items),
     }
 
 

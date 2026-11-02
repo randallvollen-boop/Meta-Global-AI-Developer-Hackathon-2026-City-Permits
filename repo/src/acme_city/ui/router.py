@@ -572,6 +572,9 @@ def ui_work_queue(
     object_type: str | None = None,
     state: str | None = None,
     focus: str = "all",
+    q: str = "",
+    page: int = 1,
+    tag: str = "",
 ) -> Any:
     """Show the work queue of the acting persona."""
     resolved, refused = _guard(request, session, actor, "queue")
@@ -587,6 +590,9 @@ def ui_work_queue(
         object_type=object_type,
         state=state,
         focus=focus,
+        query=q,
+        page=page,
+        tag=tag,
     )
     context = page_context(
         request,
@@ -608,12 +614,25 @@ def ui_review_queue(
     session: Session = Depends(get_session, scope="function"),
     actor: ActorContext | None = Depends(ui_actor),
     area: str = "",
+    next_action: str = "",
+    q: str = "",
+    page: int = 1,
+    tag: str = "",
 ) -> Any:
     """Show the review queue of the Permit Reviewer."""
     resolved, refused = _guard(request, session, actor, "review_queue")
     if refused is not None:
         return refused
-    queue = queues.review_queue(session, resolved, area=area)
+    from acme_city.ui.reviewer_views import present_review_queue
+
+    queue = present_review_queue(
+        session,
+        queues.review_queue(session, resolved, area=area),
+        next_action=next_action,
+        query=q,
+        page=page,
+        tag=tag,
+    )
     context = page_context(
         request,
         session,
