@@ -65,7 +65,13 @@ def test_waking_the_agent_shows_the_awake_agent_without_a_reload(page, server, l
         expect(mode).to_have_text("awake")
         expect(toggle).to_have_text("Put agent to sleep")
         assert page.locator("[data-testid='agent-sleep-notice']").count() == 0
-        assert page.locator("[data-testid='agent-run-all']").is_enabled()
+        # The queue is empty, so the batch button stays off and says why.
+        batch = page.locator("[data-testid='agent-run-all']")
+        assert batch.is_disabled()
+        assert batch.get_attribute("aria-describedby") == "agent-nothing-waiting"
+        expect(page.locator("[data-testid='agent-nothing-waiting']")).to_have_text(
+            "Nothing is waiting"
+        )
         if agent_key == "intake":
             # The sidebar of the screen names the state the server holds too.
             expect(page.locator("[data-testid='agent-status']")).to_contain_text("awake")

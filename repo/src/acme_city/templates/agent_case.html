@@ -9,7 +9,7 @@
     <h1>{% if view.missing %}Case not found{% else %}Case {{ view.reference }}{% endif %}</h1>
   </div>
   <div class="actions">
-    <a class="btn ghost" href="/agents/runs" data-testid="agent-case-back">Back to run history</a>
+    <a class="btn ghost" href="{{ view.back_href }}" data-testid="agent-case-back">{{ view.back_label }}</a>
     {{ ui.general_help_button() }}
   </div>
 </div>

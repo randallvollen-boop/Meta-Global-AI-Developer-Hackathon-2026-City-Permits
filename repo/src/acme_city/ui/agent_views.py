@@ -11,6 +11,7 @@ server checks.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlencode
@@ -89,6 +90,130 @@ OUTCOME_LABELS: dict[str, str] = {
     "deny": "Deny",
     "hold": "Hold",
 }
+
+#: The screens a case link may return to.  Any other ``from`` stays on the
+#: run history, so a waiting-table link does not change where Back goes.
+AGENT_RETURN_PATHS = frozenset({
+    "/agent/intake",
+    "/agent/adjudication",
+    "/agent/steward_assist",
+})
+
+#: The suffix the adjudication step stores after the reason a person reads.
+_PENDING_NOTE = " The recommendation is pending."
+
+#: The intake notes, as the router and the duplicate check record them.
+_BLOCKING_NOTE = re.compile(
+    r"Route to early resolution: (\d+) blocking finding\(s\) must be cleared first\."
+)
+_JUDGING_NOTE = re.compile(
+    r"Verify before review: (\d+) finding\(s\) need a person's judgement\."
+)
+_READY_NOTE = re.compile(r"Ready for review in the .+ area\.")
+_IDENTITY_NOTE = re.compile(r"Proposed (\d+) identity link\(s\)")
+
+
+def batch_button_label(waiting: int, limit: int, *, noun: str = "case") -> str:
+    """Return the batch button text for a waiting count and a batch limit.
+
+    One item uses the singular noun.  A queue longer than the limit names
+    the next bounded slice.  An empty queue does not say that zero items
+    will be processed.
+    """
+    if waiting <= 0 or limit <= 0:
+        return f"Process {noun}s"
+    if waiting <= limit:
+        word = noun if waiting == 1 else f"{noun}s"
+        return f"Process {waiting} {word}"
+    return f"Process the next {limit} of {waiting}"
+
+
+def _counted(count: int, singular: str) -> str:
+    """Return ``1 finding`` or ``2 findings``."""
+    if count == 1:
+        return f"1 {singular}"
+    return f"{count} {singular}s"
+
+
+def plain_outcome(
+    agent_key: str,
+    nodes: list[dict[str, Any]],
+    *,
+    outcome: str = "",
+    detail: str = "",
+) -> str:
+    """Return the plain words of one recorded run.
+
+    The words come from the notes the run stored on its steps.  An identity
+    link is the link the duplicate check proposed.  A parcel the address
+    locator proposed is not an identity link.
+
+    An early-resolution route is the whole outcome, even when a link was
+    also proposed.  A case that is ready and also has a proposed identity
+    link says both.
+    """
+    notes = {
+        str(node.get("node_id") or ""): str(node.get("note") or "") for node in nodes
+    }
+    if agent_key == "adjudication":
+        note = notes.get(graphs.ADJUDICATION_DISPOSITION, "")
+        if note.endswith(_PENDING_NOTE):
+            note = note[: -len(_PENDING_NOTE)].rstrip()
+        text = note or detail.strip()
+        return text or "The recommendation is pending."
+    if agent_key == "steward_assist":
+        return detail.strip() or "Prepared a recommendation."
+    router = notes.get(graphs.INTAKE_ROUTER, "")
+    duplicate = notes.get(graphs.INTAKE_DUPLICATE_FINDER, "")
+    blocking = _BLOCKING_NOTE.search(router)
+    if blocking:
+        return (
+            "Routed to early resolution: "
+            f"{_counted(int(blocking.group(1)), 'blocking finding')}"
+        )
+    judging = _JUDGING_NOTE.search(router)
+    if judging:
+        return (
+            "Needs a person's judgement: "
+            f"{_counted(int(judging.group(1)), 'finding')}"
+        )
+    identity = _IDENTITY_NOTE.search(duplicate)
+    identity_count = int(identity.group(1)) if identity else 0
+    ready = _READY_NOTE.search(router) is not None
+    if identity_count >= 1 and ready:
+        return "Ready for review. Identity link proposed"
+    if ready:
+        return "Ready for review"
+    if identity_count >= 1:
+        return "Identity link proposed"
+    if outcome == "failed":
+        return "The run stopped before it finished."
+    if router.strip():
+        return router.strip()
+    return detail.strip() or "Recorded"
+
+
+def steward_batch_limit(session: Session) -> int:
+    """Return how many tasks one press of the steward assistant may name.
+
+    The press is bounded by the stored batch size and by the assistant's own
+    cap, so the button and the handler name the same slice.
+    """
+    from acme_city.agents.steward_assist import MAX_TASKS_PER_PRESS
+
+    return min(batch_limit(session).max_batch_size, MAX_TASKS_PER_PRESS)
+
+
+def steward_waiting_tasks(session: Session, actor: ActorContext) -> list[Any]:
+    """Return the needs-review tasks that do not already hold a recommendation.
+
+    A task that already carries an uncleared recommendation has been
+    prepared.  It leaves this count, so a second press can find an empty
+    queue.  The case table on the screen stays empty: these are tasks, not
+    cases.
+    """
+    waiting, _issues = _steward_queue(session, actor)
+    return waiting
 
 
 def _iso(value) -> str:
@@ -215,6 +340,171 @@ def _pending_recommendations(session: Session) -> list[permit.Recommendation]:
             .order_by(permit.Recommendation.created_at.desc())
         ).scalars().all()
     )
+
+
+def _steward_queue(
+    session: Session, actor: ActorContext
+) -> tuple[list[Any], list[Any]]:
+    """Return the unprepared needs-review tasks and every steward issue."""
+    from acme_city.ui import steward_queue_views, steward_views
+
+    issues = steward_views.collect_issues(session, actor)
+    waiting = [
+        issue
+        for issue in issues
+        if steward_queue_views.matches(issue, "needs_review", actor.actor_id)
+        and not str(issue.recommendation_confidence or "").strip()
+    ]
+    return steward_queue_views.order_tasks(waiting), issues
+
+
+def _batch_members(runs: list[agent_models.AgentRun]) -> list[agent_models.AgentRun]:
+    """Return the runs of the latest press, oldest first.
+
+    A press stamps one batch id on every run it starts.  A run with no batch
+    id, including a run the worker started, is shown on its own.
+    """
+    if not runs:
+        return []
+    latest = runs[0]
+    batch_id = str((latest.inputs or {}).get("batch_id") or "")
+    if not batch_id:
+        return [latest]
+    members = [
+        run
+        for run in runs
+        if str((run.inputs or {}).get("batch_id") or "") == batch_id
+    ]
+    return sorted(members, key=lambda run: (run.started_at, run.id))
+
+
+def _count_words(count: int, noun: str) -> str:
+    """Return ``1 case`` or ``2 cases``."""
+    word = noun if count == 1 else f"{noun}s"
+    return f"{count} {word}"
+
+
+def _readable_reference(value: str) -> str:
+    """Return a reference a person can read, never an internal application id."""
+    text = value.strip()
+    if not text or text.startswith("app_"):
+        return ""
+    return text
+
+
+def _case_last_item(
+    session: Session,
+    run: agent_models.AgentRun,
+    nodes: list[dict[str, Any]],
+    agent_key: str,
+) -> dict[str, str]:
+    """Return one processed case, from the notes that run recorded."""
+    reference = _readable_reference(_number_of(session, run.application_id)) or "Not recorded"
+    outcome = plain_outcome(
+        agent_key,
+        nodes,
+        outcome=run.outcome,
+        detail=run.outcome_detail or "",
+    )
+    href = ""
+    if run.application_id:
+        href = f"/agents/cases/{run.application_id}?from=/agent/{agent_key}"
+    return {"reference": reference, "outcome": outcome, "href": href}
+
+
+def _steward_last_items(
+    session: Session,
+    members: list[agent_models.AgentRun],
+    issues: list[Any],
+) -> list[dict[str, str]]:
+    """Return the tasks one assistant press prepared.
+
+    The items are the recommendations that name the run.  The assistant
+    records no step rows, so the list is not invented from nodes.
+    """
+    from acme_city.persistence.models.steward_recommendation import StewardRecommendation
+
+    by_issue = {(issue.kind, issue.item_id): issue for issue in issues}
+    run_ids = {run.id for run in members}
+    rows = session.execute(
+        select(StewardRecommendation).order_by(
+            StewardRecommendation.made_at, StewardRecommendation.id
+        )
+    ).scalars().all()
+    items: list[dict[str, str]] = []
+    for row in rows:
+        if str(dict(row.evidence or {}).get("run_id") or "") not in run_ids:
+            continue
+        items.append(_steward_item(session, row, by_issue.get((row.task_kind, row.task_id))))
+    return items
+
+
+def _steward_item(session: Session, row: Any, issue: Any) -> dict[str, str]:
+    """Return one prepared task: a readable reference, the reason and a link."""
+    application_id = ""
+    reference = ""
+    if row.task_kind == "parcel":
+        application_id = row.task_id
+        reference = _readable_reference(_number_of(session, application_id))
+    if not reference:
+        number = _readable_reference(_number_of(session, row.task_id))
+        if number:
+            reference = number
+            application_id = application_id or row.task_id
+    if issue is not None:
+        applications = list(issue.applications or [])
+        if applications and not reference:
+            reference = _readable_reference(str(applications[0].get("number") or ""))
+        if applications and not application_id:
+            permit_href = str(applications[0].get("href") or "")
+            if permit_href.startswith("/permits/"):
+                application_id = permit_href.rsplit("/", 1)[-1]
+        if not reference:
+            reference = _readable_reference(str(issue.title or ""))
+    if not reference:
+        reference = "Not recorded"
+    if application_id and _readable_reference(_number_of(session, application_id)):
+        href = f"/agents/cases/{application_id}?from=/agent/steward_assist"
+    else:
+        href = (
+            f"/steward/issues/{row.task_kind}/{row.task_id}?from=/agent/steward_assist"
+        )
+    return {"reference": reference, "outcome": row.reason, "href": href}
+
+
+def _last_run_view(
+    session: Session,
+    agent_key: str,
+    runs: list[agent_models.AgentRun],
+    nodes_by_run: dict[str, list[dict[str, Any]]],
+    issues: list[Any] | None = None,
+) -> dict[str, Any] | None:
+    """Return the latest press: when, by whom, how many and which items."""
+    members = _batch_members(runs)
+    if not members:
+        return None
+    noun = "task" if agent_key == "steward_assist" else "case"
+    if agent_key == "steward_assist":
+        items = _steward_last_items(session, members, issues or [])
+    else:
+        items = [
+            _case_last_item(session, run, nodes_by_run.get(run.id, []), agent_key)
+            for run in members
+        ]
+    earliest = members[0]
+    when = _iso(earliest.started_at)
+    actor = _actor_label(session, earliest.triggered_by)
+    count_label = _count_words(len(items), noun)
+    return {
+        "when": when,
+        "actor": actor,
+        "count": len(items),
+        "count_label": count_label,
+        "summary": f"{when} by {actor}, {count_label}",
+        # ``rows``, not ``items``: a dict's ``items`` is a method, and the
+        # template would iterate that method instead of the list.
+        "rows": items,
+    }
 
 
 def agent_screen(
@@ -346,6 +636,21 @@ def agent_screen(
     progress = _progress_view(
         agent_key, latest, nodes_by_run.get(latest.id, []) if latest else []
     )
+    stored_limit = batch_limit(session).max_batch_size
+    steward_issues: list[Any] | None = None
+    if agent_key == "steward_assist":
+        steward_waiting, steward_issues = _steward_queue(session, actor)
+        waiting_count = len(steward_waiting)
+        noun = "task"
+        screen_limit = min(stored_limit, steward_batch_limit(session))
+    else:
+        # The same list the inbox counts with ``waiting|length``.
+        waiting_count = len(waiting_rows)
+        noun = "case"
+        screen_limit = stored_limit
+    last_run = _last_run_view(
+        session, agent_key, runs, nodes_by_run, steward_issues
+    )
 
     return {
         "agent_key": agent_key,
@@ -357,7 +662,10 @@ def agent_screen(
         "can_run": _holds(session, actor, f"agent.run.{agent_key}"),
         # The most cases one manual batch may name, so the button on the
         # screen says what it will do.
-        "batch_limit": batch_limit(session).max_batch_size,
+        "batch_limit": stored_limit,
+        "waiting_count": waiting_count,
+        "batch_label": batch_button_label(waiting_count, screen_limit, noun=noun),
+        "last_run": last_run,
         # The processing policy of the City and the engine that produces the
         # runs.  They are separate things: the policy says when work starts,
         # the engine says what produces it.
@@ -806,6 +1114,8 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
         return {
             "missing": True,
             "application_id": application_id,
+            "back_href": "/agents/runs",
+            "back_label": "Back to run history",
             "reference": "",
             "revision": 0,
             "status": "",
@@ -857,6 +1167,8 @@ def agent_case(session: Session, actor: ActorContext, application_id: str) -> di
     return {
         "application_id": application.id,
         "missing": False,
+        "back_href": "/agents/runs",
+        "back_label": "Back to run history",
         "reference": application.source_application_number,
         "revision": application.revision,
         "status": application.status,

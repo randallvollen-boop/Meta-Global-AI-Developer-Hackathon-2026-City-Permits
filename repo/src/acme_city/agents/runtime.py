@@ -322,6 +322,7 @@ class AgentRuntime:
         agent_key: str,
         runner: Callable[[str, str], agent_models.AgentRun],
         work_id: str | None = None,
+        batch_id: str | None = None,
     ) -> QueuedRun:
         """Run one agent on one case through the queue.
 
@@ -364,7 +365,8 @@ class AgentRuntime:
         try:
             run = runner(application.id, claimed.id)
         except Exception as error:  # noqa: BLE001 - the failure is recorded
-            self._finish_failed_run(application, error)
+            failed = self._finish_failed_run(application, error)
+            _remember_batch(failed, batch_id)
             self.finish(
                 claimed.id,
                 claimed.attempts,
@@ -373,6 +375,7 @@ class AgentRuntime:
             )
             raise AgentRunFailed(f"the run failed: {error}", cause=error) from error
         self._record_engine(run)
+        _remember_batch(run, batch_id)
         status = work_status_for(run.outcome)
         self.finish(
             claimed.id, claimed.attempts, status, note=f"the run ended: {run.outcome}"
@@ -396,12 +399,15 @@ class AgentRuntime:
         inputs["engine"] = BUILTIN_ENGINE
         run.inputs = inputs
 
-    def _finish_failed_run(self, application: permit.Application, error: Exception) -> None:
+    def _finish_failed_run(
+        self, application: permit.Application, error: Exception
+    ) -> agent_models.AgentRun | None:
         """Record the failure on the run evidence of the attempt.
 
         A run that stops leaves an open run row behind.  The row is closed
         with the failure, so the run history shows what happened instead of
-        a run that never ended.
+        a run that never ended.  A stop that never opened a run returns
+        nothing, so an earlier run of the same case is left alone.
         """
         row = self._session.execute(
             select(agent_models.AgentRun)
@@ -412,11 +418,12 @@ class AgentRuntime:
             .order_by(agent_models.AgentRun.started_at.desc(), agent_models.AgentRun.id.desc())
         ).scalars().first()
         if row is None:
-            return
+            return None
         row.outcome = "failed"
         row.outcome_detail = f"the run failed: {error}"
         row.finished_at = self._clock()
         self._session.flush()
+        return row
 
     def counts(self) -> dict[str, int]:
         """Return how many pieces of work hold each status."""
@@ -438,6 +445,19 @@ def queue_counts(session: Session) -> dict[str, int]:
     return AgentRuntime(session).counts()
 
 
+def _remember_batch(run: agent_models.AgentRun | None, batch_id: str | None) -> None:
+    """Stamp the press on the run, so the screen can list that press together.
+
+    The worker never passes a batch id.  A press that stopped before it
+    opened a run has nothing to stamp.
+    """
+    if run is None or not batch_id:
+        return
+    inputs = dict(run.inputs or {})
+    inputs["batch_id"] = batch_id
+    run.inputs = inputs
+
+
 def run_agent(
     session: Session,
     *,
@@ -447,6 +467,7 @@ def run_agent(
     settings: Any = None,
     now: datetime | None = None,
     work_id: str | None = None,
+    batch_id: str | None = None,
 ) -> QueuedRun:
     """Run one agent on one case through the durable work queue.
 
@@ -490,7 +511,11 @@ def run_agent(
     require_hour_room(limit)
     AgentControlService(session, now=now).require_awake(agent_key)
     return AgentRuntime(session, now=now).execute(
-        application, agent_key=agent_key, runner=runner, work_id=work_id
+        application,
+        agent_key=agent_key,
+        runner=runner,
+        work_id=work_id,
+        batch_id=batch_id,
     )
 
 
@@ -502,6 +527,7 @@ def run_batch(
     triggered_by: str,
     settings: Any = None,
     now: datetime | None = None,
+    batch_id: str | None = None,
 ) -> tuple[QueuedRun, ...]:
     """Run one agent on the cases one manual batch may name.
 
@@ -528,6 +554,7 @@ def run_batch(
                     triggered_by=triggered_by,
                     settings=settings,
                     now=now,
+                    batch_id=batch_id,
                 )
             )
         except AgentRunFailed:

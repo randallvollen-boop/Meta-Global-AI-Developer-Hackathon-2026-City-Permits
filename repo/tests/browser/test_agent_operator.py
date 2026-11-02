@@ -182,7 +182,7 @@ def test_the_operator_wakes_and_runs_the_agent_at_390(viewport_390, server, logi
     page.reload(wait_until="domcontentloaded")
     button = page.locator("[data-testid='agent-run-all']")
     assert button.is_enabled()
-    assert button.inner_text().strip() == "Process the next 20 cases"
+    assert button.inner_text().strip() == "Process 1 case"
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, button)
     # The button runs the waiting case and says how many it ran.
@@ -244,7 +244,7 @@ def test_the_operator_runs_the_adjudication_batch_at_390(
     assert application_id
     button = page.locator("[data-testid='agent-run-all']")
     assert button.is_enabled()
-    assert button.inner_text().strip() == "Process the next 20 cases"
+    assert button.inner_text().strip() == "Process 1 case"
     assert_no_horizontal_overflow(page)
     assert_not_covered(page, button)
     with page.expect_response(
