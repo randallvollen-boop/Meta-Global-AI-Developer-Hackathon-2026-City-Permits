@@ -157,10 +157,19 @@
     var submit = form.querySelector("[data-testid='submit-application']");
     var dym = form.querySelector("[data-did-you-mean]");
     var address = form.querySelector("[name='address_text']");
+    // A review on the screen means the hold must be asked about again while
+    // the applicant edits.  Without it the browser keeps the hold of a
+    // review the applicant has already answered, and Submit stays off.
+    var reviewShown = false;
+    // The assistant's note and its notes on the rules are kept when the
+    // live check answers again without the assistant.
+    var lastNote = "";
+    var lastFeedback = {};
     function refresh() {
       if (!window.fetch || !window.FormData) { return; }
       var data = new FormData(form);
       data.delete("csrf_token");
+      if (reviewShown) { data.set("review", "1"); }
       form.querySelectorAll("input[type=file]").forEach(function (input) {
         data.delete(input.name);
         if (input.files && input.files.length) { data.append("have__" + input.name.replace("file__", ""), "1"); }
@@ -174,6 +183,7 @@
             statusLine.setAttribute("data-complete", state.can_submit ? "true" : "false");
           }
           renderNeeds(state);
+          if (state.review) { renderReview(state.review); }
         }).catch(function () { /* the server still checks on submit */ });
     }
     // After a refused Submit the errors stay up; each one clears as the person fixes it.
@@ -296,6 +306,7 @@
       items.forEach(function (item) {
         var row = document.createElement("p");
         row.setAttribute("data-testid", "presubmit-item");
+        row.setAttribute("data-rule-id", item.rule_id || "");
         row.textContent = item.sentence || "";
         if (item.feedback) {
           var note = document.createElement("span");
@@ -310,6 +321,18 @@
     function renderReview(review) {
       var root = form.querySelector("[data-presubmit-root]");
       if (!root) { return; }
+      reviewShown = true;
+      // The live check answers with the rules alone.  What the assistant
+      // said about them is kept, so the note does not blink away.
+      if (review.assistant_note) { lastNote = review.assistant_note; }
+      review.assistant_note = lastNote;
+      ["must_fix", "should_check", "looks_good"].forEach(function (key) {
+        (review[key] || []).forEach(function (item) {
+          var id = item.rule_id || "";
+          if (item.feedback) { lastFeedback[id] = item.feedback; }
+          else if (lastFeedback[id]) { item.feedback = lastFeedback[id]; }
+        });
+      });
       root.hidden = false;
       root.setAttribute("data-testid", "presubmit-panel");
       root.textContent = "";
@@ -323,6 +346,19 @@
         root.appendChild(note);
       }
       applyHold(review);
+    }
+    // Read the review the server rendered, so a page that was answered by
+    // the server (a refused Submit) asks about the hold again as well.
+    function rememberRenderedReview() {
+      var root = form.querySelector("[data-presubmit-root]");
+      if (!root || root.hidden) { return; }
+      reviewShown = true;
+      var note = root.querySelector("[data-testid='assistant-note']");
+      if (note) { lastNote = note.textContent; }
+      root.querySelectorAll("[data-testid='presubmit-item']").forEach(function (row) {
+        var said = row.querySelector("[data-testid='presubmit-feedback']");
+        if (said) { lastFeedback[row.getAttribute("data-rule-id") || ""] = said.textContent; }
+      });
     }
     function reviewData() {
       // The files stay on the request so the assistant can read a text file.
@@ -358,6 +394,7 @@
       }
       syncAnyway();
     }
+    rememberRenderedReview();
     if (summary) { summary.focus(); }
     function setPill(row, input) {
       var pill = row.querySelector("[data-testid='doc-status']");

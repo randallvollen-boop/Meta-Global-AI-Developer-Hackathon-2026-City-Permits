@@ -2,9 +2,13 @@
 
 The groups and the button labels are fixed: "Must fix", "Should check",
 "Looks good", "Check my application", "Submit anyway", "Why submit now".
-A rule the application breaks is "Must fix".  An address that does not match
-a parcel is "Must fix" too.  A pass is "Looks good".  Everything else the
-rules layer returns is "Should check".
+A rule the application breaks is "Must fix".  A pass is "Looks good".
+Everything else the rules layer returns is "Should check".
+
+An address that matches no parcel never holds the application.  The City
+matches the property after the case is filed, so an address the locator
+cannot place is "Should check": the applicant is told it, and the case is
+filed with the address exactly as it was typed and the property unmatched.
 
 The sentences here are the rules layer's own words.  Muse may add a short
 note beside them.  It never replaces the citation.
@@ -31,10 +35,9 @@ SUBMIT_HELD_WHY = "Fix the items under Must fix, or use Submit anyway."
 #: Beside Submit anyway until the applicant types a reason.
 ANYWAY_WHY = "Enter why submit now."
 
-#: An address the locator could not match to a parcel.
-ADDRESS_MUST_FIX = (
-    "This address does not match a parcel. Check the spelling, or submit anyway and say why."
-)
+#: An address the locator could not match to a parcel.  It never holds the
+#: application: the City matches the property once the case is filed.
+ADDRESS_UNMATCHED = "We could not match this address to a parcel. The City will match it."
 
 #: A match that is not unique.  It does not hold Submit.
 ADDRESS_AMBIGUOUS = "More than one address matches. A person at the City will confirm the property."
@@ -122,8 +125,10 @@ def address_item(located: dict[str, Any], address_text: str) -> dict[str, Any] |
     """Return the address row, or None when the address is not a review issue.
 
     A blank address is completeness, not this check.  An address service that
-    is down is not "Must fix": the applicant can still submit.  An ambiguous
-    match that still names a parcel is "Should check".
+    is down is not a review issue at all: the applicant can still submit.  An
+    ambiguous match that still names a parcel is "Should check", and so is an
+    address that matches no parcel: the City matches the property later, so
+    the address never holds the application.
     """
     if not str(address_text or "").strip():
         return None
@@ -145,8 +150,8 @@ def address_item(located: dict[str, Any], address_text: str) -> dict[str, Any] |
     return {
         "rule_id": "",
         "citation": "",
-        "status": "fail",
-        "sentence": ADDRESS_MUST_FIX,
+        "status": "review",
+        "sentence": ADDRESS_UNMATCHED,
         "feedback": None,
         "kind": "address",
     }
@@ -223,7 +228,7 @@ def override_record(review: dict[str, Any], reason: str, *, recorded_at: str) ->
 
 __all__ = [
     "ADDRESS_AMBIGUOUS",
-    "ADDRESS_MUST_FIX",
+    "ADDRESS_UNMATCHED",
     "ANYWAY_WHY",
     "ASSISTANT_OFFLINE",
     "FLAG",

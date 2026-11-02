@@ -23,7 +23,7 @@ from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.muse.client import MuseClient
 from acme_city.muse.schemas import PRESUBMIT_FEEDBACK_SCHEMA_VERSION
 from acme_city.permits.queues import early_resolution
-from acme_city.persistence.models import audit, model_run, permit
+from acme_city.persistence.models import audit, gis, model_run, permit
 from acme_city.persistence.models.governance import ActorRole, DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -43,6 +43,10 @@ FENCE_FIELDS = {
 }
 
 FRONT_SIX = {**FENCE_FIELDS, "height_ft": "6", "location": "front", "project_description": "6 ft front fence"}
+
+#: An address the city locator cannot place.  The applicant may type one.
+MADE_UP = {**FENCE_FIELDS, "address_text": "12 Imaginary Lane"}
+MADE_UP_FRONT_SIX = {**FRONT_SIX, "address_text": "12 Imaginary Lane"}
 
 
 def fence_files():
@@ -264,6 +268,187 @@ def test_a_six_foot_front_fence_is_held_until_the_applicant_says_why(client, env
             assert reason in blob
     finally:
         factory.dispose()
+
+
+def test_an_address_the_city_cannot_match_still_submits(client, environment) -> None:
+    """A made-up address never holds the application: it is filed as typed."""
+    choose(client, "persona_applicant")
+    before = application_count(environment)
+    response = post_form(client, MADE_UP, files=fence_files(), intent="submit")
+    assert response.status_code == 303, response.text
+    reference = response.headers["location"].rsplit("/", 1)[1]
+    assert application_count(environment) == before + 1
+    factory = SessionFactory(environment.database_url)
+    try:
+        with factory() as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application_id = application.id
+            assert application.presubmit_override is None
+            assert application.status == "submitted"
+            facts = dict(application.submitted_facts or {})
+            # The address is kept exactly as it was typed.
+            assert facts["submitted_site_text"] == "12 Imaginary Lane"
+            # The property is not matched: the City matches it after filing.
+            assert facts["parcel_number"] == ""
+            assert facts["submitted_parcel"] == ""
+            site = session.execute(
+                select(permit.ApplicationSite).where(
+                    permit.ApplicationSite.application_id == application_id
+                )
+            ).scalar_one()
+            assert site.submitted_address_text == "12 Imaginary Lane"
+            assert site.resolution_status == "unresolved"
+    finally:
+        factory.dispose()
+
+
+def test_the_city_matches_the_property_after_the_case_is_filed(client, environment) -> None:
+    """The case lands unmatched and the steward sees it as an unmatched property."""
+    choose(client, "persona_applicant")
+    response = post_form(client, MADE_UP, files=fence_files(), intent="submit")
+    assert response.status_code == 303, response.text
+    reference = response.headers["location"].rsplit("/", 1)[1]
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            operator = context_for(session, "persona_agent_operator")
+            AgentControlService(session).set_mode("intake", "awake", operator)
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application_id = application.id
+            IntakeAgent(session, settings=environment).run(
+                application_id, triggered_by="persona_data_steward"
+            )
+            application = session.get(permit.Application, application_id)
+            assert application is not None
+            assert application.status == "needs_information"
+            match = session.execute(
+                select(gis.ApplicationParcelMatch).where(
+                    gis.ApplicationParcelMatch.application_id == application_id
+                )
+            ).scalar_one()
+            assert match.link_state == "not_found"
+            assert match.submitted_text == "12 Imaginary Lane"
+            findings = session.execute(
+                select(permit.ApplicationFinding).where(
+                    permit.ApplicationFinding.application_id == application_id,
+                    permit.ApplicationFinding.finding_type == "conflict",
+                )
+            ).scalars().all()
+            assert any("12 Imaginary Lane" in finding.message for finding in findings)
+            board = early_resolution(session, context_for(session, "persona_data_steward"))
+            blob = json.dumps(board)
+            assert reference in blob
+            assert "12 Imaginary Lane" in blob
+    finally:
+        factory.dispose()
+
+
+def test_the_override_works_with_an_address_the_city_cannot_match(client, environment) -> None:
+    """A real rule breach is still held and still overridden with a reason."""
+    choose(client, "persona_applicant")
+    before = application_count(environment)
+    held = post_form(client, MADE_UP_FRONT_SIX, files=fence_files(), intent="submit")
+    assert held.status_code == 422, held.text
+    assert application_count(environment) == before
+    must_fix = held.text.split('data-testid="must-fix"')[1].split("</section>")[0]
+    assert "ACME Code §14-305" in must_fix
+    # The address is not a Must fix: it is a note under Should check.
+    assert "does not match a parcel" not in must_fix
+    should_check = held.text.split('data-testid="should-check"')[1].split("</section>")[0]
+    assert "We could not match this address to a parcel." in should_check
+
+    reason = "The fence is already built."
+    accepted = post_form(
+        client, MADE_UP_FRONT_SIX, files=fence_files(), intent="override", override_reason=reason
+    )
+    assert accepted.status_code == 303, accepted.text
+    reference = accepted.headers["location"].rsplit("/", 1)[1]
+    factory = SessionFactory(environment.database_url)
+    try:
+        with transaction(factory) as session:
+            application = session.execute(
+                select(permit.Application).where(
+                    permit.Application.source_application_number == reference
+                )
+            ).scalar_one()
+            application_id = application.id
+            assert application.presubmit_override["reason"] == reason
+            assert application.presubmit_override["flag"] == "Submitted with known issues"
+            kinds = {issue["kind"] for issue in application.presubmit_override["issues"]}
+            assert kinds == {"rule"}
+            # The case waits for a person: the agent routes it to early resolution.
+            operator = context_for(session, "persona_agent_operator")
+            AgentControlService(session).set_mode("intake", "awake", operator)
+            IntakeAgent(session, settings=environment).run(
+                application_id, triggered_by="persona_data_steward"
+            )
+            application = session.get(permit.Application, application_id)
+            assert application is not None
+            assert application.status == "needs_information"
+            findings = session.execute(
+                select(permit.ApplicationFinding).where(
+                    permit.ApplicationFinding.application_id == application_id,
+                    permit.ApplicationFinding.severity == "block",
+                )
+            ).scalars().all()
+            assert any(
+                "Submitted with known issues" in finding.message for finding in findings
+            )
+            board = early_resolution(session, context_for(session, "persona_data_steward"))
+            blob = json.dumps(board)
+            assert reference in blob
+            assert reason in blob
+    finally:
+        factory.dispose()
+
+
+def test_the_live_check_does_not_call_an_unmatched_address_missing(client) -> None:
+    """The background check of the form never holds an address the City cannot place."""
+    choose(client, "persona_applicant")
+    body = client.post(
+        "/apply/deck_fence/check",
+        data={
+            **MADE_UP,
+            "have__site_plan": "1",
+            "have__material_spec": "1",
+            "certification_accepted": "on",
+        },
+    ).json()
+    assert body["complete"] is True
+    assert body["can_submit"] is True
+    assert body["missing"] == [] and body["items"] == [] and body["blocking"] == []
+    assert body["banner"] == "Ready to submit. All required fields and documents are provided."
+
+
+def test_the_live_check_answers_with_the_rules_while_a_review_is_on_screen(client) -> None:
+    """The browser learns the current answer, so a hold it cannot lift is lifted."""
+    choose(client, "persona_applicant")
+    data = {
+        **MADE_UP_FRONT_SIX,
+        "have__site_plan": "1",
+        "have__material_spec": "1",
+        "certification_accepted": "on",
+    }
+    plain = client.post("/apply/deck_fence/check", data=data).json()
+    assert "review" not in plain
+    held = client.post("/apply/deck_fence/check", data={**data, "review": "1"}).json()
+    assert held["review"]["held"] is True
+    assert held["review"]["must_fix"]
+    assert held["review"]["assistant"] == "rules"
+    fixed = client.post(
+        "/apply/deck_fence/check",
+        data={**data, "height_ft": "4", "location": "side_rear", "review": "1"},
+    ).json()
+    assert fixed["review"]["must_fix"] == []
+    assert fixed["review"]["held"] is False
 
 
 def test_check_my_application_uses_the_rules_layer_when_muse_is_off(client, environment) -> None:

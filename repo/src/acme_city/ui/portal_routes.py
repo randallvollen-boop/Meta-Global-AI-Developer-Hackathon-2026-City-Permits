@@ -167,6 +167,7 @@ def _form_context(
     notice: str = "",
     upload_problems: dict[str, str] | None = None,
     review: dict[str, Any] | None = None,
+    override_reason: str = "",
 ) -> dict[str, Any]:
     values = spec.with_defaults(values)
     documents = service.draft_documents(draft)
@@ -201,6 +202,9 @@ def _form_context(
             doc_type: portal_content.document_purpose(doc_type) for doc_type, _label in spec.documents
         },
         review=review,
+        # The reason the applicant typed is kept when the answer is refused, so
+        # nobody has to write it twice.
+        override_reason=override_reason,
     )
 
 
@@ -617,24 +621,56 @@ async def ui_portal_check(
     actor: ActorContext | None = Depends(ui_actor),
     form: Any = Depends(posted_form),
 ) -> Any:
-    """Return the server's completeness answer for the typed values (writes nothing)."""
+    """Return the server's completeness answer for the typed values (writes nothing).
+
+    While a review is on screen the browser asks for the rules answer as
+    well (``review`` in the posted form).  It needs it to lift the hold when
+    the applicant has fixed what the rules layer named: without it the
+    browser would keep the hold of a review the applicant has already
+    answered.  The assistant is never asked here; only "Check my application"
+    does that.
+    """
     resolved, refused = _portal_guard(request, session, actor)
     if refused is not None:
         return refused
     service = _service(request, session)
     spec = service.form(type_key)
     row = service.draft(str(form.get("draft", "")), resolved) if form.get("draft") else None
-    have = set(service.draft_documents(row))
+    documents = service.draft_documents(row)
+    have = set(documents)
     for doc_type, _filename, _content in await _files(form, spec):
         have.add(doc_type)
     have |= {key[len("have__"):] for key in form.keys() if key.startswith("have__")}
+    values = _values(form, spec)
+    certification_accepted = (
+        str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"}
+    )
+    declared = _declared(form, spec)
     state = service.completeness(
         spec,
-        _values(form, spec),
+        values,
         have,
-        certification_accepted=str(form.get("certification_accepted", "")).lower() in {"on", "true", "1"},
-        sent_separately=_declared(form, spec),
+        certification_accepted=certification_accepted,
+        sent_separately=declared,
     )
+    if str(form.get("review", "")).lower() in {"on", "true", "1"}:
+        try:
+            state["review"] = _run_review(
+                request,
+                service,
+                spec,
+                values,
+                resolved,
+                certification_accepted=certification_accepted,
+                declared=declared,
+                uploaded_types=have,
+                documents=documents,
+                muse=False,
+            )
+        except Exception:  # noqa: BLE001 - the completeness answer must still come
+            # The rules layer could not answer.  The completeness answer is
+            # still true, and the server decides again on every submit.
+            pass
     return JSONResponse(state)
 
 
@@ -741,6 +777,9 @@ async def ui_portal_post(
     error_text = ""
     notice = ""
     upload_problems: dict[str, str] = {}
+    # The reason the applicant typed under Why submit now.  It is kept when
+    # the answer is refused, so nobody has to write it twice.
+    reason_text = " ".join(str(form.get("override_reason", "") or "").split())
     try:
         verify_csrf(request.app.state.settings, resolved, str(form.get(CSRF_FIELD, "")))
         draft = service.save_draft(
@@ -800,7 +839,7 @@ async def ui_portal_post(
                 documents=documents,
                 muse=False,
             )
-            reason = " ".join(str(form.get("override_reason", "") or "").split())
+            reason = reason_text
             override = None
             if review["must_fix"]:
                 if intent != "override" or not reason:
@@ -842,7 +881,7 @@ async def ui_portal_post(
         request, session, resolved, service, spec,
         values=values, certification_accepted=certification_accepted, draft=draft,
         sent_separately=declared, attempted=attempted, error=error_text, notice=notice,
-        upload_problems=upload_problems, review=review,
+        upload_problems=upload_problems, review=review, override_reason=reason_text,
     )
     return render(
         request, "portal_form.html", context, status_code=422 if (error_text or attempted or held) else 200

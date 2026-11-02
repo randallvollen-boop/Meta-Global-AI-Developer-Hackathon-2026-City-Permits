@@ -177,7 +177,7 @@
         <h2>{{ review.labels[key] }}</h2>
         {% if review[key] %}
           {% for item in review[key] %}
-          <p data-testid="presubmit-item">{{ item.sentence }}{% if item.feedback %} <span data-testid="presubmit-feedback">{{ item.feedback }}</span>{% endif %}</p>
+          <p data-testid="presubmit-item" data-rule-id="{{ item.rule_id }}">{{ item.sentence }}{% if item.feedback %} <span data-testid="presubmit-feedback">{{ item.feedback }}</span>{% endif %}</p>
           {% endfor %}
         {% else %}
           <p>None.</p>
@@ -196,7 +196,7 @@
       <p id="submit-held-why" data-testid="submit-held-why">Fix the items under Must fix, or use Submit anyway.</p>
       <div data-override>
         <label for="override-reason">Why submit now</label>
-        <textarea id="override-reason" name="override_reason" data-testid="why-submit-now" maxlength="500"></textarea>
+        <textarea id="override-reason" name="override_reason" data-testid="why-submit-now" maxlength="500">{{ override_reason }}</textarea>
         <button type="submit" name="intent" value="override" class="btn" data-testid="submit-anyway" disabled aria-describedby="submit-anyway-why">Submit anyway</button>
         <p id="submit-anyway-why" data-testid="submit-anyway-why">Enter why submit now.</p>
       </div>
