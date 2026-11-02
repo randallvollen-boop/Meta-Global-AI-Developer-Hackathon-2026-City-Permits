@@ -345,13 +345,14 @@ def test_the_buttons_of_a_held_form_share_one_row_and_stack_on_a_phone(
     assert len(boxes) == 5, boxes
     assert len({round(box["top"]) for box in boxes}) == 1, boxes
     assert len({round(box["height"]) for box in boxes}) == 1, boxes
-    # The disabled button says why it is off, beside it, in words.
+    # The disabled button says why it is off in a note below the action row.
     button = _boxes(page, "[data-testid='submit-anyway']")[0]
     why = _boxes(page, "[data-testid='submit-anyway-why']")[0]
     assert page.locator('[data-testid="submit-anyway"]').is_disabled()
     assert page.locator('[data-testid="submit-anyway-why"]').is_visible()
-    assert why["x"] >= button["x"] + button["width"], (button, why)
-    assert why["top"] < button["bottom"] and why["bottom"] > button["top"], (button, why)
+    assert why["top"] >= max(box["bottom"] for box in boxes), (boxes, why)
+    assert page.locator('[data-testid="submit-anyway"]').get_attribute("aria-describedby") == "submit-anyway-why"
+    assert page.locator('[data-testid="check-application"]').get_attribute("aria-describedby") == "check-application-muse-hint"
     # The reason is a field of the form like any other: the label is above
     # it, and the box carries the field style of the other fields.
     label = _boxes(page, "label[for='override-reason']")[0]

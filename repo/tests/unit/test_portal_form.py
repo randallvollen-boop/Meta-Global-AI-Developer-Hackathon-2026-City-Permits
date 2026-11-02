@@ -253,7 +253,7 @@ def test_check_my_application_shows_the_three_groups(client: TestClient) -> None
     assert 'data-server-held="true"' in page
     field = re.search(r'<div class="override-field"[^>]*>', page)
     assert field is not None and "hidden" not in field.group(0), field
-    action = re.search(r'<span class="submit-anyway"[^>]*>', page)
+    action = re.search(r'<button[^>]*data-override-action[^>]*>', page)
     assert action is not None and "hidden" not in action.group(0), action
 
 

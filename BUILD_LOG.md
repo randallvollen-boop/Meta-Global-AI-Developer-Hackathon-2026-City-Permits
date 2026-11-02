@@ -433,6 +433,13 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - STW-31B: the demo preparation. A separate prepare mode activates the policy, runs the worker once and leaves one applied link in the queue for a person to keep or undo. The Cedarline demonstration is unchanged: three proposals and nothing decided.
 - No model is called, no fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added. Nothing pushed, merged or published.
 
+## 2026-11-02 — Wave 3 integration repairs
+
+- Reviewed WIP commits `2e1eab2` and `b5a2989` against G14–G39. Disclosure-aware browser paths open collapsed ancestor summaries before interacting, and the workspace model opens Decision when a pending recommendation needs human review.
+- The application form now keeps all five controls in its desktop row. Check my application and Submit anyway notes render below the row and retain `aria-describedby`; the Muse badge remains inside Check my application. The browser expectation changes only from a beside-button note to a below-row note.
+- Refused, denied, and error last-action results render visible before JavaScript and are opened automatically; accepted results remain behind the bell. No rule text, fixture, hash, acceptance outcome, persona, or permission changed.
+- `node --check` passed for `static/app.js` and `static/property.js`; `compileall` passed for the changed Python/test scope; focused collection found 86 tests. Focused pytest execution did not complete in this sandbox and browser execution remains unavailable, so neither is recorded as a pass.
+
 ## 2026-11-02 — Submit anyway held form, G38 and G39
 
 - Traced the reported loss of the override panel across the server-rendered held form, `property.js`, `/apply/{type}/check`, and the implicit `intent=update` submitter. The prior commit `4b502a1` already preserves stored draft documents on a reload and treats a server-rendered hold as authoritative while a live `/check` reports an incomplete file control.

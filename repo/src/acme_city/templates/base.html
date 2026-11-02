@@ -240,10 +240,10 @@
    when the panel is shut.  A screen without an acting persona has no action
    to report, so it carries neither. #}
 {% if screen != 'select' and actor %}
-<aside id="ui-feedback-panel" class="feedback-panel {% if not feedback %}{% elif feedback.outcome == 'denied' %}feedback-denied{% else %}feedback-accepted{% endif %}"
-       role="dialog" aria-labelledby="ui-feedback-panel-title" data-testid="feedback" data-outcome="{{ feedback.outcome if feedback else 'none' }}"{% if feedback %} data-event-id="{{ feedback.event_id }}"{% endif %} hidden>
+<aside id="ui-feedback-panel" class="feedback-panel {% if not feedback %}{% elif feedback.outcome in ('denied', 'refused', 'error') %}feedback-denied{% else %}feedback-accepted{% endif %}"
+       role="dialog" aria-labelledby="ui-feedback-panel-title" data-testid="feedback" data-outcome="{{ feedback.outcome if feedback else 'none' }}"{% if feedback %} data-event-id="{{ feedback.event_id }}"{% endif %}{% if not feedback or feedback.outcome not in ('denied', 'refused', 'error') %} hidden{% endif %}>
   <div class="feedback-panel-head">
-    <h2 class="feedback-title feedback-panel-title" id="ui-feedback-panel-title" tabindex="-1" data-testid="feedback-panel-title">{{ 'The action was refused' if feedback and feedback.outcome == 'denied' else 'Last action' }}</h2>
+    <h2 class="feedback-title feedback-panel-title" id="ui-feedback-panel-title" tabindex="-1" data-testid="feedback-panel-title">{{ 'The action was refused' if feedback and feedback.outcome in ('denied', 'refused', 'error') else 'Last action' }}</h2>
     <button type="button" class="feedback-panel-close" data-testid="feedback-panel-close" aria-label="Close the last action">&times;</button>
   </div>
   <div class="feedback-panel-body">

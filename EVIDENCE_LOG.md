@@ -329,3 +329,10 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - `node --check src/acme_city/static/property.js` exited 0. The required pytest invocation with `--collect-only` collected 46 tests across the changed unit, integration and browser modules in 0.36s.
 - Browser test command was attempted with the required venv and Chromium. It could not launch in this sandbox: Chromium exited at `sandbox_host_linux.cc:41` with `shutdown: Operation not permitted`. It is not recorded as a pass.
 - Focused pytest commands began database migration but did not complete in this sandbox before interruption; they are not recorded as passes. No test assertion was weakened or skipped.
+
+## 2026-11-02 — Wave 3 integration repair evidence
+
+- Source inspection: G14 moved action forms and decision history behind nested `details`; affected paths open the summaries and `workspace_open_sections` opens Decision when a pending agent recommendation requires review.
+- Source inspection: held-form hints were flex children, making their wrappers determine the desktop row height and width. They are below the row now, and both related controls retain their `aria-describedby` links.
+- Source inspection: feedback markup hid every persisted outcome, so non-success feedback depended on script timing. Refused, denied, and error results now render visible; the existing client opens each non-success outcome once per audit event.
+- Local checks: `node --check src/acme_city/static/app.js`; `node --check src/acme_city/static/property.js`; and `python -m compileall -q src tests/unit/test_portal_form.py tests/unit/test_stylesheet_scopes.py tests/integration/test_presubmit.py` exited 0. The focused `pytest --collect-only` command collected 86 tests. Focused test execution and browser tests did not complete in this sandbox, so no test-pass claim is made.

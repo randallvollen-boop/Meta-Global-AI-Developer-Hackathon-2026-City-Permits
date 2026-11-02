@@ -662,7 +662,7 @@
        panel opens once for that refusal, without a click; the same refusal
        does not open it again on later pages. */
     var panel = feedbackPanel();
-    if (!panel || panel.getAttribute("data-outcome") !== "denied") return;
+    if (!panel || panel.getAttribute("data-outcome") === "accepted" || panel.getAttribute("data-outcome") === "none") return;
     if (panel.getAttribute("data-opened")) return;
     var id = panel.getAttribute("data-event-id") || "";
     var key = "acme-refusal-shown";
