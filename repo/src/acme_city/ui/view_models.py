@@ -3515,7 +3515,11 @@ def _presubmit_flag(application: permit.Application) -> dict[str, str] | None:
 
 
 def permit_workspace(
-    session: Session, actor: ActorContext, application_id: str
+    session: Session,
+    actor: ActorContext,
+    application_id: str,
+    *,
+    return_from: str | None = None,
 ) -> dict[str, Any]:
     """Return the permit workspace of one application.
 
@@ -3959,7 +3963,7 @@ def permit_workspace(
         has_assessment=bool((workspace.get("finance") or {}).get("assessment")),
     )
     workspace["reviewer"] = reviewer_views.workspace_extras(
-        session, actor, application, workspace
+        session, actor, application, workspace, return_from=return_from
     )
     workspace["presubmit_flag"] = _presubmit_flag(application)
     return workspace

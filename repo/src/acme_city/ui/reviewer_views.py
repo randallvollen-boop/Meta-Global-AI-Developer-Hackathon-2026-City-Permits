@@ -10,8 +10,10 @@ details; nothing here writes a record or decides a permission.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
+from urllib.parse import unquote, urlencode, urlsplit
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -607,11 +609,142 @@ def label_workspace(session: Session, detail: dict[str, Any]) -> None:
         allocation["actor_label"] = _actor_label(session, allocation.get("actor_id"))
 
 
+#: Queues a case may send the reviewer back to. Persona homes are added
+#: beside these, because a persona who opened the case from home should
+#: land there again.
+_QUEUE_RETURNS: dict[str, str] = {
+    "/queue": "/queue",
+    "/queue/review": "/queue/review",
+    "/queue/intake": "/queue/intake",
+    "/queue/early-resolution": "/queue/early-resolution",
+    "/steward": "/steward",
+    "/agents": "/agents",
+}
+
+#: A permit workspace address with no query. Only these gain ``?from=``.
+_CASE_HREF = re.compile(r"^/permits/[A-Za-z0-9_-]+$")
+
+
+def _path_key(path: str) -> str:
+    """Return the allowlist key of a local path, or ``""`` when it has none."""
+    if not path.startswith("/") or path.startswith("//"):
+        return ""
+    return path.rstrip("/") or "/"
+
+
+def _return_targets() -> dict[str, str]:
+    """Return the allowlisted path and the address the back link uses."""
+    from acme_city.ui import view_models
+
+    targets = dict(_QUEUE_RETURNS)
+    for profile in view_models.PERSONA_PROFILES.values():
+        href = str(profile.get("next") or "")
+        key = _path_key(href)
+        if key:
+            targets.setdefault(key, href)
+    for href in view_models.HOME_OVERRIDES.values():
+        key = _path_key(str(href))
+        if key:
+            targets.setdefault(key, str(href))
+    return targets
+
+
+def page_origin(path: str, query: str = "") -> str:
+    """Return the local path of the page a case link is leaving."""
+    origin = path or "/"
+    if query:
+        return f"{origin}?{query}"
+    return origin
+
+
+def accepted_return(value: str | None) -> tuple[str, str] | None:
+    """Return ``(href, screen path)`` when ``value`` is an allowlisted local return.
+
+    A query on an allowlisted queue is kept, so a filtered queue is the
+    same queue on the way back. A foreign, absolute or off-list value
+    returns ``None`` and the caller uses the persona's home queue.
+    """
+    if not value or not value.startswith("/") or value.startswith("//"):
+        return None
+    if "\\" in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        return None
+    parts = urlsplit(value)
+    if parts.scheme or parts.netloc:
+        return None
+    decoded_path = unquote(parts.path)
+    decoded_query = unquote(parts.query)
+    if (
+        "\\" in decoded_path
+        or "\\" in decoded_query
+        or any(ord(char) < 0x20 or ord(char) == 0x7F for char in decoded_path + decoded_query)
+        or not decoded_path.startswith("/")
+        or decoded_path.startswith("//")
+        or any(segment in {".", ".."} for segment in decoded_path.split("/"))
+    ):
+        return None
+    canonical = _return_targets().get(_path_key(decoded_path))
+    if canonical is None:
+        return None
+    href = f"{canonical}?{parts.query}" if parts.query else canonical
+    return href, canonical
+
+
+def workspace_return(session: Session, actor: Any, value: str | None) -> tuple[str, str]:
+    """Return the back link of the permit workspace and its label."""
+    from acme_city.ui import view_models
+
+    chosen = accepted_return(value)
+    if chosen is None:
+        home = view_models.home_for(session, actor)
+        return home["href"], f"Back to {home['label']}"
+    href, label_path = chosen
+    screen = view_models.screen_for_path(label_path)
+    if screen:
+        name = view_models.screen_label(screen)
+    elif _path_key(label_path) == "/city":
+        name = "the City website"
+    else:
+        name = label_path
+    return href, f"Back to {name}"
+
+
+def stamp_case_links(value: Any, origin: str) -> None:
+    """Add ``?from=`` to every permit-workspace link under ``value``.
+
+    The origin has to be an allowlisted return. Anything else is left
+    alone, and the workspace then uses the persona's home queue.
+    """
+    if accepted_return(origin) is None:
+        return
+    _stamp(value, origin, set())
+
+
+def _stamp(value: Any, origin: str, seen: set[int]) -> None:
+    if isinstance(value, dict):
+        marker = id(value)
+        if marker in seen:
+            return
+        seen.add(marker)
+        href = value.get("href")
+        if isinstance(href, str) and _CASE_HREF.fullmatch(href):
+            value["href"] = f"{href}?{urlencode({'from': origin})}"
+        for item in list(value.values()):
+            _stamp(item, origin, seen)
+    elif isinstance(value, list):
+        marker = id(value)
+        if marker in seen:
+            return
+        seen.add(marker)
+        for item in value:
+            _stamp(item, origin, seen)
+
+
 def workspace_extras(
     session: Session,
     actor: Any,
     application: permit.Application,
     detail: dict[str, Any],
+    return_from: str | None = None,
 ) -> dict[str, Any]:
     """Return the reviewer-facing facts the workspace tabs show."""
     from acme_city.ui import view_models
@@ -641,9 +774,7 @@ def workspace_extras(
         empty_stages.append("Permit: Not issued")
     issuance_status, issuance_next = _issuance_words(detail, blockers)
     review_target = view_models.holds_grant(session, actor, "permit.decide", "permits")
-    back_href, back_label = (
-        ("/queue/review", "Back to the review queue") if review_target else ("/queue", "Back to the work queue")
-    )
+    back_href, back_label = workspace_return(session, actor, return_from)
     return {
         "header": {
             "reference": application.source_application_number,

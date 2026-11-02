@@ -331,6 +331,14 @@ def render(
 ) -> Any:
     """Render one template."""
     context = {"public_demo": request.app.state.settings.public_demo, **context}
+    # A link into a case remembers the queue it left, so the workspace can
+    # send the reviewer back there.
+    from acme_city.ui import reviewer_views
+
+    reviewer_views.stamp_case_links(
+        context,
+        reviewer_views.page_origin(request.url.path, request.url.query),
+    )
     if request.app.state.settings.is_production:
         # No persona switch and no simulator action is shown in production mode.
         context = {**context, "personas": []}
@@ -704,7 +712,12 @@ def ui_permit_workspace(
     resolved, refused = _guard(request, session, actor, "permit")
     if refused is not None:
         return refused
-    detail = view_models.permit_workspace(session, resolved, application_id)
+    detail = view_models.permit_workspace(
+        session,
+        resolved,
+        application_id,
+        return_from=request.query_params.get("from"),
+    )
     if not detail:
         return error_response(
             request,

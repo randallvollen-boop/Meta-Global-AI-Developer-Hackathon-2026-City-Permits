@@ -13,6 +13,7 @@ import html
 import re
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -107,6 +108,15 @@ def csrf(client: TestClient, path: str) -> str:
 def row_for(page: str, reference: str) -> str:
     rows = re.findall(r'<tr class="row" data-testid="queue-item".*?</tr>', page, re.S)
     return next(row for row in rows if f">{reference}<" in row)
+
+
+def back_link(page: str) -> tuple[str, str]:
+    match = re.search(
+        r'<a class="btn ghost" href="([^"]+)" data-testid="back-link">([^<]*)</a>',
+        page,
+    )
+    assert match is not None
+    return html.unescape(match.group(1)), text_of(match.group(2))
 
 
 # ------------------------------------------------------------------ queue
@@ -236,12 +246,38 @@ def test_the_case_header_reads_for_a_person(client: TestClient) -> None:
     assert "Commercial tenant improvement" in head
     assert "400 Lantern Row, Unit 2" in head
     assert "SYN-APP-001 · Cedarline Coffee Roasters LLC · Revision" in head
-    assert "Back to the review queue" in head
-    assert 'href="/queue/review"' in page
+    assert back_link(page) == ("/queue", "Back to Work queue")
     visible = text_of(re.search(r'data-testid="case-header".*?</div>\s*</div>', page, re.S).group(0))
     assert "app_synth_001" not in visible and "com_ti" not in visible
     detail = client.get(f"/permits/{CASE}?detail=case-tech:{CASE}").text
     assert "app_synth_001" in detail and "com_ti" in detail
+
+
+def test_the_back_link_returns_to_the_queue_the_reviewer_came_from(
+    client: TestClient,
+) -> None:
+    choose(client, REVIEWER)
+    queue = client.get("/queue").text
+    action = re.search(r'href="([^"]+)" data-testid="queue-action"', queue)
+    assert action is not None
+    opened_from = html.unescape(action.group(1))
+    assert parse_qs(urlsplit(opened_from).query)["from"] == ["/queue"]
+    assert back_link(client.get(opened_from).text) == ("/queue", "Back to Work queue")
+
+    review_page = client.get("/queue/review").text
+    review_row = re.search(
+        r'data-testid="(?:review-row|recent-decision)".*?</tr>', review_page, re.S
+    )
+    assert review_row is not None
+    review_href = html.unescape(re.search(r'href="([^"]+)"', review_row.group(0)).group(1))
+    assert parse_qs(urlsplit(review_href).query)["from"] == ["/queue/review"]
+    assert back_link(client.get(review_href).text) == ("/queue/review", "Back to Review queue")
+
+    kept = client.get(f"/permits/{CASE}", params={"from": "/queue?view=all"}).text
+    assert back_link(kept) == ("/queue?view=all", "Back to Work queue")
+    for foreign in ("https://example.com/queue", "//example.com", "/admin"):
+        page = client.get(f"/permits/{CASE}", params={"from": foreign}).text
+        assert back_link(page) == ("/queue", "Back to Work queue"), foreign
 
 
 def test_empty_future_stages_are_one_line_and_expand_with_content(
