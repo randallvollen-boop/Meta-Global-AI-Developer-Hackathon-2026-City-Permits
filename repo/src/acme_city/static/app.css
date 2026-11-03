@@ -958,9 +958,11 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 .needs-status { margin: 0.4rem 0; }
 
 /* The account chip in the top bar is the demo persona switcher: it names the
-   persona that acts and its menu offers the five personas.  The first line of
-   the chip is always the role; the small second line names the person (the
-   applicant) or the department of the persona. */
+   persona that acts and its menu offers the five personas.  The chip is one
+   line: the dot and the role stand together, centred.  The name of the
+   person (the applicant) or the department of the persona is not in the chip:
+   it is the first line of the menu the chip opens, and the tooltip of the
+   chip. */
 .account-menu { position: relative; flex: none; }
 .account-trigger {
   list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
@@ -974,8 +976,6 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
   border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor;
 }
 .account-trigger .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.account-text { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2; text-align: left; }
-.account-sub { font-weight: 400; font-size: .74rem; color: var(--fg-2); max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-panel {
   /* Fixed, and right-aligned to the screen, so the bar cannot clip it and a
      long menu cannot hang off the left edge. Top stays automatic: that is
@@ -989,6 +989,9 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
   max-height: calc(100vh - 96px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; box-shadow: var(--shadow);
 }
+/* The name of the person, or the department of the persona: the first line of
+   the menu, above its items. */
+.account-person { margin: 0 0 2px; font-size: .95rem; font-weight: 600; overflow-wrap: anywhere; }
 .account-line { margin: 0 0 8px; font-size: .82rem; }
 .account-switch-label { margin: 0 0 4px; font-size: .74rem; font-weight: 700; color: var(--fg-2); }
 .account-personas { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }

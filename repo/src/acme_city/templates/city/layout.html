@@ -6,8 +6,8 @@
 {% set path = request.url.path.rstrip('/') %}
 {% set portal_page = path == '/apply' or path.startswith('/apply/') %}
 {% set is_applicant = actor is defined and actor and actor.label == 'Applicant' %}
-{# The second line of the chip: the name of the person, or the department of
-   the persona.  The role itself is always the first line. #}
+{# The name that opens the menu of the chip: the name of the person, or the
+   department of the persona.  The chip itself carries the role on one line. #}
 {% set shown_name = (applicant_name | default('', true)) or (actor.department | default('', true)) %}
 {% set portal_active = 'track' if path == '/apply/track' else ('help' if path == '/apply/help/panel' else 'start') %}
 {# The placement the assistant is opened from.  It is named apart from the

@@ -518,3 +518,11 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The staff detail pages (the data issue case, the batch preview, the record profile, the application, the source record) showed the trail of the frame and their own way back, so the same section was named twice. Those pages keep the crumb in their content, which carries the search of the queue the page was opened from, and the frame leaves its slot empty. No page shows two trails.
 - The trail is one row of crumbs: the crumbs do not wrap, the last crumb truncates with an ellipsis, and the trail never pushes the page wider. At the width of a phone it truncates too. The rules are shared by the two frames (`.crumb-trail` in `ui-patterns.css`); the frame writes its own separator (`›` on the City website, `/` in the staff application).
 - The labels of the crumbs are unchanged: `Home`, `Help and documentation`, the name of the section and the name of the page.
+
+## 2026-11-02 — Persona pill lane: one line in the top right
+
+- The chip of the persona held two lines, the role and the name of the person, and the dot beside it was centred on the two of them, so the role read as top aligned against the dot. The chip is one line now: the dot and the role stand together, centred. The same component serves every persona, on the City website and in the staff application.
+- The name of the person (or the department of the persona) left the chip. It is the first line of the menu the chip opens, above its items, and the tooltip of the chip. The items of the menu and their labels are unchanged.
+- The accessible name of the chip is unchanged: it names the persona that acts, and the name of the person is reachable in the menu.
+- The rules of the two-line chip are gone from `app.css`; the line of the name in the menu is new. The guard on the selector list of `app.css` records the change.
+- No fixture, rule, grant, persona, migration, model call, publication or remote was touched.

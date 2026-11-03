@@ -100,3 +100,13 @@ The old statements that no remote, commit or deployment existed are historical a
 | Payer link and fee gate | GO / locally verified | Data follow-up does not replace the finance gate; payer-account linkage and fee settlement still block issuance. |
 | D01–D11, AT01–AT20, DF-1/DF-2 expected data | GO / unchanged | Protected hashes and fixture outcomes were not edited; D evaluator, policy parity, and protected-fixture checks pass. |
 | Browser confirmation | PENDING | The lead must run the browser suite; this task did not run browser tests. |
+
+## 2026-11-02 — Persona pill in the top right (polish)
+
+| Item | Decision | Note |
+| --- | --- | --- |
+| One line in the persona pill | GO / locally verified | The chip holds the dot and the role on one line, centred together, in the City frame and in the staff frame and for every persona. A browser test measures the vertical centre of the dot against the vertical centre of the role at 1280 pixels. |
+| The name of the person | GO / locally verified | It left the chip. It is the first line of the menu the chip opens, above its items, and the tooltip of the chip. The items of the menu and their labels are unchanged. |
+| The accessible name of the chip | GO / unchanged | The label of the summary still names the persona that acts, and the name of the person is reachable in the menu, as its first line. |
+| The rules of the two-line chip | GO / removed | `.account-text` and `.account-sub` are gone from `app.css` and from `city.css`; the line of the name in the menu is new. The guard on the selector list of `app.css` records the change. |
+| Everything else | GO / unchanged | No fixture, rule, grant, persona, migration, model call, publication or remote was touched. |
