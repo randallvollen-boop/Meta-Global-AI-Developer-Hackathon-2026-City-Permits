@@ -8,13 +8,13 @@ The diagram now shows the parts built through repo commit `4ea0497`. See the rev
 
 ## Revision 2026-10-29, hosting copy
 
-The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact was not published.
+The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact was not published. The scheduled reset that this revision described was withdrawn on 2026-11-02; see the last revision.
 
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 364358 bytes. SHA-256 `b13d67ccb5ae4d8b9785e816ec55bd8d300996fb31852aa2083503810229b60c` (2026-11-02, no review status and Muse as the only model name). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 364310 bytes. SHA-256 `566691fffe0acc036687b50501c11e0dea246112c96412919e0c0f6c7740089d` (2026-11-02, picture lock and no scheduled reset). It loads nothing from the network and renders offline in a browser.
 
 The application serves this file at `/help/technical/architecture`. It is the only copy in the repository, and `repo/tests/integration/test_help_docs.py` checks that the served bytes are the committed bytes.
 
@@ -90,7 +90,7 @@ The review banner was removed from the page by the project owner's decision of 2
 
 ## Planned content
 
-The `roadmap` section (Phase 3: built) and the `video` section (the demo video in production) state what is built and what is still being recorded. Neither publishes or submits anything.
+The `roadmap` section (Phase 3: built) and the `video` section (the finished demo video) state what is built. The video is the final cut and plays on the landing page of the live demonstration. Neither section publishes or submits anything.
 
 ## Revision 2026-10-29, permit life cycle section
 
@@ -135,3 +135,14 @@ The `roadmap` section (Phase 3: built) and the `video` section (the demo video i
 - `check/verify_page.py` gained two checks, the model names and the open-gate phrases, and now runs ten. Both were run against the previous build: they failed there with eleven problems, all of them the ones this pass removes.
 - The AVA Library article was replaced under `acme-city-permits-architecture` with this build, and `STATUS.json` records the new publication time and hash.
 - Kit builder and the Linux checker ran clean, `check/verify_page.py` passes, `repo/tests/integration/test_help_docs.py` passes, so the served bytes are the committed bytes.
+
+## Revision 2026-11-02, picture lock and no nightly reset
+
+- The nightly reset is gone from the blueprint and from the page. `render.yaml` holds one web service and no scheduled job. The Hosting section now says that the blueprint defines one web service, built from `repo/Dockerfile-demo`, and that every deploy rebuilds the demonstration data. The words "nightly" and "cron" and the time 02:00 appear nowhere on the page.
+- The demo video is finished. Picture lock was reached on 2026-11-02. The page says so: the "In progress" chip, the "being recorded" sentence, the "Final pass" row about the drifting face and the "replaced at picture lock" sentence are gone. The video rows now carry the cut, the presenter, the voice, the screens, the file (720p, 179.7 s, about 3:00, 7.83 MB, preload none, no autoplay) and where it plays (the landing page of the live demonstration, under the persona cards).
+- The collected test count on the page and in the fact sheet is 3819, counted on 2026-11-02 with `python -m pytest --collect-only -q`. The sentence about two held-submit checks landing later the same day is dropped.
+- `check/verify_page.py` follows the page: the allowed figure list carries the collected count, the video length and size, and the date fragment of 2026-11-02.
+- The build ran the same steps as before. `inline_assets.py` wrote `page/body.html` from `page/body.src.html`, the kit builder wrote the self-contained HTML, the Linux checker ran the kit checker in headless Chrome, and `check/verify_page.py` passed. `page/page.json` was set to an absolute output path for the build and restored to the portable relative value afterwards, because this workspace is a temporary worktree and a machine path must not enter tracked history.
+- The kit checker passed with 11 writing warnings, the same kinds as before, and no functional problem. `repo/tests/integration/test_help_docs.py` passed, so the served bytes are the committed bytes.
+- The rebuilt page lives on this branch. The copy in the main checkout is the one before this revision until the branch is merged.
+- The AVA Library copy was not replaced in this revision.

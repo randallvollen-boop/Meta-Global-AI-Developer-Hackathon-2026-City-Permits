@@ -55,7 +55,7 @@
       <p>One local application holds fictional ACME City records. It stores submissions, decisions, fee versions and evidence in one SQLite database.</p>
       <p>The synthetic case SYN-APP-001 is a commercial tenant improvement. It follows one case from a submission that cannot be changed to a simulated permit, issued as a separate step.</p>
       <p>Refreshing the page, restarting the server or repeating the issuance returns the same record each time, and the build checks for it.</p>
-      <p>All three parity phases are merged, and later lanes have followed. Phase 1 adds an intake agent and an adjudication agent, a confirm and revert flow for the reviewer, 17 permit types and an Administration area. Phase 2 adds a simulated geographic information system (GIS) service, a shared property master, a town map and an applicant portal. Phase 3 adds the life of a case, queues, the applicant help assistant, operations screens, the City view and what-if analysis. The later lanes add the Agent Operator, optional automatic processing and steward autolink. The demo video is being recorded from the final build of the application.</p>
+      <p>All three parity phases are merged, and later lanes have followed. Phase 1 adds an intake agent and an adjudication agent, a confirm and revert flow for the reviewer, 17 permit types and an Administration area. Phase 2 adds a simulated geographic information system (GIS) service, a shared property master, a town map and an applicant portal. Phase 3 adds the life of a case, queues, the applicant help assistant, operations screens, the City view and what-if analysis. The later lanes add the Agent Operator, optional automatic processing and steward autolink. The demo video is finished and plays on the landing page of the live demonstration.</p>
       <p>Every record on this page is invented for the demonstration. No permit, payment, parcel or applicant record comes from a real city or a real person.</p>
     </div>
     <div class="split">
@@ -575,7 +575,7 @@
     <div class="tbl-wrap"><table>
       <thead><tr><th>Measure</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td>Tests collected</td><td>3765 on merged main, counted on 2026-11-02</td></tr>
+        <tr><td>Tests collected</td><td>3819 on merged main, counted on 2026-11-02</td></tr>
         <tr><td>Last recorded full run</td><td>3237 passed, without the browser checks (the evidence log)</td></tr>
         <tr><td>Gates</td><td>10, unchanged</td></tr>
       </tbody>
@@ -671,12 +671,12 @@
   <h2>Hosting on Render</h2>
   <p class="lede">The live public demonstration is at <code>https://acme-city-permits.onrender.com</code> on a paid Render web service. It uses SQLite and fictional data only.</p>
   <ul>
-    <li>The Blueprint is <code>render.yaml</code> at the repository root. It defines one web service, built from <code>repo/Dockerfile-demo</code>, and one nightly cron job.</li>
+    <li>The Blueprint is <code>render.yaml</code> at the repository root. It defines one web service, built from <code>repo/Dockerfile-demo</code>.</li>
     <li>Automatic deploys are off. A person starts each release deploy manually.</li>
     <li>The service runs in demo mode with fictional data only. It has no disk, so each start rebuilds the database.</li>
     <li>With demo seeding on start, each start resets the data, runs the recorded walkthrough and loads 600 synthetic permit applications and the steward demonstration data. The demonstration uses the real clock, so the seeded records carry the current date. A controlled test or a caller may still pass an explicit date.</li>
     <li>The <code>ACME_PUBLIC_DEMO</code> lock is on. Live Muse is enabled in the blueprint with a daily allowance of 100 calls and a live-call cap of 100. The credential is entered in the Render dashboard and never sits in the repository.</li>
-    <li>The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. Render keeps the old instance running until the new one passes <code>/readyz</code>.</li>
+    <li>Every deploy rebuilds the demonstration data. Render keeps the old instance running until the new one passes <code>/readyz</code>.</li>
     <li>Rate limits count requests per client address: 300 a minute for all requests, 60 for writes, 20 for persona switches and 10 for uploads. The request size limit is 25 MB.</li>
   </ul>
   <p>A Netlify front door in <code>netlify/</code> is a static page. It gives the Render service time to wake, then sends the visitor to the demonstration.</p>
@@ -778,16 +778,16 @@
 
 <section id="video" class="alt"><div class="wrap">
   <h2>Explainer video</h2>
-  <p class="lede"><span class="chip ex">In progress</span> The demo video is being recorded from the final build of the application. It stays under the 3 minute limit the organisers set. Nothing is published or submitted without the project owner's go.</p>
+  <p class="lede"><span class="chip ga">Done</span> The demo video is finished. It is the final cut, and it plays on the landing page of the live demonstration. It stays under the 3 minute limit the organisers set. Nothing is published or submitted without the project owner's go.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Item</th><th>State</th><th>Detail</th></tr></thead>
     <tbody>
-      <tr><td>Recording</td><td><span class="chip ex">In progress</span></td><td>The demo video is being recorded from the final build of the application. The cut keeps narration revision 12, sharp screen footage, animated title cards and captions at the top.</td></tr>
+      <tr><td>Cut</td><td><span class="chip ga">Done</span></td><td>The final cut of the demo video was recorded from the final build of the application. It keeps narration revision 12, sharp screen footage, animated title cards and captions at the top, and it is exported with no music.</td></tr>
       <tr><td>Presenter</td><td><span class="chip ga">Done</span></td><td>The VollenData sunflower, an animated character, sits in the bottom left corner over the screens. A video model renders each clip from the sunflower image and the approved narration, so the mouth follows the spoken words.</td></tr>
       <tr><td>Voice</td><td><span class="chip ga">Done</span></td><td>Text to speech reads every line exactly as written. A wording change regenerates one line and rebuilds the cut.</td></tr>
       <tr><td>Screens</td><td><span class="chip ga">Done</span></td><td>A scripted browser steps through a separate copy of the application and captures timed screenshots for crisp footage. The Muse moments use the live paths of the City, such as the help assistant and the council briefing.</td></tr>
-      <tr><td>Bundled copy</td><td><span class="chip ga">Done</span></td><td>A copy is bundled on the persona page. It never plays on its own and loads nothing until play is pressed. The bundled copy is replaced when the recording of the final build is finished.</td></tr>
-      <tr><td>Final pass</td><td><span class="chip ex">In progress</span></td><td>Clips where the sunflower's face drifts get rendered again. Picture lock and the final export remain open. The final file is exported with no music.</td></tr>
+      <tr><td>File</td><td><span class="chip ga">Done</span></td><td>The bundled file is <code>static/video/demo-video.mp4</code>, at 720p, 179.7 s (about 3:00) and 7.83 MB. It never plays on its own and loads nothing until play is pressed.</td></tr>
+      <tr><td>Where it plays</td><td><span class="chip ga">Done</span></td><td>The bundled copy is on the landing page of the live demonstration, under the persona cards. The same file is served with the application.</td></tr>
     </tbody>
   </table></div>
   <h3>Narration script</h3>
@@ -821,7 +821,7 @@
       <tr><td>6</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
       <tr><td>7</td><td>Fonts</td><td>Closed. The app and this page use system font stacks only, with no embedded fonts. The 38 icons are the project's own.</td></tr>
       <tr><td>8</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
-      <tr><td>9</td><td>Phase 3 and explainer video</td><td>Phase 3 is built and merged to main. The demo video is being recorded from the final build, and nothing is published or submitted without the project owner's go.</td></tr>
+      <tr><td>9</td><td>Phase 3 and explainer video</td><td>Phase 3 is built and merged to main. The demo video is finished and plays on the live demonstration, and nothing is published or submitted without the project owner's go.</td></tr>
     </tbody>
   </table></div>
   <p class="mock-note">Sources: the fact sheet, the status record, the alignment note and the decision log, read again on 2026-11-02.</p>

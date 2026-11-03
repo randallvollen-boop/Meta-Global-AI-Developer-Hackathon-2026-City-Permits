@@ -1,6 +1,6 @@
 # ACME City Permits architecture facts — as built (local candidate)
 
-Date: 2026-10-26, updated 2026-10-29. Audience: internal AVA Library. No client. Architecture status is AS BUILT: the integrated verification gate passed. Canonical status: `STATUS.json` in this workspace.
+Date: 2026-10-26, updated 2026-11-02. Audience: internal AVA Library. No client. Architecture status is AS BUILT: the integrated verification gate passed. Canonical status: `STATUS.json` in this workspace.
 
 ## Handling and never-on-page list
 
@@ -116,7 +116,7 @@ No implementation or verification figure is shown as complete until the correspo
 ## Hosting and production
 
 - The live public demonstration is at `https://acme-city-permits.onrender.com` on a paid Render web service. It runs the demo image from `repo/Dockerfile-demo`, uses SQLite and contains fictional data only.
-- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC.
+- Render automatic deploys are off. A person starts each release deploy. The blueprint defines one web service, built from `repo/Dockerfile-demo`, and no scheduled job, so every deploy rebuilds the demonstration data.
 - The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock. The next deploy sets `ACME_MUSE_PROVIDER_ENABLED=1`, `ACME_MUSE_LIVE_CALLS_ALLOWED=1` and a daily cap of 100. A public demo without `ACME_MUSE_LIVE_CALLS_ALLOWED` still locks live calls.
 - The production mode remains a hardened core rather than a finished product. Real sign-in, a server database, backups, monitoring and malware scanning remain open.
 
@@ -163,14 +163,14 @@ Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. 
 - P3insight, community permit insight. The City Administrator gets permit activity on the town map by district, with filters for type, outcome, period and exceptions (variances, waivers, denials, conditions), business activity by category, and trends. Residents get "Permits in my community" on the City of Acme website: the same map and totals, plus public lookup by address, street or permit number. The public record shows the permit number, type, parcel and address, work description, status, dates, outcome, conditions, an exception marker and the contractor business name. It never shows homeowner names, documents, internal notes, comments, contact details or fees, and district totals under 3 show as "fewer than 3". Business categories (restaurant, bar, retail, office) are added. Sanitation and police join the simulated subscriber departments. Everything displayed comes from seeded synthetic data with a synthetic label.
 - P3policy, what-if for administrators. A scenario applies proposed rule, document, process-category, service-target or fee changes in memory only. A deterministic engine reruns the rule evaluator, intake checks and fee calculation over current cases, decided cases or a seeded synthetic year. It reports cases whose outcome changes, cases no longer held for a reviewer, needs-information changes, service-target changes and hypothetical assessed fees. It makes no staff-time or revenue claim, and every case that moves from fail to pass is listed. Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure. "Propose as draft" creates draft rule versions that still need independent approval. Demo scenario: fence height limit raised from 6 ft to 7 ft.
 
-## Explainer video, in production (Randall approved the script 2026-10-28)
+## Explainer video, finished (Randall approved the script 2026-10-28, picture lock 2026-11-02)
 
 Source: `../acme-permits-parity-notes/VIDEO-SCRIPT-r7.md`. Review record: `VIDEO-SCRIPT-REVIEW.md` (private; it never goes on the page).
 
-- The demo video is being recorded from the final build of the application. The page states that plainly and carries no draft number, no draft badge and no cut length.
-- Length target: under the organisers' 3 minute limit, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
+- The demo video is finished. The final cut was recorded from the final build of the application and reached picture lock on 2026-11-02. The page states that plainly and carries no draft number and no draft badge.
+- Length target: under the organisers' 3 minute limit, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close. The final cut runs 179.7 s (about 3:00), so it stays under the limit.
 - Presenter: the VollenData sunflower character, lip-synced with a video model to text-to-speech narration. Slides, app recordings, captions and assembly are done in a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
-- Workflow: presenter clips; app recordings on a separate copy of the app, with the Muse moments taken from the live paths of the City (the help assistant, Check my application, Explain with Muse and the policy briefing); video engine assembly; review; final render; Randall's sign-off. Nothing is published or submitted without Randall's go.
+- Workflow: presenter clips; app recordings on a separate copy of the app, with the Muse moments taken from the live paths of the City (the help assistant, Check my application, Explain with Muse and the policy briefing); video engine assembly; review; final render; Randall's sign-off. The workflow completed and the cut was signed off on 2026-11-02. Nothing is published or submitted without Randall's go.
 - Script text for the page: the narration paragraphs of the approved script, verbatim, under the "Explainer video" heading.
 - Never on the page: the private review record, voice or face reference file paths, or the identity name.
 
@@ -258,8 +258,8 @@ Sources are the code on that commit under `repo/`. Every item below was checked 
 - Daily Muse allowance: `muse/budget.py`, `ACME_MUSE_DAILY_CALL_CAP`, default 10 (`core/config_operator.py`). Live call cap default 2.
 - Applicant help answer, council briefing and what-if proposals use the same adapter. On the hosted demonstration `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` are 1, with a daily cap of 100. When live Muse is off, or that allowance is used up, recorded answers are used.
 - Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were generated at build time with a local image model (commits `5eddb89`, `6e96c36`), a build-time asset only.
-- Demo video: `static/video/demo-video.mp4` is bundled on the persona page at 720p, 164.2 s (2:44), 7.96 MB, preload none, no autoplay. It is the copy of the current cut. The demo video is being recorded from the final build, and the bundled copy is replaced at picture lock.
-- Tests: 3765 collected on merged main, counted on 2026-11-02 (`python -m pytest --collect-only -q`). The tree gained two held-submit regression checks later that day, so a collection at the tip of the same day reports 3767. The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02). Phase counts 762 and 879 are historical. 10 gates unchanged.
+- Demo video: `static/video/demo-video.mp4` is bundled on the landing page of the live demonstration, under the persona cards, at 720p, 179.7 s (about 3:00), 7.83 MB, preload none, no autoplay. It is the final cut, and picture lock was reached on 2026-11-02.
+- Tests: 3819 collected on merged main, counted on 2026-11-02 (`python -m pytest --collect-only -q`). The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02). Phase counts 762 and 879 are historical. 10 gates unchanged.
 - Licence: all rights reserved, copyright Randy Vollen and VollenData; the repository is public for transparency, hackathon evaluation and demonstration only (`LICENSE`, `NOTICE`). The earlier Apache 2.0 statement is withdrawn.
 - Approval policy: `config/approval_policy.json`, default `single` (one administrator may approve); `independent` requires a different administrator.
 - Steward autolink: `registry/automation.py`, `agents/linking.py`, `scripts/run_linking_worker.py`. A steward-activated policy; a bounded worker applies only high-confidence party links through a narrow service identity (`linking_agent`); each applied link is reviewable and reversible; parcel and address families are suggest-only; no model call.
@@ -285,10 +285,10 @@ Sources: the tree at `3a77390`, read on 2026-11-02: `BUILD_LOG.md`, `EVIDENCE_LO
 - The pre-submit check (`repo/src/acme_city/applicant_portal/presubmit.py`): Check my application runs the rules layer and asks Muse for feedback. The findings are grouped as Must fix, Should check and Looks good. Submit anyway needs a written reason, and submitting itself makes no model call (`repo/src/acme_city/ui/portal_routes.py`, `muse=False` on submit).
 - The demonstration uses the real clock. Render no longer sets `ACME_SCENARIO_CLOCK=auto`, and the Compose file leaves the setting empty (commits `4782b46` and `3a77390`).
 - Permissions: 85, in `repo/config/permissions.json`.
-- Tests: 3765 collected on merged main, counted on 2026-11-02. Two held-submit regression checks landed later the same day, so a collection at the tip reports 3767. The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02).
+- Tests: 3819 collected on merged main, counted on 2026-11-02. The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02).
 - The live paths of Muse: the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals (`repo/src/acme_city/ui/guide_routes.py`, `_surface_live`). The document extraction is a recorded Muse run and is replayed (`repo/src/acme_city/agents/extraction.py`).
 - The hosted demonstration enables live Muse in `render.yaml` with a daily allowance of 100 and a live-call cap of 100. The credential is entered in the Render dashboard and never sits in the repository.
-- The demo video is being recorded from the final build of the application.
+- The demo video is finished. The final cut was recorded from the final build of the application and reached picture lock on 2026-11-02.
 - The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` are untouched by this pass.
 
 ## Presentation pass, 2026-11-02 (the brand line and the theme toggle)
@@ -308,3 +308,14 @@ Sources: the project owner's instruction of 2026-11-02, read against the built p
 - The banner rule of the build skill does not apply to this page, and the same decision covers the gate and review status lines. Neither the banner nor any gate status is restored by a rebuild or by a status refresh. `update_status.py` no longer writes a release-gates row.
 - The only model name on the page is Muse. The Muse product variants, the model versions and the model identifiers are removed from the copy, the diagram, the diagram alt text and the info panels. The diagram's external model services keep one node titled "Muse" and one titled "Icon generation", and the runtime node's subtitle reads "Standard mode, bounded call".
 - The facts in this sheet keep the model names, the gate statuses and the review findings. The sheet is the gate for the build, and it is internal.
+
+## Picture lock and no scheduled reset, 2026-11-02 (the rebuild of the page)
+
+Sources: the project owner's instruction of 2026-11-02, read against `render.yaml` at the repository root, `repo/src/acme_city/static/video/demo-video.mp4`, `repo/src/acme_city/templates/components/demo_video.html` and `repo/src/acme_city/templates/base.html`, and a collection run on the merged main tree.
+
+- The scheduled demonstration reset is gone. `render.yaml` holds one web service and no scheduled job. The page says so: the blueprint defines one web service, built from `repo/Dockerfile-demo`, and every deploy rebuilds the demonstration data. The reset schedule and its clock time appear nowhere on the page.
+- The demo video is finished. Picture lock was reached on 2026-11-02. The bundled file is `repo/src/acme_city/static/video/demo-video.mp4`: 720p, 179.7 s (about 3:00), 7829407 bytes (7.83 MB), `preload="none"`, no autoplay. The component is included from `base.html` on the landing page, under the persona cards, so the video plays there.
+- The page states the video as finished. The "In progress" chip, the "being recorded" sentence, the "Final pass" row about the drifting face and the "replaced at picture lock" sentence are gone. The video rows now carry the cut, the presenter, the voice, the screens, the file and where it plays.
+- Tests: 3819 collected on merged main, counted on 2026-11-02 with `python -m pytest --collect-only -q`. The figure on the page and the two figures in this sheet are that count. The earlier note about checks that landed later the same day is dropped.
+- The build is the same one the kit owns: `inline_assets.py` writes `page/body.html` from `page/body.src.html`, the kit builder writes the self-contained HTML, the Linux checker runs the kit checker in headless Chrome, and `check/verify_page.py` runs the independent checks.
+- The allowed figure list in `check/verify_page.py` follows the page: the collected count, the video length and size, and the date fragment of 2026-11-02.
