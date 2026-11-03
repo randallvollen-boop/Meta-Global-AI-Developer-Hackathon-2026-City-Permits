@@ -64,6 +64,9 @@
 .tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .tour-controls .btn { font-size: .88rem; }
 
+/* The note beside the voice button says why the voice did not start. */
+.tour-voice-note { font-size: .82rem; color: var(--warn, #a5650b); }
+
 /* The hidden attribute hides the control of the tour.  The buttons of the
    interface set a display of their own, which would otherwise show a button
    that the tour has hidden, such as Play voice before a clip is named. */

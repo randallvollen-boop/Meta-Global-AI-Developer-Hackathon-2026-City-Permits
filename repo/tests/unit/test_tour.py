@@ -434,11 +434,43 @@ def test_the_engine_loads_opt_in_voice_clips_from_the_local_manifest() -> None:
     script = SCRIPT.read_text(encoding="utf-8")
     assert 'AUDIO_MANIFEST_URL = "/ui/static/tour-audio/manifest.json"' in script
     assert 'data-testid="tour-voice"' in script
-    assert '"Play voice"' in script and '"Mute voice"' in script
-    assert 'VOICE_KEY = "acme-tour-voice"' in script
+    assert '"Play voice"' in script and '"Stop voice"' in script
     assert "function voiceKey(current)" in script
     assert 'current.kind === "bridge"' in script
     assert "function stopVoice()" in script
+
+
+def test_the_voice_is_played_on_demand_and_never_remembered() -> None:
+    """A tap of the button starts the clip, and nothing else does.
+
+    The auto-play never speaks, the step of the auto-play is the ordinary
+    nine seconds, the clip of a step stops when the tour moves on, and no
+    choice about the voice is kept anywhere.
+    """
+    script = SCRIPT.read_text(encoding="utf-8")
+    # Only the button of the voice starts a clip.
+    button = re.search(r"function toggleVoice\(\) \{(.*?)\n  \}", script, re.S)
+    assert button is not None
+    assert "playVoice(current, clip)" in button.group(1)
+    # Painting the button never starts a clip.
+    paint = re.search(r"function paintVoice\(current\) \{(.*?)\n  \}", script, re.S)
+    assert paint is not None
+    assert "playVoice" not in paint.group(1)
+    # The auto-play never speaks, and its step is the ordinary nine seconds.
+    auto = re.search(r"function startAuto\(\) \{(.*?)\n  \}", script, re.S)
+    assert auto is not None
+    assert "playVoice" not in auto.group(1)
+    assert "var AUTO_PLAY_MS = 9000;" in script
+    # A step that the tour leaves behind is silent.
+    move = re.search(r"function goTo\(number\) \{(.*?)\n  \}", script, re.S)
+    assert move is not None
+    assert "stopVoice()" in move.group(1)
+    # The voice is not remembered: the old key is only removed, never read.
+    assert 'LEGACY_VOICE_KEY = "acme-tour-voice"' in script
+    assert script.count('"acme-tour-voice"') == 1
+    assert "readVoicePreference" not in script
+    assert "writeVoicePreference" not in script
+    assert "clearLegacyVoicePreference()" in script
 
 
 def test_the_engine_starts_the_path_it_is_given() -> None:

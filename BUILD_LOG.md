@@ -576,3 +576,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Both images copy `README.md`, `USER_TEST_GUIDE.md` and `help_docs_bundle/` in the shared runtime stage, so the production image and the demo image carry the same documents. The shared recipe is unchanged and `tests/security/test_public_demo_protection.py` still pins it.
 - `docs/operations/RUNBOOK.md` gained a section that says where the documents of the help come from in the image, and that a document is copied into the bundle with `scripts/sync_help_docs_bundle.py`.
 - No word of the help pages changed, no persona, grant, rule, fee, fixture, migration or acceptance expectation changed, and nothing was pushed, deployed or published.
+
+## 2026-11-03 — The tour voice is played on demand
+
+- The voice of the guided tour was a stored preference. Turning it on made every step play its clip, the choice travelled with the tour across the steps and the screens, and the auto-play of a step could be cut short by a clip that had not finished. The voice is played on demand now: the visitor presses the button and the clip of that step is heard.
+- The button says what it does. It reads "Play voice" while the clip is silent and "Stop voice" while it plays, and `aria-pressed` follows it. A second press stops the clip, and the button returns to "Play voice" when the clip ends on its own.
+- Nothing starts a clip except a press of the button. The auto-play never speaks and keeps its nine-second step, and a step the tour leaves behind is silent: the clip stops when the tour moves on, and the next step is quiet until it is asked for.
+- No choice about the voice is kept. The key of the earlier build is removed from the local and the session storage when the engine starts, so a visitor who comes back is not left with a voice that speaks by itself.
+- A browser that refuses the clip is told so: the note "The voice could not start. Tap again to try." stands beside the button, and the button is at rest again. No failure is silent.
+- No caption, no clip, no path, no step, no fixture, no grant, no rule and no acceptance expectation changed. The nine-second step of the auto-play, the manifest, the tour steps and the application are unchanged. No document of the help described the voice, so no document of the help changed.

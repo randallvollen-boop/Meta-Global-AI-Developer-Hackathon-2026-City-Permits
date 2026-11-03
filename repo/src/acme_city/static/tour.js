@@ -17,6 +17,11 @@
    place, so the tour keeps playing across the page change as well: the
    viewer presses Auto-play once and the tour walks on by itself.
 
+   The voice of the tour is spoken on demand: the viewer presses the voice
+   button and the clip of this step is heard.  Nothing else starts a clip.
+   The auto-play never speaks, the voice stops when the tour moves on, and
+   no choice about the voice is kept anywhere.
+
    One step may offer Start fresh: it creates a copy of the café case for
    the visitor, so the path works for every judge of the shared
    demonstration.  That is the only write the tour ever makes, and the server
@@ -35,7 +40,10 @@
   var ACTOR_URL = "/ui/actor";
   var FRESH_URL = "/walkthrough/start-fresh?format=json";
   var STATE_KEY = "acme-tour";
-  var VOICE_KEY = "acme-tour-voice";
+  /* An earlier build kept the wish for the voice in a storage.  The voice is
+     played on demand now, so the old key is removed once and a visitor who
+     comes back is not affected by it. */
+  var LEGACY_VOICE_KEY = "acme-tour-voice";
   var AUTO_PLAY_MS = 9000;
   var COUNTDOWN_MS = 1000;
 
@@ -50,7 +58,7 @@
   var audioManifest = null;
   var audioManifestRequest = null;
   var audioElement = null;
-  var voiceOn = false;
+  var voicePlaying = false;
 
   /* Where the tour is, and whether it plays on its own.  The state travels
      in the session storage: a step that opens another screen comes back to
@@ -97,24 +105,27 @@
     }
   }
 
-  function readVoicePreference() {
-    var store = memory();
-    if (!store) return false;
+  /* The voice is played on demand, so no wish about it is kept.  The key of
+     an earlier build is removed from every store the browser offers, so a
+     visitor who comes back is not left with a voice that speaks by itself. */
+  function clearLegacyVoicePreference() {
+    var stores = [];
     try {
-      return store.getItem(VOICE_KEY) === "on";
+      stores.push(window.localStorage);
     } catch (error) {
-      return false;
+      /* The browser has no local storage. */
     }
-  }
-
-  function writeVoicePreference(on) {
-    var store = memory();
-    if (!store) return;
     try {
-      if (on) store.setItem(VOICE_KEY, "on");
-      else store.removeItem(VOICE_KEY);
+      stores.push(window.sessionStorage);
     } catch (error) {
-      /* The visitor can still turn narration on for this screen. */
+      /* The browser has no session storage. */
+    }
+    for (var number = 0; number < stores.length; number++) {
+      try {
+        stores[number].removeItem(LEGACY_VOICE_KEY);
+      } catch (error) {
+        /* The store refuses to be written to; there is nothing to clear. */
+      }
     }
   }
 
@@ -174,6 +185,7 @@
       '  <div class="tour-controls">',
       '    <button type="button" class="btn sm" data-tour-back data-testid="tour-back">Back</button>',
       '    <button type="button" class="btn sm" data-tour-voice data-testid="tour-voice" aria-pressed="false" hidden>Play voice</button>',
+      '    <span class="tour-voice-note" data-testid="tour-voice-note" role="status" hidden></span>',
       '    <button type="button" class="btn sm" data-tour-play data-testid="tour-play">Auto-play</button>',
       '    <span class="tour-auto" data-testid="tour-auto" hidden>',
       '      <span class="tour-countdown" data-testid="tour-countdown" aria-live="off"></span>',
@@ -464,6 +476,11 @@
 
   /* -------------------------------------------------------------- voice */
 
+  /* The voice is spoken on demand.  The viewer presses the button and the
+     clip of this step is heard; a second press stops it.  Nothing else
+     starts a clip: the auto-play never speaks, and the tour never remembers
+     that the voice was wanted. */
+
   function voiceKey(current) {
     if (!current || !current.id) return "";
     /* Bridges belong to the combined story, not to either adjacent track. */
@@ -506,11 +523,28 @@
     audioElement = document.createElement("audio");
     audioElement.preload = "auto";
     audioElement.hidden = true;
+    audioElement.setAttribute("data-testid", "tour-audio");
+    /* The clip has ended: the button returns to its resting state. */
+    audioElement.addEventListener("ended", function () {
+      voicePlaying = false;
+      paintVoice(step());
+    });
     document.body.appendChild(audioElement);
     return audioElement;
   }
 
+  /* The note beside the button.  It says why the voice did not start. */
+  function voiceNote(text) {
+    var element = part("tour-voice-note");
+    if (!element) return;
+    element.textContent = text || "";
+    element.hidden = !text;
+  }
+
+  /* Any clip that is playing stops here: when the tour moves on, when the
+     page changes and when the viewer presses the button again. */
   function stopVoice() {
+    voicePlaying = false;
     if (!audioElement) return;
     audioElement.pause();
     try {
@@ -520,8 +554,15 @@
     }
   }
 
+  /* The browser refused to start the clip.  The viewer is told, and the
+     button returns to its resting state. */
+  function voiceFailed() {
+    voicePlaying = false;
+    voiceNote("The voice could not start. Tap again to try.");
+    paintVoice(step());
+  }
+
   function playVoice(current, clip) {
-    if (!voiceOn || !clip) return;
     var player = voicePlayer();
     var source = AUDIO_ROOT + clip;
     if (player.getAttribute("src") !== source) player.setAttribute("src", source);
@@ -530,10 +571,22 @@
     } catch (error) {
       /* Playback still begins when the browser has loaded the clip. */
     }
-    var playing = player.play();
-    if (playing && playing.catch) playing.catch(function () {});
+    var started;
+    try {
+      started = player.play();
+    } catch (error) {
+      voiceFailed();
+      return;
+    }
+    if (started && started.catch) {
+      started.catch(function () {
+        voiceFailed();
+      });
+    }
   }
 
+  /* The button says what it does: it plays the clip, and it stops the clip
+     that is playing. */
   function paintVoice(current) {
     var button = part("tour-voice");
     if (!button) return;
@@ -541,21 +594,29 @@
     button.hidden = !clip;
     if (!clip) {
       stopVoice();
+      voiceNote("");
       return;
     }
-    button.textContent = voiceOn ? "Mute voice" : "Play voice";
-    button.setAttribute("aria-pressed", voiceOn ? "true" : "false");
-    if (voiceOn) playVoice(current, clip);
+    button.textContent = voicePlaying ? "Stop voice" : "Play voice";
+    button.setAttribute("aria-pressed", voicePlaying ? "true" : "false");
   }
 
+  /* The button of the voice: it plays the clip of this step, and it stops
+     the clip while it plays. */
   function toggleVoice() {
     var current = step();
     var clip = clipFor(current);
     if (!clip) return;
-    voiceOn = !voiceOn;
-    writeVoicePreference(voiceOn);
-    if (!voiceOn) stopVoice();
+    if (voicePlaying) {
+      stopVoice();
+      voiceNote("");
+      paintVoice(current);
+      return;
+    }
+    voiceNote("");
+    voicePlaying = true;
     paintVoice(current);
+    playVoice(current, clip);
   }
 
   /* ----------------------------------------------------------- highlight */
@@ -728,7 +789,8 @@
     state.index = index;
     persist();
     /* The page is going away.  The wish to play on stays in the state, so
-       the next screen carries the tour on without another click. */
+       the next screen carries the tour on without another click.  The voice
+       of this step stops here: it belongs to the step and not to the tour. */
     clearTimers();
     stopVoice();
     var current = step();
@@ -958,9 +1020,9 @@
   function init() {
     if (bound) return;
     bound = true;
+    clearLegacyVoicePreference();
     if (clearMissingCaseState()) return;
     ensureStyles();
-    voiceOn = readVoicePreference();
     loadAudioManifest();
     bindStarters();
     window.addEventListener("scroll", follow, { passive: true });
