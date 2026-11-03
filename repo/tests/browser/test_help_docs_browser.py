@@ -25,14 +25,20 @@ def test_help_link_opens_the_tutorial_and_a_step_link_lands_on_its_screen(
     assert page.recorded_errors == []
 
 
-def test_the_architecture_page_runs_no_script_in_its_frame(page, server: BrowserServer, login) -> None:
+def test_the_architecture_page_runs_its_diagram_inside_an_opaque_script_sandbox(
+    page, server: BrowserServer, login
+) -> None:
     login("persona_city_administrator")
     page.goto(f"{server.base_url}/help/technical/architecture", wait_until="domcontentloaded")
     frame = page.frame_locator('[data-testid="document-frame"]')
-    frame.locator("body").wait_for()
-    # The page's own theme button is a script feature; in the sandbox it cannot reach the app origin.
+    diagram = frame.locator("svg#arch")
+    diagram.wait_for()
+    assert diagram.locator(":scope > *").count() > 0
+    # The iframe remains opaque to its embedding application even though this document may run its own script.
     assert page.evaluate(
         "() => { try { return document.querySelector('iframe').contentDocument === null; }"
         " catch (error) { return true; } }"
     )
-    assert page.locator('[data-testid="document-frame"]').get_attribute("sandbox") == ""
+    sandbox = page.locator('[data-testid="document-frame"]').get_attribute("sandbox")
+    assert sandbox == "allow-scripts"
+    assert "allow-same-origin" not in sandbox

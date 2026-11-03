@@ -496,6 +496,7 @@
         "title": "Solution architecture",
         "summary": "The architecture page for the ACME City Permits solution: context, components, data and controls.",
         "format": "html",
+        "scripts_allowed": true,
         "root": "project",
         "path": "docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html"
       },

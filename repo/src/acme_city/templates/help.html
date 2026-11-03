@@ -93,7 +93,7 @@
   {% elif document.format == 'html' %}
   <p class="muted" data-testid="document-sandbox-note">{{ technical_note }}</p>
   <p><a class="btn sm" href="/help/technical/{{ document.slug }}/file" target="_blank" rel="noopener" data-testid="document-open">Open in a new tab</a> <a class="btn sm" href="/help/technical/{{ document.slug }}/file?download=true" data-testid="document-download">Download</a></p>
-  <iframe class="help-frame" sandbox="" src="/help/technical/{{ document.slug }}/file" title="{{ document.title }}" loading="lazy" referrerpolicy="no-referrer" data-testid="document-frame"></iframe>
+  <iframe class="help-frame" sandbox="{{ 'allow-scripts' if document.scripts_allowed else '' }}" src="/help/technical/{{ document.slug }}/file" title="{{ document.title }}" loading="lazy" referrerpolicy="no-referrer" data-testid="document-frame"></iframe>
   {% else %}
   <article class="help-doc" data-testid="document-body">{{ document_body | safe }}</article>
   {% endif %}
