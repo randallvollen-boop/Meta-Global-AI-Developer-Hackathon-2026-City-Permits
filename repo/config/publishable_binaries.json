@@ -88,6 +88,17 @@
         ".mp4",
         ".jpg"
       ]
+    },
+    {
+      "directory": "src/acme_city/static/tour-audio",
+      "source": "Kokoro narration of the guided tour, one clip per tour step, made by DemoVideo from config/tour_steps.json",
+      "added_in": [
+        "003a91d"
+      ],
+      "max_bytes": 1048576,
+      "suffixes": [
+        ".mp3"
+      ]
     }
   ]
 }

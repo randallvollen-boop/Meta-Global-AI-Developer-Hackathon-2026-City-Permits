@@ -516,3 +516,11 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - Added an optional, manifest-driven narration control to the guided tour. It remains absent when the manifest is empty or unavailable, uses one audio element, stops on step changes, and only begins after the visitor presses Play voice. The session preference allows later narrated steps to play automatically.
 - Added the empty checked-in tour-audio manifest, its deterministic builder script, manifest validation, and a browser test with a test-only static audio directory and a 549-byte silent MP3 fixture.
 - No visible tour caption changed, no live model call was made, and no persona, grant, rule, fixture, acceptance arithmetic, deployment, or publication changed.
+
+## 2026-11-02 — G10 tour voice: the narration control and the publication gate
+
+- The narration control had never worked. `clipFor` matched a clip name with `/^[A-Za-z0-9_.-]+\\.mp3$/`: the doubled backslash asks for a literal backslash inside the name, so no manifest entry could ever match. The control therefore stayed hidden, a press did nothing, and the browser test failed at "Mute voice". The pattern now asks for the dot.
+- The hidden attribute did not hide the control either. `.btn` sets `display: inline-flex`, and an author rule beats the browser's own `[hidden] { display: none }`, so a hidden button of the tour kept a box and stayed on the screen. The tour stylesheet now carries `.tour-overlay [hidden] { display: none; }`, which also keeps the Start fresh button and the auto-play countdown out of the panel while they are hidden.
+- The publication gate now understands the narration. `scripts/scan_publishable_tree.py` checks an MP3 header, either an ID3 tag or the frame sync of an MPEG audio frame, and reads a `.b64` file as text, so the deny patterns still scan the test fixture. `config/publishable_binaries.json` lists `src/acme_city/static/tour-audio` with a one mebibyte limit and the commit that added the clips.
+- The browser coverage now proves both sides of the contract: a manifest that names no clip leaves no control on the panel, and the shipped manifest offers Play voice on the resident intro.
+- No tour caption changed, no live model call was made, and no persona, grant, rule, fixture, acceptance arithmetic, deployment, or publication changed.

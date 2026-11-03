@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from conftest import BrowserServer, start_server
+from playwright.sync_api import expect
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -48,9 +49,31 @@ def voice_server(tmp_path: Path) -> BrowserServer:
     yield from start_server(tmp_path, tour_audio_dir=audio_dir)
 
 
-def test_no_voice_button_appears_when_the_manifest_is_empty(page, server: BrowserServer) -> None:
-    start_resident_tour(page, server)
+@pytest.fixture()
+def empty_voice_server(tmp_path: Path) -> BrowserServer:
+    """Serve a narration folder whose manifest names no clip."""
+    audio_dir = tmp_path / "tour-audio"
+    audio_dir.mkdir()
+    (audio_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    yield from start_server(tmp_path, tour_audio_dir=audio_dir)
+
+
+def test_no_voice_button_appears_when_the_manifest_is_empty(
+    page, empty_voice_server: BrowserServer
+) -> None:
+    start_resident_tour(page, empty_voice_server)
     assert page.locator('[data-testid="tour-voice"]').is_hidden()
+    assert page.recorded_errors == []
+
+
+def test_the_shipped_manifest_offers_the_voice_of_the_resident_intro(
+    page, server: BrowserServer
+) -> None:
+    start_resident_tour(page, server)
+    voice = page.locator('[data-testid="tour-voice"]')
+    expect(voice).to_be_visible()
+    assert voice.inner_text().strip() == "Play voice"
+    assert voice.get_attribute("aria-pressed") == "false"
     assert page.recorded_errors == []
 
 

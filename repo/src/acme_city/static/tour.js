@@ -475,7 +475,7 @@
     if (!audioManifest) return "";
     var clip = audioManifest[voiceKey(current)];
     /* Filenames come from the local generated manifest, never from tour copy. */
-    return typeof clip === "string" && /^[A-Za-z0-9_.-]+\\.mp3$/.test(clip) ? clip : "";
+    return typeof clip === "string" && /^[A-Za-z0-9_.-]+\.mp3$/.test(clip) ? clip : "";
   }
 
   function loadAudioManifest() {

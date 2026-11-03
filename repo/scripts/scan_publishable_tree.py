@@ -15,6 +15,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEXT_SUFFIXES = {
     "",
+    ".b64",
     ".css",
     ".html",
     ".ini",
@@ -53,6 +54,10 @@ BINARY_HEADERS = {
     ".png": lambda header: header[:8] == b"\x89PNG\r\n\x1a\n",
     ".jpg": lambda header: header[:3] == b"\xff\xd8\xff",
     ".mp4": lambda header: header[4:8] == b"ftyp",
+    # An MP3 carries an ID3 tag, or it starts with the frame sync of an MPEG
+    # audio frame: eleven set bits in the first two bytes.
+    ".mp3": lambda header: header[:3] == b"ID3"
+    or (header[0] == 0xFF and (header[1] & 0xE0) == 0xE0),
 }
 #: The size limit for any file, unless its manifest set raises it with ``max_bytes``.
 SIZE_LIMIT = 5 * 1024 * 1024

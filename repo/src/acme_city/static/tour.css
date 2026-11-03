@@ -64,6 +64,11 @@
 .tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .tour-controls .btn { font-size: .88rem; }
 
+/* The hidden attribute hides the control of the tour.  The buttons of the
+   interface set a display of their own, which would otherwise show a button
+   that the tour has hidden, such as Play voice before a clip is named. */
+.tour-overlay [hidden] { display: none; }
+
 /* The countdown of the auto-play sits beside the button that starts it.  The
    text counts the seconds down; the thin bar fills over the step. */
 .tour-auto { display: inline-flex; flex-direction: column; gap: .2rem; min-width: 5.5rem; }
