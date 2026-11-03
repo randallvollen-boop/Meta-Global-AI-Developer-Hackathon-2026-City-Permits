@@ -567,3 +567,12 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The accessible name of the chip is unchanged: it names the persona that acts, and the name of the person is reachable in the menu.
 - The rules of the two-line chip are gone from `app.css`; the line of the name in the menu is new. The guard on the selector list of `app.css` records the change.
 - No fixture, rule, grant, persona, migration, model call, publication or remote was touched.
+
+## 2026-11-02 — The technical documents of the help open in the hosted image
+
+- Every page of **Help > Technical documents** answered "This document is not available in this copy of the application" on the hosted demonstration. The image is built from `repo/` alone (`render.yaml` has `dockerContext: ./repo`), so it has no project root above `repo/`, and the six documents of the project root (the architecture page, the runbook, the use case, the user stories, the plan for assistants through MCP and the project overview) were not in it. The two documents of the repository itself (the application overview and the user test guide) were missing too, because the image copied neither `README.md` nor `USER_TEST_GUIDE.md`.
+- `repo/help_docs_bundle/` holds a copy of every document of the project root, at the same relative path. `repo/scripts/sync_help_docs_bundle.py` copies them and names the ones it copies; `--check` reports the copies that differ and exits 1.
+- `help_docs/content.py` reads a document of the project root from the bundle when the original is not in this copy of the repository. A path that leaves the project root or the bundle is still refused with the same message, and a document that is in neither place still gives the plain message.
+- Both images copy `README.md`, `USER_TEST_GUIDE.md` and `help_docs_bundle/` in the shared runtime stage, so the production image and the demo image carry the same documents. The shared recipe is unchanged and `tests/security/test_public_demo_protection.py` still pins it.
+- `docs/operations/RUNBOOK.md` gained a section that says where the documents of the help come from in the image, and that a document is copied into the bundle with `scripts/sync_help_docs_bundle.py`.
+- No word of the help pages changed, no persona, grant, rule, fee, fixture, migration or acceptance expectation changed, and nothing was pushed, deployed or published.

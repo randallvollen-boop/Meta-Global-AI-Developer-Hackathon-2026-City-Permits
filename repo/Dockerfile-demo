@@ -36,6 +36,10 @@ COPY --from=base /app/src ./src
 COPY alembic.ini ./alembic.ini
 COPY migrations ./migrations
 COPY config ./config
+# The documents the in-app help shows: this image has no project root above
+# /app, so the copies of the project-root documents travel with it.
+COPY README.md USER_TEST_GUIDE.md ./
+COPY help_docs_bundle ./help_docs_bundle
 COPY docker/entrypoint.py /app/entrypoint.py
 # Runtime data the service reads (rules text, GIS layers, document samples).
 COPY fixtures ./fixtures

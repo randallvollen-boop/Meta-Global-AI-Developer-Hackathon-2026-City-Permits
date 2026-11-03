@@ -795,6 +795,20 @@ On the City of Acme website, linked from `/city/permits` and the home page servi
 
 Every model run shown on the evidence panel and the workspace has a source label such as "Muse Spark (live)" or "Muse Spark (replay)" with tokens and latency. The macro `templates/components/muse_source.html` is the one to reuse on the chat, briefing and what-if screens when they are built.
 
+## The documents of the help
+
+**Help > Technical documents** shows files of this repository: the solution
+architecture page, this runbook, the use case, the user stories, the plan for
+assistants through MCP, the project overview, the application overview and the
+user test guide.  The container image is built from `repo/` alone, so it has no
+project root above it, and `repo/help_docs_bundle/` holds a copy of every
+document of the project root at the same relative path.  The application reads
+those copies when the original is not there.
+
+After editing one of these documents, run `scripts/sync_help_docs_bundle.py`
+from `repo/` to copy it into the bundle; `--check` reports the copies that
+differ, and the test suite uses it as the drift guard.
+
 ## Production mode
 
 Everything in this runbook describes demo mode, which is the default and the mode the judges use. A second mode, `ACME_DEPLOYMENT_MODE=production`, removes the persona selector, the simulators, fixture replay and the scenario clock, and refuses to start against a demo database or without `ACME_SECRET_KEY`. It is opt-in, and the start scripts never set it.

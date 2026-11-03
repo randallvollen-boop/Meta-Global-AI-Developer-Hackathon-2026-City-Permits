@@ -4,6 +4,8 @@ The tutorial, the how-to guides and the list of technical documents live in
 ``config/help_content.json``.  The technical documents are files of the
 repository; their paths are resolved at run time from the position of this
 module, and a file that is not there gives a plain message instead of an error.
+The documents of the project root are also kept in ``help_docs_bundle/``, so
+that the container image, which is built from ``repo/`` alone, can show them.
 """
 # REQUIRES: UX-01, SEC-01
 # The help pages read their words from config and their documents from the
@@ -23,6 +25,11 @@ PROJECT_ROOT = REPO_DIR.parent
 CONTENT_PATH = REPO_DIR / "config" / "help_content.json"
 #: Optional overlay files, merged on top of the base file in name order.
 OVERLAY_DIR = REPO_DIR / "config" / "help_content.d"
+#: The copies of the project-root documents that travel with the application.
+#: The container image is built from ``repo/`` alone and has no project root
+#: above it, so a document that is not in this checkout is read from here.
+#: ``scripts/sync_help_docs_bundle.py`` keeps the copies the same.
+BUNDLE_DIR = REPO_DIR / "help_docs_bundle"
 
 #: The key that identifies an item of a list of objects, tried in this order.
 _ID_KEYS = ("slug", "key", "persona_id")
@@ -195,24 +202,51 @@ class Loaded:
     message: str = ""
 
 
-def read_document(entry: dict[str, Any]) -> Loaded:
-    """Read the file a technical-document entry names.
+#: The reason a document is not in this copy of the application.
+MISSING_MESSAGE = (
+    "This document is not available in this copy of the application. "
+    "It is part of the full repository."
+)
+#: The reason a path leaves the folder it has to stay in.
+OUTSIDE_MESSAGE = "This document is outside the repository and is not shown."
 
-    The path is joined to its root and must stay inside it.  A missing,
-    unreadable or oversized file gives a plain message.
-    """
-    root = (PROJECT_ROOT if entry.get("root") == "project" else REPO_DIR).resolve()
-    candidate = (root / str(entry["path"])).resolve()
+
+def _inside(root: Path, relative: str) -> Path | None:
+    """The file at ``relative`` within ``root``, or None when it leaves it."""
+    root = root.resolve()
+    candidate = (root / relative).resolve()
     try:
         candidate.relative_to(root)
     except ValueError:
-        return Loaded(None, "This document is outside the repository and is not shown.")
+        return None
+    return candidate
+
+
+def read_document(entry: dict[str, Any]) -> Loaded:
+    """Read the file a technical-document entry names.
+
+    The path is joined to its root and must stay inside it.  A document of the
+    project root that is not in this copy of the repository is read from the
+    bundle of copies that travels with the application, so that the container
+    image shows the same documents as the checkout.  A missing, unreadable or
+    oversized file gives a plain message.
+    """
+    relative = str(entry["path"])
+    if entry.get("root") == "project":
+        candidate = _inside(PROJECT_ROOT, relative)
+        if candidate is None:
+            return Loaded(None, OUTSIDE_MESSAGE)
+        if not candidate.is_file():
+            bundled = _inside(BUNDLE_DIR, relative)
+            if bundled is None:
+                return Loaded(None, OUTSIDE_MESSAGE)
+            candidate = bundled
+    else:
+        candidate = _inside(REPO_DIR, relative)
+        if candidate is None:
+            return Loaded(None, OUTSIDE_MESSAGE)
     if not candidate.is_file():
-        return Loaded(
-            None,
-            "This document is not available in this copy of the application. "
-            "It is part of the full repository.",
-        )
+        return Loaded(None, MISSING_MESSAGE)
     if candidate.stat().st_size > MAX_BYTES:
         return Loaded(None, "This document is too large to show here.")
     try:
@@ -222,7 +256,10 @@ def read_document(entry: dict[str, Any]) -> Loaded:
 
 
 __all__ = [
+    "BUNDLE_DIR",
     "CONTENT_PATH",
+    "MISSING_MESSAGE",
+    "OUTSIDE_MESSAGE",
     "OVERLAY_DIR",
     "PERSONA_LABELS",
     "PROJECT_ROOT",

@@ -331,7 +331,9 @@ def test_a_script_in_a_document_shows_as_text_in_the_page(
 def test_a_missing_document_gives_a_plain_message(
     client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Neither the project root nor the bundle of copies holds the document.
     monkeypatch.setattr(content, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(content, "BUNDLE_DIR", tmp_path / "no-bundle")
     sign_in(client, "persona_city_administrator")
     response = client.get("/help/technical/runbook")
     assert response.status_code == 404
@@ -346,6 +348,23 @@ def test_a_missing_document_gives_a_plain_message(
 def test_a_path_outside_the_root_is_refused() -> None:
     loaded = content.read_document({"root": "repo", "path": "../README.md"})
     assert loaded.text is None and "outside" in loaded.message
+
+
+def test_the_documents_are_served_from_the_bundle_when_the_project_root_is_absent(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The image is built from ``repo/`` and has no project root above it."""
+    monkeypatch.setattr(content, "PROJECT_ROOT", tmp_path)
+    sign_in(client, "persona_permit_reviewer")
+    entry = content.document("architecture")
+    committed = (content.BUNDLE_DIR / entry["path"]).read_bytes()
+    raw = client.get("/help/technical/architecture/file")
+    assert raw.status_code == 200 and raw.content == committed
+    index = client.get("/help/technical")
+    assert index.status_code == 200 and "Not available in this copy" not in index.text
+    for item in content.technical()["documents"]:
+        page = client.get(f"/help/technical/{item['slug']}")
+        assert page.status_code == 200, item["slug"]
 
 
 # -------------------------------------- HTML documents are sandboxed
