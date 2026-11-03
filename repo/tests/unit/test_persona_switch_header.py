@@ -75,6 +75,22 @@ def menu_of(body: str) -> str:
     return match.group(0)
 
 
+def chip_of(body: str) -> str:
+    """Return the markup of the chip of the persona (the summary)."""
+    match = re.search(r'<summary class="account-trigger".*?</summary>', body, re.S)
+    assert match is not None, "the page carries no persona chip"
+    return match.group(0)
+
+
+def menu_head_of(body: str) -> str:
+    """Return the markup of the head of the menu, above its items."""
+    match = re.search(
+        r'<div class="account-panel">(.*?)<p class="account-switch-label">', body, re.S
+    )
+    assert match is not None, "the page carries no persona menu"
+    return match.group(1)
+
+
 # ------------------------------------------------------------- the chip
 
 
@@ -89,6 +105,39 @@ def test_the_chip_in_the_top_right_names_the_persona_that_acts(
     assert "Data Steward" in header
     # The menu is inside the header, not in a floating overlay.
     assert 'data-testid="demo-switch"' in header
+
+
+def test_the_chip_is_one_line_and_the_menu_opens_with_the_name(
+    client: TestClient,
+) -> None:
+    """The chip holds the role alone; the name of the person opens the menu.
+
+    The chip used to hold two lines, the role and the name of the person, so
+    the dot was centred between the two of them.  The chip is one line now:
+    the name of the person is the first line of the menu the chip opens, and
+    the tooltip of the chip.
+    """
+    choose(client, "persona_applicant")
+    # The staff frame: the chip carries the role, and nothing else.
+    body = client.get("/permits/app_d05").text
+    chip = chip_of(body)
+    assert 'data-testid="account-sub"' not in chip
+    # The chip is one line: the role, and nothing else.
+    assert re.sub(r"<[^>]+>", " ", chip).split() == ["Applicant"]
+    # The name of the person is the tooltip of the chip...
+    assert 'title="Demo Applicant"' in chip
+    # ... and the first line of the menu, above its items.
+    head = menu_head_of(body)
+    assert 'data-testid="account-sub">Demo Applicant<' in head
+    assert head.index("Demo Applicant") < head.index("Signed in as")
+    # The City frame carries the same chip under its own test id.
+    body = client.get("/city/").text
+    chip = chip_of(body)
+    assert re.sub(r"<[^>]+>", " ", chip).split() == ["Applicant"]
+    assert 'title="Demo Applicant"' in chip
+    head = menu_head_of(body)
+    assert 'data-testid="applicant-name">Demo Applicant<' in head
+    assert head.index("Demo Applicant") < head.index("Signed in as")
 
 
 def test_the_menu_offers_the_five_personas_and_marks_the_current_one(

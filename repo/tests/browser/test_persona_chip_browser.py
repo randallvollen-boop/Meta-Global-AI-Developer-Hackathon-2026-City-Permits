@@ -46,6 +46,19 @@ def _rect(page, selector: str) -> dict | None:
     )
 
 
+def _dot_and_label_centres(page) -> tuple[float, float]:
+    """Return the vertical centre of the dot of the chip and of its label."""
+    return page.evaluate(
+        "() => {"
+        " const dot = document.querySelector('[data-testid=\"persona-trigger\"] .dot');"
+        " const label = document.querySelector('[data-testid=\"acting-persona\"]');"
+        " if (!dot || !label) return null;"
+        " const d = dot.getBoundingClientRect();"
+        " const l = label.getBoundingClientRect();"
+        " return [(d.top + d.bottom) / 2, (l.top + l.bottom) / 2]; }"
+    )
+
+
 def _frame(page) -> str:
     """Return the frame the page is drawn in."""
     if page.locator("body[data-city-site]").count():
@@ -134,16 +147,54 @@ def test_the_chip_is_in_the_top_right_of_every_frame_for_every_persona(
 def test_the_chip_of_the_city_frame_carries_the_name_of_the_applicant(
     page, server: BrowserServer
 ) -> None:
-    """The City chip names the role, with the name of the person below it."""
+    """The City chip is one line; the name of the person opens with the menu."""
     page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
     page.locator('button[data-persona="persona_applicant"]').click()
     page.wait_for_url(f"{server.base_url}/city/*")
     page.goto(f"{server.base_url}/city/", wait_until="domcontentloaded")
     chip = page.locator('.city-header [data-testid="persona-trigger"]')
     assert chip.locator('[data-testid="acting-persona"]').inner_text().strip() == "Applicant"
-    assert chip.locator('[data-testid="applicant-name"]').inner_text().strip() == "Demo Applicant"
+    # The chip is one line: the role, and nothing else.
+    assert chip.locator(".account-sub").count() == 0
+    assert chip.locator('[data-testid="applicant-name"]').count() == 0
+    assert chip.inner_text().strip() == "Applicant"
+    # The name of the person is the tooltip of the chip.
+    assert chip.get_attribute("title") == "Demo Applicant"
+    # And it is the first line of the menu the chip opens, above its items.
+    chip.click()
+    panel = page.locator(".city-header .account-panel")
+    name = panel.locator('[data-testid="applicant-name"]')
+    assert name.inner_text().strip() == "Demo Applicant"
+    name_box = name.bounding_box()
+    items_box = panel.locator('[data-testid="demo-switch"]').bounding_box()
+    assert name_box is not None and items_box is not None
+    assert name_box["y"] < items_box["y"], (name_box, items_box)
     # The wrapper of the City chip keeps the test id the walkthroughs use.
     assert page.locator('.city-header [data-testid="applicant-account"]').count() == 1
+
+
+def test_the_dot_of_the_chip_stands_on_the_line_of_the_role(
+    page, server: BrowserServer
+) -> None:
+    """The dot and the role of the chip share one line, in both frames.
+
+    The chip used to hold two lines, so the dot was centred between them and
+    the role read as top aligned.  The chip is one line now: the dot and the
+    role are centred together.
+    """
+    page.set_viewport_size({"width": 1280, "height": 900})
+    for actor_id, home, path in (
+        ("persona_applicant", "/city/", "/city/"),
+        ("persona_permit_reviewer", "/queue", "/queue"),
+    ):
+        page.goto(f"{server.base_url}/select", wait_until="domcontentloaded")
+        page.locator(f'button[data-persona="{actor_id}"]').click()
+        page.wait_for_url(f"{server.base_url}{home}*")
+        page.goto(f"{server.base_url}{path}", wait_until="domcontentloaded")
+        centres = _dot_and_label_centres(page)
+        assert centres is not None, (actor_id, path)
+        dot, label = centres
+        assert abs(dot - label) <= 2, (actor_id, path, dot, label)
 
 
 def test_a_signed_out_reader_sees_no_chip(page, server: BrowserServer) -> None:

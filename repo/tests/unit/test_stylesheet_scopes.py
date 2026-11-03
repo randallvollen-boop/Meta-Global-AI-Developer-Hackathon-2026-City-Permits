@@ -125,20 +125,30 @@ LANDING_ADDED = (
 
 #: The theme of the frames (slice T3) changed on purpose: the setting of the
 #: device is never followed, so the dark tokens apply only under
-#: [data-theme="dark"], and the chip of the persona carries the role, the
-#: small second line and the other entries of its menu.
+#: [data-theme="dark"], and the chip of the persona carries the role and the
+#: other entries of its menu.
 THEME_REMOVED = (
     ':root:not([data-theme="light"])',
     ".account-dept",
 )
 THEME_ADDED = (
-    ".account-text",
-    ".account-sub",
     ".account-extras",
     ".account-action",
     ".account-action:hover",
     ".account-action:focus-visible",
     ".account-action-state",
+)
+
+#: The persona pill (2026-11-02) is one line on purpose: the dot and the role
+#: stand together, centred, and the name of the person moved into the menu,
+#: on the first line above its items.  The rules of the two-line chip are gone
+#: and the line of the name in the menu is new.
+PILL_ONE_LINE_REMOVED = (
+    ".account-text",
+    ".account-sub",
+)
+PILL_ONE_LINE_ADDED = (
+    ".account-person",
 )
 
 #: The design lane (2026-11-02) changed these selectors on purpose: a
@@ -276,6 +286,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         + REVIEWER_SLIM_REMOVED
         + LANDING_REMOVED
         + THEME_REMOVED
+        + PILL_ONE_LINE_REMOVED
         + DESIGN_FIX_REMOVED
         + LAST_ACTION_PANEL_REMOVED
     )
@@ -287,6 +298,7 @@ def test_app_css_plus_insight_css_keeps_the_old_selector_list() -> None:
         + REVIEWER_SLIM_ADDED
         + LANDING_ADDED
         + THEME_ADDED
+        + PILL_ONE_LINE_ADDED
         + DESIGN_FIX_ADDED
         + DESIGN_FIX_2_ADDED
         + MERGED_BRANCHES_ADDED

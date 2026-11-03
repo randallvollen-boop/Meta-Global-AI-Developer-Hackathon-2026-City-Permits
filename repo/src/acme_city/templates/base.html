@@ -101,7 +101,21 @@
 
   <div class="main">
     <header class="top app-header">
+      {# The breadcrumb of the frame.  A page that brings its own trail (the
+         help pages) uses it; a page that carries its own crumb in the content
+         (the detail pages with their way back) leaves the slot empty, so no
+         page shows two trails. #}
+      {% if breadcrumb %}
+      <nav class="crumbs crumb-trail" aria-label="Breadcrumb" data-testid="app-breadcrumb">
+        <ol>
+          {% for item in breadcrumb %}
+          <li>{% if item.href %}<a href="{{ item.href }}">{{ item.label }}</a>{% else %}<span aria-current="page">{{ item.label }}</span>{% endif %}</li>
+          {% endfor %}
+        </ol>
+      </nav>
+      {% elif not content_crumb %}
       <div class="crumbs" aria-label="Breadcrumb">City of Acme <span>/</span> <b>{{ current_label or title }}</b>{% if screen == 'permit' and detail and detail.application %}<span>/</span> <span class="mono">{{ detail.application.source_application_number }}</span>{% endif %}</div>
+      {% endif %}
       <p class="app-title visually-hidden"><a href="{{ brand_href }}">City of Acme permit workspace</a></p>
       <div class="top-right persona">
         <a class="top-help-link" href="/help" data-testid="help-link"{% if screen == 'help' %} aria-current="page"{% endif %}>Help</a>
