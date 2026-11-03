@@ -23,7 +23,7 @@ from the collection and the full run of that day.
 | 32 | What the data steward does | "**Data stewards** clear the findings that block a case and keep the master records consistent." | "**Data stewards** settle identity and property records and keep the master records consistent. Their work is Data follow-up: it never holds a case and it never refuses a decision. Missing applicant information still goes back to the applicant, and the payer link and the fee still block issuing." |
 | 47 | The Muse bullet on the pre-submit check | "It explains the "Check my application" result in plain words when live." | "It explains the "Check my application" result in plain words when live. That button carries a Muse badge and may ask Muse for feedback. "Submit application" makes no Muse call at all." |
 | 52 | The allowance of the hosted demo | "Live Muse is on for the hosted demonstration, with an allowance of 100 live calls a day." | "Live Muse is on for the hosted demonstration. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard." |
-| 68 to 70 | Three facts the demonstration has today | The list held no line about the tour, a lost copy or the clock | The guided tour of "Apply as a resident" fills the resident's form; a judge's copy of the café case that the nightly reset removed opens on a recovery page that offers a fresh one; no scenario clock is set, so the current date on screen is today's date |
+| 68 to 70 | Three facts the demonstration has today | The list held no line about the tour, a lost copy or the clock | The guided tour of "Apply as a resident" fills the resident's form; a judge's copy of the café case that a deploy removed opens on a recovery page that offers a fresh one; no scenario clock is set, so the current date on screen is today's date. The middle line was changed again in Part 4 below |
 | 76 | The first step of "How to try it" | "Muse explains the result in plain words when live." | "The button carries a Muse badge, and Muse explains the result in plain words when it is live. ... "Submit application" itself makes no Muse call." |
 | 113 | The pre-submit bullet of "Production behaviour" | ""Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues"." | The same, plus: "It carries a Muse badge and may ask Muse for feedback when live." and ""Submit application" makes no Muse call." |
 
@@ -93,7 +93,7 @@ provider. The line under the table already said so.
 | `repo/config/help_content.json:82` | A new step in the tutorial of the Applicant | The tutorial took the applicant from the empty form to the receipt without the pre-submit check | "Click "Check my application"." and the three groups, the Muse badge and the hold on "Submit application" |
 | `repo/config/help_content.json:304` | A new step in the guide "Apply for a fence or deck permit" | The guide had no step for the pre-submit check | "Press "Check my application". The button carries a Muse badge, and Muse explains the result in plain words when it is live. The findings are grouped under "Must fix", "Should check" and "Looks good". A "Must fix" holds "Submit application" until you press "Submit anyway" and write why you are submitting now." |
 | `repo/config/help_content.json:421` | The result of the guide "Run a what-if and write the briefing" | "When live Muse is off, or the daily allowance of 100 calls is used up, the briefing is a recorded answer and the label says so." | "When live Muse is off, or the allowance of the deployment is used up, the briefing is a recorded answer and the label says so." |
-| `repo/config/help_content.json:492` | The note on the architecture page | "It is shown inside a sandbox that blocks every script, so it reads as a static page." | "It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page." |
+| `repo/config/help_content.json:492` | The note on the architecture page | "It is shown inside a sandbox that blocks every script, so it reads as a static page." | "It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page." The note was rewritten again in Part 4 below, after `07e66f8` gave the architecture document its own scripts |
 | `repo/config/help_content.d/admin_b.json:15` and `:31` | The allowance in the what-if texts | "The hosted demonstration allows 100 live Muse calls a day." | "The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting." |
 | `repo/config/help_content.d/operator.json:21` | The allowance in the guide "Run the agents" | "On the hosted demonstration live Muse is on, with a daily allowance of 100 calls." | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls and 100 provider calls a day that whoever runs it can change." |
 | `repo/config/help_content.d/steward.json:43` | The allowance in the guide "Resolve a data issue" | "On the hosted demonstration live Muse is on, with a daily allowance of 100 calls." | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls and 100 provider calls a day that whoever runs it can change." |
@@ -107,15 +107,15 @@ gone; the facts they stood next to stay where they were true.
 | --- | --- | --- | --- |
 | `README.md:7` | The visibility of the repository | "Repository visibility: [REVIEW: Randall. The repository is private today. Make it public before submission, then delete this line.]" | "Repository visibility: private. It must be public at submission." |
 | `README.md:22` | The build window | "The build window is not settled. The participant guide says October 27 to November 4. The event page says October 26. [REVIEW: Randall. Confirm the window before submission.]" | "The participant guide says the build window runs October 27 to November 4. The event page says October 26." |
-| `README.md:84` | The nightly reset | "The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "The data is fictional and is meant to be disposable. The nightly reset rebuilds it, and every deploy rebuilds it." |
+| `README.md:84` | The nightly reset | "The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 4 below |
 | `docs/submission/SUBMISSION_DRAFT.md` (lines 3 to 5 before the pass) | The whole "Draft status" section | "## Draft status / This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas." | The section is gone. The live address stays in "Entry requirements" and the personas stay listed where they were already described |
 | `docs/submission/SUBMISSION_DRAFT.md:12` | The repository link of the entry | "* Public repository: https://github.com/... [REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]" | "* Public repository: https://github.com/... The repository is private today and is made public at submission." |
 | `docs/submission/SUBMISSION_DRAFT.md:13` | The video of the entry | "* Accessible three-minute demo video: [link to be added]" | "* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards." The file is `repo/src/acme_city/static/video/demo-video.mp4` |
-| `docs/submission/SUBMISSION_DRAFT.md:76` | The nightly reset | "... It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... The nightly reset rebuilds it, and every deploy rebuilds it." |
+| `docs/submission/SUBMISSION_DRAFT.md:76` | The nightly reset | "... It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 4 below |
 | `docs/submission/SUBMISSION_DRAFT.md:105` | The build window | "The build window is not settled. ... [REVIEW: Randall. Confirm the window before submission.]" | "The participant guide says the build window runs October 27 to November 4. The event page says October 26." |
 | `docs/submission/SUBMISSION_DRAFT.md:121` | The licence wording | "... [REVIEW: Randall. Confirm the repository licence wording before submission.] See [LICENSE]..." | The sentence stays, the marker goes |
-| `docs/submission/SUBMISSION_DRAFT.md:136` | The first step of "How to try it" | "... The data resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... The data is fictional, the nightly reset rebuilds it, and every deploy rebuilds it." |
-| `docs/operations/MCP_PLAN.md:8` | The note on what the plan could check | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. Unverified: whether any write path already carries an idempotency key (only finance has one), and the exact permission names per persona." | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. It reads the code as it stood then, and the two things it could not settle are in the open questions at the end." The two points became questions 8 and 9 of section 7 |
+| `docs/submission/SUBMISSION_DRAFT.md:136` | The first step of "How to try it" | "... The data resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... The data is fictional and every deploy rebuilds the demonstration data." Changed again in Part 4 below |
+| `docs/operations/MCP_PLAN.md:8` | The note on what the plan could check | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. Unverified: whether any write path already carries an idempotency key (only finance has one), and the exact permission names per persona." | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. It reads the code as it stood then, and the two things it could not settle are in the open questions at the end." The two points became questions 8 and 9 of section 7. The model name was removed in Part 4 below |
 
 The words the application itself uses are untouched: "Save draft", "Save as a
 draft rule change", "Draft: ready for your approval", the drafts of an
@@ -169,7 +169,7 @@ the document and the question is here, with the text it had.
 | --- | --- |
 | `README.md:7` | "Repository visibility: [REVIEW: Randall. The repository is private today. Make it public before submission, then delete this line.]" The line itself stays in the README, so it can be deleted when the repository is made public |
 | `README.md:22` and `docs/submission/SUBMISSION_DRAFT.md:105` | "[REVIEW: Randall. Confirm the window before submission.]" The build window is October 27 to November 4 in the participant guide and October 26 on the event page. The documents now state both dates and say which source gives which |
-| `README.md:84` and `docs/submission/SUBMISSION_DRAFT.md:76` | "[REVIEW: Randall]" beside the nightly reset. The reset needs `ACME_DEPLOY_HOOK_URL` set in the Render dashboard (`docs/operations/DEPLOY_RENDER.md`, step 6), and the documents now say that the nightly reset rebuilds the data |
+| `README.md:84` and `docs/submission/SUBMISSION_DRAFT.md:76` | "[REVIEW: Randall]" beside the nightly reset. The reset needs `ACME_DEPLOY_HOOK_URL` set in the Render dashboard (`docs/operations/DEPLOY_RENDER.md`, step 6). The documents now say that every deploy rebuilds the data and that a nightly reset can be switched on with that variable (Part 4 below) |
 | `docs/submission/SUBMISSION_DRAFT.md:12` | "[REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]" The link points at `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits` |
 | `docs/submission/SUBMISSION_DRAFT.md:121` | "[REVIEW: Randall. Confirm the repository licence wording before submission.]" The wording now stands on its own, next to `LICENSE` and `NOTICE` |
 | `docs/submission/SUBMISSION_DRAFT.md:13` | "[link to be added]" beside the three-minute demo video. The video plays on the landing page of the live demo; a hosted link for the entry form is not in the repository |
@@ -194,13 +194,15 @@ the document and the question is here, with the text it had.
   `page/page.json`, and that page is served to judges under Help, Technical
   documentation. That branch should take the banner off.
 - **The note on the architecture page.** The audit asked the help to say the
-  sandboxed page allows scripts. The application does the opposite and the
-  shared test says so:
+  sandboxed page allows scripts. At the time of that pass the application did
+  the opposite, and the shared test said so:
   `repo/tests/integration/test_help_docs.py::test_the_architecture_page_is_served_as_committed_inside_a_script_free_sandbox`
-  asserts that the iframe carries `sandbox=""` with no allow token and that
-  the response policy sets `default-src 'none'` with no `script-src`. The
-  note therefore still says the page reads as a static page. It now also
-  says that the sandbox blocks every network request.
+  asserted that the iframe carried `sandbox=""` with no allow token and that
+  the response policy set `default-src 'none'` with no `script-src`. The
+  commit `07e66f8` ("Fix architecture document sandbox") changed the
+  application: the architecture document is now the one flagged document that
+  may run its own scripts, in an opaque frame. The note and the test were
+  reconciled with it in Part 4 below.
 - **The claim that no model is called.** The audit asked for the help to stop
   saying that no model is called while the tutorial runs. The help update
   committed before this pass (`a75aa1e`, recorded in `CHANGES-help.md`) had
@@ -227,14 +229,134 @@ the document and the question is here, with the text it had.
   logic". The deployment runbook now says the same in its table of the paths
   that reach the provider.
 
+## Part 4. The three review fixes of 2026-11-02
+
+Three findings came back from the review of this branch. Each is applied below.
+Every "After" is the text as it stands in the file after the change.
+
+### A. The nightly reset is not set up
+
+The cron job is in `render.yaml`, but the secret it needs,
+`ACME_DEPLOY_HOOK_URL`, is `sync: false` there and is not set in the Render
+dashboard. Until Randall sets it, every nightly run fails and the data is not
+reset (`docs/operations/DEPLOY_RENDER.md`, "Nightly reset"). The documents
+stated the nightly reset as a fact. They now say that every deploy rebuilds
+the data and that a nightly reset can be switched on.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `README.md:84` | "The data is fictional and is meant to be disposable. The nightly reset rebuilds it, and every deploy rebuilds it." | "The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." |
+| `README.md:69` | "* A recovery page for a judge's copy of the café case that the nightly reset removed. It says the copy is gone and offers a fresh one." | "* A recovery page for a judge's copy of the café case that a deploy removed. It says the copy is gone and offers a fresh one." |
+| `docs/submission/SUBMISSION_DRAFT.md:76` | "* The hosted data is fictional. The nightly reset rebuilds it, and every deploy rebuilds it." | "* The hosted data is fictional. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." |
+| `docs/submission/SUBMISSION_DRAFT.md:136` | "... The data is fictional, the nightly reset rebuilds it, and every deploy rebuilds it." | "... The data is fictional and every deploy rebuilds the demonstration data." |
+| `docs/submission/SUBMISSION_DRAFT.md:8` | "The entry is framed around production behaviour: rate limits, caps, audit history, nightly resets, tests, and checks." | "The entry is framed around production behaviour: rate limits, caps, audit history, a rebuild of the demonstration data on every deploy, tests, and checks." |
+| `docs/solution-architecture/acme-city-permits/facts.md:119` | "- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC." | "- Render automatic deploys are off. A person starts each release deploy. A Render cron job can request the same rebuild at 02:00 UTC, but it needs `ACME_DEPLOY_HOOK_URL` set in the Render dashboard (`docs/operations/DEPLOY_RENDER.md`, step 6); until it is set the nightly run fails and the data is not reset." |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:674`, `page/body.html:674` and the same line in the built page | "... It defines one web service, built from `repo/Dockerfile-demo`, and one nightly cron job." | "... It defines one web service, built from `repo/Dockerfile-demo`, and one cron job that runs at 02:00 UTC." |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:679`, `page/body.html:679` and the same line in the built page | "The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data." | "The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. The deploy hook URL is a secret set in the Render dashboard; until it is set the nightly run fails and the data is not reset." |
+| `repo/src/acme_city/templates/_public_demo_notice.html` | "Fictional data. Resets nightly." | "Fictional data. Rebuilt on every deploy." |
+
+The notice on the landing page of the hosted demonstration is application text
+rather than a document, and it made the same claim to a judge. It was changed
+with the documents. The three tests that hold that line to the page now hold
+the new line to the page; none of them was weakened:
+`repo/tests/unit/test_city_chrome.py:27`,
+`repo/tests/unit/test_landing_reorder.py:154` and
+`repo/tests/security/test_public_demo_protection.py:432`.
+
+`docs/operations/DEPLOY_RENDER.md` was left as it stands. It already says that
+until `ACME_DEPLOY_HOOK_URL` is set every nightly run fails and the data is not
+reset.
+
+The architecture page was not rebuilt: the kit and its standard are not on this
+host. The three copies of the page carry the same two sentences, the built file
+still embeds the body verbatim, and `PROJECT_NOTE.md` records the new size and
+hash of the built file.
+
+### B. The architecture document runs its own scripts
+
+The commit `07e66f8` ("Fix architecture document sandbox") gave the architecture
+document the one relaxed policy in the help. The iframe carries
+`sandbox="allow-scripts"` without `allow-same-origin`, so the document runs
+its own scripts in an opaque origin, and its response policy allows inline
+scripts only and keeps `default-src 'none'`, so it reaches no network. Every
+other document keeps `sandbox=""` and the strict policy. The note in the help
+still said the page was shown in a sandbox that blocks every script and reads
+as a static page. It now states the arrangement plainly.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `repo/config/help_content.json:492` (`technical.html_note`) | "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page." | "The architecture page is a finished web page with its own scripts. It is shown inside a frame that allows scripts, so the page's own diagram and controls work, but the frame gives the page an opaque origin: the page cannot reach this application, and it is served with a policy that allows inline scripts only and blocks every network request. Use the download if you want the page on its own." |
+| `repo/src/acme_city/ui/help_docs_routes.py:12` | "* ``GET /help/technical/{slug}/file``    an HTML document, in a script-free sandbox" | "* ``GET /help/technical/{slug}/file``    an HTML document, in a sandbox" |
+
+The test was reconciled with `07e66f8` before this pass, and the merge of that
+commit carried the reconciliation in:
+`repo/tests/integration/test_help_docs.py::test_the_architecture_page_is_served_as_committed_inside_an_opaque_script_sandbox`
+holds the exact checks for the architecture document (the iframe carries
+`sandbox="allow-scripts"` and no `allow-same-origin`; the response is the
+committed file byte for byte; the policy is `sandbox allow-scripts;
+default-src 'none'; script-src 'unsafe-inline'; ...` with no `'unsafe-eval'`; the
+download keeps that policy), and
+`test_html_documents_without_the_explicit_script_flag_keep_the_strict_sandbox`
+holds the strict checks for every other document (`sandbox=""`, no allow token,
+and `sandbox; default-src 'none'; img-src data:; ...` with no `script-src`).
+The old name of the first test, `..._inside_a_script_free_sandbox`, is gone.
+
+Nothing else was loosened. The browser test
+`repo/tests/browser/test_help_docs_browser.py::test_the_architecture_page_runs_its_diagram_inside_an_opaque_script_sandbox`
+still holds: the diagram draws inside the frame and the frame stays opaque to
+the page that embeds it.
+
+### C. Only Muse is named as a model
+
+Every judge-facing document and every help text was searched for the names of
+other models. One document carried one name, and one build plan inside the
+repository carried three.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `docs/operations/MCP_PLAN.md:8` | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14." | "Planned 2026-11-01 from the code at main fd41e14." |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:18` | "Haiku is the default, and each task steps up when the work needs judgment or when a runner fails." | "The cheap local model is the default, and each task steps up when the work needs judgment or when a runner fails." |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:23` to `:26` | The table of "Starting model" per task, naming "Haiku", "Sonnet" and "Parent (Opus)" | The same table with the models named by role: "The cheap local model", "A stronger local model" and "Parent (the strongest model)" |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:28` | "**Stepping up.** A task moves to the next model (Haiku, then Sonnet, then Opus) when either of these happens:" | "**Stepping up.** A task moves to the next model (the cheap local model, then a stronger local model, then the strongest) when either of these happens:" |
+
+The second file is a build plan inside the published repository, not a document
+served in the application. It stays in the repository and its tasks keep their
+meaning; only the model names are gone.
+`docs/build-story/ENGINES.md` already named the other engines by role ("Local
+and other frontier models") and was not changed.
+
+`BUILD_LOG.md`, `EVIDENCE_LOG.md`, `HANDOFF.md` and the commit trailers keep the
+names they always had. They are the record of the build for Randall and the
+team, not documents a judge reads.
+
 ## Checks
 
 ```
-cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
-    tests/unit tests/integration -k "doc or help or walkthrough or readme or copy or tour"
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -n 8 -p no:cacheprovider \
+    tests/unit tests/integration -k "doc or help or walkthrough or readme or copy or tour or sandbox"
 ```
 
-353 passed, 2145 deselected, on 2026-11-02.
+354 passed on 2026-11-02, after Part 4. The earlier run of the same selection
+without "sandbox" gave 353 passed, 2145 deselected.
+
+The lines the public demonstration notice is held to were run as well:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
+    tests/unit/test_city_chrome.py tests/unit/test_landing_reorder.py \
+    tests/security/test_public_demo_protection.py
+```
+
+79 passed.
+
+The browser test of the architecture frame was run:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
+    tests/browser/test_help_docs_browser.py -k "architecture"
+```
+
+1 passed, 1 deselected.
 
 The whole suite was run on the same day with
 `PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider -n 8`:

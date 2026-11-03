@@ -15,17 +15,18 @@
 ## Models
 
 Randall: "If a better model is needed, we need to allow that" (2026-10-29).
-Haiku is the default, and each task steps up when the work needs judgment or
-when a runner fails.
+The cheap local model is the default, and each task steps up when the work needs
+judgment or when a runner fails.
 
 | Task | Starting model | Why |
 |---|---|---|
-| 1 Snapshot harness and move script | Haiku | The code is given in full below. |
-| 2 to 5 `router.py` routes and actions | Sonnet | For about 60 handlers, the runner decides which private helpers move with each one and which stay shared. |
-| 6 to 9 section moves by marker | Haiku | The script moves the code. The runner writes imports and re-export lists from ruff's output. |
-| 0 and 10, and every gate | Parent (Opus) | Preconditions, independent acceptance and the hand-off. |
+| 1 Snapshot harness and move script | The cheap local model | The code is given in full below. |
+| 2 to 5 `router.py` routes and actions | A stronger local model | For about 60 handlers, the runner decides which private helpers move with each one and which stay shared. |
+| 6 to 9 section moves by marker | The cheap local model | The script moves the code. The runner writes imports and re-export lists from ruff's output. |
+| 0 and 10, and every gate | Parent (the strongest model) | Preconditions, independent acceptance and the hand-off. |
 
-**Stepping up.** A task moves to the next model (Haiku, then Sonnet, then Opus)
+**Stepping up.** A task moves to the next model (the cheap local model, then a
+stronger local model, then the strongest)
 when either of these happens:
 - its acceptance checks fail after two corrections on the same model;
 - the runner reports that the task needs a judgment the plan does not settle.

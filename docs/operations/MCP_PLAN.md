@@ -5,7 +5,7 @@ server, no MCP tools and no MCP token today. The stories that come from this
 plan are in `docs/operations/USER_STORIES.md`, under "Future feature:
 assistants through MCP".
 
-Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. It reads the code as it stood then, and the two things it could not settle are in the open questions at the end.
+Planned 2026-11-01 from the code at main fd41e14. It reads the code as it stood then, and the two things it could not settle are in the open questions at the end.
 
 ## 1. Purpose and top use cases
 

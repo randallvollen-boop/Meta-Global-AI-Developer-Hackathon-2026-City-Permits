@@ -5,7 +5,7 @@
 Startup track: For teams and founders building a real product.
 Judged on technical execution and whether it holds up in production.
 
-The entry is framed around production behaviour: rate limits, caps, audit history, nightly resets, tests, and checks. Only features built during the event are shown as judged work.
+The entry is framed around production behaviour: rate limits, caps, audit history, a rebuild of the demonstration data on every deploy, tests, and checks. Only features built during the event are shown as judged work.
 
 ## Entry requirements
 
@@ -73,7 +73,7 @@ The plan is written up in [docs/operations/MCP_PLAN.md](../../docs/operations/MC
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
 * Live Muse calls have a daily cap, and icon generation has its own daily cap.
 * Every governed change is recorded in the audit history.
-* The hosted data is fictional. The nightly reset rebuilds it, and every deploy rebuilds it.
+* The hosted data is fictional. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6.
 * Automatic linking of records is built and paused on the hosted demo.
 * The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case.
 * "Check my application" runs the reviewer's rules on the draft before it is sent. It carries a Muse badge and may ask Muse for feedback when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
@@ -133,7 +133,7 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 
 ## How to try it
 
-1. Open https://acme-city-permits.onrender.com. The landing page lists the five personas first, with the "Watch the 3-minute tour" button under them. The data is fictional, the nightly reset rebuilds it, and every deploy rebuilds it.
+1. Open https://acme-city-permits.onrender.com. The landing page lists the five personas first, with the "Watch the 3-minute tour" button under them. The data is fictional and every deploy rebuilds the demonstration data.
 
 2. On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. All five are available.
 

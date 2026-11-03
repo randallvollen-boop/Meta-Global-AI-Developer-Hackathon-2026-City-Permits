@@ -66,7 +66,7 @@ What the demonstration has now:
 * The agents' "Incoming" list, the step graph of each run, and a "Replay run" button behind "More details" that walks a recorded run again.
 * The "Sample data" tab in Administration, which creates the fictional cases the agents work on.
 * The guided tour of "Apply as a resident" fills the resident's form, so "Check my application" runs against a finished application.
-* A recovery page for a judge's copy of the café case that the nightly reset removed. It says the copy is gone and offers a fresh one.
+* A recovery page for a judge's copy of the café case that a deploy removed. It says the copy is gone and offers a fresh one.
 * The real clock. No scenario clock is set on the hosted demo, so the current date on screen is today's date.
 * Screens that stay slim. The secondary detail sits behind "More details".
 * A light theme by default, and a dark mode in the "Demo controls" menu.
@@ -81,7 +81,7 @@ How to try it:
 6. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
 7. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
 
-The data is fictional and is meant to be disposable. The nightly reset rebuilds it, and every deploy rebuilds it.
+The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6.
 
 Automatic processing of waiting cases is built and off on the hosted demo. Automatic linking of records is built and paused on the hosted demo.
 

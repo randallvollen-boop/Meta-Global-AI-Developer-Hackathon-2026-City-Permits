@@ -489,7 +489,7 @@
   "technical": {
     "title": "Technical documentation",
     "intro": "These documents describe how the demonstration is built and run. They are shown read only, straight from the repository.",
-    "html_note": "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page.",
+    "html_note": "The architecture page is a finished web page with its own scripts. It is shown inside a frame that allows scripts, so the page's own diagram and controls work, but the frame gives the page an opaque origin: the page cannot reach this application, and it is served with a policy that allows inline scripts only and blocks every network request. Use the download if you want the page on its own.",
     "documents": [
       {
         "slug": "architecture",
