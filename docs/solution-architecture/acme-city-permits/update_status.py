@@ -229,12 +229,13 @@ def component_status_block(status: dict) -> str:
             f'<tr><td>{html.escape(phase["label"])}</td><td><span class="chip {chip[state]}">{label}</span></td><td>{html.escape(detail)}</td></tr>'
         )
     remaining = int(req["total"]) - int(req["implemented"])
+    # No release-gates row: the project owner's decision of 2026-11-02 keeps every open-gate
+    # and review-status line off the page, so a status refresh must not write one back.
     rows.extend(
         [
             f'<tr><td>Implemented requirements</td><td><span class="chip pv">{req["implemented"]} of {req["total"]}</span></td><td>{remaining} requirement identifiers remain for later phases.</td></tr>',
             f'<tr><td>Acceptance and scenario evidence</td><td><span class="chip ex">In progress</span></td><td>{ver["acceptance_passed"]} of {ver["acceptance_total"]} acceptance tests, {ver["supplementary_passed"]} of {ver["supplementary_total"]} supplementary checks and {ver["scenarios_recorded"]} of {ver["scenarios_total"]} scenarios are recorded in the integrated manifest.</td></tr>',
             f'<tr><td>Live model evidence</td><td><span class="chip ex">{display_state(str(ver["live_muse_primary_chain"]))}</span></td><td>Replay never counts as a completed live primary-chain run.</td></tr>',
-            '<tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand, delivery owner and security review remain open, so the internal banner stays.</td></tr>',
         ]
     )
     return "<!-- ARCH_COMPONENT_STATUS_BEGIN -->\n    <tbody>\n      " + "\n      ".join(rows) + "\n    </tbody>\n    <!-- ARCH_COMPONENT_STATUS_END -->"
@@ -409,7 +410,7 @@ def publish_ava(output: Path, status: dict, digest: str) -> dict:
         "--kind",
         "architecture",
         "--summary",
-        "Registry MDM permit application with four personas, Muse Spark agents that propose and people who decide, built during the hackathon week.",
+        "Registry MDM permit application with four personas, Muse agents that propose and people who decide, built during the hackathon week.",
         "--tag",
         "ACME City",
         "--tag",

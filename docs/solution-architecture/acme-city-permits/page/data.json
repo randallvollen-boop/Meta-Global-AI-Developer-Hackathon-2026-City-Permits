@@ -201,8 +201,8 @@
    "y": 80,
    "w": 242,
    "h": 64,
-   "t": "Meta Muse Standard",
-   "s": "muse-spark-1.3, bounded call",
+   "t": "Muse",
+   "s": "Standard mode, bounded call",
    "i": "Bolt"
   },
   "src_permit": {
@@ -350,7 +350,7 @@
    "w": 230,
    "h": 64,
    "t": "Council briefing",
-   "s": "Cited briefing, Muse Spark",
+   "s": "Cited briefing, Muse",
    "i": "book_open_text",
    "cls": "plan"
   },
@@ -369,8 +369,8 @@
    "y": 156,
    "w": 242,
    "h": 64,
-   "t": "Meta Muse Image",
-   "s": "muse-image-1.0, icons",
+   "t": "Icon generation",
+   "s": "Permit-type icons",
    "i": "Bolt"
   }
  },
@@ -1834,7 +1834,7 @@
      "Bounded model exchange"
     ]
    ],
-   "note": "The model reaches the application only through the adapter. It has no edge to the database and no edge to a source. The applicant help answer and the council briefing use the same exchange, and Muse Image makes the permit-type icons."
+   "note": "The model reaches the application only through the adapter. It has no edge to the database and no edge to a source. The applicant help answer and the council briefing use the same exchange, and Muse makes the permit-type icons."
   },
   "verify": {
    "edges": [
@@ -2319,11 +2319,11 @@
   },
   "muse": {
    "k": "External service",
-   "t": "Meta Muse Standard",
-   "r": "Meta Muse Standard",
+   "t": "Muse",
+   "r": "Muse",
    "b": "The model endpoint used for the live extraction in the primary chain.",
    "f": [
-    "Standard mode only, and never a contributor model.",
+    "Only the Standard mode is used.",
     "The live primary-chain run succeeded. Replay never counts as live evidence.",
     "The provider balance and the no-cash path are unverified.",
     "The same endpoint also carries the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals. Those five are the live paths of the City. The document extraction is a recorded Muse run and is replayed. They share the live call cap 2, the daily allowance 10 and the error stop."
@@ -2400,7 +2400,7 @@
    "k": "Built",
    "t": "Administration",
    "r": "Administration",
-   "b": "City Administrator only. Tabs are Permit types, Appearance and Users and roles. The rest are Agent processing, Reason codes and the Configuration log. Appearance holds the permit-type icons, which Muse Image can generate. Users and roles shows which staff roles may run agents.",
+   "b": "City Administrator only. Tabs are Permit types, Appearance and Users and roles. The rest are Agent processing, Reason codes and the Configuration log. Appearance holds the permit-type icons, which Muse can generate. Users and roles shows which staff roles may run agents.",
    "f": [
     "The catalogue has 17 permit types.",
     "A configuration change applies only to new intake.",
@@ -2465,7 +2465,7 @@
    "r": "Applicant help assistant",
    "b": "Answers an applicant's questions about the permit process, the rules for their project and their own application, from a cited source bundle the server builds. Offered on /apply, on the application form and on the tracker.",
    "f": [
-    "Muse Spark writes the answer when live use is on, and a labelled replay fixture answers when it is off. A validator refuses any answer that is uncited, misquotes a source or promises an outcome.",
+    "Muse writes the answer when live use is on, and a labelled replay fixture answers when it is off. A validator refuses any answer that is uncited, misquotes a source or promises an outcome.",
     "If the answer is refused or nothing matches, the applicant sees the matching ACME rule text. Ask the City sends the question to the support desk.",
     "The audit record carries identifiers and the outcome, never the text of the question."
    ],
@@ -2490,7 +2490,7 @@
    "r": "What-if policy agent",
    "b": "City Administrator only. A person defines a what-if change, such as raising the side and rear fence limit from 6 ft to 7 ft. The service then scores a synthetic year of cases under the old and new rules.",
    "f": [
-    "Runs are immutable and every edit is a revision. Muse Spark can explain a run or propose a change, and a person decides.",
+    "Runs are immutable and every edit is a revision. Muse can explain a run or propose a change, and a person decides.",
     "Save as a draft rule change makes an ordinary draft. Approval follows the approval policy: by default one administrator may approve, and the independent setting requires a different administrator (config/approval_policy.json).",
     "Only rule limit, operator and fee changes convert to drafts. The rest stay simulation only."
    ],
@@ -2501,7 +2501,7 @@
    "k": "Built",
    "t": "Council briefing",
    "r": "Council briefing",
-   "b": "A briefing on a what-if run for the council. It is built from typed facts of the stored run, and Muse Spark can write it through the policy_brief task.",
+   "b": "A briefing on a what-if run for the council. It is built from typed facts of the stored run, and Muse can write it through the policy_brief task.",
    "f": [
     "Every figure must match a cited fact or a rule source, or the whole response is refused.",
     "No staff-time, throughput, savings or revenue claim is allowed, and the synthetic population is called synthetic.",
@@ -2536,9 +2536,9 @@
   },
   "museimg": {
    "k": "External service",
-   "t": "Meta Muse Image",
-   "r": "Meta Muse Image",
-   "b": "The image model that drew most of the permit-type icons: 14 of the 17 came from 14 calls to muse-image-1.0 on 2026-10-28. A City Administrator can generate more in Administration, Appearance tab.",
+   "t": "Icon generation",
+   "r": "Icon generation",
+   "b": "Muse drew most of the permit-type icons: 14 of the 17 came from 14 recorded calls on 2026-10-28. A City Administrator can generate more in Administration, Appearance tab.",
    "f": [
     "Icons are decorative and carry no record data.",
     "Applicants cannot generate icons."

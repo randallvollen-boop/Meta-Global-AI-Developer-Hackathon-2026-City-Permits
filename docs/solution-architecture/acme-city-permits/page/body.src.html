@@ -159,7 +159,6 @@
       <tr><td>Implemented requirements</td><td><span class="chip pv">57 of 57</span></td><td>0 requirement identifiers remain for later phases.</td></tr>
       <tr><td>Acceptance and scenario evidence</td><td><span class="chip ga">Verified</span></td><td>20 of 20 acceptance tests, 8 of 8 supplementary checks and 11 of 11 scenarios are recorded in the integrated manifest.</td></tr>
       <tr><td>Live model evidence</td><td><span class="chip ex">Succeeded</span></td><td>Replay never counts as a completed live primary-chain run.</td></tr>
-      <tr><td>Release gates</td><td><span class="chip ex">Open</span></td><td>Brand and delivery owner remain open. The security review has run, and its High and Medium findings are fixed.</td></tr>
     </tbody>
     <!-- ARCH_COMPONENT_STATUS_END -->
   </table></div>
@@ -185,14 +184,14 @@
   <div class="tbl-wrap"><table>
     <thead><tr><th>Part</th><th>State</th><th>Detail</th><th>Evidence</th></tr></thead>
     <tbody>
-      <tr><td>Applicant help assistant</td><td><span class="chip ga">Built</span></td><td>Answers from a cited source bundle on <code>/apply</code>, the form and the tracker. Muse Spark answers live when the deployment allows it, and falls back to a labelled replay. "Ask the City" sends the question to the support desk.</td><td>Build log, 2026-10-28, P3chat chats 1 and 2</td></tr>
-      <tr><td>What-if policy agent</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/policy/scenarios</code>. Immutable runs on a synthetic year, Muse Spark explanations and proposals, and conversion of a change into a draft rule version that goes through the approval policy.</td><td>Build log, 2026-10-28, P3policy runs 1 to 4</td></tr>
-      <tr><td>Council briefing</td><td><span class="chip ga">Built</span></td><td>A cited briefing on a run, written by Muse Spark through the <code>policy_brief</code> task, with whole-response rejection of any uncited figure.</td><td>Build log, 2026-10-28, P3policy run 3</td></tr>
+      <tr><td>Applicant help assistant</td><td><span class="chip ga">Built</span></td><td>Answers from a cited source bundle on <code>/apply</code>, the form and the tracker. Muse answers live when the deployment allows it, and falls back to a labelled replay. "Ask the City" sends the question to the support desk.</td><td>Build log, 2026-10-28, P3chat chats 1 and 2</td></tr>
+      <tr><td>What-if policy agent</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/policy/scenarios</code>. Immutable runs on a synthetic year, Muse explanations and proposals, and conversion of a change into a draft rule version that goes through the approval policy.</td><td>Build log, 2026-10-28, P3policy runs 1 to 4</td></tr>
+      <tr><td>Council briefing</td><td><span class="chip ga">Built</span></td><td>A cited briefing on a run, written by Muse through the <code>policy_brief</code> task, with whole-response rejection of any uncited figure.</td><td>Build log, 2026-10-28, P3policy run 3</td></tr>
       <tr><td>Permit insight map</td><td><span class="chip ga">Built</span></td><td>City Administrator only, at <code>/insight/city</code>. A district-shaded map with filters, trend and a definition beside every figure.</td><td>Build log, 2026-10-28, P3insight</td></tr>
       <tr><td>City of Acme website</td><td><span class="chip ga">Built</span></td><td>The public site at <code>/city/</code>, including "Permits in my community" at <code>/city/community</code>, which reads a dedicated allowlist model.</td><td>Build log, 2026-10-27, City of Acme website; 2026-10-28, P3insight</td></tr>
       <tr><td>Operations screens</td><td><span class="chip ga">Built</span></td><td>City Administrator only. Dashboard, audit log, support desk and in-process checks at <code>/ops/*</code>.</td><td>Build log, 2026-10-28, P3c</td></tr>
       <tr><td>Synthetic history generator</td><td><span class="chip ga">Built</span></td><td>One deterministic generator for a dated year of fictional cases, flagged synthetic. The what-if agent adapts the same generator.</td><td>Build log, 2026-10-28, P3insight and P3policy run 2</td></tr>
-      <tr><td>Muse Image permit-type icons</td><td><span class="chip ga">Built</span></td><td>Seed icons for all 17 permit types, and in-app icon generation for City Administrators in Administration.</td><td>Build log, 2026-10-28, Permit type icons for all 17 types</td></tr>
+      <tr><td>Muse permit-type icons</td><td><span class="chip ga">Built</span></td><td>Seed icons for all 17 permit types, and in-app icon generation for City Administrators in Administration.</td><td>Build log, 2026-10-28, Permit type icons for all 17 types</td></tr>
       <tr><td>Sanitation and Police subscribers</td><td><span class="chip ga">Built</span></td><td>Two more simulated departments read the property master, which makes six. They write nothing back.</td><td>Build log, 2026-10-28, P3insight</td></tr>
     </tbody>
   </table></div>
@@ -241,7 +240,7 @@
         <button type="button" id="next" aria-label="Next step">&#8250;</button>
       </div>
     </div>
-    <svg id="arch" viewBox="0 0 1400 890" role="img" aria-label="As-built ACME City Permits architecture. Five signed-in personas and public visitors act in the browser. The FastAPI service governs permit, registry, finance, agent, policy, insight and operations work, and serves the applicant help assistant and the City of Acme website. Meta Muse Spark proposes and Muse Image draws permit-type icons outside the application. Simulated source systems and six simulated subscriber departments sit outside the application, and evidence is collected separately."></svg>
+    <svg id="arch" viewBox="0 0 1400 890" role="img" aria-label="As-built ACME City Permits architecture. Five signed-in personas and public visitors act in the browser. The FastAPI service governs permit, registry, finance, agent, policy, insight and operations work, and serves the applicant help assistant and the City of Acme website. Muse proposes inside the application and draws the permit-type icons outside it. Simulated source systems and six simulated subscriber departments sit outside the application, and evidence is collected separately."></svg>
   </figure>
   <p class="view-note" id="view-note"></p>
   <p class="mock-note">Every component is built. The original build is verified locally, and the final acceptance manifest records the run results. The parity components are covered by the phase 2 merge review under verification. The diagram also shows the parts merged in parity phase 3, listed in the table below. Their evidence is the build log, and the page records no new verification gate for them.</p>
@@ -435,7 +434,7 @@
   <p>The request carries versioned fictional documents, source snapshots, candidate identifiers, allowed visible records, source, effective and receipt times, rule versions and exact evidence lines.</p>
   <p>The expected answers used for testing are kept out of every request, so the model never sees them.</p>
   <h3>Routing and topics</h3>
-  <p>Model muse-spark-1.3 in Standard mode does at least one real live task in the main process, preferably field extraction or an identity proposal.</p>
+  <p>Muse in Standard mode does at least one real live task in the main process, preferably field extraction or an identity proposal.</p>
   <p>Requests use a strict JavaScript Object Notation (JSON) Schema, allowlisted identifiers, bounded inputs and outputs, no web search, no tool calls, and concurrency one.</p>
   <p>The same adapter also carries the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals. Those five paths are the live paths of the City, and each is switched on by its own server setting. The document extraction is a recorded Muse run and is replayed. They share the live call cap of 2, the daily allowance of 10 and the error stop.</p>
   <p>Built-in deterministic logic never calls the provider. Automatic agent runs and steward autolink use it.</p>
@@ -604,22 +603,22 @@
 
 <section id="build" class="alt"><div class="wrap">
   <h2>How it was built</h2>
-  <p class="lede">Three Meta Muse models designed, built and run parts of the application during the hackathon week. People set the scope, approved each step and kept every decision with the server. The app was built with Muse Wonder, Muse Image and Muse Spark, with local and other frontier models assisting.</p>
+  <p class="lede">Muse designed, built and runs parts of the application during the hackathon week. People set the scope, approved each step and kept every decision with the server. The app was built with Muse, with local and other frontier models assisting.</p>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Muse model</th><th>Role</th><th>What it did</th></tr></thead>
+    <thead><tr><th>Model</th><th>Role</th><th>What it did</th></tr></thead>
     <tbody>
-      <tr><td>Muse Spark 1.3</td><td>Runtime model inside the application</td><td>Proposes application fields from the received documents for the intake agent, and writes a case summary for the reviewer that explains and never decides. Every output is a proposal that the application validates and a person decides. It also answers applicant questions and checks an application before it is sent. It explains a recommendation in plain words and writes the council briefing for a what-if run. Each of those paths is live on the hosted demonstration and falls back to a labelled replay.</td></tr>
-      <tr><td>Muse Wonder 1.0</td><td>Design reviewer and builder</td><td>Wrote a cited review of the original prototype, then built the redesigned interface, the permit-type icon feature, the simulated intake portal and the first automated triage with its recommendation for the reviewer. A lead reviewer ran every gate on its work before merge.</td></tr>
-      <tr><td>Muse Image 1.0</td><td>Image generation</td><td>Made 14 of the 17 permit-type icons. City Administrators can describe and generate a new icon for a permit type inside the application.</td></tr>
+      <tr><td>Muse</td><td>Runtime model inside the application</td><td>Proposes application fields from the received documents for the intake agent, and writes a case summary for the reviewer that explains and never decides. Every output is a proposal that the application validates and a person decides. It also answers applicant questions and checks an application before it is sent. It explains a recommendation in plain words and writes the council briefing for a what-if run. Each of those paths is live on the hosted demonstration and falls back to a labelled replay.</td></tr>
+      <tr><td>Muse</td><td>Design reviewer and builder</td><td>Wrote a cited review of the original prototype, then built the redesigned interface, the permit-type icon feature, the simulated intake portal and the first automated triage with its recommendation for the reviewer. A lead reviewer ran every gate on its work before merge.</td></tr>
+      <tr><td>Muse</td><td>Image generation</td><td>Made 14 of the 17 permit-type icons. City Administrators can describe and generate a new icon for a permit type inside the application.</td></tr>
     </tbody>
   </table></div>
   <div class="sub">
     <h3>Notes: other models used</h3>
     <ul>
-      <li>Local and other frontier models assisted the Muse models. They helped with the requirements outline, the plans, the governed foundation, the registry, permits, rules, finance and issuance, and several phase 3 slices.</li>
+      <li>Local and other frontier models assisted Muse. They helped with the requirements outline, the plans, the governed foundation, the registry, permits, rules, finance and issuance, and several phase 3 slices.</li>
       <li>They also led integration, fixed the live Muse extraction, ran the gates and reviewed every merge.</li>
       <li>A local image model generated the 17 town map image tiles at build time. They are a build-time asset only and the model does not run in the application.</li>
-      <li>None of these models runs inside the application. Muse Spark is its only runtime model.</li>
+      <li>None of these models runs inside the application. Muse is its only runtime model.</li>
     </ul>
   </div>
   <div class="sub">
@@ -713,17 +712,17 @@
     <tbody>
       <tr><td>P3a</td><td><span class="chip ga">Built</span></td><td>Lifecycle, comments, findings and archive. Merged to main; see Verification.</td></tr>
       <tr><td>P3b</td><td><span class="chip ga">Built</span></td><td>Queue views, bulk intake, a review queue and conditions. Merged to main.</td></tr>
-      <tr><td>P3chat</td><td><span class="chip ga">Built</span></td><td>Applicant help chat. All three runs are merged. They cover the help panel, its sources, "Ask the City", the Muse Spark answer with its checks, and the escalation to the support desk. The answer is live on the hosted demonstration and falls back to a labelled replay.</td></tr>
+      <tr><td>P3chat</td><td><span class="chip ga">Built</span></td><td>Applicant help chat. All three runs are merged. They cover the help panel, its sources, "Ask the City", the Muse answer with its checks, and the escalation to the support desk. The answer is live on the hosted demonstration and falls back to a labelled replay.</td></tr>
       <tr><td>P3c</td><td><span class="chip ga">Built</span></td><td>Operations dashboard, audit log, support and checks. Merged to main.</td></tr>
       <tr><td>P3insight</td><td><span class="chip ga">Built</span></td><td>The City view for administrators, "Permits in my community" for residents, a synthetic year of cases, and Sanitation and Police as subscriber departments. Merged to main.</td></tr>
-      <tr><td>P3policy</td><td><span class="chip ga">Built</span></td><td>What-if analysis for administrators. All four runs are merged: scenarios, saved runs and results, the Muse Spark briefing and explanation, and conversion of a change into draft rules.</td></tr>
+      <tr><td>P3policy</td><td><span class="chip ga">Built</span></td><td>What-if analysis for administrators. All four runs are merged: scenarios, saved runs and results, the Muse briefing and explanation, and conversion of a change into draft rules.</td></tr>
     </tbody>
   </table></div>
   <p><span class="chip ga">Built</span> Also merged: buttons that stay disabled until their inputs are complete and say what is missing, shared info popovers and side panels, seeded icons for every permit type, and restyled screens for the applicant, the Permit Reviewer and the Data Steward.</p>
   <p><span class="chip ga">Built</span> The applicant side lives on a fictional City of Acme website at <code>/city/</code>. Its Permits entry opens the applicant portal inside the city layout, and a "Demo: switch user" control uses the existing persona selector with its five personas.</p>
 
   <h3>P3chat: applicant help chat</h3>
-  <p><span class="chip ga">Built</span> Muse Spark answers only from a set of sources that the server builds. The set holds published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case.</p>
+  <p><span class="chip ga">Built</span> Muse answers only from a set of sources that the server builds. The set holds published effective rules with ACME Code citations, permit-type settings, lifecycle passages, service targets and the applicant's own case.</p>
   <div class="split">
     <div class="card"><h4>Code checks <span class="chip ga">Built</span></h4><ul>
       <li>Every citation exists.</li>
@@ -772,7 +771,7 @@
       <li>No revenue claim.</li>
     </ul></div>
   </div>
-  <p><span class="chip ga">Built</span> Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure.</p>
+  <p><span class="chip ga">Built</span> Muse explains a stored run in a council briefing, and every number in the briefing must equal a computed measure.</p>
   <p><span class="chip ga">Built</span> "Save as a draft rule change" turns a change into draft rule or fee versions. Approval follows the approval policy setting. With the default single setting, one City Administrator can approve and publish them. With the independent setting, a different administrator must approve them. Nothing changes in the published rules until then.</p>
   <p><span class="chip ga">Built</span> Demo scenario: the fence height limit rises from 6 feet to 7 feet.</p>
 </div></section>
@@ -797,15 +796,15 @@
     <div class="card"><h4>Opening</h4><p>Before this week there were ideas and a toy prototype. No app existed. This week we built all of this: the portals, the agents, the shared records, the finance chain, and the city's own website.</p></div>
     <div class="card"><h4>Scene 1: the problem</h4><p>Acme City has one small permit office for the whole town. A homeowner is waiting on a fence permit. A new café can't open yet. And the city council can't see where permits get stuck.</p></div>
     <div class="card"><h4>Scene 2: three groups, one app</h4><p>The app serves three groups. Residents apply, city staff review, and city leaders set the rules.</p></div>
-    <div class="card"><h4>Scene 3: residents</h4><p>Residents can ask the permit assistant anything. Say you want a six foot fence in your front yard. Muse Spark points you to section fourteen, three oh five, and explains that the limit there is four feet. So you apply already knowing the rule.</p></div>
+    <div class="card"><h4>Scene 3: residents</h4><p>Residents can ask the permit assistant anything. Say you want a six foot fence in your front yard. Muse points you to section fourteen, three oh five, and explains that the limit there is four feet. So you apply already knowing the rule.</p></div>
     <div class="card"><h4>Title card</h4><p>Agents do the first pass. People make every decision.</p></div>
-    <div class="card"><h4>Scene 4: city staff</h4><p>For city staff, agents take a first pass. The intake agent sorts each application. Muse Spark fills in the details from the documents. A data steward links the applicant, property, and contractor to their master records. The adjudication agent checks the zoning rules. It recommends a decision and cites the rule. The permit reviewer makes the final decision.</p></div>
+    <div class="card"><h4>Scene 4: city staff</h4><p>For city staff, agents take a first pass. The intake agent sorts each application. Muse fills in the details from the documents. A data steward links the applicant, property, and contractor to their master records. The adjudication agent checks the zoning rules. It recommends a decision and cites the rule. The permit reviewer makes the final decision.</p></div>
     <div class="card"><h4>Scene 5: city leaders</h4><p>For city leaders, the permit map shows where new restaurants and bars are opening. It also shows where the city keeps granting exceptions.</p></div>
     <div class="card"><h4>Title card</h4><p>A what-if run tests a rule change on last year's cases before anyone changes the rule.</p></div>
-    <div class="card"><h4>Scene 5: city leaders</h4><p>The what-if agent tries a seven foot fence limit on a year of sample cases. Muse Spark writes the council briefing as a draft for approval.</p></div>
+    <div class="card"><h4>Scene 5: city leaders</h4><p>The what-if agent tries a seven foot fence limit on a year of sample cases. Muse writes the council briefing as a draft for approval.</p></div>
     <div class="card"><h4>Title card</h4><p>And underneath it all, one record for the whole city.</p></div>
-    <div class="card"><h4>Scene 6: one shared record</h4><p>Every resident, property, contractor and permit has one shared record. Fire, police, sanitation and code enforcement all work from it. And on the city's website, residents can look up any permit in their neighborhood. Muse Wonder wrote the application code. Muse Image drew the permit icons. And Muse Spark runs inside the app: the help desk, the document reader, and the council briefing.</p></div>
-    <div class="card"><h4>Scene 7: close</h4><p>Randy Vollen built this with Muse Spark, Muse Wonder, and Muse Image. The code is linked below.</p></div>
+    <div class="card"><h4>Scene 6: one shared record</h4><p>Every resident, property, contractor and permit has one shared record. Fire, police, sanitation and code enforcement all work from it. And on the city's website, residents can look up any permit in their neighborhood. Muse wrote the application code and drew the permit icons. And Muse runs inside the app: the help desk, the document reader, and the council briefing.</p></div>
+    <div class="card"><h4>Scene 7: close</h4><p>Randy Vollen built this with Muse. The code is linked below.</p></div>
   </div>
 </div></section>
 
@@ -818,12 +817,11 @@
       <tr><td>2</td><td>Provider account</td><td>The credit balance, the expiry, the eligible products and the no cash path are unverified.</td></tr>
       <tr><td>3</td><td>Repository</td><td>Work is committed to a local repository. Remote creation and pushes wait on authentication to the required personal owner.</td></tr>
       <tr><td>4</td><td>Competition</td><td>The final candidate, the event terms, the submission format, the deployment and the submission remain held.</td></tr>
-      <tr><td>5</td><td>Review gates</td><td>The brand and delivery owner gates are open. Both High findings and all Medium findings of the security review are fixed and covered by tests. Remaining Low items are tracked.</td></tr>
-      <tr><td>6</td><td>Architecture status</td><td>AS BUILT for the local candidate. Deployment and any change after this evidence need a new gate.</td></tr>
-      <tr><td>7</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
-      <tr><td>8</td><td>Fonts</td><td>Closed. The app and this page use system font stacks only, with no embedded fonts. The 38 icons are the project's own.</td></tr>
-      <tr><td>9</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
-      <tr><td>10</td><td>Phase 3 and explainer video</td><td>Phase 3 is built and merged to main. The demo video is being recorded from the final build, and nothing is published or submitted without the project owner's go.</td></tr>
+      <tr><td>5</td><td>Architecture status</td><td>AS BUILT for the local candidate. Deployment and any change after this evidence need a new gate.</td></tr>
+      <tr><td>6</td><td>Standard source</td><td>The standalone standard and its templates are absent on this host. The installed kit, this fact sheet and the worked example set the page shape.</td></tr>
+      <tr><td>7</td><td>Fonts</td><td>Closed. The app and this page use system font stacks only, with no embedded fonts. The 38 icons are the project's own.</td></tr>
+      <tr><td>8</td><td>Publication</td><td>The private AVA Library article uses a fixed identifier and updates after accepted phase transitions. Public publication remains held.</td></tr>
+      <tr><td>9</td><td>Phase 3 and explainer video</td><td>Phase 3 is built and merged to main. The demo video is being recorded from the final build, and nothing is published or submitted without the project owner's go.</td></tr>
     </tbody>
   </table></div>
   <p class="mock-note">Sources: the fact sheet, the status record, the alignment note and the decision log, read again on 2026-11-02.</p>

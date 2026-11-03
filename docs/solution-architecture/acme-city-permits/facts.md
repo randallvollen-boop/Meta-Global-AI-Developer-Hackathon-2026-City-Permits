@@ -6,7 +6,7 @@ Date: 2026-10-26, updated 2026-10-29. Audience: internal AVA Library. No client.
 
 Never on the page: credentials, tokens or private email; people's names or contact details; local usernames, machine paths, hostnames, IP addresses or exact hardware; client names/data/logos/scans; City of Westerville logos, portal copies or implied endorsement; real applicant, contractor, parcel, payment or permit records; raw source archives; private account screenshots; deal terms, grant balances, prize claims or submission credentials; unmeasured accuracy, savings, performance or compliance claims; hidden chain-of-thought; Contributor model use; production-readiness or tamper-proof claims.
 
-Use only fictional ACME City records and examples. VollenData text branding only; the page is prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme; no logo of any kind. Every interface mockup says “Example with fictional data.” The internal-review banner is removed by the project owner's decision of 2026-11-02: the banner rule of the build skill does not apply to this page, and the builder must not restore it.
+Use only fictional ACME City records and examples. VollenData text branding only; the page is prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme; no logo of any kind. Every interface mockup says “Example with fictional data.” The internal-review banner is removed by the project owner's decision of 2026-11-02: the banner rule of the build skill does not apply to this page, and the builder must not restore it. The same decision keeps every open-gate and review-status line off the page: no release-gate row, no brand or delivery-owner gate status, no draft or review marker. Those statuses stay in this fact sheet and in `PROJECT_NOTE.md`, which are internal. The only model name the page may carry is Muse: no Muse product variant, no model version and no other model is named, in the copy, in the diagram or in the alt text.
 
 ## Evidence sources
 
@@ -126,7 +126,7 @@ No implementation or verification figure is shown as complete until the correspo
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
 - The repository is on GitHub under the personal owner, private until submission.
 - Final competition candidate, event terms, submission format and submission remain held. The public demonstration is deployed separately in demo mode.
-- Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. The internal-review banner is removed by the project owner's decision of 2026-11-02, and no draft or internal-review marker stays on the page.
+- Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. These statuses are internal. The project owner's decision of 2026-11-02 keeps them off the page: no release-gate row, no gate status and no internal-review or draft marker is written there, and the build skill must not restore one.
 - Architecture status is AS BUILT; the integrated evidence gate passed.
 
 ## Kit provenance
@@ -135,7 +135,7 @@ Build with the installed Solution Architecture Kit and Vollen Linux brand layer.
 
 ## How it was built (2026-10-27)
 
-- Local and other frontier models assisted the Muse models: requirements, plans, implementation slices, integration, the live Muse extraction fix, the gates and review of each merge. The page names no non-Muse product or model (Randall, 2026-10-30).
+- Local and other frontier models assisted the Muse models: requirements, plans, implementation slices, integration, the live Muse extraction fix, the gates and review of each merge. The page names no non-Muse product or model (Randall, 2026-10-30). From 2026-11-02 the rule is tighter: Muse is the only model name the page carries, and no Muse product variant is named either.
 - Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made 14 of the 17 permit-type icons.
 - Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.
 
@@ -299,3 +299,12 @@ Sources: the project owner's two corrections of 2026-11-02, read against the bui
 - The theme toggle sets `data-theme` on the root element and does not depend on `localStorage`. A frame that allows scripts without the same origin has an opaque origin, and `localStorage` raises a `SecurityError` there; the toggle still flips the theme. Persistence is best effort and is not needed for the page to work.
 - The shared brand layer in the build skill, `assets/vds-brand/extra.css` and `assets/vds-brand/snippets.html`, was not changed. The sandbox refused both files. The skill still carries the older footer rule and the older theme script, and every other page copies that script into its own `body.src.html`, so the skill template should take the same script in a later pass.
 - No figure, status value or claim changed in this pass.
+
+## Judge-facing pass, 2026-11-02 (no review status, and Muse as the only model name)
+
+Sources: the project owner's instruction of 2026-11-02, read against the built page.
+
+- The page carries no open-gate or review-status sentence. The "Release gates" row of "What exists now" and the "Review gates" row of "Open decisions and limitations" are gone, and the open-decisions rows are renumbered. The security review section stays: it reports a completed review and its fixed findings, not a gate that is still open.
+- The banner rule of the build skill does not apply to this page, and the same decision covers the gate and review status lines. Neither the banner nor any gate status is restored by a rebuild or by a status refresh. `update_status.py` no longer writes a release-gates row.
+- The only model name on the page is Muse. The Muse product variants, the model versions and the model identifiers are removed from the copy, the diagram, the diagram alt text and the info panels. The diagram's external model services keep one node titled "Muse" and one titled "Icon generation", and the runtime node's subtitle reads "Standard mode, bounded call".
+- The facts in this sheet keep the model names, the gate statuses and the review findings. The sheet is the gate for the build, and it is internal.

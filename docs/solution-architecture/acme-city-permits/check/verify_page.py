@@ -12,6 +12,8 @@ Checks, in order:
   6. Every mockup frame carries the fictional data note.
   7. The theme toggle flips data-theme on the root, and every storage call is guarded.
   8. The footer brand line is right aligned, and the wordmark and tagline are separated.
+  9. The page names no model other than Muse.
+ 10. The page carries no open-gate or review-status line.
 
 Writes a text report to stdout and exits non-zero when a check fails.
 Standard library only.
@@ -74,8 +76,8 @@ ALLOWED_FIGURES = {
     "879": "merged main at ead8790 (phase 3a and city website): pytest passed (repo/var/check-run-main-city/)",
     "5.6": "model name GPT-5.6",
     "5.5": "model name Claude Opus 5.5",
-    "1.3": "model name Muse Spark 1.3",
-    "1.0": "model names Muse Wonder 1.0 and Muse Image 1.0",
+    "1.3": "model version fragment, no longer printed",
+    "1.0": "model version fragment, no longer printed",
     "0": "zero implemented, zero verified, zero records",
     "1": "status values and list positions",
     "01": "identifier fragment for AT, VC and D identifiers",
@@ -168,6 +170,33 @@ EXTRA_LEAKS = [
     Path.home().name, "/home/", "Randall", "GB10", "127.0.0.1", "192.168", "10.0.0",
     "META_API_KEY", "api_key", "apikey", "api key", "password", "secret",
     "mailto:", "gmail", "@vollen", "grant balance", "prize",
+]
+
+# Model names that must never reach the page. Muse is the only model the page may name,
+# by the project owner's decision of 2026-11-02. The Muse product variants and the model
+# identifiers go with it. Relax this list only if the owner says so.
+FORBIDDEN_MODEL_NAMES = [
+    "Muse Spark", "Muse Wonder", "Muse Image",
+    "muse-spark", "muse-wonder", "muse-image",
+    "GPT", "OpenAI", "Claude", "Anthropic", "Opus", "Sonnet", "Haiku",
+    "Gemini", "Llama", "Mistral", "DeepSeek", "Qwen", "Grok",
+    "DALL-E", "Midjourney", "Stable Diffusion", "Kinetograph",
+    "contributor model",
+]
+
+# Open-gate and review-status phrases that must never reach the page, by the same decision.
+# The release gates that passed stay on the page; the status of a gate that is still open does not.
+FORBIDDEN_STATUS_PHRASES = [
+    "brand and delivery",
+    "delivery owner",
+    "delivery-owner",
+    "review gates",
+    "gates are open",
+    "brand approval",
+    "internal draft",
+    "review required",
+    "internal banner",
+    "<td>release gates</td>",
 ]
 
 
@@ -414,6 +443,26 @@ def main():
             fail(lines, "the wordmark and the tagline have no visible gap (gap is %r)" % gap)
             failures.append("brand line gap")
         lines.append("The brand line is right aligned with a %s gap." % gap)
+
+    # 9. no model name other than Muse
+    lines.append("")
+    lines.append("## 9. Model names")
+    # The inline images are base64 and hold random text, so they are removed before the scan.
+    scanned = re.sub(r"data:[^\"'\s)]*", " ", doc)
+    for name in FORBIDDEN_MODEL_NAMES:
+        if re.search(re.escape(name), scanned, re.I):
+            fail(lines, 'the page names "%s"' % name)
+            failures.append(name)
+    lines.append("Scanned the whole output, with the inline images removed, for %d model names." % len(FORBIDDEN_MODEL_NAMES))
+
+    # 10. no open-gate or review-status line
+    lines.append("")
+    lines.append("## 10. Open gates and review status")
+    for phrase in FORBIDDEN_STATUS_PHRASES:
+        if phrase.lower() in doc.lower():
+            fail(lines, 'the page still carries "%s"' % phrase)
+            failures.append(phrase)
+    lines.append("Checked %d open-gate and review-status phrases." % len(FORBIDDEN_STATUS_PHRASES))
 
     lines.append("")
     lines.append("Result: **%s**" % ("FAIL, %d problem(s)" % len(failures) if failures else "PASS"))
