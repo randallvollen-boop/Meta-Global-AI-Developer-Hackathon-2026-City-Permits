@@ -89,14 +89,23 @@
 </header>
 
 <div class="city-wrap">
-  <nav class="city-crumbs" aria-label="Breadcrumb" data-testid="city-breadcrumb">
+  <nav class="city-crumbs crumb-trail" aria-label="Breadcrumb" data-testid="city-breadcrumb">
     <ol>
+      {# A page that brings its own trail (the help pages) uses it.  Every
+         other page of the City website has the trail below.  Either way the
+         trail is one line and the last crumb truncates. #}
+      {% if breadcrumb %}
+      {% for item in breadcrumb %}
+      <li>{% if item.href %}<a href="{{ item.href }}">{{ item.label }}</a>{% else %}<span aria-current="page">{{ item.label }}</span>{% endif %}</li>
+      {% endfor %}
+      {% else %}
       <li><a href="/city/">Home</a></li>
       {% if active == 'permits' %}
       <li>{% if on_chooser or title in ('Permits', 'Permits and applications') %}<span aria-current="page">{{ 'Permits' if title == 'Permits' else ('Start an application' if on_chooser else title) }}</span>{% else %}<a href="{{ permits_crumb|default('/apply') }}">Permits</a>{% endif %}</li>
       {% if not on_chooser and title not in ('Permits', 'Permits and applications') %}<li><span aria-current="page">{{ title }}</span></li>{% endif %}
       {% elif active != 'home' %}
       <li><span aria-current="page">{{ title }}</span></li>
+      {% endif %}
       {% endif %}
     </ol>
   </nav>

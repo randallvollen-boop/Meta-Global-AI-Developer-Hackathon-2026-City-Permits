@@ -302,6 +302,9 @@ def _profile_page(
         may_read_source=_may_read_source(session, resolved),
         help_screen="masters" if nav_screen == "masters" else "applicants",
         quiet_feedback=True,
+        # The page carries its own crumb (the way back to the list), so the
+        # frame does not add a second trail above it.
+        content_crumb=True,
     )
     return render(request, "record_profile.html", context)
 
@@ -446,6 +449,9 @@ def ui_steward_batch(
         title="Accept the high-confidence recommendations",
         batch=batch,
         guide=_guide("queue"),
+        # The page carries its own crumb (the way back to the queue), so the
+        # frame does not add a second trail above it.
+        content_crumb=True,
     )
     return render(request, "steward_batch.html", context)
 
@@ -513,6 +519,9 @@ def ui_steward_case(
         back_href=safe_next(back, "/steward"),
         help_screen="steward",
         quiet_feedback=True,
+        # The page carries its own crumb (the way back to the queue), so the
+        # frame does not add a second trail above it.
+        content_crumb=True,
     )
     return render(request, "steward_case.html", context)
 
@@ -571,6 +580,9 @@ def ui_steward_application(
         application=application,
         help_screen="steward",
         quiet_feedback=True,
+        # The page carries its own crumb (the way back to the queue), so the
+        # frame does not add a second trail above it.
+        content_crumb=True,
     )
     return render(request, "steward_application.html", context)
 
@@ -747,6 +759,9 @@ def ui_source_record(
         record=record,
         help_screen="source_records",
         quiet_feedback=True,
+        # The page carries its own crumb (the way back to the list), so the
+        # frame does not add a second trail above it.
+        content_crumb=True,
     )
     return render(request, "source_record.html", context)
 

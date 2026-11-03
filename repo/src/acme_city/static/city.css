@@ -48,9 +48,9 @@ body.city { font: 16px/1.55 var(--f-body); height: auto; min-height: 100%; displ
 .city-nav a:hover { background: rgba(255,255,255,.08); }
 .city-nav a[aria-current="page"] { border-bottom-color: var(--city-gold); background: rgba(255,255,255,.1); }
 
-.city-crumbs { padding: 12px 0 4px; font-size: .88rem; color: var(--fg-2); }
-.city-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
-.city-crumbs li + li::before { content: "\203A"; margin-right: 6px; color: var(--fg-3); }
+/* The breadcrumb of the City website.  The trail itself is the shared one of
+   ui-patterns.css; the frame writes its own separator. */
+.city-crumbs { padding: 12px 0 4px; font-size: .88rem; color: var(--fg-2); min-width: 0; --crumb-sep: "\203A"; }
 
 /* app.css gives main a flex column, 22px padding and a 1320px cap. */
 .city .city-main { flex: 1 0 auto; max-width: 1120px; padding: 8px 16px 48px; gap: 18px; }

@@ -33,7 +33,7 @@ from sqlalchemy.orm import Session
 from acme_city.auth.context import ActorContext
 from acme_city.auth.router import get_session
 from acme_city.help_docs import content, markdown
-from acme_city.ui import patterns
+from acme_city.ui import patterns, view_models
 from acme_city.ui.router import error_response, page_context, render, ui_actor
 from acme_city.ui.view_models import actor_label
 
@@ -47,6 +47,36 @@ SANDBOX_CSP = (
     "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; "
     "font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
 )
+
+
+def _trail(
+    session: Session,
+    actor: ActorContext | None,
+    *,
+    staff: bool,
+    title: str,
+    view: str,
+) -> list[dict[str, str]]:
+    """Return the breadcrumb of a help page.
+
+    It is one trail: the home of the visitor, the help hub and the page.  The
+    home is the City website for the public and the Applicant and the own home
+    of a staff persona, the same one the brand of the frame points at.  The
+    hub is the last crumb of its own trail, so it does not link to itself.
+    """
+    home = "/city/"
+    if staff and actor is not None:
+        home = view_models.home_for(session, actor)["href"]
+    if view == "hub":
+        return [
+            {"label": "Home", "href": home},
+            {"label": "Help and documentation", "href": ""},
+        ]
+    return [
+        {"label": "Home", "href": home},
+        {"label": "Help and documentation", "href": "/help"},
+        {"label": title, "href": ""},
+    ]
 
 
 def _context(
@@ -73,6 +103,9 @@ def _context(
     base["help_persona_id"] = actor.actor_id if actor is not None else ""
     base["help_persona"] = persona
     base["help_hub"] = content.hub()
+    base["breadcrumb"] = _trail(
+        session, actor, staff=staff, title=title, view=str(extra.get("help_view", ""))
+    )
     return {**base, **extra}
 
 

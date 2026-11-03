@@ -204,8 +204,12 @@ button { font: inherit; color: inherit; }
   z-index: var(--z-persona-menu);
   overflow: visible;
 }
-.crumbs { display: flex; gap: 6px; align-items: center; font-size: .82rem; color: var(--fg-3); min-width: 0; }
-.crumbs b { color: var(--fg); font-weight: 600; }
+/* The breadcrumb of the staff frame is one line.  A long last crumb truncates
+   with an ellipsis instead of wrapping, and the trail never pushes the page
+   wider.  The trail itself is the shared one of ui-patterns.css; the frame
+   writes its own separator. */
+.crumbs { display: flex; gap: 6px; align-items: center; font-size: .82rem; color: var(--fg-3); flex: 1 1 0; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; --crumb-sep: "/"; }
+.crumbs b { color: var(--fg); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; }
 .seg {
   display: inline-flex; background: var(--surface-2); border: 1px solid var(--line);
@@ -1054,7 +1058,9 @@ tr.is-current th, tr.is-subject th { background: var(--accent-soft); }
 @media (max-width: 720px) { .ops-figures { grid-template-columns: repeat(1, minmax(0,1fr)); } }
 /* ------------------------------------------------ Data Steward screens */
 .nowrap { white-space: nowrap; }
-.crumb { margin: 0 0 6px; font-size: .84rem; }
+/* The crumb a page carries in its content: one line, truncated, never wider
+   than the page. */
+.crumb { margin: 0 0 6px; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .source-summary { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 0 12px; font-size: .84rem; color: var(--fg-2); }
 .source-summary b { color: var(--fg); font-weight: 600; margin-right: 4px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }

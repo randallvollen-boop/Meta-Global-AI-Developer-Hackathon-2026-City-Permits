@@ -198,7 +198,6 @@ html.ui-js .ui-info-fallback { display: none; }
 .city-help-link { color: #fff; font-weight: 600; font-size: .92rem; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 @media (max-width: 760px) { .city-help-more { display: none; } .city-wordmark b { white-space: nowrap; } .city-header-tools { flex-shrink: 0; } }
 .help-page { max-width: 62rem; padding-bottom: 2rem; }
-.help-crumbs { margin: 0 0 .5rem; font-size: .88rem; color: var(--fg-2); }
 .help-cards { list-style: none; margin: 1rem 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 14px; }
 .help-card { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
 .help-card h2 { margin: 0 0 .4rem; font-size: 1.05rem; }
@@ -219,3 +218,14 @@ html.ui-js .ui-info-fallback { display: none; }
 .help-doc th, .help-doc td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; }
 .help-doc blockquote { margin: .8rem 0; padding: .1rem 1rem; border-left: 4px solid var(--line); color: var(--fg-2); }
 @media (max-width: 640px) { .city-header-tools { gap: 8px; } .top-help-link { padding: 3px 8px; } }
+
+/* ---------------------------------------------------- the breadcrumb trail */
+/* The breadcrumb of a page, in both frames.  It is one row of crumbs: the
+   crumbs do not wrap, the last crumb truncates with an ellipsis instead of
+   wrapping to a second row, and the trail never pushes the page wider.  At
+   the width of a phone it truncates too.  The separator is the one of the
+   frame: the City website writes "›", the staff application "/". */
+.crumb-trail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: nowrap; align-items: baseline; gap: 4px; min-width: 0; overflow: hidden; }
+.crumb-trail li { white-space: nowrap; }
+.crumb-trail li:last-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.crumb-trail li + li::before { content: var(--crumb-sep, "\203A"); margin-right: 6px; color: var(--fg-3); }

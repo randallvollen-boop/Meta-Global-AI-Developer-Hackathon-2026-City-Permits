@@ -3,9 +3,9 @@
    config/help_content.json; documents come from the repository. #}
 {% extends help_layout %}
 
-{% macro crumbs(label) -%}
-<p class="help-crumbs" data-testid="help-crumbs"><a href="/help">Help and documentation</a>{% if label %} <span aria-hidden="true">/</span> <span>{{ label }}</span>{% endif %}</p>
-{%- endmacro %}
+{# The breadcrumb of a help page is the one of the frame: Home, Help and
+   documentation and the page itself.  It is set by the route, so a page never
+   carries a second trail of its own. #}
 
 {% block content %}
 <div class="help-page{% if help_layout != 'base.html' %} city-wrap{% endif %}" data-testid="help-page" data-help-view="{{ help_view }}">
@@ -20,7 +20,6 @@
   <p class="muted">Looking for help with one screen? Press the ? button in its page header.{% if help_layout != 'base.html' %} To ask about your own permit, use <a href="/apply/help/panel">Ask about your permit</a>.{% endif %}</p>
 
 {% elif help_view == 'tutorial' %}
-  {{ crumbs('Tutorial') }}
   <div class="page-head"><div><h1>{{ tutorial.title }}</h1><p class="sub">{{ tutorial.intro }}</p></div></div>
   <section class="panel help-notes" aria-label="Before you start" data-testid="tutorial-notes">
     <h2>Before you start</h2>
@@ -50,7 +49,6 @@
   {% endfor %}
 
 {% elif help_view == 'howto_index' %}
-  {{ crumbs('How-to guides') }}
   <div class="page-head"><div><h1>How-to guides</h1><p class="sub">{{ howto_intro }}</p></div></div>
   <ul class="help-cards" data-testid="howto-list">
     {% for g in guides %}
@@ -59,7 +57,6 @@
   </ul>
 
 {% elif help_view == 'howto' %}
-  {{ crumbs('How-to guides') }}
   <div class="page-head"><div><h1>{{ guide.title }}</h1><p class="sub">{{ guide.summary }}</p></div></div>
   <p class="help-who" data-testid="howto-who"><strong>Who can do this:</strong> {{ guide.who }}. Pick the person to act as them from Demo controls.</p>
   <p><a class="btn primary" href="{{ guide.screen_href }}" data-testid="howto-go">Go to {{ guide.screen_label }}</a></p>
@@ -70,14 +67,12 @@
   <p><a href="/help/how-to">All how-to guides</a></p>
 
 {% elif help_view == 'glossary' %}
-  {{ crumbs('Glossary') }}
   <div class="page-head"><div><h1>Glossary</h1><p class="sub">The same definitions the information buttons show on the screens.</p></div></div>
   <dl class="help-glossary" data-testid="glossary">
     {% for t in terms %}<div id="term-{{ t.key }}"><dt>{{ t.label }}</dt><dd>{{ t.text }}</dd></div>{% endfor %}
   </dl>
 
 {% elif help_view == 'technical' %}
-  {{ crumbs('Technical documentation') }}
   <div class="page-head"><div><h1>{{ technical.title }}</h1><p class="sub">{{ technical.intro }}</p></div></div>
   <ul class="help-cards" data-testid="technical-list">
     {% for d in documents %}
@@ -86,7 +81,6 @@
   </ul>
 
 {% elif help_view == 'document' %}
-  {{ crumbs(document.title) }}
   <div class="page-head"><div><h1>{{ document.title }}</h1><p class="sub">{{ document.summary }} Read only.</p></div></div>
   {% if not document_available %}
   <p class="panel" role="status" data-testid="document-missing">{{ document_message }}</p>
@@ -100,7 +94,6 @@
   <p><a href="/help/technical">All technical documents</a></p>
 
 {% elif help_view == 'missing' %}
-  {{ crumbs('') }}
   <div class="page-head"><div><h1>Not found</h1><p class="sub" data-testid="help-missing">{{ missing }}</p></div></div>
   <p><a href="{{ back }}">Go back</a></p>
 {% endif %}
