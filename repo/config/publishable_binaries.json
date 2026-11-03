@@ -79,7 +79,7 @@
     },
     {
       "directory": "src/acme_city/static/video",
-      "source": "DemoVideo final (picture lock 2026-11-02, Randall) web encode of the persona tour, 720p, Kokoro narration, captions burned in; the poster is its title slide. Not pinned by hash because drafts are re-encoded; any MP4 or JPEG here passes on its header and the size limit",
+      "source": "DemoVideo final (picture lock 2026-11-02, Randall) web encode of the persona tour, 720p, Kokoro narration with a quiet instrumental bed, captions burned in; the poster is its title slide. Not pinned by hash because drafts are re-encoded; any MP4 or JPEG here passes on its header and the size limit",
       "added_in": [
         "426bc5a"
       ],
