@@ -142,5 +142,3 @@ Open http://127.0.0.1:8266. The server binds only to the local computer. The pre
 ## License
 
 All rights reserved. Copyright 2026 Randall Vollen and VollenData. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-
-The workspace map for the build team is in `docs/process/WORKSPACE.md`.

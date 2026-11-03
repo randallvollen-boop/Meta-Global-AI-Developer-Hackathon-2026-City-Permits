@@ -232,7 +232,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 
 - Focused operator/navigation checks: 63 passed in 22.44s. Reset, session and migration checks: 32 passed in 10.85s.
 - Fixture guard, outcome snapshot and acceptance suite: 106 passed in 20.60s. Chromium operator navigation at 390px: 1 passed in 7.43s.
-- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2118 passed in 569.69s (9:29).
+- Final full suite: `PYTHONPATH=src .venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2118 passed in 569.69s (9:29).
 
 ## 2026-10-29 — Agent Operator lane review 2 evidence
 
@@ -244,7 +244,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `tests/regression` and `tests/acceptance` → 111 passed in 22.41s: the fixture hash guard, the outcome snapshot and AT01 to AT20 are unchanged.
   - `tests/unit`, `tests/integration`, `tests/ui`, `tests/supplementary` and `tests/security` with six workers → exit 0.
   - `scripts/check_owned_hunks.py --lane agent-operator --base 9a37789 --head HEAD` → "every hunk is inside the lane's own functions".
-- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2133 passed in 622.57s (10:22). The requirement coverage check reports 57/57 requirements mapped and 2133 collected nodes.
+- Final full suite: `PYTHONPATH=src .venv/bin/python -m pytest -q -p no:cacheprovider -n 6` → 2133 passed in 622.57s (10:22). The requirement coverage check reports 57/57 requirements mapped and 2133 collected nodes.
 - The City worker bundle is proven to be the operator's bundle: the managed grants of the reviewer and the seeded grants of the operator agree on the domain of every action, the reviewer opens `/agents` and `/agents/runs` while the option is on and is refused with 403 while it is off, and the reviewer is refused on the agent screen itself while the option is off.
 - The refusal of the saving action is proven to be a refusal and not a side effect of the state: the post carries a valid token and is answered 403 for the Data Steward, the Permit Reviewer and the Agent Operator.
 - No live provider call was made, and no rule text, replay fixture, acceptance test, persona or grant of the original four personas changed.
@@ -257,7 +257,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `tests/unit/test_stylesheet_scopes.py`, `tests/integration/test_agents_and_administration.py`, `tests/integration/test_agent_operator_ui.py`, `tests/integration/test_agent_processing_policy.py` and `tests/integration/test_agent_role_permissions.py` → 39 passed.
   - `scripts/check_owned_hunks.py --lane agent-operator --base main --head HEAD` → "every hunk is inside the lane's own functions".
   - `scripts/check_requirement_coverage.py` → 57/57 requirements mapped, 63 requirement identifiers referenced.
-- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` → 2141 passed in 622.64s (10:22).
+- Final full suite: `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` → 2141 passed in 622.64s (10:22).
 - No live provider call was made, and no rule text, replay fixture, acceptance test, persona, grant or screen changed.
 ## Permit life cycle and the AVA republish (2026-10-29)
 
@@ -276,7 +276,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `tests/unit`, `tests/integration`, `tests/regression` and `tests/api` with six workers -> 1696 passed.
   - The fixture hash guard and the outcome snapshot -> 10 passed.
   - `scripts/check_owned_hunks.py --lane steward-queue-guide --base main --head HEAD` -> "every hunk is inside the lane's own functions"; `--actor-only` -> "only actor-id literals change".
-- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2333 passed in 711.69s (11:51).
+- Final full suite: `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2333 passed in 711.69s (11:51).
 - No live provider call was made. The guide answered from saved words in hosted mode with a credential set, and the tripwire recorded no call.
 
 ## 2026-10-29 - Steward queue and guide lane, review 4 evidence
@@ -288,7 +288,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `tests/regression/test_admin_early_resolution.py`, `tests/regression/test_steward_selector_contract.py`, `tests/integration/test_help_docs_steward.py`, `tests/integration/test_help_docs.py`, `tests/integration/test_steward_guide_offline.py`, `tests/integration/test_steward_ui.py`, `tests/integration/test_p3b_queues.py`, `tests/unit/test_steward_guide.py`, `tests/unit/test_steward_queue_views.py`, `tests/unit/test_stylesheet_scopes.py` and `tests/api/test_steward_workspace.py` -> 201 passed.
 - The label test of the steward help was checked against a wrong element on purpose: the check failed, so it reads the element and not the page.
 - No live provider call was made. No fixture, rule text, replay fixture, acceptance test, persona or grant changed.
-- Final full suite: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2341 passed in 725.99s (12:05).
+- Final full suite: `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2341 passed in 725.99s (12:05).
 
 ## 2026-10-30 - Steward autolink lane evidence
 
@@ -305,7 +305,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The demo preparation was run twice: the Cedarline mode still holds three proposals and no applied link, and the automation mode holds the three proposals and one applied link that the service applied.
 - `scripts/check_owned_hunks.py --lane steward-autolink --base main --head HEAD` -> 77 violations, every one of them in `ui/router.py` in `_agent_run`, which the Agent Operator lane owns and which arrived with the merged operator lane. The lane changed no line of that file.
 - No live provider call was made. The worker compares with the built in deterministic logic of the City. No fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
-- Final full suite on the finished tree: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2718 passed in 830.88s (13:50). The suite on the merged operator lane, before this lane's work, passed 2685 in 811.70s (13:31), so the merge was green and no settling commit was needed.
+- Final full suite on the finished tree: `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2718 passed in 830.88s (13:50). The suite on the merged operator lane, before this lane's work, passed 2685 in 811.70s (13:31), so the merge was green and no settling commit was needed.
 
 ## 2026-10-30 - Steward autolink lane, review 4 evidence
 
@@ -318,7 +318,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
   - `tests/unit/test_judge_walkthrough_doc.py` -> 1 passed: the walkthrough document still lists every step of the app in order.
 - Every new test was run against the code without its fix, and every one of them failed: the per-job savepoint, the take back of the proposal, the required version of the link, the family guard, the suggested parcel and the refused mode. The files were restored after each check.
 - No live provider call was made. The worker compares with the built in deterministic logic of the City. No fixture, rule text, replay fixture, acceptance test, persona or grant changed, and no new binary was added.
-- Final full suite on the finished tree: `PYTHONPATH=src /home/vollenr/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/repo/.venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2726 passed in 815.58s (13:35). The tree of the lane before this work passed 2718, and the eight tests of this pass are the eight new ones.
+- Final full suite on the finished tree: `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` -> 2726 passed in 815.58s (13:35). The tree of the lane before this work passed 2718, and the eight tests of this pass are the eight new ones.
 
 ## 2026-11-02 — Submit anyway held-form evidence
 
