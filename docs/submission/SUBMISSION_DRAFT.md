@@ -1,9 +1,5 @@
 # ACME City Permits
 
-## Draft status
-
-This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas.
-
 ## Track
 
 Startup track: For teams and founders building a real product.
@@ -13,8 +9,8 @@ The entry is framed around production behaviour: rate limits, caps, audit histor
 
 ## Entry requirements
 
-* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits [REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]
-* Accessible three-minute demo video: [link to be added]
+* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits. The repository is private today and is made public at submission.
+* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards.
 * Live product: https://acme-city-permits.onrender.com
 
 ## Summary
@@ -25,7 +21,7 @@ ACME City Permits is a fictional municipal permitting application. It follows a 
 
 ### Applicant
 
-An applicant can choose from seventeen fictional permit types, locate a property, save a draft, submit an application, replace documents, answer a request for information, track progress, read messages from the City, and download a submission or issued permit. "Check my application" runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". The help chat on the page answers from the published ACME rules and the applicant's own case. It cites its sources and says when it cannot answer.
+An applicant can choose from seventeen fictional permit types, locate a property, save a draft, submit an application, replace documents, answer a request for information, track progress, read messages from the City, and download a submission or issued permit. "Check my application" runs the reviewer's rules on the draft before it is sent. The button carries a Muse badge, and Muse explains the result in plain words when it is live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call. The help chat on the page answers from the published ACME rules and the applicant's own case. It cites its sources and says when it cannot answer.
 
 ### Agent operator
 
@@ -33,7 +29,7 @@ The Agent Operator wakes and runs the intake and adjudication agents, and wakes 
 
 ### Data steward
 
-A data steward works the "Data issues" workspace, which has a guide, and the "Early resolution" screen. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect "Master records", "Source records", and the change activity on the "Activity" screen. These actions do not approve a permit.
+A data steward works the "Data issues" workspace, which has a guide, and the "Early resolution" screen. The steward reviews possible duplicate records, approves identity and parcel links, and accepts or corrects values proposed from documents. The steward can also inspect "Master records", "Source records", and the change activity on the "Activity" screen. These actions do not approve a permit. The steward's work is Data follow-up: it never holds a case and it never refuses a decision.
 
 Once the Agent Operator wakes it, the steward assistant works the "Data issues" queue when the steward asks, up to 20 tasks per press of "Prepare recommendations". The Agent Operator may press the same "Prepare recommendations" on the "Steward assistant" screen; the Data Steward still decides every task. For each task it gathers the evidence and proposes a decision with a High, Review, or Held level and a one line reason. The steward reads the evidence and presses "Accept recommendation", which is refused if the record changed since, or decides the task another way. A held recommendation can never be accepted. "Accept all high-confidence" shows the exact list before anything is accepted, and skips and names any item that changed. An agreement figure shows how many recommendations the steward accepted unchanged in the last 7 days. "Explain with Muse" rewrites the reason in plain words without changing the decision.
 
@@ -51,13 +47,13 @@ Muse is the model inside the application. Muse proposes. People decide.
 
 Muse can propose structured values from received document text and can produce bounded record match proposals. The application validates the response against a strict schema and records its source, usage, latency, and validation result. A data steward decides whether a proposed value or link becomes part of the governed record.
 
-The applicant help and City policy paths also have bounded Muse support. Muse can draft a cited answer, explain a policy simulation, write a briefing from typed facts, or propose a policy change. When the applicant presses "Check my application", Muse explains the result in plain words when live. The server checks sources, claims, figures, rule citations, and allowed change types. A failed answer is refused. A policy proposal is not saved until an authorized person chooses to save it, and it still follows the normal draft and approval process. The administrator writes the briefing with "Write the briefing with Muse".
+The applicant help and City policy paths also have bounded Muse support. Muse can draft a cited answer, explain a policy simulation, write a briefing from typed facts, or propose a policy change. When the applicant presses "Check my application", the button carries a Muse badge and Muse explains the result in plain words when it is live; "Submit application" makes no Muse call. The server checks sources, claims, figures, rule citations, and allowed change types. A failed answer is refused. A policy proposal is not saved until an authorized person chooses to save it, and it still follows the normal draft and approval process. The administrator writes the briefing with "Write the briefing with Muse".
 
 The steward assistant follows the same rule. It prepares its proposals on the "Data issues" screen, where the steward presses "Prepare recommendations" and then "Accept recommendation" or "Accept all high-confidence", and "Explain with Muse" rewrites a reason in plain words without changing the decision.
 
 Muse also generates the fictional permit type icons through a governed administrator action with daily limits and recorded provenance.
 
-Live Muse is on for the hosted demo, with an allowance of 100 live calls a day. When that allowance is used up, the help chat answers with the published rule text and says so on screen.
+Live Muse is on for the hosted demo. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
 
 ## Future feature: assistants through MCP
 
@@ -77,10 +73,10 @@ The plan is written up in [docs/operations/MCP_PLAN.md](../../docs/operations/MC
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
 * Live Muse calls have a daily cap, and icon generation has its own daily cap.
 * Every governed change is recorded in the audit history.
-* The hosted data is fictional. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
+* The hosted data is fictional. The nightly reset rebuilds it, and every deploy rebuilds it.
 * Automatic linking of records is built and paused on the hosted demo.
 * The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case.
-* "Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+* "Check my application" runs the reviewer's rules on the draft before it is sent. It carries a Muse badge and may ask Muse for feedback when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
 
 ## Architecture
 
@@ -106,11 +102,11 @@ The git history starts on October 27 with a baseline commit of the overnight bui
 * "Check my application" on the applicant form, with the "Must fix" hold and "Submit anyway".
 * A production mode that is separate from demo mode, rate limits, and security headers.
 
-The build window is not settled. The participant guide says October 27 to November 4. The event page says October 26. [REVIEW: Randall. Confirm the window before submission.]
+The participant guide says the build window runs October 27 to November 4. The event page says October 26.
 
 ## Verification
 
-* The full automated suite collects 3,414 tests, and all of them pass. It covers the acceptance checks, the security checks, the browser checks, and the unit tests. The count comes from a full run on November 1, 2026.
+* The full automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 * 10 gates run in `scripts/run_all_checks.py`.
 
@@ -118,9 +114,11 @@ The build window is not settled. The participant guide says October 27 to Novemb
 
 * There are 17 permit types and six simulated subscriber departments. They are listed in `repo/config/rules_and_fees.json` and `repo/config/property_subscribers.json`.
 
+* 85 permissions are listed in `repo/config/permissions.json`. Every grant is explicit, and a role label never authorizes an action.
+
 ## License
 
-All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository will be public at submission, for evaluation and demonstration only. [REVIEW: Randall. Confirm the repository licence wording before submission.] See [LICENSE](../../LICENSE) and [NOTICE](../../NOTICE).
+All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository will be public at submission, for evaluation and demonstration only. See [LICENSE](../../LICENSE) and [NOTICE](../../NOTICE).
 
 ## What the demonstration shows now
 
@@ -131,15 +129,15 @@ All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repositor
 * The "Sample data" tab in Administration, which creates the fictional cases the agents work on.
 * Screens that stay slim, with the secondary detail behind "More details", and a light theme by default.
 * The walkthrough has four paths, each with a guided tour and "Auto-play": "Apply as a resident", "Get the café open", "Run the city", and "Before you start". "Start fresh" gives each judge a fresh copy of the café case.
-* "Check my application" on the applicant form. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+* "Check my application" on the applicant form. The button carries a Muse badge, and Muse explains the result in plain words when it is live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
 
 ## How to try it
 
-1. Open https://acme-city-permits.onrender.com. The landing page lists the five personas first, with the "Watch the 3-minute tour" button under them. The data resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
+1. Open https://acme-city-permits.onrender.com. The landing page lists the five personas first, with the "Watch the 3-minute tour" button under them. The data is fictional, the nightly reset rebuilds it, and every deploy rebuilds it.
 
 2. On every page with a persona signed in, the persona chip in the top right opens the "Demo controls" menu. The menu holds the five personas and the "Take the tour" button. All five are available.
 
-3. Open the walkthrough. On "Apply as a resident", press "Check my application". Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+3. Open the walkthrough. On "Apply as a resident", press "Check my application". The button carries a Muse badge, and Muse explains the result in plain words when it is live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
 
 4. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour. The Data Steward links the café owner's three records, the agent routes the case, the Permit Reviewer approves, the City Administrator matches the fee paid from the old account and reconciles, the reviewer issues, and the permit appears on the public record.
 

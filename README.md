@@ -3,8 +3,8 @@
 ACME City Permits is a fictional municipal permitting application. It follows one permit from the applicant's form to a recorded decision and an issued permit. Muse proposes. People decide.
 
 Live demo: https://acme-city-permits.onrender.com
-Video: [link to be added]
-Repository visibility: [REVIEW: Randall. The repository is private today. Make it public before submission, then delete this line.]
+Video: the three-minute tour video is on the landing page of the live demo, under the persona cards.
+Repository visibility: private. It must be public at submission.
 
 Every person, business, parcel, permit, fee, rule, and document in this application is fictional. The application issues no real permit and sends nothing to a real municipality.
 
@@ -19,7 +19,7 @@ Before the event, only the requirements package existed. It arrived on October 2
 
 The git history starts on October 27, 2026. Its first commit is a baseline of the overnight build of October 26. Everything the demo shows beyond that baseline was built during the event.
 
-The build window is not settled. The participant guide says October 27 to November 4. The event page says October 26. [REVIEW: Randall. Confirm the window before submission.]
+The participant guide says the build window runs October 27 to November 4. The event page says October 26.
 
 ## Impact
 
@@ -29,7 +29,7 @@ Who it helps:
 
 * **Applicants** apply, save a draft, press "Check my application", upload documents, answer a request for information, track the case, and read the messages from the City.
 * **Agent operators** wake the intake and adjudication agents and run them over the waiting cases.
-* **Data stewards** clear the findings that block a case and keep the master records consistent.
+* **Data stewards** settle identity and property records and keep the master records consistent. Their work is Data follow-up: it never holds a case and it never refuses a decision. Missing applicant information still goes back to the applicant, and the payer link and the fee still block issuing.
 * **Permit reviewers** check the facts against the City rules and record the decision.
 * **City administrators** set the rules, fees, and processing policy, and read the operations and audit screens.
 
@@ -44,12 +44,12 @@ Muse is the model inside the application.
 * It writes a cited answer for the applicant's help chat.
 * It explains a policy scenario and writes a policy briefing.
 * It explains a steward recommendation in plain words.
-* It explains the "Check my application" result in plain words when live.
+* It explains the "Check my application" result in plain words when live. That button carries a Muse badge and may ask Muse for feedback. "Submit application" makes no Muse call at all.
 * It generates the fictional permit type icons through a governed administrator action.
 
 Every proposal is checked against a strict schema, recorded with its source and its usage, and decided by a named person. The model never approves a permit, never sets a fee, and never issues a permit.
 
-Live Muse is on for the hosted demonstration, with an allowance of 100 live calls a day. When that allowance is used up, the help chat answers with the published rule text and says so on screen.
+Live Muse is on for the hosted demonstration. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
 
 ## Demo
 
@@ -65,12 +65,15 @@ What the demonstration has now:
 * One contact page, "Contact the City", with the departments and a way to ask a person.
 * The agents' "Incoming" list, the step graph of each run, and a "Replay run" button behind "More details" that walks a recorded run again.
 * The "Sample data" tab in Administration, which creates the fictional cases the agents work on.
+* The guided tour of "Apply as a resident" fills the resident's form, so "Check my application" runs against a finished application.
+* A recovery page for a judge's copy of the café case that the nightly reset removed. It says the copy is gone and offers a fresh one.
+* The real clock. No scenario clock is set on the hosted demo, so the current date on screen is today's date.
 * Screens that stay slim. The secondary detail sits behind "More details".
 * A light theme by default, and a dark mode in the "Demo controls" menu.
 
 How to try it:
 
-1. Open the walkthrough. On "Apply as a resident", press "Check my application". That runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+1. Open the walkthrough. On "Apply as a resident", press "Check my application". That runs the reviewer's rules on the draft before it is sent. The button carries a Muse badge, and Muse explains the result in plain words when it is live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" itself makes no Muse call.
 2. Press "Start fresh" on "Get the café open", then start that path or press "Auto-play" on its guided tour.
 3. As Data Steward, open "Data issues", press "Prepare recommendations", and press "Accept recommendation" on each task that carries a "High" pill.
 4. As Agent Operator, press "Wake agent", then press "Process one" beside the case of the café.
@@ -78,7 +81,7 @@ How to try it:
 6. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
 7. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
 
-The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]
+The data is fictional and is meant to be disposable. The nightly reset rebuilds it, and every deploy rebuilds it.
 
 Automatic processing of waiting cases is built and off on the hosted demo. Automatic linking of records is built and paused on the hosted demo.
 
@@ -107,7 +110,7 @@ Production behaviour:
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries by itself, labels live and recorded results, and cannot approve, price, or issue a permit.
 * Live Muse calls have a daily cap, and icon generation has its own daily cap.
 * The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case, so other visitors’ changes don’t get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
-* "Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues".
+* "Check my application" runs the reviewer's rules on the draft before it is sent. It carries a Muse badge and may ask Muse for feedback when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
 
 Architecture:
 
@@ -121,8 +124,9 @@ Checks and tests:
 * 57 requirements, listed in `repo/docs/REQUIREMENTS_OUTLINE.md`.
 * 39 checks: AT01 to AT20, VC01 to VC08, and D01 to D11, listed in `repo/config/check_inventory.json`.
 * 6 simulated subscriber departments, listed in `repo/config/property_subscribers.json`.
+* 85 permissions, listed in `repo/config/permissions.json`.
 * 10 local gates, run by `repo/scripts/run_all_checks.py`.
-* The automated suite collects 3,414 tests, and all of them pass. It covers the acceptance checks, the security checks, the browser checks, and the unit tests. The count comes from a full run on November 1, 2026.
+* The automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 ## How to run it locally
 

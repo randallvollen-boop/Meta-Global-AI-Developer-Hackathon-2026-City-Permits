@@ -79,6 +79,11 @@
             "href": "/apply/deck_fence"
           },
           {
+            "do": "Click \"Check my application\".",
+            "see": "The findings are grouped under \"Must fix\", \"Should check\" and \"Looks good\", and each one names the published rule behind it. The button carries a Muse badge, and Muse explains the result in plain words when it is live. A \"Must fix\" holds \"Submit application\" until the applicant presses \"Submit anyway\" and writes a reason.",
+            "href": "/apply/deck_fence"
+          },
+          {
             "do": "Click \"Submit application\" again.",
             "see": "A receipt headed \"Application received\" shows your reference number and the status \"Awaiting intake agent\".",
             "href": "/apply/track"
@@ -258,7 +263,7 @@
           },
           {
             "do": "Click \"Read briefing\". When live Muse is on, click \"Write the briefing with Muse\". When it is off, click \"Try recorded Muse briefing\".",
-            "see": "When the call is live the label reads \"Muse briefing (live)\". When it is a recorded answer the label reads \"Recorded Muse briefing\". The sections are \"Summary\", \"Key effects\", and \"Risks and trade-offs\". The hosted demonstration allows 100 live Muse calls a day. When that allowance is used up, the recorded answer is used.",
+            "see": "When the call is live the label reads \"Muse briefing (live)\". When it is a recorded answer the label reads \"Recorded Muse briefing\". The sections are \"Summary\", \"Key effects\", and \"Risks and trade-offs\". The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting. When the allowance is used up, the recorded answer is used.",
             "href": "/policy/scenarios"
           },
           {
@@ -296,6 +301,7 @@
           "Fill in the missing items. Fields marked * are required, and optional fields say \"(optional)\".",
           "Add the files with \"Add file\": a site sketch and a material specification.",
           "Tick \"I will not build over the property line\" and the certification.",
+          "Press \"Check my application\". The button carries a Muse badge, and Muse explains the result in plain words when it is live. The findings are grouped under \"Must fix\", \"Should check\" and \"Looks good\". A \"Must fix\" holds \"Submit application\" until you press \"Submit anyway\" and write why you are submitting now.",
           "Press \"Submit application\". A receipt headed \"Application received\" shows your reference number."
         ],
         "result": "The status is \"Awaiting intake agent\". Keep the reference number to find the application later."
@@ -412,7 +418,7 @@
           "Click \"Write the briefing with Muse\". The source label shows whether the text is a recorded replay.",
           "Read the sections, then use \"Download (HTML)\" or \"Download (Markdown)\" if you need a copy."
         ],
-        "result": "The figures come from the rule engine. Muse only explains them. When live Muse is off, or the daily allowance of 100 calls is used up, the briefing is a recorded answer and the label says so."
+        "result": "The figures come from the rule engine. Muse only explains them. When live Muse is off, or the allowance of the deployment is used up, the briefing is a recorded answer and the label says so."
       },
       {
         "slug": "propose-and-approve-a-rule-change",
@@ -483,7 +489,7 @@
   "technical": {
     "title": "Technical documentation",
     "intro": "These documents describe how the demonstration is built and run. They are shown read only, straight from the repository.",
-    "html_note": "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page.",
+    "html_note": "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page.",
     "documents": [
       {
         "slug": "architecture",

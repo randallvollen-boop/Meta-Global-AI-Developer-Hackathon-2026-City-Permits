@@ -104,11 +104,14 @@ PATHS: tuple[Path, ...] = (
                 "/apply",
                 "With the story’s answers already filled in, press Check my application, "
                 "then set the fence to 6 ft in the front yard and press Check my "
-                "application again to see Must fix, or press Submit application.",
-                "The findings are grouped under Must fix, Should check and "
-                "Looks good, and each one names the published rule behind it.",
+                "application again to see Must fix, which holds Submit application "
+                "until the applicant presses Submit anyway with a reason.",
+                "The button carries a Muse badge, and the findings are grouped under "
+                "Must fix, Should check and Looks good, each naming the published "
+                "rule behind it.",
                 "We are here because Check my application asks Muse for feedback "
-                "before the application is sent.",
+                "before the application is sent, and Submit application makes no "
+                "Muse call.",
             ),
             Step(
                 "Let the agent route the application",

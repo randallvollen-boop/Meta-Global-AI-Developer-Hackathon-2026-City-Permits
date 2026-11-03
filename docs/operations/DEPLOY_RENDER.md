@@ -79,7 +79,7 @@ Check once after the first deploy that visitors are counted separately (step 9 b
 
    The URL is a secret: anyone who holds it can start a deploy. Keep it out of the repository, chat and tickets. If it leaks, use the Regenerate button beside the hook in Render and update the cron job variable. If the cron job cannot be used, the manual alternative is to press Manual Deploy, then Deploy latest commit, on the web service each time the data should be reset. The schedule is in UTC (`0 2 * * *`).
 
-7. **Live Muse.** On for judging, at most 100 live calls a day. See Live Muse for judging below.
+7. **Live Muse.** On for judging. The blueprint sets 100 live calls and 100 provider calls a day. See Live Muse for judging below.
 
 8. **Run the smoke check** (below).
 
@@ -118,7 +118,7 @@ Run it after every deploy and every rollback. Use the `onrender.com` address.
 
 ## Live Muse for judging
 
-Live Muse is on for judging, at Randall's request (2026-10-31), with at most 100 live calls a day. The live service holds:
+Live Muse is on for judging, at Randall's request (2026-10-31). The blueprint sets the caps below, and Randall can change any of them in the Render dashboard. The live service holds:
 
 | Setting | Value now |
 |---|---|
@@ -140,12 +140,14 @@ Live Muse is on for judging, at Randall's request (2026-10-31), with at most 100
 
 | Path | Live call cap | Daily allowance | Image daily cap |
 |---|---|---|---|
-| Muse runs on a case (extraction, match proposal) | yes | yes | no |
 | Applicant help assistant | yes | yes | no |
+| Check my application (the pre-submit review) | yes | yes | no |
+| Explain with Muse (a steward recommendation) | yes | yes | no |
 | What-if briefing, explanation and proposal | yes | yes | no |
+| Document reading by the intake agent | no, the run is recorded and sent no provider call | no | no |
 | Permit type icon generation (Muse Image) | no | yes | yes |
 
-The intake and adjudication agents use the City's built in logic and never call the provider, so no cap applies to them.
+The intake and adjudication agents use the City's built in logic and never call the provider, so no cap applies to them. On the applicant form, "Check my application" is the button that may reach Muse; "Submit application" makes no Muse call.
 
 - The judging setting is 100 for both caps (Randall's choice).
 - Both are Render environment variables. Randall can raise or lower them at any time: Environment, edit the value, Save. Render then redeploys, which also resets the counts.
@@ -157,7 +159,7 @@ Use these steps after turning it off, or on a new service.
 
 
 1. In Render, open `acme-city-permits`, then Environment, then Add Environment Variable. Add `META_API_KEY` with the key.
-2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1` and `ACME_MUSE_LIVE_CALLS_ALLOWED` to `1`. Without the second flag, a public demo still locks live calls. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live, and `ACME_PRESUBMIT_REVIEW_LIVE_ENABLED` to `1` so Check my application gives live Muse feedback.
+2. Set `ACME_MUSE_PROVIDER_ENABLED` to `1` and `ACME_MUSE_LIVE_CALLS_ALLOWED` to `1`. Without the second flag, a public demo still locks live calls. Set `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` to `1` if the help assistant and the council briefing should answer live, and `ACME_PRESUBMIT_REVIEW_LIVE_ENABLED` to `1` so Check my application gives live Muse feedback. "Submit application" makes no Muse call in either case.
 3. Set `ACME_MUSE_LIVE_CALL_CAP` to `100`, and add `ACME_MUSE_DAILY_CALL_CAP` with the value `100`. Without the second, the daily allowance stops live calls at 10.
 4. Save. Render redeploys by itself, which also resets the live call count. Run the smoke check.
 
