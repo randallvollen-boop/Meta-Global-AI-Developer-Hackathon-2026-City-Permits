@@ -49,7 +49,6 @@ ALLOWED_FIGURES = {
     "96": "scene second ranges in the planned narration",
     "112": "scene second ranges in the planned narration",
     "120": "scene second ranges in the planned narration",
-    "02": "nightly Render reset at 02:00 UTC",
     "1080": "architecture diagram canvas coordinate",
     "18": "completed presenter clip count",
     "27": "date fragment of the 2026-10-27 merge date",

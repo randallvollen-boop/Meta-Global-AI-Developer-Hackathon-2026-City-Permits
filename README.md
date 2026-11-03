@@ -49,7 +49,7 @@ Muse is the model inside the application.
 
 Every proposal is checked against a strict schema, recorded with its source and its usage, and decided by a named person. The model never approves a permit, never sets a fee, and never issues a permit.
 
-Live Muse is on for the hosted demonstration. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
+Live Muse is on for the hosted demonstration. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls per deploy and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
 
 ## Demo
 
@@ -81,7 +81,7 @@ How to try it:
 6. As City Administrator, open "Reconciliation", press "Start" under "Assess application", allocate the 150.00 receipt from the old finance account, and reconcile.
 7. As Permit Reviewer, press "Start" under "Issue permit". Search for the permit number on the City of Acme website.
 
-The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6.
+The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data.
 
 Automatic processing of waiting cases is built and off on the hosted demo. Automatic linking of records is built and paused on the hosted demo.
 
@@ -108,7 +108,7 @@ Production behaviour:
 * Every governed change is recorded in the audit history.
 * Waiting agent work sits in a durable queue. A run records each of its nodes.
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries by itself, labels live and recorded results, and cannot approve, price, or issue a permit.
-* Live Muse calls have a daily cap, and icon generation has its own daily cap.
+* Live Muse calls are capped in total between deploys. The provider calls and the icon generation each have their own daily cap.
 * The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case, so other visitors’ changes don’t get in the way. The resident track makes its own application, so it needs no copy. The city track does not change any case, so it needs no copy.
 * "Check my application" runs the reviewer's rules on the draft before it is sent. It carries a Muse badge and may ask Muse for feedback when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
 
@@ -126,7 +126,7 @@ Checks and tests:
 * 6 simulated subscriber departments, listed in `repo/config/property_subscribers.json`.
 * 85 permissions, listed in `repo/config/permissions.json`.
 * 10 local gates, run by `repo/scripts/run_all_checks.py`.
-* The automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 ## How to run it locally
 

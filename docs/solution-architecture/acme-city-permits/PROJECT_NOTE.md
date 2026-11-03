@@ -14,7 +14,7 @@ The Hosting and Production passages now describe the live public demonstration o
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 363085 bytes. SHA-256 `b5015940480bceef54a794dd22cd7d8bce1b1b88cd199d5405679c724fefe73d` (2026-11-02 hosting wording). The file before that change was 362944 bytes, SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 362853 bytes. SHA-256 `4d7f96568540e7aae44cdb1a5e9429457ee144d256550fac3bea46a678b18c27` (2026-11-02 no nightly reset). The file before that change was 363085 bytes, SHA-256 `b5015940480bceef54a794dd22cd7d8bce1b1b88cd199d5405679c724fefe73d` (2026-11-02 hosting wording). The file before that was 362944 bytes, SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
 
 ## Rebuild
 
@@ -114,6 +114,24 @@ The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections 
   hook URL is a secret set in the Render dashboard, and that until it is set the
   nightly run fails and the data is not reset. The same wording is in
   `facts.md` under "Hosting and production".
+- Superseded by the revision below: the cron job was dropped from the blueprint
+  on Randall's word, so the page no longer names it at all.
+- The kit and its standard are not on this host, so the page was not rebuilt.
+  `page/body.src.html`, `page/body.html` and the built file carry the same two
+  sentences, and the built file still embeds the body verbatim, so a rebuild
+  from these sources gives the same output.
+- The AVA Library copy was not replaced.
+
+## Revision 2026-11-02, the nightly reset is gone
+
+- The Hosting section names no cron job and no nightly reset. The Blueprint line
+  says the blueprint defines one web service, built from `repo/Dockerfile-demo`.
+  The next line says every deploy rebuilds the fictional data. The same wording
+  is in `facts.md` under "Hosting and production", and the live call allowance
+  there now says 100 live calls per deploy and a daily provider cap of 100.
+- The cron job was dropped from `render.yaml` on 2026-11-02 (Randall), so the
+  page and the blueprint agree. The deploy hook stays a manual tool in the
+  Render dashboard.
 - The kit and its standard are not on this host, so the page was not rebuilt.
   `page/body.src.html`, `page/body.html` and the built file carry the same two
   sentences, and the built file still embeds the body verbatim, so a rebuild

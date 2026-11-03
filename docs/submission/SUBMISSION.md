@@ -10,7 +10,7 @@ The entry is framed around production behaviour: rate limits, caps, audit histor
 ## Entry requirements
 
 * Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits. The repository is private today and is made public at submission.
-* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards.
+* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards. The entry form carries a hosted link to the same video.
 * Live product: https://acme-city-permits.onrender.com
 
 ## Summary
@@ -53,7 +53,7 @@ The steward assistant follows the same rule. It prepares its proposals on the "D
 
 Muse also generates the fictional permit type icons through a governed administrator action with daily limits and recorded provenance.
 
-Live Muse is on for the hosted demo. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
+Live Muse is on for the hosted demo. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls per deploy and 100 provider calls a day, and Randall can change either number in the Render dashboard. When the allowance is used up, the help chat answers with the published rule text and says so on screen.
 
 ## Future feature: assistants through MCP
 
@@ -71,9 +71,9 @@ The plan is written up in [docs/operations/MCP_PLAN.md](../../docs/operations/MC
 * The server holds the actors, and scoped permissions, record scope, version checks, audit history, and explicit human actions protect every sensitive read and write.
 * Waiting agent work sits in a durable queue. Automatic processing of waiting cases is off on the hosted demo.
 * The Muse adapter allows only named models and strict schemas, bounds each request, never retries automatically, labels live and replay results, and cannot approve, price, or issue a permit.
-* Live Muse calls have a daily cap, and icon generation has its own daily cap.
+* Live Muse calls are capped in total between deploys. The provider calls and the icon generation each have their own daily cap.
 * Every governed change is recorded in the audit history.
-* The hosted data is fictional. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6.
+* The hosted data is fictional. Every deploy rebuilds the demonstration data.
 * Automatic linking of records is built and paused on the hosted demo.
 * The walkthrough has four paths, and each path has a guided tour and "Auto-play". "Start fresh" gives each judge a fresh copy of the café case.
 * "Check my application" runs the reviewer's rules on the draft before it is sent. It carries a Muse badge and may ask Muse for feedback when live. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues". "Submit application" makes no Muse call.
@@ -106,7 +106,7 @@ The participant guide says the build window runs October 27 to November 4. The e
 
 ## Verification
 
-* The full automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The full automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 * 10 gates run in `scripts/run_all_checks.py`.
 

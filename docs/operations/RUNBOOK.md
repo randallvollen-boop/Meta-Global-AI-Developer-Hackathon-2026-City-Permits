@@ -17,7 +17,7 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 uv run python scripts/stop_demo.py
 ```
 
-To host the demonstration publicly on Render, see [DEPLOY_RENDER.md](DEPLOY_RENDER.md). The hosted copy rebuilds its data on every start and resets every night.
+To host the demonstration publicly on Render, see [DEPLOY_RENDER.md](DEPLOY_RENDER.md). The hosted copy rebuilds its data on every start.
 
 Simulate incoming permits (server running; the script signs in as Data Steward, who
 holds the staging grant; override with `--actor`):

@@ -263,7 +263,7 @@
           },
           {
             "do": "Click \"Read briefing\". When live Muse is on, click \"Write the briefing with Muse\". When it is off, click \"Try recorded Muse briefing\".",
-            "see": "When the call is live the label reads \"Muse briefing (live)\". When it is a recorded answer the label reads \"Recorded Muse briefing\". The sections are \"Summary\", \"Key effects\", and \"Risks and trade-offs\". The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting. When the allowance is used up, the recorded answer is used.",
+            "see": "When the call is live the label reads \"Muse briefing (live)\". When it is a recorded answer the label reads \"Recorded Muse briefing\". The sections are \"Summary\", \"Key effects\", and \"Risks and trade-offs\". The hosted demonstration is set for 100 live Muse calls per deploy and 100 provider calls a day, and whoever runs it can change that setting. When the allowance is used up, the recorded answer is used.",
             "href": "/policy/scenarios"
           },
           {
