@@ -13,3 +13,15 @@
 /docs/solution-architecture/*/status-updates.jsonl
 /docs/solution-architecture/*/BUILD_REPORT.md
 __pycache__/
+# Internal working notes stay local
+/AGENTS.md
+/CHANGES-*.md
+/IMPACT-*.md
+/DOCS-AUDIT.md
+/HANDOFF.md
+/CONTEXT.md
+/RISK_LIST.md
+/GO_NO_GO.md
+/docs/process/
+/repo/docs/plans/
+commit_message.txt
