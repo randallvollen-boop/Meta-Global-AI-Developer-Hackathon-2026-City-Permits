@@ -9,7 +9,7 @@ Routes:
 * ``GET /help/glossary``                 the terms of the information popovers
 * ``GET /help/technical``                the list of technical documents
 * ``GET /help/technical/{slug}``         one document, read only
-* ``GET /help/technical/{slug}/file``    an HTML document, in a script-free sandbox
+* ``GET /help/technical/{slug}/file``    an HTML document, in a sandbox
 
 The hub, the tutorial, the guides and the glossary are open to anyone who
 visits, signed in or not, because they describe the demonstration and hold no

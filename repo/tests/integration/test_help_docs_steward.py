@@ -22,6 +22,7 @@ from acme_city.fixtures.loader import FixtureBundle
 from acme_city.fixtures.reset import ENVIRONMENT_ID, reset_demo
 from acme_city.fixtures.steward_demo import seed_cedarline
 from acme_city.help_docs import content
+from acme_city.persistence.models import change
 from acme_city.persistence.models.governance import DemoEnvironment
 from acme_city.persistence.session import SessionFactory, initialize_database, transaction
 from acme_city.ui.router import router as ui_router
@@ -31,6 +32,13 @@ QUEUE_GUIDE = "work-the-queue-and-the-incoming-work"
 
 #: The Cedarline example of the shared help.
 EXAMPLE_GUIDE = "resolve-a-data-issue"
+
+#: The recorded data issue the demonstration adds, so the page that closes an
+#: issue by hand is read in the test.
+ISSUE_ID = "issue_steward_help"
+
+#: The record the recorded issue is about.
+ISSUE_SUBJECT = "party_cedarline"
 
 
 @pytest.fixture()
@@ -62,6 +70,17 @@ def client(tmp_path: Path) -> TestClient:
             reset_demo(session, bundle, confirmation="--confirm-fictional-demo")
         with transaction(factory) as session:
             seed_cedarline(session)
+        with transaction(factory) as session:
+            session.add(
+                change.GovernanceIssue(
+                    id=ISSUE_ID,
+                    subject_type="party",
+                    subject_id=ISSUE_SUBJECT,
+                    issue_type="unregistered_dataset",
+                    description="The licence register of the business is not registered.",
+                    status="open",
+                )
+            )
     finally:
         factory.dispose()
     app = create_app(settings)
@@ -113,6 +132,62 @@ def quoted_labels(*slugs: str) -> set[str]:
     return labels
 
 
+def csrf(client: TestClient, path: str) -> str:
+    """Return the token of the first form of a page."""
+    match = re.search(r'name="csrf_token" value="([^"]+)"', client.get(path).text)
+    assert match is not None, path
+    return match.group(1)
+
+
+def prepare(client: TestClient) -> None:
+    """Wake the steward assistant and let it prepare the recommendations.
+
+    The steward holds the grant of its own assistant, so the steward may wake
+    it and ask it for the work of the queue, exactly as the help says.
+    """
+    for action_id, fields in (
+        ("agent.toggle", {"agent_key": "steward_assist", "mode": "awake"}),
+        ("steward.assist.prepare", {}),
+    ):
+        response = client.post(
+            f"/ui/actions/{action_id}",
+            data={
+                "csrf_token": csrf(client, "/steward"),
+                "action_id": action_id,
+                "next": "/steward",
+                **fields,
+            },
+            headers={"Accept": "application/json"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 200, response.text
+
+
+def issue_case_path(client: TestClient) -> str:
+    """Return the address of the recorded data issue of the demonstration."""
+    queue = client.get("/steward").text
+    match = re.search(r'href="(/steward/issues/issue/[^"]+)', queue)
+    assert match is not None, "the queue holds no data issue"
+    return match.group(1).replace("&amp;", "&")
+
+
+def operator_assistant_page(client: TestClient) -> str:
+    """Return the Steward assistant screen as the Agent Operator reads it.
+
+    The screen always shows the count of every confidence the assistant may
+    record, so a label that the demonstration data does not reach is read
+    there.
+    """
+    operator = TestClient(client.app)
+    assert (
+        operator.post(
+            "/api/session/select", json={"actor_id": "persona_agent_operator"}
+        ).status_code
+        == 200
+    )
+    return operator.get("/agent/steward_assist").text
+
+
 #: The page each quoted label of the steward help is read on, and the chain of
 #: elements that hold the label on that page.  A holder is a fragment of the
 #: start tag of an element, such as a test id or a class, and the elements are
@@ -139,11 +214,34 @@ LABELS: dict[str, tuple[str, tuple[str, ...]]] = {
     "5. What will this action do?": ("case", ('data-testid="case-q5"', "<h2")),
     "6. What happened?": ("case", ('data-testid="case-q6"', "<h2")),
     "Reject match proposed for": ("case", ('class="action-label act-title"',)),
+    "Reject match": ("case", ('class="action-label act-title"',)),
+    "Decision note": ("case", ('for="reject-match-reason"',)),
     "Start": ("case", ('class="btn sm primary act-open"',)),
     "Confirm link to Cedarline Coffee Works LLC": (
         "case with a candidate",
         ('class="action-label act-title"',),
     ),
+    # The steward assistant of the queue and of a task.
+    "Wake": ("/steward", ('data-testid="assistant-toggle"',)),
+    "Put to sleep": ("prepared queue", ('data-testid="assistant-toggle"',)),
+    "Prepare recommendations": ("/steward", ('data-testid="assistant-prepare"',)),
+    "Press Wake to wake it.": ("/steward", ('data-testid="assistant-sleep-note"',)),
+    "High": ("prepared queue", ('data-testid="recommendation-pill"',)),
+    "Review": ("prepared queue", ('data-testid="recommendation-pill"',)),
+    # The demonstration data holds no held recommendation, so the label of
+    # that confidence is read on the screen that always shows its count.
+    "Held": ("assistant screen", ('data-testid="kpi-held"',)),
+    "The steward assistant": ("case", ('data-testid="assistant-panel"', "<h2")),
+    "Reason": ("prepared case", ('for="assistant-reason-field"',)),
+    "Accept recommendation": ("prepared case", ('data-testid="assistant-accept"',)),
+    "Clear recommendation": ("prepared case", ('data-testid="assistant-clear"',)),
+    "Explain with Muse": ("prepared case", ('data-testid="assistant-explain"',)),
+    "Accept all high-confidence": ("/steward", ('data-testid="assistant-batch-preview"',)),
+    "Accept these": ("prepared batch", ('data-testid="assistant-batch-confirm"',)),
+    # The manual close of a recorded issue.
+    "Close with a reason": ("issue case", ('class="action-label act-title"',)),
+    "Close as": ("issue case", ('for="close-issue-outcome"',)),
+    "Note": ("issue case", ('for="close-issue-note"',)),
 }
 
 
@@ -158,6 +256,22 @@ def page_of(client: TestClient, path: str) -> str:
     if path == "case with a candidate":
         # The confirmation names the record the steward chose to compare.
         return "\n".join(case_pages(client, candidate="party_false_friend"))
+    if path == "prepared queue":
+        # The assistant is awake and has prepared the work of the queue.
+        prepare(client)
+        return client.get("/steward").text
+    if path == "prepared case":
+        # The task of a case holds the recommendation of the assistant.
+        prepare(client)
+        return "\n".join(case_pages(client))
+    if path == "prepared batch":
+        # The batch holds the recommendations the assistant is sure of.
+        prepare(client)
+        return client.get("/steward/batch").text
+    if path == "issue case":
+        return client.get(issue_case_path(client)).text
+    if path == "assistant screen":
+        return operator_assistant_page(client)
     return client.get(path).text
 
 

@@ -17,7 +17,7 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 uv run python scripts/stop_demo.py
 ```
 
-To host the demonstration publicly on Render, see [DEPLOY_RENDER.md](DEPLOY_RENDER.md). The hosted copy rebuilds its data on every start and resets every night.
+To host the demonstration publicly on Render, see [DEPLOY_RENDER.md](DEPLOY_RENDER.md). The hosted copy rebuilds its data on every start.
 
 Simulate incoming permits (server running; the script signs in as Data Steward, who
 holds the staging grant; override with `--actor`):
@@ -32,7 +32,9 @@ Or, in the browser, sign in as **City Administrator**, open **Governance and
 sources**, and use **Simulate incoming permits**. Scenarios:
 `fence-conforming-rear`, `fence-front-too-tall`, `fence-missing-site-plan`,
 `deck-high`, `mixed` (about six records), `shed-large` (a 400 sq ft shed with a condition), `variance-request` (a discretionary type that is held), `hvac-no-contractor` (a case that fails), `fax-unreadable` (an unreadable page that sends the case to early resolution), `duplicate-fence` (the same
-applicant, address and type as a fence already submitted) and `random`
+applicant, address and type as a fence already submitted), the three address
+scenarios of the property master, `address-typo`, `address-ambiguous` and
+`address-unknown` (described below), and `random`
 (deterministic from a seed, across all seventeen permit types and all five
 channels, with realistic omissions and quality problems).
 
@@ -194,7 +196,7 @@ moves it; the browser never decides.
 | Status | What it means | Who moves it, and how |
 |---|---|---|
 | `submitted` | The City has the application and it waits for the intake agent | the intake agent, when a person runs it |
-| `needs_information` | The City needs something from the applicant | **Data Steward**: return it, or advance it to review |
+| `needs_information` | The City needs something from the applicant | **Permit Reviewer**: record the decision "Needs information", which sends the case back to the applicant, who answers it on the tracker. **Data Steward**: return it, or advance it to review |
 | `revisions_requested` | The reviewer has sent the case back for revisions | **Permit Reviewer**: request revisions with a reason code and a message |
 | `ready_for_review` | The case is complete and waits for a reviewer | **Data Steward**: advance to review |
 | `under_review` | A reviewer has the case | the adjudication agent and the reviewer |

@@ -400,3 +400,33 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The tour-facing browser families then passed together in parallel: `130 passed, 2 skipped in 191.04s` across `test_cafe_path.py`, `test_demo_video_browser.py`, `test_design_findings_browser.py`, `test_feedback_panel.py`, `test_guide_pages_browser.py`, `test_missing_tour_case_browser.py`, `test_persona_chip_browser.py`, `test_presubmit_browser.py`, `test_tour_story.py`, `test_walkthrough_cards.py`, `test_tour_voice_browser.py`, `test_tour_browser.py` and `test_tour_entry_browser.py`. The two skips are the pre-existing WebKit checks of `test_presubmit_browser.py`, which skip themselves because that browser is not installed on this machine; nothing was skipped for this change.
 - The whole browser family then passed on its own: `PYTHONPATH=src python -m pytest -q -n 4 tests/browser` reported `530 passed, 2 skipped in 1030.94s`, the same two WebKit skips. This is the full check on the stylesheet change.
 - A whole-tree serial `pytest` run was started at the same time as that batch and was killed by the machine at about seven percent: the memory of the box was exhausted (119 GB, the swap full) while both runs held browser servers and databases. It reported no test failure and is not recorded as a pass. The browser family was then run alone, with the memory back to 23 GB in use, and it passed as recorded above.
+## 2026-11-02 — The in-app help follows the build, evidence
+
+- Every label quoted by the help was taken from the running screens. The
+  screens were read through the application itself (a signed-in client for
+  each persona): `/agents`, `/agent/intake`, `/agent/steward_assist`,
+  `/agents/runs`, `/queue/intake`, `/steward`, `/steward/batch`, a steward
+  task, the work queue, the review queue and a permit workspace. The
+  recorded data issue and the prepared recommendations were produced with the
+  real actions (`agent.toggle`, `steward.assist.prepare`).
+- The shared check of the help, `tests/integration/test_help_docs.py`, still
+  verifies that every quoted label exists in the application and that every
+  link of the tutorial opens for the persona it names. It passed with the
+  new words.
+- The steward lane check now reads every label the steward guides quote on
+  the page that shows it, with the assistant awake, a recommendation
+  prepared, a batch to confirm and a recorded issue to close: 46 passed.
+- Focused runs after the final edit: `tests/integration/test_help_docs.py`,
+  `test_help_docs_operator.py`, `test_help_docs_steward.py`,
+  `test_help_docs_admin_a.py`, `test_help_docs_admin_b.py` and
+  `tests/unit/test_help_content_overlay.py` gave 86 passed. The filter
+  `-k "help or glossary or tutorial or guide"` over `tests/unit` and
+  `tests/integration` gave 277 passed, and over `tests/browser` gave 83
+  passed.
+- The command of the brief, `pytest -q -p no:cacheprovider tests -k "help or
+  glossary or tutorial or guide" -m "not browser"`, gave 361 passed and 3425
+  deselected in 10m56s. The whole of `tests/unit` and `tests/integration`
+  gave 2498 passed in 2m58s.
+- The daily allowance of live Muse calls was checked against the deployment
+  configuration before the help kept the number: `render.yaml` sets
+  `ACME_MUSE_LIVE_CALL_CAP` and `ACME_MUSE_DAILY_CALL_CAP` to 100.

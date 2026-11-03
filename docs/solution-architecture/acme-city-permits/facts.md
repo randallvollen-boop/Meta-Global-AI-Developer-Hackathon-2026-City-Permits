@@ -116,8 +116,8 @@ No implementation or verification figure is shown as complete until the correspo
 ## Hosting and production
 
 - The live public demonstration is at `https://acme-city-permits.onrender.com` on a paid Render web service. It runs the demo image from `repo/Dockerfile-demo`, uses SQLite and contains fictional data only.
-- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC.
-- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock. The next deploy sets `ACME_MUSE_PROVIDER_ENABLED=1`, `ACME_MUSE_LIVE_CALLS_ALLOWED=1` and a daily cap of 100. A public demo without `ACME_MUSE_LIVE_CALLS_ALLOWED` still locks live calls.
+- Render automatic deploys are off. A person starts each release deploy. The blueprint holds one service and no scheduled job, so every deploy rebuilds the fictional data.
+- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock. The next deploy sets `ACME_MUSE_PROVIDER_ENABLED=1`, `ACME_MUSE_LIVE_CALLS_ALLOWED=1`, a live call cap of 100 per deploy and a daily provider cap of 100. A public demo without `ACME_MUSE_LIVE_CALLS_ALLOWED` still locks live calls.
 - The production mode remains a hardened core rather than a finished product. Real sign-in, a server database, backups, monitoring and malware scanning remain open.
 
 ## Open decisions and release gates

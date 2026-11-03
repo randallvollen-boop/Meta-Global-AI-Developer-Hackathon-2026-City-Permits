@@ -5,12 +5,11 @@
 # docs/operations/DEPLOY_RENDER.md.
 #
 # Not set here on purpose, so a person chooses them in Render:
-#   * `plan` (instance type) of both services.  Use the paid instance type
+#   * `plan` (instance type) of the service.  Use the paid instance type
 #     already on the account.  A free instance sleeps when idle, which would
 #     make the first judge wait through the data rebuild.
-#   * META_API_KEY (live Muse credential) and ACME_DEPLOY_HOOK_URL.  Both are
-#     `sync: false`: Render asks for them at creation and the file never holds
-#     a value.
+#   * META_API_KEY (live Muse credential).  It is `sync: false`: Render asks
+#     for it at creation and the file never holds a value.
 #
 # This file could not be validated against Render offline.  Render reports any
 # field error when the Blueprint is created.
@@ -24,8 +23,7 @@ services:
     dockerfilePath: ./repo/Dockerfile-demo
     dockerContext: ./repo
     healthCheckPath: /readyz
-    # A push does not redeploy the live demonstration by itself.  Deploy by hand,
-    # or through the deploy hook (the nightly cron job below).
+    # A push does not redeploy the live demonstration by itself.  Deploy by hand.
     autoDeploy: false
     # plan: <set the instance type in Render; see the note at the top>
     envVars:
@@ -80,17 +78,3 @@ services:
       # Largest request body, in bytes (25 MB).
       - key: ACME_MAX_REQUEST_BYTES
         value: "26214400"
-
-  # Nightly reset: asks Render to redeploy the web service, which rebuilds the
-  # fictional data.  The deploy hook URL is a secret (anyone who has it can
-  # trigger a deploy), so only its name is here.
-  - type: cron
-    name: acme-city-permits-nightly-reset
-    runtime: python
-    schedule: "0 2 * * *"
-    buildCommand: echo "nothing to build"
-    startCommand: python -c "import os,sys,urllib.request as u; r=u.urlopen(os.environ['ACME_DEPLOY_HOOK_URL'], timeout=30); print('deploy hook answered', r.status); sys.exit(0 if r.status < 300 else 1)"
-    # plan: <set the instance type in Render; see the note at the top>
-    envVars:
-      - key: ACME_DEPLOY_HOOK_URL
-        sync: false

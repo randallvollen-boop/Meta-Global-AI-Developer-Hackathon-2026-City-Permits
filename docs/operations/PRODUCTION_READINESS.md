@@ -58,7 +58,7 @@ The CSP (Content Security Policy) and the other headers apply in both modes.
 Both modes send these headers on every response:
 
 - `Content-Security-Policy` (CSP) with `default-src 'self'`, `script-src 'self'`, `style-src 'self'`, `img-src 'self' data:`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` and `frame-ancestors 'none'`. No template or script uses an inline script or an inline event handler, so none is allowed.
-- `style-src-attr 'unsafe-inline'`. About 80 inline `style="..."` attributes in 14 templates need it. An attribute can restyle an element but cannot run code. Moving them into the stylesheets is a cleanup that touches many templates and is left open.
+- `style-src-attr 'unsafe-inline'`. 47 inline `style="..."` attributes in 18 templates need it. An attribute can restyle an element but cannot run code. Moving them into the stylesheets is a cleanup that touches many templates and is left open.
 - Downloaded HTML documents (the printable permit and the application copy) carry an inline `<style>` block and no script. They get their own policy: `default-src 'none'; style-src 'unsafe-inline'`.
 - In demo mode only, `/docs` and `/redoc` use a policy that allows the public CDN (content delivery network) those generated pages load from.
 - `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, and a `Permissions-Policy` that turns off camera, microphone and location.

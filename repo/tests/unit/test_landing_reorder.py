@@ -151,4 +151,4 @@ def test_the_public_notice_is_one_line(landing: str) -> None:
     notice = re.search(r'data-testid="public-demo-notice">(.*?)</p>', landing, re.S)
     if notice is None:
         return
-    assert notice.group(1).strip() == "Fictional data. Resets nightly."
+    assert notice.group(1).strip() == "Fictional data. Rebuilt on every deploy."

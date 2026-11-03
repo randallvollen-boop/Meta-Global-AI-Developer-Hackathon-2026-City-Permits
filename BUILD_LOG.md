@@ -524,3 +524,31 @@ The parent (Claude Opus) re-ran all 10 gates on Muse's copy (passed), reviewed t
 - The publication gate now understands the narration. `scripts/scan_publishable_tree.py` checks an MP3 header, either an ID3 tag or the frame sync of an MPEG audio frame, and reads a `.b64` file as text, so the deny patterns still scan the test fixture. `config/publishable_binaries.json` lists `src/acme_city/static/tour-audio` with a one mebibyte limit and the commit that added the clips.
 - The browser coverage now proves both sides of the contract: a manifest that names no clip leaves no control on the panel, and the shipped manifest offers Play voice on the resident intro.
 - No tour caption changed, no live model call was made, and no persona, grant, rule, fixture, acceptance arithmetic, deployment, or publication changed.
+## 2026-11-02 — The in-app help follows the build (`docs/final-pass`)
+
+- The steward section of the tutorial and the guide of a data issue now cover
+  the steward assistant end to end: the steward wakes and sleeps its own
+  assistant on "Data issues", prepares the recommendations, reads the
+  confidence and the one-line reason of each, accepts or clears each one,
+  accepts a batch on `/steward/batch` with "Accept all high-confidence" and
+  "Accept these", reads "Explain with Muse", reads the "Submitted vs record"
+  panel and "Open the original submission", and closes a data issue by hand
+  with "Close with a reason".
+- The queue of the reviewer is named as it shows today: the chips of the next
+  action, the search and its clear, the tags of the row, the sections of the
+  permit workspace with the "Decision" section open when the next action is
+  to decide, the recorded exception with its "Exception reason", and the
+  prefilled "Needs information". The tag "Data follow-up: parcel not
+  confirmed" and the rule that the agent recommends on the checked rules are
+  stated, with the payer link and the fee still blocking issuing.
+- The guide of the operator names the agent pages of today: the "Incoming"
+  panel, the "Waiting work" heading with its count, "Process N cases",
+  "Nothing is waiting", "Last run", "Needs attention" with "Try again" and
+  the counts of the steward assistant.
+- A glossary term for the "Steward assistant" is added, and the screen help
+  of "Data issues" and of the review queue are refreshed.
+- The claim that no model is called when the tutorial is followed is replaced
+  by the difference between a recorded replay and a live answer, whose label
+  says which it is.
+- No record, rule, fee, grant, persona, model name, fixture, migration or
+  acceptance expectation changed. Nothing was pushed, deployed or published.

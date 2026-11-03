@@ -429,7 +429,7 @@ def test_public_demo_notice_shows_on_chooser_and_city_home_when_on(make_client) 
         assert 'data-testid="public-demo-notice"' in body, path
         # One line, once (city frame, S2).
         assert body.count('data-testid="public-demo-notice"') == 1, path
-        assert "Fictional data. Resets nightly." in body
+        assert "Fictional data. Rebuilt on every deploy." in body
         assert "—" not in body.split('data-testid="public-demo-notice"')[1][:300]
 
 
@@ -538,21 +538,26 @@ def test_blueprint_declares_the_demo_service_without_secret_values() -> None:
         "dockerfilePath: ./repo/Dockerfile-demo",
         "dockerContext: ./repo",
         "healthCheckPath: /readyz",
-        "type: cron",
     ):
         assert expected in BLUEPRINT, expected
     assert not re.search(r"(?m)^\s*disk:", BLUEPRINT)  # the database lives on the container
     assert re.search(r"key: ACME_SECRET_KEY\n\s+generateValue: true", BLUEPRINT)
     assert re.search(r"key: META_API_KEY\n\s+sync: false", BLUEPRINT)
-    assert re.search(r"key: ACME_DEPLOY_HOOK_URL\n\s+sync: false", BLUEPRINT)
     assert re.search(r"key: ACME_DEPLOYMENT_MODE\n\s+value: demo", BLUEPRINT)
     # Randall turned live Muse on for judging (2026-10-31), capped per day.
     assert re.search(r"key: ACME_MUSE_PROVIDER_ENABLED\n\s+value: \"?1\"?", BLUEPRINT)
     assert re.search(r"key: ACME_DEMO_SEED_ON_START\n\s+value: \"?1\"?", BLUEPRINT)
-    assert 'schedule: "0 2 * * *"' in BLUEPRINT
     assert not re.search(r"(?m)^\s+plan:", BLUEPRINT)  # Randall sets the instance type
     assert not re.search(r"https://api\.render\.com/deploy/\S+key=", BLUEPRINT)
     assert not re.search(r"(?i)\b(?:sk|rnd|nvapi)[-_][A-Za-z0-9]{8,}", BLUEPRINT)
+    # The blueprint holds one service and no scheduled job. The nightly reset
+    # cron job was dropped on 2026-11-02 (Randall): it needed a deploy hook
+    # secret that was never set, so it failed every night, and the documents
+    # promise one thing only, that every deploy rebuilds the data.
+    assert "type: cron" not in BLUEPRINT
+    assert "schedule:" not in BLUEPRINT
+    assert "ACME_DEPLOY_HOOK_URL" not in BLUEPRINT
+    assert BLUEPRINT.count("type: web") == 1
 
 
 def test_blueprint_limits_match_the_documented_defaults() -> None:

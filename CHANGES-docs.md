@@ -1,0 +1,546 @@
+# Changes to the judge-facing documents
+
+Date: 2026-11-02
+Branch: `docs/final-pass`
+
+This file records the last pass over the documents a judge reads: the README,
+the submission text, the judge walkthrough, the operations runbook, the
+deployment runbook and the in-app help. It covers five things: the stale
+document audit of 2026-11-02 (Part 1), the internal-review and draft status
+markers Randall removed on the same day (Part 2), the numbers the documents
+state (Part 3), the three review fixes of 2026-11-02 (Part 4) and the three
+answers Randall gave on the same day, with the size of the suite (Part 5).
+`CHANGES-help.md` holds the help update committed before this pass; nothing
+was appended to it.
+
+Every number below was read from the code on 2026-11-02. The test count comes
+from the collection and the full run of that day.
+
+## Part 1. The stale-document findings
+
+### `README.md`
+
+| Line | What changed | Before | After |
+| --- | --- | --- | --- |
+| 32 | What the data steward does | "**Data stewards** clear the findings that block a case and keep the master records consistent." | "**Data stewards** settle identity and property records and keep the master records consistent. Their work is Data follow-up: it never holds a case and it never refuses a decision. Missing applicant information still goes back to the applicant, and the payer link and the fee still block issuing." |
+| 47 | The Muse bullet on the pre-submit check | "It explains the "Check my application" result in plain words when live." | "It explains the "Check my application" result in plain words when live. That button carries a Muse badge and may ask Muse for feedback. "Submit application" makes no Muse call at all." |
+| 52 | The allowance of the hosted demo | "Live Muse is on for the hosted demonstration, with an allowance of 100 live calls a day." | "Live Muse is on for the hosted demonstration. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard." |
+| 68 to 70 | Three facts the demonstration has today | The list held no line about the tour, a lost copy or the clock | The guided tour of "Apply as a resident" fills the resident's form; a judge's copy of the café case that a deploy removed opens on a recovery page that offers a fresh one; no scenario clock is set, so the current date on screen is today's date. The middle line was changed again in Part 4 below |
+| 76 | The first step of "How to try it" | "Muse explains the result in plain words when live." | "The button carries a Muse badge, and Muse explains the result in plain words when it is live. ... "Submit application" itself makes no Muse call." |
+| 113 | The pre-submit bullet of "Production behaviour" | ""Check my application" runs the reviewer's rules on the draft before it is sent. "Must fix" holds "Submit application" unless the applicant presses "Submit anyway" with a reason, and the reviewer then sees "Submitted with known issues"." | The same, plus: "It carries a Muse badge and may ask Muse for feedback when live." and ""Submit application" makes no Muse call." |
+
+### `docs/submission/SUBMISSION.md`
+
+| Line | What changed | Before | After |
+| --- | --- | --- | --- |
+| 24 | The applicant paragraph | ""Check my application" runs the reviewer's rules on the draft before it is sent. Muse explains the result in plain words when live." | "The button carries a Muse badge, and Muse explains the result in plain words when it is live. ... "Submit application" makes no Muse call." |
+| 32 | The data steward paragraph | "These actions do not approve a permit." | "These actions do not approve a permit. The steward's work is Data follow-up: it never holds a case and it never refuses a decision." |
+| 50 | The Muse paragraph | "When the applicant presses "Check my application", Muse explains the result in plain words when live." | "When the applicant presses "Check my application", the button carries a Muse badge and Muse explains the result in plain words when it is live; "Submit application" makes no Muse call." |
+| 56 | The allowance of the hosted demo | "Live Muse is on for the hosted demo, with an allowance of 100 live calls a day." | "Live Muse is on for the hosted demo. The allowance is a setting of that deployment: `render.yaml` gives the service 100 live calls and 100 provider calls a day, and Randall can change either number in the Render dashboard." |
+| 79 | The pre-submit bullet of "Production behaviour" | ""Check my application" runs the reviewer's rules on the draft before it is sent." | The same, plus the Muse badge and the sentence ""Submit application" makes no Muse call." |
+| 132 | The pre-submit bullet of "What the demonstration shows now" | "Muse explains the result in plain words when live." | "The button carries a Muse badge, and Muse explains the result in plain words when it is live. ... "Submit application" makes no Muse call." |
+| 140 | The third step of "How to try it" | "Muse explains the result in plain words when live." | "The button carries a Muse badge, and Muse explains the result in plain words when it is live. ... "Submit application" makes no Muse call." |
+
+### `docs/submission/JUDGE_WALKTHROUGH.md` and its source
+
+The document is generated from the application, and
+`repo/tests/unit/test_judge_walkthrough_doc.py` holds it to the words of the
+page. The wording was therefore changed at its source and the document was
+regenerated with `walkthrough_markdown()`.
+
+| File and line | What changed | Before | After |
+| --- | --- | --- | --- |
+| `repo/src/acme_city/ui/guide_views.py:107` | What the applicant does in the second step | "then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, or press Submit application." | "then set the fence to 6 ft in the front yard and press Check my application again to see Must fix, which holds Submit application until the applicant presses Submit anyway with a reason." |
+| `repo/src/acme_city/ui/guide_views.py:110` | What the applicant notices | "The findings are grouped under Must fix, Should check and Looks good, and each one names the published rule behind it." | "The button carries a Muse badge, and the findings are grouped under Must fix, Should check and Looks good, each naming the published rule behind it." |
+| `repo/src/acme_city/ui/guide_views.py:113` | Why the step is on the walkthrough | "We are here because Check my application asks Muse for feedback before the application is sent." | "We are here because Check my application asks Muse for feedback before the application is sent, and Submit application makes no Muse call." |
+| `docs/submission/JUDGE_WALKTHROUGH.md:29` to `:31` | The three lines of the step | The words above | The words above, regenerated |
+
+Only the words changed. No label, no screen and no behaviour changed, and the
+walkthrough page shows the same three sentences as the document.
+
+### `docs/operations/RUNBOOK.md`
+
+| Line | What changed | Before | After |
+| --- | --- | --- | --- |
+| 197 | Who sends a case back to the applicant | "**Data Steward**: return it, or advance it to review" | "**Permit Reviewer**: record the decision "Needs information", which sends the case back to the applicant, who answers it on the tracker. **Data Steward**: return it, or advance it to review" |
+
+The rest of the runbook already matches the build: Data follow-up, the
+recorded exception for an approval against a failed rule, the payer link and
+the fee blocking issuance, the real clock, and the data identity and parcel
+work of the steward, which is Data follow-up and does not hold a case.
+
+### `docs/operations/DEPLOY_RENDER.md`
+
+| Line | What changed | Before | After |
+| --- | --- | --- | --- |
+| 82 | The Live Muse step of the setup | "**Live Muse.** On for judging, at most 100 live calls a day." | "**Live Muse.** On for judging. The blueprint sets 100 live calls and 100 provider calls a day." |
+| 121 | The head of the Live Muse section | "Live Muse is on for judging, at Randall's request (2026-10-31), with at most 100 live calls a day." | "Live Muse is on for judging, at Randall's request (2026-10-31). The blueprint sets the caps below, and Randall can change any of them in the Render dashboard." |
+| 142 to 150 | The table of the paths that reach the provider | The first row read "Muse runs on a case (extraction, match proposal) \| yes \| yes \| no" | Four live paths (the applicant help assistant, Check my application, Explain with Muse, and the what-if briefing, explanation and proposal) and one row that reads "Document reading by the intake agent \| no, the run is recorded and sent no provider call \| no \| no". The line under the table says that on the applicant form "Check my application" is the button that may reach Muse, and that "Submit application" makes no Muse call |
+| 162 | The step that turns live Muse on again | "set ACME_PRESUBMIT_REVIEW_LIVE_ENABLED to 1 so Check my application gives live Muse feedback." | The same, plus ""Submit application" makes no Muse call in either case." |
+
+The number 100 is the one the blueprint sets (`render.yaml`), and the head of
+the section now says that the dashboard can change it. The line at 137 about
+the live call cap is right and was left alone.
+
+The old first row was wrong: the intake agent reads the documents through the
+built in path of the City (`repo/src/acme_city/agents/extraction.py`, mode
+`builtin`, since the commit `bff7c0e` of 2026-10-29) and never calls the
+provider. The line under the table already said so.
+
+### `repo/config/help_content.json` and the overlays
+
+| File and line | What changed | Before | After |
+| --- | --- | --- | --- |
+| `repo/config/help_content.json:266` | The allowance in the tutorial of the City Administrator | "The hosted demonstration allows 100 live Muse calls a day." | "The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting." |
+| `repo/config/help_content.json:82` | A new step in the tutorial of the Applicant | The tutorial took the applicant from the empty form to the receipt without the pre-submit check | "Click "Check my application"." and the three groups, the Muse badge and the hold on "Submit application" |
+| `repo/config/help_content.json:304` | A new step in the guide "Apply for a fence or deck permit" | The guide had no step for the pre-submit check | "Press "Check my application". The button carries a Muse badge, and Muse explains the result in plain words when it is live. The findings are grouped under "Must fix", "Should check" and "Looks good". A "Must fix" holds "Submit application" until you press "Submit anyway" and write why you are submitting now." |
+| `repo/config/help_content.json:421` | The result of the guide "Run a what-if and write the briefing" | "When live Muse is off, or the daily allowance of 100 calls is used up, the briefing is a recorded answer and the label says so." | "When live Muse is off, or the allowance of the deployment is used up, the briefing is a recorded answer and the label says so." |
+| `repo/config/help_content.json:492` | The note on the architecture page | "It is shown inside a sandbox that blocks every script, so it reads as a static page." | "It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page." The note was rewritten again in Part 4 below, after `07e66f8` gave the architecture document its own scripts |
+| `repo/config/help_content.d/admin_b.json:15` and `:31` | The allowance in the what-if texts | "The hosted demonstration allows 100 live Muse calls a day." | "The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting." |
+| `repo/config/help_content.d/operator.json:21` | The allowance in the guide "Run the agents" | "On the hosted demonstration live Muse is on, with a daily allowance of 100 calls." | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls and 100 provider calls a day that whoever runs it can change." |
+| `repo/config/help_content.d/steward.json:43` | The allowance in the guide "Resolve a data issue" | "On the hosted demonstration live Muse is on, with a daily allowance of 100 calls." | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls and 100 provider calls a day that whoever runs it can change." |
+
+## Part 2. The internal-review and draft status markers
+
+Every marker below was read out of the text a judge can see. The markers are
+gone; the facts they stood next to stay where they were true.
+
+| File and line | What changed | Before | After |
+| --- | --- | --- | --- |
+| `README.md:7` | The visibility of the repository | "Repository visibility: [REVIEW: Randall. The repository is private today. Make it public before submission, then delete this line.]" | "Repository visibility: private. It must be public at submission." |
+| `README.md:22` | The build window | "The build window is not settled. The participant guide says October 27 to November 4. The event page says October 26. [REVIEW: Randall. Confirm the window before submission.]" | "The participant guide says the build window runs October 27 to November 4. The event page says October 26." |
+| `README.md:84` | The nightly reset | "The data is fictional and is meant to be disposable. It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 4 below |
+| `docs/submission/SUBMISSION.md` (lines 3 to 5 before the pass) | The whole "Draft status" section | "## Draft status / This is submission text for Randall to review and submit himself. It has not been submitted. The hosted demo at https://acme-city-permits.onrender.com shows all five personas." | The section is gone. The live address stays in "Entry requirements" and the personas stay listed where they were already described |
+| `docs/submission/SUBMISSION.md:12` | The repository link of the entry | "* Public repository: https://github.com/... [REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]" | "* Public repository: https://github.com/... The repository is private today and is made public at submission." |
+| `docs/submission/SUBMISSION.md:13` | The video of the entry | "* Accessible three-minute demo video: [link to be added]" | "* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards." The file is `repo/src/acme_city/static/video/demo-video.mp4`. Changed again in Part 5 below |
+| `docs/submission/SUBMISSION.md:76` | The nightly reset | "... It resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 4 and Part 5 below |
+| `docs/submission/SUBMISSION.md:105` | The build window | "The build window is not settled. ... [REVIEW: Randall. Confirm the window before submission.]" | "The participant guide says the build window runs October 27 to November 4. The event page says October 26." |
+| `docs/submission/SUBMISSION.md:121` | The licence wording | "... [REVIEW: Randall. Confirm the repository licence wording before submission.] See [LICENSE]..." | The sentence stays, the marker goes |
+| `docs/submission/SUBMISSION.md:136` | The first step of "How to try it" | "... The data resets nightly once the scheduled reset is configured, and every deploy rebuilds it. [REVIEW: Randall]" | "... The data is fictional and every deploy rebuilds the demonstration data." Changed again in Part 4 below |
+| `docs/operations/MCP_PLAN.md:8` | The note on what the plan could check | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. Unverified: whether any write path already carries an idempotency key (only finance has one), and the exact permission names per persona." | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14. It reads the code as it stood then, and the two things it could not settle are in the open questions at the end." The two points became questions 8 and 9 of section 7. The model name was removed in Part 4 below |
+
+The words the application itself uses are untouched: "Save draft", "Save as a
+draft rule change", "Draft: ready for your approval", the drafts of an
+application, "Submit for review" on a rule version, "Ready for review" on a
+case and "Recommended for review" on a record. "Example with fictional data"
+and the byline "Prepared by Randy Vollen, host of www.VollenData.com, for the
+Muse Hackathon, using the fictional City of Acme" are unchanged.
+
+## Part 3. The numbers
+
+| File and line | What changed | Before | After |
+| --- | --- | --- | --- |
+| `README.md:129` | The size of the automated suite | "The automated suite collects 3,414 tests, and all of them pass. ... The count comes from a full run on November 1, 2026." | "The automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine." Changed again in Part 5 below |
+| `README.md:127` | A new line in "Checks and tests" | The list held no count for the permissions | "* 85 permissions, listed in `repo/config/permissions.json`." |
+| `docs/submission/SUBMISSION.md:109` | The size of the automated suite | "The full automated suite collects 3,414 tests, and all of them pass. ... The count comes from a full run on November 1, 2026." | "The full automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine." Changed again in Part 5 below |
+| `docs/submission/SUBMISSION.md:117` | A new line under "Verification" | The list held no count for the permissions | "* 85 permissions are listed in `repo/config/permissions.json`. Every grant is explicit, and a role label never authorizes an action." |
+| `docs/operations/PRODUCTION_READINESS.md:61` | The inline style attributes | "About 80 inline `style="..."` attributes in 14 templates need it." | "47 inline `style="..."` attributes in 18 templates need it." |
+| `docs/operations/RUNBOOK.md:32` | The list of the simulator scenarios | Eleven of the fourteen names | The three address scenarios of the property master, `address-typo`, `address-ambiguous` and `address-unknown`, were named as well |
+
+### How each number was checked
+
+| Number | Where it comes from |
+| --- | --- |
+| 3,787 tests | `pytest --collect-only -q` in `repo/`, on 2026-11-02, and the full run of the same day: 3,785 passed and 2 skipped, the two WebKit browser tests, because that browser is not installed on the machine. The figure was 3,786 until the merge of 19:36 on the same day brought one test with it |
+| 85 permissions | `repo/config/permissions.json` holds 85 entries with 85 distinct `permission_id` values. The five personas hold 80 of them; the other 5 (`admin.health.view`, `admin.role.permissions.manage`, `agent.policy.manage`, `agent.run.linking`, `registry.master.create`) are held by service identities, so every key of the catalog is reachable |
+| 10 gates | The ten steps of `repo/scripts/run_all_checks.py`: compile, requirement-coverage, collect, collection-contract, alembic-upgrade, alembic, publishable-tree, pytest, deterministic-acceptance, evidence-verification |
+| 100 live calls and 100 provider calls a day | `render.yaml` sets `ACME_MUSE_LIVE_CALL_CAP` and `ACME_MUSE_DAILY_CALL_CAP` to 100. The code defaults are 2 and 10 (`repo/src/acme_city/core/config.py` and `config_operator.py`) |
+| 10 image calls a day | `ACME_MUSE_IMAGE_DAILY_CAP` is 10 in `render.yaml` and 10 is the code default |
+| 17 permit types | `repo/config/rules_and_fees.json` |
+| 57 requirements | `repo/docs/REQUIREMENTS_OUTLINE.md` |
+| 39 checks | `repo/config/check_inventory.json` |
+| 6 simulated subscriber departments | `repo/config/property_subscribers.json` |
+| 47 inline style attributes in 18 templates | `grep -ro 'style=' repo/src/acme_city/templates/` |
+| 20 cases in a batch, 50 in a selection | `DEFAULT_MAX_BATCH_SIZE` in `repo/src/acme_city/agents/runtime.py` and `MAX_SELECTION` in `repo/src/acme_city/permits/bulk.py` |
+| 69 parcels, 71 address points, 6 streets | `repo/fixtures/gis_town.json` |
+| 14 generated icons, 14 calls at $0.01 | `docs/operations/permit-type-icons-manifest.json` holds 14 icons, and `BUILD_LOG.md` records the 14 calls and the $0.14 |
+| 14 simulator scenarios | `SCENARIO_NAMES` in `repo/src/acme_city/portal_intake/scenarios.py`, which is also what `GET /api/intake/scenarios` returns |
+
+The numbers that were already right were left alone: 17 permit types, 57
+requirements, 39 checks, 6 subscriber departments, 10 gates, the seven node
+intake graph and the five node adjudication graph, the 20 case batch, the 50
+case selection, the 69 parcels, the 71 address points, the 6 streets, the 14
+icons and the code defaults of the Muse caps.
+
+## Open questions for Randall
+
+Each marker below hid a question that is still open. The marker is gone from
+the document and the question is here, with the text it had.
+
+| Where it was | The text of the marker |
+| --- | --- |
+| `README.md:7` | "Repository visibility: [REVIEW: Randall. The repository is private today. Make it public before submission, then delete this line.]" The line itself stays in the README, so it can be deleted when the repository is made public |
+| `README.md:22` and `docs/submission/SUBMISSION.md:105` | "[REVIEW: Randall. Confirm the window before submission.]" The build window is October 27 to November 4 in the participant guide and October 26 on the event page. The documents now state both dates and say which source gives which |
+| `README.md:84` and `docs/submission/SUBMISSION.md:76` | "[REVIEW: Randall]" beside the nightly reset. The reset is gone: the cron job was dropped from `render.yaml` and the documents say only that every deploy rebuilds the demonstration data (Part 5 below) |
+| `docs/submission/SUBMISSION.md:12` | "[REVIEW: Randall. The repository is private today. Make it public before submission, and confirm this link.]" The link points at `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits` |
+| `docs/submission/SUBMISSION.md:121` | "[REVIEW: Randall. Confirm the repository licence wording before submission.]" The wording now stands on its own, next to `LICENSE` and `NOTICE` |
+| `docs/submission/SUBMISSION.md:13` | "[link to be added]" beside the three-minute demo video. The video plays on the landing page of the live demo, under the persona cards, and the entry form carries a hosted link to the same video (Part 5 below) |
+
+## Left alone on purpose
+
+- **The persona findings of the audit were not applied.** The audit asked for
+  four selectable personas and asked that the Agent Operator be taken out of
+  the documents. The Agent Operator is a selectable persona in this build:
+  `repo/config/actors.json` lists five selectable personas, the selector, the
+  tour and `repo/tests/integration/test_help_docs.py` use all five, and
+  `repo/tests/api/test_sessions.py` expects five actors. The persona
+  descriptions were not touched.
+- **The count of the audit does not hold.** The audit says `actors.json`
+  yields 82 distinct `permission_id` values. It yields 80 for the five
+  personas, and the catalog holds 85 distinct keys. The number written into
+  the README and the submission text is 85, the size of the catalog, with the
+  definition spelled out above.
+- **The architecture page and its sources.** `docs/solution-architecture/**`
+  and the served page belong to another branch. The banner "Internal draft.
+  [REVIEW REQUIRED] before external use." is still on the page and in
+  `page/page.json`, and that page is served to judges under Help, Technical
+  documentation. That branch should take the banner off.
+- **The note on the architecture page.** The audit asked the help to say the
+  sandboxed page allows scripts. At the time of that pass the application did
+  the opposite, and the shared test said so:
+  `repo/tests/integration/test_help_docs.py::test_the_architecture_page_is_served_as_committed_inside_a_script_free_sandbox`
+  asserted that the iframe carried `sandbox=""` with no allow token and that
+  the response policy set `default-src 'none'` with no `script-src`. The
+  commit `07e66f8` ("Fix architecture document sandbox") changed the
+  application: the architecture document is now the one flagged document that
+  may run its own scripts, in an opaque frame. The note and the test were
+  reconciled with it in Part 4 below.
+- **The claim that no model is called.** The audit asked for the help to stop
+  saying that no model is called while the tutorial runs. The help update
+  committed before this pass (`a75aa1e`, recorded in `CHANGES-help.md`) had
+  already replaced that sentence with "A step that may call Muse for a live
+  answer says so on the screen, and the label of that answer says so too",
+  and the steps name the live surfaces.
+- **The file name `docs/submission/SUBMISSION.md`.** The document itself
+  carries no draft marker any more, and the name was left because the path may
+  be named in the hackathon governance, which this session may not read.
+  Randall said the word on 2026-11-02 and the file was renamed with `git mv`
+  (Part 5 below).
+- **The internal working notes.** `BUILD_LOG.md`, `EVIDENCE_LOG.md`,
+  `CITY_PERMIT_ALIGNMENT.md`, `GO_NO_GO.md`, `HANDOFF.md`, `CONTEXT.md`,
+  `RISK_LIST.md`, `IMPACT-steward6.md` and `docs/process/WORKSPACE.md` are
+  the record of the build for Randall and the team, not documents shipped to
+  judges. They keep the words "internal draft" and "[REVIEW REQUIRED]" where
+  they record what was published and when.
+- **The label of the document reading.** The walkthrough says that document
+  reading is a recorded Muse run (replay), and that is the label the
+  application itself uses for that surface
+  (`repo/src/acme_city/ui/guide_routes.py`, the `intake` surface, whose
+  replay label is "Recorded replay"). The run sends no provider call: the
+  intake agent reads the documents through the built in path of the City
+  since the commit `bff7c0e` of 2026-10-29, and the run panel says "Built in
+  logic". The deployment runbook now says the same in its table of the paths
+  that reach the provider.
+
+## Part 4. The three review fixes of 2026-11-02
+
+Three findings came back from the review of this branch. Each is applied below.
+Every "After" is the text as it stands in the file after the change.
+
+### A. The nightly reset is not set up
+
+The cron job is in `render.yaml`, but the secret it needs,
+`ACME_DEPLOY_HOOK_URL`, is `sync: false` there and is not set in the Render
+dashboard. Until Randall sets it, every nightly run fails and the data is not
+reset (`docs/operations/DEPLOY_RENDER.md`, "Nightly reset"). The documents
+stated the nightly reset as a fact. They now say that every deploy rebuilds
+the data and that a nightly reset can be switched on. Part 5 below drops the
+nightly reset altogether.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `README.md:84` | "The data is fictional and is meant to be disposable. The nightly reset rebuilds it, and every deploy rebuilds it." | "The data is fictional and is meant to be disposable. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 5 below |
+| `README.md:69` | "* A recovery page for a judge's copy of the café case that the nightly reset removed. It says the copy is gone and offers a fresh one." | "* A recovery page for a judge's copy of the café case that a deploy removed. It says the copy is gone and offers a fresh one." |
+| `docs/submission/SUBMISSION.md:76` | "* The hosted data is fictional. The nightly reset rebuilds it, and every deploy rebuilds it." | "* The hosted data is fictional. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." Changed again in Part 5 below |
+| `docs/submission/SUBMISSION.md:136` | "... The data is fictional, the nightly reset rebuilds it, and every deploy rebuilds it." | "... The data is fictional and every deploy rebuilds the demonstration data." |
+| `docs/submission/SUBMISSION.md:8` | "The entry is framed around production behaviour: rate limits, caps, audit history, nightly resets, tests, and checks." | "The entry is framed around production behaviour: rate limits, caps, audit history, a rebuild of the demonstration data on every deploy, tests, and checks." |
+| `docs/solution-architecture/acme-city-permits/facts.md:119` | "- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC." | "- Render automatic deploys are off. A person starts each release deploy. A Render cron job can request the same rebuild at 02:00 UTC, but it needs `ACME_DEPLOY_HOOK_URL` set in the Render dashboard (`docs/operations/DEPLOY_RENDER.md`, step 6); until it is set the nightly run fails and the data is not reset." Changed again in Part 5 below |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:674`, `page/body.html:674` and the same line in the built page | "... It defines one web service, built from `repo/Dockerfile-demo`, and one nightly cron job." | "... It defines one web service, built from `repo/Dockerfile-demo`, and one cron job that runs at 02:00 UTC." Changed again in Part 5 below |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:679`, `page/body.html:679` and the same line in the built page | "The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data." | "The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. The deploy hook URL is a secret set in the Render dashboard; until it is set the nightly run fails and the data is not reset." Changed again in Part 5 below |
+| `repo/src/acme_city/templates/_public_demo_notice.html` | "Fictional data. Resets nightly." | "Fictional data. Rebuilt on every deploy." |
+
+The notice on the landing page of the hosted demonstration is application text
+rather than a document, and it made the same claim to a judge. It was changed
+with the documents. The three tests that hold that line to the page now hold
+the new line to the page; none of them was weakened:
+`repo/tests/unit/test_city_chrome.py:27`,
+`repo/tests/unit/test_landing_reorder.py:154` and
+`repo/tests/security/test_public_demo_protection.py:432`.
+
+`docs/operations/DEPLOY_RENDER.md` was left as it stands. It already says that
+until `ACME_DEPLOY_HOOK_URL` is set every nightly run fails and the data is not
+reset. It was changed again in Part 5 below, where the nightly reset was
+dropped altogether.
+
+The architecture page was not rebuilt: the kit and its standard are not on this
+host. The three copies of the page carry the same two sentences, the built file
+still embeds the body verbatim, and `PROJECT_NOTE.md` records the new size and
+hash of the built file. Part 5 below records the size and hash after the
+second change of the same two sentences.
+
+### B. The architecture document runs its own scripts
+
+The commit `07e66f8` ("Fix architecture document sandbox") gave the architecture
+document the one relaxed policy in the help. The iframe carries
+`sandbox="allow-scripts"` without `allow-same-origin`, so the document runs
+its own scripts in an opaque origin, and its response policy allows inline
+scripts only and keeps `default-src 'none'`, so it reaches no network. Every
+other document keeps `sandbox=""` and the strict policy. The note in the help
+still said the page was shown in a sandbox that blocks every script and reads
+as a static page. It now states the arrangement plainly.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `repo/config/help_content.json:492` (`technical.html_note`) | "The architecture page is a finished web page with its own scripts. It is shown inside a sandbox that blocks every script and every network request, so it reads as a static page. The theme switch and other interactive controls on that page do not work here. Use the download if you want the full page." | "The architecture page is a finished web page with its own scripts. It is shown inside a frame that allows scripts, so the page's own diagram and controls work, but the frame gives the page an opaque origin: the page cannot reach this application, and it is served with a policy that allows inline scripts only and blocks every network request. Use the download if you want the page on its own." |
+| `repo/src/acme_city/ui/help_docs_routes.py:12` | "* ``GET /help/technical/{slug}/file``    an HTML document, in a script-free sandbox" | "* ``GET /help/technical/{slug}/file``    an HTML document, in a sandbox" |
+
+The test was reconciled with `07e66f8` before this pass, and the merge of that
+commit carried the reconciliation in:
+`repo/tests/integration/test_help_docs.py::test_the_architecture_page_is_served_as_committed_inside_an_opaque_script_sandbox`
+holds the exact checks for the architecture document (the iframe carries
+`sandbox="allow-scripts"` and no `allow-same-origin`; the response is the
+committed file byte for byte; the policy is `sandbox allow-scripts;
+default-src 'none'; script-src 'unsafe-inline'; ...` with no `'unsafe-eval'`; the
+download keeps that policy), and
+`test_html_documents_without_the_explicit_script_flag_keep_the_strict_sandbox`
+holds the strict checks for every other document (`sandbox=""`, no allow token,
+and `sandbox; default-src 'none'; img-src data:; ...` with no `script-src`).
+The old name of the first test, `..._inside_a_script_free_sandbox`, is gone.
+
+Nothing else was loosened. The browser test
+`repo/tests/browser/test_help_docs_browser.py::test_the_architecture_page_runs_its_diagram_inside_an_opaque_script_sandbox`
+still holds: the diagram draws inside the frame and the frame stays opaque to
+the page that embeds it.
+
+### C. Only Muse is named as a model
+
+Every judge-facing document and every help text was searched for the names of
+other models. One document carried one name, and one build plan inside the
+repository carried three.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `docs/operations/MCP_PLAN.md:8` | "Planned 2026-11-01 by a Claude planning subagent from the code at main fd41e14." | "Planned 2026-11-01 from the code at main fd41e14." |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:18` | "Haiku is the default, and each task steps up when the work needs judgment or when a runner fails." | "The cheap local model is the default, and each task steps up when the work needs judgment or when a runner fails." |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:23` to `:26` | The table of "Starting model" per task, naming "Haiku", "Sonnet" and "Parent (Opus)" | The same table with the models named by role: "The cheap local model", "A stronger local model" and "Parent (the strongest model)" |
+| `repo/docs/plans/2026-10-29-ui-layer-split.md:28` | "**Stepping up.** A task moves to the next model (Haiku, then Sonnet, then Opus) when either of these happens:" | "**Stepping up.** A task moves to the next model (the cheap local model, then a stronger local model, then the strongest) when either of these happens:" |
+
+The second file is a build plan inside the published repository, not a document
+served in the application. It stays in the repository and its tasks keep their
+meaning; only the model names are gone.
+`docs/build-story/ENGINES.md` already named the other engines by role ("Local
+and other frontier models") and was not changed.
+
+`BUILD_LOG.md`, `EVIDENCE_LOG.md`, `HANDOFF.md` and the commit trailers keep the
+names they always had. They are the record of the build for Randall and the
+team, not documents a judge reads.
+
+## Part 5. The three answers of 2026-11-02, and the size of the suite
+
+Randall answered three open questions on 2026-11-02. Each is applied below.
+Every "After" is the text as it stands in the file after the change. The size
+of the automated suite moved by one test with the merge of the same day, and
+the documents were corrected with it (D below).
+
+### A. The file is `docs/submission/SUBMISSION.md`
+
+The document carries no draft marker any more, and the name was left open
+above because the path may be named in the hackathon governance, which this
+session may not read. Randall said the word.
+
+| What changed | Before | After |
+| --- | --- | --- |
+| The file | `docs/submission/SUBMISSION_DRAFT.md` | `docs/submission/SUBMISSION.md`, renamed with `git mv`, so the history of the document follows it |
+| `docs/process/WORKSPACE.md:18` | "\| `docs/submission/` \| The submission draft and the judge walkthrough \|" | "\| `docs/submission/` \| The submission and the judge walkthrough \|" |
+| The tables above | `docs/submission/SUBMISSION_DRAFT.md` | `docs/submission/SUBMISSION.md` |
+| The table of "What changed" in Part 1 | Two quoted rows held bare `\|` characters, which split a markdown cell and left the row with six cells | The pipes are escaped, so the row has the three cells the table names |
+
+The repository was searched for the old path. Nothing else named it: no link,
+no config entry, no test and no help text. `repo/config/`, `repo/tests/` and
+the in-app help content hold no reference to the file at all.
+
+### B. The demo video plays on the landing page
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `docs/submission/SUBMISSION.md:13` | "* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards." | "* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards. The entry form carries a hosted link to the same video." |
+
+The marker "[link to be added]" was already gone in Part 2. The line now names
+where the video plays and says that the entry form carries a hosted link, so
+the swap has a place to go. No placeholder is left in the text.
+
+The claim is true of the build. The landing page includes
+`components/demo_video.html` directly after the persona list
+(`repo/src/acme_city/templates/base.html`, the `select` screen), and the file
+is `repo/src/acme_city/static/video/demo-video.mp4`. The order is held by a
+test: `repo/tests/unit/test_landing_reorder.py::test_the_video_comes_after_the_cards_behind_a_title_card`
+puts the cards before the video and the video before the links.
+
+### C. The nightly reset is gone
+
+Randall dropped the nightly reset. The earlier pass made it a switch that was
+off; the documents now say one thing only, that every deploy rebuilds the
+demonstration data.
+
+The cron job was in `render.yaml`, and it needed `ACME_DEPLOY_HOOK_URL`, which
+was never set in the Render dashboard, so every nightly run failed. The job was
+removed from the blueprint, and every document that named it was changed.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `README.md:84` | "... Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." | "... Every deploy rebuilds the demonstration data." |
+| `README.md:52` | "`render.yaml` gives the service 100 live calls and 100 provider calls a day" | "`render.yaml` gives the service 100 live calls per deploy and 100 provider calls a day" |
+| `docs/submission/SUBMISSION.md:76` | "* The hosted data is fictional. Every deploy rebuilds the demonstration data. A nightly reset can be switched on with `ACME_DEPLOY_HOOK_URL`; see DEPLOY_RENDER step 6." | "* The hosted data is fictional. Every deploy rebuilds the demonstration data." |
+| `docs/submission/SUBMISSION.md:56` | The same allowance sentence as in the README | The same sentence with "100 live calls per deploy" |
+| `README.md:111` | "Live Muse calls have a daily cap, and icon generation has its own daily cap." | "Live Muse calls are capped in total between deploys. The provider calls and the icon generation each have their own daily cap." |
+| `docs/submission/SUBMISSION.md:74` | The same sentence as in the README | The same sentence with "capped in total between deploys" |
+| `repo/config/help_content.json:266` | "The hosted demonstration is set for 100 live Muse calls and 100 provider calls a day, and whoever runs it can change that setting." | "The hosted demonstration is set for 100 live Muse calls per deploy and 100 provider calls a day, and whoever runs it can change that setting." |
+| `repo/config/help_content.d/admin_b.json:15` and `:31` | The same sentence as in the help content | The same sentence with "100 live Muse calls per deploy" |
+| `repo/config/help_content.d/operator.json:21` | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls and 100 provider calls a day that whoever runs it can change." | "On the hosted demonstration live Muse is on, with an allowance of 100 live calls per deploy and 100 provider calls a day that whoever runs it can change." |
+| `repo/config/help_content.d/steward.json:43` | The same sentence as in the operator overlay | The same sentence with "100 live calls per deploy" |
+| `docs/operations/RUNBOOK.md:20` | "The hosted copy rebuilds its data on every start and resets every night." | "The hosted copy rebuilds its data on every start." |
+| `docs/operations/DEPLOY_RENDER.md:3` | "... the smoke check, live Muse for judging, the nightly reset and rollback." | "... the smoke check, live Muse for judging and rollback." |
+| `docs/operations/DEPLOY_RENDER.md:19` | "- **Nightly reset.** A Render cron job calls the web service's deploy hook at 02:00 Coordinated Universal Time (UTC). The redeploy rebuilds the data. Render keeps the old instance serving until the new one passes `/readyz`." | "- **Every deploy rebuilds the data.** The blueprint holds one service and no scheduled job, so the demonstration data is rebuilt from nothing on every deploy. Render keeps the old instance serving until the new one passes `/readyz`." |
+| `docs/operations/DEPLOY_RENDER.md:22` | "People who are signed in as a persona at 02:00 UTC lose their session and any unsaved work when the redeploy completes." | "People who are signed in as a persona lose their session and any unsaved work when a deploy completes." |
+| `docs/operations/DEPLOY_RENDER.md:57` | "(step 9 below)" | "(step 8 below)" |
+| `docs/operations/DEPLOY_RENDER.md:63` | "Render reads `render.yaml` and proposes two services: `acme-city-permits` (web) and `acme-city-permits-nightly-reset` (cron job)." | "Render reads `render.yaml` and proposes one service: `acme-city-permits` (web)." |
+| `docs/operations/DEPLOY_RENDER.md:65` | "`render.yaml` leaves `plan` unset on both services on purpose. ... The cron job runs for seconds each night and takes the smallest type Render offers." | "`render.yaml` leaves `plan` unset on purpose. ..." |
+| `docs/operations/DEPLOY_RENDER.md:67` | "Render asks for the two values marked `sync: false`", one of them `ACME_DEPLOY_HOOK_URL` (cron job) | "Render asks for the value marked `sync: false`", which is `META_API_KEY` |
+| `docs/operations/DEPLOY_RENDER.md:75` to `:80` (the lines the step had before this pass) | The step "Set the deploy hook for the nightly reset" | The step is gone and the steps after it move up by one: Live Muse is step 6, the smoke check 7, the limits 8, the rollback 9 |
+| `docs/operations/DEPLOY_RENDER.md:98` | "`/select` and `/city/` show the line "This is a public demonstration with fictional data. It resets every night. Don't enter real personal information."" | "`/select` and `/city/` show the line "Fictional data. Rebuilt on every deploy."" The old line was the notice before Part 4 changed it, so the smoke check named a line that was no longer on the page |
+| `docs/operations/DEPLOY_RENDER.md:146` | "The live call cap counts live runs since the last database reset. It works as a daily limit only once the nightly reset cron has `ACME_DEPLOY_HOOK_URL` set (see Nightly reset). Any deploy also resets it." | "The live call cap counts live runs since the last database rebuild. Any deploy rebuilds the data and resets the count, so the 100 live calls are an allowance for one deploy, not for one day." |
+| `docs/operations/DEPLOY_RENDER.md:189` to `:193` (the lines the section had before this pass) | The section "## Nightly reset" | The section is gone |
+| `docs/operations/DEPLOY_RENDER.md:208` (the line it had before this pass) | "That covers the Blueprint field names, the cron job runtime, ..." | "That covers the Blueprint field names, ..." |
+| `render.yaml` | The cron service `acme-city-permits-nightly-reset`, its schedule `0 2 * * *`, its deploy hook secret, and the notes around them | The blueprint holds one service. The notes name only `plan` and `META_API_KEY` |
+| `repo/tests/security/test_public_demo_protection.py:534` | The blueprint test expected "type: cron", the deploy hook secret and the schedule | The same test holds the other way round: the blueprint has no cron job, no schedule and no deploy hook secret, and one web service. The three assertions that expected the cron job are replaced by four that forbid it |
+| `docs/solution-architecture/acme-city-permits/facts.md:119` | "- Render automatic deploys are off. A person starts each release deploy. A Render cron job can request the same rebuild at 02:00 UTC, but it needs `ACME_DEPLOY_HOOK_URL` set ..." | "- Render automatic deploys are off. A person starts each release deploy. The blueprint holds one service and no scheduled job, so every deploy rebuilds the fictional data." |
+| `docs/solution-architecture/acme-city-permits/facts.md:120` | "... `ACME_MUSE_LIVE_CALLS_ALLOWED=1` and a daily cap of 100." | "... `ACME_MUSE_LIVE_CALLS_ALLOWED=1`, a live call cap of 100 per deploy and a daily provider cap of 100." |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:674`, `page/body.html:674` and the same line in the built page | "... It defines one web service, built from `repo/Dockerfile-demo`, and one cron job that runs at 02:00 UTC." | "... It defines one web service, built from `repo/Dockerfile-demo`." |
+| `docs/solution-architecture/acme-city-permits/page/body.src.html:679`, `page/body.html:679` and the same line in the built page | "The cron job calls the web service deploy hook at 02:00 UTC each night, which rebuilds the fictional data. The deploy hook URL is a secret set in the Render dashboard; until it is set the nightly run fails and the data is not reset. Render keeps the old instance running until the new one passes `/readyz`." | "Every deploy rebuilds the fictional data. Render keeps the old instance running until the new one passes `/readyz`." |
+| `docs/solution-architecture/acme-city-permits/check/verify_page.py` | The allowed figure "02" was there for "nightly Render reset at 02:00 UTC" | The entry is gone. The page prints no "02" any more, and the check is stricter for it: a figure that is not on the list still fails the build |
+
+The live call allowance was corrected with it. `ACME_MUSE_LIVE_CALL_CAP`
+counts the live runs in the database (`repo/src/acme_city/muse/service.py`),
+and the database is rebuilt on every deploy, so 100 live calls is an allowance
+for one deploy, not for one day. `ACME_MUSE_DAILY_CALL_CAP` is counted by the
+UTC day (`repo/src/acme_city/muse/budget.py`), so "100 provider calls a day"
+was true and stays.
+
+One thing for Randall: without the nightly reset the 100 live calls are spent
+for the life of a deploy. A deploy rebuilds the data and clears the count, so
+a Manual Deploy before a judging round gives the demonstration a fresh
+allowance.
+
+The job is gone from the blueprint, so the next Blueprint sync in Render takes
+the `acme-city-permits-nightly-reset` job off the dashboard. It never ran,
+because the deploy hook secret was never set. The deploy hook itself stays a
+manual tool under `acme-city-permits`, then Settings, then Deploy Hook.
+
+The architecture page was not rebuilt: the kit and its standard are not on this
+host. The three copies of the page carry the same two sentences, the built
+file still embeds the body verbatim, and `PROJECT_NOTE.md` records the new size
+(362853 bytes) and hash
+(`4d7f96568540e7aae44cdb1a5e9429457ee144d256550fac3bea46a678b18c27`) of the
+built file. The independent check of the built page passes: "Result: PASS".
+
+### D. The size of the automated suite
+
+The merge of 19:36 on 2026-11-02 brought one test with it, so the suite
+collects 3,787 tests where the earlier measurement said 3,786. The full run of
+the branch passes 3,785 of them and skips the two WebKit browser tests. The
+two documents that state the size were corrected with it.
+
+| File and line | Before | After |
+| --- | --- | --- |
+| `README.md:129` | "The automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, ..." | "The automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, ..." |
+| `docs/submission/SUBMISSION.md:109` | "The full automated suite collects 3,786 tests. The full run of November 2, 2026 passed 3,784 of them and skipped 2, ..." | "The full automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, ..." |
+
+The figures come from the code of the day: `pytest --collect-only -q` in
+`repo/` gives 3,787, and the full run of the same day passed 3,785 and skipped
+2. No test was added or removed in this pass, so the count is the count of the
+branch.
+
+## Checks
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -n 8 -p no:cacheprovider \
+    tests/unit tests/integration -k "doc or help or walkthrough or readme or copy or tour or sandbox"
+```
+
+354 passed on 2026-11-02, after Part 4. The earlier run of the same selection
+without "sandbox" gave 353 passed, 2145 deselected.
+
+The lines the public demonstration notice is held to were run as well:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
+    tests/unit/test_city_chrome.py tests/unit/test_landing_reorder.py \
+    tests/security/test_public_demo_protection.py
+```
+
+79 passed.
+
+The browser test of the architecture frame was run:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
+    tests/browser/test_help_docs_browser.py -k "architecture"
+```
+
+1 passed, 1 deselected.
+
+The whole suite was run on the same day with
+`PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider -n 8`:
+**3,784 passed, 2 skipped in 963.36s**. The two skipped are the WebKit
+browser tests, which cannot run because that browser is not installed on the
+machine. That is the number in Part 3.
+
+No assertion was weakened or removed.
+
+### After Part 5
+
+The selection Randall asked for was run with `-n 8`:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -n 8 -p no:cacheprovider \
+    -k "doc or help or submission or readme or walkthrough"
+```
+
+417 passed on 2026-11-02. The selection was run three times: once before the
+help content of Part 5 C was changed, once after it, and once more after the
+last changes of the README, the submission text and this file. The result was
+the same each time.
+
+The blueprint check of the Render file does not fall inside that selection, so
+it was run with the two files that hold the landing page:
+
+```
+cd repo && PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider \
+    tests/security/test_public_demo_protection.py tests/unit/test_landing_reorder.py \
+    tests/unit/test_city_chrome.py
+```
+
+79 passed on 2026-11-02, after the last change. The landing page is where the
+notice line and the order of the cards and the video are held.
+
+The independent check of the architecture page was run from the page folder:
+
+```
+cd docs/solution-architecture/acme-city-permits && python3 -I check/verify_page.py \
+    vollen_acme-city-permits_solution-architecture_2026-10-26.html STATUS.json page/page.json
+```
+
+PASS. 60 numeric tokens on the page, none unrecognised, and the mockup note
+count held.
+
+The whole suite was run on the same day with
+`PYTHONPATH=src <venv python> -m pytest -q -p no:cacheprovider -n 8`:
+**3,785 passed, 2 skipped in 894.91s**. The two skipped are the WebKit browser
+tests, which cannot run because that browser is not installed on the machine.
+That is the number in Part 3. The run started at 19:54 and finished at 20:09;
+the words changed after it started are the ones in the README, the submission
+text and the help content, and the selection above was run again after them.
+
+No assertion was weakened. The three assertions of the blueprint test that
+expected the nightly reset are replaced by four that forbid it.
+

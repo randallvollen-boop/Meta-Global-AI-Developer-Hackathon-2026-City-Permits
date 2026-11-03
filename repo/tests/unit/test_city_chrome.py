@@ -24,7 +24,7 @@ from acme_city.app import create_app  # noqa: E402
 from acme_city.core.config import Settings  # noqa: E402
 
 #: The one line the public demonstration carries.
-NOTICE_LINE = "Fictional data. Resets nightly."
+NOTICE_LINE = "Fictional data. Rebuilt on every deploy."
 
 #: The one sentence the City footer carries.
 FOOTER_NOTE = (
