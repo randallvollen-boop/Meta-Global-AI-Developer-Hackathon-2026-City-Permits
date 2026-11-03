@@ -78,8 +78,14 @@ footer{border-top:1px solid var(--hi)}
 .bnc-tabs .on{border-color:#b8893a}
 
 /* ---- Page-local styles for the ACME City Permits architecture page ----
-   Scope: the status panel, the evidence register state chip and the
-   figure captions. Everything else comes from the shared brand layer. */
+   Scope: the footer brand line, the status panel, the evidence register state
+   chip and the figure captions. Everything else comes from the shared brand
+   layer. The footer rule is kept here, and not in the brand layer copy above,
+   so that a recopy of the shared brand layer cannot lose it. */
+
+/* Footer brand line: the wordmark and the tagline are right aligned against the
+   page edge, and a visible gap keeps them from reading as one run of text. */
+footer .foot-vds{gap:6px;margin-left:auto}
 
 /* Status panel: six cards generated from the workspace status record. */
 .status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }

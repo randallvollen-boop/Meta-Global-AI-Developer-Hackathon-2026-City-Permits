@@ -6,7 +6,7 @@ Date: 2026-10-26, updated 2026-10-29. Audience: internal AVA Library. No client.
 
 Never on the page: credentials, tokens or private email; people's names or contact details; local usernames, machine paths, hostnames, IP addresses or exact hardware; client names/data/logos/scans; City of Westerville logos, portal copies or implied endorsement; real applicant, contractor, parcel, payment or permit records; raw source archives; private account screenshots; deal terms, grant balances, prize claims or submission credentials; unmeasured accuracy, savings, performance or compliance claims; hidden chain-of-thought; Contributor model use; production-readiness or tamper-proof claims.
 
-Use only fictional ACME City records and examples. VollenData text branding only; the page is prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme; no logo of any kind. Every interface mockup says “Example with fictional data.” Retain “Internal draft. [REVIEW REQUIRED] before external use.”
+Use only fictional ACME City records and examples. VollenData text branding only; the page is prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme; no logo of any kind. Every interface mockup says “Example with fictional data.” The internal-review banner is removed by the project owner's decision of 2026-11-02: the banner rule of the build skill does not apply to this page, and the builder must not restore it. The same decision keeps every open-gate and review-status line off the page: no release-gate row, no brand or delivery-owner gate status, no draft or review marker. Those statuses stay in this fact sheet and in `PROJECT_NOTE.md`, which are internal. The only model name the page may carry is Muse: no Muse product variant, no model version and no other model is named, in the copy, in the diagram or in the alt text.
 
 ## Evidence sources
 
@@ -116,8 +116,8 @@ No implementation or verification figure is shown as complete until the correspo
 ## Hosting and production
 
 - The live public demonstration is at `https://acme-city-permits.onrender.com` on a paid Render web service. It runs the demo image from `repo/Dockerfile-demo`, uses SQLite and contains fictional data only.
-- Render automatic deploys are off. A person starts each release deploy. The blueprint holds one service and no scheduled job, so every deploy rebuilds the fictional data.
-- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock. The next deploy sets `ACME_MUSE_PROVIDER_ENABLED=1`, `ACME_MUSE_LIVE_CALLS_ALLOWED=1`, a live call cap of 100 per deploy and a daily provider cap of 100. A public demo without `ACME_MUSE_LIVE_CALLS_ALLOWED` still locks live calls.
+- Render automatic deploys are off. A person starts each release deploy, while a Render cron job requests the nightly demonstration reset at 02:00 UTC.
+- The hosted demonstration is not production mode. `ACME_PUBLIC_DEMO=1` applies the public demonstration lock. The next deploy sets `ACME_MUSE_PROVIDER_ENABLED=1`, `ACME_MUSE_LIVE_CALLS_ALLOWED=1` and a daily cap of 100. A public demo without `ACME_MUSE_LIVE_CALLS_ALLOWED` still locks live calls.
 - The production mode remains a hardened core rather than a finished product. Real sign-in, a server database, backups, monitoring and malware scanning remain open.
 
 ## Open decisions and release gates
@@ -126,7 +126,7 @@ No implementation or verification figure is shown as complete until the correspo
 - Provider-reported credit balance, expiration, eligible products and no-cash enforcement remain unverified; live calls use a two-success cap and stop on provider/billing errors.
 - The repository is on GitHub under the personal owner, private until submission.
 - Final competition candidate, event terms, submission format and submission remain held. The public demonstration is deployed separately in demo mode.
-- Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. Keep the internal-review banner.
+- Brand and delivery-owner review are open. The security review has run, and its High and Medium findings are fixed. These statuses are internal. The project owner's decision of 2026-11-02 keeps them off the page: no release-gate row, no gate status and no internal-review or draft marker is written there, and the build skill must not restore one.
 - Architecture status is AS BUILT; the integrated evidence gate passed.
 
 ## Kit provenance
@@ -135,7 +135,7 @@ Build with the installed Solution Architecture Kit and Vollen Linux brand layer.
 
 ## How it was built (2026-10-27)
 
-- Local and other frontier models assisted the Muse models: requirements, plans, implementation slices, integration, the live Muse extraction fix, the gates and review of each merge. The page names no non-Muse product or model (Randall, 2026-10-30).
+- Local and other frontier models assisted the Muse models: requirements, plans, implementation slices, integration, the live Muse extraction fix, the gates and review of each merge. The page names no non-Muse product or model (Randall, 2026-10-30). From 2026-11-02 the rule is tighter: Muse is the only model name the page carries, and no Muse product variant is named either.
 - Meta Muse Spark 1.3 is the runtime extraction model. Muse Wonder 1.0 reviewed the prototype and built the redesign. Muse Image 1.0 made 14 of the 17 permit-type icons.
 - Before and after screenshots use fictional data only. Source: `docs/build-story/ENGINES.md`.
 
@@ -163,14 +163,15 @@ Source: `../acme-permits-parity-notes/BRIEF-P3-OPERATIONS.md`, read 2026-10-28. 
 - P3insight, community permit insight. The City Administrator gets permit activity on the town map by district, with filters for type, outcome, period and exceptions (variances, waivers, denials, conditions), business activity by category, and trends. Residents get "Permits in my community" on the City of Acme website: the same map and totals, plus public lookup by address, street or permit number. The public record shows the permit number, type, parcel and address, work description, status, dates, outcome, conditions, an exception marker and the contractor business name. It never shows homeowner names, documents, internal notes, comments, contact details or fees, and district totals under 3 show as "fewer than 3". Business categories (restaurant, bar, retail, office) are added. Sanitation and police join the simulated subscriber departments. Everything displayed comes from seeded synthetic data with a synthetic label.
 - P3policy, what-if for administrators. A scenario applies proposed rule, document, process-category, service-target or fee changes in memory only. A deterministic engine reruns the rule evaluator, intake checks and fee calculation over current cases, decided cases or a seeded synthetic year. It reports cases whose outcome changes, cases no longer held for a reviewer, needs-information changes, service-target changes and hypothetical assessed fees. It makes no staff-time or revenue claim, and every case that moves from fail to pass is listed. Muse Spark explains a stored run in a council briefing, and every number in the briefing must equal a computed measure. "Propose as draft" creates draft rule versions that still need independent approval. Demo scenario: fence height limit raised from 6 ft to 7 ft.
 
-## Explainer video, planned (Randall approved the script 2026-10-28)
+## Explainer video, in production (Randall approved the script 2026-10-28)
 
 Source: `../acme-permits-parity-notes/VIDEO-SCRIPT-r7.md`. Review record: `VIDEO-SCRIPT-REVIEW.md` (private; it never goes on the page).
 
-- Length 2:00, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
-- Presenter: the VollenData sunflower character, lip-synced with a video model to text-to-speech narration (DemoVideo session, draft 7, 2026-10-29). Slides, app recordings, captions and assembly are done in a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
-- Workflow: video model pilot clip of scene 1 (on hold until the GPU is free); seven presenter clips; app recordings on a separate copy of the app with live Muse Spark for the Muse moments; video engine assembly; review; final render; Randall's sign-off. Recording waits until P3chat, P3insight and P3policy merge. Nothing is published or submitted without Randall's go.
-- Script text for the page: the seven narration paragraphs of `VIDEO-SCRIPT-r7.md`, verbatim, under a "Planned explainer video" heading.
+- The demo video is being recorded from the final build of the application. The page states that plainly and carries no draft number, no draft badge and no cut length.
+- Length target: under the organisers' 3 minute limit, seven scenes: the problem; three groups, one app; residents; city staff; city leaders; one shared record; close.
+- Presenter: the VollenData sunflower character, lip-synced with a video model to text-to-speech narration. Slides, app recordings, captions and assembly are done in a TypeScript video engine running on the local GPU. Hook and close stills come from Muse Image.
+- Workflow: presenter clips; app recordings on a separate copy of the app, with the Muse moments taken from the live paths of the City (the help assistant, Check my application, Explain with Muse and the policy briefing); video engine assembly; review; final render; Randall's sign-off. Nothing is published or submitted without Randall's go.
+- Script text for the page: the narration paragraphs of the approved script, verbatim, under the "Explainer video" heading.
 - Never on the page: the private review record, voice or face reference file paths, or the identity name.
 
 ## Phase 3a and the City of Acme website, as built (2026-10-28)
@@ -234,7 +235,7 @@ Left out because it could not be verified: nothing is drawn for a live Muse Spar
 
 ## Permit life cycle (2026-10-29, branch `feature/permit-lifecycle` off main `6437418`)
 
-Randall asked for a permit life cycle in the architecture, a route to test it and a judge walkthrough (2026-10-29). Status: BUILT on the branch and not yet merged. The page is republished only after the merge.
+Randall asked for a permit life cycle in the architecture, a route to test it and a judge walkthrough (2026-10-29). Status: BUILT and merged to main (`src/acme_city/permits/lifecycle_map.py`).
 
 - 12 statuses. Source: the `status_allowed` check constraint in `repo/src/acme_city/persistence/models/permit.py`.
 - 16 moves, each with its source statuses, target, acting grant and screen. Source: `repo/src/acme_city/permits/lifecycle_map.py`. The source status sets are imported from the services where they exist: `ADVANCEABLE_STATUSES`, `RETURNABLE_STATUSES`, `REVISION_STATUSES` and `ARCHIVABLE_STATUSES` (`permits/lifecycle.py`), `DECIDABLE_STATUSES` (`permits/decisions.py`) and `RESPONDABLE_STATUSES` (`applicant_portal/service.py`).
@@ -257,8 +258,8 @@ Sources are the code on that commit under `repo/`. Every item below was checked 
 - Daily Muse allowance: `muse/budget.py`, `ACME_MUSE_DAILY_CALL_CAP`, default 10 (`core/config_operator.py`). Live call cap default 2.
 - Applicant help answer, council briefing and what-if proposals use the same adapter. On the hosted demonstration `ACME_APPLICANT_ASSIST_LIVE_ENABLED` and `ACME_POLICY_ASSIST_LIVE_ENABLED` are 1, with a daily cap of 100. When live Muse is off, or that allowance is used up, recorded answers are used.
 - Town map: no outside tiles or network calls; parcels are textured with 17 bundled local WebP tiles (`static/map-tiles`, `gis/svg.py`); the City view uses them. The tiles were generated at build time with a local image model (commits `5eddb89`, `6e96c36`), a build-time asset only.
-- Demo video: `static/video/demo-video.mp4` is the final cut (picture lock 2026-11-02, Randall) at 720p, 179.5 s (2:59.5) with a 2 s title slide, 8.22 MB, preload none, no autoplay.
-- Tests: 2741 collected on merged main (`python -m pytest --collect-only -q`, 2026-10-30). Last recorded full run 2726 passed in 815.58 s (`EVIDENCE_LOG.md`). Phase counts 762 and 879 are historical. 10 gates unchanged.
+- Demo video: `static/video/demo-video.mp4` is bundled on the persona page at 720p, 164.2 s (2:44), 7.96 MB, preload none, no autoplay. It is the copy of the current cut. The demo video is being recorded from the final build, and the bundled copy is replaced at picture lock.
+- Tests: 3765 collected on merged main, counted on 2026-11-02 (`python -m pytest --collect-only -q`). The tree gained two held-submit regression checks later that day, so a collection at the tip of the same day reports 3767. The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02). Phase counts 762 and 879 are historical. 10 gates unchanged.
 - Licence: all rights reserved, copyright Randy Vollen and VollenData; the repository is public for transparency, hackathon evaluation and demonstration only (`LICENSE`, `NOTICE`). The earlier Apache 2.0 statement is withdrawn.
 - Approval policy: `config/approval_policy.json`, default `single` (one administrator may approve); `independent` requires a different administrator.
 - Steward autolink: `registry/automation.py`, `agents/linking.py`, `scripts/run_linking_worker.py`. A steward-activated policy; a bounded worker applies only high-confidence party links through a narrow service identity (`linking_agent`); each applied link is reviewable and reversible; parcel and address families are suggest-only; no model call.
@@ -273,3 +274,37 @@ Sources: `repo/src/acme_city/registry/` (`service.py` propose, decide, apply_aut
 - Callers that import the registry: `ingestion/service.py`, `agents/intake.py`, `agents/linking.py`, `muse/service.py` (proposals); `permits/service.py`, `permits/issuance.py`, `permits/queues.py`, `finance/service.py` (reads); `ui/property_views.py` (property master).
 - The public community lookup does not read registry identities. It reads `insight/public.py` over an allowlist model and the GIS catalog, so the page says it is separate by design.
 - Diagram: the registry node is at the centre of the System view with a heavier outline (class `core`). New edges: agents to registry "proposes link", Data Steward to registry "decides", registry to permits, finance and property master "reads". Evidence and tests moved to the cell the registry used to hold.
+
+## Final pass, 2026-11-02 (the rebuild of the page)
+
+Sources: the tree at `3a77390`, read on 2026-11-02: `BUILD_LOG.md`, `EVIDENCE_LOG.md`, `GO_NO_GO.md`, `render.yaml`, `repo/docker-compose.yml`, `repo/config/permissions.json` and the code under `repo/src/acme_city/`.
+
+- The internal-review banner and every other internal-review or draft status marker are removed from the page. The project owner's decision of 2026-11-02 overrides the banner rule of the build skill for this page. The byline and the "Example with fictional data" labels stay.
+- Steward data no longer holds a case (merge `50638bb`, `BUILD_LOG.md` "Non-blocking steward data"). An open parcel or identity link is Data follow-up, and the agent recommends from the rules it could check. A rule that depends on the parcel shows as Not checked. Missing applicant information still returns to the applicant, and the payer link and the fee still block issuing.
+- Approving against a failed rule is allowed and is recorded as an exception with its reason (commit `0bae0db`, `docs/operations/RUNBOOK.md`).
+- The pre-submit check (`repo/src/acme_city/applicant_portal/presubmit.py`): Check my application runs the rules layer and asks Muse for feedback. The findings are grouped as Must fix, Should check and Looks good. Submit anyway needs a written reason, and submitting itself makes no model call (`repo/src/acme_city/ui/portal_routes.py`, `muse=False` on submit).
+- The demonstration uses the real clock. Render no longer sets `ACME_SCENARIO_CLOCK=auto`, and the Compose file leaves the setting empty (commits `4782b46` and `3a77390`).
+- Permissions: 85, in `repo/config/permissions.json`.
+- Tests: 3765 collected on merged main, counted on 2026-11-02. Two held-submit regression checks landed later the same day, so a collection at the tip reports 3767. The last recorded full run passed 3237 without the browser checks (`EVIDENCE_LOG.md`, 2026-11-02).
+- The live paths of Muse: the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals (`repo/src/acme_city/ui/guide_routes.py`, `_surface_live`). The document extraction is a recorded Muse run and is replayed (`repo/src/acme_city/agents/extraction.py`).
+- The hosted demonstration enables live Muse in `render.yaml` with a daily allowance of 100 and a live-call cap of 100. The credential is entered in the Render dashboard and never sits in the repository.
+- The demo video is being recorded from the final build of the application.
+- The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` are untouched by this pass.
+
+## Presentation pass, 2026-11-02 (the brand line and the theme toggle)
+
+Sources: the project owner's two corrections of 2026-11-02, read against the built page in a browser.
+
+- The footer brand line, "VollenData" over "A Brighter Future, Rooted in Data.", is right aligned against the page edge. The two are separated by a visible 6px gap, and the markup carries a space between the two spans so a text copy reads "VollenData A Brighter Future, Rooted in Data." The wordmark stays the single word "VollenData". The rule lives in the page local block of `page/extra.css`, not in the brand layer copy, because the shared brand layer is recopied on every rebuild.
+- The theme toggle sets `data-theme` on the root element and does not depend on `localStorage`. A frame that allows scripts without the same origin has an opaque origin, and `localStorage` raises a `SecurityError` there; the toggle still flips the theme. Persistence is best effort and is not needed for the page to work.
+- The shared brand layer in the build skill, `assets/vds-brand/extra.css` and `assets/vds-brand/snippets.html`, was not changed. The sandbox refused both files. The skill still carries the older footer rule and the older theme script, and every other page copies that script into its own `body.src.html`, so the skill template should take the same script in a later pass.
+- No figure, status value or claim changed in this pass.
+
+## Judge-facing pass, 2026-11-02 (no review status, and Muse as the only model name)
+
+Sources: the project owner's instruction of 2026-11-02, read against the built page.
+
+- The page carries no open-gate or review-status sentence. The "Release gates" row of "What exists now" and the "Review gates" row of "Open decisions and limitations" are gone, and the open-decisions rows are renumbered. The security review section stays: it reports a completed review and its fixed findings, not a gate that is still open.
+- The banner rule of the build skill does not apply to this page, and the same decision covers the gate and review status lines. Neither the banner nor any gate status is restored by a rebuild or by a status refresh. `update_status.py` no longer writes a release-gates row.
+- The only model name on the page is Muse. The Muse product variants, the model versions and the model identifiers are removed from the copy, the diagram, the diagram alt text and the info panels. The diagram's external model services keep one node titled "Muse" and one titled "Icon generation", and the runtime node's subtitle reads "Standard mode, bounded call".
+- The facts in this sheet keep the model names, the gate statuses and the review findings. The sheet is the gate for the build, and it is internal.

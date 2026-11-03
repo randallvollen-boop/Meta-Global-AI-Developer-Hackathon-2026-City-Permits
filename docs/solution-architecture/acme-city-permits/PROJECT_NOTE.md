@@ -1,6 +1,6 @@
 # ACME City Permits architecture page, project note
 
-Date: 2026-10-30 (accuracy rebuild; originally 2026-10-26). Status: AS BUILT. Internal draft.
+Date: 2026-11-02 (final rebuild; originally 2026-10-26). Status: AS BUILT.
 
 ## Revision 2026-10-28
 
@@ -8,13 +8,15 @@ The diagram now shows the parts built through repo commit `4ea0497`. See the rev
 
 ## Revision 2026-10-29, hosting copy
 
-The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact remains an internal draft and was not published.
+The Hosting and Production passages now describe the live public demonstration on a paid Render web service. They distinguish the demo image and public demonstration lock from production mode, record manual release deploys and the nightly reset, and state that live Muse calls have no provider or key on the hosted demonstration. The artifact was not published.
 
 ## Output
 
 `~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
-One self-contained HTML file. 362853 bytes. SHA-256 `4d7f96568540e7aae44cdb1a5e9429457ee144d256550fac3bea46a678b18c27` (2026-11-02 no nightly reset). The file before that change was 363085 bytes, SHA-256 `b5015940480bceef54a794dd22cd7d8bce1b1b88cd199d5405679c724fefe73d` (2026-11-02 hosting wording). The file before that was 362944 bytes, SHA-256 `6d95b250204520da18a2b6fa8a57b9b622e8b5a1fe4b42da08e455a0e7de7f9b` (2026-10-30 accuracy rebuild). It loads nothing from the network and renders offline in a browser.
+One self-contained HTML file. 364358 bytes. SHA-256 `b13d67ccb5ae4d8b9785e816ec55bd8d300996fb31852aa2083503810229b60c` (2026-11-02, no review status and Muse as the only model name). It loads nothing from the network and renders offline in a browser.
+
+The application serves this file at `/help/technical/architecture`. It is the only copy in the repository, and `repo/tests/integration/test_help_docs.py` checks that the served bytes are the committed bytes.
 
 ## Rebuild
 
@@ -75,7 +77,7 @@ The library article identifier is `acme-city-permits-architecture`, as recorded 
 
 The private AVA Library article is published under `acme-city-permits-architecture`, as recorded in the status record under `library.article_id`. Each accepted phase update replaces the previous content under that same identifier and never creates a new article.
 
-The article remains an internal draft with the review banner. Brand, delivery-owner and security approvals are still open. AVA was updated offline while its service remained inactive.
+The review banner was removed from the page by the project owner's decision of 2026-11-02. The same decision keeps every open-gate and review-status line off the page, so the release gates row and the review gates row are gone. Brand and delivery-owner approvals are still open, and the security review has run; those notes stay here and in the fact sheet, which are internal. Muse is the only model name the page carries. The AVA article was replaced with this build under the same identifier, while its service remained inactive.
 
 ## Boundaries
 
@@ -88,7 +90,7 @@ The article remains an internal draft with the review banner. Brand, delivery-ow
 
 ## Planned content
 
-The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections are planned content only. They claim no result, and nothing in them is built, published or submitted.
+The `roadmap` section (Phase 3: built) and the `video` section (the demo video in production) state what is built and what is still being recorded. Neither publishes or submits anything.
 
 ## Revision 2026-10-29, permit life cycle section
 
@@ -107,33 +109,29 @@ The `roadmap` (Planned: phase 3) and `video` (Planned explainer video) sections 
 
 - New section "Why master data is central", a registry-first standfirst, and a System view with the registry master data node at the centre (class `core`, heavier outline in `page/extra.css`). Edges: proposes link, decides, reads. Non-Muse product and model names were removed from the sources and the page.
 
-## Revision 2026-11-02, hosting reset wording
+## Revision 2026-11-02, final rebuild
 
-- The Hosting section no longer states the nightly reset as a fact. The Blueprint
-  line says the cron job runs at 02:00 UTC. The cron job line says the deploy
-  hook URL is a secret set in the Render dashboard, and that until it is set the
-  nightly run fails and the data is not reset. The same wording is in
-  `facts.md` under "Hosting and production".
-- Superseded by the revision below: the cron job was dropped from the blueprint
-  on Randall's word, so the page no longer names it at all.
-- The kit and its standard are not on this host, so the page was not rebuilt.
-  `page/body.src.html`, `page/body.html` and the built file carry the same two
-  sentences, and the built file still embeds the body verbatim, so a rebuild
-  from these sources gives the same output.
-- The AVA Library copy was not replaced.
+- The internal-review banner is gone. The project owner's decision of 2026-11-02 overrides the banner rule of the build skill for this page, so `page/page.json` carries an empty banner and no internal-review or draft marker stays on the page. The byline and the "Example with fictional data" labels stay.
+- The facts of 2026-11-02 are on the page: steward data no longer holds a case, approving against a failed rule is a recorded exception, the pre-submit check with Check my application and Submit anyway, the real clock in the demonstration, 85 permissions, and the current test figures.
+- The Muse passage names the live paths: the applicant help answer, Check my application, Explain with Muse, the council briefing and the what-if proposals. The document extraction stays a recorded run that is replayed.
+- The video rows carry no draft number. The page says the demo video is being recorded from the final build.
+- The diagram keeps its Play and step-through engine. `repo/src/acme_city/templates/help.html` and `repo/src/acme_city/ui/help_docs_routes.py` were not touched.
+- Kit builder and the Linux checker ran clean, and `check/verify_page.py` passes. The AVA Library copy was not replaced in this revision.
 
-## Revision 2026-11-02, the nightly reset is gone
+## Revision 2026-11-02, brand line and theme toggle
 
-- The Hosting section names no cron job and no nightly reset. The Blueprint line
-  says the blueprint defines one web service, built from `repo/Dockerfile-demo`.
-  The next line says every deploy rebuilds the fictional data. The same wording
-  is in `facts.md` under "Hosting and production", and the live call allowance
-  there now says 100 live calls per deploy and a daily provider cap of 100.
-- The cron job was dropped from `render.yaml` on 2026-11-02 (Randall), so the
-  page and the blueprint agree. The deploy hook stays a manual tool in the
-  Render dashboard.
-- The kit and its standard are not on this host, so the page was not rebuilt.
-  `page/body.src.html`, `page/body.html` and the built file carry the same two
-  sentences, and the built file still embeds the body verbatim, so a rebuild
-  from these sources gives the same output.
-- The AVA Library copy was not replaced.
+- The footer brand line, "VollenData" over "A Brighter Future, Rooted in Data.", is right aligned against the page edge and the two are separated by a visible 6px gap. The markup also carries a space between the two spans, so a text copy no longer runs them together. The rule lives in the page local block of `page/extra.css`, not in the brand layer copy, because the shared brand layer is recopied on every rebuild.
+- The theme toggle flips `data-theme` on the root element and does not depend on `localStorage`. The script now guards `matchMedia` and the storage calls, and keeps the reader's choice in force when the operating system theme moves. In a frame with an opaque origin, `localStorage` raises a `SecurityError`, and the toggle still works.
+- `check/verify_page.py` gained two checks, the theme toggle and the footer brand line, and now runs eight. Both were run against the previous build: check 7 passed there and check 8 failed there with three problems.
+- The shared brand layer in the skill, `assets/vds-brand/extra.css` and `assets/vds-brand/snippets.html`, was not changed. The sandbox refused both files, so the skill still carries the older footer rule and the older theme script. Every other page copies that script into its own `body.src.html`, so the skill template should take the same script in a later pass.
+- The frame that carries the page still blocks scripts on this branch. The toggle was read against a frame that allows scripts and an opaque origin, which is what the branch that allows scripts provides.
+- Kit builder and the Linux checker ran clean, `check/verify_page.py` passes, and `repo/tests/integration/test_help_docs.py -k architecture` passes, so the served bytes are the committed bytes. The AVA Library copy was not replaced in this revision.
+
+## Revision 2026-11-02, no review status and Muse as the only model name
+
+- The page carries no open-gate or review-status line. The release gates row of "What exists now" and the review gates row of "Open decisions and limitations" are gone, and the open-decisions rows are renumbered from 6 to 10 into 5 to 9.
+- Muse is the only model name on the page. The Muse product variants, the model versions and the model identifiers are out of the copy, the diagram, the diagram alt text and the info panels. The diagram's external model services keep one node titled "Muse" and one titled "Icon generation".
+- The decision is recorded in `facts.md`, so the build skill does not restore a gate status or a model name. `update_status.py` no longer writes a release-gates row.
+- `check/verify_page.py` gained two checks, the model names and the open-gate phrases, and now runs ten. Both were run against the previous build: they failed there with eleven problems, all of them the ones this pass removes.
+- The AVA Library article was replaced under `acme-city-permits-architecture` with this build, and `STATUS.json` records the new publication time and hash.
+- Kit builder and the Linux checker ran clean, `check/verify_page.py` passes, `repo/tests/integration/test_help_docs.py` passes, so the served bytes are the committed bytes.

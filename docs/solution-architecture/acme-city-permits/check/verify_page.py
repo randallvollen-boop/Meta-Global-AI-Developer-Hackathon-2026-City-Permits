@@ -9,6 +9,11 @@ Checks, in order:
   3. No external script, style, font, image or link is required to render.
   4. The status panel values match STATUS.json exactly.
   5. Every number printed on the page is on the allowed figure list.
+  6. Every mockup frame carries the fictional data note.
+  7. The theme toggle flips data-theme on the root, and every storage call is guarded.
+  8. The footer brand line is right aligned, and the wordmark and tagline are separated.
+  9. The page names no model other than Muse.
+ 10. The page carries no open-gate or review-status line.
 
 Writes a text report to stdout and exits non-zero when a check fails.
 Standard library only.
@@ -55,6 +60,9 @@ ALLOWED_FIGURES = {
     "720": "720p bundled video copy",
     "2741": "tests collected on merged main",
     "2726": "last recorded full run, passed",
+    "3765": "tests collected on merged main, counted on 2026-11-02",
+    "3237": "last recorded full run without the browser checks, passed",
+    "85": "permissions in repo/config/permissions.json",
     "300": "public demonstration request limit and diagram coordinate",
     "503": "readiness response when schema is not current",
     "60": "public demonstration write limit",
@@ -67,8 +75,8 @@ ALLOWED_FIGURES = {
     "879": "merged main at ead8790 (phase 3a and city website): pytest passed (repo/var/check-run-main-city/)",
     "5.6": "model name GPT-5.6",
     "5.5": "model name Claude Opus 5.5",
-    "1.3": "model name Muse Spark 1.3",
-    "1.0": "model names Muse Wonder 1.0 and Muse Image 1.0",
+    "1.3": "model version fragment, no longer printed",
+    "1.0": "model version fragment, no longer printed",
     "0": "zero implemented, zero verified, zero records",
     "1": "status values and list positions",
     "01": "identifier fragment for AT, VC and D identifiers",
@@ -161,6 +169,33 @@ EXTRA_LEAKS = [
     Path.home().name, "/home/", "Randall", "GB10", "127.0.0.1", "192.168", "10.0.0",
     "META_API_KEY", "api_key", "apikey", "api key", "password", "secret",
     "mailto:", "gmail", "@vollen", "grant balance", "prize",
+]
+
+# Model names that must never reach the page. Muse is the only model the page may name,
+# by the project owner's decision of 2026-11-02. The Muse product variants and the model
+# identifiers go with it. Relax this list only if the owner says so.
+FORBIDDEN_MODEL_NAMES = [
+    "Muse Spark", "Muse Wonder", "Muse Image",
+    "muse-spark", "muse-wonder", "muse-image",
+    "GPT", "OpenAI", "Claude", "Anthropic", "Opus", "Sonnet", "Haiku",
+    "Gemini", "Llama", "Mistral", "DeepSeek", "Qwen", "Grok",
+    "DALL-E", "Midjourney", "Stable Diffusion", "Kinetograph",
+    "contributor model",
+]
+
+# Open-gate and review-status phrases that must never reach the page, by the same decision.
+# The release gates that passed stay on the page; the status of a gate that is still open does not.
+FORBIDDEN_STATUS_PHRASES = [
+    "brand and delivery",
+    "delivery owner",
+    "delivery-owner",
+    "review gates",
+    "gates are open",
+    "brand approval",
+    "internal draft",
+    "review required",
+    "internal banner",
+    "<td>release gates</td>",
 ]
 
 
@@ -314,6 +349,119 @@ def main():
         fail(lines, "only %d fictional data notes for %d mockups" % (notes, mockups))
         failures.append("mockup note")
     lines.append("%d mockup frames, %d fictional data notes." % (mockups, notes))
+
+    # 7. the theme toggle
+    lines.append("")
+    lines.append("## 7. Theme toggle")
+    scripts = re.findall(r"<script\b[^>]*>(.*?)</script>", doc, re.S)
+    theme = next((s for s in scripts if "vtheme-toggle" in s), "")
+    # The check reads code, not prose: drop the comments before looking for calls.
+    theme = re.sub(r"/\*.*?\*/", " ", theme, flags=re.S)
+    theme = re.sub(r"(?m)^\s*//.*$", " ", theme)
+    if not theme:
+        fail(lines, "no theme script found")
+        failures.append("theme script")
+    else:
+        if 'class="vtheme-toggle"' not in doc:
+            fail(lines, "the theme toggle button is missing from the page")
+            failures.append("theme toggle button")
+        if "setAttribute('data-theme'" not in theme:
+            fail(lines, "the theme script never sets data-theme on the root")
+            failures.append("data-theme")
+        click = re.search(r"addEventListener\('click'\s*,\s*function\s*\([^)]*\)\s*\{", theme)
+        if not click:
+            fail(lines, "the theme toggle has no click handler")
+            failures.append("click handler")
+        else:
+            depth, block = 0, ""
+            for i in range(click.end() - 1, len(theme)):
+                if theme[i] == "{":
+                    depth += 1
+                elif theme[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        block = theme[click.end() - 1:i + 1]
+                        break
+            if "setAttribute('data-theme'" not in block:
+                fail(lines, "the click handler does not set data-theme on the root")
+                failures.append("click handler")
+        # Every storage call must sit inside a try or catch block. A sandboxed frame
+        # has an opaque origin, so localStorage throws there and the flip must not
+        # depend on it.
+        guarded = []
+        for m in re.finditer(r"\b(?:try|catch)\b[^{]*\{", theme):
+            depth = 0
+            for i in range(m.end() - 1, len(theme)):
+                if theme[i] == "{":
+                    depth += 1
+                elif theme[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        guarded.append((m.start(), i))
+                        break
+        for m in re.finditer(r"localStorage", theme):
+            if not any(a <= m.start() <= b for a, b in guarded):
+                fail(lines, "a localStorage call is not guarded by try or catch")
+                failures.append("localStorage")
+        lines.append("The toggle sets data-theme on the root, and every storage call is guarded.")
+
+    # 8. the footer brand line
+    lines.append("")
+    lines.append("## 8. Footer brand line")
+    footer = re.search(r"<footer\b.*?</footer>", doc, re.S)
+    if not footer:
+        fail(lines, "no footer found")
+        failures.append("footer")
+    else:
+        mark = footer.group(0)
+        word = re.search(r'<span class="vds">([^<]*)</span>\s+<span class="tag">([^<]*)</span>', mark)
+        if not word:
+            fail(lines, "the wordmark and the tagline are not separated in the markup")
+            failures.append("brand line markup")
+        else:
+            if word.group(1).strip() != "VollenData":
+                fail(lines, "the wordmark is not the single word VollenData")
+                failures.append("wordmark")
+            lines.append("The wordmark and the tagline are separated, and the wordmark is one word.")
+        css = "\n".join(re.findall(r"<style\b[^>]*>(.*?)</style>", doc, re.S))
+        gap, margin = None, None
+        for rule in re.findall(r"footer \.foot-vds\{([^}]*)\}", css):
+            for declaration in rule.split(";"):
+                if ":" not in declaration:
+                    continue
+                prop, value = declaration.split(":", 1)
+                prop, value = prop.strip(), value.strip()
+                if prop == "gap":
+                    gap = value
+                elif prop == "margin-left":
+                    margin = value
+        if margin != "auto":
+            fail(lines, "the footer brand line is not right aligned (margin-left is %r)" % margin)
+            failures.append("brand line alignment")
+        if not gap or not gap.endswith("px") or int(gap[:-2]) < 4:
+            fail(lines, "the wordmark and the tagline have no visible gap (gap is %r)" % gap)
+            failures.append("brand line gap")
+        lines.append("The brand line is right aligned with a %s gap." % gap)
+
+    # 9. no model name other than Muse
+    lines.append("")
+    lines.append("## 9. Model names")
+    # The inline images are base64 and hold random text, so they are removed before the scan.
+    scanned = re.sub(r"data:[^\"'\s)]*", " ", doc)
+    for name in FORBIDDEN_MODEL_NAMES:
+        if re.search(re.escape(name), scanned, re.I):
+            fail(lines, 'the page names "%s"' % name)
+            failures.append(name)
+    lines.append("Scanned the whole output, with the inline images removed, for %d model names." % len(FORBIDDEN_MODEL_NAMES))
+
+    # 10. no open-gate or review-status line
+    lines.append("")
+    lines.append("## 10. Open gates and review status")
+    for phrase in FORBIDDEN_STATUS_PHRASES:
+        if phrase.lower() in doc.lower():
+            fail(lines, 'the page still carries "%s"' % phrase)
+            failures.append(phrase)
+    lines.append("Checked %d open-gate and review-status phrases." % len(FORBIDDEN_STATUS_PHRASES))
 
     lines.append("")
     lines.append("Result: **%s**" % ("FAIL, %d problem(s)" % len(failures) if failures else "PASS"))
