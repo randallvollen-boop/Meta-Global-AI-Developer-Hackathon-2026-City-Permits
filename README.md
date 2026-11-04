@@ -12,7 +12,7 @@ Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, us
 ## Submission overview
 
 * Track: Indie Developer · Build for Your World.
-* Built during the event: before the event there were a requirements package with a read-only reference baseline, and a click-through prototype of the screens. No code from either runs here. Every line of code under `repo/` was written between the overnight baseline of October 26 and November 3. See "Track and starting point".
+* Built during the event: before any code was written for `repo/`, Randall used an AI chat in the browser to write a requirements package and a click-through prototype of the screens. No code from either runs here. Every line of code under `repo/` was written between the overnight baseline of October 26 and November 3. See "Track and starting point".
 * Meta AI at runtime: Muse on the Meta Model API, through `muse-spark-1.3` for document reading, record matching, the help chat, the policy briefing and explanations, and `muse-image-1.0` for the permit type icons. At build time, `muse-wonder-1.0` reviewed the prototype and built the user interface redesign, the permit-type icon feature, the ePermit intake channels and the agent triage. See "Muse" for where each model runs and what it does.
 * Bonus prize targeted: Best Agentic Use-Case. The intake and adjudication agents run multi-step over the waiting cases, each run keeps its step graph and can be replayed, and a named person makes every decision.
 * Video: https://www.youtube.com/watch?v=NelkRrahaXw
@@ -22,10 +22,10 @@ Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, us
 
 Indie Developer track.
 
-What existed before the event:
+What existed before any code was written for `repo/`:
 
-* The requirements package: 57 requirements, the synthetic ACME City data and documents, and the acceptance arithmetic. It arrived on October 26, 2026. It also carried a read-only reference baseline, `reference/acme-city/`: a fictional permit domain with five permit-type configurations, synthetic data, deterministic rules, reports and static pages. That baseline is a pre-existing dependency in the sense of ideas only: it is not bundled here, no file of it was copied into `repo/`, and nothing in it implements the registry, the stewardship, the agents, the Muse integration or the server-enforced permissions that this application has.
-* A click-through prototype of the screens: one JSX file of about 3,100 lines with fourteen screens and no back end. It was a design reference only. Muse Wonder reviewed it against the built application, and its application form and its idea of agents that a person wakes and runs were rebuilt in this codebase. None of its code is in this repository.
+* The requirements package: 57 requirements, the synthetic ACME City data and documents, and the acceptance arithmetic, dated October 26, 2026. Randall wrote it with an AI chat in the browser, before the build started. The package also contains a small folder of generated Python scripts and static pages, `reference/acme-city/` (a synthetic data generator, deterministic fence rules, a findings dashboard, a self-test), which served as reference material only. That folder is not bundled here, no file of it was copied into `repo/`, and nothing in it implements the registry, the stewardship, the agents, the Muse integration or the server-enforced permissions that this application has.
+* A click-through prototype of the screens, written the same way: one JSX file of about 3,100 lines with fourteen screens and no back end. It was a design reference only. Muse Wonder reviewed it against the built application, and its application form and its idea of agents that a person wakes and runs were rebuilt in this codebase. None of its code is in this repository.
 
 Everything under `repo/` was written during the event: the whole application. The git history starts on October 27, 2026, and its first commit is a baseline of the overnight build of October 26, the first night of the event. The work recorded in `BUILD_LOG.md` runs from October 26 to November 3, 2026.
 

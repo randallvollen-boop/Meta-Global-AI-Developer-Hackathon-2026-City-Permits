@@ -88,7 +88,7 @@ The plan is written up in [docs/operations/MCP_PLAN.md](../../docs/operations/MC
 
 ## What was built during the event
 
-Before the event there were the requirements package (received 2026-10-26), which carried a read-only reference baseline of synthetic data, rules and static pages, and a click-through JSX prototype of the screens. Neither contributed code to `repo/`; the README section "Track and starting point" names both. There was no application code.
+Before any code was written for `repo/`, Randall used an AI chat in the browser to write the requirements package (dated 2026-10-26), which contains a small folder of generated Python scripts and static pages used as reference material only, and a click-through JSX prototype of the screens. Neither contributed code to `repo/`; the README section "Track and starting point" names both. There was no prior application.
 
 The git history starts on October 27 with a baseline commit of the overnight build of October 26. Work after that baseline includes:
 
