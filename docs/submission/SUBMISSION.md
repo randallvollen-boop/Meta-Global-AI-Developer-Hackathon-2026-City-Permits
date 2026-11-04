@@ -10,7 +10,7 @@ The entry is framed around production behaviour: rate limits, caps, audit histor
 
 ## Entry requirements
 
-* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits.
+* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits-Public.
 * Accessible three-minute demo video: https://www.youtube.com/watch?v=NelkRrahaXw. It also plays on the landing page of the live demo, under the persona cards.
 * Live product: https://acme-city-permits.onrender.com
 

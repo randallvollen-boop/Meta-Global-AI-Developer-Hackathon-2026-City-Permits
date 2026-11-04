@@ -58,7 +58,7 @@ Check once after the first deploy that visitors are counted separately (step 8 b
 
 ## Steps
 
-1. **Give Render access to the repository.** In Render, open Account Settings, then GitHub, and install or configure the Render GitHub app so it can read `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits`. The repository must contain `render.yaml` and `repo/Dockerfile-demo` on the branch Render deploys (the default branch unless set otherwise).
+1. **Give Render access to the repository.** In Render, open Account Settings, then GitHub, and install or configure the Render GitHub app so it can read `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits-Public`. The repository must contain `render.yaml` and `repo/Dockerfile-demo` on the branch Render deploys (the default branch unless set otherwise).
 
 2. **Create the Blueprint.** In Render choose New, then Blueprint, pick the repository and branch, and confirm. Render reads `render.yaml` and proposes one service: `acme-city-permits` (web).
 
@@ -83,7 +83,7 @@ Check once after the first deploy that visitors are counted separately (step 8 b
 
 `autoDeploy` is off, so a push never changes the live demonstration by itself.
 
-1. Randall approves the push, and main is pushed to `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits`.
+1. Randall approves the push, and main is pushed to `randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits-Public`.
 2. In Render, open `acme-city-permits` and press Manual Deploy, then Deploy latest commit. The lead may trigger the same deploy through the Render API instead.
 3. Wait until the deploy shows Live. Render keeps the old instance serving until the new one passes `/readyz`.
 4. Run the smoke check.
