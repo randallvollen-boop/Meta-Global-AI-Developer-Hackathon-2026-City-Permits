@@ -275,8 +275,35 @@ def login(page, server: BrowserServer):
 def submit_action(page, server: BrowserServer):
     """Return a callable that performs one explicit action of the interface."""
 
+    def _fixed_fields_agree(candidate, wanted: dict[str, str]) -> bool:
+        # A page can offer the same action for several records (for example
+        # the decision of one record and a prefilled form for another).  A
+        # candidate is ruled out only when a field the test wants to set is
+        # already filled with another value and cannot be edited on screen:
+        # hidden, read-only, disabled or not visible.  An empty or editable
+        # field never rules a candidate out.
+        for name, value in wanted.items():
+            control = candidate.locator(f'form.action-form [name="{name}"]')
+            if control.count() == 0:
+                continue
+            state = control.first.evaluate(
+                "element => ({value: element.value,"
+                " fixed: element.type === 'hidden' || element.readOnly || element.disabled})"
+            )
+            if not state["value"] or state["value"] == value:
+                continue
+            if state["fixed"] or not control.first.is_visible():
+                return False
+        return True
+
     def perform(action_id: str, fields: dict[str, str] | None = None) -> str:
-        details = page.locator(f'details[data-action-id="{action_id}"]').first
+        candidates = page.locator(f'details[data-action-id="{action_id}"]')
+        details = candidates.first
+        if fields and candidates.count() > 1:
+            for candidate in candidates.all():
+                if _fixed_fields_agree(candidate, fields):
+                    details = candidate
+                    break
         form = details.locator("form.action-form")
         button = form.locator('button[type="submit"]')
         # The control may sit inside a disclosure that is closed, and the page
