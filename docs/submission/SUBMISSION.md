@@ -88,7 +88,7 @@ The plan is written up in [docs/operations/MCP_PLAN.md](../../docs/operations/MC
 
 ## What was built during the event
 
-Before the event only the reference requirements package existed (received 2026-10-26). There was no application code.
+Before the event there were the requirements package (received 2026-10-26), which carried a read-only reference baseline of synthetic data, rules and static pages, and a click-through JSX prototype of the screens. Neither contributed code to `repo/`; the README section "Track and starting point" names both. There was no application code.
 
 The git history starts on October 27 with a baseline commit of the overnight build of October 26. Work after that baseline includes:
 
@@ -107,7 +107,7 @@ The participant guide says the build window runs October 27 to November 4. The e
 
 ## Verification
 
-* The full automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The full automated suite collects 3,841 tests. The full run of November 3, 2026 passed 3,839 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 * 10 gates run in `scripts/run_all_checks.py`.
 

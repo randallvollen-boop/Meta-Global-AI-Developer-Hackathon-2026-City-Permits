@@ -12,8 +12,8 @@ Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, us
 ## Submission overview
 
 * Track: Indie Developer · Build for Your World.
-* Built during the event: the requirements package arrived on October 26, 2026, with no application code. The code was built from the overnight baseline of October 26 through the build window of October 27 to November 4.
-* Meta AI at runtime: Muse, through `muse-spark-1.3` for document reading, record matching and explanations, and `muse-image-1.0` for the permit type icons.
+* Built during the event: before the event there were a requirements package with a read-only reference baseline, and a click-through prototype of the screens. No code from either runs here. Every line of code under `repo/` was written between the overnight baseline of October 26 and November 3. See "Track and starting point".
+* Meta AI at runtime: Muse on the Meta Model API, through `muse-spark-1.3` for document reading, record matching, the help chat, the policy briefing and explanations, and `muse-image-1.0` for the permit type icons. At build time, `muse-wonder-1.0` reviewed the prototype and built the user interface redesign, the permit-type icon feature, the ePermit intake channels and the agent triage. See "Muse" for where each model runs and what it does.
 * Bonus prize targeted: Best Agentic Use-Case. The intake and adjudication agents run multi-step over the waiting cases, each run keeps its step graph and can be replayed, and a named person makes every decision.
 * Video: https://www.youtube.com/watch?v=NelkRrahaXw
 * Try it: https://acme-city-permits.onrender.com, with no API key needed. When live Muse is off, the demo shows recorded answers and labels them.
@@ -22,9 +22,14 @@ Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, us
 
 Indie Developer track.
 
-Before the event, only the requirements package existed. It arrived on October 26, 2026. There was no application code.
+What existed before the event:
 
-The git history starts on October 27, 2026. Its first commit is a baseline of the overnight build of October 26. Everything the demo shows beyond that baseline was built during the event.
+* The requirements package: 57 requirements, the synthetic ACME City data and documents, and the acceptance arithmetic. It arrived on October 26, 2026. It also carried a read-only reference baseline, `reference/acme-city/`: a fictional permit domain with five permit-type configurations, synthetic data, deterministic rules, reports and static pages. That baseline is a pre-existing dependency in the sense of ideas only: it is not bundled here, no file of it was copied into `repo/`, and nothing in it implements the registry, the stewardship, the agents, the Muse integration or the server-enforced permissions that this application has.
+* A click-through prototype of the screens: one JSX file of about 3,100 lines with fourteen screens and no back end. It was a design reference only. Muse Wonder reviewed it against the built application, and its application form and its idea of agents that a person wakes and runs were rebuilt in this codebase. None of its code is in this repository.
+
+Everything under `repo/` was written during the event: the whole application. The git history starts on October 27, 2026, and its first commit is a baseline of the overnight build of October 26, the first night of the event. The work recorded in `BUILD_LOG.md` runs from October 26 to November 3, 2026.
+
+Pre-existing code that the application depends on, all as named open-source packages and none of it written for this project: FastAPI, Starlette and uvicorn (the web service), SQLAlchemy and Alembic (the database and migrations), Jinja2 (templates), Pydantic (schemas), httpx (the Meta Model API client) and python-multipart (uploads). The tests use pytest and Playwright. The version constraints are declared in `repo/pyproject.toml` and the resolved versions are locked in `repo/uv.lock`.
 
 The participant guide says the build window runs October 27 to November 4. The event page says October 26.
 
@@ -45,6 +50,16 @@ The model never decides. Every permit decision, fee, and issuance is made by a n
 ## Muse
 
 Muse is the model inside the application.
+
+Which Meta models the project uses, where each one runs, and what each one does:
+
+| Model | Where it runs | When | What it does in the project |
+|---|---|---|---|
+| `muse-spark-1.3` | Meta Model API (`api.meta.ai`), Standard mode, called from the server | At runtime | Reads received documents and proposes structured values; proposes record matches; writes the cited answer in the applicant help chat; explains a steward recommendation; explains the "Check my application" result; explains a policy scenario and drafts the council briefing |
+| `muse-image-1.0` | Meta Model API, called from the server | At runtime, and once at build time | Generates the fictional permit type icons through an Administrator action with a daily cap; without a key that action is unavailable. Three icons came with the redesign build. The 14 seed icons in `repo/src/acme_city/static/permit-type-icons/` were generated with the same model on October 28, 2026 in a separate batch outside the in-app flow (14 calls); their prompts and hash prefixes are in `docs/operations/permit-type-icons-manifest.json` and their full SHA-256 hashes in `repo/config/publishable_binaries.json` |
+| `muse-wonder-1.0` | Meta Model API, Standard mode, driven through a coding harness on the developer's machine | At build time only | Reviewed the prototype against the built application, then built the user interface redesign, the permit-type icon feature, the ePermit intake channels and the agent triage. It is never called by the running application |
+
+No Meta model runs on Baseten or on the project's own compute. The text client sends only models on the allowlist (`ACME_MUSE_MODEL_ALLOWLIST`, by default `muse-spark-1.3` alone), the image client is fixed to `muse-image-1.0`, and no configuration can select a `-contributor` model. Other parts of the application were built with local and other frontier models; `docs/build-story/ENGINES.md` records which engine produced which part.
 
 * It reads the text of received documents and proposes structured values.
 * It proposes record matches for the data stewards.
@@ -137,7 +152,7 @@ Checks and tests:
 
 ## How to run it locally
 
-The application is in `repo/`. It needs Python 3.12 and [uv](https://docs.astral.sh/uv/). Run these commands from the `repo/` directory.
+The application is in `repo/`. It needs Linux (or Windows Subsystem for Linux; the launcher tracks the server through `/proc`), Python 3.12 and [uv](https://docs.astral.sh/uv/). Run these commands from the `repo/` directory.
 
 ```bash
 uv run python scripts/prepare_user_test.py --mode demo-synthetic
@@ -145,6 +160,47 @@ uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
 ```
 
 Open http://127.0.0.1:8266. The server binds only to the local computer. The prepare mode loads the synthetic year of permits that the walkthrough needs. `repo/USER_TEST_GUIDE.md` lists the other prepared states and the commands that stop the server.
+
+No account is needed for this. Without a Meta API key the application runs with live Muse off: document reading, record matching, the help chat and the policy briefing answer from the fixtures in `repo/fixtures/replay/` and the screen labels the result "replay"; "Check my application" falls back to the deterministic rules with no Muse explanation; icon generation is unavailable.
+
+### Using a Meta API key (optional)
+
+Live Muse needs a key for the Meta Model API. The application reads `META_API_KEY` from the environment, or from a key file outside the repository (`~/.config/ai-keys.env` by default, or the file named by `ACME_KEY_FILE`). It reads only `META_API_KEY` and `ACME_SECRET_KEY` from that file; every other setting comes from the environment.
+
+1. Copy `repo/.env.example` to a file outside the repository and fill in `META_API_KEY`. Never commit the key: `.env` is ignored by Git at the root and under `repo/`, and `repo/scripts/scan_publishable_tree.py` fails on secret-shaped values anywhere under `repo/`.
+2. Stop the server from the quick start, turn the live features on and start it again:
+
+```bash
+uv run python scripts/stop_demo.py
+export ACME_KEY_FILE=~/.config/ai-keys.env
+export ACME_APPLICANT_ASSIST_LIVE_ENABLED=1 ACME_POLICY_ASSIST_LIVE_ENABLED=1 ACME_PRESUBMIT_REVIEW_LIVE_ENABLED=1
+uv run python scripts/start_demo.py --host 127.0.0.1 --port 8266
+```
+
+Locally, in demo mode, the provider is enabled as soon as a key is present (`ACME_MUSE_PROVIDER_ENABLED=0` turns it off; in production mode it is off unless set to 1). `ACME_MUSE_LIVE_CALLS_ALLOWED` is the extra lock of the hosted public demo and has no effect locally. The three per-feature switches above are off by default. Each live result then carries the "live" label and its model run record keeps the model name and the validated output. `ACME_MUSE_LIVE_CALL_CAP` (default 2, counted over the live runs stored in the database, not per process), `ACME_MUSE_DAILY_CALL_CAP` (default 10) and `ACME_MUSE_IMAGE_DAILY_CAP` (default 10) bound the spend; `repo/.env.example` lists the settings with their defaults. The hosted demonstration holds its key as a Render secret (`render.yaml`, `sync: false`).
+
+## Third-party and non-Meta components
+
+Everything that is not Muse, labelled:
+
+* Server and tests: the open-source Python packages named under "Track and starting point", plus pytest and Playwright with its Chromium, Firefox and WebKit builds for the browser tests. No front-end framework; the pages are Jinja templates with vanilla JavaScript and CSS written for this project, no external scripts, no web fonts (system font stacks only) and no outside map tiles.
+* Database and hosting: SQLite, and the public demo runs on Render.
+* Text to speech: the 26 voice clips of the guided tour in `repo/src/acme_city/static/tour-audio/` and the narration of the demo video were made with Kokoro, an open-source text-to-speech model run locally. No Meta model produced speech.
+* Images that are not Muse Image: the 17 town map tiles in `repo/src/acme_city/static/map-tiles/` and the 5 persona icons in `repo/src/acme_city/static/persona-icons/` were rendered at build time with a locally hosted image model that is not a Meta model. Every permit-type icon is Muse Image.
+* Demo video: the screen recordings are the real application. The animated presenter was made with a video model that is not a Meta model; its narration is Kokoro.
+* Data: every person, business, parcel, permit, fee, rule and document is fictional and was written for this project. No public dataset is used. The workflow was modelled on dated public municipal permitting pages, cited in `CITY_PERMIT_ALIGNMENT.md`, without their branding, fees or codes.
+
+`repo/config/publishable_binaries.json` is the allowlist of the application's binary assets (icons, tiles, audio, video) with the source of each set and the hash of each image; the build-story screenshots under `docs/` are outside it.
+
+## Recorded runs and evidence
+
+For the steps a judge cannot rerun without a key, the record is in the repository:
+
+* `repo/fixtures/replay/`: 19 fixtures, used whenever live Muse is off. Two are recordings of live Muse Spark runs, each with the run it came from in `source_run_id`: a document extraction and a record match proposal. One is a malformed output that the schema check rejects. The other 16, the 11 applicant help answers and the 5 policy scenarios (one briefing fails validation on purpose), are deterministic demonstration fixtures written for the demo against the published rule text they quote; each one says so in its `note`, and they are not recordings. The screen labels every result "live" or "replay"; a replay never counts as live evidence.
+* Model runs: every Muse Spark call, live or replay, is stored as a model run with its mode, its model, its status and its validated output; the "Check my application" runs store the hashes of their inputs; icon generations are audit records with the model and the estimated cost. The agents' "Replay run" button walks a recorded run again, step by step.
+* `docs/operations/permit-type-icons-manifest.json`: the prompts and hash prefixes of the 14 seed icons generated with Muse Image; the icons themselves are the output.
+* `EVIDENCE_LOG.md`: the dated record of live calls, test runs and gate results, including the Meta response ids of the live extraction runs. The run directories it names under `repo/evidence/runs/` are local and are not published. `BUILD_LOG.md` is the dated record of what was built when, and `docs/build-story/` holds the screenshots of the application at each stage.
+* Acceptance checks: `repo/scripts/run_all_checks.py` runs the 10 gates and writes an evidence manifest with artifact hashes; `repo/scripts/verify_evidence.py` checks the manifest's required fields and the hashes of the artifacts it names.
 
 ## License
 

@@ -27,3 +27,6 @@ __pycache__/
 /docs/process/
 /repo/docs/plans/
 commit_message.txt
+# Local environment / secret material
+.env
+*.env.local

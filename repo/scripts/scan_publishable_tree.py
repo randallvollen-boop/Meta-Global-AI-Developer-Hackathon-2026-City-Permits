@@ -17,6 +17,7 @@ TEXT_SUFFIXES = {
     "",
     ".b64",
     ".css",
+    ".example",
     ".html",
     ".ini",
     ".js",

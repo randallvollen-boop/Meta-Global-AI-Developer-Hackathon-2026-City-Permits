@@ -144,3 +144,11 @@ def test_a_base64_fixture_is_still_scanned_for_secrets(scanner, tmp_path: Path) 
     write(tmp_path, "tests/fixtures/clip.mp3.b64", b"aGVsbG8 " + b"someone@" + b"gmail.com\n")
     write_manifest(tmp_path, {})
     assert scanner.scan() == ["tests/fixtures/clip.mp3.b64: personal email"]
+
+
+def test_an_env_example_is_scanned_as_text(scanner, tmp_path: Path) -> None:
+    write(tmp_path, ".env.example", b"META_API_KEY=\nACME_MUSE_LIVE_CALL_CAP=2\n")
+    write_manifest(tmp_path, {})
+    assert scanner.scan() == []
+    write(tmp_path, ".env.example", b"META_API_KEY=" + b"x" * 40 + b"\n")
+    assert any("assigned provider key" in finding for finding in scanner.scan())
