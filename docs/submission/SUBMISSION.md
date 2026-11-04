@@ -107,7 +107,7 @@ The participant guide says the build window runs October 27 to November 4. The e
 
 ## Verification
 
-* The full automated suite collects 3,841 tests. The full run of November 3, 2026 passed 3,839 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The full automated suite collects 3,842 tests. The full run of November 3, 2026 passed 3,840 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 * 10 gates run in `scripts/run_all_checks.py`.
 

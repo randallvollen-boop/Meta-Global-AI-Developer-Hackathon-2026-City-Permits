@@ -464,3 +464,9 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - A refused clip is not silent: the note beside the button reads "The voice could not start. Tap again to try." and the button is at rest again.
 - No caption and no clip changed: `config/tour_steps.json`, the twenty-seven shipped clips and the manifest are untouched, and the nine-second step of the auto-play stands.
 - Focused runs: `tests/browser/test_tour_voice_browser.py` — 11 passed; `tests/unit/test_tour.py` — 30 passed; the run of the lane, `pytest -q -p no:cacheprovider -n 4 -k "tour or voice" tests`, gave 96 passed. `scripts/scan_publishable_tree.py` passed with 952 source files and zero findings. `scripts/sync_help_docs_bundle.py --check` exits 0: no document of the help, of the walkthrough or of the submission described the voice, so none of them changed and no copy of the bundle moved.
+
+## 2026-11-03 — Full gate before submission
+
+- Commit `c32145d` (the README judging checklist, on top of `5346374`): `PYTHONPATH=src .venv/bin/python -m pytest -q -n 6 -p no:cacheprovider` in `repo/` collected 3,842 tests and gave 3,840 passed and 2 skipped (the two WebKit browser tests; that browser is not installed) in 1171.91 s.
+- `scripts/run_all_checks.py`: all 10 local verification gates passed. The summary is in `repo/evidence/runs/final/run-all-summary.json`.
+- The earlier full run of the day, on `5346374`, gave 3,839 passed and 2 skipped, and all 10 gates passed.

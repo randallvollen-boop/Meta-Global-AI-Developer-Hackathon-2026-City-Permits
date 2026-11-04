@@ -148,7 +148,7 @@ Checks and tests:
 * 6 simulated subscriber departments, listed in `repo/config/property_subscribers.json`.
 * 85 permissions, listed in `repo/config/permissions.json`.
 * 10 local gates, run by `repo/scripts/run_all_checks.py`.
-* The automated suite collects 3,841 tests. The full run of November 3, 2026 passed 3,839 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The automated suite collects 3,842 tests. The full run of November 3, 2026 passed 3,840 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 ## How to run it locally
 
