@@ -6,7 +6,9 @@
 /work/jsx-parity/
 # Architecture-page build outputs and local runtime state (contain machine paths)
 /docs/solution-architecture/*/check/*
-!/docs/solution-architecture/*/check/verify_page.py
+# The page build/check scripts stay local (machine paths, denylists)
+/docs/solution-architecture/*/update_status.py
+/docs/solution-architecture/*/page/page.json
 /docs/solution-architecture/*/var/
 /docs/solution-architecture/*/work/
 /docs/solution-architecture/*/digests/

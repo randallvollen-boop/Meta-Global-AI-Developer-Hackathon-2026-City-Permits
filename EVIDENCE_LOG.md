@@ -40,7 +40,7 @@ The source says the reference city-permit application is a deterministic synthet
 
 Initialized a nested local Git repository on branch `main`. Repository-local author identity is configured for the personal GitHub account using its GitHub noreply address. `.gitignore` contains `/intake/`; `git check-ignore` confirmed the preserved ZIP is excluded.
 
-`gh auth status` showed only `elawclerkdemo` as the active authenticated account. Randall then fixed the publication owner for this hackathon to `RandallVollen-boop` only. No authentication change, remote creation, commit, push, or external write occurred.
+`gh auth status` showed no authentication for the publication owner. Randall then fixed the publication owner for this hackathon to `RandallVollen-boop` only. No authentication change, remote creation, commit, push, or external write occurred.
 
 ## 2026-10-26 — Westerville process reference
 

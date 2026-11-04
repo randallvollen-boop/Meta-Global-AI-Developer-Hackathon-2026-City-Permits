@@ -15,7 +15,7 @@ Timezone: America/New_York. Record preparation and implementation separately; ne
 - Configured the repository-local personal GitHub noreply author identity.
 - Recorded that this hackathon may be published only to `RandallVollen-boop`.
 - Aligned the fictional ACME workflow to current public City of Westerville submission-channel, contractor-registration, commercial plan-review, correction, issuance, status, and inspection-handoff concepts without importing City branding or authoritative fee/code claims.
-- Verified GitHub CLI is currently authenticated only as `elawclerkdemo`; no remote was created and nothing was committed or pushed.
+- Verified the GitHub CLI was not yet authenticated as the publication owner; no remote was created and nothing was committed or pushed.
 - Randall released the City Permits candidate for a full local end-to-end build and loopback user-test handoff. External publication/submission actions remain held.
 - Created a 57-requirement execution outline and six-plan implementation set covering 22 gated tasks, AT01–AT20, VC01–VC08, D01–D11, bounded Muse Standard integration, eight screens, evidence, restart/idempotency and local process handoff. Self-review found 57/57 requirement IDs and no missing child-plan links or placeholder markers.
 - Corrected whitespace around the existing `META_API_KEY` assignment so shell-based launchers can source the key file; key value was not displayed or changed and file mode is 0600.

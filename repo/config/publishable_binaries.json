@@ -3,7 +3,7 @@
   "sets": [
     {
       "directory": "src/acme_city/static/map-tiles",
-      "source": "Krea 2 renders for the town map, one recipe and one colour grade, seeds 9301 to 9341; c2a re-rolled with seed 9325 and all 17 regraded together",
+      "source": "A local image model rendered the town map, one recipe and one colour grade, seeds 9301 to 9341; c2a re-rolled with seed 9325 and all 17 regraded together",
       "added_in": [
         "5eddb89",
         "6e96c36"
@@ -30,7 +30,7 @@
     },
     {
       "directory": "src/acme_city/static/persona-icons",
-      "source": "Krea 2 renders for the persona selector, seeds 9201 to 9205",
+      "source": "A local image model rendered the persona selector, seeds 9201 to 9205",
       "added_in": [
         "2f070af"
       ],
