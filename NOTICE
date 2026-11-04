@@ -1,16 +1,9 @@
 ACME City Permits
-Copyright © 2026 Randall Vollen and VollenData. All rights reserved.
+Copyright (c) 2026 Randall Vollen and VollenData.
 
-The terms are in the LICENSE file. No permission is granted to reproduce,
-modify, redistribute, sublicense, host commercially, or sell the software
-except as expressly authorized in writing by Randall Vollen.
+Released under the MIT License. The terms are in the LICENSE file.
 
-This repository is provided for the Muse Hackathon, for evaluation and
-demonstration.
-
-Commits 3827ea3 to 5eef256 briefly contained an Apache-2.0 file while the
-repository was private. The project was never published under that license,
-and the file was replaced on October 29, 2026.
+This repository was built for the Muse Hackathon.
 
 All people, businesses, parcels, permits, fees, and rules in this product are
 fictional. The application issues no real permit and sends nothing to a real

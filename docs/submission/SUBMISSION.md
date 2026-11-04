@@ -2,15 +2,16 @@
 
 ## Track
 
-Startup track: For teams and founders building a real product.
-Judged on technical execution and whether it holds up in production.
+Indie Developer track.
+
+Bonus prize targeted: Best Agentic Use-Case. The intake and adjudication agents run multi-step over the waiting cases, each run keeps its step graph and can be replayed, and a named person makes every decision.
 
 The entry is framed around production behaviour: rate limits, caps, audit history, a rebuild of the demonstration data on every deploy, tests, and checks. Only features built during the event are shown as judged work.
 
 ## Entry requirements
 
-* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits. The repository is private today and is made public at submission.
-* Accessible three-minute demo video: it plays on the landing page of the live demo, under the persona cards. The entry form carries a hosted link to the same video.
+* Public repository: https://github.com/randallvollen-boop/Meta-Global-AI-Developer-Hackathon-2026-City-Permits.
+* Accessible three-minute demo video: https://www.youtube.com/watch?v=NelkRrahaXw. It also plays on the landing page of the live demo, under the persona cards.
 * Live product: https://acme-city-permits.onrender.com
 
 ## Summary
@@ -118,7 +119,7 @@ The participant guide says the build window runs October 27 to November 4. The e
 
 ## License
 
-All rights reserved. Copyright 2026 Randall Vollen and VollenData. The repository will be public at submission, for evaluation and demonstration only. See [LICENSE](../../LICENSE) and [NOTICE](../../NOTICE).
+MIT License. Copyright (c) 2026 Randall Vollen and VollenData. See [LICENSE](../../LICENSE) and [NOTICE](../../NOTICE).
 
 ## What the demonstration shows now
 

@@ -34,4 +34,4 @@ The stack is Python 3.12 with FastAPI, SQLAlchemy and Alembic, one SQLite databa
 
 ## License
 
-All rights reserved. See `../LICENSE` and `../NOTICE`.
+MIT License. See `../LICENSE` and `../NOTICE`.

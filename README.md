@@ -3,17 +3,24 @@
 ACME City Permits is a fictional municipal permitting application. It follows one permit from the applicant's form to a recorded decision and an issued permit. Muse proposes. People decide.
 
 Live demo: https://acme-city-permits.onrender.com
-Video: the three-minute tour video is on the landing page of the live demo, under the persona cards.
-Repository visibility: private. It must be public at submission.
+Video: the three-minute tour video is on YouTube at https://www.youtube.com/watch?v=NelkRrahaXw and on the landing page of the live demo, under the persona cards.
 
 Every person, business, parcel, permit, fee, rule, and document in this application is fictional. The application issues no real permit and sends nothing to a real municipality.
 
 Prepared by Randy Vollen, host of www.VollenData.com, for the Muse Hackathon, using the fictional City of Acme.
 
+## Submission overview
+
+* Track: Indie Developer · Build for Your World.
+* Built during the event: the requirements package arrived on October 26, 2026, with no application code. The code was built from the overnight baseline of October 26 through the build window of October 27 to November 4.
+* Meta AI at runtime: Muse, through `muse-spark-1.3` for document reading, record matching and explanations, and `muse-image-1.0` for the permit type icons.
+* Bonus prize targeted: Best Agentic Use-Case. The intake and adjudication agents run multi-step over the waiting cases, each run keeps its step graph and can be replayed, and a named person makes every decision.
+* Video: https://www.youtube.com/watch?v=NelkRrahaXw
+* Try it: https://acme-city-permits.onrender.com, with no API key needed. When live Muse is off, the demo shows recorded answers and labels them.
+
 ## Track and starting point
 
-Startup track: For teams and founders building a real product.
-Judged on technical execution and whether it holds up in production.
+Indie Developer track.
 
 Before the event, only the requirements package existed. It arrived on October 26, 2026. There was no application code.
 
@@ -126,7 +133,7 @@ Checks and tests:
 * 6 simulated subscriber departments, listed in `repo/config/property_subscribers.json`.
 * 85 permissions, listed in `repo/config/permissions.json`.
 * 10 local gates, run by `repo/scripts/run_all_checks.py`.
-* The automated suite collects 3,787 tests. The full run of November 2, 2026 passed 3,785 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
+* The automated suite collects 3,841 tests. The full run of November 3, 2026 passed 3,839 of them and skipped 2, the two WebKit browser tests, because that browser is not installed on the machine. It covers the acceptance checks, the security checks, the browser checks, and the unit tests.
 
 ## How to run it locally
 
@@ -141,4 +148,4 @@ Open http://127.0.0.1:8266. The server binds only to the local computer. The pre
 
 ## License
 
-All rights reserved. Copyright 2026 Randall Vollen and VollenData. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+MIT License. Copyright (c) 2026 Randall Vollen and VollenData. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
