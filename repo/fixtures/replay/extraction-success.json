@@ -1,7 +1,7 @@
 {
   "fixture_kind": "muse_replay",
   "fixture_version": "2026.10.26-1",
-  "note": "A recorded extraction output. It was produced by the live run named in source_run_id against the document content whose hash is the hash of fixtures/documents/SYN-APP-001-application-v1.txt. The recorded application and document references are logical: a replay binds them to the records of the current run.",
+  "note": "A demonstration extraction output written for the demo in the shape of a live run; source_run_id and source_response_id are fictional placeholders, not a recording. It is bound to the document content whose hash is the hash of fixtures/documents/SYN-APP-001-application-v1.txt. The recorded application and document references are logical: a replay binds them to the records of the current run.",
   "task": "extraction",
   "provider": "meta",
   "model": "muse-spark-1.3",

@@ -12,7 +12,7 @@ The Hosting and Production passages now describe the live public demonstration o
 
 ## Output
 
-`~/Projects/Personal/Meta-Global-AI-Developer-Hackathon-2026-City-Permits/docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
+`docs/solution-architecture/acme-city-permits/vollen_acme-city-permits_solution-architecture_2026-10-26.html`
 
 One self-contained HTML file. 364310 bytes. SHA-256 `566691fffe0acc036687b50501c11e0dea246112c96412919e0c0f6c7740089d` (2026-11-02, picture lock and no scheduled reset). It loads nothing from the network and renders offline in a browser.
 
@@ -20,29 +20,7 @@ The application serves this file at `/help/technical/architecture`. It is the on
 
 ## Rebuild
 
-Run from the solution workspace root, in this order:
-
-```
-python3 -I ~/.agents/skills/solution-architecture-page/scripts/inline_assets.py page
-# The current kit requires page/page.json output to be an absolute path for this build.
-python3 -I "~/Documents/Vollen Data Analytics/Solution_Architecture_Kit/build_page.py" page
-~/.agents/skills/solution-architecture-page/scripts/check_linux.sh \
-  "$PWD/vollen_acme-city-permits_solution-architecture_2026-10-26.html" "$PWD/check"
-python3 -I check/verify_page.py \
-  vollen_acme-city-permits_solution-architecture_2026-10-26.html STATUS.json page/page.json
-```
-
-The checker needs absolute paths because its Linux wrapper changes the working directory. Before the build, set `page/page.json` `output` to the absolute path of the target HTML. Restore the portable relative value after the build if the workspace is a temporary worktree.
-
-Sources of truth for a rebuild:
-
-- `page/body.src.html` is the markup, including the status panel block.
-- `page/data.json` is the diagram, the six views, the eight steps, the node panels, the explorer and the tree.
-- `page/extra.css` is the Vollen brand layer plus the page local block. Recopy the brand layer first, then reapply the page local block, so a brand update is not lost.
-- `page/page.json` holds the title, description, brand, output, banner, client and denylist.
-
-Do not edit the built HTML. Edit the sources and rebuild.
-
+The page was built from `page/body.src.html` and `facts.md` with a private page kit that is not part of this repository. The committed HTML file is the artefact; the application serves it as is.
 ## Status source
 
 `STATUS.json` in this workspace is the one architecture status record. The status panel on the page, the status node in the diagram and the `info.status` panel entry all carry its values.

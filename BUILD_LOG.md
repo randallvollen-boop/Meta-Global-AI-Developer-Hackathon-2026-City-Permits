@@ -4,7 +4,7 @@ Timezone: America/New_York. Record preparation and implementation separately; ne
 
 ## October 26, 2026 — intake and alignment
 
-- Created sibling workspace `Meta-Global-AI-Developer-Hackathon-2026-City-Permits` beside the existing RailFlow workspace.
+- Created sibling workspace `Meta-Global-AI-Developer-Hackathon-2026-City-Permits` as its own workspace.
 - Validated the downloaded ZIP for path traversal, duplicate names, symlinks, size limits, and CRC integrity.
 - Preserved the archive and extracted package under ignored `intake/`; hashes match.
 - Read the authoritative requirements and principal build/governance/data/interface/validation companions.

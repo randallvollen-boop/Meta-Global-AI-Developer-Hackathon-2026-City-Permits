@@ -1,7 +1,7 @@
 {
   "fixture_kind": "muse_replay",
   "fixture_version": "2026.10.26-1",
-  "note": "A recorded match-proposal output. It was produced by the live run named in source_run_id against the source record ERP-BL-00413. The disposition is a proposal: it was never a link, a decision or an approval.",
+  "note": "A demonstration match-proposal output written for the demo in the shape of a live run; source_run_id and source_response_id are fictional placeholders, not a recording. It is written against the source record ERP-BL-00413. The disposition is a proposal: it was never a link, a decision or an approval.",
   "task": "match_proposal",
   "provider": "meta",
   "model": "muse-spark-1.3",

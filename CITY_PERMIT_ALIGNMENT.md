@@ -173,7 +173,7 @@ No milestone is verified from a screenshot, static report, generated role label,
 
 ### Established
 
-- New workspace is separate from RailFlow.
+- New workspace is separate from any other project.
 - Intake package and old city-permit reference remain preserved and unmodified.
 - New code will live under `repo/`.
 - Intake is excluded from Git.

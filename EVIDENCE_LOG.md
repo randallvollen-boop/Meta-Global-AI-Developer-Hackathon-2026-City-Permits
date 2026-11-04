@@ -462,7 +462,7 @@ Defect found: the 8266 demo stopped during the full test run (likely a process-m
 - The step the tour leaves behind is silent. The spy on `HTMLMediaElement.prototype.pause` counted the stop before the tour moved on, and the spy on `HTMLMediaElement.prototype.play` counted one call for the press and no other, neither on the step the tour came to nor on the two steps the auto-play walked over.
 - Nothing is kept about the voice: `localStorage.getItem('acme-tour-voice')` and `sessionStorage.getItem('acme-tour-voice')` are both null after a press and after the change of the step, and the key of the earlier build is removed from both stores when the engine starts.
 - A refused clip is not silent: the note beside the button reads "The voice could not start. Tap again to try." and the button is at rest again.
-- No caption and no clip changed: `config/tour_steps.json`, the twenty-seven shipped clips and the manifest are untouched, and the nine-second step of the auto-play stands.
+- No caption and no clip changed: `config/tour_steps.json`, the twenty-six shipped clips and the manifest are untouched, and the nine-second step of the auto-play stands.
 - Focused runs: `tests/browser/test_tour_voice_browser.py` — 11 passed; `tests/unit/test_tour.py` — 30 passed; the run of the lane, `pytest -q -p no:cacheprovider -n 4 -k "tour or voice" tests`, gave 96 passed. `scripts/scan_publishable_tree.py` passed with 952 source files and zero findings. `scripts/sync_help_docs_bundle.py --check` exits 0: no document of the help, of the walkthrough or of the submission described the voice, so none of them changed and no copy of the bundle moved.
 
 ## 2026-11-03 — Full gate before submission
